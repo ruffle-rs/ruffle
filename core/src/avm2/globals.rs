@@ -23,7 +23,7 @@ mod boolean;
 mod class;
 mod date;
 mod error;
-mod flash;
+pub mod flash;
 mod function;
 mod global_scope;
 mod int;

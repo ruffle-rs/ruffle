@@ -1067,6 +1067,60 @@ fn shared_object_avm1() -> Result<(), Error> {
 }
 
 #[test]
+fn shared_object_avm2() -> Result<(), Error> {
+    set_logger();
+    // Test SharedObject persistence. Run an SWF that saves data
+    // to a shared object twice and verify that the data is saved.
+    let mut memory_storage_backend: Box<dyn StorageBackend> =
+        Box::new(MemoryStorageBackend::default());
+
+    // Initial run; no shared object data.
+    test_swf_with_hooks(
+        "tests/swfs/avm2/shared_object/test.swf",
+        1,
+        "tests/swfs/avm2/shared_object/input1.json",
+        "tests/swfs/avm2/shared_object/output1.txt",
+        |_player| Ok(()),
+        |player| {
+            // Save the storage backend for next run.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+        false,
+        false,
+    )?;
+
+    // Verify that the flash cookie matches the expected one
+    let expected = std::fs::read("tests/swfs/avm2/shared_object/RuffleTest.sol")?;
+    assert_eq!(
+        expected,
+        memory_storage_backend
+            .get("localhost//RuffleTest")
+            .unwrap_or_default()
+    );
+
+    // Re-run the SWF, verifying that the shared object persists.
+    test_swf_with_hooks(
+        "tests/swfs/avm2/shared_object/test.swf",
+        1,
+        "tests/swfs/avm2/shared_object/input2.json",
+        "tests/swfs/avm2/shared_object/output2.txt",
+        |player| {
+            // Swap in the previous storage backend.
+            let mut player = player.lock().unwrap();
+            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
+            Ok(())
+        },
+        |_player| Ok(()),
+        false,
+        false,
+    )?;
+
+    Ok(())
+}
+
+#[test]
 fn timeout_avm1() -> Result<(), Error> {
     set_logger();
     test_swf_with_hooks(

@@ -7,7 +7,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, EventObject as Avm2EventObject,
+    Domain as Avm2Domain, EventObject as Avm2EventObject, Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -121,7 +121,9 @@ struct GcRootData<'gc> {
     /// data in the GC arena.
     load_manager: LoadManager<'gc>,
 
-    shared_objects: HashMap<String, Object<'gc>>,
+    avm1_shared_objects: HashMap<String, Object<'gc>>,
+
+    avm2_shared_objects: HashMap<String, Avm2Object<'gc>>,
 
     /// Text fields with unbound variable bindings.
     unbound_text_fields: Vec<EditText<'gc>>,
@@ -156,6 +158,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<DragObject<'gc>>,
         &mut LoadManager<'gc>,
         &mut HashMap<String, Object<'gc>>,
+        &mut HashMap<String, Avm2Object<'gc>>,
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
         &mut Option<ContextMenuState<'gc>>,
@@ -170,7 +173,8 @@ impl<'gc> GcRootData<'gc> {
             &mut self.avm2,
             &mut self.drag_object,
             &mut self.load_manager,
-            &mut self.shared_objects,
+            &mut self.avm1_shared_objects,
+            &mut self.avm2_shared_objects,
             &mut self.unbound_text_fields,
             &mut self.timers,
             &mut self.current_context_menu,
@@ -1547,7 +1551,8 @@ impl Player {
                 avm2,
                 drag_object,
                 load_manager,
-                shared_objects,
+                avm1_shared_objects,
+                avm2_shared_objects,
                 unbound_text_fields,
                 timers,
                 current_context_menu,
@@ -1579,7 +1584,8 @@ impl Player {
                 storage: self.storage.deref_mut(),
                 log: self.log.deref_mut(),
                 video: self.video.deref_mut(),
-                shared_objects,
+                avm1_shared_objects,
+                avm2_shared_objects,
                 unbound_text_fields,
                 timers,
                 current_context_menu,
@@ -1677,11 +1683,24 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|context| {
-            let mut activation =
+            let mut avm1_activation =
                 Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
-            let shared_objects = activation.context.shared_objects.clone();
-            for so in shared_objects.values() {
-                let _ = crate::avm1::flush(&mut activation, *so, &[]);
+            for so in avm1_activation.context.avm1_shared_objects.clone().values() {
+                if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
+                    log::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                }
+            }
+
+            let mut avm2_activation =
+                Avm2Activation::from_nothing(avm1_activation.context.reborrow());
+            for so in avm2_activation.context.avm2_shared_objects.clone().values() {
+                if let Err(e) = crate::avm2::globals::flash::net::sharedobject::flush(
+                    &mut avm2_activation,
+                    Some(*so),
+                    &[],
+                ) {
+                    log::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
+                }
             }
         });
     }
@@ -1996,7 +2015,8 @@ impl PlayerBuilder {
                                 load_manager: LoadManager::new(),
                                 mouse_hovered_object: None,
                                 mouse_pressed_object: None,
-                                shared_objects: HashMap::new(),
+                                avm1_shared_objects: HashMap::new(),
+                                avm2_shared_objects: HashMap::new(),
                                 stage: Stage::empty(gc_context, self.fullscreen),
                                 timers: Timers::new(),
                                 unbound_text_fields: Vec::new(),

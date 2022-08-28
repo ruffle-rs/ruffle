@@ -337,7 +337,7 @@ pub fn get_local<'gc>(
     }
 
     // Check if this is referencing an existing shared object
-    if let Some(so) = activation.context.shared_objects.get(&full_name) {
+    if let Some(so) = activation.context.avm1_shared_objects.get(&full_name) {
         return Ok((*so).into());
     }
 
@@ -380,7 +380,10 @@ pub fn get_local<'gc>(
         Attribute::DONT_DELETE,
     );
 
-    activation.context.shared_objects.insert(full_name, this);
+    activation
+        .context
+        .avm1_shared_objects
+        .insert(full_name, this);
 
     Ok(this.into())
 }

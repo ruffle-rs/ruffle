@@ -1,9 +1,8 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::array::ArrayStorage;
-use crate::avm2::bytearray::{ByteArrayStorage, CompressionAlgorithm, Endian, ObjectEncoding};
+use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{bytearray_allocator, ArrayObject, ByteArrayObject, Object, TObject};
+use crate::avm2::object::{bytearray_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
@@ -14,77 +13,7 @@ use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
-use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
-
-pub fn deserialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    value: &AmfValue,
-) -> Result<Value<'gc>, Error> {
-    Ok(match value {
-        AmfValue::Undefined => Value::Undefined,
-        AmfValue::Null => Value::Null,
-        AmfValue::Bool(b) => Value::Bool(*b),
-        AmfValue::Integer(i) => Value::Integer(*i),
-        AmfValue::Number(n) => Value::Number(*n),
-        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
-        AmfValue::ByteArray(bytes) => {
-            let storage = ByteArrayStorage::from_vec(bytes.clone());
-            let bytearray = ByteArrayObject::from_storage(activation, storage)?;
-            bytearray.into()
-        }
-        AmfValue::StrictArray(values) => {
-            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
-            for value in values {
-                arr.push(Some(deserialize_value(activation, value)?));
-            }
-            let storage = ArrayStorage::from_storage(arr);
-            let array = ArrayObject::from_storage(activation, storage)?;
-            array.into()
-        }
-        AmfValue::ECMAArray(values, elements, _) => {
-            // First lets create an array out of `values` (dense portion), then we add the elements onto it.
-            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
-            for value in values {
-                arr.push(Some(deserialize_value(activation, value)?));
-            }
-            let storage = ArrayStorage::from_storage(arr);
-            let mut array = ArrayObject::from_storage(activation, storage)?;
-            // Now lets add each element as a property
-            for element in elements {
-                array.set_property(
-                    &QName::new(
-                        Namespace::public(),
-                        AvmString::new_utf8(activation.context.gc_context, element.name()),
-                    )
-                    .into(),
-                    deserialize_value(activation, element.value())?,
-                    activation,
-                )?;
-            }
-            array.into()
-        }
-        AmfValue::Object(properties, _class_definition) => {
-            let obj_class = activation.avm2().classes().object;
-            let mut obj = obj_class.construct(activation, &[])?;
-            for property in properties {
-                obj.set_property(
-                    &QName::new(
-                        Namespace::public(),
-                        AvmString::new_utf8(activation.context.gc_context, property.name()),
-                    )
-                    .into(),
-                    deserialize_value(activation, property.value())?,
-                    activation,
-                )?;
-            }
-            obj.into()
-            // TODO: Handle class_defintion
-        }
-        // TODO: Dictionary, Vector, XML, Date, etc...
-        _ => Value::Undefined,
-    })
-}
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -849,14 +778,20 @@ pub fn read_object<'gc>(
                     let (extra, amf) = decoder
                         .parse_single_element(bytes)
                         .map_err(|_| "Error: Invalid object")?;
-                    (extra.len(), deserialize_value(activation, &amf)?)
+                    (
+                        extra.len(),
+                        crate::avm2::amf::deserialize_value(activation, &amf)?,
+                    )
                 }
                 ObjectEncoding::Amf3 => {
                     let mut decoder = AMF3Decoder::default();
                     let (extra, amf) = decoder
                         .parse_single_element(bytes)
                         .map_err(|_| "Error: Invalid object")?;
-                    (extra.len(), deserialize_value(activation, &amf)?)
+                    (
+                        extra.len(),
+                        crate::avm2::amf::deserialize_value(activation, &amf)?,
+                    )
                 }
             };
 
