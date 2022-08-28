@@ -1,6 +1,7 @@
 //! Object representation for Error objects
 
 use crate::avm2::activation::Activation;
+#[cfg(feature = "avm_debug")]
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
@@ -23,6 +24,7 @@ pub fn error_allocator<'gc>(
         activation.context.gc_context,
         ErrorObjectData {
             base,
+            #[cfg(feature = "avm_debug")]
             call_stack: activation.avm2().call_stack().read().clone(),
         },
     ))
@@ -39,6 +41,7 @@ pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
+    #[cfg(feature = "avm_debug")]
     call_stack: CallStack<'gc>,
 }
 
@@ -63,6 +66,7 @@ impl<'gc> ErrorObject<'gc> {
         Ok(AvmString::new(activation.context.gc_context, output))
     }
 
+    #[cfg(feature = "avm_debug")]
     pub fn display_full(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -73,7 +77,8 @@ impl<'gc> ErrorObject<'gc> {
         Ok(AvmString::new(activation.context.gc_context, output))
     }
 
-    pub fn call_stack(&self) -> Ref<CallStack<'gc>> {
+    #[cfg(feature = "avm_debug")]
+    fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
     }
 }
