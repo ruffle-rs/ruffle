@@ -74,11 +74,6 @@ pub struct DisplayObjectBase<'gc> {
     scale_y: Percent,
     skew: f64,
 
-    /// The previous display object in order of AVM1 execution.
-    ///
-    /// `None` in an AVM2 movie.
-    prev_avm1_clip: Option<DisplayObject<'gc>>,
-
     /// The next display object in order of execution.
     ///
     /// `None` in an AVM2 movie.
@@ -133,7 +128,6 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             scale_x: Percent::from_unit(1.0),
             scale_y: Percent::from_unit(1.0),
             skew: 0.0,
-            prev_avm1_clip: None,
             next_avm1_clip: None,
             masker: None,
             maskee: None,
@@ -340,14 +334,6 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_parent(&mut self, parent: Option<DisplayObject<'gc>>) {
         self.parent = parent;
-    }
-
-    fn prev_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
-        self.prev_avm1_clip
-    }
-
-    fn set_prev_avm1_clip(&mut self, node: Option<DisplayObject<'gc>>) {
-        self.prev_avm1_clip = node;
     }
 
     fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
@@ -989,16 +975,6 @@ pub trait TDisplayObject<'gc>:
         self.parent().filter(|p| p.as_container().is_some())
     }
 
-    fn prev_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
-        self.base().prev_avm1_clip()
-    }
-    fn set_prev_avm1_clip(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        node: Option<DisplayObject<'gc>>,
-    ) {
-        self.base_mut(gc_context).set_prev_avm1_clip(node);
-    }
     fn next_avm1_clip(&self) -> Option<DisplayObject<'gc>> {
         self.base().next_avm1_clip()
     }
