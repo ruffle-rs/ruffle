@@ -266,6 +266,7 @@ impl<'gc> ScriptObjectData<'gc> {
             return false;
         }
         if let Some(name) = multiname.local_name() {
+            self.set_local_property_is_enumerable(name, false);
             self.values.remove(&name);
             true
         } else {

@@ -1,2 +1,7 @@
+key2
+value2
+key
+value
+Delete key2
 key
 value
