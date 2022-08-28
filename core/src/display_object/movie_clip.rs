@@ -1108,6 +1108,7 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
+        run_sounds: bool,
     ) {
         let next_frame = self.determine_next_frame();
         match next_frame {
@@ -1164,8 +1165,8 @@ impl<'gc> MovieClip<'gc> {
                 self.queue_remove_object(context, reader, tag_len, 2)
             }
             TagCode::SetBackgroundColor => self.set_background_color(context, reader),
-            TagCode::StartSound => self.start_sound_1(context, reader),
-            TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
+            TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
+            TagCode::SoundStreamBlock if run_sounds => self.sound_stream_block(context, reader),
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
@@ -1395,6 +1396,8 @@ impl<'gc> MovieClip<'gc> {
             self.assert_expected_tag_start();
         }
 
+        let frame_before_rewind = self.current_frame();
+
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
         //    backward to a frame.
@@ -1621,13 +1624,17 @@ impl<'gc> MovieClip<'gc> {
             .for_each(|goto| run_goto_command(self, context, goto));
 
         // Next, run the final frame for the parent clip.
-        // Re-run the final frame without display tags (DoAction, StartSound, etc.)
+        // Re-run the final frame without display tags (DoAction, etc.)
         // Note that this only happens if the frame exists and is loaded;
         // e.g. gotoAndStop(9999) displays the final frame, but actions don't run!
         if hit_target_frame {
             self.0.write(context.gc_context).current_frame -= 1;
             self.0.write(context.gc_context).tag_stream_pos = frame_pos;
-            self.run_frame_internal(context, false);
+            // If we changed frames, then trigger any sounds in our target frame.
+            // However, if we executed a 'no-op goto' (start and end frames are the same),
+            // then do *not* run sounds. Some SWFS (e.g. 'This is the only level too')
+            // rely on this behavior.
+            self.run_frame_internal(context, false, frame != frame_before_rewind);
         } else {
             self.0.write(context.gc_context).current_frame = clamped_frame;
         }
@@ -2053,7 +2060,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let is_playing = self.playing();
 
             if is_playing {
-                self.run_frame_internal(context, true);
+                self.run_frame_internal(context, true, true);
             }
         }
     }
@@ -2125,7 +2132,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // Run my SWF tags.
         // In AVM2, SWF tags are processed at enterFrame time.
         if self.playing() && !context.is_action_script_3() {
-            self.run_frame_internal(context, true);
+            self.run_frame_internal(context, true, true);
         }
     }
 
