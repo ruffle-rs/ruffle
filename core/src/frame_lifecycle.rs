@@ -75,33 +75,6 @@ impl Default for FramePhase {
     }
 }
 
-/// Run one frame according to AVM1 frame order.
-pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
-    // In AVM1, we only ever execute the update phase, and all the work that
-    // would ordinarily be phased is instead run all at once in whatever order
-    // the SWF requests it.
-    *context.frame_phase = FramePhase::Update;
-
-    // AVM1 execution order is determined by the global execution list, based on instantiation order.
-    for clip in context.avm1.clip_exec_iter() {
-        if clip.removed() {
-            // Clean up removed objects from this frame or a previous frame.
-            // Can be safely removed while iterating here, because the iterator advances
-            // to the next node before returning the current node.
-            context.avm1.remove_from_exec_list(context.gc_context, clip);
-        } else {
-            clip.run_frame(context);
-        }
-    }
-
-    // Fire "onLoadInit" events.
-    context
-        .load_manager
-        .movie_clip_on_load(context.action_queue);
-
-    *context.frame_phase = FramePhase::Idle;
-}
-
 /// Run one frame according to AVM2 frame order.
 pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     let stage = context.stage;

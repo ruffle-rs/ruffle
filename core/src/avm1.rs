@@ -3,13 +3,12 @@ use crate::avm1::globals::create_globals;
 use crate::avm1::object::stage_object;
 use crate::avm1::property_map::PropertyMap;
 use crate::context::UpdateContext;
-use crate::prelude::*;
-use gc_arena::{Collect, GcCell, MutationContext};
-
-use swf::avm1::read::Reader;
-
 use crate::display_object::DisplayObject;
+use crate::frame_lifecycle::FramePhase;
+use crate::prelude::*;
 use crate::tag_utils::SwfSlice;
+use gc_arena::{Collect, GcCell, MutationContext};
+use swf::avm1::read::Reader;
 
 #[cfg(test)]
 #[macro_use]
@@ -424,10 +423,37 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Returns an iterator over all movie clips in execution order.
-    pub fn clip_exec_iter(&self) -> DisplayObjectIter<'gc> {
+    fn clip_exec_iter(&self) -> DisplayObjectIter<'gc> {
         DisplayObjectIter {
             clip: self.clip_exec_list,
         }
+    }
+
+    // Run a single frame.
+    pub fn run_frame(context: &mut UpdateContext<'_, 'gc, '_>) {
+        // In AVM1, we only ever execute the update phase, and all the work that
+        // would ordinarily be phased is instead run all at once in whatever order
+        // the SWF requests it.
+        *context.frame_phase = FramePhase::Update;
+
+        // AVM1 execution order is determined by the global execution list, based on instantiation order.
+        for clip in context.avm1.clip_exec_iter() {
+            if clip.removed() {
+                // Clean up removed objects from this frame or a previous frame.
+                // Can be safely removed while iterating here, because the iterator advances
+                // to the next node before returning the current node.
+                context.avm1.remove_from_exec_list(context.gc_context, clip);
+            } else {
+                clip.run_frame(context);
+            }
+        }
+
+        // Fire "onLoadInit" events.
+        context
+            .load_manager
+            .movie_clip_on_load(context.action_queue);
+
+        *context.frame_phase = FramePhase::Idle;
     }
 
     /// Adds a movie clip to the execution list.
@@ -450,7 +476,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Removes a display object from the execution list.
-    pub fn remove_from_exec_list(
+    fn remove_from_exec_list(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         clip: DisplayObject<'gc>,
@@ -642,7 +668,7 @@ pub fn start_drag<'gc>(
     *activation.context.drag_object = Some(drag_object);
 }
 
-pub struct DisplayObjectIter<'gc> {
+struct DisplayObjectIter<'gc> {
     clip: Option<DisplayObject<'gc>>,
 }
 

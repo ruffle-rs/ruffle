@@ -30,7 +30,7 @@ use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
 use crate::font::Font;
-use crate::frame_lifecycle::{run_all_phases_avm1, run_all_phases_avm2, FramePhase};
+use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::locale::get_current_date_time;
@@ -1340,7 +1340,7 @@ impl Player {
             if context.is_action_script_3() {
                 run_all_phases_avm2(context);
             } else {
-                run_all_phases_avm1(context);
+                Avm1::run_frame(context);
             }
             context.update_sounds();
         });
