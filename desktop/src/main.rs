@@ -21,10 +21,11 @@ use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState, ViewportDimensions,
+    StageDisplayState, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
+use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -38,6 +39,10 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+
+thread_local! {
+    static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
+}
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -273,6 +278,10 @@ impl App {
                 parse_parameters(&opt).collect(),
                 Box::new(on_metadata),
             );
+
+            CALLSTACK.with(|callstack| {
+                *callstack.borrow_mut() = Some(player.lock().unwrap().callstack());
+            })
         }
 
         Ok(Self {
@@ -812,7 +821,21 @@ fn init() {
         AttachConsole(ATTACH_PARENT_PROCESS);
     }
 
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        prev_hook(info);
+        panic_hook();
+    }));
+
     env_logger::init();
+}
+
+fn panic_hook() {
+    CALLSTACK.with(|callstack| {
+        if let Some(callstack) = &*callstack.borrow() {
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {}", callstack))
+        }
+    });
 }
 
 fn shutdown() {

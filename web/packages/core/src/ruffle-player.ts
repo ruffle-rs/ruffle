@@ -1201,8 +1201,10 @@ export class RufflePlayer extends HTMLElement {
 
         const errorArray: Array<string | null> & {
             stackIndex: number;
+            avmStackIndex: number;
         } = Object.assign([], {
             stackIndex: -1,
+            avmStackIndex: -1,
         });
 
         errorArray.push("# Error Info\n");
@@ -1215,6 +1217,15 @@ export class RufflePlayer extends HTMLElement {
                     errorArray.push(
                         `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`
                     ) - 1;
+                if (error.avmStack) {
+                    const avmStackIndex =
+                        errorArray.push(
+                            `AVM2 stack:\n\`\`\`\n    ${error.avmStack
+                                .trim()
+                                .replace(/\t/g, "    ")}\n\`\`\`\n`
+                        ) - 1;
+                    errorArray.avmStackIndex = avmStackIndex;
+                }
                 errorArray.stackIndex = stackIndex;
             }
         } else {
@@ -1248,6 +1259,9 @@ export class RufflePlayer extends HTMLElement {
                 // Strip the stack error from the array when the produced URL is way too long.
                 // This should prevent "414 Request-URI Too Large" errors on GitHub.
                 errorArray[errorArray.stackIndex] = null;
+                if (errorArray.avmStackIndex > -1) {
+                    errorArray[errorArray.avmStackIndex] = null;
+                }
                 issueBody = encodeURIComponent(errorArray.join(""));
             }
             issueLink += issueBody;

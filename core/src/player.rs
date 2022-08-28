@@ -6,7 +6,8 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, EventObject as Avm2EventObject,
+    Activation as Avm2Activation, Avm2, CallStack, Domain as Avm2Domain,
+    EventObject as Avm2EventObject,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -43,8 +44,10 @@ use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::transform::TransformStack;
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
+use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
@@ -55,7 +58,36 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[derive(Collect)]
 #[collect(no_drop)]
-struct GcRoot<'gc>(GcCell<'gc, GcRootData<'gc>>);
+struct GcRoot<'gc> {
+    callstack: GcCell<'gc, GcCallstack<'gc>>,
+    data: GcCell<'gc, GcRootData<'gc>>,
+}
+
+#[derive(Collect, Default)]
+#[collect(no_drop)]
+struct GcCallstack<'gc> {
+    avm2: Option<GcCell<'gc, CallStack<'gc>>>,
+}
+
+#[derive(Clone)]
+pub struct StaticCallstack {
+    arena: RcWeak<RefCell<GcArena>>,
+}
+
+impl StaticCallstack {
+    pub fn avm2(&self, f: impl for<'gc> FnOnce(&CallStack<'gc>)) {
+        if let Some(arena) = self.arena.upgrade() {
+            if let Ok(arena) = arena.try_borrow() {
+                arena.mutate(|_, root| {
+                    let callstack = root.callstack.read();
+                    if let Some(callstack) = callstack.avm2 {
+                        f(&callstack.read())
+                    }
+                })
+            }
+        }
+    }
+}
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -190,7 +222,7 @@ pub struct Player {
 
     rng: SmallRng,
 
-    gc_arena: GcArena,
+    gc_arena: Rc<RefCell<GcArena>>,
 
     frame_rate: f64,
     actions_since_timeout_check: u16,
@@ -549,8 +581,8 @@ impl Player {
     }
 
     pub fn clear_custom_menu_items(&mut self) {
-        self.gc_arena.mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.0.write(gc_context);
+        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.data.write(gc_context);
             root_data.current_context_menu = None;
         });
     }
@@ -1269,8 +1301,8 @@ impl Player {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
 
-        self.gc_arena.mutate(|gc_context, gc_root| {
-            let root_data = gc_root.0.read();
+        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+            let root_data = gc_root.data.read();
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
                 gc_context,
@@ -1455,8 +1487,8 @@ impl Player {
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        self.gc_arena.mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.0.write(gc_context);
+        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+            let mut root_data = gc_root.data.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
             let focus_tracker = root_data.focus_tracker;
@@ -1591,7 +1623,7 @@ impl Player {
         self.update_mouse_state(false, false);
 
         // GC
-        self.gc_arena.collect_debt();
+        self.gc_arena.borrow_mut().collect_debt();
 
         rval
     }
@@ -1650,6 +1682,12 @@ impl Player {
 
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
         self.max_execution_duration = max_execution_duration
+    }
+
+    pub fn callstack(&self) -> StaticCallstack {
+        StaticCallstack {
+            arena: Rc::downgrade(&self.gc_arena),
+        }
     }
 }
 
@@ -1898,29 +1936,33 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
 
                 // GC data
-                gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
-                    GcRoot(GcCell::allocate(
-                        gc_context,
-                        GcRootData {
-                            audio_manager: AudioManager::new(),
-                            action_queue: ActionQueue::new(),
-                            avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
-                            avm2: Avm2::new(gc_context),
-                            current_context_menu: None,
-                            drag_object: None,
-                            external_interface: ExternalInterface::new(),
-                            focus_tracker: FocusTracker::new(gc_context),
-                            library: Library::empty(),
-                            load_manager: LoadManager::new(),
-                            mouse_hovered_object: None,
-                            mouse_pressed_object: None,
-                            shared_objects: HashMap::new(),
-                            stage: Stage::empty(gc_context, self.fullscreen),
-                            timers: Timers::new(),
-                            unbound_text_fields: Vec::new(),
-                        },
-                    ))
-                }),
+                gc_arena: Rc::new(RefCell::new(GcArena::new(
+                    ArenaParameters::default(),
+                    |gc_context| GcRoot {
+                        callstack: GcCell::allocate(gc_context, GcCallstack::default()),
+                        data: GcCell::allocate(
+                            gc_context,
+                            GcRootData {
+                                audio_manager: AudioManager::new(),
+                                action_queue: ActionQueue::new(),
+                                avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                                avm2: Avm2::new(gc_context),
+                                current_context_menu: None,
+                                drag_object: None,
+                                external_interface: ExternalInterface::new(),
+                                focus_tracker: FocusTracker::new(gc_context),
+                                library: Library::empty(),
+                                load_manager: LoadManager::new(),
+                                mouse_hovered_object: None,
+                                mouse_pressed_object: None,
+                                shared_objects: HashMap::new(),
+                                stage: Stage::empty(gc_context, self.fullscreen),
+                                timers: Timers::new(),
+                                unbound_text_fields: Vec::new(),
+                            },
+                        ),
+                    },
+                ))),
             })
         });
 
@@ -1935,6 +1977,10 @@ impl PlayerBuilder {
             let stage = context.stage;
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
+        });
+        player_lock.gc_arena.borrow().mutate(|context, root| {
+            let call_stack = root.data.read().avm2.call_stack();
+            root.callstack.write(context).avm2 = Some(call_stack);
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);

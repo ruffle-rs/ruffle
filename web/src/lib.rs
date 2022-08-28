@@ -14,7 +14,7 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
+use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -43,6 +43,7 @@ type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
     core: Arc<Mutex<Player>>,
+    callstack: Option<StaticCallstack>,
     js_player: JavascriptPlayer,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
@@ -509,6 +510,7 @@ impl Ruffle {
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .build();
 
+        let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
             if let Some(color) = config.background_color.and_then(parse_html_color) {
@@ -524,11 +526,13 @@ impl Ruffle {
             if allow_script_access {
                 core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
             }
+            callstack = Some(core.callstack());
         }
 
         // Create instance.
         let instance = RuffleInstance {
             core,
+            callstack,
             js_player: js_player.clone(),
             canvas: canvas.clone(),
             canvas_width: 0, // Initialize canvas width and height to 0 to force an initial canvas resize.
@@ -1299,7 +1303,6 @@ pub fn set_panic_handler() {
             RUFFLE_GLOBAL_PANIC.call_once(|| {
                 console_error_panic_hook::hook(info);
 
-                let error = JsError::new(&info.to_string());
                 let _ = INSTANCES.try_with(|instances| {
                     let mut players = Vec::new();
 
@@ -1310,12 +1313,23 @@ pub fn set_panic_handler() {
 
                     if let Ok(instances) = instances.try_borrow() {
                         for (_, instance) in instances.iter() {
-                            if let Ok(player) = instance.try_borrow().map(|i| i.js_player.clone()) {
-                                players.push(player);
+                            if let Ok((player, Some(callstack))) = instance
+                                .try_borrow()
+                                .map(|i| (i.js_player.clone(), i.callstack.clone()))
+                            {
+                                players.push((player, callstack));
                             }
                         }
                     }
-                    for player in players {
+                    for (player, callstack) in players {
+                        let error = JsError::new(&info.to_string());
+                        callstack.avm2(|callstack| {
+                            let _ = js_sys::Reflect::set(
+                                &error,
+                                &"avmStack".into(),
+                                &callstack.to_string().into(),
+                            );
+                        });
                         player.panic(&error);
                     }
                 });
