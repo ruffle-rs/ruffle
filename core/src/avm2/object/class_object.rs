@@ -293,7 +293,7 @@ impl<'gc> ClassObject<'gc> {
             activation.context.gc_context,
             "constructor".into(),
             false,
-        )?;
+        );
 
         Ok(())
     }
@@ -848,11 +848,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
         is_enumerable: bool,
-    ) -> Result<(), Error> {
+    ) {
         self.0
             .write(mc)
             .base
-            .set_local_property_is_enumerable(name, is_enumerable)
+            .set_local_property_is_enumerable(name, is_enumerable);
     }
 
     fn apply(

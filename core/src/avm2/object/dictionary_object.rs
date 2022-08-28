@@ -142,7 +142,6 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         _mc: MutationContext<'gc, '_>,
         _name: AvmString<'gc>,
         _is_enumerable: bool,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) {
     }
 }

@@ -397,11 +397,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.enumerants.contains(&name)
     }
 
-    pub fn set_local_property_is_enumerable(
-        &mut self,
-        name: AvmString<'gc>,
-        is_enumerable: bool,
-    ) -> Result<(), Error> {
+    pub fn set_local_property_is_enumerable(&mut self, name: AvmString<'gc>, is_enumerable: bool) {
         if is_enumerable && self.values.contains_key(&name) && !self.enumerants.contains(&name) {
             self.enumerants.push(name);
         } else if !is_enumerable && self.enumerants.contains(&name) {
@@ -416,8 +412,6 @@ impl<'gc> ScriptObjectData<'gc> {
                 self.enumerants.remove(index);
             }
         }
-
-        Ok(())
     }
 
     /// Gets the number of (standard) enumerants.

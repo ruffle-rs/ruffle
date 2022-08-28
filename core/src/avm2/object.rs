@@ -588,7 +588,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
         is_enumerable: bool,
-    ) -> Result<(), Error> {
+    ) {
         let mut base = self.base_mut(mc);
 
         base.set_local_property_is_enumerable(name, is_enumerable)
