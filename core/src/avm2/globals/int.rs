@@ -120,11 +120,11 @@ fn class_init<'gc>(
             activation,
         )?;
 
-        int_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false)?;
-        int_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false)?;
-        int_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false)?;
-        int_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false)?;
-        int_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false)?;
+        int_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false);
+        int_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false);
+        int_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false);
+        int_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
+        int_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
     }
 
     Ok(Value::Undefined)

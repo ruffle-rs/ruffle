@@ -316,7 +316,7 @@ pub fn class_init<'gc>(
                 .into(),
                 activation,
             )?;
-            date_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false)?;
+            date_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
         }
     }
     Ok(Value::Undefined)

@@ -227,7 +227,7 @@ pub fn specialized_class_init<'gc>(
                 activation.context.gc_context,
                 (*pubname).into(),
                 false,
-            )?;
+            );
         }
     }
 

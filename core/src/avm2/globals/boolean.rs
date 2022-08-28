@@ -82,8 +82,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        boolean_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false)?;
-        boolean_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false)?;
+        boolean_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false);
+        boolean_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false);
     }
 
     Ok(Value::Undefined)

@@ -64,12 +64,12 @@ pub fn class_init<'gc>(
             activation.context.gc_context,
             "call".into(),
             false,
-        )?;
+        );
         function_proto.set_local_property_is_enumerable(
             activation.context.gc_context,
             "apply".into(),
             false,
-        )?;
+        );
     }
     Ok(Value::Undefined)
 }
