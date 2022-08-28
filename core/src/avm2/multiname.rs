@@ -4,6 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::{AvmString, WStr, WString};
+use bitflags::bitflags;
 use gc_arena::Gc;
 use gc_arena::{Collect, MutationContext};
 use std::fmt::Debug;
@@ -46,6 +47,19 @@ impl<'gc> NamespaceSet<'gc> {
     }
 }
 
+bitflags! {
+    #[derive(Default, Collect)]
+    #[collect(require_static)]
+    pub struct MultinameFlags: u8 {
+        /// Whether the namespace needs to be read at runtime before use.
+        /// This should only be set when lazy-initialized in Activation.
+        const HAS_LAZY_NS = 1 << 0;
+        /// Whether the name needs to be read at runtime before use
+        /// This should only be set when lazy-initialized in Activation.
+        const HAS_LAZY_NAME = 1 << 1;
+    }
+}
+
 /// A `Multiname` consists of a name which could be resolved in one or more
 /// potential namespaces.
 ///
@@ -67,28 +81,23 @@ pub struct Multiname<'gc> {
     /// this multiname is satisfied by any type parameters in any amount.
     params: Vec<Gc<'gc, Multiname<'gc>>>,
 
-    /// Whether the namespace needs to be read at runtime before use.
-    /// This should only be `false` when lazy-initialized in Activation.
-    has_lazy_ns: bool,
-    /// Whether the name needs to be read at runtime before use
-    /// This should only be `false` when lazy-initialized in Activation.
-    has_lazy_name: bool,
+    flags: MultinameFlags,
 }
 
 impl<'gc> Multiname<'gc> {
     #[inline(always)]
     pub fn has_lazy_ns(&self) -> bool {
-        self.has_lazy_ns
+        self.flags.contains(MultinameFlags::HAS_LAZY_NS)
     }
 
     #[inline(always)]
     pub fn has_lazy_name(&self) -> bool {
-        self.has_lazy_name
+        self.flags.contains(MultinameFlags::HAS_LAZY_NAME)
     }
 
     #[inline(always)]
     pub fn has_lazy_component(&self) -> bool {
-        self.has_lazy_ns || self.has_lazy_name
+        self.has_lazy_ns() || self.has_lazy_name()
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -148,23 +157,20 @@ impl<'gc> Multiname<'gc> {
                     )?),
                     name: translation_unit.pool_string_option(name.0, mc)?,
                     params: Vec::new(),
-                    has_lazy_ns: false,
-                    has_lazy_name: false,
+                    flags: Default::default(),
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit.pool_string_option(name.0, mc)?,
                 params: Vec::new(),
-                has_lazy_ns: true,
-                has_lazy_name: false,
+                flags: MultinameFlags::HAS_LAZY_NS,
             },
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: None,
                 params: Vec::new(),
-                has_lazy_ns: true,
-                has_lazy_name: true,
+                flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME,
             },
             AbcMultiname::Multiname {
                 namespace_set,
@@ -177,16 +183,14 @@ impl<'gc> Multiname<'gc> {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
                 name: translation_unit.pool_string_option(name.0, mc)?,
                 params: Vec::new(),
-                has_lazy_ns: false,
-                has_lazy_name: false,
+                flags: Default::default(),
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
                 name: None,
                 params: Vec::new(),
-                has_lazy_ns: false,
-                has_lazy_name: true,
+                flags: MultinameFlags::HAS_LAZY_NAME,
             },
             AbcMultiname::TypeName {
                 base_type,
@@ -220,13 +224,13 @@ impl<'gc> Multiname<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
-        let name = if self.has_lazy_name {
+        let name = if self.has_lazy_name() {
             Some(activation.avm2().pop().coerce_to_string(activation)?)
         } else {
             self.name
         };
 
-        let ns = if self.has_lazy_ns {
+        let ns = if self.has_lazy_ns() {
             let ns_value = activation.avm2().pop();
             let ns = ns_value.as_namespace()?;
             NamespaceSet::single(*ns)
@@ -238,8 +242,7 @@ impl<'gc> Multiname<'gc> {
             ns,
             name,
             params: self.params.clone(),
-            has_lazy_ns: false,
-            has_lazy_name: false,
+            flags: Default::default(),
         })
     }
 
@@ -266,8 +269,7 @@ impl<'gc> Multiname<'gc> {
             ns: NamespaceSet::single(Namespace::Any),
             name: None,
             params: Vec::new(),
-            has_lazy_ns: false,
-            has_lazy_name: false,
+            flags: Default::default(),
         }
     }
 
@@ -276,8 +278,7 @@ impl<'gc> Multiname<'gc> {
             ns: NamespaceSet::single(Namespace::public()),
             name: Some(name.into()),
             params: Vec::new(),
-            has_lazy_ns: false,
-            has_lazy_name: false,
+            flags: Default::default(),
         }
     }
 
@@ -364,8 +365,7 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
             ns: NamespaceSet::single(q.namespace()),
             name: Some(q.local_name()),
             params: Vec::new(),
-            has_lazy_ns: false,
-            has_lazy_name: false,
+            flags: Default::default(),
         }
     }
 }
