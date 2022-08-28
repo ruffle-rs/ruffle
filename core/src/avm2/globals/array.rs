@@ -1202,6 +1202,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_instance_allocator(array_allocator);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("concat", concat),
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
