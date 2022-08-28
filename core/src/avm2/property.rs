@@ -101,7 +101,12 @@ impl<'gc> PropertyClass<'gc> {
                                     return Ok((value, false));
                                 }
                             }
+                        } else if matches!(value, Value::Null) || matches!(value, Value::Undefined)
+                        {
+                            //AVM2 properties are nullable, so null is always an instance of the class
+                            return Ok((Value::Null, false));
                         }
+
                         return Err(Error::from(format!(
                             "Attempted to perform (private) resolution of nonexistent type {:?}",
                             name
