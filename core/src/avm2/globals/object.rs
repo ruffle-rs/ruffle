@@ -165,7 +165,7 @@ fn to_string<'gc>(
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    this.map(|t| t.to_string(activation.context.gc_context))
+    this.map(|t| t.to_string(activation))
         .unwrap_or(Ok(Value::Undefined))
 }
 
@@ -175,7 +175,7 @@ fn to_locale_string<'gc>(
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    this.map(|t| t.to_locale_string(activation.context.gc_context))
+    this.map(|t| t.to_locale_string(activation))
         .unwrap_or(Ok(Value::Undefined))
 }
 

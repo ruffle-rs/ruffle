@@ -773,16 +773,19 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(AvmString::new_utf8(
-            mc,
+            activation.context.gc_context,
             format!("[class {}]", self.0.read().class.read().name().local_name()),
         )
         .into())
     }
 
-    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        self.to_string(mc)
+    fn to_locale_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        self.to_string(activation)
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {

@@ -35,6 +35,7 @@ mod date_object;
 mod dictionary_object;
 mod dispatch_object;
 mod domain_object;
+mod error_object;
 mod event_object;
 mod function_object;
 mod loaderinfo_object;
@@ -59,6 +60,7 @@ pub use crate::avm2::object::date_object::{date_allocator, DateObject};
 pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::FunctionObject;
 pub use crate::avm2::object::loaderinfo_object::{
@@ -107,6 +109,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         QNameObject(QNameObject<'gc>),
         TextFormatObject(TextFormatObject<'gc>),
         ProxyObject(ProxyObject<'gc>),
+        ErrorObject(ErrorObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -721,13 +724,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
             .instance_of_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
-        Ok(AvmString::new_utf8(mc, format!("[object {}]", class_name)).into())
+        Ok(AvmString::new_utf8(
+            activation.context.gc_context,
+            format!("[object {}]", class_name),
+        )
+        .into())
     }
 
     /// Implement the result of calling `Object.prototype.toLocaleString` on this
@@ -738,13 +745,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// generate a debug-style string based on the name of the class this
     /// object is, in the format of `[object Class]` (where `Class` is the name
     /// of the class that created this object).
-    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_locale_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
         let class_name = self
             .instance_of_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
-        Ok(AvmString::new_utf8(mc, format!("[object {}]", class_name)).into())
+        Ok(AvmString::new_utf8(
+            activation.context.gc_context,
+            format!("[object {}]", class_name),
+        )
+        .into())
     }
 
     /// Implement the result of calling `Object.prototype.valueOf` on this
@@ -1069,6 +1083,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable text format.
     fn as_text_format_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<TextFormat>> {
+        None
+    }
+
+    /// Unwrap this object as an Error.
+    fn as_error_object(&self) -> Option<ErrorObject<'gc>> {
         None
     }
 }
