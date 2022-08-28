@@ -1,3 +1,7 @@
+//null as Object
+null
+//undefined as Object
+null
 //x as Object
 [object Test3]
 //x as Test2
