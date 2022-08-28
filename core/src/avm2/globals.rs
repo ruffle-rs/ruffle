@@ -22,6 +22,7 @@ mod array;
 mod boolean;
 mod class;
 mod date;
+mod error;
 mod flash;
 mod function;
 mod global_scope;

@@ -233,7 +233,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             || self.base().property_is_enumerable(name)
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
 

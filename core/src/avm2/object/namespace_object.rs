@@ -76,7 +76,7 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(self.0.read().namespace.as_uri().into())
     }
 

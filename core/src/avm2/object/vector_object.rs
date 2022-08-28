@@ -234,7 +234,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             .unwrap_or(false)
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
 
