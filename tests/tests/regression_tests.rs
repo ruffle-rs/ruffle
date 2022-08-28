@@ -280,6 +280,7 @@ swf_tests! {
     (as3_edittext_newline_stripping, "avm2/edittext_newline_stripping", 1),
     (as3_edittext_width_height, "avm2/edittext_width_height", 1),
     (as3_equals, "avm2/equals", 1),
+    (as3_error_stack_trace, "avm2/error_stack_trace", 1),
     (as3_es3_inheritance, "avm2/es3_inheritance", 1),
     (as3_es4_inheritance, "avm2/es4_inheritance", 1),
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
