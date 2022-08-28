@@ -254,19 +254,18 @@ impl<'gc> Executable<'gc> {
                                 TraitKind::Getter { .. } => output.push_utf8("get "),
                                 _ => (),
                             }
-                            output.push_str(&method_trait.name().local_name());
+                            if method_trait.name().namespace().is_namespace() {
+                                output.push_str(&method_trait.name().to_qualified_name_no_mc());
+                            } else {
+                                output.push_str(&method_trait.name().local_name());
+                            }
                         }
                         // TODO: What happens if we can't find the trait?
                     }
                     // We purposely do nothing for instance initializers
-                } else if method.is_function {
+                } else if method.is_function && !method.method_name().is_empty() {
                     output.push_utf8("Function/");
-                    let name = method.method_name();
-                    if name.is_empty() {
-                        output.push_utf8("<anonymous>");
-                    } else {
-                        output.push_utf8(name);
-                    }
+                    output.push_utf8(method.method_name());
                 } else {
                     output.push_utf8("MethodInfo-");
                     output.push_utf8(&method.abc_method.to_string());
