@@ -160,8 +160,11 @@ fn rust_method_path(
         // For example, the freestanding function "flash.utils.getDefinitionByName"
         // has a namespace of "flash.utils", which turns into the path
         // "flash::utils"
-        path += &flash_to_rust_path(resolve_multiname_ns(&abc, trait_name));
-        path += "::";
+        let ns = &flash_to_rust_path(resolve_multiname_ns(&abc, trait_name));
+        path += &ns;
+        if !ns.is_empty() {
+            path += "::";
+        }
     }
 
     // Append the trait name - this corresponds to the actual method
