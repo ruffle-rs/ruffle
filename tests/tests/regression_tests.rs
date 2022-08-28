@@ -483,6 +483,7 @@ swf_tests! {
     (as3_stage_properties, "avm2/stage_properties", 1),
     (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
+    (as3_string_case, "avm2/string_case", 1),
     (as3_string_char_at, "avm2/string_char_at", 1),
     (as3_string_char_code_at, "avm2/string_char_code_at", 1),
     (as3_string_concat_fromcharcode, "avm2/string_concat_fromcharcode", 1),
