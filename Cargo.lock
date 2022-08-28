@@ -3047,6 +3047,7 @@ dependencies = [
  "dasp",
  "downcast-rs",
  "encoding_rs",
+ "enumset",
  "flash-lso",
  "flate2",
  "fnv",

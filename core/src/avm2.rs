@@ -23,6 +23,7 @@ macro_rules! avm_debug {
 }
 
 pub mod activation;
+mod amf;
 mod array;
 pub mod bytearray;
 mod call_stack;
@@ -30,7 +31,7 @@ mod class;
 mod domain;
 mod events;
 mod function;
-mod globals;
+pub mod globals;
 mod method;
 mod multiname;
 mod namespace;
