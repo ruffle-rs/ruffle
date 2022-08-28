@@ -204,6 +204,7 @@ swf_tests! {
     (as3_class_enumeration, "avm2/class_enumeration", 1),
     (as3_class_is, "avm2/class_is", 1),
     (as3_class_methods, "avm2/class_methods", 1),
+    (as3_class_singleton, "avm2/class_singleton", 1),
     (as3_class_supercalls_mismatched, "avm2/class_supercalls_mismatched", 1),
     (as3_class_to_locale_string, "avm2/class_to_locale_string", 1),
     (as3_class_to_string, "avm2/class_to_string", 1),
