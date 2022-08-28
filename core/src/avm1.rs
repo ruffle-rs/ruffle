@@ -466,11 +466,8 @@ impl<'gc> Avm1<'gc> {
         clip: DisplayObject<'gc>,
     ) {
         // Adding while iterating is safe, as this does not modify any active nodes.
-        if clip.next_avm1_clip().is_none() && clip.prev_avm1_clip().is_none() {
-            if let Some(head) = self.clip_exec_list {
-                head.set_prev_avm1_clip(gc_context, Some(clip));
-                clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
-            }
+        if clip.next_avm1_clip().is_none() {
+            clip.set_next_avm1_clip(gc_context, self.clip_exec_list);
             self.clip_exec_list = Some(clip);
         }
     }
