@@ -847,15 +847,18 @@ export class RufflePlayer extends HTMLElement {
         if (this.instance && this.swfUrl && this.showSwfDownload) {
             items.push(null);
             items.push({
-                text: `Download .swf`,
+                text: "Download .swf",
                 onClick: this.downloadSwf.bind(this),
             });
         }
 
-        items.push({
-            text: `Copy debug info`,
-            onClick: () => navigator.clipboard.writeText(this.getPanicData()),
-        });
+        if (window.isSecureContext) {
+            items.push({
+                text: "Copy debug info",
+                onClick: () =>
+                    navigator.clipboard.writeText(this.getPanicData()),
+            });
+        }
 
         items.push(null);
 
