@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 clap = { version = "3.2.18", features = ["derive"] }
-cpal = "0.13.5"
+cpal = "0.14.0"
 ruffle_core = { path = "../core", features = ["audio", "minimp3", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 env_logger = { version = "0.9", default-features = false, features = ["humantime"] }
