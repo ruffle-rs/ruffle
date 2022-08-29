@@ -174,9 +174,8 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
 
-    /// Returns the highest depth on the render list, or `None` if no children
-    /// have a depth less than the provided value.
-    fn highest_depth(self, less_than: Depth) -> Option<Depth>;
+    /// Returns the highest depth among children.
+    fn highest_depth(self) -> Depth;
 
     /// Insert a child display object into the container at a specific position
     /// in the depth list, removing any child already at that position.
@@ -349,8 +348,8 @@ macro_rules! impl_display_object_container {
             self.0.read().$field.num_children()
         }
 
-        fn highest_depth(self, less_than: Depth) -> Option<Depth> {
-            self.0.read().$field.highest_depth(less_than)
+        fn highest_depth(self) -> Depth {
+            self.0.read().$field.highest_depth()
         }
 
         fn replace_at_depth(
@@ -669,14 +668,9 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
-    /// Returns the highest depth on the render list, or `None` if no children
-    /// have a depth less than the provided value.
-    pub fn highest_depth(&self, less_than: Depth) -> Option<Depth> {
-        self.depth_list
-            .range(..less_than)
-            .rev()
-            .map(|(k, _v)| *k)
-            .next()
+    /// Returns the highest depth among children.
+    pub fn highest_depth(&self) -> Depth {
+        self.depth_list.keys().next_back().copied().unwrap_or(0)
     }
 
     /// Determine if the render list is empty.
