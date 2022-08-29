@@ -983,13 +983,10 @@ fn get_next_highest_depth<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 7 {
-        let depth = std::cmp::max(
-            movie_clip
-                .highest_depth(Depth::MAX)
-                .unwrap_or(0)
-                .wrapping_sub(AVM_DEPTH_BIAS - 1),
-            0,
-        );
+        let depth = movie_clip
+            .highest_depth()
+            .wrapping_sub(AVM_DEPTH_BIAS - 1)
+            .max(0);
         Ok(depth.into())
     } else {
         Ok(Value::Undefined)
