@@ -1,3 +1,10 @@
+import {
+    FLASH_MIMETYPE,
+    FUTURESPLASH_MIMETYPE,
+    FLASH7_AND_8_MIMETYPE,
+    FLASH_MOVIE_MIMETYPE,
+} from "./ruffle-player";
+
 /**
  * Replacement object for `MimeTypeArray` that lets us install new fake mime
  * types.
@@ -162,25 +169,25 @@ export const FLASH_PLUGIN = new RufflePlugin(
 );
 
 FLASH_PLUGIN.install({
-    type: "application/futuresplash",
+    type: FUTURESPLASH_MIMETYPE,
     description: "Shockwave Flash",
     suffixes: "spl",
     enabledPlugin: FLASH_PLUGIN,
 });
 FLASH_PLUGIN.install({
-    type: "application/x-shockwave-flash",
+    type: FLASH_MIMETYPE,
     description: "Shockwave Flash",
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
 });
 FLASH_PLUGIN.install({
-    type: "application/x-shockwave-flash2-preview",
+    type: FLASH7_AND_8_MIMETYPE,
     description: "Shockwave Flash",
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
 });
 FLASH_PLUGIN.install({
-    type: "application/vnd.adobe.flash-movie",
+    type: FLASH_MOVIE_MIMETYPE,
     description: "Shockwave Flash",
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
