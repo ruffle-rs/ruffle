@@ -1515,9 +1515,13 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        return `Allows script access: ${
+        let result = `Allows script access: ${
             this.options?.allowScriptAccess ?? false
         }\n`;
+        if (this.instance) {
+            result += `Renderer: ${this.instance.renderer_name()}\n`;
+        }
+        return result;
     }
 
     private hidePreloader(): void {
