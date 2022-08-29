@@ -6,7 +6,7 @@ mod storage;
 mod ui;
 
 use generational_arena::{Arena, Index};
-use js_sys::{Array, Function, Object, Promise, Uint8Array};
+use js_sys::{Array, Function, JsString, Object, Promise, Uint8Array};
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
@@ -66,6 +66,7 @@ struct RuffleInstance {
     unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
+    renderer_name: &'static str,
 }
 
 #[wasm_bindgen]
@@ -278,6 +279,12 @@ impl Ruffle {
         let _ = self.with_core_mut(|core| core.set_volume(value));
     }
 
+    pub fn renderer_name(&self) -> JsString {
+        self.with_instance(|instance| instance.renderer_name)
+            .unwrap_or("Unknown")
+            .into()
+    }
+
     // after the context menu is closed, remember to call `clear_custom_menu_items`!
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
@@ -474,7 +481,7 @@ impl Ruffle {
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
-        let (mut builder, canvas) =
+        let (mut builder, canvas, renderer_name) =
             create_renderer(PlayerBuilder::new(), &document, &config).await?;
 
         parent
@@ -554,6 +561,7 @@ impl Ruffle {
             timestamp: None,
             has_focus: false,
             trace_observer,
+            renderer_name,
         };
 
         // Prevent touch-scrolling on canvas.
@@ -1226,7 +1234,7 @@ async fn create_renderer(
     builder: PlayerBuilder,
     document: &web_sys::Document,
     config: &Config,
-) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
+) -> Result<(PlayerBuilder, HtmlCanvasElement, &'static str), Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgpu", feature = "wgpu-webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
@@ -1252,7 +1260,7 @@ async fn create_renderer(
 
             match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
                 Ok(renderer) => {
-                    return Ok((builder.with_renderer(renderer), canvas));
+                    return Ok((builder.with_renderer(renderer), canvas, "WebGPU"));
                 }
                 Err(error) => log::error!("Error creating wgpu webgpu renderer: {}", error),
             }
@@ -1269,7 +1277,11 @@ async fn create_renderer(
 
         match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
             Ok(renderer) => {
-                return Ok((builder.with_renderer(renderer), canvas));
+                return Ok((
+                    builder.with_renderer(renderer),
+                    canvas,
+                    "WebGL through wgpu",
+                ));
             }
             Err(error) => log::error!("Error creating wgpu webgl renderer: {}", error),
         }
@@ -1288,7 +1300,7 @@ async fn create_renderer(
             .map_err(|_| "Expected HtmlCanvasElement")?;
         match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => {
-                return Ok((builder.with_renderer(renderer), canvas));
+                return Ok((builder.with_renderer(renderer), canvas, "WebGL"));
             }
             Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
@@ -1304,7 +1316,7 @@ async fn create_renderer(
             .map_err(|_| "Expected HtmlCanvasElement")?;
         match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => {
-                return Ok((builder.with_renderer(renderer), canvas));
+                return Ok((builder.with_renderer(renderer), canvas, "Canvas"));
             }
             Err(error) => log::error!("Error creating canvas renderer: {}", error),
         }
