@@ -183,18 +183,28 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn get_next_enumerant(
         self,
-        last_index: u32,
+        mut last_index: u32,
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<u32>, Error> {
         let read = self.0.read();
         let num_enumerants = read.base.num_enumerants();
         let array_length = read.array.length() as u32;
 
-        if last_index < num_enumerants + array_length {
-            Ok(Some(last_index.saturating_add(1)))
-        } else {
-            Ok(None)
+        // Array enumeration skips over holes.
+        while last_index < array_length {
+            if read.array.get(last_index as usize).is_some() {
+                return Ok(Some(last_index + 1));
+            }
+            last_index += 1;
         }
+
+        // After enumerating all of the 'normal' array entries,
+        // we enumerate all of the local properties stored on the
+        // ScriptObject.
+        if last_index < num_enumerants + array_length {
+            return Ok(Some(last_index + 1));
+        }
+        Ok(None)
     }
 
     fn get_enumerant_name(

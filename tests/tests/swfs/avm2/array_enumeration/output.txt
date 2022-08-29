@@ -3,3 +3,8 @@
 3
 4
 5
+Enumerating with holes
+Indices len:  4
+Entires len:  4
+First indices:  0 4
+First entires:  elem0 elem4
