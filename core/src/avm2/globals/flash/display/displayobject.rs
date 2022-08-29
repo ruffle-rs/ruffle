@@ -767,6 +767,70 @@ fn set_scroll_rect<'gc>(
     Ok(Value::Undefined)
 }
 
+fn local_to_global<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let point = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let x = point
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_number(activation)?;
+        let y = point
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_number(activation)?;
+
+        let (out_x, out_y) = dobj.local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
+        return Ok(activation
+            .avm2()
+            .classes()
+            .point
+            .construct(
+                activation,
+                &[out_x.to_pixels().into(), out_y.to_pixels().into()],
+            )?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn global_to_local<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let point = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let x = point
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_number(activation)?;
+        let y = point
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_number(activation)?;
+
+        let (out_x, out_y) = dobj.global_to_local((Twips::from_pixels(x), Twips::from_pixels(y)));
+        return Ok(activation
+            .avm2()
+            .classes()
+            .point
+            .construct(
+                activation,
+                &[out_x.to_pixels().into(), out_y.to_pixels().into()],
+            )?
+            .into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -819,6 +883,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("hitTestPoint", hit_test_point),
         ("hitTestObject", hit_test_object),
+        ("localToGlobal", local_to_global),
+        ("globalToLocal", global_to_local),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

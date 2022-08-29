@@ -487,22 +487,16 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     }
 
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
-        // Translate everything that we render (including DisplayObject.mask)
-        context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(-rect.x_min, -rect.y_min),
-            color_transform: Default::default(),
-        });
-
         let cur_transform = context.transform_stack.transform();
         // The matrix we use for actually drawing a rectangle for cropping purposes
-        // Note that we've already applied the translation
+        // Note that we do *not* apply the translation yet
         Some(
             cur_transform.matrix
                 * Matrix {
-                    a: rect.x_max.to_pixels() as f32,
+                    a: (rect.x_max - rect.x_min).to_pixels() as f32,
                     b: 0.0,
                     c: 0.0,
-                    d: rect.y_max.to_pixels() as f32,
+                    d: (rect.y_max - rect.y_min).to_pixels() as f32,
                     tx: Twips::from_pixels(0.0),
                     ty: Twips::from_pixels(0.0),
                 },
@@ -510,6 +504,14 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     } else {
         None
     };
+
+    if let Some(rect) = this.scroll_rect() {
+        // Translate everything that we render (including DisplayObject.mask)
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(-rect.x_min, -rect.y_min),
+            color_transform: Default::default(),
+        });
+    }
 
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
@@ -680,13 +682,10 @@ pub trait TDisplayObject<'gc>:
             .set_color_transform(color_transform)
     }
 
-    /// Returns the matrix for transforming from this object's local space to global stage space.
-    fn local_to_global_matrix(&self) -> Matrix {
+    /// Should only be used to implement 'Transform.concatenatedMatrix'
+    fn local_to_global_matrix_without_own_scroll_rect(&self) -> Matrix {
         let mut node = self.parent();
         let mut matrix = *self.base().matrix();
-        if let Some(rect) = self.scroll_rect() {
-            matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
-        }
         while let Some(display_object) = node {
             // TODO: We don't want to include the stage transform because it includes the scale
             // mode and alignment transform, but the AS APIs expect "global" to be relative to the
@@ -697,13 +696,22 @@ pub trait TDisplayObject<'gc>:
             if display_object.as_stage().is_some() {
                 break;
             }
-            matrix = *display_object.base().matrix() * matrix;
             if let Some(rect) = display_object.scroll_rect() {
                 matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
             }
+            matrix = *display_object.base().matrix() * matrix;
             node = display_object.parent();
         }
         matrix
+    }
+
+    /// Returns the matrix for transforming from this object's local space to global stage space.
+    fn local_to_global_matrix(&self) -> Matrix {
+        let mut matrix = Matrix::IDENTITY;
+        if let Some(rect) = self.scroll_rect() {
+            matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
+        }
+        self.local_to_global_matrix_without_own_scroll_rect() * matrix
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.

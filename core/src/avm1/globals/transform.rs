@@ -93,7 +93,12 @@ fn concatenated_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = matrix::matrix_to_object(clip.local_to_global_matrix(), activation)?;
+    // Testing shows that 'concatenatedMatrix' does *not* include the 'scrollRect' translation
+    // for the object itself, but *does* include the 'scrollRect' translation for ancestors.
+    let matrix = matrix::matrix_to_object(
+        clip.local_to_global_matrix_without_own_scroll_rect(),
+        activation,
+    )?;
     Ok(matrix)
 }
 

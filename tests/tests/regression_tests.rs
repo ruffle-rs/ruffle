@@ -89,7 +89,7 @@ macro_rules! swf_tests {
 // group is treated as a floating-point value to be compared approximately.
 // The rest of the string (outside of the capture groups) is compared exactly.
 macro_rules! swf_tests_approx {
-    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, @num_patterns = $num_patterns:expr)? $(, $opt:ident = $val:expr)*),)*) => {
+    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, @num_patterns = $num_patterns:expr)? $(, @img = $img:literal)? $(, $opt:ident = $val:expr)*),)*) => {
         $(
         #[test]
         $(#[$attr])*
@@ -101,6 +101,7 @@ macro_rules! swf_tests_approx {
                 concat!("tests/swfs/", $path, "/input.json"),
                 concat!("tests/swfs/", $path, "/output.txt"),
                 val_or_empty_slice!($($num_patterns)?),
+                val_or_false!($($img)?),
                 |actual, expected| assert_relative_eq!(actual, expected $(, $opt = $val)*),
             )
         }
@@ -239,7 +240,6 @@ swf_tests! {
     (as3_displayobject_name, "avm2/displayobject_name", 4),
     (as3_displayobject_parent, "avm2/displayobject_parent", 4),
     (as3_displayobject_root, "avm2/displayobject_root", 4),
-    (as3_displayobject_scrollrect, "avm2/displayobject_scrollrect", 100, img = true),
     (as3_displayobject_visible, "avm2/displayobject_visible", 4),
     (as3_displayobject_x, "avm2/displayobject_x", 1),
     (as3_displayobject_y, "avm2/displayobject_y", 1),
@@ -854,6 +854,9 @@ swf_tests_approx! {
     (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * f64::EPSILON),
     (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
     (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),
+    (as3_displayobject_scrollrect, "avm2/displayobject_scrollrect", 100, @num_patterns = &[
+        Regex::new(r"\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\)").unwrap()
+    ], @img = true, max_relative = f32::EPSILON as f64),
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
     (as3_displayobject_transform, "avm2/displayobject_transform", 1, @num_patterns = &[
         Regex::new(r"\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\)").unwrap()
@@ -1195,6 +1198,7 @@ fn test_swf_approx(
     simulated_input_path: &str,
     expected_output_path: &str,
     num_patterns: &[Regex],
+    check_img: bool,
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<(), Error> {
     let injector =
@@ -1205,7 +1209,7 @@ fn test_swf_approx(
         |_| Ok(()),
         injector,
         |_| Ok(()),
-        false,
+        check_img,
         false,
     )?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
