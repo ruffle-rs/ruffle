@@ -1,0 +1,18 @@
+///ES4Class.INSTANCE === null
+false
+///ES4Class.INSTANCE === undefined
+false
+///ES4Class.INSTANCE is ES4Class
+true
+///ES4Class.NULL === null
+true
+///ES4Class.NULL === undefined
+false
+///ES4Class.NULL is ES4Class
+false
+///ES4Class.UNDEFINED === null
+true
+///ES4Class.UNDEFINED === undefined
+false
+///ES4Class.UNDEFINED is ES4Class
+false

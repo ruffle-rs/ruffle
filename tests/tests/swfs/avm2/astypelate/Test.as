@@ -1,4 +1,4 @@
-package {
+﻿package {
 	public class Test {
 	}
 }
@@ -60,6 +60,12 @@ class Test4 extends Test3 {
 }
 
 var x = new Test3();
+
+trace("//null as Object");
+trace(null as Object);
+
+trace("//undefied as Object");
+trace(undefined as Object);
 
 trace("//x as Object");
 trace(x as Object);
