@@ -1227,7 +1227,7 @@ async fn create_renderer(
     document: &web_sys::Document,
     config: &Config,
 ) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
-    #[cfg(not(any(feature = "canvas", feature = "webgl")))]
+    #[cfg(not(any(feature = "canvas", feature = "webgpu", feature = "wgpu-webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
     let _is_transparent = config.wmode.as_deref() == Some("transparent");
@@ -1235,7 +1235,7 @@ async fn create_renderer(
     // Try to create a backend, falling through to the next backend on failure.
     // We must recreate the canvas each attempt, as only a single context may be created per canvas
     // with `getContext`.
-    #[cfg(all(feature = "wgpu", target_family = "wasm"))]
+    #[cfg(all(feature = "webgpu", target_family = "wasm"))]
     {
         // Check that we have access to WebGPU (navigator.gpu should exist).
         if web_sys::window()
@@ -1243,7 +1243,7 @@ async fn create_renderer(
             .and_then(|window| js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu")))
             .unwrap_or_default()
         {
-            log::info!("Creating wgpu renderer...");
+            log::info!("Creating wgpu webgpu renderer...");
             let canvas: HtmlCanvasElement = document
                 .create_element("canvas")
                 .into_js_result()?
@@ -1254,8 +1254,24 @@ async fn create_renderer(
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas));
                 }
-                Err(error) => log::error!("Error creating wgpu renderer: {}", error),
+                Err(error) => log::error!("Error creating wgpu webgpu renderer: {}", error),
             }
+        }
+    }
+    #[cfg(all(feature = "wgpu-webgl", target_family = "wasm"))]
+    {
+        log::info!("Creating wgpu webgl renderer...");
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .into_js_result()?
+            .dyn_into()
+            .map_err(|_| "Expected HtmlCanvasElement")?;
+
+        match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+            Ok(renderer) => {
+                return Ok((builder.with_renderer(renderer), canvas));
+            }
+            Err(error) => log::error!("Error creating wgpu webgl renderer: {}", error),
         }
     }
 
