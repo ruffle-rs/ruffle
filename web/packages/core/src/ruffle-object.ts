@@ -1,13 +1,10 @@
 import {
-    FLASH_MIMETYPE,
-    FUTURESPLASH_MIMETYPE,
-    FLASH7_AND_8_MIMETYPE,
-    FLASH_MOVIE_MIMETYPE,
     FLASH_ACTIVEX_CLASSID,
     isBuiltInContextMenuVisible,
     isFallbackElement,
     isScriptAccessAllowed,
     isSwfFilename,
+    isSwfMimeType,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
     RufflePlayer,
@@ -295,16 +292,8 @@ export class RuffleObject extends RufflePlayer {
         if (!type) {
             // If no MIME type is specified, polyfill if movie is an SWF file.
             return isSwf;
-        }
-
-        switch (type.value.toLowerCase()) {
-            case FLASH_MIMETYPE.toLowerCase():
-            case FUTURESPLASH_MIMETYPE.toLowerCase():
-            case FLASH7_AND_8_MIMETYPE.toLowerCase():
-            case FLASH_MOVIE_MIMETYPE.toLowerCase():
-                return true;
-            default:
-                return false;
+        } else {
+            return isSwfMimeType(type.value);
         }
     }
 

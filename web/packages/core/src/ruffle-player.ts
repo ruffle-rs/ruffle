@@ -1695,6 +1695,24 @@ export function isSwfFilename(filename: string | null): boolean {
 }
 
 /**
+ * Returns whether the given MIME type is a known flash type.
+ *
+ * @param mime The MIME type to test.
+ * @returns True if the MIME type is a flash MIME type.
+ */
+export function isSwfMimeType(mime: string): boolean {
+    switch (mime.toLowerCase()) {
+        case FLASH_MIMETYPE.toLowerCase():
+        case FUTURESPLASH_MIMETYPE.toLowerCase():
+        case FLASH7_AND_8_MIMETYPE.toLowerCase():
+        case FLASH_MOVIE_MIMETYPE.toLowerCase():
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
  * Determine if an element is a child of a node that was not supported
  * in non-HTML5 compliant browsers. If so, the element was meant to be
  * used as a fallback content.
