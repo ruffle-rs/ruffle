@@ -335,7 +335,7 @@ jobs:
         env:
           BUILD_ID: ${{ github.run_number }}
           # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
-          CARGO_FEATURES: ${{ matrix.demo && 'wgpu' || '' }}
+          CARGO_FEATURES: ${{ matrix.demo && 'webgpu' || '' }}
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         working-directory: web
         shell: bash -l {0}

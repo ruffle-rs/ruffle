@@ -23,7 +23,8 @@ lzma = ["ruffle_core/lzma"]
 # web features
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
-wgpu = ["ruffle_render_wgpu"]
+webgpu = ["ruffle_render_wgpu"]
+wgpu-webgl = ["ruffle_render_wgpu", "ruffle_render_wgpu/webgl"]
 
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
