@@ -8,12 +8,15 @@ use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::bounding_box::BoundingBox;
 use std::sync::Arc;
+use swf::Twips;
 
 /// Implements `flash.display.Sprite`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -152,6 +155,83 @@ pub fn set_button_mode<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Starts dragging this display object, making it follow the cursor.
+/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
+pub fn start_drag<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(display_object) = this.and_then(|this| this.as_display_object()) {
+        let lock_center = args.get(0).map(|o| o.coerce_to_boolean()).unwrap_or(false);
+
+        let offset = if lock_center {
+            // The object's origin point is locked to the mouse.
+            Default::default()
+        } else {
+            // The object moves relative to current mouse position.
+            // Calculate the offset from the mouse to the object in world space.
+            let (object_x, object_y) = display_object.local_to_global(Default::default());
+            let (mouse_x, mouse_y) = *activation.context.mouse_position;
+            (object_x - mouse_x, object_y - mouse_y)
+        };
+
+        let constraint = if let Some(rect) = args.get(1) {
+            let rect = rect.coerce_to_object(activation)?;
+            let x = rect
+                .get_property(&Multiname::public("x"), activation)?
+                .coerce_to_number(activation)?;
+
+            let y = rect
+                .get_property(&Multiname::public("y"), activation)?
+                .coerce_to_number(activation)?;
+
+            let width = rect
+                .get_property(&Multiname::public("width"), activation)?
+                .coerce_to_number(activation)?;
+
+            let height = rect
+                .get_property(&Multiname::public("height"), activation)?
+                .coerce_to_number(activation)?;
+
+            BoundingBox {
+                valid: true,
+                x_min: Twips::from_pixels(x),
+                y_min: Twips::from_pixels(y),
+                x_max: Twips::from_pixels(x + width),
+                y_max: Twips::from_pixels(y + height),
+            }
+        } else {
+            // No constraints.
+            Default::default()
+        };
+
+        let drag_object = crate::player::DragObject {
+            display_object,
+            offset,
+            constraint,
+        };
+        *activation.context.drag_object = Some(drag_object);
+    }
+    Ok(Value::Undefined)
+}
+
+fn stop_drag<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    // It doesn't matter which clip we call this on; it simply stops any active drag.
+
+    // we might not have had an opportunity to call `update_drag`
+    // if AS did `startDrag(mc);stopDrag();` in one go
+    // so let's do it here
+    crate::player::Player::update_drag(&mut activation.context);
+
+    *activation.context.drag_object = None;
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -186,6 +266,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("buttonMode", Some(button_mode), Some(set_button_mode)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("startDrag", start_drag), ("stopDrag", stop_drag)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(

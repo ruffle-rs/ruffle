@@ -266,6 +266,7 @@ swf_tests! {
     (as3_displayobjectcontainer_timelineinstance, "avm2/displayobjectcontainer_timelineinstance", 6),
     (as3_documentclass, "avm2/documentclass", 1),
     (as3_domain_memory, "avm2/domain_memory", 1),
+    (as3_drag_drop, "avm2/drag_drop", 14),
     (as3_edittext_default_format, "avm2/edittext_default_format", 1),
     (as3_edittext_html_entity, "avm2/edittext_html_entity", 1),
     (as3_edittext_html_roundtrip, "avm2/edittext_html_roundtrip", 1),
