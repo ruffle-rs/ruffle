@@ -5,7 +5,7 @@ authors = ["Aaron Hill <aa1ronham@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-futures = "0.3.23"
+futures = "0.3.24"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug"] }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_input_format = { path = "input-format" }
