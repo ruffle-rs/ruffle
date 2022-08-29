@@ -1,13 +1,33 @@
+circle.localToGlobal(new Point(10, 20)) = (x=10, y=20)
+circle.globalToLocal(new Point(10, 20)) = (x=10, y=20)
+Set circle.transform.matrix
 circle.scrollRect = null
+circle.localToGlobal(new Point(10, 20)) = (x=55, y=76)
+circle.globalToLocal(new Point(10, 20)) = (x=-21.4, y=-21.4)
 circle.hitTestPoint(400, 400, false) = false
 circle.hitTestPoint(400, 400, true) = false
 (x=0, y=0, w=0, h=0)
 (x=1, y=1, w=1, h=1)
 (x=2, y=2, w=0, h=0)
-circle.scrollRect = (x=30, y=40, w=500, h=600)
+circle.scrollRect = (x=50, y=60, w=50, h=100)
+circle.localToGlobal(new Point(10, 20)) = (x=55, y=76)
+circle.globalToLocal(new Point(10, 20)) = (x=-21.4, y=-21.4)
 circle.hitTestPoint(400, 400, false) = false
 circle.hitTestPoint(400, 400, true) = false
+circle.transform.concatenatedMatrix = (a=1.2999999523162842, b=0.20000001788139343, c=0.10000000894069672, d=1.2000000476837158, tx=40, ty=50)
+scrollChild.localToGlobal(new Point(10, 20)) = (x=55, y=76)
+scrollChild.globalToLocal(new Point(10, 20)) = (x=-21.4, y=-21.4)
+Change scrollChild coordinates
+scrollChild.localToGlobal(new Point(10, 20)) = (x=149.7, y=180.6)
+scrollChild.globalToLocal(new Point(10, 20)) = (x=-52.25, y=-67.5)
+scrollChild.transform.concatenatedMatrix = (a=1.709999918937683, b=0.5000000596046448, c=0.3799999952316284, d=1.4800000190734863, tx=125, ty=146)
 After 50ms delay
-circle.scrollRect = (x=30, y=40, w=500, h=600)
-circle.hitTestPoint(400, 400, false) = true
+circle.scrollRect = (x=50, y=60, w=50, h=100)
+circle.localToGlobal(new Point(10, 20)) = (x=-16, y=-6)
+circle.globalToLocal(new Point(10, 20)) = (x=28.6, y=38.6)
+scrollChild.localToGlobal(new Point(10, 20)) = (x=-130.3, y=-99.4)
+scrollChild.globalToLocal(new Point(10, 20)) = (x=79.35, y=77.25)
+circle.transform.concatenatedMatrix = (a=1.2999999523162842, b=0.20000001788139343, c=0.10000000894069672, d=1.2000000476837158, tx=40, ty=50)
+scrollChild.transform.concatenatedMatrix = (a=1.709999918937683, b=0.5000000596046448, c=0.3799999952316284, d=1.4800000190734863, tx=54, ty=64)
+circle.hitTestPoint(400, 400, false) = false
 circle.hitTestPoint(400, 400, true) = false

@@ -99,7 +99,8 @@ pub fn get_concatenated_matrix<'gc>(
 
     // We're a child of the Stage, and not the stage itself
     if node.is_some() && dobj.as_stage().is_none() {
-        let matrix = get_display_object(this, activation)?.local_to_global_matrix();
+        let matrix =
+            get_display_object(this, activation)?.local_to_global_matrix_without_own_scroll_rect();
         matrix_to_object(matrix, activation)
     } else {
         // If this object is the Stage itself, or an object

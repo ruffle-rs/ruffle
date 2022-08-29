@@ -101,6 +101,7 @@ pub struct SystemClasses<'gc> {
     pub eventdispatcher: ClassObject<'gc>,
     pub rectangle: ClassObject<'gc>,
     pub keyboardevent: ClassObject<'gc>,
+    pub point: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -171,6 +172,7 @@ impl<'gc> SystemClasses<'gc> {
             eventdispatcher: object,
             rectangle: object,
             keyboardevent: object,
+            point: object,
         }
     }
 }
@@ -720,6 +722,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
             ("flash.geom", "Matrix", matrix),
+            ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
