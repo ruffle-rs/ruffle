@@ -13,6 +13,7 @@ use crate::events::KeyCode;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::fmt::Debug;
 
 /// A class instance allocator that allocates Event objects.
 pub fn event_allocator<'gc>(
@@ -31,7 +32,7 @@ pub fn event_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct EventObject<'gc>(GcCell<'gc, EventObjectData<'gc>>);
 
@@ -166,5 +167,24 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_event_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<Event<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |d| &mut d.event))
+    }
+}
+
+impl<'gc> Debug for EventObject<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self.0.try_read() {
+            Ok(obj) => f
+                .debug_struct("EventObject")
+                .field("type", &obj.event.event_type())
+                .field("class", &obj.base.debug_class_name())
+                .field("ptr", &self.0.as_ptr())
+                .finish(),
+            Err(err) => f
+                .debug_struct("EventObject")
+                .field("type", &err)
+                .field("class", &err)
+                .field("ptr", &self.0.as_ptr())
+                .finish(),
+        }
     }
 }
