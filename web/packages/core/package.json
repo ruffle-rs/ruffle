@@ -20,15 +20,21 @@
 
         "//4": "# Dispatches to either building the real, or copying the fake (stand-in), 'with-extensions' module.",
         "build:ruffle_web-wasm_extensions": "node -e \"process.exit(process.env.ENABLE_WASM_EXTENSIONS == 'true' ? 0 : 1)\" && npm run build:ruffle_web-wasm_extensions-real || npm run build:ruffle_web-wasm_extensions-fake",
-        "build:ruffle_web-wasm_extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext\" npm run build:cargo_bindgen_opt",
+        "build:ruffle_web-wasm_extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types\" npm run build:cargo_bindgen_opt-wasm_extensions",
         "build:ruffle_web-wasm_extensions-fake": "echo \"Copying the vanilla module as stand-in\" && shx cp ./pkg/ruffle_web_bg.wasm ./pkg/ruffle_web-wasm_extensions_bg.wasm && shx cp ./pkg/ruffle_web_bg.wasm.d.ts ./pkg/ruffle_web-wasm_extensions_bg.wasm.d.ts && shx cp ./pkg/ruffle_web.js ./pkg/ruffle_web-wasm_extensions.js && shx cp ./pkg/ruffle_web.d.ts ./pkg/ruffle_web-wasm_extensions.d.ts",
 
-        "//5": "# This just chains together the three commands after it.",
+        "//5": "# These just chain together three commands after them, one for the vanilla case, and the other with extensions.",
         "build:cargo_bindgen_opt": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt",
+        "build:cargo_bindgen_opt-wasm_extensions": "npm run build:cargo && npm run build:wasm-bindgen-wasm_extensions && npm run build:wasm-opt-wasm_extensions",
 
         "build:cargo": "cross-env-shell cargo build --profile \"$CARGO_PROFILE\" --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\" $CARGO_FLAGS",
+
         "build:wasm-bindgen": "cross-env-shell wasm-bindgen \"../../../target/wasm32-unknown-unknown/${CARGO_PROFILE}/ruffle_web.wasm\" --target web --out-dir ./pkg --out-name \"$OUT_NAME\"",
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"./pkg/${OUT_NAME}_bg.wasm\" -O -g \"./pkg/${OUT_NAME}_bg.wasm\" || npm run build:wasm-opt-failed",
+
+        "//6": "# The only difference of these compared to the ones above is the single flag to enable reference-types.",
+        "build:wasm-bindgen-wasm_extensions": "cross-env-shell wasm-bindgen \"../../../target/wasm32-unknown-unknown/${CARGO_PROFILE}/ruffle_web.wasm\" --reference-types --target web --out-dir ./pkg --out-name \"$OUT_NAME\"",
+        "build:wasm-opt-wasm_extensions": "cross-env-shell wasm-opt --enable-reference-types -o \"./pkg/${OUT_NAME}_bg.wasm\" -O -g \"./pkg/${OUT_NAME}_bg.wasm\" || npm run build:wasm-opt-failed",
 
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
 
