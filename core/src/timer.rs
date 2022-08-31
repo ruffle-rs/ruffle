@@ -113,8 +113,7 @@ impl<'gc> Timers<'gc> {
                         Avm2Activation::from_nothing(activation.context.reborrow());
                     closure
                         .call(None, &params, &mut avm2_activation)
-                        .unwrap()
-                        .coerce_to_boolean()
+                        .map_or(false, |r| r.coerce_to_boolean())
                 }
             };
 
