@@ -7,6 +7,7 @@ import {
     simd,
     saturatedFloatToInt,
     signExtensions,
+    referenceTypes,
 } from "wasm-feature-detect";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
@@ -45,6 +46,7 @@ async function fetchRuffle(
             simd(),
             saturatedFloatToInt(),
             signExtensions(),
+            referenceTypes(),
         ])
     ).every(Boolean);
 
