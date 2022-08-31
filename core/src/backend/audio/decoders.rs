@@ -338,7 +338,10 @@ impl Iterator for StreamTagReader {
             if found {
                 break Some(self.current_audio_data.clone());
             } else if compression != AudioCompression::Mp3
-                || self.mp3_samples_buffered <= 0
+                // FIXME: The next condition should logically end with `<= 0`.
+                // It was changed as a quick HACK to fix #7524 by not detecting an
+                // underrun too soon. We are still not yet sure what exactly to do here.
+                || self.mp3_samples_buffered <= -(self.mp3_samples_per_block as i32)
                 || reader.get_ref().is_empty()
             {
                 break None;
