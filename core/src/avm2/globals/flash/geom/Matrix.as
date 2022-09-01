@@ -1,7 +1,4 @@
 package flash.geom {
-	import flash.geom.Point;
-	import flash.geom.Vector3D;
-
 	public class Matrix {
 		public var a:Number;
 		public var b:Number;
