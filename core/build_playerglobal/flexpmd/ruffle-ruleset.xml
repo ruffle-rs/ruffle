@@ -351,6 +351,7 @@ package com.MyCompany  // VIOLATION <- should be lower case name
 }
          ]]></example>
   </rule>
+  <!--
   <rule since="" class="com.adobe.ac.pmd.rules.naming.PropertyHiddenByLocalVariableRule" message="A class property is hidden by this local variable ({0})">
     <description/>
     <priority>3</priority>
@@ -364,6 +365,7 @@ package com.MyCompany  // VIOLATION <- should be lower case name
    }
 }]]></example>
   </rule>
+  -->
   <rule since="" class="com.adobe.ac.pmd.rules.naming.WronglyNamedVariableRule" message="This variable ({0}) seems to be incorrectly named. Let your creativity flow">
     <description/>
     <priority>3</priority>
