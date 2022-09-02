@@ -351,6 +351,24 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.sound_loader_avm2(player, request)
     }
+
+    /// Process tags on all loaders in the Parsing phase.
+    pub fn preload_tick(context: &mut UpdateContext<'_, 'gc, '_>, limit: &mut ExecutionLimit) {
+        let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
+
+        for handle in handles {
+            let status = match context.load_manager.get_loader(handle) {
+                Some(Loader::Movie { loader_status, .. }) => Some(loader_status),
+                _ => None,
+            };
+
+            if matches!(status, Some(LoaderStatus::Parsing)) {
+                if let Err(e) = Loader::preload_tick(handle, context, limit) {
+                    log::error!("Error encountered while preloading movie: {}", e);
+                }
+            }
+        }
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -493,15 +511,12 @@ impl<'gc> Loader<'gc> {
                 target_clip,
                 event_handler,
                 movie,
-                loader_status,
                 ..
             }) => {
                 if movie.is_none() {
                     //Non-SWF load or file not loaded yet
                     return Ok(());
                 }
-
-                *loader_status = LoaderStatus::Parsing;
 
                 (*target_clip, *event_handler, movie.clone().unwrap())
             }
@@ -692,7 +707,12 @@ impl<'gc> Loader<'gc> {
                                 )?);
 
                                 match uc.load_manager.get_loader_mut(handle) {
-                                    Some(Loader::Movie { movie: old, .. }) => {
+                                    Some(Loader::Movie {
+                                        movie: old,
+                                        loader_status,
+                                        ..
+                                    }) => {
+                                        *loader_status = LoaderStatus::Parsing;
                                         *old = Some(movie.clone())
                                     }
                                     _ => unreachable!(),
