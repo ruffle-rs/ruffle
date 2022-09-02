@@ -1350,9 +1350,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_min: Twips::from_pixels(0.0),
                     y_max: Twips::from_pixels(20.0),
                 },
-                has_fill_winding_rule: false,
-                has_non_scaling_strokes: true,
-                has_scaling_strokes: false,
+                flags: ShapeFlag::HAS_NON_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![FillStyle::Color(Color {
                         r: 255,
@@ -1407,9 +1405,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_min: Twips::from_pixels(0.0),
                     y_max: Twips::from_pixels(50.0),
                 },
-                has_fill_winding_rule: false,
-                has_non_scaling_strokes: true,
-                has_scaling_strokes: false,
+                flags: ShapeFlag::HAS_NON_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![FillStyle::RadialGradient(Gradient {
                         matrix: Matrix {
@@ -1522,9 +1518,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_min: Twips::from_pixels(0.0),
                     y_max: Twips::from_pixels(100.0),
                 },
-                has_fill_winding_rule: false,
-                has_non_scaling_strokes: true,
-                has_scaling_strokes: false,
+                flags: ShapeFlag::HAS_NON_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![
                         FillStyle::Color(Color {
@@ -2475,9 +2469,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_min: Twips::from_pixels(0.0),
                     y_max: Twips::from_pixels(0.0),
                 },
-                has_fill_winding_rule: false,
-                has_non_scaling_strokes: false,
-                has_scaling_strokes: true,
+                flags: ShapeFlag::HAS_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![],
                     line_styles: vec![LineStyle::new()
