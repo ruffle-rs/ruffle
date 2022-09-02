@@ -192,7 +192,7 @@ pub enum Compression {
 /// A rectangular region defined by minimum
 /// and maximum x- and y-coordinate positions
 /// measured in [`Twips`].
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Rectangle {
     /// The minimum x-position of the rectangle.
     pub x_min: Twips,

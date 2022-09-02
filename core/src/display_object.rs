@@ -1036,11 +1036,11 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn scroll_rect(&self) -> Option<Rectangle> {
-        self.base().scroll_rect
+        self.base().scroll_rect.clone()
     }
 
     fn next_scroll_rect(&self) -> Rectangle {
-        self.base().next_scroll_rect
+        self.base().next_scroll_rect.clone()
     }
 
     fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rectangle: Rectangle) {
@@ -1288,7 +1288,9 @@ pub trait TDisplayObject<'gc>:
     /// (as long as the child is still on a render list)
     fn pre_render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         let mut this = self.base_mut(context.gc_context);
-        this.scroll_rect = this.has_scroll_rect().then_some(this.next_scroll_rect);
+        this.scroll_rect = this
+            .has_scroll_rect()
+            .then(|| this.next_scroll_rect.clone());
     }
 
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc, '_>) {}

@@ -36,7 +36,7 @@ impl<'gc> Graphic<'gc> {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let static_data = GraphicStatic {
             id: swf_shape.id,
-            bounds: swf_shape.shape_bounds.into(),
+            bounds: (&swf_shape.shape_bounds).into(),
             render_handle: Some(
                 context
                     .renderer
