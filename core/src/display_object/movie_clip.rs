@@ -365,6 +365,16 @@ impl<'gc> MovieClip<'gc> {
         chunk_limit: &mut ExecutionLimit,
     ) -> bool {
         use swf::TagCode;
+
+        {
+            let read = self.0.read();
+            if read.static_data.preload_progress.read().next_preload_chunk
+                >= read.static_data.swf.len() as u64
+            {
+                return true;
+            }
+        }
+
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
