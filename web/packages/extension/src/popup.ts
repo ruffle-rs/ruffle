@@ -81,7 +81,7 @@ async function queryTabStatus(
     optionsChanged();
 }
 
-function objectsEqual<T>(x: T, y: T) {
+function objectsEqual<T>(x: NonNullable<T>, y: NonNullable<T>) {
     for (const [key, value] of Object.entries(x)) {
         if (y[key as keyof T] !== value) {
             return false;
