@@ -940,7 +940,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class, activation)? {
+            if object.is_of_type(class, activation) {
                 return Ok(object.into());
             }
 
@@ -1013,21 +1013,21 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         type_object: ClassObject<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> bool {
         if Object::ptr_eq(type_object, activation.avm2().classes().number) {
-            return Ok(self.is_number());
+            return self.is_number();
         }
         if Object::ptr_eq(type_object, activation.avm2().classes().uint) {
-            return Ok(self.is_u32());
+            return self.is_u32();
         }
         if Object::ptr_eq(type_object, activation.avm2().classes().int) {
-            return Ok(self.is_i32());
+            return self.is_i32();
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
             o.is_of_type(type_object, activation)
         } else {
-            Ok(false)
+            false
         }
     }
 

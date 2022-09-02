@@ -263,7 +263,7 @@ impl<'gc> Avm2<'gc> {
             if let Some(object) = object {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
-                if object.is_of_type(on_type, &mut activation)? {
+                if object.is_of_type(on_type, &mut activation) {
                     Avm2::dispatch_event(&mut activation.context, event, object)?;
                 }
             }

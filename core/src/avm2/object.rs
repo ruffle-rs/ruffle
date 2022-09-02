@@ -810,17 +810,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         test_class: ClassObject<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<bool, Error> {
+    ) -> bool {
         let my_class = self.instance_of();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
         if my_class.is_none() && Object::ptr_eq(test_class, activation.avm2().classes().object) {
-            Ok(true)
+            true
         } else if let Some(my_class) = my_class {
             my_class.has_class_in_chain(test_class)
         } else {
-            Ok(false)
+            false
         }
     }
 

@@ -426,42 +426,38 @@ impl<'gc> ClassObject<'gc> {
     /// interface we are checking against this class.
     ///
     /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> Result<bool, Error> {
+    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> bool {
         let mut my_class = Some(self);
 
         while let Some(class) = my_class {
             if Object::ptr_eq(class, test_class) {
-                return Ok(true);
+                return true;
             }
 
             for interface in class.interfaces() {
                 if Object::ptr_eq(interface, test_class) {
-                    return Ok(true);
+                    return true;
                 }
             }
 
             if let (Some(my_param), Some(test_param)) =
                 (class.as_class_params(), test_class.as_class_params())
             {
-                let mut are_all_params_coercible = true;
-
-                are_all_params_coercible &= match (my_param, test_param) {
-                    (Some(my_param), Some(test_param)) => {
-                        my_param.has_class_in_chain(test_param)?
-                    }
+                let are_all_params_coercible = match (my_param, test_param) {
+                    (Some(my_param), Some(test_param)) => my_param.has_class_in_chain(test_param),
                     (None, Some(_)) => false,
                     _ => true,
                 };
 
                 if are_all_params_coercible {
-                    return Ok(true);
+                    return true;
                 }
             }
 
             my_class = class.superclass_object()
         }
 
-        Ok(false)
+        false
     }
 
     /// Call the instance initializer.
