@@ -379,7 +379,7 @@ impl<'gc> MovieClip<'gc> {
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
-        let mut reader = data.read_from(0);
+        let mut reader = data.read_from(static_data.preload_progress.read().next_preload_chunk);
         let (mut cur_frame, mut start_pos) = {
             let read = static_data.preload_progress.read();
             (read.cur_preload_frame, read.last_frame_start_pos)
