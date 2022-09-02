@@ -690,8 +690,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineMorphShape(Box::new(DefineMorphShape {
                 version: 1,
                 id: 1,
-                has_non_scaling_strokes: true,
-                has_scaling_strokes: false,
+                flags: DefineMorphShapeFlag::HAS_NON_SCALING_STROKES,
                 start: MorphShape {
                     shape_bounds: Rectangle {
                         x_min: Twips::from_pixels(15.0),
@@ -898,8 +897,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineMorphShape(Box::new(DefineMorphShape {
                 version: 2,
                 id: 1,
-                has_non_scaling_strokes: false,
-                has_scaling_strokes: true,
+                flags: DefineMorphShapeFlag::HAS_SCALING_STROKES,
                 start: MorphShape {
                     shape_bounds: Rectangle {
                         x_min: Twips::from_pixels(15.0),
@@ -1130,8 +1128,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
             Tag::DefineMorphShape(Box::new(DefineMorphShape {
                 version: 2,
                 id: 1,
-                has_non_scaling_strokes: false,
-                has_scaling_strokes: true,
+                flags: DefineMorphShapeFlag::HAS_SCALING_STROKES,
                 start: MorphShape {
                     shape_bounds: Rectangle {
                         x_min: Twips::from_pixels(0.0),

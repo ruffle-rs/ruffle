@@ -1195,10 +1195,16 @@ bitflags! {
 pub struct DefineMorphShape {
     pub version: u8,
     pub id: CharacterId,
-    pub has_non_scaling_strokes: bool,
-    pub has_scaling_strokes: bool,
+    pub flags: DefineMorphShapeFlag,
     pub start: MorphShape,
     pub end: MorphShape,
+}
+
+bitflags! {
+    pub struct DefineMorphShapeFlag: u8 {
+        const HAS_SCALING_STROKES     = 1 << 0;
+        const HAS_NON_SCALING_STROKES = 1 << 1;
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

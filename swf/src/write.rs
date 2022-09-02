@@ -1060,13 +1060,7 @@ impl<W: Write> Writer<W> {
             if data.version >= 2 {
                 writer.write_rectangle(&data.start.edge_bounds)?;
                 writer.write_rectangle(&data.end.edge_bounds)?;
-                writer.write_u8(
-                    if data.has_non_scaling_strokes {
-                        0b10
-                    } else {
-                        0
-                    } | if data.has_scaling_strokes { 0b1 } else { 0 },
-                )?;
+                writer.write_u8(data.flags.bits())?;
             }
 
             // Offset to EndEdges.
