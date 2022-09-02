@@ -397,7 +397,7 @@ impl<'gc> MovieClip<'gc> {
             TagCode::DefineButtonCxform => self
                 .0
                 .write(context.gc_context)
-                .define_button_cxform(context, reader, tag_len),
+                .define_button_cxform(context, reader),
             TagCode::DefineButtonSound => self
                 .0
                 .write(context.gc_context)
@@ -2998,9 +2998,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
     ) -> DecodeResult {
-        let button_colors = reader.read_define_button_cxform(tag_len)?;
+        let button_colors = reader.read_define_button_cxform()?;
         match context
             .library
             .library_for_movie_mut(self.movie())

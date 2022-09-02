@@ -390,7 +390,7 @@ impl<'a> Reader<'a> {
                 Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
             }
             TagCode::DefineButtonCxform => {
-                Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform(length)?)
+                Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform()?)
             }
             TagCode::DefineButtonSound => {
                 Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
@@ -790,18 +790,15 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_button_cxform(&mut self, tag_length: usize) -> Result<ButtonColorTransform> {
+    pub fn read_define_button_cxform(&mut self) -> Result<ButtonColorTransform> {
         // SWF19 is incorrect here. You can have >1 color transforms in this tag. They apply
         // to the characters in a button in sequence.
 
-        // We don't know how many color transforms this tag will contain, so read it into a buffer.
-        let mut reader = Reader::new(self.read_slice(tag_length)?, self.version);
-
-        let id = reader.read_character_id()?;
+        let id = self.read_character_id()?;
         let mut color_transforms = Vec::new();
 
         // Read all color transforms.
-        while let Ok(color_transform) = reader.read_color_transform_no_alpha() {
+        while let Ok(color_transform) = self.read_color_transform_no_alpha() {
             color_transforms.push(color_transform);
         }
 
