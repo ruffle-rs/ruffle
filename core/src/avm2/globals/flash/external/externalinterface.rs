@@ -43,7 +43,7 @@ pub fn call<'gc>(
     {
         let mut external_args = Vec::with_capacity(args.len() - 1);
         for arg in &args[1..] {
-            external_args.push(ExternalValue::from_avm2(activation, arg.to_owned())?);
+            external_args.push(ExternalValue::from_avm2(arg.to_owned())?);
         }
         Ok(method
             .call(&mut activation.context, &external_args)

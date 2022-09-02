@@ -426,11 +426,7 @@ impl<'gc> ClassObject<'gc> {
     /// interface we are checking against this class.
     ///
     /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(
-        self,
-        test_class: ClassObject<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<bool, Error> {
+    pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> Result<bool, Error> {
         let mut my_class = Some(self);
 
         while let Some(class) = my_class {
@@ -451,7 +447,7 @@ impl<'gc> ClassObject<'gc> {
 
                 are_all_params_coercible &= match (my_param, test_param) {
                     (Some(my_param), Some(test_param)) => {
-                        my_param.has_class_in_chain(test_param, activation)?
+                        my_param.has_class_in_chain(test_param)?
                     }
                     (None, Some(_)) => false,
                     _ => true,
