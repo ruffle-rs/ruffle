@@ -183,10 +183,7 @@ impl Value {
         }
     }
 
-    pub fn from_avm2<'gc>(
-        activation: &mut Avm2Activation<'_, 'gc, '_>,
-        value: Avm2Value<'gc>,
-    ) -> Result<Value, Avm2Error> {
+    pub fn from_avm2(value: Avm2Value) -> Result<Value, Avm2Error> {
         Ok(match value {
             Avm2Value::Undefined | Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
@@ -201,7 +198,7 @@ impl Value {
                         .map(|i| {
                             // FIXME - is this right?
                             let element = array.get(i).unwrap_or(Avm2Value::Null);
-                            Value::from_avm2(activation, element)
+                            Value::from_avm2(element)
                         })
                         .collect();
                     Value::List(values?)
@@ -289,7 +286,7 @@ impl<'gc> Callback<'gc> {
                     .collect();
                 if let Ok(result) = method
                     .call(None, &args, &mut activation)
-                    .and_then(|value| Value::from_avm2(&mut activation, value))
+                    .and_then(Value::from_avm2)
                 {
                     result
                 } else {

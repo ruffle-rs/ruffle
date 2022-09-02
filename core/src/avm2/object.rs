@@ -818,7 +818,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if my_class.is_none() && Object::ptr_eq(test_class, activation.avm2().classes().object) {
             Ok(true)
         } else if let Some(my_class) = my_class {
-            my_class.has_class_in_chain(test_class, activation)
+            my_class.has_class_in_chain(test_class)
         } else {
             Ok(false)
         }
