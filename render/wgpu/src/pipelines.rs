@@ -1,7 +1,57 @@
 use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
-use swf::BlendMode;
 use wgpu::vertex_attr_array;
+
+#[derive(Debug, Enum, Copy, Clone)]
+pub enum BlendMode {
+    Normal,
+    Add,
+    Subtract,
+}
+
+// Use the GPU blend modes to roughly approximate Flash's blend modes.
+// This should look reasonable for the most common cases, but full support requires
+// rendering to an intermediate texture and custom shaders for the complex blend modes.
+impl From<swf::BlendMode> for BlendMode {
+    fn from(blend: swf::BlendMode) -> Self {
+        match blend {
+            swf::BlendMode::Normal => BlendMode::Normal,
+
+            // dst + src
+            swf::BlendMode::Add => BlendMode::Add,
+
+            // dst - src
+            swf::BlendMode::Subtract => BlendMode::Subtract,
+
+            // Unsupported blend mode. Default to normal for now.
+            _ => BlendMode::Normal,
+        }
+    }
+}
+
+impl BlendMode {
+    pub fn blend_state(&self) -> wgpu::BlendState {
+        match self {
+            BlendMode::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+            BlendMode::Add => wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::One,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            },
+            BlendMode::Subtract => wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::One,
+                    operation: wgpu::BlendOperation::ReverseSubtract,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            },
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct ShapePipeline {
@@ -54,40 +104,6 @@ impl ShapePipeline {
             .unwrap();
         ShapePipeline {
             pipelines: EnumMap::from_array(blend_array),
-        }
-    }
-}
-
-fn blend_mode_to_state(mode: BlendMode) -> Option<wgpu::BlendState> {
-    // Use the GPU blend modes to roughly approximate Flash's blend modes.
-    // This should look reasonable for the most common cases, but full support requires
-    // rendering to an intermediate texture and custom shaders for the complex blend modes.
-    match mode {
-        BlendMode::Normal => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-
-        // dst + src
-        BlendMode::Add => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // dst - src
-        BlendMode::Subtract => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::ReverseSubtract,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        _ => {
-            // Unsupported blend mode. Default to normal for now.
-            Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING)
         }
     }
 }
@@ -386,7 +402,7 @@ fn create_shape_pipeline(
             }),
             &[Some(wgpu::ColorTargetState {
                 format,
-                blend,
+                blend: Some(blend),
                 write_mask,
             })],
             vertex_buffers_layout,
@@ -395,7 +411,7 @@ fn create_shape_pipeline(
     };
 
     ShapePipeline::build(|blend_mode, mask_state| {
-        let blend = blend_mode_to_state(blend_mode);
+        let blend = blend_mode.blend_state();
         match mask_state {
             MaskState::NoMask => mask_render_state(
                 "no mask",

@@ -1119,7 +1119,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .pipelines
                     .bitmap_pipelines
-                    .pipeline_for(blend_mode, self.mask_state),
+                    .pipeline_for(blend_mode.into(), self.mask_state),
             );
             frame
                 .render_pass
@@ -1227,7 +1227,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .color_pipelines
-                            .pipeline_for(blend_mode, self.mask_state),
+                            .pipeline_for(blend_mode.into(), self.mask_state),
                     );
                 }
                 DrawType::Gradient { bind_group, .. } => {
@@ -1235,7 +1235,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .gradient_pipelines
-                            .pipeline_for(blend_mode, self.mask_state),
+                            .pipeline_for(blend_mode.into(), self.mask_state),
                     );
                     frame.render_pass.set_bind_group(2, bind_group, &[]);
                 }
@@ -1249,7 +1249,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .bitmap_pipelines
-                            .pipeline_for(blend_mode, self.mask_state),
+                            .pipeline_for(blend_mode.into(), self.mask_state),
                     );
                     frame.render_pass.set_bind_group(2, bind_group, &[]);
                     frame.render_pass.set_bind_group(
@@ -1317,7 +1317,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             self.descriptors
                 .pipelines
                 .color_pipelines
-                .pipeline_for(blend_mode, self.mask_state),
+                .pipeline_for(blend_mode.into(), self.mask_state),
         );
 
         frame
