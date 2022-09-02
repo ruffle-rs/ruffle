@@ -348,6 +348,11 @@ impl SwfSlice {
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
         swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
     }
+
+    /// Get the length of the SwfSlice.
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
 }
 
 /// Decode tags from a SWF stream reader.
@@ -392,7 +397,6 @@ where
                     log::error!("Error running definition tag: {:?}, got {}", tag, e)
                 }
                 Ok(ControlFlow::Exit) => {
-                    *reader.get_mut() = end_slice;
                     break;
                 }
                 Ok(ControlFlow::Continue) => {}
