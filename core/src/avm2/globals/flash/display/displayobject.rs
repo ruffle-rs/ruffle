@@ -831,6 +831,24 @@ fn global_to_local<'gc>(
     Ok(Value::Undefined)
 }
 
+fn mask<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObject.mask getter: not yet implemented");
+    Ok(Value::Null)
+}
+
+fn set_mask<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObject.mask setter: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -877,6 +895,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("filters", Some(filters), Some(set_filters)),
         ("transform", Some(transform), Some(set_transform)),
         ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
+        ("mask", Some(mask), Some(set_mask)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
