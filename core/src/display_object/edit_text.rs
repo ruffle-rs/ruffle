@@ -236,7 +236,7 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
-        let bounds: BoundingBox = swf_tag.bounds.into();
+        let bounds: BoundingBox = (&swf_tag.bounds).into();
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,

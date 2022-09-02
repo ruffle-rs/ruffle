@@ -49,8 +49,8 @@ impl Drawing {
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: Cell::new(None),
-            shape_bounds: shape.shape_bounds.into(),
-            edge_bounds: shape.edge_bounds.into(),
+            shape_bounds: (&shape.shape_bounds).into(),
+            edge_bounds: (&shape.edge_bounds).into(),
             dirty: Cell::new(true),
             paths: Vec::new(),
             bitmaps: Vec::new(),

@@ -1256,8 +1256,8 @@ impl<'a> Reader<'a> {
             end_edge_bounds = self.read_rectangle()?;
             flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
         } else {
-            start_edge_bounds = start_shape_bounds;
-            end_edge_bounds = end_shape_bounds;
+            start_edge_bounds = start_shape_bounds.clone();
+            end_edge_bounds = end_shape_bounds.clone();
             flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
         }
 
@@ -1503,7 +1503,7 @@ impl<'a> Reader<'a> {
             edge_bounds = self.read_rectangle()?;
             flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
         } else {
-            edge_bounds = shape_bounds;
+            edge_bounds = shape_bounds.clone();
             flags = ShapeFlag::HAS_NON_SCALING_STROKES;
         }
 

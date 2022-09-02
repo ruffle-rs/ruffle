@@ -553,11 +553,11 @@ mod tests {
 
     /// Convenience method to quickly make a shape,
     fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
-        let bounds = calculate_shape_bounds(&records[..]);
+        let bounds = calculate_shape_bounds(&records);
         swf::Shape {
             version: 2,
             id: 1,
-            shape_bounds: bounds,
+            shape_bounds: bounds.clone(),
             edge_bounds: bounds,
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles: swf::ShapeStyles {
@@ -1295,12 +1295,13 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
     // SVG.
     let bounds = glyph
         .bounds
+        .clone()
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
-        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..]));
+        .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records));
     swf::Shape {
         version: 2,
         id: 0,
-        shape_bounds: bounds,
+        shape_bounds: bounds.clone(),
         edge_bounds: bounds,
         flags: swf::ShapeFlag::HAS_SCALING_STROKES,
         styles: swf::ShapeStyles {

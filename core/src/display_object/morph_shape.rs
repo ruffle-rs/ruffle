@@ -297,12 +297,12 @@ impl MorphShapeStatic {
             line_styles,
         };
 
-        let bounds = ruffle_render::shape_utils::calculate_shape_bounds(&shape[..]);
+        let bounds = ruffle_render::shape_utils::calculate_shape_bounds(&shape);
         let shape = swf::Shape {
             version: 4,
             id: 0,
-            shape_bounds: bounds,
-            edge_bounds: bounds,
+            shape_bounds: bounds.clone(),
+            edge_bounds: bounds.clone(),
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles,
             shape,
