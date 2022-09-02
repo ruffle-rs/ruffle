@@ -564,7 +564,7 @@ impl<'a> Reader<'a> {
                 tag_reader.read_define_scene_and_frame_label_data()?,
             ),
 
-            TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
+            TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label()?),
 
             TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
 
@@ -923,12 +923,10 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_frame_label(&mut self, length: usize) -> Result<FrameLabel<'a>> {
+    pub fn read_frame_label(&mut self) -> Result<FrameLabel<'a>> {
         let label = self.read_str()?;
-        Ok(FrameLabel {
-            is_anchor: self.version >= 6 && length > label.len() + 1 && self.read_u8()? != 0,
-            label,
-        })
+        let is_anchor = self.version >= 6 && self.read_u8().unwrap_or_default() != 0;
+        Ok(FrameLabel { label, is_anchor })
     }
 
     pub fn read_define_scene_and_frame_label_data(
