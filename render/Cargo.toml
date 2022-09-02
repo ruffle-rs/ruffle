@@ -6,8 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-swf = {path = "../swf"}
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+swf = { path = "../swf"}
 log = "0.4"
 gif = "0.11.4"
 png = { version = "0.17.5" }

@@ -1,7 +1,4 @@
-use gc_arena::Collect;
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Collect)]
-#[collect(no_drop)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BitmapHandle(pub usize);
 
 /// Info returned by the `register_bitmap` methods.

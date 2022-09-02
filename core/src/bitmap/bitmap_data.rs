@@ -148,6 +148,7 @@ pub struct BitmapData<'gc> {
     ///
     /// This is lazily initialized; a value of `None` indicates that
     /// initialization has not yet happened.
+    #[collect(require_static)]
     bitmap_handle: Option<BitmapHandle>,
 
     /// The AVM2 side of this `BitmapData`.
