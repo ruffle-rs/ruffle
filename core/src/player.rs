@@ -401,7 +401,12 @@ impl Player {
             stage.build_matrices(&mut activation.context);
         });
 
-        self.preload();
+        self.preload(&mut ExecutionLimit::none());
+
+        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
+            self.ui.display_unsupported_message();
+        }
+
         self.audio.set_frame_rate(self.frame_rate);
     }
 
@@ -1323,25 +1328,20 @@ impl Player {
         needs_render
     }
 
-    /// Preload the first movie in the player.
+    /// Preload all pending movies in the player, including the root movie.
     ///
-    /// This should only be called once. Further movie loads should preload the
-    /// specific `MovieClip` referenced.
-    fn preload(&mut self) {
+    /// This should be called periodically with a reasonable execution limit.
+    /// By default, the Player will do so after every `run_frame` using a limit
+    /// derived from the current frame rate and execution time. Clients that
+    /// want synchronous or 'lockstep' preloading may call this function with
+    /// an unlimited execution limit.
+    fn preload(&mut self, limit: &mut ExecutionLimit) {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            let preload_done = root
-                .as_movie_clip()
-                .unwrap()
-                .preload(context, &mut ExecutionLimit::none());
+            root.as_movie_clip().unwrap().preload(context, limit);
 
-            if !preload_done {
-                log::warn!("Preloading of root clip did not complete in a single call.");
-            }
+            LoadManager::preload_tick(context, limit);
         });
-        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
-            self.ui.display_unsupported_message();
-        }
     }
 
     pub fn run_frame(&mut self) {
