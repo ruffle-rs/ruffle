@@ -496,7 +496,7 @@ impl Player {
             // Sanity: If we had too many frames to tick, just reset the accumulator
             // to prevent running at turbo speed.
             if self.frame_accumulator >= frame_time {
-                self.frame_accumulator = Duration::zero();
+                self.frame_accumulator = Duration::ZERO;
             }
 
             // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
@@ -522,19 +522,19 @@ impl Player {
     /// This is only an approximation to be used for sleep durations.
     pub fn time_til_next_frame(&self) -> Duration {
         let frame_time = Duration::from_millis(1000.0 / self.frame_rate);
-        let mut dt = if self.frame_accumulator <= Duration::zero() {
+        let mut dt = if self.frame_accumulator <= Duration::ZERO {
             frame_time
         } else if self.frame_accumulator >= frame_time {
-            Duration::zero()
+            Duration::ZERO
         } else {
             frame_time - self.frame_accumulator
         };
 
         if let Some(time_til_next_timer) = self.time_til_next_timer {
-            dt = dt.min(time_til_next_timer)
+            dt = dt.min(&time_til_next_timer)
         }
 
-        dt = dt.max(Duration::zero());
+        dt = dt.max(&Duration::ZERO);
 
         dt
     }
@@ -2092,7 +2092,7 @@ impl PlayerBuilder {
                 // Timing
                 frame_rate,
                 frame_phase: Default::default(),
-                frame_accumulator: Duration::zero(),
+                frame_accumulator: Duration::ZERO,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
                 time_offset: 0,

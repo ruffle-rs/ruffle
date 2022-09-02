@@ -1,14 +1,16 @@
 use num_traits::Zero;
-use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::time::Duration as StdDuration;
 
 /// Duration f64 nanosec
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Serialize, Deserialize)]
-pub struct Duration(OrderedFloat<f64>);
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Default, Serialize, Deserialize)]
+pub struct Duration(f64);
 
 impl Duration {
+    pub const ZERO: Self = Self(0.0);
+    pub const ONE_SECOND: Self = Self(1.0);
+
     pub fn from_secs(secs: f64) -> Self {
         Self::from_nanos(secs * 1_000_000_000.0)
     }
@@ -22,39 +24,39 @@ impl Duration {
     }
 
     pub const fn from_nanos(nanosecs: f64) -> Self {
-        Self(OrderedFloat(nanosecs))
+        Self(nanosecs)
     }
 
     pub fn as_secs(&self) -> f64 {
-        self.0.into_inner() / 1_000_000_000.0
+        self.0 / 1_000_000_000.0
     }
 
     pub fn as_millis(self) -> f64 {
-        self.0.into_inner() / 1_000_000.0
+        self.0 / 1_000_000.0
     }
 
     pub fn as_micros(&self) -> f64 {
-        self.0.into_inner() / 1_000.0
+        self.0 / 1_000.0
     }
 
     pub fn as_nanos(&self) -> f64 {
-        self.0.into_inner()
-    }
-
-    pub fn zero() -> Self {
-        Self(OrderedFloat::zero())
+        self.0
     }
 
     pub fn abs(&self) -> Duration {
-        Self(OrderedFloat(self.0.abs()))
-    }
-
-    pub const fn one_sec() -> Self {
-        Self(OrderedFloat(1.0))
+        Self(self.0.abs())
     }
 
     pub fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+
+    pub fn min(&self, other: &Self) -> Self {
+        Self(self.0.min(other.0))
+    }
+
+    pub fn max(&self, other: &Self) -> Self {
+        Self(self.0.max(other.0))
     }
 }
 

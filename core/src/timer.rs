@@ -175,7 +175,7 @@ impl<'gc> Timers<'gc> {
         Self {
             timers: Default::default(),
             timer_counter: 0,
-            cur_time: Duration::zero(),
+            cur_time: Duration::ZERO,
         }
     }
 

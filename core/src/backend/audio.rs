@@ -220,7 +220,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn stop_all_sounds(&mut self) {}
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<Duration> {
-        Some(Duration::zero())
+        Some(Duration::ZERO)
     }
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         if let Some(sound) = self.sounds.get(sound) {
@@ -299,7 +299,7 @@ impl<'gc> AudioManager<'gc> {
     pub const STREAM_SYNC_THRESHOLD: f64 = 1.0 / 60.0;
 
     /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
-    pub const STREAM_RESTART_THRESHOLD: Duration = Duration::one_sec();
+    pub const STREAM_RESTART_THRESHOLD: Duration = Duration::ONE_SECOND;
 
     /// The minimum audio sycning threshold in seconds.
     ///
@@ -537,13 +537,13 @@ impl<'gc> AudioManager<'gc> {
             let instance = &self.sounds[i];
             audio.stop_sound(instance.instance);
             self.sounds.swap_remove(i);
-            Duration::zero()
+            Duration::ZERO
         } else if skew.abs() < sync_threshold {
             // Slightly out of sync, adjust player speed to compensate.
             skew
         } else {
             // More or less in sync, no adjustment.
-            Duration::zero()
+            Duration::ZERO
         }
     }
 

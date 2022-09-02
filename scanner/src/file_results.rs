@@ -141,7 +141,7 @@ impl FileResults {
             name: name.to_string(),
             hash: vec![],
             progress: Step::Start,
-            testing_time: Duration::zero(),
+            testing_time: Duration::ZERO,
             compressed_len: None,
             uncompressed_len: None,
             error: None,
