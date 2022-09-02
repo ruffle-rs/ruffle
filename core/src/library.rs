@@ -279,7 +279,7 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
-    pub fn set_jpeg_tables(&mut self, data: Vec<u8>) {
+    pub fn set_jpeg_tables(&mut self, data: &[u8]) {
         if self.jpeg_tables.is_some() {
             // SWF spec says there should only be one JPEGTables tag.
             // TODO: What is the behavior when there are multiples?
@@ -291,7 +291,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables = if data.is_empty() {
             None
         } else {
-            Some(remove_invalid_jpeg_data(&data[..]).to_vec())
+            Some(remove_invalid_jpeg_data(data).to_vec())
         }
     }
 
