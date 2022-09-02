@@ -1244,24 +1244,22 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_morph_shape(&mut self, shape_version: u8) -> Result<DefineMorphShape> {
+    pub fn read_define_morph_shape(&mut self, version: u8) -> Result<DefineMorphShape> {
         let id = self.read_character_id()?;
         let start_shape_bounds = self.read_rectangle()?;
         let end_shape_bounds = self.read_rectangle()?;
-        let (start_edge_bounds, end_edge_bounds, has_non_scaling_strokes, has_scaling_strokes) =
-            if shape_version >= 2 {
-                let start_edge_bounds = self.read_rectangle()?;
-                let end_edge_bounds = self.read_rectangle()?;
-                let flags = self.read_u8()?;
-                (
-                    start_edge_bounds,
-                    end_edge_bounds,
-                    flags & 0b10 != 0,
-                    flags & 0b1 != 0,
-                )
-            } else {
-                (start_shape_bounds, end_shape_bounds, true, false)
-            };
+        let start_edge_bounds;
+        let end_edge_bounds;
+        let flags;
+        if version >= 2 {
+            start_edge_bounds = self.read_rectangle()?;
+            end_edge_bounds = self.read_rectangle()?;
+            flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
+        } else {
+            start_edge_bounds = start_shape_bounds;
+            end_edge_bounds = end_shape_bounds;
+            flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
+        }
 
         self.read_u32()?; // Offset to EndEdges.
 
@@ -1284,7 +1282,7 @@ impl<'a> Reader<'a> {
         let mut start_line_styles = Vec::with_capacity(num_line_styles);
         let mut end_line_styles = Vec::with_capacity(num_line_styles);
         for _ in 0..num_line_styles {
-            let (start, end) = self.read_morph_line_style(shape_version)?;
+            let (start, end) = self.read_morph_line_style(version)?;
             start_line_styles.push(start);
             end_line_styles.push(end);
         }
@@ -1294,7 +1292,7 @@ impl<'a> Reader<'a> {
         let mut bits = self.bits();
         let mut shape_context = ShapeContext {
             swf_version,
-            shape_version,
+            shape_version: version,
             num_fill_bits: bits.read_ubits(4)? as u8,
             num_line_bits: bits.read_ubits(4)? as u8,
         };
@@ -1307,7 +1305,7 @@ impl<'a> Reader<'a> {
         self.read_u8()?; // NumFillBits and NumLineBits are written as 0 for the end shape.
         let mut shape_context = ShapeContext {
             swf_version: self.version,
-            shape_version,
+            shape_version: version,
             num_fill_bits: 0,
             num_line_bits: 0,
         };
@@ -1315,11 +1313,11 @@ impl<'a> Reader<'a> {
         while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             end_shape.push(record);
         }
+
         Ok(DefineMorphShape {
             id,
-            version: shape_version,
-            has_non_scaling_strokes,
-            has_scaling_strokes,
+            version,
+            flags,
             start: MorphShape {
                 shape_bounds: start_shape_bounds,
                 edge_bounds: start_edge_bounds,
