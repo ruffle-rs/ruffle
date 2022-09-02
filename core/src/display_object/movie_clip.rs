@@ -476,13 +476,11 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .export_assets(context, reader),
-            TagCode::FrameLabel => self.0.write(context.gc_context).frame_label(
-                context,
-                reader,
-                tag_len,
-                cur_frame,
-                &mut static_data,
-            ),
+            TagCode::FrameLabel => {
+                self.0
+                    .write(context.gc_context)
+                    .frame_label(reader, cur_frame, &mut static_data)
+            }
             TagCode::JpegTables => self
                 .0
                 .write(context.gc_context)
@@ -3304,13 +3302,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     #[inline]
     fn frame_label(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic<'gc>,
     ) -> DecodeResult {
-        let frame_label = reader.read_frame_label(tag_len)?;
+        let frame_label = reader.read_frame_label()?;
         let mut label = frame_label
             .label
             .to_str_lossy(reader.encoding())
