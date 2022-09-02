@@ -1497,19 +1497,16 @@ impl<'a> Reader<'a> {
     pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
         let id = self.read_u16()?;
         let shape_bounds = self.read_rectangle()?;
-        let (edge_bounds, has_fill_winding_rule, has_non_scaling_strokes, has_scaling_strokes) =
-            if version >= 4 {
-                let edge_bounds = self.read_rectangle()?;
-                let flags = self.read_u8()?;
-                (
-                    edge_bounds,
-                    (flags & 0b100) != 0,
-                    (flags & 0b10) != 0,
-                    (flags & 0b1) != 0,
-                )
-            } else {
-                (shape_bounds, false, true, false)
-            };
+        let edge_bounds;
+        let flags;
+        if version >= 4 {
+            edge_bounds = self.read_rectangle()?;
+            flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
+        } else {
+            edge_bounds = shape_bounds;
+            flags = ShapeFlag::HAS_NON_SCALING_STROKES;
+        }
+
         let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();
         let mut shape_context = ShapeContext {
@@ -1522,14 +1519,13 @@ impl<'a> Reader<'a> {
         while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             records.push(record);
         }
+
         Ok(Shape {
             version,
             id,
             shape_bounds,
             edge_bounds,
-            has_fill_winding_rule,
-            has_non_scaling_strokes,
-            has_scaling_strokes,
+            flags,
             styles,
             shape: records,
         })

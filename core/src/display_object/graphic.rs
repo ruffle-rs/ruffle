@@ -71,9 +71,7 @@ impl<'gc> Graphic<'gc> {
                 id: 0,
                 shape_bounds: Default::default(),
                 edge_bounds: Default::default(),
-                has_fill_winding_rule: false,
-                has_non_scaling_strokes: false,
-                has_scaling_strokes: false,
+                flags: swf::ShapeFlag::empty(),
                 styles: swf::ShapeStyles {
                     fill_styles: Vec::new(),
                     line_styles: Vec::new(),

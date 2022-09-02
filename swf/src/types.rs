@@ -726,11 +726,17 @@ pub struct Shape {
     pub id: CharacterId,
     pub shape_bounds: Rectangle,
     pub edge_bounds: Rectangle,
-    pub has_fill_winding_rule: bool,
-    pub has_non_scaling_strokes: bool,
-    pub has_scaling_strokes: bool,
+    pub flags: ShapeFlag,
     pub styles: ShapeStyles,
     pub shape: Vec<ShapeRecord>,
+}
+
+bitflags! {
+    pub struct ShapeFlag: u8 {
+        const HAS_SCALING_STROKES     = 1 << 0;
+        const HAS_NON_SCALING_STROKES = 1 << 1;
+        const HAS_FILL_WINDING_RULE   = 1 << 2;
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

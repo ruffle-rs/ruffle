@@ -1274,17 +1274,7 @@ impl<W: Write> Writer<W> {
             writer.write_rectangle(&shape.shape_bounds)?;
             if shape.version >= 4 {
                 writer.write_rectangle(&shape.edge_bounds)?;
-                writer.write_u8(
-                    if shape.has_fill_winding_rule {
-                        0b100
-                    } else {
-                        0
-                    } | if shape.has_non_scaling_strokes {
-                        0b10
-                    } else {
-                        0
-                    } | if shape.has_scaling_strokes { 0b1 } else { 0 },
-                )?;
+                writer.write_u8(shape.flags.bits())?;
             }
 
             let (num_fill_bits, num_line_bits) =

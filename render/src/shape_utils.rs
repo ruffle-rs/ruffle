@@ -559,9 +559,7 @@ mod tests {
             id: 1,
             shape_bounds: bounds,
             edge_bounds: bounds,
-            has_fill_winding_rule: false,
-            has_non_scaling_strokes: false,
-            has_scaling_strokes: true,
+            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles: swf::ShapeStyles {
                 fill_styles: FILL_STYLES.to_vec(),
                 line_styles: LINE_STYLES.to_vec(),
@@ -1304,9 +1302,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         id: 0,
         shape_bounds: bounds,
         edge_bounds: bounds,
-        has_fill_winding_rule: false,
-        has_non_scaling_strokes: false,
-        has_scaling_strokes: true,
+        flags: swf::ShapeFlag::HAS_SCALING_STROKES,
         styles: swf::ShapeStyles {
             fill_styles: vec![swf::FillStyle::Color(swf::Color {
                 r: 255,

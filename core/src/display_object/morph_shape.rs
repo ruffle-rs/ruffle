@@ -303,9 +303,7 @@ impl MorphShapeStatic {
             id: 0,
             shape_bounds: bounds,
             edge_bounds: bounds,
-            has_fill_winding_rule: false,
-            has_non_scaling_strokes: false,
-            has_scaling_strokes: true,
+            flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles,
             shape,
         };
