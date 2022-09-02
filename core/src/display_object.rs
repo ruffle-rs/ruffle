@@ -58,6 +58,7 @@ pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
     place_frame: u16,
     depth: Depth,
+    #[collect(require_static)]
     transform: Transform,
     name: AvmString<'gc>,
     clip_depth: Depth,

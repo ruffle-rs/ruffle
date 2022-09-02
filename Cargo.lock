@@ -3125,7 +3125,6 @@ dependencies = [
  "approx",
  "downcast-rs",
  "flate2",
- "gc-arena",
  "gif",
  "jpeg-decoder",
  "log",

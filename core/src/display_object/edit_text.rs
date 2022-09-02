@@ -120,6 +120,7 @@ pub struct EditTextData<'gc> {
     intrinsic_bounds: BoxBounds<Twips>,
 
     /// The current intrinsic bounds of the text field.
+    #[collect(require_static)]
     bounds: BoundingBox,
 
     /// The AVM1 object handle

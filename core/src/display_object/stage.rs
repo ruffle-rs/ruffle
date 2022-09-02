@@ -86,6 +86,7 @@ pub struct StageData<'gc> {
     use_bitmap_downsampling: bool,
 
     /// The bounds of the current viewport in twips, used for culling.
+    #[collect(require_static)]
     view_bounds: BoundingBox,
 
     /// The window mode of the viewport.

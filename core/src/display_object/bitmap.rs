@@ -39,6 +39,7 @@ pub struct BitmapData<'gc> {
     /// that it can be accessed without a mutation context.
     ///
     /// If this is `None`, then the bitmap does not render anything.
+    #[collect(require_static)]
     bitmap_handle: Option<BitmapHandle>,
 
     /// Whether or not bitmap smoothing is enabled.
