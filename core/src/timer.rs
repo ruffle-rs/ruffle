@@ -87,12 +87,17 @@ impl<'gc> Timers<'gc> {
 
             let cancel_timer = match callback {
                 TimerCallback::Avm1Function { func, params } => {
-                    let _ = func.call(
+                    let result = func.call(
                         "[Timer Callback]".into(),
                         &mut activation,
                         Avm1Value::Undefined,
                         &params,
                     );
+
+                    if let Err(e) = result {
+                        log::error!("Unhandled AVM1 error in timer callback: {}", e);
+                    }
+
                     false
                 }
                 TimerCallback::Avm1Method {
@@ -100,20 +105,29 @@ impl<'gc> Timers<'gc> {
                     method_name,
                     params,
                 } => {
-                    let _ = this.call_method(
+                    let result = this.call_method(
                         method_name,
                         &params,
                         &mut activation,
                         ExecutionReason::Special,
                     );
+
+                    if let Err(e) = result {
+                        log::error!("Unhandled AVM1 error in timer callback: {}", e);
+                    }
+
                     false
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let mut avm2_activation =
                         Avm2Activation::from_nothing(activation.context.reborrow());
-                    closure
-                        .call(None, &params, &mut avm2_activation)
-                        .map_or(false, |r| r.coerce_to_boolean())
+                    match closure.call(None, &params, &mut avm2_activation) {
+                        Ok(v) => v.coerce_to_boolean(),
+                        Err(e) => {
+                            log::error!("Unhandled AVM2 error in timer callback: {}", e);
+                            false
+                        }
+                    }
                 }
             };
 
