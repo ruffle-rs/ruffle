@@ -233,7 +233,7 @@ impl<'gc> AvmSerializer<'gc> {
                     return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(activation.avm2().classes().array, activation)? {
+                let value = if obj.is_of_type(activation.avm2().classes().array, activation) {
                     // TODO: Vectors
                     self.serialize_iterable(activation, obj)?
                 } else {

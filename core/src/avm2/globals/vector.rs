@@ -331,7 +331,7 @@ pub fn concat<'gc>(
             let arg_class = arg_obj
                 .instance_of_class_definition()
                 .ok_or("TypeError: Tried to concat from a bare object")?;
-            if !arg.is_of_type(activation, my_class)? {
+            if !arg.is_of_type(activation, my_class) {
                 return Err(format!(
                     "TypeError: Cannot coerce argument of type {:?} to argument of type {:?}",
                     arg_class.read().name(),
@@ -349,7 +349,7 @@ pub fn concat<'gc>(
 
             for val in old_vec {
                 if let Ok(val_obj) = val.coerce_to_object(activation) {
-                    if !val.is_of_type(activation, val_class)? {
+                    if !val.is_of_type(activation, val_class) {
                         let other_val_class = val_obj
                             .instance_of_class_definition()
                             .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
