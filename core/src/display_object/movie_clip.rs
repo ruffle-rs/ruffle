@@ -485,8 +485,7 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .jpeg_tables(context, reader),
-            TagCode::ShowFrame => self.0.write(context.gc_context).preload_show_frame(
-                context,
+            TagCode::ShowFrame => self.0.write(context.gc_context).show_frame(
                 reader,
                 tag_len,
                 &mut cur_frame,
@@ -521,7 +520,7 @@ impl<'gc> MovieClip<'gc> {
         // End-of-clip should be treated as ShowFrame
         self.0
             .write(context.gc_context)
-            .preload_show_frame(context, &mut reader, 0, &mut cur_frame, &mut start_pos)
+            .show_frame(&mut reader, 0, &mut cur_frame, &mut start_pos)
             .unwrap();
 
         self.0.write(context.gc_context).static_data =
@@ -3340,9 +3339,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
     #[inline]
     #[cfg(not(feature = "timeline_debug"))]
-    fn preload_show_frame(
+    fn show_frame(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<'a>,
         _tag_len: usize,
         cur_frame: &mut FrameNumber,
@@ -3354,9 +3352,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
     #[inline]
     #[cfg(feature = "timeline_debug")]
-    fn preload_show_frame(
+    fn show_frame(
         &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         cur_frame: &mut FrameNumber,
