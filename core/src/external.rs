@@ -10,8 +10,7 @@ use crate::avm1::{
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::object::TObject as _;
 use crate::avm2::Value as Avm2Value;
-use crate::avm2::{ArrayObject as Avm2ArrayObject, Error as Avm2Error, Object as Avm2Object};
-
+use crate::avm2::{ArrayObject as Avm2ArrayObject, Object as Avm2Object};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -183,8 +182,8 @@ impl Value {
         }
     }
 
-    pub fn from_avm2(value: Avm2Value) -> Result<Value, Avm2Error> {
-        Ok(match value {
+    pub fn from_avm2(value: Avm2Value) -> Value {
+        match value {
             Avm2Value::Undefined | Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
@@ -194,20 +193,20 @@ impl Value {
             Avm2Value::Object(object) => {
                 if let Some(array) = object.as_array_storage() {
                     let length = array.length();
-                    let values: Result<Vec<_>, Avm2Error> = (0..length)
+                    let values = (0..length)
                         .map(|i| {
                             // FIXME - is this right?
                             let element = array.get(i).unwrap_or(Avm2Value::Null);
                             Value::from_avm2(element)
                         })
                         .collect();
-                    Value::List(values?)
+                    Value::List(values)
                 } else {
                     log::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
                     Value::Null
                 }
             }
-        })
+        }
     }
 
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc, '_>) -> Avm2Value<'gc> {
@@ -284,11 +283,8 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                if let Ok(result) = method
-                    .call(None, &args, &mut activation)
-                    .and_then(Value::from_avm2)
-                {
-                    result
+                if let Ok(result) = method.call(None, &args, &mut activation) {
+                    Value::from_avm2(result)
                 } else {
                     Value::Null
                 }
