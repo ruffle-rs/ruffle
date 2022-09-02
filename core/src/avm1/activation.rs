@@ -9,7 +9,7 @@ use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
-use crate::duration::RuffleDuration;
+use crate::duration::Duration;
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::SwfSlice;
@@ -435,7 +435,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         *self.context.actions_since_timeout_check += 1;
         if *self.context.actions_since_timeout_check >= 2000 {
             *self.context.actions_since_timeout_check = 0;
-            if RuffleDuration::from(self.context.update_start.elapsed())
+            if Duration::from(self.context.update_start.elapsed())
                 >= self.context.max_execution_duration
             {
                 return Err(Error::ExecutionTimeout);

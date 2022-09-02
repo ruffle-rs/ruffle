@@ -1,4 +1,4 @@
-use crate::duration::RuffleDuration;
+use crate::duration::Duration;
 use crate::{
     avm1::SoundObject,
     avm2::SoundChannelObject,
@@ -79,11 +79,11 @@ pub trait AudioBackend: Downcast {
 
     /// Get the position of a sound instance in milliseconds.
     /// Returns `None` if ther sound is not/no longer playing
-    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration>;
+    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration>;
 
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration>;
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration>;
 
     /// Get the size of the data stored within a given sound.
     ///
@@ -119,7 +119,7 @@ pub trait AudioBackend: Downcast {
     /// value is unknown.
     ///
     /// This determines the time threshold for syncing embedded audio streams to the animation.
-    fn position_resolution(&self) -> Option<RuffleDuration> {
+    fn position_resolution(&self) -> Option<Duration> {
         None
     }
 
@@ -138,7 +138,7 @@ impl_downcast!(AudioBackend);
 /// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {
     /// The duration of the sound in milliseconds.
-    duration: RuffleDuration,
+    duration: Duration,
 
     /// The compressed size of the sound data, excluding MP3 latency seek data.
     size: u32,
@@ -176,7 +176,7 @@ impl AudioBackend for NullAudioBackend {
         // AS duration does not subtract `skip_sample_frames`.
         let num_sample_frames: f64 = sound.num_samples.into();
         let sample_rate: f64 = sound.format.sample_rate.into();
-        let duration = RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate);
+        let duration = Duration::from_millis(num_sample_frames * 1000.0 / sample_rate);
 
         Ok(self.sounds.insert(NullSound {
             duration,
@@ -219,10 +219,10 @@ impl AudioBackend for NullAudioBackend {
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
-    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<RuffleDuration> {
-        Some(RuffleDuration::zero())
+    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<Duration> {
+        Some(Duration::zero())
     }
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.duration)
         } else {
@@ -299,7 +299,7 @@ impl<'gc> AudioManager<'gc> {
     pub const STREAM_SYNC_THRESHOLD: f64 = 1.0 / 60.0;
 
     /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
-    pub const STREAM_RESTART_THRESHOLD: RuffleDuration = RuffleDuration::one_sec();
+    pub const STREAM_RESTART_THRESHOLD: Duration = Duration::one_sec();
 
     /// The minimum audio sycning threshold in seconds.
     ///
@@ -502,11 +502,7 @@ impl<'gc> AudioManager<'gc> {
     }
 
     /// Returns the difference in seconds between the primary audio stream's time and the player's time.
-    pub fn audio_skew_time(
-        &mut self,
-        audio: &mut dyn AudioBackend,
-        offset: RuffleDuration,
-    ) -> RuffleDuration {
+    pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset: Duration) -> Duration {
         // Consider the first playing "stream" sound to be the primary audio track.
         // Needs research: It's not clear how Flash handles the case of multiple stream sounds.
         let (i, skew) = self
@@ -523,7 +519,7 @@ impl<'gc> AudioManager<'gc> {
 
                 // Calculate the difference in time between the owning movie clip and its audio track.
                 // If the difference is beyond some threshold, inform the player to adjust playback speed.
-                let timeline_pos = RuffleDuration::from_secs(
+                let timeline_pos = Duration::from_secs(
                     f64::from(clip.current_frame().saturating_sub(start_frame)) / frame_rate,
                 ) + offset;
                 Some((i, stream_pos - timeline_pos))
@@ -531,9 +527,9 @@ impl<'gc> AudioManager<'gc> {
             .unwrap_or_default();
 
         // Calculate the syncing threshold based on the audio backend's frequency in updating sound position.
-        let sync_threshold = audio.position_resolution().unwrap_or_else(|| {
-            RuffleDuration::from_secs(Self::STREAM_DEFAULT_SYNC_THRESHOLD_SECONDS)
-        });
+        let sync_threshold = audio
+            .position_resolution()
+            .unwrap_or_else(|| Duration::from_secs(Self::STREAM_DEFAULT_SYNC_THRESHOLD_SECONDS));
 
         if skew.abs() >= Self::STREAM_RESTART_THRESHOLD {
             // Way out of sync, let's stop the entire stream.
@@ -541,13 +537,13 @@ impl<'gc> AudioManager<'gc> {
             let instance = &self.sounds[i];
             audio.stop_sound(instance.instance);
             self.sounds.swap_remove(i);
-            RuffleDuration::zero()
+            Duration::zero()
         } else if skew.abs() < sync_threshold {
             // Slightly out of sync, adjust player speed to compensate.
             skew
         } else {
             // More or less in sync, no adjustment.
-            RuffleDuration::zero()
+            Duration::zero()
         }
     }
 

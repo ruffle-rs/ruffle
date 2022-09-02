@@ -19,7 +19,7 @@ use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
-use ruffle_core::duration::RuffleDuration;
+use ruffle_core::duration::Duration;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
     PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
@@ -369,7 +369,7 @@ impl App {
                     // Core loop
                     winit::event::Event::MainEventsCleared if loaded => {
                         let new_time = Instant::now();
-                        let dt = RuffleDuration::from(new_time.duration_since(time));
+                        let dt = Duration::from(new_time.duration_since(time));
                         if !dt.is_zero() {
                             time = new_time;
                             let mut player_lock = self.player.lock().unwrap();

@@ -9,7 +9,7 @@ use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, JsString, Object, Promise, Uint8Array};
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::duration::RuffleDuration;
+use ruffle_core::duration::Duration;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
@@ -150,7 +150,7 @@ struct Config {
     log_level: log::Level,
 
     #[serde(rename = "maxExecutionDuration")]
-    max_execution_duration: RuffleDuration,
+    max_execution_duration: Duration,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -985,7 +985,7 @@ impl Ruffle {
                 });
             }
 
-            core.tick(RuffleDuration::from_millis(dt));
+            core.tick(Duration::from_millis(dt));
 
             // Render if the core signals a new frame, or if we resized.
             if core.needs_render() || new_dimensions.is_some() {

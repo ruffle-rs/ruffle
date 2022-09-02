@@ -10,7 +10,7 @@ use ruffle_core::backend::{
     storage::{MemoryStorageBackend, StorageBackend},
 };
 use ruffle_core::context::UpdateContext;
-use ruffle_core::duration::RuffleDuration;
+use ruffle_core::duration::Duration;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::Duration as StdDuration;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
@@ -1141,7 +1141,7 @@ fn timeout_avm1() -> Result<(), Error> {
             player
                 .lock()
                 .unwrap()
-                .set_max_execution_duration(RuffleDuration::from_secs(5.0));
+                .set_max_execution_duration(Duration::from_secs(5.0));
             Ok(())
         },
         |_| Ok(()),
@@ -1387,7 +1387,7 @@ fn run_swf(
     let base_path = Path::new(swf_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
-    let frame_time = RuffleDuration::from_millis(1000.0 / movie.frame_rate().to_f64());
+    let frame_time = Duration::from_millis(1000.0 / movie.frame_rate().to_f64());
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
     #[allow(unused_mut)]
@@ -1421,7 +1421,7 @@ fn run_swf(
     let player = builder
         .with_log(TestLogBackend::new(trace_output.clone()))
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
-        .with_max_execution_duration(RuffleDuration::from_secs(300.0))
+        .with_max_execution_duration(Duration::from_secs(300.0))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
             movie.height().to_pixels() as u32,
@@ -1447,7 +1447,7 @@ fn run_swf(
         // with timer execution (timers will see an elapsed time of *at least*
         // the requested timer interval).
         if frame_time_sleep {
-            std::thread::sleep(Duration::from_nanos(frame_time.as_nanos() as u64));
+            std::thread::sleep(StdDuration::from_nanos(frame_time.as_nanos() as u64));
         }
 
         while !player

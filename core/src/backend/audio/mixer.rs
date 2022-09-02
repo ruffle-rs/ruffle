@@ -1,7 +1,7 @@
 use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
 use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
-use crate::duration::RuffleDuration;
+use crate::duration::Duration;
 use crate::tag_utils::SwfSlice;
 use duration_helper::from_f64_millis;
 use generational_arena::Arena;
@@ -594,13 +594,13 @@ impl AudioMixer {
     /// Returns the position of a playing sound in milliseconds.
     ///
     ////// Returns `None` if the sound is no longer playing.
-    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration> {
+    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration> {
         let sound_instances = self.sound_instances.lock().unwrap();
         sound_instances.get(instance).map(|instance| {
             // Get the current sample position from the underlying audio source.
             let num_sample_frames: f64 = instance.stream.source_position().into();
             let sample_rate: f64 = instance.stream.source_sample_rate().into();
-            RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate)
+            Duration::from_millis(num_sample_frames * 1000.0 / sample_rate)
         })
     }
 
@@ -612,12 +612,12 @@ impl AudioMixer {
     /// Returns the duration of a registered sound in milliseconds.
     ///
     /// Returns `None` if the sound is not registered or invalid.
-    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         self.sounds.get(sound).map(|sound| {
             // AS duration does not subtract `skip_sample_frames`.
             let num_sample_frames: f64 = sound.num_sample_frames.into();
             let sample_rate: f64 = sound.format.sample_rate.into();
-            RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate)
+            Duration::from_millis(num_sample_frames * 1000.0 / sample_rate)
         })
     }
 
@@ -1044,12 +1044,12 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration> {
+        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration> {
             self.$mixer.get_sound_position(instance)
         }
 
         #[inline]
-        fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+        fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
             self.$mixer.get_sound_duration(sound)
         }
 

@@ -2,7 +2,7 @@
 //!
 //! The `FileResults` type in this module is used to report results of a scan.
 
-use ruffle_core::duration::RuffleDuration;
+use ruffle_core::duration::Duration;
 use serde::de::{Error as DesError, Unexpected, Visitor};
 use serde::ser::Error as SerError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -78,7 +78,7 @@ pub struct FileResults {
 
     /// How long testing took to complete
     #[serde(rename = "Test Duration")]
-    pub testing_time: RuffleDuration,
+    pub testing_time: Duration,
 
     /// The compressed length of the SWF file.
     #[serde(rename = "Compressed Length")]
@@ -141,7 +141,7 @@ impl FileResults {
             name: name.to_string(),
             hash: vec![],
             progress: Step::Start,
-            testing_time: RuffleDuration::zero(),
+            testing_time: Duration::zero(),
             compressed_len: None,
             uncompressed_len: None,
             error: None,

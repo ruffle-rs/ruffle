@@ -2,13 +2,13 @@ use num_traits::Zero;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
-use std::time::Duration;
+use std::time::Duration as StdDuration;
 
 /// Duration f64 nanosec
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Serialize, Deserialize)]
-pub struct RuffleDuration(OrderedFloat<f64>);
+pub struct Duration(OrderedFloat<f64>);
 
-impl RuffleDuration {
+impl Duration {
     pub fn from_secs(secs: f64) -> Self {
         Self::from_nanos(secs * 1_000_000_000.0)
     }
@@ -45,7 +45,7 @@ impl RuffleDuration {
         Self(OrderedFloat::zero())
     }
 
-    pub fn abs(&self) -> RuffleDuration {
+    pub fn abs(&self) -> Duration {
         Self(OrderedFloat(self.0.abs()))
     }
 
@@ -58,7 +58,7 @@ impl RuffleDuration {
     }
 }
 
-impl Add for RuffleDuration {
+impl Add for Duration {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -66,13 +66,13 @@ impl Add for RuffleDuration {
     }
 }
 
-impl AddAssign for RuffleDuration {
-    fn add_assign(&mut self, other: RuffleDuration) {
+impl AddAssign for Duration {
+    fn add_assign(&mut self, other: Duration) {
         self.0 += other.0;
     }
 }
 
-impl Sub for RuffleDuration {
+impl Sub for Duration {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -80,21 +80,21 @@ impl Sub for RuffleDuration {
     }
 }
 
-impl SubAssign for RuffleDuration {
+impl SubAssign for Duration {
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
 }
 
-impl From<Duration> for RuffleDuration {
-    fn from(d: std::time::Duration) -> Self {
+impl From<StdDuration> for Duration {
+    fn from(d: StdDuration) -> Self {
         Self::from_nanos(d.as_nanos() as f64)
     }
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<Duration> for RuffleDuration {
-    fn into(self) -> Duration {
-        Duration::from_nanos(self.as_nanos() as u64)
+impl Into<StdDuration> for Duration {
+    fn into(self) -> StdDuration {
+        StdDuration::from_nanos(self.as_nanos() as u64)
     }
 }

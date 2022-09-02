@@ -11,7 +11,7 @@ use crate::avm1::{
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
-use crate::duration::RuffleDuration;
+use crate::duration::Duration;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
@@ -26,15 +26,15 @@ pub struct Timers<'gc> {
     timer_counter: i32,
 
     /// The current global time.
-    cur_time: RuffleDuration,
+    cur_time: Duration,
 }
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
     pub fn update_timers(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        dt: RuffleDuration,
-    ) -> Option<RuffleDuration> {
+        dt: Duration,
+    ) -> Option<Duration> {
         context.timers.cur_time.add_assign(dt);
 
         let num_timers = context.timers.num_timers();
@@ -59,7 +59,7 @@ impl<'gc> Timers<'gc> {
             .context
             .timers
             .peek()
-            .map(|timer| RuffleDuration::from_micros(timer.tick_time as f64))
+            .map(|timer| Duration::from_micros(timer.tick_time as f64))
             .unwrap_or(cur_time)
             < cur_time
         {
@@ -76,11 +76,10 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per timer per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = RuffleDuration::from_micros(
+                let next_time = Duration::from_micros(
                     activation.context.timers.peek_mut().unwrap().tick_time as f64,
                 );
-                activation.context.timers.cur_time =
-                    next_time.add(RuffleDuration::from_millis(100.0));
+                activation.context.timers.cur_time = next_time.add(Duration::from_millis(100.0));
                 break;
             }
 
@@ -162,7 +161,7 @@ impl<'gc> Timers<'gc> {
             .context
             .timers
             .peek()
-            .map(|timer| (RuffleDuration::from_micros(timer.tick_time as f64).sub(cur_time)))
+            .map(|timer| (Duration::from_micros(timer.tick_time as f64).sub(cur_time)))
     }
 
     /// The minimum interval we allow for timers.
@@ -176,7 +175,7 @@ impl<'gc> Timers<'gc> {
         Self {
             timers: Default::default(),
             timer_counter: 0,
-            cur_time: RuffleDuration::zero(),
+            cur_time: Duration::zero(),
         }
     }
 
@@ -193,7 +192,7 @@ impl<'gc> Timers<'gc> {
         is_timeout: bool,
     ) -> i32 {
         // SANITY: Set a minimum interval so we don't spam too much.
-        let interval = RuffleDuration::from_millis(interval.max(Self::MIN_INTERVAL) as f64);
+        let interval = Duration::from_millis(interval.max(Self::MIN_INTERVAL) as f64);
 
         self.timer_counter = self.timer_counter.wrapping_add(1);
         let id = self.timer_counter;

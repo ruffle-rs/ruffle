@@ -13,7 +13,7 @@ use crate::display_object::stage::Stage;
 use crate::display_object::{
     DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
-use crate::duration::RuffleDuration;
+use crate::duration::Duration;
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
@@ -265,9 +265,7 @@ pub trait TInteractiveObject<'gc>:
                     .flags
                     .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
                     && last_click
-                        .map(|lc| {
-                            RuffleDuration::from(this_click - lc) < RuffleDuration::from_secs(1.0)
-                        })
+                        .map(|lc| Duration::from(this_click - lc) < Duration::from_secs(1.0))
                         .unwrap_or(false);
 
                 drop(read);
