@@ -2359,7 +2359,9 @@ impl<'a> Reader<'a> {
         } else {
             Default::default()
         };
-        let height = if flags.contains(EditTextFlag::HAS_FONT) {
+        let height = if flags.intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS) {
+            // SWF19 errata: The specs say this field is only present if the HasFont flag is set,
+            // but it's also present when the HasFontClass flag is set.
             Twips::new(self.read_u16()?)
         } else {
             Twips::ZERO
