@@ -1,6 +1,8 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
+#[cfg(not(target_family = "wasm"))]
 use crate::Error;
+#[cfg(not(target_family = "wasm"))]
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 

@@ -1683,41 +1683,17 @@ async fn request_device(
     adapter: &wgpu::Adapter,
     trace_path: Option<&Path>,
 ) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
-    if let Ok(result) =
-        request_device_with_limits(&adapter, trace_path, wgpu::Limits::default()).await
-    {
-        return Ok(result);
-    }
-    if let Ok(result) = request_device_with_limits(
-        &adapter,
-        trace_path,
-        wgpu::Limits {
-            max_texture_dimension_2d: 4096,
-            ..wgpu::Limits::downlevel_defaults()
-        },
-    )
-    .await
-    {
-        return Ok(result);
-    }
-    if let Ok(result) =
-        request_device_with_limits(&adapter, trace_path, wgpu::Limits::downlevel_defaults()).await
-    {
-        return Ok(result);
-    }
-    request_device_with_limits(
-        &adapter,
-        trace_path,
-        wgpu::Limits::downlevel_webgl2_defaults(),
-    )
-    .await
-}
+    // We start off with the lowest limits we actually need - basically GL-ES 3.0
+    let mut limits = wgpu::Limits::downlevel_webgl2_defaults();
+    // Then we increase parts of it to the maximum supported by the adapter, to take advantage of
+    // more powerful hardware or capabilities
+    limits = limits.using_resolution(adapter.limits());
+    limits = limits.using_alignment(adapter.limits());
 
-async fn request_device_with_limits(
-    adapter: &wgpu::Adapter,
-    trace_path: Option<&Path>,
-    limits: wgpu::Limits,
-) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
+    limits.max_storage_buffers_per_shader_stage =
+        adapter.limits().max_storage_buffers_per_shader_stage;
+    limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
+
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
