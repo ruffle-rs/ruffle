@@ -642,8 +642,8 @@ pub fn set_transform<'gc>(
 
         let dobj = this.as_display_object().unwrap();
         let mut write = dobj.base_mut(activation.context.gc_context);
-        write.set_color_transform(&color_transform);
-        write.set_matrix(&matrix);
+        write.set_matrix(matrix);
+        write.set_color_transform(color_transform);
     }
     Ok(Value::Undefined)
 }

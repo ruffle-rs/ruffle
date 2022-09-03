@@ -196,13 +196,13 @@ impl<'gc> Avm2Button<'gc> {
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     Ok(child) => {
-                        child.set_matrix(context.gc_context, &record.matrix.into());
+                        child.set_matrix(context.gc_context, record.matrix.into());
                         child.set_depth(context.gc_context, record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
                             child.set_color_transform(
                                 context.gc_context,
-                                &record.color_transform.clone().into(),
+                                record.color_transform.clone().into(),
                             );
                         }
 
