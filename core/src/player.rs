@@ -1341,19 +1341,13 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let mut did_finish = true;
 
-            if let (Some(root), Some(movie)) = (
-                context.stage.root_clip().as_movie_clip(),
-                context.stage.root_clip().movie(),
-            ) {
+            if let Some(root) = context.stage.root_clip().as_movie_clip() {
                 let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
                 did_finish = root.preload(context, limit);
 
                 if !was_root_movie_loaded {
                     if let Some(loader_info) = root.loader_info() {
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        let total_len = movie.compressed_len();
-                        let uncompressed_total_len = movie.data().len();
-                        let uncompressed_cur_len = root.loaded_bytes();
 
                         let progress_evt = activation.avm2().classes().progressevent.construct(
                             &mut activation,
@@ -1361,11 +1355,8 @@ impl Player {
                                 "progress".into(),
                                 false.into(),
                                 false.into(),
-                                ((uncompressed_cur_len as f64 * total_len as f64
-                                    / uncompressed_total_len as f64)
-                                    .floor() as u32)
-                                    .into(),
-                                total_len.into(),
+                                root.compressed_loaded_bytes().into(),
+                                root.compressed_total_bytes().into(),
                             ],
                         );
 

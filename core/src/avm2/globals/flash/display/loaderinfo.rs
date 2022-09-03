@@ -140,25 +140,16 @@ pub fn bytes_loaded<'gc>(
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
-            let (uncompressed_bytes_loaded, uncompressed_bytes_total, compressed_bytes_total) =
-                match &*loader_stream {
-                    LoaderStream::NotYetLoaded(_swf) => return Ok(0.into()),
-                    LoaderStream::Swf(movie, root) => (
-                        root.as_movie_clip()
-                            .map(|mc| mc.loaded_bytes())
-                            .unwrap_or_default(),
-                        root.as_movie_clip()
-                            .map(|mc| mc.total_bytes())
-                            .unwrap_or_default(),
-                        movie.compressed_len(),
-                    ),
-                };
-
-            let compressed_bytes_loaded = (uncompressed_bytes_loaded as f64
-                * compressed_bytes_total as f64
-                / uncompressed_bytes_total as f64)
-                .floor() as u32;
-            return Ok(compressed_bytes_loaded.into());
+            match &*loader_stream {
+                LoaderStream::NotYetLoaded(_swf) => return Ok(0.into()),
+                LoaderStream::Swf(_, root) => {
+                    return Ok(root
+                        .as_movie_clip()
+                        .map(|mc| mc.compressed_loaded_bytes())
+                        .unwrap_or_default()
+                        .into())
+                }
+            };
         }
     }
 
