@@ -530,23 +530,34 @@ impl<'gc> Loader<'gc> {
                     return Ok(false);
                 }
 
+                if target_clip.as_movie_clip().is_none() {
+                    // Non-movie-clip loads should not be handled in preload_tick
+                    log::error!("Cannot preload non-movie-clip loader");
+                    return Ok(false);
+                }
+
                 (*target_clip, *event_handler, movie.clone().unwrap())
             }
             None => return Err(Error::Cancelled),
             Some(_) => panic!("Attempted to preload a non-SWF loader"),
         };
 
-        let did_finish = mc
-            .as_movie_clip()
-            .map(|mc| mc.preload(context, limit))
-            .unwrap_or(false);
+        let mc = mc.as_movie_clip().unwrap();
+
+        let did_finish = mc.preload(context, limit);
         if did_finish {
-            let length = movie.compressed_len();
-            Loader::movie_loader_progress(handle, context, length, length)?;
-
             mc.post_instantiation(context, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(context, mc);
-
+            catchup_display_object_to_frame(context, mc.into());
+        }
+        
+        Loader::movie_loader_progress(
+            handle,
+            context,
+            mc.compressed_loaded_bytes() as usize,
+            mc.compressed_total_bytes() as usize,
+        )?;
+        
+        if did_finish {
             let loader_info =
                 if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
                     Some(*loader_info.as_loader_info_object().unwrap())
@@ -581,9 +592,9 @@ impl<'gc> Loader<'gc> {
                 // Per the flash docs, our implementation always throws
                 // an 'unsupported' error. Also, the AVM2 side of our movie
                 // clip does not yet exist.
-                loader.insert_at_index(&mut activation.context, mc, 0);
+                loader.insert_at_index(&mut activation.context, mc.into(), 0);
             }
-
+            
             Loader::movie_loader_complete(handle, context)?;
         }
 
@@ -701,8 +712,6 @@ impl<'gc> Loader<'gc> {
                             length = 0;
                         }
 
-                        // FIXME - properly set 'bytesLoaded' and 'bytesTotal' on our `LoaderInfo` object
-                        // to match the values in the event.
                         if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(_)) = event_handler {
                             // Flash always fires an initial 'progress' event with
                             // bytesLoaded=0 and bytesTotal set to the proper value.
@@ -1276,6 +1285,8 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader progress event to script code.
+    ///
+    /// The current and total length are always reported as compressed lengths.
     fn movie_loader_progress(
         handle: Index,
         uc: &mut UpdateContext<'_, 'gc, '_>,
