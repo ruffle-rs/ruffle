@@ -1139,6 +1139,41 @@ impl<'gc> MovieClip<'gc> {
         swf_header_size + progress_read.next_preload_chunk as u32
     }
 
+    /// Calculate the compressed total size of this movie clip's tag stream.
+    ///
+    /// For root movie clips, this is just the compressed size of the whole
+    /// SWF. Other movie clips will have a compressed size calculated by taking
+    /// the compression ratio of the whole SWF and scaling the uncompressed size
+    /// down.
+    pub fn compressed_total_bytes(self) -> u32 {
+        let movie = self.movie();
+        let compressed_movie_size = movie
+            .as_ref()
+            .map(|mv| mv.compressed_len())
+            .unwrap_or_default();
+
+        if self.is_root() {
+            compressed_movie_size as u32
+        } else {
+            let uncompressed_movie_size = movie.map(|mv| mv.data().len()).unwrap_or_default();
+            let uncompressed_clip_size = self.tag_stream_len() as u32;
+
+            (uncompressed_clip_size as f64 * compressed_movie_size as f64
+                / uncompressed_movie_size as f64)
+                .floor() as u32
+        }
+    }
+
+    /// Calculate the compressed loaded size of this movie clip's tag stream.
+    ///
+    /// Since we only consider a byte loaded after it has been uncompressed and
+    /// run through `preload`, we instead emulate this property by scaling the
+    /// loaded bytes by the compression ratio of the SWF.
+    pub fn compressed_loaded_bytes(self) -> u32 {
+        (self.loaded_bytes() as f64 * self.compressed_total_bytes() as f64
+            / self.total_bytes() as f64) as u32
+    }
+
     pub fn set_avm2_class(
         self,
         gc_context: MutationContext<'gc, '_>,
