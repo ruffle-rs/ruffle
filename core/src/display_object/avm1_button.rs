@@ -172,11 +172,9 @@ impl<'gc> Avm1Button<'gc> {
                 };
 
                 // Set transform of child (and modify previous child if it already existed)
-                child.set_matrix(context.gc_context, &record.matrix.into());
-                child.set_color_transform(
-                    context.gc_context,
-                    &record.color_transform.clone().into(),
-                );
+                child.set_matrix(context.gc_context, record.matrix.into());
+                child
+                    .set_color_transform(context.gc_context, record.color_transform.clone().into());
             }
         }
         drop(write);
@@ -302,7 +300,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                         .instantiate_by_id(record.id, context.gc_context)
                     {
                         Ok(child) => {
-                            child.set_matrix(context.gc_context, &record.matrix.into());
+                            child.set_matrix(context.gc_context, record.matrix.into());
                             child.set_parent(context.gc_context, Some(self_display_object));
                             child.set_depth(context.gc_context, record.depth.into());
                             new_children.push((child, record.depth.into()));

@@ -1597,7 +1597,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix) {
+    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
         self.0.write(gc_context).base.base.set_matrix(matrix);
         self.redraw_border(gc_context);
     }

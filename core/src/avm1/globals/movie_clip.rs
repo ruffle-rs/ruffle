@@ -873,15 +873,18 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         parent.replace_at_depth(&mut activation.context, new_clip, depth);
 
         // Copy display properties from previous clip to new clip.
-        new_clip.set_matrix(activation.context.gc_context, movie_clip.base().matrix());
-        new_clip.set_color_transform(
-            activation.context.gc_context,
-            movie_clip.base().color_transform(),
-        );
-        new_clip.as_movie_clip().unwrap().set_clip_event_handlers(
-            activation.context.gc_context,
-            movie_clip.clip_actions().to_vec(),
-        );
+        let matrix = *movie_clip.base().matrix();
+        new_clip.set_matrix(activation.context.gc_context, matrix);
+
+        let color_transform = *movie_clip.base().color_transform();
+        new_clip.set_color_transform(activation.context.gc_context, color_transform);
+
+        let clip_actions = movie_clip.clip_actions().to_vec();
+        new_clip
+            .as_movie_clip()
+            .unwrap()
+            .set_clip_event_handlers(activation.context.gc_context, clip_actions);
+
         *new_clip.as_drawing(activation.context.gc_context).unwrap() = movie_clip
             .as_drawing(activation.context.gc_context)
             .unwrap()
@@ -1443,9 +1446,11 @@ fn set_transform<'gc>(
         if let Some(transform) = object.as_transform_object() {
             if let Some(clip) = transform.clip() {
                 let matrix = *clip.base().matrix();
-                this.set_matrix(activation.context.gc_context, &matrix);
+                this.set_matrix(activation.context.gc_context, matrix);
+
                 let color_transform = *clip.base().color_transform();
-                this.set_color_transform(activation.context.gc_context, &color_transform);
+                this.set_color_transform(activation.context.gc_context, color_transform);
+
                 this.set_transformed_by_script(activation.context.gc_context, true);
             }
         }

@@ -177,8 +177,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.matrix
     }
 
-    pub fn set_matrix(&mut self, matrix: &Matrix) {
-        self.transform.matrix = *matrix;
+    pub fn set_matrix(&mut self, matrix: Matrix) {
+        self.transform.matrix = matrix;
         self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
     }
 
@@ -190,8 +190,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.color_transform
     }
 
-    pub fn set_color_transform(&mut self, color_transform: &ColorTransform) {
-        self.transform.color_transform = *color_transform;
+    pub fn set_color_transform(&mut self, color_transform: ColorTransform) {
+        self.transform.color_transform = color_transform;
     }
 
     fn x(&self) -> f64 {
@@ -670,14 +670,14 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_place_frame(frame)
     }
 
-    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix) {
+    fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
     }
 
     fn set_color_transform(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        color_transform: &ColorTransform,
+        color_transform: ColorTransform,
     ) {
         self.base_mut(gc_context)
             .set_color_transform(color_transform)
@@ -1365,10 +1365,10 @@ pub trait TDisplayObject<'gc>:
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = place_object.matrix {
-                self.set_matrix(context.gc_context, &matrix.into());
+                self.set_matrix(context.gc_context, matrix.into());
             }
             if let Some(color_transform) = &place_object.color_transform {
-                self.set_color_transform(context.gc_context, &color_transform.clone().into());
+                self.set_color_transform(context.gc_context, color_transform.clone().into());
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {

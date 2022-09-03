@@ -121,7 +121,7 @@ fn set_color_transform<'gc>(
     if as_color_transform.as_color_transform_object().is_some() {
         let swf_color_transform =
             color_transform::object_to_color_transform(as_color_transform, activation)?;
-        clip.set_color_transform(activation.context.gc_context, &swf_color_transform);
+        clip.set_color_transform(activation.context.gc_context, swf_color_transform);
         clip.set_transformed_by_script(activation.context.gc_context, true);
     }
 
@@ -148,7 +148,7 @@ fn set_matrix<'gc>(
         .all(|p| as_matrix.has_own_property(activation, (*p).into()));
     if is_matrix {
         let swf_matrix = matrix::object_to_matrix(as_matrix, activation)?;
-        clip.set_matrix(activation.context.gc_context, &swf_matrix);
+        clip.set_matrix(activation.context.gc_context, swf_matrix);
         clip.set_transformed_by_script(activation.context.gc_context, true);
     }
 

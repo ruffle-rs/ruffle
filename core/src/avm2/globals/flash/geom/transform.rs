@@ -54,7 +54,7 @@ pub fn set_color_transform<'gc>(
     let ct = object_to_color_transform(args[0].coerce_to_object(activation)?, activation)?;
     get_display_object(this, activation)?
         .base_mut(activation.context.gc_context)
-        .set_color_transform(&ct);
+        .set_color_transform(ct);
     Ok(Value::Undefined)
 }
 
@@ -77,7 +77,7 @@ pub fn set_matrix<'gc>(
     let matrix = object_to_matrix(args[0].coerce_to_object(activation)?, activation)?;
     get_display_object(this, activation)?
         .base_mut(activation.context.gc_context)
-        .set_matrix(&matrix);
+        .set_matrix(matrix);
     Ok(Value::Undefined)
 }
 
