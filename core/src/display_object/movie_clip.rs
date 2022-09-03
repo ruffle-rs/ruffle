@@ -379,13 +379,17 @@ impl<'gc> MovieClip<'gc> {
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
-        let mut reader = data.read_from(static_data.preload_progress.read().next_preload_chunk);
-        let (mut cur_frame, mut start_pos) = {
+        let (mut cur_frame, mut start_pos, next_preload_chunk, preload_symbol) = {
             let read = static_data.preload_progress.read();
-            (read.cur_preload_frame, read.last_frame_start_pos)
+            (
+                read.cur_preload_frame,
+                read.last_frame_start_pos,
+                read.next_preload_chunk,
+                read.cur_preload_symbol,
+            )
         };
+        let mut reader = data.read_from(next_preload_chunk);
 
-        let preload_symbol = static_data.preload_progress.read().cur_preload_symbol;
         if let Some(cur_preload_symbol) = preload_symbol {
             if let Some(movie) = self.movie() {
                 match context
