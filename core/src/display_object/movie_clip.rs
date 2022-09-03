@@ -3409,15 +3409,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        // NOTE: We don't support partial preloading of defined sprites yet.
-        let preload_done = movie_clip.preload(context, &mut ExecutionLimit::none());
-        if !preload_done {
-            log::warn!(
-                "Preloading of movieclip {} did not complete in a single call.",
-                id
-            );
-        }
-
         context
             .library
             .library_for_movie_mut(self.movie())
