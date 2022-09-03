@@ -633,60 +633,27 @@ impl<'a> Reader<'a> {
         Ok(Color { r, g, b, a })
     }
 
-    pub fn read_color_transform_no_alpha(&mut self) -> Result<ColorTransform> {
+    fn read_color_transform(&mut self, has_alpha: bool) -> Result<ColorTransform> {
         let mut bits = self.bits();
         let has_add = bits.read_bit()?;
         let has_mult = bits.read_bit()?;
         let num_bits = bits.read_ubits(4)?;
-        let mut color_transform = ColorTransform {
-            r_multiply: Fixed8::ONE,
-            g_multiply: Fixed8::ONE,
-            b_multiply: Fixed8::ONE,
-            a_multiply: Fixed8::ONE,
-            r_add: 0,
-            g_add: 0,
-            b_add: 0,
-            a_add: 0,
-        };
+        let mut color_transform = ColorTransform::default();
         if has_mult {
             color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
             color_transform.g_multiply = bits.read_sbits_fixed8(num_bits)?;
             color_transform.b_multiply = bits.read_sbits_fixed8(num_bits)?;
+            if has_alpha {
+                color_transform.a_multiply = bits.read_sbits_fixed8(num_bits)?;
+            }
         }
         if has_add {
             color_transform.r_add = bits.read_sbits(num_bits)? as i16;
             color_transform.g_add = bits.read_sbits(num_bits)? as i16;
             color_transform.b_add = bits.read_sbits(num_bits)? as i16;
-        }
-        Ok(color_transform)
-    }
-
-    fn read_color_transform(&mut self) -> Result<ColorTransform> {
-        let mut bits = self.bits();
-        let has_add = bits.read_bit()?;
-        let has_mult = bits.read_bit()?;
-        let num_bits = bits.read_ubits(4)?;
-        let mut color_transform = ColorTransform {
-            r_multiply: Fixed8::ONE,
-            g_multiply: Fixed8::ONE,
-            b_multiply: Fixed8::ONE,
-            a_multiply: Fixed8::ONE,
-            r_add: 0,
-            g_add: 0,
-            b_add: 0,
-            a_add: 0,
-        };
-        if has_mult {
-            color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
-            color_transform.g_multiply = bits.read_sbits_fixed8(num_bits)?;
-            color_transform.b_multiply = bits.read_sbits_fixed8(num_bits)?;
-            color_transform.a_multiply = bits.read_sbits_fixed8(num_bits)?;
-        }
-        if has_add {
-            color_transform.r_add = bits.read_sbits(num_bits)? as i16;
-            color_transform.g_add = bits.read_sbits(num_bits)? as i16;
-            color_transform.b_add = bits.read_sbits(num_bits)? as i16;
-            color_transform.a_add = bits.read_sbits(num_bits)? as i16;
+            if has_alpha {
+                color_transform.a_add = bits.read_sbits(num_bits)? as i16;
+            }
         }
         Ok(color_transform)
     }
@@ -798,7 +765,7 @@ impl<'a> Reader<'a> {
         let mut color_transforms = Vec::new();
 
         // Read all color transforms.
-        while let Ok(color_transform) = self.read_color_transform_no_alpha() {
+        while let Ok(color_transform) = self.read_color_transform(false) {
             color_transforms.push(color_transform);
         }
 
@@ -852,7 +819,7 @@ impl<'a> Reader<'a> {
         let depth = self.read_u16()?;
         let matrix = self.read_matrix()?;
         let color_transform = if version >= 2 {
-            self.read_color_transform()?
+            self.read_color_transform(true)?
         } else {
             ColorTransform::new()
         };
@@ -1831,7 +1798,7 @@ impl<'a> Reader<'a> {
             depth: reader.read_u16()?,
             matrix: Some(reader.read_matrix()?),
             color_transform: if !reader.get_ref().is_empty() {
-                Some(reader.read_color_transform_no_alpha()?)
+                Some(reader.read_color_transform(false)?)
             } else {
                 None
             },
@@ -1895,7 +1862,7 @@ impl<'a> Reader<'a> {
             None
         };
         let color_transform = if flags.contains(PlaceFlag::HAS_COLOR_TRANSFORM) {
-            Some(self.read_color_transform()?)
+            Some(self.read_color_transform(true)?)
         } else {
             None
         };
