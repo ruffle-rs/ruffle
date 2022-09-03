@@ -46,7 +46,11 @@ pub enum LoaderStream<'gc> {
     /// While it makes no sense to actually retrieve loader info properties off
     /// the stage, it's possible to do so. Some properties yield the
     /// not-yet-loaded error while others are pulled from the root SWF.
-    NotYetLoaded(Arc<SwfMovie>),
+    ///
+    /// For loader infos that point to an actual loaded movie rather than the
+    /// stage, the DisplayObject parameter is provided. It is always `None` for
+    /// the stage.
+    NotYetLoaded(Arc<SwfMovie>, Option<DisplayObject<'gc>>),
 
     /// A loaded SWF movie.
     ///
@@ -115,11 +119,15 @@ impl<'gc> LoaderInfoObject<'gc> {
         Ok(this)
     }
 
-    /// Create a loader info object for the stage.
+    /// Create a loader info object that has not yet been loaded.
+    ///
+    /// Use `None` as the root clip to indicate that this is the stage's loader
+    /// info.
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         loader: Option<Object<'gc>>,
+        root_clip: Option<DisplayObject<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
@@ -128,7 +136,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
-                loaded_stream: Some(LoaderStream::NotYetLoaded(movie)),
+                loaded_stream: Some(LoaderStream::NotYetLoaded(movie, root_clip)),
                 loader,
                 events_fired: false,
                 shared_events: activation

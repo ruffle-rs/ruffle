@@ -239,7 +239,7 @@ impl<'gc> MovieClip<'gc> {
             // The root movie doesn't have a `Loader`
             // We will replace this with a `LoaderStream::Swf` later in this function
             Some(
-                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None)
+                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None)
                     .expect("Failed to construct LoaderInfoObject"),
             )
         } else {
