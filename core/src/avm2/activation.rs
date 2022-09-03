@@ -2001,7 +2001,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // TODO: Special handling required for `Date` and ECMA-357/E4X `XML`
         let sum_value = match (value1, value2) {
-            (Value::Number(n1), Value::Number(n2)) => Value::Number(n1 + n2),
+            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't overflow.
+            (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
+            (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.context.gc_context,
                 s,
@@ -2218,10 +2220,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_subtract(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value2 = self.context.avm2.pop().coerce_to_number(self)?;
-        let value1 = self.context.avm2.pop().coerce_to_number(self)?;
+        let value2 = self.context.avm2.pop();
+        let value1 = self.context.avm2.pop();
 
-        self.context.avm2.push(value1 - value2);
+        let sub_value: Value<'gc> = match (value1, value2) {
+            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't underflow.
+            (Value::Integer(n1), Value::Integer(n2)) => (n1 - n2).into(),
+            (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
+            _ => {
+                let value2 = value2.coerce_to_number(self)?;
+                let value1 = value1.coerce_to_number(self)?;
+                (value1 - value2).into()
+            }
+        };
+
+        self.context.avm2.push(sub_value);
 
         Ok(FrameControl::Continue)
     }
