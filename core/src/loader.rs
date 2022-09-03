@@ -353,7 +353,13 @@ impl<'gc> LoadManager<'gc> {
     }
 
     /// Process tags on all loaders in the Parsing phase.
-    pub fn preload_tick(context: &mut UpdateContext<'_, 'gc, '_>, limit: &mut ExecutionLimit) {
+    ///
+    /// Returns true if *all* loaders finished preloading.
+    pub fn preload_tick(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        limit: &mut ExecutionLimit,
+    ) -> bool {
+        let mut did_finish = true;
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
 
         for handle in handles {
@@ -363,11 +369,14 @@ impl<'gc> LoadManager<'gc> {
             };
 
             if matches!(status, Some(LoaderStatus::Parsing)) {
-                if let Err(e) = Loader::preload_tick(handle, context, limit) {
-                    log::error!("Error encountered while preloading movie: {}", e);
+                match Loader::preload_tick(handle, context, limit) {
+                    Ok(f) => did_finish = did_finish && f,
+                    Err(e) => log::error!("Error encountered while preloading movie: {}", e),
                 }
             }
         }
+
+        did_finish
     }
 }
 
@@ -500,12 +509,14 @@ impl<'gc> Loader<'gc> {
     /// complete their preload will fire all events and be removed from the
     /// load manager queue.
     ///
+    /// Returns true if the movie finished preloading.
+    ///
     /// Returns any AVM errors encountered while sending events to user code.
     fn preload_tick(
         handle: Handle,
         context: &mut UpdateContext<'_, 'gc, '_>,
         limit: &mut ExecutionLimit,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         let (mc, event_handler, movie) = match context.load_manager.get_loader_mut(handle) {
             Some(Self::Movie {
                 target_clip,
@@ -515,7 +526,7 @@ impl<'gc> Loader<'gc> {
             }) => {
                 if movie.is_none() {
                     //Non-SWF load or file not loaded yet
-                    return Ok(());
+                    return Ok(false);
                 }
 
                 (*target_clip, *event_handler, movie.clone().unwrap())
@@ -575,7 +586,7 @@ impl<'gc> Loader<'gc> {
             Loader::movie_loader_complete(handle, context)?;
         }
 
-        Ok(())
+        Ok(did_finish)
     }
 
     /// Construct a future for the root movie loader.
@@ -748,11 +759,9 @@ impl<'gc> Loader<'gc> {
                                     );
                                 }
 
-                                return Loader::preload_tick(
-                                    handle,
-                                    uc,
-                                    &mut ExecutionLimit::none(),
-                                );
+                                Loader::preload_tick(handle, uc, &mut ExecutionLimit::none())?;
+
+                                return Ok(());
                             }
                             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                                 let bitmap = uc.renderer.register_bitmap_jpeg_2(&response.body)?;
