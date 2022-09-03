@@ -1339,8 +1339,55 @@ impl Player {
     /// this in lieu of an unlimited execution limit.
     pub fn preload(&mut self, limit: &mut ExecutionLimit) -> bool {
         self.mutate_with_update_context(|context| {
-            let root = context.stage.root_clip();
-            let mut did_finish = root.as_movie_clip().unwrap().preload(context, limit);
+            let mut did_finish = true;
+
+            if let (Some(root), Some(movie)) = (
+                context.stage.root_clip().as_movie_clip(),
+                context.stage.root_clip().movie(),
+            ) {
+                let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
+                did_finish = root.preload(context, limit);
+
+                if !was_root_movie_loaded {
+                    if let Some(loader_info) = root.loader_info() {
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let total_len = movie.compressed_len();
+                        let uncompressed_total_len = movie.data().len();
+                        let uncompressed_cur_len = root.loaded_bytes();
+
+                        let progress_evt = activation.avm2().classes().progressevent.construct(
+                            &mut activation,
+                            &[
+                                "progress".into(),
+                                false.into(),
+                                false.into(),
+                                ((uncompressed_cur_len as f64 * total_len as f64
+                                    / uncompressed_total_len as f64)
+                                    .floor() as u32)
+                                    .into(),
+                                total_len.into(),
+                            ],
+                        );
+
+                        match progress_evt {
+                            Err(e) => log::error!(
+                                "Encountered AVM2 error when broadcasting `progress` event: {}",
+                                e
+                            ),
+                            Ok(progress_evt) => {
+                                if let Err(e) =
+                                    Avm2::dispatch_event(context, progress_evt, loader_info)
+                                {
+                                    log::error!(
+                                        "Encountered AVM2 error when broadcasting `progress` event: {}",
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             if did_finish {
                 did_finish = LoadManager::preload_tick(context, limit);
