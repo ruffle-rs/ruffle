@@ -1,0 +1,13 @@
+// uint doesn't exist
+int
+true
+int
+// int overflow => Number
+int
+int
+Number
+// int underflow => Number
+int
+int
+int
+Number

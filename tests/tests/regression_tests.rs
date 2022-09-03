@@ -338,6 +338,7 @@ swf_tests! {
     (as3_increment, "avm2/increment", 1),
     (as3_instanceof, "avm2/instanceof", 1),
     (as3_int_constr, "avm2/int_constr", 1),
+    (as3_int_edge_cases, "avm2/int_edge_cases", 1),
     #[ignore] (as3_int_toexponential, "avm2/int_toexponential", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
     (as3_int_tofixed, "avm2/int_tofixed", 1),
     #[ignore] (as3_int_toprecision, "avm2/int_toprecision", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
