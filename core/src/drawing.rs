@@ -3,6 +3,7 @@ use gc_arena::Collect;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapInfo, BitmapSource};
 use ruffle_render::bounding_box::BoundingBox;
+use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Twips};
@@ -290,7 +291,7 @@ impl Drawing {
 
         if let Some(handle) = self.render_handle.get() {
             context
-                .renderer
+                .commands
                 .render_shape(handle, context.transform_stack.transform());
         }
     }

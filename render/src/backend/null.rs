@@ -1,9 +1,8 @@
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::commands::CommandList;
 use crate::error::Error;
-use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
-use crate::transform::Transform;
 use swf::Color;
 
 pub struct NullBitmapSource;
@@ -54,23 +53,13 @@ impl RenderBackend for NullRenderer {
         _handle: BitmapHandle,
         _width: u32,
         _height: u32,
-        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), Error>,
+        _commands: CommandList,
+        _clear_color: Color,
     ) -> Result<Bitmap, Error> {
         Err(Error::Unimplemented)
     }
 
-    fn begin_frame(&mut self, _clear: Color) {}
-    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
-    fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
-    fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
-    fn end_frame(&mut self) {}
-    fn push_mask(&mut self) {}
-    fn activate_mask(&mut self) {}
-    fn deactivate_mask(&mut self) {}
-    fn pop_mask(&mut self) {}
-
-    fn push_blend_mode(&mut self, _blend_mode: swf::BlendMode) {}
-    fn pop_blend_mode(&mut self) {}
+    fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
 
     fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
         None

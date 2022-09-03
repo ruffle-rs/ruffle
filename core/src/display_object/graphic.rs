@@ -10,6 +10,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
+use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -169,7 +170,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             drawing.render(context);
         } else if let Some(render_handle) = self.0.read().static_data.render_handle {
             context
-                .renderer
+                .commands
                 .render_shape(render_handle, context.transform_stack.transform())
         }
     }

@@ -12,6 +12,7 @@ use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_render::bounding_box::BoundingBox;
+use ruffle_render::commands::CommandHandler;
 use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
@@ -465,7 +466,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             };
 
             context
-                .renderer
+                .commands
                 .render_bitmap(bitmap.handle, &transform, smoothing);
         } else {
             log::warn!("Video has no decoded frame to render.");
