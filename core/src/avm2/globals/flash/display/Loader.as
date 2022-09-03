@@ -4,6 +4,7 @@ package flash.display {
 		import flash.display.DisplayObject;
 		import flash.errors.IllegalOperationError;
 		import flash.system.LoaderContext;
+		import flash.utils.ByteArray;
 		import flash.net.URLRequest;
 
 		private var _contentLoaderInfo: LoaderInfo;
@@ -26,6 +27,8 @@ package flash.display {
 		}
 
 		public native function load(request: URLRequest, context: LoaderContext = null):void;
+
+		public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
 
 		override public function addChild(child:DisplayObject):void {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
