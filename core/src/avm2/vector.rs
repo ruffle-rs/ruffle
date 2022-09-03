@@ -108,10 +108,10 @@ impl<'gc> VectorStorage<'gc> {
 
     /// Get the default value for this vector.
     pub fn default(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        if Object::ptr_eq(self.value_type, activation.avm2().classes().int) {
+        if Object::ptr_eq(self.value_type, activation.avm2().classes().int)
+            || Object::ptr_eq(self.value_type, activation.avm2().classes().uint)
+        {
             Value::Integer(0)
-        } else if Object::ptr_eq(self.value_type, activation.avm2().classes().uint) {
-            Value::Unsigned(0)
         } else if Object::ptr_eq(self.value_type, activation.avm2().classes().number) {
             Value::Number(0.0)
         } else {
@@ -204,7 +204,7 @@ impl<'gc> VectorStorage<'gc> {
         match self.storage.pop() {
             Some(v) => Ok(v),
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().uint) => {
-                Ok(Value::Unsigned(0))
+                Ok(Value::Integer(0))
             }
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().int) => {
                 Ok(Value::Integer(0))
@@ -248,7 +248,7 @@ impl<'gc> VectorStorage<'gc> {
         match unshifted {
             Some(v) => Ok(v),
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().uint) => {
-                Ok(Value::Unsigned(0))
+                Ok(Value::Integer(0))
             }
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().int) => {
                 Ok(Value::Integer(0))

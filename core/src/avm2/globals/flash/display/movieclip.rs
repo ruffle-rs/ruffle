@@ -371,7 +371,6 @@ pub fn goto_frame<'gc>(
     .unwrap_or(0) as u32;
     let frame = match frame_or_label {
         Value::Integer(i) => i as u32 + scene,
-        Value::Unsigned(i) => i + scene,
         frame_or_label => {
             let frame_or_label = frame_or_label.coerce_to_string(activation)?;
             if let Ok(frame) = frame_or_label.parse::<u32>() {

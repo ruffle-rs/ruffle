@@ -220,7 +220,6 @@ impl<'gc> AvmSerializer<'gc> {
             Value::Null => JsonValue::Null,
             Value::Undefined => JsonValue::Null,
             Value::Integer(i) => JsonValue::from(i),
-            Value::Unsigned(u) => JsonValue::from(u),
             Value::Number(n) => JsonValue::from(n),
             Value::Bool(b) => JsonValue::from(b),
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
