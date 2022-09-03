@@ -359,44 +359,40 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             4,
-            Tag::DefineEditText(Box::new(EditText {
-                id: 2,
-                bounds: Rectangle {
-                    x_min: Twips::from_pixels(-2.0),
-                    x_max: Twips::from_pixels(77.9),
-                    y_min: Twips::from_pixels(-2.0),
-                    y_max: Twips::from_pixels(23.9),
-                },
-                font_id: Some(1),
-                font_class_name: None,
-                height: Some(Twips::from_pixels(18.0)),
-                color: Some(Color {
-                    r: 0,
-                    g: 255,
-                    b: 0,
-                    a: 255,
-                }),
-                max_length: None,
-                layout: Some(TextLayout {
-                    align: TextAlign::Justify,
-                    left_margin: Twips::from_pixels(3.0),
-                    right_margin: Twips::from_pixels(4.0),
-                    indent: Twips::from_pixels(1.0),
-                    leading: Twips::from_pixels(2.0),
-                }),
-                variable_name: SwfStr::from_str_with_encoding("foo", WINDOWS_1252).unwrap(),
-                initial_text: Some(SwfStr::from_str_with_encoding("-_-", WINDOWS_1252).unwrap()),
-                is_word_wrap: false,
-                is_multiline: true,
-                is_password: false,
-                is_read_only: true,
-                is_auto_size: false,
-                is_selectable: true,
-                has_border: true,
-                was_static: false,
-                is_html: false,
-                is_device_font: true,
-            })),
+            Tag::DefineEditText(Box::new(
+                EditText::new()
+                    .with_id(2)
+                    .with_font_id(1, Twips::from_pixels(18.0))
+                    .with_bounds(Rectangle {
+                        x_min: Twips::from_pixels(-2.0),
+                        x_max: Twips::from_pixels(77.9),
+                        y_min: Twips::from_pixels(-2.0),
+                        y_max: Twips::from_pixels(23.9),
+                    })
+                    .with_color(Some(Color {
+                        r: 0,
+                        g: 255,
+                        b: 0,
+                        a: 255,
+                    }))
+                    .with_layout(Some(TextLayout {
+                        align: TextAlign::Justify,
+                        left_margin: Twips::from_pixels(3.0),
+                        right_margin: Twips::from_pixels(4.0),
+                        indent: Twips::from_pixels(1.0),
+                        leading: Twips::from_pixels(2.0),
+                    }))
+                    .with_variable_name(
+                        SwfStr::from_str_with_encoding("foo", WINDOWS_1252).unwrap(),
+                    )
+                    .with_initial_text(Some(
+                        SwfStr::from_str_with_encoding("-_-", WINDOWS_1252).unwrap(),
+                    ))
+                    .with_is_read_only(true)
+                    .with_has_border(true)
+                    .with_is_multiline(true)
+                    .with_use_outlines(false),
+            )),
             read_tag_bytes_from_file("tests/swfs/DefineEditText-MX.swf", TagCode::DefineEditText),
         ),
         (

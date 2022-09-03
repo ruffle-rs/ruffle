@@ -2348,72 +2348,68 @@ impl<'a> Reader<'a> {
     pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
-        let flags = self.read_u8()?;
-        let flags2 = self.read_u8()?;
-        let font_id = if flags & 0b1 != 0 {
-            Some(self.read_character_id()?)
+        let flags = EditTextFlag::from_bits_truncate(self.read_u16()?);
+        let font_id = if flags.contains(EditTextFlag::HAS_FONT) {
+            self.read_character_id()?
         } else {
-            None
+            Default::default()
         };
-        let font_class_name = if flags2 & 0b10000000 != 0 {
-            Some(self.read_str()?)
+        let font_class = if flags.contains(EditTextFlag::HAS_FONT_CLASS) {
+            self.read_str()?
         } else {
-            None
+            Default::default()
         };
-        let height = if flags & 0b1 != 0 {
-            Some(Twips::new(self.read_u16()?))
+        let height = if flags.contains(EditTextFlag::HAS_FONT) {
+            Twips::new(self.read_u16()?)
         } else {
-            None
+            Twips::ZERO
         };
-        let color = if flags & 0b100 != 0 {
-            Some(self.read_rgba()?)
+        let color = if flags.contains(EditTextFlag::HAS_TEXT_COLOR) {
+            self.read_rgba()?
         } else {
-            None
+            Color::BLACK
         };
-        let max_length = if flags & 0b10 != 0 {
-            Some(self.read_u16()?)
+        let max_length = if flags.contains(EditTextFlag::HAS_MAX_LENGTH) {
+            self.read_u16()?
         } else {
-            None
+            0
         };
-        let layout = if flags2 & 0b100000 != 0 {
-            Some(TextLayout {
+        let layout = if flags.contains(EditTextFlag::HAS_LAYOUT) {
+            TextLayout {
                 align: TextAlign::from_u8(self.read_u8()?)
                     .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
                 left_margin: Twips::new(self.read_u16()?),
                 right_margin: Twips::new(self.read_u16()?),
                 indent: Twips::new(self.read_u16()?),
                 leading: Twips::new(self.read_i16()?),
-            })
+            }
         } else {
-            None
+            TextLayout {
+                align: TextAlign::Left,
+                left_margin: Twips::ZERO,
+                right_margin: Twips::ZERO,
+                indent: Twips::ZERO,
+                leading: Twips::ZERO,
+            }
         };
         let variable_name = self.read_str()?;
-        let initial_text = if flags & 0b10000000 != 0 {
-            Some(self.read_str()?)
+        let initial_text = if flags.contains(EditTextFlag::HAS_TEXT) {
+            self.read_str()?
         } else {
-            None
+            Default::default()
         };
         Ok(EditText {
             id,
             bounds,
             font_id,
-            font_class_name,
+            font_class,
             height,
             color,
             max_length,
             layout,
             variable_name,
             initial_text,
-            is_word_wrap: flags & 0b1000000 != 0,
-            is_multiline: flags & 0b100000 != 0,
-            is_password: flags & 0b10000 != 0,
-            is_read_only: flags & 0b1000 != 0,
-            is_auto_size: flags2 & 0b1000000 != 0,
-            is_selectable: flags2 & 0b10000 == 0,
-            has_border: flags2 & 0b1000 != 0,
-            was_static: flags2 & 0b100 != 0,
-            is_html: flags2 & 0b10 != 0,
-            is_device_font: flags2 & 0b1 == 0,
+            flags,
         })
     }
 

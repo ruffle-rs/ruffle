@@ -210,13 +210,13 @@ impl<'gc> EditText<'gc> {
         swf_movie: Arc<SwfMovie>,
         swf_tag: swf::EditText,
     ) -> Self {
-        let is_multiline = swf_tag.is_multiline;
-        let is_word_wrap = swf_tag.is_word_wrap;
-        let is_selectable = swf_tag.is_selectable;
-        let is_password = swf_tag.is_password;
-        let is_editable = !swf_tag.is_read_only;
-        let is_html = swf_tag.is_html;
-        let text = swf_tag.initial_text.unwrap_or_default();
+        let is_multiline = swf_tag.is_multiline();
+        let is_word_wrap = swf_tag.is_word_wrap();
+        let is_selectable = swf_tag.is_selectable();
+        let is_password = swf_tag.is_password();
+        let is_editable = !swf_tag.is_read_only();
+        let is_html = swf_tag.is_html();
+        let text = swf_tag.initial_text().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
 
@@ -231,37 +231,37 @@ impl<'gc> EditText<'gc> {
             text_spans.hide_text();
         }
 
-        let autosize = if swf_tag.is_auto_size {
+        let autosize = if swf_tag.is_auto_size() {
             AutoSizeMode::Left
         } else {
             AutoSizeMode::None
         };
 
-        let bounds: BoundingBox = (&swf_tag.bounds).into();
+        let bounds: BoundingBox = swf_tag.bounds().into();
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
             bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
-            swf_tag.is_word_wrap,
-            swf_tag.is_device_font,
+            swf_tag.is_word_wrap(),
+            !swf_tag.use_outlines(),
         );
         let line_data = get_line_data(&layout);
 
-        let has_background = swf_tag.has_border;
+        let has_background = swf_tag.has_border();
         let background_color = 0xFFFFFF; // Default is white
-        let has_border = swf_tag.has_border;
+        let has_border = swf_tag.has_border();
         let border_color = 0; // Default is black
-        let is_device_font = swf_tag.is_device_font;
+        let is_device_font = !swf_tag.use_outlines();
 
         let mut base = InteractiveObjectBase::default();
 
         base.base.matrix_mut().tx = bounds.x_min;
         base.base.matrix_mut().ty = bounds.y_min;
 
-        let variable = if !swf_tag.variable_name.is_empty() {
-            Some(swf_tag.variable_name)
+        let variable = if !swf_tag.variable_name().is_empty() {
+            Some(swf_tag.variable_name())
         } else {
             None
         };
@@ -276,32 +276,32 @@ impl<'gc> EditText<'gc> {
                     EditTextStatic {
                         swf: swf_movie,
                         text: EditTextStaticData {
-                            id: swf_tag.id,
-                            bounds: swf_tag.bounds,
-                            font_id: swf_tag.font_id,
+                            id: swf_tag.id(),
+                            bounds: swf_tag.bounds().clone(),
+                            font_id: swf_tag.font_id(),
                             font_class_name: swf_tag
-                                .font_class_name
+                                .font_class()
                                 .map(|s| s.to_string_lossy(encoding)),
-                            height: swf_tag.height,
-                            color: swf_tag.color.clone(),
-                            max_length: swf_tag.max_length,
-                            layout: swf_tag.layout.clone(),
+                            height: swf_tag.height(),
+                            color: swf_tag.color().cloned(),
+                            max_length: swf_tag.max_length(),
+                            layout: swf_tag.layout().cloned(),
                             variable_name: WString::from_utf8_owned(
-                                swf_tag.variable_name.to_string_lossy(encoding),
+                                swf_tag.variable_name().to_string_lossy(encoding),
                             ),
                             initial_text: swf_tag
-                                .initial_text
+                                .initial_text()
                                 .map(|s| WString::from_utf8_owned(s.to_string_lossy(encoding))),
-                            is_word_wrap: swf_tag.is_word_wrap,
-                            is_multiline: swf_tag.is_multiline,
-                            is_password: swf_tag.is_password,
-                            is_read_only: swf_tag.is_read_only,
-                            is_auto_size: swf_tag.is_auto_size,
-                            is_selectable: swf_tag.is_selectable,
-                            has_border: swf_tag.has_border,
-                            was_static: swf_tag.was_static,
-                            is_html: swf_tag.is_html,
-                            is_device_font: swf_tag.is_device_font,
+                            is_word_wrap: swf_tag.is_word_wrap(),
+                            is_multiline: swf_tag.is_multiline(),
+                            is_password: swf_tag.is_password(),
+                            is_read_only: swf_tag.is_read_only(),
+                            is_auto_size: swf_tag.is_auto_size(),
+                            is_selectable: swf_tag.is_selectable(),
+                            has_border: swf_tag.has_border(),
+                            was_static: swf_tag.was_static(),
+                            is_html: swf_tag.is_html(),
+                            is_device_font: !swf_tag.use_outlines(),
                         },
                     },
                 ),
@@ -334,7 +334,7 @@ impl<'gc> EditText<'gc> {
             },
         ));
 
-        if swf_tag.is_auto_size {
+        if swf_tag.is_auto_size() {
             et.relayout(context);
         } else {
             et.redraw_border(context.gc_context);
@@ -352,45 +352,16 @@ impl<'gc> EditText<'gc> {
         width: f64,
         height: f64,
     ) -> Self {
-        let swf_tag = swf::EditText {
-            id: 0, //TODO: Dynamic text fields don't have a character ID?
-            bounds: swf::Rectangle {
+        let swf_tag = swf::EditText::new()
+            .with_font_id(0, Twips::from_pixels(12.0))
+            .with_color(Some(Color::BLACK))
+            .with_bounds(swf::Rectangle {
                 x_min: Twips::from_pixels(0.0),
                 x_max: Twips::from_pixels(width),
                 y_min: Twips::from_pixels(0.0),
                 y_max: Twips::from_pixels(height),
-            },
-            font_id: None,
-            font_class_name: None,
-            height: Some(Twips::from_pixels(12.0)),
-            color: Some(swf::Color {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0xFF,
-            }),
-            max_length: Some(width as u16),
-            layout: Some(swf::TextLayout {
-                align: swf::TextAlign::Left,
-                left_margin: Twips::from_pixels(0.0),
-                right_margin: Twips::from_pixels(0.0),
-                indent: Twips::from_pixels(0.0),
-                leading: Twips::from_pixels(0.0),
-            }),
-            variable_name: "".into(), //TODO: should be null
-            initial_text: None,
-            is_word_wrap: false,
-            is_multiline: false,
-            is_password: false,
-            is_read_only: true,
-            is_auto_size: false,
-            is_selectable: true,
-            has_border: false,
-            was_static: false,
-            is_html: false,
-            is_device_font: false,
-        };
-
+            })
+            .with_layout(Default::default());
         let text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
 
         // Set position.
