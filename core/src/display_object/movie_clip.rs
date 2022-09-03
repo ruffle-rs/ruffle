@@ -1129,6 +1129,11 @@ impl<'gc> MovieClip<'gc> {
     pub fn loaded_bytes(self) -> u32 {
         let read = self.0.read();
         let progress_read = read.static_data.preload_progress.read();
+        if progress_read.next_preload_chunk == u64::MAX {
+            // u64::MAX is a sentinel for load complete
+            return self.total_bytes();
+        }
+
         let swf_header_size = self.total_bytes() - self.tag_stream_len() as u32;
 
         swf_header_size + progress_read.next_preload_chunk as u32
