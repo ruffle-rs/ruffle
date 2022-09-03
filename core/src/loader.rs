@@ -549,14 +549,14 @@ impl<'gc> Loader<'gc> {
             mc.post_instantiation(context, None, Instantiator::Movie, false);
             catchup_display_object_to_frame(context, mc.into());
         }
-        
+
         Loader::movie_loader_progress(
             handle,
             context,
             mc.compressed_loaded_bytes() as usize,
             mc.compressed_total_bytes() as usize,
         )?;
-        
+
         if did_finish {
             let loader_info =
                 if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
@@ -572,8 +572,10 @@ impl<'gc> Loader<'gc> {
                 // However, we still use `LoaderStream::NotYetLoaded`, since
                 // the actual MovieClip display object has not run its first
                 // frame yet.
-                loader_info
-                    .set_loader_stream(LoaderStream::NotYetLoaded(movie), context.gc_context);
+                loader_info.set_loader_stream(
+                    LoaderStream::NotYetLoaded(movie, Some(mc.into())),
+                    context.gc_context,
+                );
             }
 
             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
@@ -594,7 +596,7 @@ impl<'gc> Loader<'gc> {
                 // clip does not yet exist.
                 loader.insert_at_index(&mut activation.context, mc.into(), 0);
             }
-            
+
             Loader::movie_loader_complete(handle, context)?;
         }
 
