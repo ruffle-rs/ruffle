@@ -650,11 +650,13 @@ impl<'gc> MovieClip<'gc> {
             write.last_frame_start_pos = start_pos;
         }
 
-        // End-of-clip should be treated as ShowFrame
-        self.0
-            .write(context.gc_context)
-            .show_frame(&mut reader, 0, &mut cur_frame, &mut start_pos)
-            .unwrap();
+        if is_finished {
+            // End-of-clip should be treated as ShowFrame
+            self.0
+                .write(context.gc_context)
+                .show_frame(&mut reader, 0, &mut cur_frame, &mut start_pos)
+                .unwrap();
+        }
 
         self.0.write(context.gc_context).static_data =
             Gc::allocate(context.gc_context, static_data);
