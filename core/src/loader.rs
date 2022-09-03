@@ -243,6 +243,28 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader(player, request, loader_url)
     }
 
+    /// Kick off a movie clip load.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_movie_into_clip_bytes(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_clip: DisplayObject<'gc>,
+        bytes: Vec<u8>,
+        event_handler: Option<MovieLoaderEventHandler<'gc>>,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::Movie {
+            self_handle: None,
+            target_clip,
+            event_handler,
+            loader_status: LoaderStatus::Pending,
+            movie: None,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.movie_loader_bytes(player, bytes)
+    }
+
     /// Indicates that a movie clip has initialized (ran its first frame).
     ///
     /// Interested loaders will be invoked from here.
@@ -808,6 +830,151 @@ impl<'gc> Loader<'gc> {
                     })?;
                 }
             }
+
+            Ok(())
+        })
+    }
+
+    fn movie_loader_bytes(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        bytes: Vec<u8>,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let mut replacing_root_movie = false;
+            player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                let clip = match uc.load_manager.get_loader(handle) {
+                    Some(Loader::Movie { target_clip, .. }) => *target_clip,
+                    None => return Err(Error::Cancelled),
+                    _ => unreachable!(),
+                };
+
+                replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
+
+                if let Some(mut mc) = clip.as_movie_clip() {
+                    mc.unload(uc);
+                    mc.replace_with_movie(uc, None, None);
+                }
+
+                Loader::movie_loader_start(handle, uc)
+            })?;
+
+            let sniffed_type = ContentType::sniff(&bytes);
+            let mut length = bytes.len();
+
+            if replacing_root_movie {
+                sniffed_type.expect(ContentType::Swf)?;
+
+                let movie = SwfMovie::from_data(&bytes, None, None)?;
+                player.lock().unwrap().set_root_movie(movie);
+                return Ok(());
+            }
+
+            player.lock().unwrap().update(|uc| {
+                let (clip, event_handler) = match uc.load_manager.get_loader(handle) {
+                    Some(Loader::Movie {
+                        target_clip,
+                        event_handler,
+                        ..
+                    }) => (*target_clip, *event_handler),
+                    None => return Err(Error::Cancelled),
+                    _ => unreachable!(),
+                };
+
+                if let ContentType::Unknown = sniffed_type {
+                    length = 0;
+                }
+
+                if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(_)) = event_handler {
+                    // Flash always fires an initial 'progress' event with
+                    // bytesLoaded=0 and bytesTotal set to the proper value.
+                    // This only seems to happen for an AVM2 event handler
+                    Loader::movie_loader_progress(handle, uc, 0, length)?;
+                }
+
+                match sniffed_type {
+                    ContentType::Swf => {
+                        let movie = Arc::new(SwfMovie::from_data(&bytes, None, None)?);
+
+                        match uc.load_manager.get_loader_mut(handle) {
+                            Some(Loader::Movie {
+                                movie: old,
+                                loader_status,
+                                ..
+                            }) => {
+                                *loader_status = LoaderStatus::Parsing;
+                                *old = Some(movie.clone())
+                            }
+                            _ => unreachable!(),
+                        };
+
+                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        let parent_domain = activation.avm2().global_domain();
+                        let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
+                        activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone())
+                            .set_avm2_domain(domain);
+
+                        if let Some(mut mc) = clip.as_movie_clip() {
+                            let loader_info =
+                                if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) =
+                                    event_handler
+                                {
+                                    Some(*loader_info.as_loader_info_object().unwrap())
+                                } else {
+                                    None
+                                };
+
+                            // Store our downloaded `SwfMovie` into our target `MovieClip`,
+                            // and initialize it.
+
+                            mc.replace_with_movie(
+                                &mut activation.context,
+                                Some(movie),
+                                loader_info,
+                            );
+                        }
+
+                        // NOTE: Certain tests specifically expect small files to preload immediately
+                        Loader::preload_tick(
+                            handle,
+                            uc,
+                            &mut ExecutionLimit::with_max_actions_and_time(
+                                10000,
+                                Duration::from_millis(1),
+                            ),
+                        )?;
+
+                        return Ok(());
+                    }
+                    ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                        let bitmap = uc.renderer.register_bitmap_jpeg_2(&bytes)?;
+                        let bitmap_obj =
+                            Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
+
+                        if let Some(mc) = clip.as_movie_clip() {
+                            mc.replace_at_depth(uc, bitmap_obj.into(), 1);
+                        }
+                    }
+                    ContentType::Unknown => {}
+                }
+
+                Loader::movie_loader_progress(handle, uc, length, length)?;
+                Loader::movie_loader_complete(handle, uc)?;
+
+                Ok(())
+            })?; //TODO: content sniffing errors need to be reported somehow
 
             Ok(())
         })

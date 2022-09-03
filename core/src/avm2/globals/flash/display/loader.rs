@@ -90,3 +90,46 @@ pub fn load<'gc>(
     }
     Ok(Value::Undefined)
 }
+
+pub fn load_bytes<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let arg0 = args[0].as_object().unwrap();
+        let bytearray = arg0.as_bytearray().unwrap();
+
+        if let Some(context) = args.get(1) {
+            if !matches!(context, Value::Null) {
+                log::warn!(
+                    "Loader.load: 'context' argument is not yet implemented: {:?}",
+                    context
+                );
+            }
+        }
+
+        // This is a dummy MovieClip, which will get overwritten in `Loader`
+        let content = MovieClip::new(
+            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            activation.context.gc_context,
+        );
+
+        let loader_info = this
+            .get_property(
+                &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
+                activation,
+            )?
+            .as_object()
+            .unwrap();
+
+        let future = activation.context.load_manager.load_movie_into_clip_bytes(
+            activation.context.player.clone(),
+            content.into(),
+            bytearray.bytes().to_vec(),
+            Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
+        );
+        activation.context.navigator.spawn_future(future);
+    }
+    Ok(Value::Undefined)
+}
