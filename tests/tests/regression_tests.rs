@@ -13,6 +13,7 @@ use ruffle_core::context::UpdateContext;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
+use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
@@ -1445,6 +1446,13 @@ fn run_swf(
         if frame_time_sleep {
             std::thread::sleep(frame_time_duration);
         }
+
+        while !player
+            .lock()
+            .unwrap()
+            .preload(&mut ExecutionLimit::exhausted())
+        {}
+
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.run();

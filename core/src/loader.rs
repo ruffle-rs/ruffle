@@ -31,6 +31,7 @@ use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
 use swf::read::read_compression_type;
 use thiserror::Error;
 use url::form_urlencoded;
@@ -759,7 +760,15 @@ impl<'gc> Loader<'gc> {
                                     );
                                 }
 
-                                Loader::preload_tick(handle, uc, &mut ExecutionLimit::none())?;
+                                // NOTE: Certain tests specifically expect small files to preload immediately
+                                Loader::preload_tick(
+                                    handle,
+                                    uc,
+                                    &mut ExecutionLimit::with_max_actions_and_time(
+                                        10000,
+                                        Duration::from_millis(1),
+                                    ),
+                                )?;
 
                                 return Ok(());
                             }
