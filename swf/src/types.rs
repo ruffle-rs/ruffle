@@ -1385,28 +1385,6 @@ impl<'a> EditText<'a> {
             .then_some(self.font_id)
     }
 
-    // The height of the font in twips.
-    #[inline]
-    pub fn height(&self) -> Option<Twips> {
-        self.flags
-            .contains(EditTextFlag::HAS_FONT)
-            .then_some(self.height)
-    }
-
-    #[inline]
-    pub fn with_default_font(mut self) -> Self {
-        self.flags -= EditTextFlag::HAS_FONT;
-        self
-    }
-
-    #[inline]
-    pub fn with_font_id(mut self, font_id: CharacterId, height: Twips) -> Self {
-        self.flags |= EditTextFlag::HAS_FONT;
-        self.font_id = font_id;
-        self.height = height;
-        self
-    }
-
     #[inline]
     pub fn font_class(&self) -> Option<&'a SwfStr> {
         self.flags
@@ -1414,14 +1392,35 @@ impl<'a> EditText<'a> {
             .then_some(self.font_class)
     }
 
+    // The height of the font in twips.
     #[inline]
-    pub fn with_font_class(mut self, font_class_name: Option<&'a SwfStr>) -> Self {
-        if let Some(font_class_name) = font_class_name {
-            self.flags |= EditTextFlag::HAS_FONT_CLASS;
-            self.font_class = font_class_name;
-        } else {
-            self.flags -= EditTextFlag::HAS_FONT_CLASS;
-        }
+    pub fn height(&self) -> Option<Twips> {
+        self.flags
+            .intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS)
+            .then_some(self.height)
+    }
+
+    #[inline]
+    pub fn with_default_font(mut self) -> Self {
+        self.flags -= EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS;
+        self
+    }
+
+    #[inline]
+    pub fn with_font_id(mut self, font_id: CharacterId, height: Twips) -> Self {
+        self.flags |= EditTextFlag::HAS_FONT;
+        self.flags -= EditTextFlag::HAS_FONT_CLASS;
+        self.font_id = font_id;
+        self.height = height;
+        self
+    }
+
+    #[inline]
+    pub fn with_font_class(mut self, font_class: &'a SwfStr, height: Twips) -> Self {
+        self.flags |= EditTextFlag::HAS_FONT_CLASS;
+        self.flags -= EditTextFlag::HAS_FONT;
+        self.font_class = font_class;
+        self.height = height;
         self
     }
 
