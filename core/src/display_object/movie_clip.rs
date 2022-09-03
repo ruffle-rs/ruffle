@@ -633,8 +633,13 @@ impl<'gc> MovieClip<'gc> {
         {
             let mut write = static_data.preload_progress.write(context.gc_context);
 
-            write.next_preload_chunk =
-                (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64);
+            write.next_preload_chunk = if is_finished {
+                // Flag the movie as fully preloaded when we hit the end of the
+                // tag stream.
+                u64::MAX
+            } else {
+                (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64)
+            };
             write.cur_preload_frame = if is_finished {
                 // Flag the movie as fully preloaded when we hit the end of the
                 // tag stream.
