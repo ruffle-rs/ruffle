@@ -1258,7 +1258,7 @@ async fn create_renderer(
                 .dyn_into()
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
-            match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas, "WebGPU"));
                 }
@@ -1275,7 +1275,7 @@ async fn create_renderer(
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
-        match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
             Ok(renderer) => {
                 return Ok((
                     builder.with_renderer(renderer),
