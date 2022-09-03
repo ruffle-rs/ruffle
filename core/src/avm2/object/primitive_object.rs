@@ -67,7 +67,6 @@ impl<'gc> PrimitiveObject<'gc> {
         let class = match primitive {
             Value::Bool(_) => activation.avm2().classes().boolean,
             Value::Number(_) => activation.avm2().classes().number,
-            Value::Unsigned(_) => activation.avm2().classes().uint,
             Value::Integer(_) => activation.avm2().classes().int,
             Value::String(_) => activation.avm2().classes().string,
             _ => unreachable!(),
@@ -109,7 +108,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
 
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         match self.0.read().primitive {
-            val @ Value::Integer(_) | val @ Value::Unsigned(_) => Ok(val),
+            val @ Value::Integer(_) => Ok(val),
             _ => {
                 let class_name = self
                     .instance_of_class_definition()

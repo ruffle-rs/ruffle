@@ -90,10 +90,11 @@ pub fn instance_init<'gc>(
                 .get(2)
                 .unwrap_or(&Value::Bool(true))
                 .coerce_to_boolean();
-            let fill_color = args
-                .get(3)
-                .unwrap_or(&Value::Unsigned(0xFFFFFFFF))
-                .coerce_to_u32(activation)?;
+            let fill_color = if let Some(value) = args.get(3) {
+                value.coerce_to_u32(activation)?
+            } else {
+                0xFFFFFFFF
+            };
 
             if !is_size_valid(activation.context.swf.version(), width, height) {
                 return Err("Bitmap size is not valid".into());

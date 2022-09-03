@@ -142,7 +142,7 @@ fn to_exponential<'gc>(
                 let digits = args
                     .get(0)
                     .cloned()
-                    .unwrap_or(Value::Unsigned(0))
+                    .unwrap_or(Value::Integer(0))
                     .coerce_to_u32(activation)? as usize;
 
                 if digits > 20 {
@@ -176,7 +176,7 @@ fn to_fixed<'gc>(
                 let digits = args
                     .get(0)
                     .cloned()
-                    .unwrap_or(Value::Unsigned(0))
+                    .unwrap_or(Value::Integer(0))
                     .coerce_to_u32(activation)? as usize;
 
                 if digits > 20 {
@@ -207,7 +207,7 @@ fn to_precision<'gc>(
                 let wanted_digits = args
                     .get(0)
                     .cloned()
-                    .unwrap_or(Value::Unsigned(0))
+                    .unwrap_or(Value::Integer(0))
                     .coerce_to_u32(activation)? as usize;
 
                 if wanted_digits < 1 || wanted_digits > 21 {
@@ -234,7 +234,7 @@ fn to_string<'gc>(
                 let radix = args
                     .get(0)
                     .cloned()
-                    .unwrap_or(Value::Unsigned(10))
+                    .unwrap_or(Value::Integer(10))
                     .coerce_to_u32(activation)? as usize;
 
                 if radix < 2 || radix > 36 {

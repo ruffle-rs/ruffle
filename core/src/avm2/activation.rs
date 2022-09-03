@@ -2729,7 +2729,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Value::Undefined => "undefined",
             Value::Null => "object",
             Value::Bool(_) => "boolean",
-            Value::Number(_) | Value::Integer(_) | Value::Unsigned(_) => "number",
+            Value::Number(_) | Value::Integer(_) => "number",
             Value::Object(o) => {
                 // Subclasses always have a typeof = "object", must be a subclass if the prototype chain is > 2, or not a subclass if <=2
                 let is_not_subclass = matches!(

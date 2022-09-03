@@ -162,11 +162,11 @@ pub fn write_bytes<'gc>(
             .coerce_to_object(activation)?;
         let offset = args
             .get(1)
-            .unwrap_or(&Value::Unsigned(0))
+            .unwrap_or(&Value::Integer(0))
             .coerce_to_u32(activation)? as usize;
         let length = args
             .get(2)
-            .unwrap_or(&Value::Unsigned(0))
+            .unwrap_or(&Value::Integer(0))
             .coerce_to_u32(activation)? as usize;
         if !Object::ptr_eq(this, bytearray) {
             // The ByteArray we are reading from is different than the ByteArray we are writing to,
@@ -216,11 +216,11 @@ pub fn read_bytes<'gc>(
             .coerce_to_object(activation)?;
         let offset = args
             .get(1)
-            .unwrap_or(&Value::Unsigned(0))
+            .unwrap_or(&Value::Integer(0))
             .coerce_to_u32(activation)? as usize;
         let length = args
             .get(2)
-            .unwrap_or(&Value::Unsigned(0))
+            .unwrap_or(&Value::Integer(0))
             .coerce_to_u32(activation)? as usize;
 
         if !Object::ptr_eq(this, bytearray) {
@@ -328,7 +328,7 @@ pub fn position<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.position() as u32));
+            return Ok(bytearray.position().into());
         }
     }
 
@@ -360,7 +360,7 @@ pub fn bytes_available<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.bytes_available() as u32));
+            return Ok(bytearray.bytes_available().into());
         }
     }
 
@@ -374,7 +374,7 @@ pub fn length<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.len() as u32));
+            return Ok(bytearray.len().into());
         }
     }
 
@@ -390,7 +390,7 @@ pub fn set_length<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             let len = args
                 .get(0)
-                .unwrap_or(&Value::Unsigned(0))
+                .unwrap_or(&Value::Integer(0))
                 .coerce_to_u32(activation)? as usize;
             bytearray.set_length(len);
         }
@@ -447,7 +447,7 @@ pub fn read_short<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Integer(bytearray.read_short()? as i32));
+            return Ok(bytearray.read_short()?.into());
         }
     }
 
@@ -461,7 +461,7 @@ pub fn read_unsigned_short<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.read_unsigned_short()? as u32));
+            return Ok(bytearray.read_unsigned_short()?.into());
         }
     }
 
@@ -475,7 +475,7 @@ pub fn read_double<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Number(bytearray.read_double()?));
+            return Ok(bytearray.read_double()?.into());
         }
     }
 
@@ -489,7 +489,7 @@ pub fn read_float<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Number(bytearray.read_float()? as f64));
+            return Ok(bytearray.read_float()?.into());
         }
     }
 
@@ -503,7 +503,7 @@ pub fn read_int<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Integer(bytearray.read_int()?));
+            return Ok(bytearray.read_int()?.into());
         }
     }
 
@@ -517,7 +517,7 @@ pub fn read_unsigned_int<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.read_unsigned_int()?));
+            return Ok(bytearray.read_unsigned_int()?.into());
         }
     }
 
@@ -531,7 +531,7 @@ pub fn read_boolean<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Bool(bytearray.read_boolean()?));
+            return Ok(bytearray.read_boolean()?.into());
         }
     }
 
@@ -545,7 +545,7 @@ pub fn read_byte<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Integer(bytearray.read_byte()? as i32));
+            return Ok(bytearray.read_byte()?.into());
         }
     }
 
@@ -581,7 +581,7 @@ pub fn read_unsigned_byte<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.read_unsigned_byte()? as u32));
+            return Ok(bytearray.read_unsigned_byte()?.into());
         }
     }
 

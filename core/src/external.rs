@@ -187,7 +187,6 @@ impl Value {
             Avm2Value::Undefined | Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
-            Avm2Value::Unsigned(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
             Avm2Value::String(value) => Value::String(value.to_string()),
             Avm2Value::Object(object) => {

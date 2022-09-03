@@ -32,7 +32,7 @@ pub fn instance_init<'gc>(
             let length = args
                 .get(0)
                 .cloned()
-                .unwrap_or(Value::Unsigned(0))
+                .unwrap_or(Value::Integer(0))
                 .coerce_to_u32(activation)? as usize;
             let is_fixed = args
                 .get(1)
@@ -260,7 +260,7 @@ pub fn set_length<'gc>(
             let new_length = args
                 .get(0)
                 .cloned()
-                .unwrap_or(Value::Unsigned(0))
+                .unwrap_or(Value::Integer(0))
                 .coerce_to_u32(activation)? as usize;
 
             vector.resize(new_length, activation)?;
