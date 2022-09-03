@@ -24,6 +24,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ViewportDimensions;
+use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
@@ -512,7 +513,7 @@ impl<'gc> Stage<'gc> {
         if margin_top + margin_bottom > margin_left + margin_right {
             // Top + bottom
             if margin_top > 0.0 {
-                context.renderer.draw_rect(
+                context.commands.draw_rect(
                     Color::BLACK,
                     &Matrix::create_box(
                         viewport_width,
@@ -524,7 +525,7 @@ impl<'gc> Stage<'gc> {
                 );
             }
             if margin_bottom > 0.0 {
-                context.renderer.draw_rect(
+                context.commands.draw_rect(
                     Color::BLACK,
                     &Matrix::create_box(
                         viewport_width,
@@ -538,7 +539,7 @@ impl<'gc> Stage<'gc> {
         } else {
             // Left + right
             if margin_left > 0.0 {
-                context.renderer.draw_rect(
+                context.commands.draw_rect(
                     Color::BLACK,
                     &Matrix::create_box(
                         margin_left,
@@ -550,7 +551,7 @@ impl<'gc> Stage<'gc> {
                 );
             }
             if margin_right > 0.0 {
-                context.renderer.draw_rect(
+                context.commands.draw_rect(
                     Color::BLACK,
                     &Matrix::create_box(
                         margin_right,
@@ -700,22 +701,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
-        let background_color =
-            if self.window_mode() != WindowMode::Transparent || self.is_fullscreen() {
-                self.background_color().unwrap_or(Color::WHITE)
-            } else {
-                Color::from_rgba(0)
-            };
-
-        context.renderer.begin_frame(background_color);
-
         render_base((*self).into(), context);
 
         if self.should_letterbox() {
             self.draw_letterbox(context);
         }
-
-        context.renderer.end_frame();
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {

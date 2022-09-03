@@ -3,6 +3,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
@@ -377,6 +378,28 @@ impl WebCanvasRenderBackend {
             .set_global_composite_operation(mode)
             .expect("Failed to update BlendMode");
     }
+
+    fn begin_frame(&mut self, clear: Color) {
+        // Reset canvas transform in case it was left in a dirty state.
+        self.context.reset_transform().unwrap();
+
+        let width = self.canvas.width();
+        let height = self.canvas.height();
+
+        if clear.a > 0 {
+            let color = format!("rgba({}, {}, {}, {})", clear.r, clear.g, clear.b, clear.a);
+            self.context.set_fill_style(&color.into());
+            let _ = self.context.set_global_composite_operation("copy");
+            self.context
+                .fill_rect(0.0, 0.0, width.into(), height.into());
+            let _ = self.context.set_global_composite_operation("source-over");
+        } else {
+            self.context
+                .clear_rect(0.0, 0.0, width.into(), height.into());
+        }
+
+        self.mask_state = MaskState::DrawContent;
+    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -427,37 +450,53 @@ impl RenderBackend for WebCanvasRenderBackend {
         _handle: BitmapHandle,
         _width: u32,
         _height: u32,
-        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
+        _commands: CommandList,
+        _clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented)
+        Err(Error::Unimplemented)
     }
 
-    fn begin_frame(&mut self, clear: Color) {
-        // Reset canvas transform in case it was left in a dirty state.
-        self.context.reset_transform().unwrap();
-
-        let width = self.canvas.width();
-        let height = self.canvas.height();
-
-        if clear.a > 0 {
-            let color = format!("rgba({}, {}, {}, {})", clear.r, clear.g, clear.b, clear.a);
-            self.context.set_fill_style(&color.into());
-            let _ = self.context.set_global_composite_operation("copy");
-            self.context
-                .fill_rect(0.0, 0.0, width.into(), height.into());
-            let _ = self.context.set_global_composite_operation("source-over");
-        } else {
-            self.context
-                .clear_rect(0.0, 0.0, width.into(), height.into());
-        }
-
-        self.mask_state = MaskState::DrawContent;
+    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+        self.begin_frame(clear);
+        commands.execute(self);
     }
 
-    fn end_frame(&mut self) {
-        // Noop
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
+        let bitmap = &self.bitmaps[&bitmap];
+        bitmap.get_pixels()
     }
 
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        let handle = self.next_bitmap_handle;
+        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
+        let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
+        self.bitmaps.insert(handle, bitmap_data);
+        Ok(handle)
+    }
+
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
+        self.bitmaps.remove(&bitmap);
+    }
+
+    fn update_texture(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, Error> {
+        // TODO: Could be optimized to a single put_image_data call
+        // in case it is already stored as a canvas+context.
+        self.bitmaps.insert(
+            handle,
+            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
+                .map_err(Error::JavascriptError)?,
+        );
+        Ok(handle)
+    }
+}
+
+impl CommandHandler for WebCanvasRenderBackend {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         if self.mask_state == MaskState::ClearMask {
             return;
@@ -738,40 +777,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         if old != Some(current) {
             self.apply_blend_mode(current);
         }
-    }
-
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        let bitmap = &self.bitmaps[&bitmap];
-        bitmap.get_pixels()
-    }
-
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
-        self.bitmaps.insert(handle, bitmap_data);
-        Ok(handle)
-    }
-
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
-        self.bitmaps.remove(&bitmap);
-    }
-
-    fn update_texture(
-        &mut self,
-        handle: BitmapHandle,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        // TODO: Could be optimized to a single put_image_data call
-        // in case it is already stored as a canvas+context.
-        self.bitmaps.insert(
-            handle,
-            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
-                .map_err(Error::JavascriptError)?,
-        );
-        Ok(handle)
     }
 }
 

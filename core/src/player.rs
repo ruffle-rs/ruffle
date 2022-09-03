@@ -42,6 +42,7 @@ use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
+use ruffle_render::commands::CommandList;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
@@ -1350,23 +1351,37 @@ impl Player {
     pub fn render(&mut self) {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
+        let mut commands = CommandList::new();
+        let mut background_color = Color::WHITE;
 
         self.gc_arena.borrow().mutate(|gc_context, gc_root| {
             let root_data = gc_root.data.read();
+            let stage = root_data.stage;
+
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
+                commands: &mut commands,
                 gc_context,
                 ui: ui.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
                 is_offscreen: false,
-                stage: root_data.stage,
+                stage,
                 clip_depth_stack: vec![],
                 allow_mask: true,
             };
 
-            root_data.stage.render(&mut render_context);
+            stage.render(&mut render_context);
+
+            background_color =
+                if stage.window_mode() != WindowMode::Transparent || stage.is_fullscreen() {
+                    stage.background_color().unwrap_or(Color::WHITE)
+                } else {
+                    Color::from_rgba(0)
+                };
         });
+
+        renderer.submit_frame(background_color, commands);
 
         self.needs_render = false;
     }

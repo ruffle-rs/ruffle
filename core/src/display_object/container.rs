@@ -11,6 +11,7 @@ use crate::string::WStr;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
+use ruffle_render::commands::CommandHandler;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -293,21 +294,21 @@ pub trait TDisplayObjectContainer<'gc>:
                 // Clear the mask stencil and pop the mask.
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
-                context.renderer.deactivate_mask();
+                context.commands.deactivate_mask();
                 context.allow_mask = false;
                 clip_child.render(context);
                 context.allow_mask = true;
-                context.renderer.pop_mask();
+                context.commands.pop_mask();
             }
             if context.allow_mask && child.clip_depth() > 0 && child.allow_as_mask() {
                 // Push and render the mask.
                 clip_depth_stack.push((clip_depth, child));
                 clip_depth = child.clip_depth();
-                context.renderer.push_mask();
+                context.commands.push_mask();
                 context.allow_mask = false;
                 child.render(context);
                 context.allow_mask = true;
-                context.renderer.activate_mask();
+                context.commands.activate_mask();
             } else if child.visible() {
                 // Normal child.
                 child.render(context);
@@ -316,11 +317,11 @@ pub trait TDisplayObjectContainer<'gc>:
 
         // Pop any remaining masks.
         for (_, clip_child) in clip_depth_stack.into_iter().rev() {
-            context.renderer.deactivate_mask();
+            context.commands.deactivate_mask();
             context.allow_mask = false;
             clip_child.render(context);
             context.allow_mask = true;
-            context.renderer.pop_mask();
+            context.commands.pop_mask();
         }
     }
 }

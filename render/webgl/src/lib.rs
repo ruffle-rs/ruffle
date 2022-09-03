@@ -3,6 +3,7 @@ use fnv::FnvHashMap;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
@@ -736,81 +737,6 @@ impl WebGlRenderBackend {
         self.gl
             .blend_func_separate(src_rgb, dst_rgb, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
     }
-}
-
-impl RenderBackend for WebGlRenderBackend {
-    fn viewport_dimensions(&self) -> ViewportDimensions {
-        ViewportDimensions {
-            width: self.renderbuffer_width as u32,
-            height: self.renderbuffer_height as u32,
-            scale_factor: self.viewport_scale_factor,
-        }
-    }
-
-    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
-        // Build view matrix based on canvas size.
-        self.view_matrix = [
-            [1.0 / (dimensions.width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (dimensions.height as f32 / 2.0), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [-1.0, 1.0, 0.0, 1.0],
-        ];
-
-        // Setup GL viewport and renderbuffers clamped to reasonable sizes.
-        // We don't use `.clamp()` here because `self.gl.drawing_buffer_width()` and
-        // `self.gl.drawing_buffer_height()` return zero when the WebGL context is lost,
-        // then an assertion error would be triggered.
-        self.renderbuffer_width = (dimensions.width as i32)
-            .max(1)
-            .min(self.gl.drawing_buffer_width());
-        self.renderbuffer_height = (dimensions.height as i32)
-            .max(1)
-            .min(self.gl.drawing_buffer_height());
-
-        // Recreate framebuffers with the new size.
-        let _ = self.build_msaa_buffers();
-        self.gl
-            .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
-    }
-
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
-        let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes.push(mesh);
-        handle
-    }
-
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes[handle.0] = mesh;
-    }
-
-    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
-        self.meshes.push(mesh);
-        handle
-    }
-
-    fn render_offscreen(
-        &mut self,
-        _handle: BitmapHandle,
-        _width: u32,
-        _height: u32,
-        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
-    ) -> Result<Bitmap, ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented)
-    }
 
     fn begin_frame(&mut self, clear: Color) {
         self.active_program = std::ptr::null();
@@ -931,7 +857,174 @@ impl RenderBackend for WebGlRenderBackend {
             );
         }
     }
+}
 
+impl RenderBackend for WebGlRenderBackend {
+    fn render_offscreen(
+        &mut self,
+        _handle: BitmapHandle,
+        _width: u32,
+        _height: u32,
+        _commands: CommandList,
+        _clear_color: Color,
+    ) -> Result<Bitmap, ruffle_render::error::Error> {
+        Err(ruffle_render::error::Error::Unimplemented)
+    }
+
+    fn viewport_dimensions(&self) -> ViewportDimensions {
+        ViewportDimensions {
+            width: self.renderbuffer_width as u32,
+            height: self.renderbuffer_height as u32,
+            scale_factor: self.viewport_scale_factor,
+        }
+    }
+
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
+        // Build view matrix based on canvas size.
+        self.view_matrix = [
+            [1.0 / (dimensions.width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (dimensions.height as f32 / 2.0), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [-1.0, 1.0, 0.0, 1.0],
+        ];
+
+        // Setup GL viewport and renderbuffers clamped to reasonable sizes.
+        // We don't use `.clamp()` here because `self.gl.drawing_buffer_width()` and
+        // `self.gl.drawing_buffer_height()` return zero when the WebGL context is lost,
+        // then an assertion error would be triggered.
+        self.renderbuffer_width = (dimensions.width as i32)
+            .max(1)
+            .min(self.gl.drawing_buffer_width());
+        self.renderbuffer_height = (dimensions.height as i32)
+            .max(1)
+            .min(self.gl.drawing_buffer_height());
+
+        // Recreate framebuffers with the new size.
+        let _ = self.build_msaa_buffers();
+        self.gl
+            .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
+    }
+
+    fn register_shape(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+    ) -> ShapeHandle {
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal(shape, bitmap_source);
+        self.meshes.push(mesh);
+        handle
+    }
+
+    fn replace_shape(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        handle: ShapeHandle,
+    ) {
+        let mesh = self.register_shape_internal(shape, bitmap_source);
+        self.meshes[handle.0] = mesh;
+    }
+
+    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
+        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
+        let handle = ShapeHandle(self.meshes.len());
+        let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
+        self.meshes.push(mesh);
+        handle
+    }
+
+    fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+        self.begin_frame(clear);
+        commands.execute(self);
+        self.end_frame();
+    }
+
+    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
+        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
+    }
+
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+        let format = match bitmap.format() {
+            BitmapFormat::Rgb => Gl::RGB,
+            BitmapFormat::Rgba => Gl::RGBA,
+        };
+
+        let texture = self.gl.create_texture().unwrap();
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+        self.gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                Gl::TEXTURE_2D,
+                0,
+                format as i32,
+                bitmap.width() as i32,
+                bitmap.height() as i32,
+                0,
+                format,
+                Gl::UNSIGNED_BYTE,
+                Some(bitmap.data()),
+            )
+            .into_js_result()
+            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
+        let handle = self.next_bitmap_handle;
+        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
+        self.bitmap_registry
+            .insert(handle, RegistryData { bitmap, texture });
+
+        Ok(handle)
+    }
+
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
+        self.bitmap_registry.remove(&bitmap);
+    }
+
+    fn update_texture(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    ) -> Result<BitmapHandle, BitmapError> {
+        let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
+            &entry.texture
+        } else {
+            log::warn!("Tried to replace nonexistent texture");
+            return Ok(handle);
+        };
+
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+
+        self.gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                Gl::TEXTURE_2D,
+                0,
+                Gl::RGBA as i32,
+                width as i32,
+                height as i32,
+                0,
+                Gl::RGBA,
+                Gl::UNSIGNED_BYTE,
+                Some(&rgba),
+            )
+            .into_js_result()
+            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
+
+        Ok(handle)
+    }
+}
+
+impl CommandHandler for WebGlRenderBackend {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
         if let Some(entry) = self.bitmap_registry.get(&bitmap) {
@@ -1284,89 +1377,6 @@ impl RenderBackend for WebGlRenderBackend {
         if old != Some(current) {
             self.apply_blend_mode(current);
         }
-    }
-
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
-    }
-
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
-        let format = match bitmap.format() {
-            BitmapFormat::Rgb => Gl::RGB,
-            BitmapFormat::Rgba => Gl::RGBA,
-        };
-
-        let texture = self.gl.create_texture().unwrap();
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-        self.gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                Gl::TEXTURE_2D,
-                0,
-                format as i32,
-                bitmap.width() as i32,
-                bitmap.height() as i32,
-                0,
-                format,
-                Gl::UNSIGNED_BYTE,
-                Some(bitmap.data()),
-            )
-            .into_js_result()
-            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
-
-        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
-
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        self.bitmap_registry
-            .insert(handle, RegistryData { bitmap, texture });
-
-        Ok(handle)
-    }
-
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
-        self.bitmap_registry.remove(&bitmap);
-    }
-
-    fn update_texture(
-        &mut self,
-        handle: BitmapHandle,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, BitmapError> {
-        let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
-            &entry.texture
-        } else {
-            log::warn!("Tried to replace nonexistent texture");
-            return Ok(handle);
-        };
-
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-
-        self.gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                Gl::TEXTURE_2D,
-                0,
-                Gl::RGBA as i32,
-                width as i32,
-                height as i32,
-                0,
-                Gl::RGBA,
-                Gl::UNSIGNED_BYTE,
-                Some(&rgba),
-            )
-            .into_js_result()
-            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
-
-        Ok(handle)
     }
 }
 

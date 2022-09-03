@@ -11,6 +11,7 @@ use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::Transform;
 use std::ops::Range;
 
@@ -971,54 +972,50 @@ impl<'gc> BitmapData<'gc> {
         let mut transform_stack = ruffle_render::transform::TransformStack::new();
         transform_stack.push(&transform);
         let handle = self.bitmap_handle(context.renderer).unwrap();
+        let mut commands = CommandList::new();
+
+        let mut render_context = RenderContext {
+            renderer: context.renderer,
+            commands: &mut commands,
+            gc_context: context.gc_context,
+            ui: context.ui,
+            library: &context.library,
+            transform_stack: &mut transform_stack,
+            is_offscreen: true,
+            stage: context.stage,
+            clip_depth_stack: vec![],
+            allow_mask: true,
+        };
+
+        // Make the screen opacity match the opacity of this bitmap
+        let initial_alpha = if self.transparency { 0 } else { 0xFF };
+        render_context.commands.push_blend_mode(blend_mode);
+        match &mut source {
+            IBitmapDrawable::BitmapData(data) => {
+                let source_handle = data
+                    .write(context.gc_context)
+                    .bitmap_handle(render_context.renderer)
+                    .unwrap();
+                render_context.commands.render_bitmap(
+                    source_handle,
+                    render_context.transform_stack.transform(),
+                    smoothing,
+                );
+            }
+            IBitmapDrawable::DisplayObject(object) => {
+                // Note that we do *not* use `render_base`,
+                // as we want to ignore the object's mask and normal transform
+                object.render_self(&mut render_context);
+            }
+        }
+        render_context.commands.pop_blend_mode();
 
         let image = context.renderer.render_offscreen(
             handle,
             bitmapdata_width,
             bitmapdata_height,
-            &mut |renderer| {
-                let mut render_context = RenderContext {
-                    renderer,
-                    gc_context: context.gc_context,
-                    ui: context.ui,
-                    library: &context.library,
-                    transform_stack: &mut transform_stack,
-                    is_offscreen: true,
-                    stage: context.stage,
-                    clip_depth_stack: vec![],
-                    allow_mask: true,
-                };
-
-                // Make the screen opacity match the opacity of this bitmap
-                let initial_alpha = if self.transparency { 0 } else { 0xFF };
-
-                render_context
-                    .renderer
-                    .begin_frame(swf::Color::from_rgb(0x000000, initial_alpha));
-                render_context.renderer.push_blend_mode(blend_mode);
-                match &mut source {
-                    IBitmapDrawable::BitmapData(data) => {
-                        let source_handle = data
-                            .write(context.gc_context)
-                            .bitmap_handle(render_context.renderer)
-                            .unwrap();
-                        render_context.renderer.render_bitmap(
-                            source_handle,
-                            render_context.transform_stack.transform(),
-                            smoothing,
-                        );
-                    }
-                    IBitmapDrawable::DisplayObject(object) => {
-                        // Note that we do *not* use `render_base`,
-                        // as we want to ignore the object's mask and normal transform
-                        object.render_self(&mut render_context);
-                    }
-                }
-                render_context.renderer.pop_blend_mode();
-                render_context.renderer.end_frame();
-
-                Ok(())
-            },
+            commands,
+            swf::Color::from_rgb(0x000000, initial_alpha),
         );
 
         match image {

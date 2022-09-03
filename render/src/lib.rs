@@ -8,5 +8,6 @@ pub mod shape_utils;
 pub mod transform;
 pub mod utils;
 
+pub mod commands;
 #[cfg(feature = "tessellator")]
 pub mod tessellator;

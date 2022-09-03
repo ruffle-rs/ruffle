@@ -47,6 +47,7 @@ pub use interactive::{InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+use ruffle_render::commands::CommandHandler;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMode, WindowMode};
 pub use text::Text;
 pub use video::Video;
@@ -483,7 +484,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     context.transform_stack.push(this.base().transform());
     let blend_mode = this.blend_mode();
     if blend_mode != BlendMode::Normal {
-        context.renderer.push_blend_mode(this.blend_mode());
+        context.commands.push_blend_mode(this.blend_mode());
     }
 
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
@@ -518,13 +519,13 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if let Some(m) = mask {
         mask_transform.matrix = this.global_to_local_matrix();
         mask_transform.matrix *= m.local_to_global_matrix();
-        context.renderer.push_mask();
+        context.commands.push_mask();
         context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
         context.allow_mask = true;
-        context.renderer.activate_mask();
+        context.commands.activate_mask();
     }
 
     // There are two parts to 'DisplayObject.scrollRect':
@@ -539,10 +540,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     // lies in the intersection of the scroll rect and DisplayObject.mask,
     // which is exactly the behavior that we want.
     if let Some(rect_mat) = scroll_rect_matrix {
-        context.renderer.push_mask();
+        context.commands.push_mask();
         // The color doesn't matter, as this is a mask.
-        context.renderer.draw_rect(Color::BLACK, &rect_mat);
-        context.renderer.activate_mask();
+        context.commands.draw_rect(Color::BLACK, &rect_mat);
+        context.commands.activate_mask();
     }
 
     this.render_self(context);
@@ -550,22 +551,22 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if let Some(rect_mat) = scroll_rect_matrix {
         // Draw the rectangle again after deactivating the mask,
         // to reset the stencil buffer.
-        context.renderer.deactivate_mask();
-        context.renderer.draw_rect(Color::BLACK, &rect_mat);
-        context.renderer.pop_mask();
+        context.commands.deactivate_mask();
+        context.commands.draw_rect(Color::BLACK, &rect_mat);
+        context.commands.pop_mask();
     }
 
     if let Some(m) = mask {
-        context.renderer.deactivate_mask();
+        context.commands.deactivate_mask();
         context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
         context.allow_mask = true;
-        context.renderer.pop_mask();
+        context.commands.pop_mask();
     }
     if blend_mode != BlendMode::Normal {
-        context.renderer.pop_blend_mode();
+        context.commands.pop_blend_mode();
     }
 
     if scroll_rect_matrix.is_some() {

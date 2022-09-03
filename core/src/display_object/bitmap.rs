@@ -11,6 +11,7 @@ use crate::prelude::*;
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 
 /// A Bitmap display object is a raw bitamp on the stage.
@@ -272,7 +273,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 }
             }
 
-            context.renderer.render_bitmap(
+            context.commands.render_bitmap(
                 bitmap_handle,
                 context.transform_stack.transform(),
                 bitmap_data.smoothing,

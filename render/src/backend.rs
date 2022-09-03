@@ -1,13 +1,13 @@
 pub mod null;
 
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::commands::CommandList;
 use crate::error::Error;
-use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
-use crate::transform::Transform;
 use crate::utils;
 use downcast_rs::{impl_downcast, Downcast};
 use swf;
+use swf::Color;
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -50,7 +50,8 @@ pub trait RenderBackend: Downcast {
         handle: BitmapHandle,
         width: u32,
         height: u32,
-        f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), Error>,
+        commands: CommandList,
+        clear_color: Color,
     ) -> Result<Bitmap, Error>;
 
     fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
@@ -96,18 +97,7 @@ pub trait RenderBackend: Downcast {
         })
     }
 
-    fn begin_frame(&mut self, clear: swf::Color);
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool);
-    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
-    fn draw_rect(&mut self, color: swf::Color, matrix: &Matrix);
-    fn end_frame(&mut self);
-    fn push_mask(&mut self);
-    fn activate_mask(&mut self);
-    fn deactivate_mask(&mut self);
-    fn pop_mask(&mut self);
-
-    fn push_blend_mode(&mut self, blend: swf::BlendMode);
-    fn pop_blend_mode(&mut self);
+    fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap>;
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
