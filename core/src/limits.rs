@@ -51,6 +51,19 @@ impl ExecutionLimit {
         }
     }
 
+    /// Create an execution limit that is already expired.
+    ///
+    /// This is intended to indicate that only the smallest action possible be
+    /// taken before returning. Code that obeys an execution limit must be able
+    /// to make forward progress even when restricted to this limit.
+    pub fn exhausted() -> ExecutionLimit {
+        Self {
+            current_action_limit: Some(0),
+            max_actions_per_check: Some(0),
+            time_limit: Duration::from_secs(0),
+        }
+    }
+
     /// Check if the execution of a certain number of actions has exceeded the
     /// execution limit.
     ///
