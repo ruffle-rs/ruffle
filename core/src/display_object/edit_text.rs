@@ -245,25 +245,12 @@ impl<'gc> EditText<'gc> {
                     context.gc_context,
                     EditTextStatic {
                         swf: swf_movie,
-                        text: EditTextStaticData {
-                            id: swf_tag.id(),
-                            bounds: swf_tag.bounds().clone(),
-                            font_id: swf_tag.font_id(),
-                            font_class_name: swf_tag
-                                .font_class()
-                                .map(|s| s.to_string_lossy(encoding)),
-                            height: swf_tag.height(),
-                            color: swf_tag.color().cloned(),
-                            max_length: swf_tag.max_length(),
-                            layout: swf_tag.layout().cloned(),
-                            variable_name: WString::from_utf8_owned(
-                                swf_tag.variable_name().to_string_lossy(encoding),
-                            ),
-                            initial_text: swf_tag
-                                .initial_text()
-                                .map(|s| WString::from_utf8_owned(s.to_string_lossy(encoding))),
-                            flags: swf_tag.flags(),
-                        },
+                        id: swf_tag.id(),
+                        bounds: swf_tag.bounds().clone(),
+                        layout: swf_tag.layout().cloned(),
+                        initial_text: swf_tag
+                            .initial_text()
+                            .map(|s| WString::from_utf8_owned(s.to_string_lossy(encoding))),
                     },
                 ),
                 flags,
@@ -576,7 +563,7 @@ impl<'gc> EditText<'gc> {
 
         let mut base_width = Twips::from_pixels(self.width());
 
-        if let Some(layout) = &static_data.text.layout {
+        if let Some(layout) = &static_data.layout {
             base_width -= layout.left_margin;
             base_width -= layout.indent;
             base_width -= layout.right_margin;
@@ -620,7 +607,6 @@ impl<'gc> EditText<'gc> {
             .0
             .read()
             .static_data
-            .text
             .initial_text
             .clone()
             .unwrap_or_default();
@@ -748,8 +734,7 @@ impl<'gc> EditText<'gc> {
                 edit_text.bounds.set_x(new_x);
                 edit_text.bounds.set_width(width);
             } else {
-                let width = edit_text.static_data.text.bounds.x_max
-                    - edit_text.static_data.text.bounds.x_min;
+                let width = edit_text.static_data.bounds.x_max - edit_text.static_data.bounds.x_min;
                 edit_text.bounds.set_width(width);
             }
             let height = intrinsic_bounds.height() + padding;
@@ -1418,7 +1403,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.text.id
+        self.0.read().static_data.id
     }
 
     fn movie(&self) -> Option<Arc<SwfMovie>> {
@@ -1795,27 +1780,13 @@ bitflags::bitflags! {
 
 /// Static data shared between all instances of a text object.
 #[derive(Debug, Clone, Collect)]
-#[collect(no_drop)]
+#[collect(require_static)]
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
-    text: EditTextStaticData,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Collect)]
-#[collect(require_static)]
-struct EditTextStaticData {
     id: CharacterId,
     bounds: swf::Rectangle,
-    font_id: Option<CharacterId>, // TODO(Herschel): Combine with height
-    font_class_name: Option<String>,
-    height: Option<Twips>,
-    color: Option<Color>,
-    max_length: Option<u16>,
     layout: Option<swf::TextLayout>,
-    variable_name: WString,
     initial_text: Option<WString>,
-    flags: swf::EditTextFlag,
 }
 
 #[derive(Copy, Clone, Debug, Collect)]
