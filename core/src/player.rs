@@ -1335,13 +1335,21 @@ impl Player {
     /// derived from the current frame rate and execution time. Clients that
     /// want synchronous or 'lockstep' preloading may call this function with
     /// an unlimited execution limit.
-    fn preload(&mut self, limit: &mut ExecutionLimit) {
+    ///
+    /// Returns true if all preloading work has completed. Clients that want to
+    /// simulate a particular load condition or stress chunked loading may use
+    /// this in lieu of an unlimited execution limit.
+    fn preload(&mut self, limit: &mut ExecutionLimit) -> bool {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            root.as_movie_clip().unwrap().preload(context, limit);
+            let mut did_finish = root.as_movie_clip().unwrap().preload(context, limit);
 
-            LoadManager::preload_tick(context, limit);
-        });
+            if did_finish {
+                did_finish = LoadManager::preload_tick(context, limit);
+            }
+
+            did_finish
+        })
     }
 
     pub fn run_frame(&mut self) {
