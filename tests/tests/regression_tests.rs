@@ -18,7 +18,9 @@ use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 
 #[cfg(feature = "imgtests")]
-use ruffle_render_wgpu::{target::TextureTarget, wgpu, WgpuRenderBackend};
+use ruffle_render_wgpu::backend::WgpuRenderBackend;
+#[cfg(feature = "imgtests")]
+use ruffle_render_wgpu::{target::TextureTarget, wgpu};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::Path;

@@ -23,8 +23,8 @@ use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
     StageDisplayState, StaticCallstack, ViewportDimensions,
 };
+use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use ruffle_render_wgpu::WgpuRenderBackend;
 use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
