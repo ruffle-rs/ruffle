@@ -27,30 +27,11 @@ pub mod backend;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod frame;
 
-struct RegistryData {
+pub struct RegistryData {
     bitmap: Bitmap,
     texture_wrapper: Texture,
-}
-
-#[allow(dead_code)]
-struct Frame<'a, T: RenderTarget> {
-    frame_data: Box<(wgpu::CommandEncoder, T::Frame, wgpu::CommandEncoder)>,
-
-    // TODO: This is a self-reference to the above, so we
-    // use some unsafe to cast the lifetime away. We know this
-    // is safe because the anpve data should live for the
-    // entire frame and is boxed to have a stable address.
-    // We could clean this up later by adjusting the
-    // RenderBackend interface to return a Frame object.
-    render_pass: wgpu::RenderPass<'a>,
-}
-
-impl<'a, T: RenderTarget> Frame<'static, T> {
-    // Get a reference to the render pass with the proper lifetime.
-    fn get(&mut self) -> &mut Frame<'a, T> {
-        unsafe { std::mem::transmute::<_, &mut Frame<'a, T>>(self) }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
@@ -63,7 +44,7 @@ pub enum MaskState {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Transforms {
+pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
     color_adjustments: ColorAdjustments,
 }
@@ -197,7 +178,7 @@ impl From<TessGradient> for GradientStorage {
 }
 
 #[derive(Debug)]
-struct Mesh {
+pub struct Mesh {
     draws: Vec<Draw>,
 }
 
@@ -226,58 +207,6 @@ enum DrawType {
         is_repeating: bool,
         bind_group: wgpu::BindGroup,
     },
-}
-
-fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
-    let vertices = [
-        Vertex {
-            position: [0.0, 0.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 0.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [0.0, 1.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-    ];
-    let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
-
-    let vbo = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&vertices),
-        wgpu::BufferUsages::VERTEX,
-        create_debug_label!("Quad vbo"),
-    );
-
-    let ibo = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&indices),
-        wgpu::BufferUsages::INDEX,
-        create_debug_label!("Quad ibo"),
-    );
-
-    let tex_transforms = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&[TextureTransforms {
-            u_matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-        }]),
-        wgpu::BufferUsages::UNIFORM,
-        create_debug_label!("Quad tex transforms"),
-    );
-
-    (vbo, ibo, tex_transforms)
 }
 
 #[derive(Debug)]
