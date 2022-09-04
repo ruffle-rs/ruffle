@@ -15,7 +15,7 @@ use crate::duration::Duration;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
-use std::ops::{Add, AddAssign, Sub};
+use std::ops::{Add, Sub};
 
 /// Manages the collection of timers.
 pub struct Timers<'gc> {
@@ -35,7 +35,7 @@ impl<'gc> Timers<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         dt: Duration,
     ) -> Option<Duration> {
-        context.timers.cur_time.add_assign(dt);
+        context.timers.cur_time += dt;
 
         let num_timers = context.timers.num_timers();
 
