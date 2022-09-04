@@ -1,6 +1,5 @@
 package flash.system {
     import flash.display.DisplayObjectContainer;
-    import flash.system.ApplicationDomain;
 
     public class LoaderContext {
         public var allowCodeImport : Boolean;

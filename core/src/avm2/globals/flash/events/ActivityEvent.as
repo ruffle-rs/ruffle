@@ -1,5 +1,4 @@
 package flash.events {
-	import flash.events.Event;
 	public class ActivityEvent extends Event {
 		public var activating:Boolean;
 

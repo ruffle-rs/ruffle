@@ -7,10 +7,15 @@ package flash.events
     
     public class NetDataEvent extends Event
     {
-        public static const MEDIA_TYPE_DATA:String = "mediaTypeData"; // The NetDataEvent.MEDIA_TYPE_DATA constant defines the value of the type property of the NetDataEvent object dispatched when a data message in the media stream is encountered by the NetStream object.
+        // The NetDataEvent.MEDIA_TYPE_DATA constant defines the value of the type property of the NetDataEvent object
+        // dispatched when a data message in the media stream is encountered by the NetStream object.
+        public static const MEDIA_TYPE_DATA:String = "mediaTypeData";
 
-        private var _timestamp: Number; // The timestamp of the data message in the media stream.
-        private var _info: Object; // A data object describing the message.
+        // The timestamp of the data message in the media stream.
+        private var _timestamp: Number;
+
+        // A data object describing the message.
+        private var _info: Object;
 
         public function NetDataEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, timestamp:Number = 0, info:Object = null)
         {
@@ -20,13 +25,13 @@ package flash.events
         }
         
 
-        //  Creates a copy of an NetDataEvent object and sets the value of each property to match that of the original.
+        // Creates a copy of an NetDataEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
         {
             return new NetDataEvent(this.type, this.bubbles, this.cancelable, this.timestamp, this.info);
         }
 
-        //  Returns a string that contains all the properties of the NetDataEvent object.
+        // Returns a string that contains all the properties of the NetDataEvent object.
         override public function toString():String
         {
             return this.formatToString("NetDataEvent","type","bubbles","cancelable","eventPhase","timestamp");

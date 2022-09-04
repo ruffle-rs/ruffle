@@ -1,0 +1,657 @@
+﻿<ruleset name="Ruffle Playerglobal Rules" xsi:schemaLocation="http://pmd.sf.net/ruleset/1.0.0 http://pmd.sf.net/ruleset_xml_schema.xsd" xsi:noNamespaceSchemaLocation="http://pmd.sf.net/ruleset_xml_schema.xsd" xmlns="http://pmd.sf.net/ruleset/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <description/>
+  <rule since="" class="com.adobe.ac.pmd.rules.architecture.ViewComponentReferencedInModelRule" message="A view component should not be referenced in a model class">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[package com.adobe.ac
+{
+   import mx.controls.ComboBox; // VIOLATION
+
+   public class MyModelClass
+   {
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.architecture.MonkeyPatchingRule" message="This class looks to be duplicated with a SDK class">
+    <description>Monkey patching can be a risky undertaking because it is not using intended extensibility points and thus may have unintended consequences or make migration to newer versions of the SDK more difficult</description>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.architecture.UseInternalClassOutsideApiClass" message="This class imports an internal class ({0}) from another function area ({1})">
+    <description>If you have different functionalities, you probably don't want every class of each to be accessible from any other functional areas.
+So you probably want to use this packaging:
+[org].[project].func1.api
+[org].[project].func1.restricted
+[org].[project].func2.api
+[org].[project].func2.restricted
+This rule makes sure that no restricted classes is accessed from outside its own function area.</description>
+    <priority>1</priority>
+    <example><![CDATA[package functional
+{
+	import functional.func1.api.Func1ExposedClass;
+	import functional.func1.restricted.Func1RestrictedClass; // VIOLATION
+	import functional.func2.api.Func2ExposedClass;
+	import functional.func2.restricted.Func2RestrictedClass; // VIOLATION
+	
+	public class FunctionClient
+	{
+	}
+}
+package functional.func1.api
+
+{
+	import functional.func1.restricted.Func1RestrictedClass; 
+	import functional.func2.api.Func2ExposedClass;
+	import functional.func2.restricted.Func2RestrictedClass; // VIOLATION
+	
+	public class Func1ExposedClass
+	{
+	}
+}
+package functional.func1.restricted
+{
+	import functional.func1.api.Func1ExposedClass;
+	import functional.func2.api.Func2ExposedClass;
+	import functional.func2.restricted.Func2RestrictedClass; // VIOLATION
+	
+	public class Func1RestrictedClass
+	{
+	}
+}
+package functional.func2.api
+{
+	import functional.func1.api.Func1ExposedClass;
+	import functional.func1.restricted.Func1RestrictedClass; // VIOLATION
+	import functional.func2.restricted.Func2RestrictedClass;
+	
+	public class Func2ExposedClass
+	{
+	}
+}
+package functional.func2.restricted
+{
+	import functional.func1.api.Func1ExposedClass;
+	import functional.func1.restricted.Func1RestrictedClass; // VIOLATION
+	import functional.func2.api.Func2ExposedClass;
+	
+	public class Func2RestrictedClass
+	{
+	}
+}]]></example>
+  </rule>
+  <!--<rule since="" class="com.adobe.ac.pmd.rules.asdocs.AttributeAsDocMissingRule" message="This attribute ({0}) should be documented with AsDocs.">
+    <description/>
+    <priority>3</priority>
+  </rule>-->
+  <!--<rule since="" class="com.adobe.ac.pmd.rules.asdocs.MethodAsDocMissingRule" message="This method ({0}) should be documented with AsDocs.">
+    <description/>
+    <priority>3</priority>
+  </rule>-->
+  <rule since="" class="com.adobe.ac.pmd.rules.mxml.MoreThanOneEntryPointInMxmlRule" message="There is more than 1 public variable in this MXML component">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.mxml.MoreThanTwoEntryPointsInMxmlRule" message="There are more than 2 public variables in this MXML component">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.mxml.TooLongScriptBlockRule" message="This script block is too long ({0} maximum, but {1} actually)">
+    <description/>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>50</value>
+      </property>
+    </properties>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.mxml.CodeBehindInMxmlRule" message="Avoid using code behind files">
+    <description>Code behind files are tightly coupled with the view, not unit-testable, not easy to navigate the code code base and not reusable. Try using presentation model pattern, or observer pattern</description>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.binding.BindingUtilsRule" message="BindingUtils class uses hard coded strings, which won't be picked up by the compiler if you rename this attribute. You should probably consider refactoring using events">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[public class Controller extends FrontController
+{
+   public function Controller()
+   {
+   	 BindingUtils.bindSetter(setContent, value, "content"); // VIOLATION
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.binding.ChangeWatcherRule" message="ChangeWatcher class uses hard coded strings to specify the attribute name, to listen to. Prefer listening to events or setters">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[public final class Title 
+{
+	private var watcher : ChangeWatcher; // VIOLATION
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.binding.TooLongBindingExpressionRule" message="This binding expression is too long ({0} dots maximum, but {1} actually)">
+    <description>A Binding expression is executed as soon as one of the bindable attributes changed. If a binding expression contains too many expression, there could be some performance issue.</description>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>3</value>
+      </property>
+    </properties>
+    <example><![CDATA[
+<mx:Label text="{ vfrfr.frfr.frf.lala }"/> <!-- Violation-->
+		]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.BindableModelLocatorRule" message="A modelLocator must not be Bindable at a class level">
+    <description>A bindable ModelLocator could leads to performance issues due to bindings</description>
+    <priority>1</priority>
+    <example><![CDATA[[Bindable]
+public class BindableModelLocator // VIOLATION 
+{      
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.ReferenceModelLocatorOutsideTheMainApplicationRule" message="The ModelLocator should be only accessible from the main application file">
+    <description>The ModelLocator should be only accessible from the main application file. Then sub-models should be injected to the nested views.</description>
+    <priority>3</priority>
+    <example><![CDATA[package business
+{
+   import model.MyModelLocator; // VIOLATION
+   
+   public class MyBusinessClass 
+   {
+   } 
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.FatControllerRule" message="A FrontController must nor add all its commands within the Controller constructor">
+    <description>Try split them into methods where you add commands depending on their functional area.</description>
+    <priority>3</priority>
+    <example><![CDATA[package control
+{
+   import control.GetItems1Command;
+   import control.GetItems1Event;
+   import control.GetItems2Command;
+   import control.GetItems2Event;
+   // A lot of other imports
+   
+   public class MyFrontController // VIOLATION
+   {
+      public function MyFrontController()
+      {
+         addCommand( 
+            GetItems1Event.EVENT_NAME,
+            GetItems1Command );
+
+         addCommand( 
+            GetItems2Event.EVENT_NAME,
+            GetItems2Command );
+
+         // A lot of other addCommand
+      }
+   } 
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.BadCairngormEventNameFormatRule" message="A Cairngorm event name should contain the function area name before the actual event name">
+    <description>You would have something like 'productManagement.getProducts' as an event name.</description>
+    <priority>3</priority>
+    <example><![CDATA[public class UncorrectConstructorEvent extends CairngormEvent
+{
+   public function UncorrectConstructorEvent( model : IModel )
+   {
+      super( "eventName", model ); // VIOLATION. It should be "functionalArea.eventName" instead
+   }
+}
+public class UncorrectConstantEvent extends CairngormEnterpriseEvent
+{
+   public static const EVENT_NAME : String = "eventName";
+   
+   public function UncorrectConstantEvent( model : IModel )
+   {
+      super( EVENT_NAME, model ); // VIOLATION
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.CairngormEventDispatcherCallExplicitlyRule" message="CairngormEventDispatcher is called explicitly. {0}">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[
+public function foo() : void
+{
+   CairngormEventDispatcher.getInstance().dispatchEvent(new Event(CONSTANT)); // VIOLATION <- use cairngormEvent.dispatch();
+   CairngormEventDispatcher.getInstance().addEventListener(CONSTANT, onHearing); // VIOLATION <- MVC broken
+}  
+		  ]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.cairngorm.ModelLocatorReferencedMoreThanOncePerClassRule" message="Only one reference of ModelLocator is allowed per class">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.component.UpdateChildrenNumberInUpdateDisplayListRule" message="Flex specific - Do not add or remove displayable children from updateDisplayList">
+    <description>UpdateDisplayList is called everytime a child is invalidated. So calling addChild or removeChild in this function could be really CPU consuming</description>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.component.CallLaterDirectlyRule" message="Flex specific - Don't call 'callLater' explicitly">
+    <description>If you needed to call 'callLater' explicitly, then you probably did not extend the correct component life cycle.</description>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.css.StyleBlockInMxmlRule" message="The style block is embed in the MXML file">
+    <description>It is not a good practice to embed style blocks inside the MXML component. Prefer using external CSS files.</description>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.css.UseCssInsteadOfEmbedMetaDataRule" message="Embed metadata detected in source code where a stylesheet may be cleaner">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.empty.EmptyCatchStatementRule" message="This catch statement is empty">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[public class Foo 
+{
+   public function bar( x : int ) : void
+   {
+      try
+      {
+      }
+      catch( e : Exception )         // VIOLATION
+      {
+      }
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.empty.EmptyIfStmtRule" message="No statements in this if statement">
+    <description>Empty If Statement finds instances where a condition is checked but nothing is done about it.</description>
+    <priority>3</priority>
+    <example><![CDATA[public class Foo 
+{
+   public function bar( x : int ) : void
+   {
+      if ( x == 0 ) 
+      {
+         // VIOLATION
+      }
+   }
+}]]></example>
+  </rule>
+  <!-- MIKE: Disabled because many AS3 event classes do not override `clone`.
+  <rule since="" class="com.adobe.ac.pmd.rules.event.EventMissingCloneFunctionRule" message="The clone event must be overiden in a custom event">
+    <description>When creating your own custom Event class, you must override the inherited Event.clone() method in order for it to duplicate the properties of your custom class. If you do not set all the properties that you add in your event subclass, those properties will not have the correct values when the event is cloned. This is important because the Flex SDK clones events whenever redispatching takes place.</description>
+    <priority>3</priority>
+    <example><![CDATA[public class FirstCustomEvent   // VIOLATION - clone method is missing
+{
+   public var lala : String;
+   
+   public function FirstCustomEvent()
+   {         
+   }
+}]]></example>
+  </rule>
+  -->
+  <rule since="" class="com.adobe.ac.pmd.rules.event.ConstructorDispatchingEventRule" message="An event is dispatched in a constructor">
+    <description>This is pointless, since event listeners cannot be attached to an object before it has been constructed, so nothing can ever hear the event</description>
+    <priority>1</priority>
+    <example><![CDATA[public class BigModel   
+{
+   public function BigModel()
+   {    
+      dispatchEvent( new Event( "pointlessEvent" ) );     
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.event.DefaultEventNameRule" message="Event name should be set explicitly">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[public class DefaultNameEvent extends Event	
+{
+	public function DefaultNameEvent( type : String = "" )
+	{
+		super( type );
+	}
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.event.DispatchHardCodedEventNameRule" message="DispatchEvent function must dispatch constant strings">
+    <description>You should not dispatch a plain string. If you rename this string, you need to replace the string listener as well. Use constants instead</description>
+    <priority>1</priority>
+    <example><![CDATA[public class Foo 
+{
+   public function bar() : void
+   {
+      dispatch( new Event( "myHardCodedEvent" ) ); // VIOLATION
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.event.ListenForHardCodedEventNameRule" message="addEventListener must not contain hard coded strings">
+    <description>You should not listen for a plain string. If you rename this string, you need to replace the string listener as well. Use constants instead</description>
+    <priority>1</priority>
+    <example><![CDATA[public class Foo 
+{
+   public function bar() : void
+   {
+      addEventListener( "myHardCodedEvent", handleMyHardCodedEvent ); // VIOLATION
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.event.UnboundTypeInMetadataRule" message="This type ({0}) was not found within the scope against which PMD was run">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[[Event(name="myTypeEvent",type="UnknownType")] // VIOLATION
+public class UnboundMetadata
+{
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.event.UntypedEventMetadataRule" message="This event type is not specified">
+    <description>Specifying a type will allow Flash builder and the class to have this event exposed in its API</description>
+    <priority>3</priority>
+    <example><![CDATA[[Event(name="myTypeEvent")] // VIOLATION
+public class UnTypedMetadata
+{
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.naming.PackageCaseRule" message="A package name should be lower case ({0})">
+    <description>Detects when a package definition contains upper case characters.</description>
+    <priority>1</priority>
+    <example><![CDATA[
+package com.MyCompany  // VIOLATION <- should be lower case name
+{
+   public class SomeClass 
+   {
+   }
+}
+         ]]></example>
+  </rule>
+  <!--
+  <rule since="" class="com.adobe.ac.pmd.rules.naming.PropertyHiddenByLocalVariableRule" message="A class property is hidden by this local variable ({0})">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[public class SomeClass 
+{
+   public var myField : int = 0;
+   
+   public function foo() : void
+   {
+   	var myField : int = 9; // VIOLATION
+   }
+}]]></example>
+  </rule>
+  -->
+  <rule since="" class="com.adobe.ac.pmd.rules.naming.WronglyNamedVariableRule" message="This variable ({0}) seems to be incorrectly named. Let your creativity flow">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[
+public class SomeClass 
+{
+   public var myField : int = 0; // VIOLATION <- my prefix is forbidden
+   
+   public function tmpFoo() : void // VIOLATION <- tmp prefix is forbidden
+   {
+   	var tempFoo : int = 9; // VIOLATION <- temp prefix is forbidden
+   }
+}		
+		]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.InaccessibleMetaDataRule" message="Parsley metadata should not be placed on inaccessible members.">
+    <description>Parsley can only process metadata that is placed onto public members.</description>
+    <priority>1</priority>
+    <example><![CDATA[[MessageHandler]
+private function doSomething() : void // VIOLATION 
+{      
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.MismatchedManagedEventRule" message="Managed events should have matching [Event] metadata">
+    <description>Each managed event should have matching [Event] metadata.</description>
+    <priority>1</priority>
+    <example><![CDATA[[Event(name="message", type="my.package.MyEvemt")]
+[ManagedEvents(names="messag")] // VIOLATION
+public class MyClass  
+{      
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.MessageInterceptorSignatureRule" message="The signature of the message interceptor {0} is not correct. {1}.">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[
+[MessageInterceptor(type="a.b.MyMessage")]
+public function messageInterceptor( processor : MessageProcessor ) : void
+{
+   processor.proceed();
+}
+
+[MessageInterceptor(type="a.b.MyMessage")]
+public function messageInterceptor() : void // VIOLATION
+{
+}
+
+[MessageInterceptor(type="a.b.MyMessage")]
+public function messageInterceptor( type : MyMessage ) : void // VIOLATION
+{
+   type.something();
+}
+
+[MessageInterceptor(type="a.b.MyMessage")]
+public function messageInterceptor( processor : MessageProcessor, type : MyMessage ) : void // VIOLATION
+{
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.MisplacedMetaDataRule" message="This metadata {0} is misplaced">
+    <description/>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.RedundantMessageHandlerTypeAttributeRule" message="This type metadata argument is redundant with the handler argument type">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[
+[MessageHandler(type="a.b.MyMessage")] // VIOLATION
+public function doSomething( message : MyMessage ) : void
+{
+   message.toString();
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.RedundantMethodAttributeRule" message="This method metadata argument is redundant with the handler name">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[
+[MessageHandler(method="doSomething")] // VIOLATION
+public function doSomething( message : MyMessage ) : void
+{
+   message.toString();
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.parsley.UnknownMetaDataAttributeRule" message="This metadata attribute {0} is unknown">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[
+[AsyncInit(x="y")] // VIOLATION
+public class UnknownMetaDataAttribute
+{
+   [Inject(x="y")] // VIOLATION
+   public var inject;
+
+   [MessageHandler(x="y")] // VIOLATION
+   public function messageHandler() : void
+   {
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.DynamicFiltersUsedInPopup" message="A popup should not use dynamic filters">
+    <description>Prefer using embed filters in assets</description>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.CyclomaticComplexityRule" message="This method is too complex. Maximum complexity is {0}, but its cyclomatic complexity was {1}">
+    <description/>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>15</value>
+      </property>
+    </properties>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.HeavyConstructorRule" message="Constructor must be as lightweight as possible. No control statement allowed, whereas a cyclomatic complexe of {0} has been detected">
+    <description>The Just-In-Time compiler does not compile constructors. Make them as lightweight as possible, or move the complexity of the code to a method called by the constructor. Then the complexity will be compiled by the JIT.</description>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.CreationPolicySetToAllRule" message="creationPolicy to ALL impacts the performance significantly">
+    <description/>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.BindableClassRule" message="Globally bindable classes can lead to unexpected behaviour especially when you have a setter to a property, and hits the performance of the application">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.AvoidInstanciationInLoopRule" message="Instanciating a variable in a loop can be expensive">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.DeeplyNestedIfRule" message="Nested if statements are not a good design">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.performance.RecursiveStyleManagerRule" message="Detect calls to the StyleManager that don’t pass “false” as the second parameter">
+    <description>A recursive style manager call can be a very expensive operation, causing parts of the UI to flicker visibly. Instead it is preferable to defer the creation of parts of the UI that depend on a runtime CSS SWF until after the SWF has been loaded. In this case a recursive call is not required.</description>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.sizing.TooLongFunctionRule" message="This function is far too long ({0} maximum, but {1} actually)">
+    <description>Violations of this rule usually indicate that the method has too much responsibility. Try to reduce the method size by creating helper methods and removing any copy/pasted code.</description>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>20</value>
+      </property>
+    </properties>
+    <example><![CDATA[public class Foo 
+   {
+      public function doSomething() : void
+      {
+         System.out.println("Hello world!");
+         System.out.println("Hello world!");
+         // 98 copies omitted for brevity.
+      }
+   }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.sizing.TooLongSwitchCaseRule" message="Long switch case detected ({0} lines maximum, but {1} actually)">
+    <description>A switch case statement should be either empty, or contain a break, or call another method.</description>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>3</value>
+      </property>
+    </properties>
+    <example><![CDATA[public class Bar   
+   {
+      public function foo() : void
+      {
+          var i : int = 4;
+          
+          switch( i )
+          {
+             case 1:
+                handleFirstCase();
+                break;
+             case 2: // VIOLATION
+                googleResquest.url = "";
+                handleSecondCaseFirstPart();
+                handleSecondCaseSecondPart();
+                break;
+          }
+      }
+   }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.sizing.TooManyFieldInVORule" message="Too many field detected ({0} maximum, but {1} actually)">
+    <description/>
+    <priority>3</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.style.ConstructorNonEmptyReturnTypeRule" message="A constructor should not have a return type">
+    <description>Even if this is syntactically correct, there should not be a return type for a constructor.</description>
+    <priority>3</priority>
+    <example><![CDATA[public class VoidConstructor   
+   {
+      public function VoidConstructor() : void // VIOLATION
+      {         
+      }      
+   }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.style.OverLongLineRule" message="Too long line ({0} maximum, but {1} actually)">
+    <description/>
+    <priority>3</priority>
+    <properties>
+      <property name="maximum">
+        <value>200</value>
+      </property>
+    </properties>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.style.ImportFromSamePackageRule" message="Imports from the same package are not necessary">
+    <description/>
+    <priority>3</priority>
+    <example><![CDATA[package com.adobe.ac
+{
+   import com.adobe.ac.MyModel; // VIOLATION HERE
+
+   public class BigModel   
+   {
+      public var model : MyModel = null;
+   }
+}]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.switchrules.SwitchStatementsShouldHaveDefaultRule" message="A switch statement does not contain a default statement">
+    <description>Switch statements should have a default label in order to detect corner cases.</description>
+    <priority>1</priority>
+    <example><![CDATA[public class Foo 
+   {
+      public funciton bar() : void 
+      {
+         var  x : int = 2;
+         switch (x) 
+         {
+            case 2: var j : int = 8;
+         }
+      }
+   }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.switchrules.NestedSwitchRule" message="Switch must not be nested">
+    <description>As a general practice, switch statement should not be used. Prefer using inheritance. It is even harder to read when switch statements are nested.</description>
+    <priority>3</priority>
+    <example><![CDATA[public function foo( a : Number, b : Number ) : void
+      {
+          switch( a )
+          {
+             case 1:
+                break;
+             case 2:                   
+                switch ( b ) 
+                {
+                  case 3 :
+                     break;
+                  case 4 :
+                     break;
+                }
+                break;                     
+          }
+      }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.switchrules.TooFewBrancheInSwitchStatementRule" message="There are too few branches in this switch statement ({0} minimum, but {1} actual)">
+    <description>Switch statements are designed for complex branches, and allow branches to share treatment. Using a switch for only 2 branches is ill advised, as switches are not as easy to understand as if. In this case, it's most likely is a good idea to use a if statement</description>
+    <priority>3</priority>
+    <properties>
+      <property name="minimum">
+        <value>3</value>
+      </property>
+    </properties>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.switchrules.IdenticalSwitchCasesRule" message="Two switch cases should not be identical">
+    <description/>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.unused.UnusedLocalVariableRule" message="This variable ({0}) is not used">
+    <description/>
+    <priority>1</priority>
+    <example><![CDATA[public function foo() : void
+      {
+         var i : int = 0;// 1 violation
+      }]]></example>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.unused.UnusedPrivateMethodRule" message="This private method ({0}) does not seem to be used">
+    <description/>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.unused.UnusedFieldRule" message="This private attribute ({0}) does not seem to be used">
+    <description/>
+    <priority>1</priority>
+  </rule>
+  <rule since="" class="com.adobe.ac.pmd.rules.unused.EmptyPrivateMethodRule" message="This private method ({0}) is used but its content is empty">
+    <description/>
+    <priority>1</priority>
+  </rule>
+</ruleset>

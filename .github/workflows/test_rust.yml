@@ -69,6 +69,13 @@ jobs:
           command: fmt
           args: --all -- --check
 
+      - name: Lint AS3 playerglobals 
+        if: runner.os == 'Linux' && matrix.rust_version == 'stable'
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: -p build_playerglobal -- lint
+
       - name: Check clippy
         uses: actions-rs/cargo@v1
         with:

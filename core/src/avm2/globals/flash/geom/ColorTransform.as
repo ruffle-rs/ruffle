@@ -9,7 +9,15 @@ package flash.geom {
         public var blueOffset: Number;
         public var alphaOffset: Number;
 
-        public function ColorTransform(redMultiplier: Number = 1, greenMultiplier: Number = 1, blueMultiplier: Number = 1, alphaMultiplier: Number = 1, redOffset: Number = 0, greenOffset: Number = 0, blueOffset: Number = 0, alphaOffset: Number = 0) {
+        public function ColorTransform(redMultiplier: Number = 1, 
+                                       greenMultiplier: Number = 1, 
+                                       blueMultiplier: Number = 1, 
+                                       alphaMultiplier: Number = 1, 
+                                       redOffset: Number = 0, 
+                                       greenOffset: Number = 0, 
+                                       blueOffset: Number = 0, 
+                                       alphaOffset: Number = 0) 
+        {
             this.redMultiplier = redMultiplier;
             this.greenMultiplier = greenMultiplier;
             this.blueMultiplier = blueMultiplier;
@@ -45,7 +53,23 @@ package flash.geom {
         }
 
         public function toString(): String {
-            return "(redMultiplier=" + this.redMultiplier + ", greenMultiplier=" + this.greenMultiplier + ", blueMultiplier=" + this.blueMultiplier + ", alphaMultiplier=" + this.alphaMultiplier + ", redOffset=" + this.redOffset + ", greenOffset=" + this.greenOffset + ", blueOffset=" + this.blueOffset + ", alphaOffset=" + this.alphaOffset + ")";
+            return "(redMultiplier=" 
+                    + this.redMultiplier 
+                    + ", greenMultiplier=" 
+                    + this.greenMultiplier 
+                    + ", blueMultiplier=" 
+                    + this.blueMultiplier 
+                    + ", alphaMultiplier=" 
+                    + this.alphaMultiplier 
+                    + ", redOffset=" 
+                    + this.redOffset 
+                    + ", greenOffset=" 
+                    + this.greenOffset 
+                    + ", blueOffset=" 
+                    + this.blueOffset 
+                    + ", alphaOffset=" 
+                    + this.alphaOffset 
+                    + ")";
         }
     }
 }
