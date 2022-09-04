@@ -9,7 +9,8 @@ package flash.events
     
     public class DRMAuthenticationCompleteEvent extends Event
     {
-        public static const AUTHENTICATION_COMPLETE:String = "authenticationComplete"; // The string constant to use for the authentication complete event in the type parameter when adding and removing event listeners.
+        // The string constant to use for the authentication complete event in the type parameter when adding and removing event listeners.
+        public static const AUTHENTICATION_COMPLETE:String = "authenticationComplete";
 
         public var serverURL: String; // The URL of the media rights server.
         public var domain: String; // The content domain of the media rights server.

@@ -9,12 +9,20 @@ package flash.events
     
     public class SoftKeyboardEvent extends Event
     {
-        public static const SOFT_KEYBOARD_ACTIVATE:String = "softKeyboardActivate"; // The SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE constant defines the value of the type property SoftKeyboardEvent object when a soft keyboard is displayed.
-        public static const SOFT_KEYBOARD_ACTIVATING:String = "softKeyboardActivating"; // The SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATING constant defines the value of the type property SoftKeyboardEvent object immediately before a soft keyboard is displayed.
-        public static const SOFT_KEYBOARD_DEACTIVATE:String = "softKeyboardDeactivate"; // The SoftKeyboardEvent.SOFT_KEYBOARD_DEACTIVATE constant defines the value of the type property SoftKeyboardEvent object when a soft keyboard is lowered or hidden.
+        // The SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATE constant defines the value of the type property SoftKeyboardEvent object when a soft keyboard is displayed.
+        public static const SOFT_KEYBOARD_ACTIVATE:String = "softKeyboardActivate";
 
-        public var relatedObject: InteractiveObject; // A reference to a display list object that is related to the event.
-        private var _triggerType: String; // Indicates whether the change in keyboard status has been triggered by an application (such as programmatic use of requestSoftKeyboard()) or by the user (such as selecting a text field).
+        // The SoftKeyboardEvent.SOFT_KEYBOARD_ACTIVATING constant defines the value of the type property SoftKeyboardEvent object immediately before a soft keyboard is displayed.
+        public static const SOFT_KEYBOARD_ACTIVATING:String = "softKeyboardActivating";
+
+        // The SoftKeyboardEvent.SOFT_KEYBOARD_DEACTIVATE constant defines the value of the type property SoftKeyboardEvent object when a soft keyboard is lowered or hidden.
+        public static const SOFT_KEYBOARD_DEACTIVATE:String = "softKeyboardDeactivate";
+
+        // A reference to a display list object that is related to the event.
+        public var relatedObject: InteractiveObject;
+
+        // Indicates whether the change in keyboard status has been triggered by an application (such as programmatic use of requestSoftKeyboard()) or by the user (such as selecting a text field).
+        private var _triggerType: String;
 
         public function SoftKeyboardEvent(type:String, bubbles:Boolean, cancelable:Boolean, relatedObjectVal:InteractiveObject, triggerTypeVal:String)
         {
@@ -22,15 +30,14 @@ package flash.events
             this.relatedObject = relatedObjectVal;
             this._triggerType = triggerTypeVal;
         }
-        
 
-        //  Creates a copy of a SoftKeyboardEvent object and sets the value of each property to match that of the original.
+        // Creates a copy of a SoftKeyboardEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
         {
             return new SoftKeyboardEvent(this.type, this.bubbles, this.cancelable, this.relatedObject, this.triggerType);
         }
 
-        //  Returns a string that contains all the properties of the SoftKeyboardEvent object.
+        // Returns a string that contains all the properties of the SoftKeyboardEvent object.
         override public function toString():String
         {
             return this.formatToString("SoftKeyboardEvent","type","bubbles","cancelable","eventPhase","relatedObjectVal","triggerTypeVal", "activating");

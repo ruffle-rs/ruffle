@@ -267,6 +267,7 @@ public function foo() : void
    }
 }]]></example>
   </rule>
+  <!-- MIKE: Disabled because many AS3 event classes do not override `clone`.
   <rule since="" class="com.adobe.ac.pmd.rules.event.EventMissingCloneFunctionRule" message="The clone event must be overiden in a custom event">
     <description>When creating your own custom Event class, you must override the inherited Event.clone() method in order for it to duplicate the properties of your custom class. If you do not set all the properties that you add in your event subclass, those properties will not have the correct values when the event is cloned. This is important because the Flex SDK clones events whenever redispatching takes place.</description>
     <priority>3</priority>
@@ -279,6 +280,7 @@ public function foo() : void
    }
 }]]></example>
   </rule>
+  -->
   <rule since="" class="com.adobe.ac.pmd.rules.event.ConstructorDispatchingEventRule" message="An event is dispatched in a constructor">
     <description>This is pointless, since event listeners cannot be attached to an object before it has been constructed, so nothing can ever hear the event</description>
     <priority>1</priority>

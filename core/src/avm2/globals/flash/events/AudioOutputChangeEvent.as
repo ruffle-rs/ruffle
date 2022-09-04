@@ -4,12 +4,11 @@
 // It won't be regenerated in the future, so feel free to edit and/or fix
 package flash.events
 {
-    
     public class AudioOutputChangeEvent extends Event
     {
-        public static const AUDIO_OUTPUT_CHANGE:String = "audioOutputChange"; // Defines the value of the type property of a AudioOutputchangeEvent event object.
+        public static const AUDIO_OUTPUT_CHANGE:String = "audioOutputChange"; // Defines the value of the type property of a AudioOutputChangeEvent event object.
 
-        private var _reason: String; // Reports the reason that triggers this AudioOutputchangeEvent.
+        private var _reason: String; // Reports the reason that triggers this AudioOutputChangeEvent.
 
         public function AudioOutputChangeEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, reason:String = null)
         {

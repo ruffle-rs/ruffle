@@ -9,15 +9,29 @@ package flash.events
     {
         public static const GESTURE_TWO_FINGER_TAP:String = "gestureTwoFingerTap"; // Defines the value of the type property of a GESTURE_TWO_FINGER_TAP gesture event object.
 
-        public var phase: String; // A value from the GesturePhase class indicating the progress of the touch gesture.
-        public var localX: Number; // The horizontal coordinate at which the event occurred relative to the containing sprite.
-        public var localY: Number; // The vertical coordinate at which the event occurred relative to the containing sprite.
-        public var ctrlKey: Boolean; // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
-        public var altKey: Boolean; // Indicates whether the Alt key is active (true) or inactive (false).
-        public var shiftKey: Boolean; // Indicates whether the Shift key is active (true) or inactive (false).
-        public var controlKey: Boolean; // Indicates whether the Control key is activated on Mac and whether the Ctrl key is activated on Windows or Linux.
+        // A value from the GesturePhase class indicating the progress of the touch gesture.
+        public var phase: String;
 
-        public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0, localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, controlKey:Boolean = false)
+        // The horizontal coordinate at which the event occurred relative to the containing sprite.
+        public var localX: Number;
+
+        // The vertical coordinate at which the event occurred relative to the containing sprite.
+        public var localY: Number;
+
+        // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
+        public var ctrlKey: Boolean;
+
+        // Indicates whether the Alt key is active (true) or inactive (false).
+        public var altKey: Boolean;
+
+        // Indicates whether the Shift key is active (true) or inactive (false).
+        public var shiftKey: Boolean;
+
+        // Indicates whether the Control key is activated on Mac and whether the Ctrl key is activated on Windows or Linux.
+        public var controlKey: Boolean;
+
+        public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0,
+            localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, controlKey:Boolean = false)
         {
             super(type,bubbles,cancelable);
             this.phase = phase;
@@ -30,13 +44,13 @@ package flash.events
         }
         
 
-        //  Creates a copy of the GestureEvent object and sets the value of each property to match that of the original.
+        // Creates a copy of the GestureEvent object and sets the value of each property to match that of the original.
         override public function clone():Event
         {
             return new GestureEvent(this.type, this.bubbles, this.cancelable, this.phase, this.localX, this.localY, this.ctrlKey, this.altKey, this.shiftKey, this.commandKey, this.controlKey);
         }
 
-        //  Returns a string that contains all the properties of the GestureEvent object.
+        // Returns a string that contains all the properties of the GestureEvent object.
         override public function toString():String
         {
             return this.formatToString("GestureEvent","type","bubbles","cancelable","eventPhase","phase","localX","localY","ctrlKey","altKey","shiftKey","commandKey","controlKey","stageX","stageY");
@@ -45,7 +59,7 @@ package flash.events
         // The horizontal coordinate at which the event occurred in global Stage coordinates.
         public native function get stageX() : Number;
 
-         // The vertical coordinate at which the event occurred in global Stage coordinates.
+        // The vertical coordinate at which the event occurred in global Stage coordinates.
         public native function get stageY() : Number;
     }
 }

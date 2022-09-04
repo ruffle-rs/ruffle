@@ -9,18 +9,35 @@ package flash.events
     
     public class FocusEvent extends Event
     {
-        public static const FOCUS_IN:String = "focusIn"; // Defines the value of the type property of a focusIn event object.
-        public static const FOCUS_OUT:String = "focusOut"; // Defines the value of the type property of a focusOut event object.
-        public static const KEY_FOCUS_CHANGE:String = "keyFocusChange"; // Defines the value of the type property of a keyFocusChange event object.
-        public static const MOUSE_FOCUS_CHANGE:String = "mouseFocusChange"; // Defines the value of the type property of a mouseFocusChange event object.
+        // Defines the value of the type property of a focusIn event object.
+        public static const FOCUS_IN:String = "focusIn";
 
-        public var relatedObject: InteractiveObject; // A reference to the complementary InteractiveObject instance that is affected by the change in focus.
-        public var shiftKey: Boolean; // Indicates whether the Shift key modifier is activated, in which case the value is true.
-        public var keyCode: uint; // The key code value of the key pressed to trigger a keyFocusChange event.
-        public var direction: String; // Specifies direction of focus for a focusIn event.
-        public var isRelatedObjectInaccessible: Boolean; // If true, the relatedObject property is set to null for reasons related to security sandboxes.
+        // Defines the value of the type property of a focusOut event object.
+        public static const FOCUS_OUT:String = "focusOut";
 
-        public function FocusEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, relatedObject:InteractiveObject = null, shiftKey:Boolean = false, keyCode:uint = 0, direction:String = "none")
+        // Defines the value of the type property of a keyFocusChange event object.
+        public static const KEY_FOCUS_CHANGE:String = "keyFocusChange";
+
+        // Defines the value of the type property of a mouseFocusChange event object.
+        public static const MOUSE_FOCUS_CHANGE:String = "mouseFocusChange";
+
+        // A reference to the complementary InteractiveObject instance that is affected by the change in focus.
+        public var relatedObject: InteractiveObject;
+
+        // Indicates whether the Shift key modifier is activated, in which case the value is true.
+        public var shiftKey: Boolean;
+
+        // The key code value of the key pressed to trigger a keyFocusChange event.
+        public var keyCode: uint;
+
+        // Specifies direction of focus for a focusIn event.
+        public var direction: String;
+
+        // If true, the relatedObject property is set to null for reasons related to security sandboxes.
+        public var isRelatedObjectInaccessible: Boolean;
+
+        public function FocusEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, relatedObject:InteractiveObject = null,
+            shiftKey:Boolean = false, keyCode:uint = 0, direction:String = "none")
         {
             super(type,bubbles,cancelable);
             this.relatedObject = relatedObject;
