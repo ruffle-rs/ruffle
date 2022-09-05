@@ -1,0 +1,40 @@
+///basic string test
+//str1.localeCompare(str2)
+abc = abc 0
+abc < abd -1
+abd > abc 1
+
+///distance between strings
+//str1.localeCompare(str2)
+aaaaaa < aaaazz -25
+aaaazz > aaaaaa 25
+
+///different length
+//str1.localeCompare(str2)
+aaaaa < aaaaaa -1
+aaaaaaa < aaaaaz -25
+
+///unicode string test
+//str1.localeCompare(str2)
+// All lowercase chars, str1 = str2
+0
+// All lowercase chars, str1 < str2
+-1
+// All lowercase chars, str1 > str2
+1
+
+///distance between unicode strings
+//str1.localeCompare(str2)
+aaaaａａ > aaaazz 65223
+aaaaａａ < aaaaｚｚ -25
+
+///emoji strings
+//str1.localeCompare(str2)
+😋 > a 55260
+😋 = 😋 0
+
+///empty other string
+//str1.localeCompare()
+abc < undefined -20
+undefined = undefined 0
+
