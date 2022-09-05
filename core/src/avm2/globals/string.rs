@@ -213,6 +213,41 @@ fn last_index_of<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements String.localeCompare
+/// NOTE: Despite the declaration of this function in the documentation, FP does not support multiple strings in comparison
+fn locale_compare<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this = Value::from(this).coerce_to_string(activation)?;
+        let other = match args.get(0) {
+            None => Value::Undefined.coerce_to_string(activation)?,
+            Some(s) => s.clone().coerce_to_string(activation)?,
+        };
+
+        for (tc, oc) in this.iter().zip(other.iter()) {
+            let res = (tc as i32) - (oc as i32);
+            if res != 0 {
+                return Ok(Value::Integer(res));
+            }
+        }
+
+        if this.len() < other.len() {
+            return Ok(Value::Integer(-1));
+        }
+
+        if this.len() > other.len() {
+            return Ok(Value::Integer(1));
+        }
+
+        return Ok(Value::Integer(0));
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.match`
 fn match_s<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -322,6 +357,43 @@ fn replace<'gc>(
         } else {
             return Ok(this.into());
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `String.search`
+fn search<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let (Some(this), pattern) = (this, args.get(0).unwrap_or(&Value::Undefined)) {
+        let this = Value::from(this).coerce_to_string(activation)?;
+
+        let regexp_class = activation.avm2().classes().regexp;
+        let pattern = if !pattern.is_of_type(activation, regexp_class) {
+            let string = pattern.coerce_to_string(activation)?;
+            regexp_class.construct(activation, &[Value::String(string)])?
+        } else {
+            pattern.coerce_to_object(activation)?
+        };
+
+        if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
+            let old = regexp.last_index();
+            regexp.set_last_index(0);
+            if let Some(result) = regexp.exec(this) {
+                let found_index = result.groups().flatten().next().unwrap_or_default().start as i32;
+
+                regexp.set_last_index(old);
+                return Ok(Value::Integer(found_index));
+            } else {
+                regexp.set_last_index(old);
+                // If the pattern parameter is a String or a non-global regular expression
+                // and no match is found, the method returns -1
+                return Ok(Value::Integer(-1));
+            }
+        };
     }
 
     Ok(Value::Undefined)
@@ -564,12 +636,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("concat", concat),
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
+        ("localeCompare", locale_compare),
         ("match", match_s),
         ("replace", replace),
+        ("search", search),
         ("slice", slice),
         ("split", split),
         ("substr", substr),
         ("substring", substring),
+        ("toLocaleLowerCase", to_lower_case),
+        ("toLocaleUpperCase", to_upper_case),
         ("toLowerCase", to_lower_case),
         ("toUpperCase", to_upper_case),
     ];

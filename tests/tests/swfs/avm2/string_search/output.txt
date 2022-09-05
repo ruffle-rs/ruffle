@@ -1,0 +1,41 @@
+// var str:String = new String("mtchablematmatmat");
+// var ret:int = str.search("mat");
+// trace(ret);
+8
+// var re = new RegExp("MA*T|a[a-z]*e","i");
+// re.lastIndex = 3;
+// trace(str.search(re), re.lastIndex);
+0 3
+// trace(str.search(re), re.lastIndex);
+0 3
+// trace(str.search(re), re.lastIndex);
+0 3
+// trace(str.search(new RegExp("MA*T|a[a-z]*e","i")));
+0
+// trace(str.search(new RegExp("ma*t|a[a-z]*e","")));
+0
+// trace(str.search(new RegExp("ma*t|a[a-z]*e","g")));
+0
+// trace(str.search(new RegExp("notmatch", "g")));
+-1
+// var subject:String = "AAA";
+// trace(subject.search(/(((((((((((((((((((a*)(abc|b))))))))))))))))))*.)*(...)*/g));
+0
+// trace(subject.search(/((((((((((((((((((d|.*)))))))))))))))))*.)*(...)*/g));
+0
+// trace(subject.search(/((((((((((((((((((a+)*))))))))))))))))*.)*(...)*/g));
+0
+// trace(subject.search("((((((((((((((((((a+)*))))))))))))))))*.)*(...)*"));
+0
+// trace(subject.search("((((((((((((((((((a+)*))))))))))))))))*.)*(...)*"));
+0
+// trace(subject.search("(A)(A)"));
+0
+// trace(subject.search("AAA"));
+0
+// trace(subject.search("AA"));
+0
+// trace(subject.search("A"));
+0
+// trace(str.search(ruffle_object));
+-1
