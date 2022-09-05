@@ -3,7 +3,10 @@
 use crate::avm2::object::TObject;
 use crate::avm2::QName;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::string::AvmString;
+use crate::string::WString;
 use instant::Instant;
+use std::fmt::Write;
 
 pub mod bytearray;
 pub mod dictionary;
@@ -109,6 +112,32 @@ pub fn clear_timeout<'gc>(
         .coerce_to_number(activation)?;
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
+}
+
+/// Implements `flash.utils.escapeMultiByte`
+pub fn escape_multi_byte<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let s = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let bs = s.as_wstr().to_utf8_lossy();
+    let mut buf = WString::new();
+    for b in bs.as_bytes() {
+        if *b == 0 {
+            break;
+        }
+        if b.is_ascii_alphanumeric() {
+            buf.push_char(*b as char);
+        } else {
+            write!(&mut buf, "%{b:02X}")?;
+        }
+    }
+    let v = AvmString::new(activation.context.gc_context, buf);
+    Ok(v.into())
 }
 
 /// Implements `flash.utils.getQualifiedClassName`
