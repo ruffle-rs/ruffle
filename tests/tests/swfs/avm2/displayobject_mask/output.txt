@@ -1,0 +1,3 @@
+Initial mask: null
+Mask after set: [object Sprite]
+rect == circle.mask:  true
