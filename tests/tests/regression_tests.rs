@@ -237,6 +237,7 @@ swf_tests! {
     (as3_displayobject_blendmode, "avm2/displayobject_blendmode", 1, img = true),
     (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
     (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
+    (as3_displayobject_mask, "avm2/displayobject_mask", 1, img = true),
     (as3_displayobject_name, "avm2/displayobject_name", 4),
     (as3_displayobject_parent, "avm2/displayobject_parent", 4),
     (as3_displayobject_root, "avm2/displayobject_root", 4),

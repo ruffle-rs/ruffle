@@ -833,19 +833,37 @@ fn global_to_local<'gc>(
 
 fn mask<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("DisplayObject.mask getter: not yet implemented");
-    Ok(Value::Null)
+    if let Some(this) = this.and_then(|this| this.as_display_object()) {
+        return Ok(this.masker().map_or(Value::Null, |m| m.object2()));
+    }
+    Ok(Value::Undefined)
 }
 
 fn set_mask<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    log::warn!("DisplayObject.mask setter: not yet implemented");
+    if let Some(this) = this.and_then(|this| this.as_display_object()) {
+        let mask = args.get(0).unwrap_or(&Value::Null);
+
+        if matches!(mask, Value::Null) {
+            this.set_masker(activation.context.gc_context, None, true);
+        } else {
+            let mask = mask
+                .coerce_to_object(activation)?
+                .as_display_object()
+                .ok_or_else(|| -> Error {
+                    format!("Mask is not a DisplayObject: {:?}", mask).into()
+                })?;
+
+            this.set_masker(activation.context.gc_context, Some(mask), true);
+            mask.set_maskee(activation.context.gc_context, Some(this), true);
+        }
+    }
     Ok(Value::Undefined)
 }
 
