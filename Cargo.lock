@@ -3053,6 +3053,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "generational-arena",
+ "image",
  "indexmap",
  "instant",
  "log",
@@ -3129,6 +3130,7 @@ dependencies = [
  "downcast-rs",
  "flate2",
  "gif",
+ "image",
  "jpeg-decoder",
  "log",
  "lyon",
@@ -3144,6 +3146,7 @@ name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
  "fnv",
+ "image",
  "js-sys",
  "log",
  "ruffle_render",
@@ -3159,6 +3162,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "fnv",
+ "image",
  "js-sys",
  "log",
  "ruffle_render",

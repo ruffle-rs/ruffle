@@ -1,9 +1,10 @@
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
 use crate::pipelines::Pipelines;
+use crate::target::TextureTarget;
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
-use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
+use crate::utils::{create_buffer_with_data, format_list, get_backend_names, BufferDimensions};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
 use fnv::FnvHashMap;
@@ -37,47 +38,41 @@ mod uniform_buffer;
 #[cfg(feature = "clap")]
 pub mod clap;
 
+const DEFAULT_SAMPLE_COUNT: u32 = 4;
+
 pub struct Descriptors {
     pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
     pub info: wgpu::AdapterInfo,
     pub limits: wgpu::Limits,
-    pub surface_format: wgpu::TextureFormat,
-    frame_buffer_format: wgpu::TextureFormat,
-    queue: wgpu::Queue,
     globals_layout: wgpu::BindGroupLayout,
     uniform_buffers_layout: wgpu::BindGroupLayout,
-    pipelines: Pipelines,
     bitmap_samplers: BitmapSamplers,
+
+    onscreen: DescriptorsTargetData,
+    offscreen: DescriptorsTargetData,
+}
+
+/// Contains data specific to a `RenderTarget`.
+/// We cannot re-use this data in `with_offscreen_backend`
+pub struct DescriptorsTargetData {
+    // These fields are specific to our `RenderTarget`, and
+    // cannot be re-used
+    surface_format: wgpu::TextureFormat,
+    frame_buffer_format: wgpu::TextureFormat,
+    pipelines: Pipelines,
     msaa_sample_count: u32,
 }
 
-impl Descriptors {
-    pub fn new(
-        device: wgpu::Device,
-        queue: wgpu::Queue,
-        info: wgpu::AdapterInfo,
+impl DescriptorsTargetData {
+    fn new(
+        device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
+        bitmap_samplers: &BitmapSamplers,
+        msaa_sample_count: u32,
+        globals_layout: &wgpu::BindGroupLayout,
+        uniform_buffers_layout: &wgpu::BindGroupLayout,
     ) -> Self {
-        let limits = device.limits();
-        // TODO: Allow this to be set from command line/settings file.
-        let msaa_sample_count = 4;
-        let bitmap_samplers = BitmapSamplers::new(&device);
-        let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
-        let uniform_buffers_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: true,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: uniform_buffer_layout_label.as_deref(),
-            });
-
         // We want to render directly onto a linear render target to avoid any gamma correction.
         // If our surface is sRGB, render to a linear texture and than copy over to the surface.
         // Remove Srgb from texture format.
@@ -101,6 +96,36 @@ impl Descriptors {
             _ => surface_format,
         };
 
+        let pipelines = Pipelines::new(
+            &device,
+            surface_format,
+            frame_buffer_format,
+            msaa_sample_count,
+            bitmap_samplers.layout(),
+            globals_layout,
+            uniform_buffers_layout,
+        );
+
+        DescriptorsTargetData {
+            surface_format,
+            frame_buffer_format,
+            pipelines,
+            msaa_sample_count,
+        }
+    }
+}
+
+impl Descriptors {
+    pub fn new(
+        device: wgpu::Device,
+        queue: wgpu::Queue,
+        info: wgpu::AdapterInfo,
+        surface_format: wgpu::TextureFormat,
+        msaa_sample_count: u32,
+    ) -> Self {
+        let limits = device.limits();
+        let bitmap_samplers = BitmapSamplers::new(&device);
+
         let globals_layout_label = create_debug_label!("Globals bind group layout");
         let globals_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: globals_layout_label.as_deref(),
@@ -116,28 +141,51 @@ impl Descriptors {
             }],
         });
 
-        let pipelines = Pipelines::new(
+        let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
+        let uniform_buffers_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: uniform_buffer_layout_label.as_deref(),
+            });
+
+        let onscreen = DescriptorsTargetData::new(
             &device,
             surface_format,
-            frame_buffer_format,
+            &bitmap_samplers,
             msaa_sample_count,
-            bitmap_samplers.layout(),
+            &globals_layout,
+            &uniform_buffers_layout,
+        );
+
+        // FIXME - get MSAA working for `TextureTarget`
+        let offscreen = DescriptorsTargetData::new(
+            &device,
+            wgpu::TextureFormat::Rgba8Unorm,
+            &bitmap_samplers,
+            1,
             &globals_layout,
             &uniform_buffers_layout,
         );
 
         Self {
             device,
+            queue,
             info,
             limits,
-            surface_format,
-            frame_buffer_format,
-            queue,
+            bitmap_samplers,
             globals_layout,
             uniform_buffers_layout,
-            pipelines,
-            bitmap_samplers,
-            msaa_sample_count,
+            onscreen,
+            offscreen,
         }
     }
 }
@@ -165,6 +213,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
+    offscreen: bool,
 }
 
 struct RegistryData {
@@ -382,7 +431,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         .await?;
         let target = SwapChainTarget::new(
             surface,
-            descriptors.surface_format,
+            descriptors.onscreen.surface_format,
             (1, 1),
             &descriptors.device,
         );
@@ -414,7 +463,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         ))?;
         let target = SwapChainTarget::new(
             surface,
-            descriptors.surface_format,
+            descriptors.onscreen.surface_format,
             size,
             &descriptors.device,
         );
@@ -453,6 +502,16 @@ impl WgpuRenderBackend<target::TextureTarget> {
     }
 }
 
+macro_rules! target_data {
+    ($this:expr) => {{
+        if $this.offscreen {
+            &$this.descriptors.offscreen
+        } else {
+            &$this.descriptors.onscreen
+        }
+    }};
+}
+
 impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
@@ -473,14 +532,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let frame_buffer_view = if descriptors.msaa_sample_count > 1 {
+        let frame_buffer_view = if descriptors.onscreen.msaa_sample_count > 1 {
             let frame_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
                 label: create_debug_label!("Framebuffer texture").as_deref(),
                 size: extent,
                 mip_level_count: 1,
-                sample_count: descriptors.msaa_sample_count,
+                sample_count: descriptors.onscreen.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
-                format: descriptors.frame_buffer_format,
+                format: descriptors.onscreen.frame_buffer_format,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
             Some(frame_buffer.create_view(&Default::default()))
@@ -492,7 +551,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             label: create_debug_label!("Depth texture").as_deref(),
             size: extent,
             mip_level_count: 1,
-            sample_count: descriptors.msaa_sample_count,
+            sample_count: descriptors.onscreen.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -501,8 +560,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
 
-        let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.frame_buffer_format
-            != descriptors.surface_format
+        let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.onscreen.frame_buffer_format
+            != descriptors.offscreen.surface_format
         {
             let copy_srgb_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
                 label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
@@ -510,7 +569,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: descriptors.frame_buffer_format,
+                format: descriptors.onscreen.frame_buffer_format,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::TEXTURE_BINDING,
             });
@@ -519,7 +578,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &descriptors.pipelines.bitmap_layout,
+                        layout: &descriptors.onscreen.pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -572,6 +631,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
             viewport_scale_factor: 1.0,
+            offscreen: false,
         })
     }
 
@@ -620,7 +680,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             })
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
-        Ok(Descriptors::new(device, queue, info, surface_format))
+        // TODO: Allow the sample count to be set from command line/settings file.
+        Ok(Descriptors::new(
+            device,
+            queue,
+            info,
+            surface_format,
+            DEFAULT_SAMPLE_COUNT,
+        ))
     }
 
     fn register_shape_internal(
@@ -723,7 +790,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.pipelines.gradient_layout,
+                                layout: &target_data!(self).pipelines.gradient_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -798,7 +865,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.pipelines.bitmap_layout,
+                                layout: &target_data!(self).pipelines.bitmap_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -849,6 +916,155 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn descriptors(&self) -> &Arc<Descriptors> {
         &self.descriptors
     }
+
+    pub fn target(&self) -> &T {
+        &self.target
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.descriptors.device
+    }
+
+    fn render_offscreen_internal(
+        mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
+    ) -> Result<(Self, ruffle_render::bitmap::Bitmap), ruffle_render::error::Error> {
+        // We need ownership of `Texture` to access the non-`Clone`
+        // `wgpu` fields. At the end of this method, we re-insert
+        // `texture` into the map.
+        //
+        // This means that the target texture will be inaccessible
+        // while the callback `f` is a problem. This would only be
+        // an issue if a caller tried to render the target texture
+        // to itself, which probably isn't supported by Flash. If it
+        // is, then we could change `TextureTarget` to use an `Rc<wgpu::Texture>`
+        let mut texture = self.bitmap_registry.remove(&handle).unwrap();
+
+        let extent = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        if self.offscreen {
+            panic!("Nested render_onto_bitmap is not supported!")
+        }
+
+        let descriptors = self.descriptors.clone();
+
+        // We will (presumably) never render to the majority of textures, so
+        // we lazily create the buffer and depth texture.
+        // Once created, we never destroy this data, under the assumption
+        // that the SWF will try to render to this more than once.
+        //
+        // If we end up hitting wgpu device limits due to having too
+        // many buffers / depth textures rendered at once, we could
+        // try storing this data in an LRU cache, evicting entries
+        // as needed.
+        let mut texture_offscreen =
+            texture
+                .texture_wrapper
+                .texture_offscreen
+                .unwrap_or_else(|| {
+                    let depth_texture_view =
+                        create_depth_texture_view(&descriptors, &descriptors.offscreen, extent);
+                    let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
+                    let buffer_label = create_debug_label!("Render target buffer");
+                    let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
+                        label: buffer_label.as_deref(),
+                        size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                            * buffer_dimensions.height as u64),
+                        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                        mapped_at_creation: false,
+                    });
+                    TextureOffscreen {
+                        depth_texture_view,
+                        buffer,
+                        buffer_dimensions,
+                    }
+                });
+
+        let target = TextureTarget {
+            size: extent,
+            texture: texture.texture_wrapper.texture,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            buffer: texture_offscreen.buffer,
+            buffer_dimensions: texture_offscreen.buffer_dimensions,
+        };
+
+        let (old_width, old_height) = self.globals.resolution();
+
+        // Is it worth caching this?
+        self.globals.set_resolution(width, height);
+
+        let mut texture_backend = WgpuRenderBackend {
+            descriptors,
+            target,
+            // FIXME - Enable MSAA for textures
+            frame_buffer_view: None,
+            depth_texture_view: texture_offscreen.depth_texture_view,
+            // We explicitly request a non-SRGB format for textures
+            copy_srgb_view: None,
+            copy_srgb_bind_group: None,
+            current_frame: None,
+            meshes: self.meshes,
+            mask_state: MaskState::NoMask,
+            shape_tessellator: self.shape_tessellator,
+            num_masks: 0,
+            quad_vbo: self.quad_vbo,
+            quad_ibo: self.quad_ibo,
+            quad_tex_transforms: self.quad_tex_transforms,
+            bitmap_registry: self.bitmap_registry,
+            offscreen: true,
+            next_bitmap_handle: self.next_bitmap_handle,
+            globals: self.globals,
+            uniform_buffers: self.uniform_buffers,
+            viewport_scale_factor: self.viewport_scale_factor,
+            blend_modes: vec![BlendMode::Normal],
+        };
+
+        let f_res = f(&mut texture_backend);
+
+        let image = texture_backend
+            .target
+            .capture(&texture_backend.descriptors.device);
+
+        let image = image.map(|image| {
+            ruffle_render::bitmap::Bitmap::new(
+                image.dimensions().0,
+                image.dimensions().1,
+                ruffle_render::bitmap::BitmapFormat::Rgba,
+                image.into_raw(),
+            )
+        });
+
+        self.offscreen = false;
+        self.meshes = texture_backend.meshes;
+        self.shape_tessellator = texture_backend.shape_tessellator;
+        self.bitmap_registry = texture_backend.bitmap_registry;
+        self.quad_tex_transforms = texture_backend.quad_tex_transforms;
+        self.quad_ibo = texture_backend.quad_ibo;
+        self.quad_vbo = texture_backend.quad_vbo;
+        self.globals = texture_backend.globals;
+        self.uniform_buffers = texture_backend.uniform_buffers;
+        self.next_bitmap_handle = texture_backend.next_bitmap_handle;
+        self.globals.set_resolution(old_width, old_height);
+
+        texture_offscreen.buffer = texture_backend.target.buffer;
+        texture_offscreen.buffer_dimensions = texture_backend.target.buffer_dimensions;
+        texture_offscreen.depth_texture_view = texture_backend.depth_texture_view;
+        texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
+        texture.texture_wrapper.texture = texture_backend.target.texture;
+        self.bitmap_registry.insert(handle, texture);
+
+        // Check result after restoring the backend fields
+        f_res?;
+
+        Ok((self, image.unwrap()))
+    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -877,7 +1093,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        self.frame_buffer_view = if self.descriptors.msaa_sample_count > 1 {
+        self.frame_buffer_view = if target_data!(self).msaa_sample_count > 1 {
             let frame_buffer = self
                 .descriptors
                 .device
@@ -885,9 +1101,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     label: create_debug_label!("Framebuffer texture").as_deref(),
                     size,
                     mip_level_count: 1,
-                    sample_count: self.descriptors.msaa_sample_count,
+                    sample_count: target_data!(self).msaa_sample_count,
                     dimension: wgpu::TextureDimension::D2,
-                    format: self.descriptors.frame_buffer_format,
+                    format: target_data!(self).frame_buffer_format,
                     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 });
             Some(frame_buffer.create_view(&Default::default()))
@@ -902,15 +1118,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 label: create_debug_label!("Depth texture").as_deref(),
                 size,
                 mip_level_count: 1,
-                sample_count: self.descriptors.msaa_sample_count,
+                sample_count: target_data!(self).msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
 
-        (self.copy_srgb_view, self.copy_srgb_bind_group) = if self.descriptors.frame_buffer_format
-            != self.descriptors.surface_format
+        (self.copy_srgb_view, self.copy_srgb_bind_group) = if target_data!(self).frame_buffer_format
+            != target_data!(self).surface_format
         {
             let copy_srgb_buffer =
                 self.descriptors
@@ -921,7 +1137,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         mip_level_count: 1,
                         sample_count: 1,
                         dimension: wgpu::TextureDimension::D2,
-                        format: self.descriptors.frame_buffer_format,
+                        format: target_data!(self).frame_buffer_format,
                         usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                             | wgpu::TextureUsages::TEXTURE_BINDING,
                     });
@@ -930,7 +1146,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap_layout,
+                        layout: &target_data!(self).pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -1083,7 +1299,45 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         });
     }
 
+    fn render_offscreen(
+        &mut self,
+        handle: BitmapHandle,
+        width: u32,
+        height: u32,
+        f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
+    ) -> Result<Bitmap, ruffle_render::error::Error> {
+        // Rendering to a texture backend requires us to use non-`Clone`
+        // wgpu resources (e.g. `wgpu::Device`, `wgpu::Queue`.
+        //
+        // We expect that in the majority of SWFs, we will spend most
+        // of our time performing 'normal' (non-offscreen) renders.
+        // Therefore, we want to avoid penalizing this case by adding
+        // in a check for 'normal' or 'offscreen' mode in the main
+        // rendering code.
+        //
+        // To accomplish this, we use `take_mut` to temporarily
+        // move out of `self`. This allows us to construct a new
+        // `WgpuRenderBackend` with a `TextureTarget` corresponding to
+        // `handle`. This allows us to re-use many of the fields from
+        // our normal `WgpuRenderBackend` without wrapping in an `Rc`
+        // or other indirection.
+        //
+        // Note that `take_mut` causes the process to abort if the
+        // `with_offscreen_render_backend_internal` panics, since
+        // the `&mut self` reference would be logically uninitialized.
+        // However, we normally compile Ruffle with `panic=abort`,
+        // so this shouldn't actually have an effect in practice.
+        // Even with `panic=unwind`, we would still get a backtrace
+        // printed, and there's not really much point in attempting
+        // to recover from a partially failed render operation, anyway.
+        Ok(take_mut(self, |this| {
+            this.render_offscreen_internal(handle, width, height, f)
+                .expect("Failed to render to offscreen backend")
+        }))
+    }
+
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
+        let target_data = target_data!(self);
         if let Some(entry) = self.bitmap_registry.get(&bitmap) {
             let texture = &entry.texture_wrapper;
             let blend_mode = self.blend_mode();
@@ -1116,7 +1370,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             ];
 
             frame.render_pass.set_pipeline(
-                self.descriptors
+                target_data
                     .pipelines
                     .bitmap_pipelines
                     .pipeline_for(blend_mode.into(), self.mask_state),
@@ -1224,7 +1478,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             match &draw.draw_type {
                 DrawType::Color => {
                     frame.render_pass.set_pipeline(
-                        self.descriptors
+                        target_data!(self)
                             .pipelines
                             .color_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
@@ -1232,7 +1486,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
                 DrawType::Gradient { bind_group, .. } => {
                     frame.render_pass.set_pipeline(
-                        self.descriptors
+                        target_data!(self)
                             .pipelines
                             .gradient_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
@@ -1246,7 +1500,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     ..
                 } => {
                     frame.render_pass.set_pipeline(
-                        self.descriptors
+                        target_data!(self)
                             .pipelines
                             .bitmap_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
@@ -1314,7 +1568,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let add_color = [0.0, 0.0, 0.0, 0.0];
         frame.render_pass.set_pipeline(
-            self.descriptors
+            target_data!(self)
                 .pipelines
                 .color_pipelines
                 .pipeline_for(blend_mode.into(), self.mask_state),
@@ -1391,7 +1645,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     label: None,
                 });
 
-                render_pass.set_pipeline(&self.descriptors.pipelines.copy_srgb_pipeline);
+                render_pass.set_pipeline(&target_data!(self).pipelines.copy_srgb_pipeline);
                 render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
                 self.uniform_buffers.write_uniforms(
                     &self.descriptors.device,
@@ -1508,7 +1762,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::COPY_DST
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_SRC,
             });
 
         self.descriptors.queue.write_texture(
@@ -1538,7 +1795,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.pipelines.bitmap_layout,
+                layout: &target_data!(self).pipelines.bitmap_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
@@ -1558,18 +1815,25 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
             });
 
-        self.bitmap_registry.insert(
-            handle,
-            RegistryData {
-                bitmap,
-                texture_wrapper: Texture {
-                    width,
-                    height,
-                    texture,
-                    bind_group,
+        if self
+            .bitmap_registry
+            .insert(
+                handle,
+                RegistryData {
+                    bitmap,
+                    texture_wrapper: Texture {
+                        width,
+                        height,
+                        texture,
+                        bind_group,
+                        texture_offscreen: None,
+                    },
                 },
-            },
-        );
+            )
+            .is_some()
+        {
+            panic!("Overwrote existing bitmap {:?}", handle);
+        }
 
         Ok(handle)
     }
@@ -1616,6 +1880,23 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         Ok(handle)
     }
+}
+
+fn create_depth_texture_view(
+    descriptors: &Descriptors,
+    target_data: &DescriptorsTargetData,
+    extent: wgpu::Extent3d,
+) -> wgpu::TextureView {
+    let depth_texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
+        label: create_debug_label!("Depth texture").as_deref(),
+        size: extent,
+        mip_level_count: 1,
+        sample_count: target_data.msaa_sample_count,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth24PlusStencil8,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+    });
+    depth_texture.create_view(&Default::default())
 }
 
 fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
@@ -1676,6 +1957,32 @@ struct Texture {
     height: u32,
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
+    texture_offscreen: Option<TextureOffscreen>,
+}
+
+#[derive(Debug)]
+struct TextureOffscreen {
+    depth_texture_view: wgpu::TextureView,
+    buffer: wgpu::Buffer,
+    buffer_dimensions: BufferDimensions,
+}
+
+// Based on https://github.com/Sgeo/take_mut
+fn take_mut<T, R, F>(mut_ref: &mut T, closure: F) -> R
+where
+    F: FnOnce(T) -> (T, R),
+{
+    unsafe {
+        let old_t = std::ptr::read(mut_ref);
+        let (new_t, ret) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| closure(old_t)))
+                .unwrap_or_else(|e| {
+                    eprintln!("Caught panic: {:?}", e);
+                    ::std::process::abort()
+                });
+        std::ptr::write(mut_ref, new_t);
+        ret
+    }
 }
 
 // We try to request the highest limits we can get away with

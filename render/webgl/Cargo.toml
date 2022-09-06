@@ -15,6 +15,7 @@ bytemuck = { version = "1.12.1", features = ["derive"] }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 thiserror = "1.0"
+image = "0.24.3"
 
 [dependencies.web-sys]
 version = "0.3.58"

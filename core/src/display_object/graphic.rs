@@ -160,7 +160,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.stage.view_bounds()) {
+        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }

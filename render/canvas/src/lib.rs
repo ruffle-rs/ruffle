@@ -422,6 +422,16 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.register_shape((&shape).into(), &NullBitmapSource)
     }
 
+    fn render_offscreen(
+        &mut self,
+        _handle: BitmapHandle,
+        _width: u32,
+        _height: u32,
+        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
+    ) -> Result<Bitmap, ruffle_render::error::Error> {
+        Err(ruffle_render::error::Error::Unimplemented)
+    }
+
     fn begin_frame(&mut self, clear: Color) {
         // Reset canvas transform in case it was left in a dirty state.
         self.context.reset_transform().unwrap();

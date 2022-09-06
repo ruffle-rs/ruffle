@@ -1,16 +1,21 @@
 //! flash.display.BitmapData object
 
+use super::{color_transform::object_to_color_transform, matrix::object_to_matrix};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
+use crate::avm_error;
+use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
+use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::transform::Transform;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "height" => property(height);
@@ -483,27 +488,79 @@ pub fn noise<'gc>(
     Ok((-1).into())
 }
 
+pub fn draw<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+        if !bitmap_data.disposed() {
+            let matrix = args
+                .get(1)
+                .map(|o| o.coerce_to_object(activation))
+                .and_then(|o| object_to_matrix(o, activation).ok())
+                .unwrap_or_default();
+
+            let color_transform = args
+                .get(2)
+                .map(|o| o.coerce_to_object(activation))
+                .and_then(|o| object_to_color_transform(o, activation).ok())
+                .unwrap_or_default();
+
+            if args.get(3).is_some() {
+                log::warn!("BitmapData.draw with blend mode - not implemented")
+            }
+            if args.get(4).is_some() {
+                log::warn!("BitmapData.draw with clip rect - not implemented")
+            }
+            let smoothing = args
+                .get(5)
+                .unwrap_or(&false.into())
+                .as_bool(activation.swf_version());
+
+            let source = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let source = if let Some(source_object) = source.as_display_object() {
+                IBitmapDrawable::DisplayObject(source_object)
+            } else if let Some(source_bitmap) = source.as_bitmap_data_object() {
+                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data())
+            } else {
+                avm_error!(
+                    activation,
+                    "BitmapData.draw: Unexpected source {:?} {:?}",
+                    source,
+                    args.get(0)
+                );
+                return Ok(Value::Undefined);
+            };
+
+            let bmd = bitmap_data.bitmap_data();
+            let mut write = bmd.write(activation.context.gc_context);
+            write.draw(
+                source,
+                Transform {
+                    matrix,
+                    color_transform,
+                },
+                smoothing,
+                BlendMode::Normal,
+                &mut activation.context,
+            );
+            return Ok(Value::Undefined);
+        }
+    }
+
+    Ok((-1).into())
+}
+
 pub fn apply_filter<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("BitmapData.applyFilter - not yet implemented");
-    Ok((-1).into())
-}
-
-pub fn draw<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        if !bitmap_data.disposed() {
-            log::warn!("BitmapData.draw - not yet implemented");
-            return Ok(Value::Undefined);
-        }
-    }
-
     Ok((-1).into())
 }
 

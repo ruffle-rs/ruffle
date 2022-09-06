@@ -440,6 +440,9 @@ pub struct RenderContext<'a, 'gc, 'gc_context> {
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
 
+    /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
+    pub is_offscreen: bool,
+
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
 

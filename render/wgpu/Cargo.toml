@@ -15,14 +15,11 @@ clap = { version = "3.2.20", features = ["derive"], optional = true }
 enum-map = "2.4.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
+image = { version = "0.24.2", default-features = false }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.24"
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies.image]
-version = "0.24.2"
-default-features = false
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]

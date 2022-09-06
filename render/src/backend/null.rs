@@ -48,6 +48,17 @@ impl RenderBackend for NullRenderer {
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
+
+    fn render_offscreen(
+        &mut self,
+        _handle: BitmapHandle,
+        _width: u32,
+        _height: u32,
+        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), Error>,
+    ) -> Result<Bitmap, Error> {
+        Err(Error::Unimplemented)
+    }
+
     fn begin_frame(&mut self, _clear: Color) {}
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}

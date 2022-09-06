@@ -1,11 +1,17 @@
-use gc_arena::Collect;
+use gc_arena::{Collect, GcCell};
+use swf::BlendMode;
 
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
+use crate::context::RenderContext;
+use crate::context::UpdateContext;
+use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::transform::Transform;
 use std::ops::Range;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -931,5 +937,106 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
         self.avm2_object = Some(object)
+    }
+
+    pub fn draw(
+        &mut self,
+        mut source: IBitmapDrawable<'gc>,
+        transform: Transform,
+        smoothing: bool,
+        blend_mode: BlendMode,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let bitmapdata_width = self.width();
+        let bitmapdata_height = self.height();
+
+        let mut transform_stack = ruffle_render::transform::TransformStack::new();
+        transform_stack.push(&transform);
+        let handle = self.bitmap_handle(context.renderer).unwrap();
+
+        let image = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            &mut |renderer| {
+                let mut render_context = RenderContext {
+                    renderer,
+                    gc_context: context.gc_context,
+                    ui: context.ui,
+                    library: &context.library,
+                    transform_stack: &mut transform_stack,
+                    is_offscreen: true,
+                    stage: context.stage,
+                    clip_depth_stack: vec![],
+                    allow_mask: true,
+                };
+
+                render_context
+                    .renderer
+                    .begin_frame(swf::Color::from_rgb(0x000000, 0));
+                render_context.renderer.push_blend_mode(blend_mode);
+                match &mut source {
+                    IBitmapDrawable::BitmapData(data) => {
+                        let source_handle = data
+                            .write(context.gc_context)
+                            .bitmap_handle(render_context.renderer)
+                            .unwrap();
+                        render_context.renderer.render_bitmap(
+                            source_handle,
+                            render_context.transform_stack.transform(),
+                            smoothing,
+                        );
+                    }
+                    IBitmapDrawable::DisplayObject(object) => {
+                        // Note that we do *not* use `render_base`,
+                        // as we want to ignore the object's mask and normal transform
+                        object.render_self(&mut render_context);
+                    }
+                }
+                render_context.renderer.pop_blend_mode();
+                render_context.renderer.end_frame();
+
+                Ok(())
+            },
+        );
+
+        match image {
+            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+            Err(ruffle_render::error::Error::Unimplemented) => {
+                log::warn!("BitmapData.draw: Not yet implemented")
+            }
+            Err(e) => panic!("BitmapData.draw failed: {:?}", e),
+        }
+    }
+}
+
+pub enum IBitmapDrawable<'gc> {
+    BitmapData(GcCell<'gc, BitmapData<'gc>>),
+    DisplayObject(DisplayObject<'gc>),
+}
+
+fn copy_pixels_to_bitmapdata(write: &mut BitmapData, bytes: &[u8]) {
+    let height = write.height();
+    let width = write.width();
+
+    for y in 0..height {
+        for x in 0..width {
+            // note: this order of conversions helps llvm realize the index is 4-byte-aligned
+            let ind = ((x + y * width) as usize) * 4;
+
+            // TODO(mid): optimize this A LOT
+            let r = bytes[ind];
+            let g = bytes[ind + 1usize];
+            let b = bytes[ind + 2usize];
+            let a = bytes[ind + 3usize];
+
+            // TODO(later): we might want to swap Color storage from argb to rgba, to make it cheaper
+            let nc = Color::argb(a, r, g, b);
+
+            let oc = write.get_pixel_raw(x, y).unwrap();
+
+            // FIXME: this blending is completely broken on transparent content
+            write.set_pixel32_raw(x, y, oc.blend_over(&nc));
+        }
     }
 }
