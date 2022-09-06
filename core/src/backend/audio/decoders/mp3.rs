@@ -159,7 +159,8 @@ pub mod symphonia {
     }
 
     impl Mp3Decoder {
-        const SAMPLE_BUFFER_DURATION: u64 = 4096;
+        // MP3 frames contain 1152 samples.
+        const SAMPLE_BUFFER_DURATION: u64 = 1152;
 
         pub fn new<R: 'static + Read + Send + Sync>(reader: R) -> Result<Self, Error> {
             let source = Box::new(io::ReadOnlySource::new(reader)) as Box<dyn io::MediaSource>;
@@ -175,7 +176,7 @@ pub mod symphonia {
                 reader,
                 decoder,
                 sample_buf: audio::SampleBuffer::new(
-                    Self::SAMPLE_BUFFER_DURATION,
+                    0,
                     audio::SignalSpec::new(sample_rate, channels),
                 ),
                 cur_sample: 0,
@@ -223,7 +224,8 @@ pub mod symphonia {
             while let Ok(packet) = self.reader.next_packet() {
                 match self.decoder.decode(&packet) {
                     Ok(decoded) => {
-                        if self.sample_buf.is_empty() {
+                        if self.sample_buf.capacity() < decoded.capacity() {
+                            // Ensure our buffer has enough space for the decoded samples.
                             self.sample_buf = audio::SampleBuffer::new(
                                 decoded.capacity() as core::units::Duration,
                                 *decoded.spec(),
@@ -271,15 +273,30 @@ pub mod symphonia {
     impl SeekableDecoder for Mp3Decoder {
         #[inline]
         fn reset(&mut self) {
-            let _ = self.reader.seek(
+            self.seek_to_sample_frame(0);
+        }
+
+        #[inline]
+        fn seek_to_sample_frame(&mut self, frame: u32) {
+            // Seek to the desired position,
+            let seek_result = self.reader.seek(
                 formats::SeekMode::Accurate,
-                formats::SeekTo::TimeStamp { track_id: 0, ts: 0 },
+                formats::SeekTo::TimeStamp {
+                    track_id: 0,
+                    ts: frame.into(),
+                },
             );
             self.sample_buf.clear();
             self.decoder.reset();
             self.cur_sample = 0;
             self.stream_ended = false;
-            self.next_frame();
+            // Seeking isn't exact, so we may end up slightly before our desired position.
+            // Pump samples until we get to the exact position.
+            let samples_remaining =
+                seek_result.map_or(0, |seek| seek.required_ts.saturating_sub(seek.actual_ts));
+            for _ in 0..samples_remaining {
+                self.next();
+            }
         }
     }
 
