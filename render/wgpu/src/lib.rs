@@ -925,13 +925,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &self.descriptors.device
     }
 
-    fn with_offscreen_backend_internal(
+    fn render_offscreen_internal(
         mut self,
         handle: BitmapHandle,
         width: u32,
         height: u32,
         f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
-    ) -> Result<(Self, image::RgbaImage), ruffle_render::error::Error> {
+    ) -> Result<(Self, ruffle_render::bitmap::Bitmap), ruffle_render::error::Error> {
         // We need ownership of `Texture` to access the non-`Clone`
         // `wgpu` fields. At the end of this method, we re-insert
         // `texture` into the map.
@@ -1031,6 +1031,15 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let image = texture_backend
             .target
             .capture(&texture_backend.descriptors.device);
+
+        let image = image.map(|image| {
+            ruffle_render::bitmap::Bitmap::new(
+                image.dimensions().0,
+                image.dimensions().1,
+                ruffle_render::bitmap::BitmapFormat::Rgba,
+                image.into_raw(),
+            )
+        });
 
         self.offscreen = false;
         self.meshes = texture_backend.meshes;
@@ -1290,13 +1299,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         });
     }
 
-    fn with_offscreen_backend(
+    fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
         width: u32,
         height: u32,
         f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
-    ) -> Result<image::RgbaImage, ruffle_render::error::Error> {
+    ) -> Result<Bitmap, ruffle_render::error::Error> {
         // Rendering to a texture backend requires us to use non-`Clone`
         // wgpu resources (e.g. `wgpu::Device`, `wgpu::Queue`.
         //
@@ -1322,7 +1331,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         // printed, and there's not really much point in attempting
         // to recover from a partially failed render operation, anyway.
         Ok(take_mut(self, |this| {
-            this.with_offscreen_backend_internal(handle, width, height, f)
+            this.render_offscreen_internal(handle, width, height, f)
                 .expect("Failed to render to offscreen backend")
         }))
     }

@@ -956,7 +956,7 @@ impl<'gc> BitmapData<'gc> {
 
         let image = context
             .renderer
-            .with_offscreen_backend(
+            .render_offscreen(
                 handle,
                 bitmapdata_width,
                 bitmapdata_height,
@@ -1003,7 +1003,7 @@ impl<'gc> BitmapData<'gc> {
             )
             .unwrap();
 
-        copy_pixels_to_bitmapdata(self, &image);
+        copy_pixels_to_bitmapdata(self, image.data());
     }
 }
 

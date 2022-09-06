@@ -45,13 +45,13 @@ pub trait RenderBackend: Downcast {
     /// from the GPU texture to an `RgbaImage`. There is no need to call
     /// `update_texture` with the pixels from this image, as they
     /// reflect data that is already stored on the GPU texture.
-    fn with_offscreen_backend(
+    fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
         width: u32,
         height: u32,
         f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), Error>,
-    ) -> Result<image::RgbaImage, Error>;
+    ) -> Result<Bitmap, Error>;
 
     fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = utils::decode_define_bits_jpeg(data, None)?;

@@ -49,13 +49,13 @@ impl RenderBackend for NullRenderer {
         ShapeHandle(0)
     }
 
-    fn with_offscreen_backend(
+    fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
         _width: u32,
         _height: u32,
         _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), Error>,
-    ) -> Result<image::RgbaImage, Error> {
+    ) -> Result<Bitmap, Error> {
         Err(Error::Unimplemented)
     }
 
