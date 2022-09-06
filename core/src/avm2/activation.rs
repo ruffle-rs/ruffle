@@ -18,7 +18,7 @@ use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr, WString};
 use crate::swf::extensions::ReadSwfExt;
-use gc_arena::{Gc, GcCell, MutationContext};
+use gc_arena::{Gc, GcCell};
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
@@ -31,7 +31,7 @@ use swf::avm2::types::{
 /// Represents a particular register set.
 ///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
-#[derive(Clone)]
+
 pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
 
 unsafe impl<'gc> gc_arena::Collect for RegisterSet<'gc> {
@@ -90,7 +90,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     ///
     /// All activations have local registers, but it is possible for multiple
     /// activations (such as a rescope) to execute from the same register set.
-    local_registers: GcCell<'gc, RegisterSet<'gc>>,
+    local_registers: RegisterSet<'gc>,
 
     /// What was returned from the function.
     ///
@@ -152,7 +152,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// It is a logic error to attempt to run AVM2 code in a nothing
     /// `Activation`.
     pub fn from_nothing(context: UpdateContext<'a, 'gc, 'gc_context>) -> Self {
-        let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
+        let local_registers = RegisterSet::new(0);
 
         Self {
             this: None,
@@ -187,13 +187,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 body?.num_locals
             }
         };
-        let local_registers =
-            GcCell::allocate(context.gc_context, RegisterSet::new(num_locals + 1));
+        let mut local_registers = RegisterSet::new(num_locals + 1);
 
-        *local_registers
-            .write(context.gc_context)
-            .get_mut(0)
-            .unwrap() = global_object.into();
+        *local_registers.get_mut(0).unwrap() = global_object.into();
 
         Ok(Self {
             this: Some(global_object),
@@ -399,15 +395,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let num_declared_arguments = signature.len() as u32;
 
-        let local_registers = GcCell::allocate(
-            context.gc_context,
-            RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1),
-        );
-
-        {
-            let mut write = local_registers.write(context.gc_context);
-            *write.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
-        }
+        let mut local_registers =
+            RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
+        *local_registers.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
 
         let activation_class = if method
             .method()
@@ -450,12 +440,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             activation.resolve_parameters(method.method_name(), user_arguments, signature)?;
 
         {
-            let mut write = local_registers.write(activation.context.gc_context);
             for (i, arg) in arguments_list[0..min(signature.len(), arguments_list.len())]
                 .iter()
                 .enumerate()
             {
-                *write.get_mut(1 + i as u32).unwrap() = *arg;
+                *activation.local_registers.get_mut(1 + i as u32).unwrap() = *arg;
             }
         }
 
@@ -490,8 +479,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 )?;
             }
 
-            *local_registers
-                .write(activation.context.gc_context)
+            *activation
+                .local_registers
                 .get_mut(1 + num_declared_arguments)
                 .unwrap() = args_object.into();
         }
@@ -512,7 +501,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         outer: ScopeChain<'gc>,
         caller_domain: Domain<'gc>,
     ) -> Result<Self, Error> {
-        let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
+        let local_registers = RegisterSet::new(0);
 
         Ok(Self {
             this,
@@ -569,7 +558,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Retrieve a local register.
     pub fn local_register(&self, id: u32) -> Result<Value<'gc>, Error> {
         self.local_registers
-            .read()
             .get(id)
             .cloned()
             .ok_or_else(|| format!("Out of bounds register read: {}", id).into())
@@ -582,9 +570,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         id: u32,
         value: impl Into<Value<'gc>>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        if let Some(r) = self.local_registers.write(mc).get_mut(id) {
+        if let Some(r) = self.local_registers.get_mut(id) {
             *r = value.into();
 
             Ok(())
@@ -1177,13 +1164,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_set_local(&mut self, register_index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
 
-        self.set_local_register(register_index, value, self.context.gc_context)?;
+        self.set_local_register(register_index, value)?;
 
         Ok(FrameControl::Continue)
     }
 
     fn op_kill(&mut self, register_index: u32) -> Result<FrameControl<'gc>, Error> {
-        self.set_local_register(register_index, Value::Undefined, self.context.gc_context)?;
+        self.set_local_register(register_index, Value::Undefined)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2096,7 +2083,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_declocal(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.local_register(index)?.coerce_to_number(self)?;
 
-        self.set_local_register(index, value - 1.0, self.context.gc_context)?;
+        self.set_local_register(index, value - 1.0)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2104,7 +2091,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_declocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.local_register(index)?.coerce_to_i32(self)?;
 
-        self.set_local_register(index, value - 1, self.context.gc_context)?;
+        self.set_local_register(index, value - 1)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2137,7 +2124,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_inclocal(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.local_register(index)?.coerce_to_number(self)?;
 
-        self.set_local_register(index, value + 1.0, self.context.gc_context)?;
+        self.set_local_register(index, value + 1.0)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2145,7 +2132,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_inclocal_i(&mut self, index: u32) -> Result<FrameControl<'gc>, Error> {
         let value = self.local_register(index)?.coerce_to_i32(self)?;
 
-        self.set_local_register(index, value + 1, self.context.gc_context)?;
+        self.set_local_register(index, value + 1)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2623,11 +2610,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         self.context.avm2.push(cur_index != 0);
-        self.set_local_register(index_register, cur_index, self.context.gc_context)?;
+        self.set_local_register(index_register, cur_index)?;
         self.set_local_register(
             object_register,
             object.map(|v| v.into()).unwrap_or(Value::Null),
-            self.context.gc_context,
         )?;
 
         Ok(FrameControl::Continue)
