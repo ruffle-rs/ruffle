@@ -86,6 +86,7 @@ fn attach_sound<'gc>(
                 .character_by_export_name(name)
             {
                 sound_object.set_sound(activation.context.gc_context, Some(*sound));
+                sound_object.set_is_streaming(activation.context.gc_context, false);
                 sound_object.set_duration(
                     activation.context.gc_context,
                     activation
@@ -251,6 +252,14 @@ fn load_sound<'gc>(
                 .get(1)
                 .unwrap_or(&Value::Undefined)
                 .as_bool(activation.swf_version());
+            if is_streaming {
+                // Streaming MP3s can only have a single active instance.
+                // (Previous `attachSound` instances will continue to play.)
+                if let Some(sound_instance) = sound.sound_instance() {
+                    activation.context.stop_sound(sound_instance);
+                }
+            }
+            sound.set_is_streaming(activation.context.gc_context, is_streaming);
             let future = activation.context.load_manager.load_sound_avm1(
                 activation.context.player.clone(),
                 sound,
@@ -384,6 +393,12 @@ pub fn start<'gc>(
     use swf::{SoundEvent, SoundInfo};
     if let Some(sound_object) = this.as_sound_object() {
         if let Some(sound) = sound_object.sound() {
+            if sound_object.is_streaming() {
+                // Streaming MP3s can only have a single active instance.
+                if let Some(sound_instance) = sound_object.sound_instance() {
+                    activation.context.stop_sound(sound_instance);
+                }
+            }
             let sound_instance = activation.context.start_sound(
                 sound,
                 &SoundInfo {
