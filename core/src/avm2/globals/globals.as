@@ -167,6 +167,7 @@ include "flash/net/URLLoaderDataFormat.as"
 include "flash/net/URLRequest.as"
 include "flash/net/URLRequestHeader.as"
 include "flash/net/URLRequestMethod.as"
+include "flash/net/URLVariables.as"
 
 include "flash/printing/PrintJobOrientation.as"
 include "flash/security/CertificateStatus.as"
