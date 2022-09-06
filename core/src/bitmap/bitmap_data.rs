@@ -954,56 +954,59 @@ impl<'gc> BitmapData<'gc> {
         transform_stack.push(&transform);
         let handle = self.bitmap_handle(context.renderer).unwrap();
 
-        let image = context
-            .renderer
-            .render_offscreen(
-                handle,
-                bitmapdata_width,
-                bitmapdata_height,
-                &mut |renderer| {
-                    let mut render_context = RenderContext {
-                        renderer,
-                        gc_context: context.gc_context,
-                        ui: context.ui,
-                        library: &context.library,
-                        transform_stack: &mut transform_stack,
-                        is_offscreen: true,
-                        stage: context.stage,
-                        clip_depth_stack: vec![],
-                        allow_mask: true,
-                    };
+        let image = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            &mut |renderer| {
+                let mut render_context = RenderContext {
+                    renderer,
+                    gc_context: context.gc_context,
+                    ui: context.ui,
+                    library: &context.library,
+                    transform_stack: &mut transform_stack,
+                    is_offscreen: true,
+                    stage: context.stage,
+                    clip_depth_stack: vec![],
+                    allow_mask: true,
+                };
 
-                    render_context
-                        .renderer
-                        .begin_frame(swf::Color::from_rgb(0x000000, 0));
-                    render_context.renderer.push_blend_mode(blend_mode);
-                    match &mut source {
-                        IBitmapDrawable::BitmapData(data) => {
-                            let source_handle = data
-                                .write(context.gc_context)
-                                .bitmap_handle(render_context.renderer)
-                                .unwrap();
-                            render_context.renderer.render_bitmap(
-                                source_handle,
-                                render_context.transform_stack.transform(),
-                                smoothing,
-                            );
-                        }
-                        IBitmapDrawable::DisplayObject(object) => {
-                            // Note that we do *not* use `render_base`,
-                            // as we want to ignore the object's mask and normal transform
-                            object.render_self(&mut render_context);
-                        }
+                render_context
+                    .renderer
+                    .begin_frame(swf::Color::from_rgb(0x000000, 0));
+                render_context.renderer.push_blend_mode(blend_mode);
+                match &mut source {
+                    IBitmapDrawable::BitmapData(data) => {
+                        let source_handle = data
+                            .write(context.gc_context)
+                            .bitmap_handle(render_context.renderer)
+                            .unwrap();
+                        render_context.renderer.render_bitmap(
+                            source_handle,
+                            render_context.transform_stack.transform(),
+                            smoothing,
+                        );
                     }
-                    render_context.renderer.pop_blend_mode();
-                    render_context.renderer.end_frame();
+                    IBitmapDrawable::DisplayObject(object) => {
+                        // Note that we do *not* use `render_base`,
+                        // as we want to ignore the object's mask and normal transform
+                        object.render_self(&mut render_context);
+                    }
+                }
+                render_context.renderer.pop_blend_mode();
+                render_context.renderer.end_frame();
 
-                    Ok(())
-                },
-            )
-            .unwrap();
+                Ok(())
+            },
+        );
 
-        copy_pixels_to_bitmapdata(self, image.data());
+        match image {
+            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+            Err(ruffle_render::error::Error::Unimplemented) => {
+                log::warn!("BitmapData.draw: Not yet implemented")
+            }
+            Err(e) => panic!("BitmapData.draw failed: {:?}", e),
+        }
     }
 }
 
