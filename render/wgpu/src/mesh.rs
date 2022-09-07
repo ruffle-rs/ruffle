@@ -1,10 +1,10 @@
 use crate::{
     create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, RegistryData,
-    TextureTransforms,
+    TextureTransforms, Vertex,
 };
 use fnv::FnvHashMap;
 use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::tessellator::{Bitmap, Gradient};
+use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::CharacterId;
 
 #[derive(Debug)]
@@ -19,6 +19,62 @@ pub struct Draw {
     pub index_buffer: wgpu::Buffer,
     pub num_indices: u32,
     pub num_mask_indices: u32,
+}
+
+impl Draw {
+    pub fn new(
+        descriptors: &Descriptors,
+        draw: LyonDraw,
+        shape_id: CharacterId,
+        draw_id: usize,
+        bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
+    ) -> Self {
+        let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
+        let vertex_buffer = create_buffer_with_data(
+            &descriptors.device,
+            bytemuck::cast_slice(&vertices),
+            wgpu::BufferUsages::VERTEX,
+            create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
+        );
+
+        let index_buffer = create_buffer_with_data(
+            &descriptors.device,
+            bytemuck::cast_slice(&draw.indices),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
+        );
+
+        let index_count = draw.indices.len() as u32;
+        match draw.draw_type {
+            TessDrawType::Color => Draw {
+                draw_type: DrawType::color(),
+                vertex_buffer,
+                index_buffer,
+                num_indices: index_count,
+                num_mask_indices: draw.mask_index_count,
+            },
+            TessDrawType::Gradient(gradient) => Draw {
+                draw_type: DrawType::gradient(&descriptors, gradient, shape_id, draw_id),
+                vertex_buffer,
+                index_buffer,
+                num_indices: index_count,
+                num_mask_indices: draw.mask_index_count,
+            },
+            TessDrawType::Bitmap(bitmap) => Draw {
+                draw_type: DrawType::bitmap(
+                    &descriptors,
+                    &bitmap_registry,
+                    bitmap,
+                    shape_id,
+                    draw_id,
+                ),
+                vertex_buffer,
+                index_buffer,
+                num_indices: index_count,
+                num_mask_indices: draw.mask_index_count,
+            },
+        }
+    }
 }
 
 #[allow(dead_code)]
