@@ -13,7 +13,6 @@ wasm-bindgen = "=0.2.82"
 fnv = "1.0.7"
 ruffle_render = { path = "..", features = ["web"] }
 swf = { path = "../../swf" }
-image = "0.24.2"
 
 [dependencies.web-sys]
 version = "0.3.58"
