@@ -1,4 +1,4 @@
-use crate::pipelines::BlendMode as ActualBlendMode;
+use crate::pipelines::BlendMode;
 use crate::target::RenderTargetFrame;
 use crate::Pipelines;
 use crate::{ColorAdjustments, Descriptors, Globals, MaskState, Transforms, UniformBuffer};
@@ -11,7 +11,7 @@ pub struct Frame<'a> {
     num_masks: u32,
     uniform_encoder: &'a mut wgpu::CommandEncoder,
     render_pass: wgpu::RenderPass<'a>,
-    blend_mode: ActualBlendMode,
+    blend_mode: BlendMode,
 }
 
 impl<'a> Frame<'a> {
@@ -30,7 +30,7 @@ impl<'a> Frame<'a> {
             num_masks: 0,
             uniform_encoder,
             render_pass,
-            blend_mode: ActualBlendMode::Normal,
+            blend_mode: BlendMode::Normal,
         }
     }
 
@@ -106,51 +106,25 @@ impl<'a> Frame<'a> {
         self.uniform_buffers.finish()
     }
 
-    pub fn draw_color(
-        &mut self,
-        vertices: wgpu::BufferSlice<'a>,
-        indices: wgpu::BufferSlice<'a>,
-        num_indices: u32,
-    ) {
+    pub fn prep_color(&mut self) {
         self.render_pass.set_pipeline(
             self.pipelines
                 .color_pipelines
                 .pipeline_for(self.blend_mode, self.mask_state),
         );
-
-        self.render_pass.set_vertex_buffer(0, vertices);
-        self.render_pass
-            .set_index_buffer(indices, wgpu::IndexFormat::Uint32);
-
-        self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    pub fn draw_gradient(
-        &mut self,
-        vertices: wgpu::BufferSlice<'a>,
-        indices: wgpu::BufferSlice<'a>,
-        num_indices: u32,
-        bind_group: &'a wgpu::BindGroup,
-    ) {
+    pub fn prep_gradient(&mut self, bind_group: &'a wgpu::BindGroup) {
         self.render_pass.set_pipeline(
             self.pipelines
                 .gradient_pipelines
                 .pipeline_for(self.blend_mode, self.mask_state),
         );
         self.render_pass.set_bind_group(2, bind_group, &[]);
-
-        self.render_pass.set_vertex_buffer(0, vertices);
-        self.render_pass
-            .set_index_buffer(indices, wgpu::IndexFormat::Uint32);
-
-        self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    pub fn draw_bitmap(
+    pub fn prep_bitmap(
         &mut self,
-        vertices: wgpu::BufferSlice<'a>,
-        indices: wgpu::BufferSlice<'a>,
-        num_indices: u32,
         bind_group: &'a wgpu::BindGroup,
         is_repeating: bool,
         is_smoothed: bool,
@@ -168,7 +142,14 @@ impl<'a> Frame<'a> {
                 .get_bind_group(is_repeating, is_smoothed),
             &[],
         );
+    }
 
+    pub fn draw(
+        &mut self,
+        vertices: wgpu::BufferSlice<'a>,
+        indices: wgpu::BufferSlice<'a>,
+        num_indices: u32,
+    ) {
         self.render_pass.set_vertex_buffer(0, vertices);
         self.render_pass
             .set_index_buffer(indices, wgpu::IndexFormat::Uint32);
@@ -216,7 +197,7 @@ impl<'a> Frame<'a> {
         self.render_pass.set_stencil_reference(self.num_masks);
     }
 
-    pub fn set_blend_mode(&mut self, blend_mode: ActualBlendMode) {
+    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
         self.blend_mode = blend_mode;
     }
 
