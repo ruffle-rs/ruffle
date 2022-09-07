@@ -35,9 +35,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     copy_srgb_bind_group: Option<(wgpu::BindGroup, wgpu::Buffer, wgpu::BindGroup)>,
     meshes: Vec<Mesh>,
     shape_tessellator: ShapeTessellator,
-    quad_vbo: wgpu::Buffer,
-    quad_ibo: wgpu::Buffer,
-    quad_tex_transforms: wgpu::Buffer,
     bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
     next_bitmap_handle: BitmapHandle,
     // This is currently unused - we just store it to report in
@@ -178,8 +175,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         });
         let depth_texture_view = depth_texture.create_view(&Default::default());
 
-        let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
-
         let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.frame_buffer_format
             != descriptors.surface_format
         {
@@ -203,7 +198,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                             wgpu::BindGroupEntry {
                                 binding: 0,
                                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &quad_tex_transforms,
+                                    buffer: &descriptors.quad.texture_transforms,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
                                         std::mem::size_of::<TextureTransforms>() as u64,
@@ -282,9 +277,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
 
-            quad_vbo,
-            quad_ibo,
-            quad_tex_transforms,
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
             viewport_scale_factor: 1.0,
@@ -662,7 +654,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             wgpu::BindGroupEntry {
                                 binding: 0,
                                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &self.quad_tex_transforms,
+                                    buffer: &self.descriptors.quad.texture_transforms,
                                     offset: 0,
                                     size: wgpu::BufferSize::new(
                                         std::mem::size_of::<TextureTransforms>() as u64,
@@ -849,8 +841,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut frame,
             &self.meshes,
             &self.bitmap_registry,
-            self.quad_vbo.slice(..),
-            self.quad_ibo.slice(..),
+            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.indices.slice(..),
         ));
         frame.finish();
 
@@ -892,7 +884,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             );
 
             srgb_frame.prep_srgb_copy(copy_srgb_bind_group);
-            srgb_frame.draw(self.quad_vbo.slice(..), self.quad_ibo.slice(..), 6);
+            srgb_frame.draw(
+                self.descriptors.quad.vertices.slice(..),
+                self.descriptors.quad.indices.slice(..),
+                6,
+            );
 
             drop(srgb_frame);
             Some(copy_encoder.finish())
@@ -980,7 +976,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &self.quad_tex_transforms,
+                            buffer: &self.descriptors.quad.texture_transforms,
                             offset: 0,
                             size: wgpu::BufferSize::new(
                                 std::mem::size_of::<TextureTransforms>() as u64
@@ -1199,8 +1195,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut frame,
             &self.meshes,
             &self.bitmap_registry,
-            self.quad_vbo.slice(..),
-            self.quad_ibo.slice(..),
+            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.indices.slice(..),
         ));
         frame.finish();
 
@@ -1232,58 +1228,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         Ok(image.unwrap())
     }
-}
-
-fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wgpu::Buffer) {
-    let vertices = [
-        Vertex {
-            position: [0.0, 0.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 0.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [1.0, 1.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-        Vertex {
-            position: [0.0, 1.0],
-            color: [1.0, 1.0, 1.0, 1.0],
-        },
-    ];
-    let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
-
-    let vbo = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&vertices),
-        wgpu::BufferUsages::VERTEX,
-        create_debug_label!("Quad vbo"),
-    );
-
-    let ibo = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&indices),
-        wgpu::BufferUsages::INDEX,
-        create_debug_label!("Quad ibo"),
-    );
-
-    let tex_transforms = create_buffer_with_data(
-        device,
-        bytemuck::cast_slice(&[TextureTransforms {
-            u_matrix: [
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-        }]),
-        wgpu::BufferUsages::UNIFORM,
-        create_debug_label!("Quad tex transforms"),
-    );
-
-    (vbo, ibo, tex_transforms)
 }
 
 fn create_depth_texture_view(
