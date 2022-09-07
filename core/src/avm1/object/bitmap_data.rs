@@ -18,7 +18,6 @@ pub struct BitmapDataData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
     data: GcCell<'gc, BitmapData<'gc>>,
-    disposed: bool,
 }
 
 impl fmt::Debug for BitmapDataObject<'_> {
@@ -32,7 +31,6 @@ impl fmt::Debug for BitmapDataObject<'_> {
 
 impl<'gc> BitmapDataObject<'gc> {
     add_field_accessors!(
-        [disposed, bool, get => disposed],
         [data, GcCell<'gc, BitmapData<'gc>>, set => set_bitmap_data, get => bitmap_data],
     );
 
@@ -49,17 +47,19 @@ impl<'gc> BitmapDataObject<'gc> {
             gc_context,
             BitmapDataData {
                 base: ScriptObject::new(gc_context, proto),
-                disposed: false,
                 data: GcCell::allocate(gc_context, bitmap_data),
             },
         ))
+    }
+
+    pub fn disposed(&self) -> bool {
+        self.bitmap_data().read().disposed()
     }
 
     pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.bitmap_data()
             .write(context.gc_context)
             .dispose(context.renderer);
-        self.0.write(context.gc_context).disposed = true;
     }
 }
 

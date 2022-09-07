@@ -31,7 +31,6 @@ impl Bitmap {
     pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = width as usize * height as usize * format.bytes_per_pixel();
-        debug_assert_eq!(data.len(), expected_len);
         if data.len() != expected_len {
             log::warn!(
                 "Incorrect bitmap data size, expected {} bytes, got {}",
