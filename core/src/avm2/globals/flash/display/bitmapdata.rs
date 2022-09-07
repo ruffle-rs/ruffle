@@ -287,6 +287,28 @@ pub fn get_pixel<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.getPixel32`.
+pub fn get_pixel32<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let y = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let pixel = i32::from(bitmap_data.read().get_pixel32(x, y));
+        return Ok((pixel as u32).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn lock<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -365,6 +387,47 @@ pub fn draw<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `BitmapData.fillRect`
+pub fn fill_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let rectangle = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation)?;
+
+    let color = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_u32(activation)? as i32;
+
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        let x = rectangle
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_u32(activation)?;
+        let y = rectangle
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_u32(activation)?;
+        let width = rectangle
+            .get_property(&Multiname::public("width"), activation)?
+            .coerce_to_u32(activation)?;
+        let height = rectangle
+            .get_property(&Multiname::public("height"), activation)?
+            .coerce_to_u32(activation)?;
+
+        bitmap_data.write(activation.context.gc_context).fill_rect(
+            x,
+            y,
+            width,
+            height,
+            color.into(),
+        );
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -395,11 +458,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("getPixel", get_pixel),
+        ("getPixel32", get_pixel32),
         ("scroll", scroll),
         ("lock", lock),
         ("unlock", lock), // sic, it's a noop (TODO)
         ("copyPixels", copy_pixels),
         ("draw", draw),
+        ("fillRect", fill_rect),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
