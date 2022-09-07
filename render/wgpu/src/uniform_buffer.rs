@@ -67,12 +67,15 @@ impl<T: Pod> BufferStorage<T> {
         self.blocks
             .push(Pin::new(Box::new(Block { buffer, bind_group })));
     }
+
+    pub fn recall(&mut self) {
+        self.staging_belt.recall();
+    }
 }
 
 impl<'a, T: Pod> UniformBuffer<'a, T> {
     /// Creates a new `UniformBuffer` with the given uniform layout.
     pub fn new(buffers: &'a mut BufferStorage<T>) -> Self {
-        buffers.staging_belt.recall();
         Self {
             buffers,
             cur_block: 0,
