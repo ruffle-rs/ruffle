@@ -1,13 +1,16 @@
+use crate::commands::CommandRenderer;
 use crate::descriptors::Quad;
 use crate::frame::Frame;
 use crate::layouts::BindLayouts;
 use crate::surface::Surface::{Direct, DirectSrgb, Resolve, ResolveSrgb};
-use crate::target::RenderTargetFrame;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, TextureTransforms, Transforms,
-    UniformBuffer,
+    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Mesh, Pipelines, RegistryData,
+    TextureTransforms, Transforms, UniformBuffer,
 };
+use fnv::FnvHashMap;
+use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::commands::CommandList;
 
 #[derive(Debug)]
 pub struct FrameBuffer {
@@ -309,9 +312,9 @@ impl Surface {
         }
     }
 
-    pub fn copy_srgb<T: RenderTargetFrame>(
+    pub fn copy_srgb(
         &self,
-        frame: &T,
+        frame: &wgpu::TextureView,
         descriptors: &Descriptors,
         globals: &Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
@@ -320,7 +323,7 @@ impl Surface {
         match self {
             Direct { .. } => None,
             DirectSrgb { srgb, .. } => Some(srgb.copy_srgb(
-                frame.view(),
+                frame,
                 descriptors,
                 globals,
                 uniform_buffers_storage,
@@ -328,12 +331,100 @@ impl Surface {
             )),
             Resolve { .. } => None,
             ResolveSrgb { srgb, .. } => Some(srgb.copy_srgb(
-                frame.view(),
+                frame,
                 descriptors,
                 globals,
                 uniform_buffers_storage,
                 uniform_encoder,
             )),
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_commands(
+        &self,
+        frame_view: &wgpu::TextureView,
+        clear_color: wgpu::Color,
+        descriptors: &Descriptors,
+        globals: &mut Globals,
+        pipelines: &Pipelines,
+        uniform_buffers_storage: &mut BufferStorage<Transforms>,
+        meshes: &Vec<Mesh>,
+        bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
+        commands: CommandList,
+    ) -> Vec<wgpu::CommandBuffer> {
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+
+        globals.update_uniform(&descriptors.device, &mut draw_encoder);
+
+        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: self.view(frame_view),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(clear_color),
+                    store: true,
+                },
+                resolve_target: self.resolve_target(frame_view),
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: self.depth(),
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0.0),
+                    store: false,
+                }),
+                stencil_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0),
+                    store: true,
+                }),
+            }),
+            label: None,
+        });
+        render_pass.set_bind_group(0, globals.bind_group(), &[]);
+
+        uniform_buffers_storage.recall();
+        let mut frame = Frame::new(
+            &pipelines,
+            &descriptors,
+            UniformBuffer::new(uniform_buffers_storage),
+            render_pass,
+            &mut uniform_encoder,
+        );
+        commands.execute(&mut CommandRenderer::new(
+            &mut frame,
+            meshes,
+            bitmap_registry,
+            descriptors.quad.vertices.slice(..),
+            descriptors.quad.indices.slice(..),
+        ));
+        frame.finish();
+
+        let copy_encoder = self.copy_srgb(
+            &frame_view,
+            &descriptors,
+            &globals,
+            uniform_buffers_storage,
+            &mut uniform_encoder,
+        );
+
+        let mut command_buffers = vec![uniform_encoder.finish(), draw_encoder.finish()];
+        if let Some(copy_encoder) = copy_encoder {
+            command_buffers.push(copy_encoder);
+        }
+
+        command_buffers
     }
 }

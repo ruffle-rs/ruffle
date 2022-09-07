@@ -1,5 +1,3 @@
-use crate::commands::CommandRenderer;
-use crate::frame::Frame;
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
@@ -7,8 +5,7 @@ use crate::uniform_buffer::BufferStorage;
 use crate::{
     create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Draw,
     DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh, RegistryData, RenderTarget,
-    SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms, UniformBuffer,
-    Vertex,
+    SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms, Vertex,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -544,82 +541,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
-
-        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
-        let mut uniform_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: uniform_encoder_label.as_deref(),
-                });
-
-        self.globals
-            .update_uniform(&self.descriptors.device, &mut draw_encoder);
-
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: self.surface.view(frame_output.view()),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: f64::from(clear.r) / 255.0,
-                        g: f64::from(clear.g) / 255.0,
-                        b: f64::from(clear.b) / 255.0,
-                        a: f64::from(clear.a) / 255.0,
-                    }),
-                    store: true,
-                },
-                resolve_target: self.surface.resolve_target(frame_output.view()),
-            })],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: self.surface.depth(),
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0.0),
-                    store: false,
-                }),
-                stencil_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0),
-                    store: true,
-                }),
-            }),
-            label: None,
-        });
-        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-        self.uniform_buffers_storage.recall();
-        let mut frame = Frame::new(
-            &self.descriptors.onscreen.pipelines,
+        let command_buffers = self.surface.draw_commands(
+            frame_output.view(),
+            wgpu::Color {
+                r: f64::from(clear.r) / 255.0,
+                g: f64::from(clear.g) / 255.0,
+                b: f64::from(clear.b) / 255.0,
+                a: f64::from(clear.a) / 255.0,
+            },
             &self.descriptors,
-            UniformBuffer::new(&mut self.uniform_buffers_storage),
-            render_pass,
-            &mut uniform_encoder,
-        );
-        commands.execute(&mut CommandRenderer::new(
-            &mut frame,
+            &mut self.globals,
+            &self.descriptors.onscreen.pipelines,
+            &mut self.uniform_buffers_storage,
             &self.meshes,
             &self.bitmap_registry,
-            self.descriptors.quad.vertices.slice(..),
-            self.descriptors.quad.indices.slice(..),
-        ));
-        frame.finish();
-
-        let copy_encoder = self.surface.copy_srgb(
-            &frame_output,
-            &self.descriptors,
-            &self.globals,
-            &mut self.uniform_buffers_storage,
-            &mut uniform_encoder,
+            commands,
         );
-
-        let mut command_buffers = vec![uniform_encoder.finish(), draw_encoder.finish()];
-        if let Some(copy_encoder) = copy_encoder {
-            command_buffers.push(copy_encoder);
-        }
 
         self.target.submit(
             &self.descriptors.device,
@@ -851,83 +788,32 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         };
 
         let (old_width, old_height) = self.globals.resolution();
+        self.globals.set_resolution(width, height);
 
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
 
-        let label = create_debug_label!("Draw encoder");
-        let mut draw_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
-
-        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
-        let mut uniform_encoder =
-            self.descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: uniform_encoder_label.as_deref(),
-                });
-
-        self.globals.set_resolution(width, height);
-        self.globals
-            .update_uniform(&self.descriptors.device, &mut draw_encoder);
-
-        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: texture_offscreen.surface.view(frame_output.view()),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: f64::from(clear_color.r) / 255.0,
-                        g: f64::from(clear_color.g) / 255.0,
-                        b: f64::from(clear_color.b) / 255.0,
-                        a: f64::from(clear_color.a) / 255.0,
-                    }),
-                    store: true,
-                },
-                resolve_target: texture_offscreen
-                    .surface
-                    .resolve_target(frame_output.view()),
-            })],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: texture_offscreen.surface.depth(),
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0.0),
-                    store: false,
-                }),
-                stencil_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0),
-                    store: true,
-                }),
-            }),
-            label: None,
-        });
-        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-
-        self.uniform_buffers_storage.recall();
-        let mut frame = Frame::new(
-            &self.descriptors.offscreen.pipelines,
+        let command_buffers = texture_offscreen.surface.draw_commands(
+            frame_output.view(),
+            wgpu::Color {
+                r: f64::from(clear_color.r) / 255.0,
+                g: f64::from(clear_color.g) / 255.0,
+                b: f64::from(clear_color.b) / 255.0,
+                a: f64::from(clear_color.a) / 255.0,
+            },
             &self.descriptors,
-            UniformBuffer::new(&mut self.uniform_buffers_storage),
-            render_pass,
-            &mut uniform_encoder,
-        );
-        commands.execute(&mut CommandRenderer::new(
-            &mut frame,
+            &mut self.globals,
+            &self.descriptors.offscreen.pipelines,
+            &mut self.uniform_buffers_storage,
             &self.meshes,
             &self.bitmap_registry,
-            self.descriptors.quad.vertices.slice(..),
-            self.descriptors.quad.indices.slice(..),
-        ));
-        frame.finish();
-
+            commands,
+        );
         target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
-            vec![uniform_encoder.finish(), draw_encoder.finish()],
+            command_buffers,
             frame_output,
         );
 
