@@ -1,14 +1,15 @@
 use crate::commands::CommandRenderer;
 use crate::descriptors::DescriptorsTargetData;
 use crate::frame::Frame;
+use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, ColorAdjustments,
-    Descriptors, Draw, DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh,
-    RegistryData, RenderTarget, SwapChainTarget, Texture, TextureOffscreen, TextureTransforms,
-    Transforms, UniformBuffer, Vertex,
+    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Draw,
+    DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh, RegistryData, RenderTarget,
+    SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms, UniformBuffer,
+    Vertex,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -29,10 +30,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     globals: Globals,
     uniform_buffers_storage: BufferStorage<Transforms>,
     target: T,
-    frame_buffer_view: Option<wgpu::TextureView>,
-    depth_texture_view: wgpu::TextureView,
-    copy_srgb_view: Option<wgpu::TextureView>,
-    copy_srgb_bind_group: Option<(wgpu::BindGroup, wgpu::Buffer, wgpu::BindGroup)>,
+    surface: Surface,
     meshes: Vec<Mesh>,
     shape_tessellator: ShapeTessellator,
     bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
@@ -143,121 +141,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .into());
         }
 
-        let extent = wgpu::Extent3d {
-            width: target.width(),
-            height: target.height(),
-            depth_or_array_layers: 1,
-        };
-
-        let frame_buffer_view = if descriptors.onscreen.msaa_sample_count > 1 {
-            let frame_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-                label: create_debug_label!("Framebuffer texture").as_deref(),
-                size: extent,
-                mip_level_count: 1,
-                sample_count: descriptors.onscreen.msaa_sample_count,
-                dimension: wgpu::TextureDimension::D2,
-                format: descriptors.frame_buffer_format,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            });
-            Some(frame_buffer.create_view(&Default::default()))
-        } else {
-            None
-        };
-
-        let depth_texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-            label: create_debug_label!("Depth texture").as_deref(),
-            size: extent,
-            mip_level_count: 1,
-            sample_count: descriptors.onscreen.msaa_sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth24PlusStencil8,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        });
-        let depth_texture_view = depth_texture.create_view(&Default::default());
-
-        let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.frame_buffer_format
-            != descriptors.surface_format
-        {
-            let copy_srgb_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-                label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
-                size: extent,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: descriptors.frame_buffer_format,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::TEXTURE_BINDING,
-            });
-            let copy_srgb_view = copy_srgb_buffer.create_view(&Default::default());
-            let copy_srgb_bind_group =
-                descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &descriptors.bind_layouts.bitmap,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &descriptors.quad.texture_transforms,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                }),
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::TextureView(&copy_srgb_view),
-                            },
-                        ],
-                        label: create_debug_label!("Copy sRGB bind group").as_deref(),
-                    });
-            let copy_srgb_transform = Transforms {
-                world_matrix: [
-                    [extent.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, extent.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-                color_adjustments: ColorAdjustments {
-                    mult_color: [1.0, 1.0, 1.0, 1.0],
-                    add_color: [0.0, 0.0, 0.0, 0.0],
-                },
-            };
-            let copy_srgb_transforms_buffer = create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&[copy_srgb_transform]),
-                wgpu::BufferUsages::UNIFORM,
-                create_debug_label!("Copy sRGB transforms buffer"),
-            );
-            let copy_srgb_transforms_bind_group =
-                descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &descriptors.bind_layouts.transforms,
-                        entries: &[wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                buffer: &copy_srgb_transforms_buffer,
-                                offset: 0,
-                                size: wgpu::BufferSize::new(
-                                    std::mem::size_of::<Transforms>() as u64
-                                ),
-                            }),
-                        }],
-                        label: create_debug_label!("Copy sRGB transforms bind group").as_deref(),
-                    });
-            (
-                Some(copy_srgb_view),
-                Some((
-                    copy_srgb_bind_group,
-                    copy_srgb_transforms_buffer,
-                    copy_srgb_transforms_bind_group,
-                )),
-            )
-        } else {
-            (None, None)
-        };
+        let surface = Surface::new(
+            &descriptors,
+            descriptors.msaa_sample_count,
+            target.width(),
+            target.height(),
+            descriptors.surface_format,
+            descriptors.frame_buffer_format,
+        );
 
         let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
         globals.set_resolution(target.width(), target.height());
@@ -270,10 +161,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             globals,
             uniform_buffers_storage,
             target,
-            frame_buffer_view,
-            depth_texture_view,
-            copy_srgb_view,
-            copy_srgb_bind_group,
+            surface,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
 
@@ -589,131 +477,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             1,
         );
         self.target.resize(&self.descriptors.device, width, height);
-
-        let size = wgpu::Extent3d {
+        self.surface = Surface::new(
+            &self.descriptors,
+            self.descriptors.msaa_sample_count,
             width,
             height,
-            depth_or_array_layers: 1,
-        };
-
-        self.frame_buffer_view = if self.descriptors.msaa_sample_count > 1 {
-            let frame_buffer = self
-                .descriptors
-                .device
-                .create_texture(&wgpu::TextureDescriptor {
-                    label: create_debug_label!("Framebuffer texture").as_deref(),
-                    size,
-                    mip_level_count: 1,
-                    sample_count: self.descriptors.msaa_sample_count,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: self.descriptors.frame_buffer_format,
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                });
-            Some(frame_buffer.create_view(&Default::default()))
-        } else {
-            None
-        };
-
-        let depth_texture = self
-            .descriptors
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                label: create_debug_label!("Depth texture").as_deref(),
-                size,
-                mip_level_count: 1,
-                sample_count: self.descriptors.msaa_sample_count,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Depth24PlusStencil8,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            });
-        self.depth_texture_view = depth_texture.create_view(&Default::default());
-
-        (self.copy_srgb_view, self.copy_srgb_bind_group) = if self.descriptors.frame_buffer_format
-            != self.descriptors.surface_format
-        {
-            let copy_srgb_buffer =
-                self.descriptors
-                    .device
-                    .create_texture(&wgpu::TextureDescriptor {
-                        label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
-                        size,
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: self.descriptors.frame_buffer_format,
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                            | wgpu::TextureUsages::TEXTURE_BINDING,
-                    });
-            let copy_srgb_view = copy_srgb_buffer.create_view(&Default::default());
-            let copy_srgb_bind_group =
-                self.descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.bind_layouts.bitmap,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &self.descriptors.quad.texture_transforms,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<TextureTransforms>() as u64,
-                                    ),
-                                }),
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::TextureView(&copy_srgb_view),
-                            },
-                        ],
-                        label: create_debug_label!("Copy sRGB bind group").as_deref(),
-                    });
-            let copy_srgb_transform = Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-                color_adjustments: ColorAdjustments {
-                    mult_color: [1.0, 1.0, 1.0, 1.0],
-                    add_color: [0.0, 0.0, 0.0, 0.0],
-                },
-            };
-            let copy_srgb_transforms_buffer = create_buffer_with_data(
-                &self.descriptors.device,
-                bytemuck::cast_slice(&[copy_srgb_transform]),
-                wgpu::BufferUsages::UNIFORM,
-                create_debug_label!("Copy sRGB transforms buffer"),
-            );
-            let copy_srgb_transforms_bind_group =
-                self.descriptors
-                    .device
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.bind_layouts.transforms,
-                        entries: &[wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                buffer: &copy_srgb_transforms_buffer,
-                                offset: 0,
-                                size: wgpu::BufferSize::new(
-                                    std::mem::size_of::<Transforms>() as u64
-                                ),
-                            }),
-                        }],
-                        label: create_debug_label!("Copy sRGB transforms bind group").as_deref(),
-                    });
-            (
-                Some(copy_srgb_view),
-                Some((
-                    copy_srgb_bind_group,
-                    copy_srgb_transforms_buffer,
-                    copy_srgb_transforms_bind_group,
-                )),
-            )
-        } else {
-            (None, None)
-        };
+            self.descriptors.surface_format,
+            self.descriptors.frame_buffer_format,
+        );
 
         self.globals.set_resolution(width, height);
         self.viewport_scale_factor = dimensions.scale_factor;
@@ -793,17 +564,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.globals
             .update_uniform(&self.descriptors.device, &mut draw_encoder);
 
-        // Use intermediate render targets when resolving MSAA or copying from linear-to-sRGB texture.
-        let (color_view, resolve_target) = match (&self.frame_buffer_view, &self.copy_srgb_view) {
-            (None, None) => (frame_output.view(), None),
-            (None, Some(copy)) => (copy, None),
-            (Some(frame_buffer), None) => (frame_buffer, Some(frame_output.view())),
-            (Some(frame_buffer), Some(copy)) => (frame_buffer, Some(copy)),
-        };
-
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: color_view,
+                view: self.surface.view(&frame_output),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: f64::from(clear.r) / 255.0,
@@ -813,10 +576,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     }),
                     store: true,
                 },
-                resolve_target,
+                resolve_target: self.surface.resolve_target(&frame_output),
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth_texture_view,
+                view: self.surface.depth(),
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(0.0),
                     store: false,
@@ -846,55 +609,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         ));
         frame.finish();
 
-        // If we have an sRGB surface, copy from our linear intermediate buffer to the sRGB surface.
-        let copy_encoder = if let Some((copy_srgb_bind_group, _, copy_srgb_transforms)) =
-            &self.copy_srgb_bind_group
-        {
-            debug_assert!(self.copy_srgb_view.is_some());
-
-            let mut copy_encoder =
-                self.descriptors
-                    .device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: create_debug_label!("Frame copy command encoder").as_deref(),
-                    });
-
-            let mut srgb_render_pass =
-                copy_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: frame_output.view(),
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                            store: true,
-                        },
-                        resolve_target: None,
-                    })],
-                    depth_stencil_attachment: None,
-                    label: None,
-                });
-            srgb_render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-            srgb_render_pass.set_bind_group(1, copy_srgb_transforms, &[0]);
-
-            let mut srgb_frame = Frame::new(
-                &self.descriptors.onscreen.pipelines,
-                &self.descriptors,
-                UniformBuffer::new(&mut self.uniform_buffers_storage),
-                srgb_render_pass,
-                &mut uniform_encoder,
-            );
-
-            srgb_frame.prep_srgb_copy(copy_srgb_bind_group);
-            srgb_frame.draw(
-                self.descriptors.quad.vertices.slice(..),
-                self.descriptors.quad.indices.slice(..),
-                6,
-            );
-
-            drop(srgb_frame);
-            Some(copy_encoder.finish())
-        } else {
-            None
-        };
+        let copy_encoder = self.surface.copy_srgb(
+            &frame_output,
+            &self.descriptors,
+            &self.globals,
+            &mut self.uniform_buffers_storage,
+            &mut uniform_encoder,
+        );
 
         let mut command_buffers = vec![uniform_encoder.finish(), draw_encoder.finish()];
         if let Some(copy_encoder) = copy_encoder {
