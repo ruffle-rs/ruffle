@@ -15,7 +15,6 @@ use swf::{BlendMode, Color};
 pub struct Frame<'a, T: RenderTargetFrame> {
     pipelines: &'a Pipelines,
     descriptors: &'a Descriptors,
-    globals: &'a Globals,
     uniform_buffers: UniformBuffer<'a, Transforms>,
     mask_state: MaskState,
     num_masks: u32,
@@ -35,7 +34,6 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
     pub fn new(
         pipelines: &'a Pipelines,
         descriptors: &'a Descriptors,
-        globals: &'a Globals,
         uniform_buffers: UniformBuffer<'a, Transforms>,
         target: &'a T,
         quad_vertices: wgpu::BufferSlice<'a>,
@@ -48,7 +46,6 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         Self {
             pipelines,
             descriptors,
-            globals,
             uniform_buffers,
             mask_state: MaskState::NoMask,
             num_masks: 0,
@@ -66,6 +63,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
 
     pub fn swap_srgb(
         &mut self,
+        globals: &Globals,
         copy_srgb_bind_group: &wgpu::BindGroup,
         width: f32,
         height: f32,
@@ -91,7 +89,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         });
 
         render_pass.set_pipeline(&self.pipelines.copy_srgb_pipeline);
-        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
+        render_pass.set_bind_group(0, globals.bind_group(), &[]);
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
             &self.descriptors.bind_layouts.transforms,
