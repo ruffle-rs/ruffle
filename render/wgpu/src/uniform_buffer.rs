@@ -1,4 +1,5 @@
 use bytemuck::Pod;
+use std::pin::Pin;
 use std::{marker::PhantomData, mem};
 use wgpu::util::StagingBelt;
 
@@ -13,7 +14,7 @@ pub struct UniformBuffer<'a, T: Pod> {
 
 pub struct BufferStorage<T: Pod> {
     _phantom: PhantomData<T>,
-    blocks: Vec<Block>,
+    blocks: Vec<Pin<Box<Block>>>,
     staging_belt: StagingBelt,
     aligned_uniforms_size: u32,
 }
@@ -63,7 +64,8 @@ impl<T: Pod> BufferStorage<T> {
             }],
         });
 
-        self.blocks.push(Block { buffer, bind_group });
+        self.blocks
+            .push(Pin::new(Box::new(Block { buffer, bind_group })));
     }
 }
 
