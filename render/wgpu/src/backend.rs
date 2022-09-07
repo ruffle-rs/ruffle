@@ -724,7 +724,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             (Some(frame_buffer), Some(copy)) => (frame_buffer, Some(copy)),
         };
 
-        let render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: color_view,
                 ops: wgpu::Operations {
@@ -751,6 +751,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             label: None,
         });
+        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
         let mut frame = Frame::new(
             &self.descriptors.onscreen.pipelines,
             &self.descriptors,
@@ -1038,7 +1039,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.globals
             .update_uniform(&self.descriptors.device, &mut draw_encoder);
 
-        let render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: frame_output.view(),
                 ops: wgpu::Operations {
@@ -1065,6 +1066,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             label: None,
         });
+        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
 
         let mut frame = Frame::new(
             &self.descriptors.offscreen.pipelines,
