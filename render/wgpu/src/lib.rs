@@ -31,6 +31,7 @@ pub mod descriptors;
 mod frame;
 mod layouts;
 mod shaders;
+mod surface;
 
 pub struct RegistryData {
     bitmap: Bitmap,
