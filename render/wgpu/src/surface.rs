@@ -2,10 +2,11 @@ use crate::commands::CommandRenderer;
 use crate::descriptors::Quad;
 use crate::frame::Frame;
 use crate::layouts::BindLayouts;
+use crate::mesh::Mesh;
 use crate::surface::Surface::{Direct, DirectSrgb, Resolve, ResolveSrgb};
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Mesh, Pipelines, RegistryData,
+    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, RegistryData,
     TextureTransforms, Transforms, UniformBuffer,
 };
 use fnv::FnvHashMap;

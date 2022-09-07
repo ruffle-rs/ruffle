@@ -31,6 +31,7 @@ mod commands;
 pub mod descriptors;
 mod frame;
 mod layouts;
+mod mesh;
 mod shaders;
 mod surface;
 
@@ -180,38 +181,6 @@ impl From<TessGradient> for GradientStorage {
             _padding: Default::default(),
         }
     }
-}
-
-#[derive(Debug)]
-pub struct Mesh {
-    draws: Vec<Draw>,
-}
-
-#[derive(Debug)]
-struct Draw {
-    draw_type: DrawType,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    num_indices: u32,
-    num_mask_indices: u32,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-enum DrawType {
-    Color,
-    Gradient {
-        texture_transforms: wgpu::Buffer,
-        gradient: wgpu::Buffer,
-        bind_group: wgpu::BindGroup,
-    },
-    Bitmap {
-        texture_transforms: wgpu::Buffer,
-        texture_view: wgpu::TextureView,
-        is_smoothed: bool,
-        is_repeating: bool,
-        bind_group: wgpu::BindGroup,
-    },
 }
 
 #[derive(Debug)]
