@@ -1,6 +1,7 @@
+use crate::layouts::BindLayouts;
+
 #[derive(Debug)]
 pub struct BitmapSamplers {
-    layout: wgpu::BindGroupLayout,
     repeat_linear: wgpu::BindGroup,
     repeat_nearest: wgpu::BindGroup,
     clamp_linear: wgpu::BindGroup,
@@ -40,18 +41,8 @@ fn create_sampler(
 }
 
 impl BitmapSamplers {
-    pub fn new(device: &wgpu::Device) -> Self {
-        let layout_label = create_debug_label!("Sampler layout");
-        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: layout_label.as_deref(),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            }],
-        });
-
+    pub fn new(device: &wgpu::Device, layouts: &BindLayouts) -> Self {
+        let layout = &layouts.bitmap_sampler;
         let repeat_linear = create_sampler(
             device,
             &layout,
@@ -86,16 +77,11 @@ impl BitmapSamplers {
         );
 
         Self {
-            layout,
             repeat_linear,
             repeat_nearest,
             clamp_linear,
             clamp_nearest,
         }
-    }
-
-    pub fn layout(&self) -> &wgpu::BindGroupLayout {
-        &self.layout
     }
 
     pub fn get_bind_group(&self, is_repeating: bool, is_smoothed: bool) -> &wgpu::BindGroup {

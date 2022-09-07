@@ -95,7 +95,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
-            &self.descriptors.uniform_buffers_layout,
+            &self.descriptors.bind_layouts.transforms,
             &mut self.uniform_encoder,
             &mut render_pass,
             1,
@@ -171,7 +171,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
 
             self.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
-                &self.descriptors.uniform_buffers_layout,
+                &self.descriptors.bind_layouts.transforms,
                 &mut self.uniform_encoder,
                 &mut self.render_pass,
                 1,
@@ -232,7 +232,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
 
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
-            &self.descriptors.uniform_buffers_layout,
+            &self.descriptors.bind_layouts.transforms,
             &mut self.uniform_encoder,
             &mut self.render_pass,
             1,
@@ -348,7 +348,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
 
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
-            &self.descriptors.uniform_buffers_layout,
+            &self.descriptors.bind_layouts.transforms,
             &mut self.uniform_encoder,
             &mut self.render_pass,
             1,
