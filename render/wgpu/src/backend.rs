@@ -4,10 +4,10 @@ use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, format_list, get_backend_names, target, BufferDimensions, Descriptors,
-    Draw, DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh, RegistryData,
-    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms,
-    UniformBuffer, Vertex,
+    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Draw,
+    DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh, RegistryData, RenderTarget,
+    SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms, UniformBuffer,
+    Vertex,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -59,7 +59,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         .await?;
         let target = SwapChainTarget::new(
             surface,
-            descriptors.onscreen.surface_format,
+            descriptors.surface_format,
             (1, 1),
             &descriptors.device,
         );
@@ -91,7 +91,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         ))?;
         let target = SwapChainTarget::new(
             surface,
-            descriptors.onscreen.surface_format,
+            descriptors.surface_format,
             size,
             &descriptors.device,
         );
@@ -100,7 +100,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-impl WgpuRenderBackend<target::TextureTarget> {
+impl WgpuRenderBackend<crate::target::TextureTarget> {
     pub fn for_offscreen(
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -121,7 +121,7 @@ impl WgpuRenderBackend<target::TextureTarget> {
             power_preference,
             trace_path,
         ))?;
-        let target = target::TextureTarget::new(&descriptors.device, size)?;
+        let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
         Self::new(Arc::new(descriptors), target)
     }
 
@@ -158,7 +158,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 mip_level_count: 1,
                 sample_count: descriptors.onscreen.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
-                format: descriptors.onscreen.frame_buffer_format,
+                format: descriptors.frame_buffer_format,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
             Some(frame_buffer.create_view(&Default::default()))
@@ -179,8 +179,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
 
-        let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.onscreen.frame_buffer_format
-            != descriptors.offscreen.surface_format
+        let (copy_srgb_view, copy_srgb_bind_group) = if descriptors.frame_buffer_format
+            != descriptors.surface_format
         {
             let copy_srgb_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
                 label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
@@ -188,7 +188,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: descriptors.onscreen.frame_buffer_format,
+                format: descriptors.frame_buffer_format,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                     | wgpu::TextureUsages::TEXTURE_BINDING,
             });
