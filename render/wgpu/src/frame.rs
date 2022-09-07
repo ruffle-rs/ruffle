@@ -166,8 +166,6 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
                     .bitmap_pipelines
                     .pipeline_for(blend_mode.into(), self.mask_state),
             );
-            self.render_pass
-                .set_bind_group(0, self.globals.bind_group(), &[]);
 
             self.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
@@ -226,9 +224,6 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
                 1.0,
             ],
         ];
-
-        self.render_pass
-            .set_bind_group(0, self.globals.bind_group(), &[]);
 
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
@@ -342,9 +337,6 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
                 .color_pipelines
                 .pipeline_for(blend_mode.into(), self.mask_state),
         );
-
-        self.render_pass
-            .set_bind_group(0, self.globals.bind_group(), &[]);
 
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
