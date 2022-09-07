@@ -150,7 +150,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         globals.set_resolution(target.width(), target.height());
 
         let uniform_buffers_storage =
-            BufferStorage::new(descriptors.limits.min_uniform_buffer_offset_alignment);
+            BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
 
         Ok(Self {
             descriptors,
