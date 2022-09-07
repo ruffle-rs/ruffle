@@ -50,16 +50,9 @@ impl DrawType {
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Self {
-        // TODO: Extract to function?
-        let mut texture_transform = [[0.0; 4]; 4];
-        texture_transform[0][..3].copy_from_slice(&gradient.matrix[0]);
-        texture_transform[1][..3].copy_from_slice(&gradient.matrix[1]);
-        texture_transform[2][..3].copy_from_slice(&gradient.matrix[2]);
-
-        let tex_transforms_ubo = create_buffer_with_data(
+        let tex_transforms_ubo = create_texture_transforms(
             &descriptors.device,
-            bytemuck::cast_slice(&[texture_transform]),
-            wgpu::BufferUsages::UNIFORM,
+            &gradient.matrix,
             create_debug_label!(
                 "Shape {} draw {} textransforms ubo transfer buffer",
                 shape_id,
@@ -145,17 +138,9 @@ impl DrawType {
             .texture_wrapper
             .texture
             .create_view(&Default::default());
-
-        // TODO: Extract to function?
-        let mut texture_transform = [[0.0; 4]; 4];
-        texture_transform[0][..3].copy_from_slice(&bitmap.matrix[0]);
-        texture_transform[1][..3].copy_from_slice(&bitmap.matrix[1]);
-        texture_transform[2][..3].copy_from_slice(&bitmap.matrix[2]);
-
-        let tex_transforms_ubo = create_buffer_with_data(
+        let tex_transforms_ubo = create_texture_transforms(
             &descriptors.device,
-            bytemuck::cast_slice(&[texture_transform]),
-            wgpu::BufferUsages::UNIFORM,
+            &bitmap.matrix,
             create_debug_label!(
                 "Shape {} draw {} textransforms ubo transfer buffer",
                 shape_id,
@@ -195,4 +180,22 @@ impl DrawType {
             bind_group,
         }
     }
+}
+
+fn create_texture_transforms(
+    device: &wgpu::Device,
+    matrix: &[[f32; 3]; 3],
+    label: Option<String>,
+) -> wgpu::Buffer {
+    let mut texture_transform = [[0.0; 4]; 4];
+    texture_transform[0][..3].copy_from_slice(&matrix[0]);
+    texture_transform[1][..3].copy_from_slice(&matrix[1]);
+    texture_transform[2][..3].copy_from_slice(&matrix[2]);
+
+    create_buffer_with_data(
+        &device,
+        bytemuck::cast_slice(&[texture_transform]),
+        wgpu::BufferUsages::UNIFORM,
+        label,
+    )
 }
