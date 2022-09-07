@@ -8,7 +8,6 @@ pub struct Frame<'a> {
     descriptors: &'a Descriptors,
     uniform_buffers: UniformBuffer<'a, Transforms>,
     mask_state: MaskState,
-    num_masks: u32,
     uniform_encoder: &'a mut wgpu::CommandEncoder,
     render_pass: wgpu::RenderPass<'a>,
     blend_mode: BlendMode,
@@ -27,7 +26,6 @@ impl<'a> Frame<'a> {
             descriptors,
             uniform_buffers,
             mask_state: MaskState::NoMask,
-            num_masks: 0,
             uniform_encoder,
             render_pass,
             blend_mode: BlendMode::Normal,
@@ -191,10 +189,8 @@ impl<'a> Frame<'a> {
         self.mask_state = state;
     }
 
-    pub fn set_mask_count(&mut self, num: u32) {
-        self.num_masks = num;
-
-        self.render_pass.set_stencil_reference(self.num_masks);
+    pub fn set_stencil(&mut self, num: u32) {
+        self.render_pass.set_stencil_reference(num);
     }
 
     pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
@@ -203,9 +199,5 @@ impl<'a> Frame<'a> {
 
     pub fn mask_state(&self) -> MaskState {
         self.mask_state
-    }
-
-    pub fn num_masks(&self) -> u32 {
-        self.num_masks
     }
 }
