@@ -118,12 +118,11 @@ impl Descriptors {
             &bind_layouts,
         );
 
-        // FIXME - get MSAA working for `TextureTarget`
         let offscreen = DescriptorsTargetData::new(
             &device,
             &shaders,
             wgpu::TextureFormat::Rgba8Unorm,
-            1,
+            msaa_sample_count,
             &bind_layouts,
         );
 

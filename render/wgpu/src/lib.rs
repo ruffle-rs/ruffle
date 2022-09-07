@@ -1,6 +1,7 @@
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
 use crate::pipelines::Pipelines;
+use crate::surface::Surface;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names, BufferDimensions};
@@ -224,7 +225,7 @@ struct Texture {
 
 #[derive(Debug)]
 struct TextureOffscreen {
-    depth_texture_view: wgpu::TextureView,
     buffer: wgpu::Buffer,
     buffer_dimensions: BufferDimensions,
+    surface: Surface,
 }
