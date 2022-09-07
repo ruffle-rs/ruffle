@@ -1,5 +1,5 @@
 use crate::target::RenderTargetFrame;
-use crate::target_data;
+use crate::Pipelines;
 use crate::{
     ColorAdjustments, Descriptors, DrawType, Globals, MaskState, Mesh, RegistryData, Transforms,
     UniformBuffer,
@@ -12,6 +12,7 @@ use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color};
 
 pub struct Frame<'a, T: RenderTargetFrame> {
+    pipelines: &'a Pipelines,
     descriptors: &'a Descriptors,
     globals: &'a Globals,
     uniform_buffers: UniformBuffer<'a, Transforms>,
@@ -25,12 +26,12 @@ pub struct Frame<'a, T: RenderTargetFrame> {
     quad_vbo: &'a wgpu::Buffer,
     quad_ibo: &'a wgpu::Buffer,
     meshes: &'a Vec<Mesh>,
-    offscreen: bool,
 }
 
 impl<'a, T: RenderTargetFrame> Frame<'a, T> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        pipelines: &'a Pipelines,
         descriptors: &'a Descriptors,
         globals: &'a Globals,
         uniform_buffers: UniformBuffer<'a, Transforms>,
@@ -41,9 +42,9 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         render_pass: wgpu::RenderPass<'a>,
         uniform_encoder: &'a mut wgpu::CommandEncoder,
         bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
-        offscreen: bool,
     ) -> Self {
         Self {
+            pipelines,
             descriptors,
             globals,
             uniform_buffers,
@@ -57,7 +58,6 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
             quad_vbo,
             quad_ibo,
             meshes,
-            offscreen,
         }
     }
 
@@ -91,7 +91,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
             label: None,
         });
 
-        render_pass.set_pipeline(&target_data!(self).pipelines.copy_srgb_pipeline);
+        render_pass.set_pipeline(&self.pipelines.copy_srgb_pipeline);
         render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
         self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
@@ -162,8 +162,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
             ];
 
             self.render_pass.set_pipeline(
-                target_data!(self)
-                    .pipelines
+                self.pipelines
                     .bitmap_pipelines
                     .pipeline_for(blend_mode.into(), self.mask_state),
             );
@@ -259,16 +258,14 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
             match &draw.draw_type {
                 DrawType::Color => {
                     self.render_pass.set_pipeline(
-                        target_data!(self)
-                            .pipelines
+                        self.pipelines
                             .color_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
                     );
                 }
                 DrawType::Gradient { bind_group, .. } => {
                     self.render_pass.set_pipeline(
-                        target_data!(self)
-                            .pipelines
+                        self.pipelines
                             .gradient_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
                     );
@@ -281,8 +278,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
                     ..
                 } => {
                     self.render_pass.set_pipeline(
-                        target_data!(self)
-                            .pipelines
+                        self.pipelines
                             .bitmap_pipelines
                             .pipeline_for(blend_mode.into(), self.mask_state),
                     );
@@ -342,8 +338,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
 
         let add_color = [0.0, 0.0, 0.0, 0.0];
         self.render_pass.set_pipeline(
-            target_data!(self)
-                .pipelines
+            self.pipelines
                 .color_pipelines
                 .pipeline_for(blend_mode.into(), self.mask_state),
         );
