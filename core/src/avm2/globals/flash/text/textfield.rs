@@ -14,6 +14,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
+use swf::Color;
 
 /// Implements `flash.text.TextField`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -139,7 +140,7 @@ pub fn background_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok((this.background_color()).into());
+        return Ok(this.background_color().to_rgb().into());
     }
 
     Ok(Value::Undefined)
@@ -154,12 +155,12 @@ pub fn set_background_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let new_color = args
+        let rgb = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        this.set_background_color(activation.context.gc_context, new_color);
+        let color = Color::from_rgb(rgb, 255);
+        this.set_background_color(activation.context.gc_context, color);
     }
 
     Ok(Value::Undefined)
@@ -209,7 +210,7 @@ pub fn border_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.border_color().into());
+        return Ok(this.border_color().to_rgb().into());
     }
 
     Ok(Value::Undefined)
@@ -224,12 +225,12 @@ pub fn set_border_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let border_color = args
+        let rgb = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        this.set_border_color(activation.context.gc_context, border_color);
+        let color = Color::from_rgb(rgb, 255);
+        this.set_border_color(activation.context.gc_context, color);
     }
 
     Ok(Value::Undefined)

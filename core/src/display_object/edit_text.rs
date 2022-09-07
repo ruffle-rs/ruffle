@@ -29,7 +29,7 @@ use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::Twips;
+use swf::{Color, Twips};
 
 /// The kind of autosizing behavior an `EditText` should have, if any
 #[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
@@ -74,10 +74,12 @@ pub struct EditTextData<'gc> {
     text_spans: FormatSpans,
 
     /// The color of the background fill. Only applied when has_border and has_background.
-    background_color: u32,
+    #[collect(require_static)]
+    background_color: Color,
 
     /// The color of the border.
-    border_color: u32,
+    #[collect(require_static)]
+    border_color: Color,
 
     /// The current border drawing.
     drawing: Drawing,
@@ -213,9 +215,6 @@ impl<'gc> EditText<'gc> {
         );
         let line_data = get_line_data(&layout);
 
-        let background_color = 0xFFFFFF; // Default is white
-        let border_color = 0; // Default is black
-
         let mut base = InteractiveObjectBase::default();
 
         base.base.matrix_mut().tx = bounds.x_min;
@@ -254,8 +253,8 @@ impl<'gc> EditText<'gc> {
                     },
                 ),
                 flags,
-                background_color,
-                border_color,
+                background_color: Color::WHITE,
+                border_color: Color::BLACK,
                 drawing: Drawing::new(),
                 object: None,
                 layout,
@@ -468,11 +467,15 @@ impl<'gc> EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    pub fn background_color(self) -> u32 {
-        self.0.read().background_color
+    pub fn background_color(self) -> Color {
+        self.0.read().background_color.clone()
     }
 
-    pub fn set_background_color(self, gc_context: MutationContext<'gc, '_>, background_color: u32) {
+    pub fn set_background_color(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        background_color: Color,
+    ) {
         self.0.write(gc_context).background_color = background_color;
         self.redraw_border(gc_context);
     }
@@ -489,11 +492,11 @@ impl<'gc> EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    pub fn border_color(self) -> u32 {
-        self.0.read().border_color
+    pub fn border_color(self) -> Color {
+        self.0.read().border_color.clone()
     }
 
-    pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: u32) {
+    pub fn set_border_color(self, gc_context: MutationContext<'gc, '_>, border_color: Color) {
         self.0.write(gc_context).border_color = border_color;
         self.redraw_border(gc_context);
     }
@@ -544,7 +547,7 @@ impl<'gc> EditText<'gc> {
     /// This `text_transform` is separate from and relative to the base
     /// transform that this `EditText` automatically gets by virtue of being a
     /// `DisplayObject`.
-    pub fn text_transform(self, color: swf::Color, baseline_adjustment: Twips) -> Transform {
+    pub fn text_transform(self, color: Color, baseline_adjustment: Twips) -> Transform {
         let mut transform: Transform = Default::default();
         transform.color_transform.set_mult_color(&color);
 
@@ -632,43 +635,35 @@ impl<'gc> EditText<'gc> {
             .flags
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let bounds = write.bounds.clone();
-            let border_color = write.border_color;
-            let background_color = write.background_color;
+            let line_style = write.flags.contains(EditTextFlag::BORDER).then_some(
+                swf::LineStyle::new()
+                    .with_width(Twips::new(1))
+                    .with_color(write.border_color.clone()),
+            );
+            write.drawing.set_line_style(line_style);
 
-            if write.flags.contains(EditTextFlag::BORDER) {
-                write.drawing.set_line_style(Some(
-                    swf::LineStyle::new()
-                        .with_width(Twips::new(1))
-                        .with_color(swf::Color::from_rgb(border_color, 0xFF)),
-                ));
-            } else {
-                write.drawing.set_line_style(None);
-            }
-            if write.flags.contains(EditTextFlag::HAS_BACKGROUND) {
-                write
-                    .drawing
-                    .set_fill_style(Some(swf::FillStyle::Color(swf::Color::from_rgb(
-                        background_color,
-                        0xFF,
-                    ))));
-            } else {
-                write.drawing.set_fill_style(None);
-            }
+            let fill_style = write
+                .flags
+                .contains(EditTextFlag::HAS_BACKGROUND)
+                .then_some(swf::FillStyle::Color(write.background_color.clone()));
+            write.drawing.set_fill_style(fill_style);
+
+            let width = write.bounds.width();
+            let height = write.bounds.height();
             write.drawing.draw_command(DrawCommand::MoveTo {
                 x: Twips::ZERO,
                 y: Twips::ZERO,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
                 x: Twips::ZERO,
-                y: bounds.y_max - bounds.y_min,
+                y: height,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: bounds.x_max - bounds.x_min,
-                y: bounds.y_max - bounds.y_min,
+                x: width,
+                y: height,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: bounds.x_max - bounds.x_min,
+                x: width,
                 y: Twips::ZERO,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
