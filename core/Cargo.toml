@@ -61,6 +61,7 @@ wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []
 deterministic = []
 timeline_debug = []
+mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
 

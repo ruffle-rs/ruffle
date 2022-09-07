@@ -10,7 +10,7 @@ version.workspace = true
 [dependencies]
 clap = { version = "4.0.27", features = ["derive"] }
 cpal = "0.14.2"
-ruffle_core = { path = "../core", features = ["audio", "symphonia", "nellymoser"] }
+ruffle_core = { path = "../core", features = ["audio", "mp3", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
 env_logger = { version = "0.10", default-features = false, features = ["humantime"] }

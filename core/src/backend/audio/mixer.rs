@@ -306,7 +306,7 @@ impl AudioMixer {
                 format.is_stereo,
                 format.sample_rate,
             )?),
-            #[cfg(feature = "symphonia")]
+            #[cfg(feature = "mp3")]
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(data)?),
             #[cfg(feature = "nellymoser")]
             AudioCompression::Nellymoser => Box::new(decoders::NellymoserDecoder::new(
@@ -496,7 +496,7 @@ impl AudioMixer {
     }
 
     /// Registers an external MP3 with the audio mixer.
-    #[cfg(feature = "symphonia")]
+    #[cfg(feature = "mp3")]
     pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
         let data = Arc::from(data);
         // Validate that this is actually MP3 data, and calculate duration and sample rate.
@@ -515,7 +515,7 @@ impl AudioMixer {
         Ok(self.sounds.insert(sound))
     }
 
-    #[cfg(not(feature = "symphonia"))]
+    #[cfg(not(feature = "mp3"))]
     pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
         Err(decoders::Error::UnhandledCompression(AudioCompression::Mp3))
     }
