@@ -403,7 +403,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.pipelines.gradient_layout,
+                                layout: &self.descriptors.onscreen.pipelines.gradient_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -478,7 +478,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.pipelines.bitmap_layout,
+                                layout: &self.descriptors.onscreen.pipelines.bitmap_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -614,7 +614,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.pipelines.bitmap_layout,
+                        layout: &self.descriptors.onscreen.pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -855,7 +855,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.pipelines.bitmap_layout,
+                layout: &self.descriptors.onscreen.pipelines.bitmap_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
