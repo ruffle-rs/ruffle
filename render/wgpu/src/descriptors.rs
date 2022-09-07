@@ -67,7 +67,6 @@ pub struct Descriptors {
     pub queue: wgpu::Queue,
     pub globals_layout: wgpu::BindGroupLayout,
     pub uniform_buffers_layout: wgpu::BindGroupLayout,
-    pub pipelines: Pipelines,
     pub bitmap_samplers: BitmapSamplers,
     pub msaa_sample_count: u32,
     pub onscreen: DescriptorsTargetData,
@@ -158,16 +157,6 @@ impl Descriptors {
             &uniform_buffers_layout,
         );
 
-        let pipelines = Pipelines::new(
-            &device,
-            surface_format,
-            frame_buffer_format,
-            msaa_sample_count,
-            bitmap_samplers.layout(),
-            &globals_layout,
-            &uniform_buffers_layout,
-        );
-
         Self {
             device,
             info,
@@ -177,7 +166,6 @@ impl Descriptors {
             queue,
             globals_layout,
             uniform_buffers_layout,
-            pipelines,
             bitmap_samplers,
             msaa_sample_count,
             onscreen,
