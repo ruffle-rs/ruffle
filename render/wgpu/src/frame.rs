@@ -25,8 +25,8 @@ pub struct Frame<'a, T: RenderTargetFrame> {
     blend_modes: Vec<BlendMode>,
     blend_mode: ActualBlendMode,
     bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
-    quad_vbo: &'a wgpu::Buffer,
-    quad_ibo: &'a wgpu::Buffer,
+    quad_vertices: wgpu::BufferSlice<'a>,
+    quad_indices: wgpu::BufferSlice<'a>,
     meshes: &'a Vec<Mesh>,
 }
 
@@ -38,8 +38,8 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         globals: &'a Globals,
         uniform_buffers: UniformBuffer<'a, Transforms>,
         target: &'a T,
-        quad_vbo: &'a wgpu::Buffer,
-        quad_ibo: &'a wgpu::Buffer,
+        quad_vertices: wgpu::BufferSlice<'a>,
+        quad_indices: wgpu::BufferSlice<'a>,
         meshes: &'a Vec<Mesh>,
         render_pass: wgpu::RenderPass<'a>,
         uniform_encoder: &'a mut wgpu::CommandEncoder,
@@ -58,8 +58,8 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
             blend_modes: vec![BlendMode::Normal],
             blend_mode: ActualBlendMode::Normal,
             bitmap_registry,
-            quad_vbo,
-            quad_ibo,
+            quad_vertices,
+            quad_indices,
             meshes,
         }
     }
@@ -119,8 +119,8 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
                 .get_bind_group(false, false),
             &[],
         );
-        render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
-        render_pass.set_index_buffer(self.quad_ibo.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(0, self.quad_vertices);
+        render_pass.set_index_buffer(self.quad_indices, wgpu::IndexFormat::Uint32);
         render_pass.draw_indexed(0..6, 0, 0..1);
         drop(render_pass);
 
@@ -248,8 +248,8 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
             );
 
             self.draw_bitmap(
-                self.quad_vbo.slice(..),
-                self.quad_ibo.slice(..),
+                self.quad_vertices,
+                self.quad_indices,
                 6,
                 &texture.bind_group,
                 false,
@@ -327,7 +327,7 @@ impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
             },
         );
 
-        self.draw_color(self.quad_vbo.slice(..), self.quad_ibo.slice(..), 6);
+        self.draw_color(self.quad_vertices, self.quad_indices, 6);
     }
 
     fn push_mask(&mut self) {
