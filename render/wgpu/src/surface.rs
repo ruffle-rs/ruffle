@@ -279,23 +279,23 @@ impl Surface {
         }
     }
 
-    pub fn view<'a, T: RenderTargetFrame>(&'a self, frame: &'a T) -> &wgpu::TextureView {
+    pub fn view<'a>(&'a self, frame: &'a wgpu::TextureView) -> &wgpu::TextureView {
         match self {
-            Direct { .. } => frame.view(),
+            Direct { .. } => frame,
             DirectSrgb { srgb, .. } => &srgb.view,
             Resolve { frame_buffer, .. } => &frame_buffer.view,
             ResolveSrgb { frame_buffer, .. } => &frame_buffer.view,
         }
     }
 
-    pub fn resolve_target<'a, T: RenderTargetFrame>(
+    pub fn resolve_target<'a>(
         &'a self,
-        frame: &'a T,
+        frame: &'a wgpu::TextureView,
     ) -> Option<&wgpu::TextureView> {
         match self {
             Direct { .. } => None,
             DirectSrgb { .. } => None,
-            Resolve { .. } => Some(&frame.view()),
+            Resolve { .. } => Some(&frame),
             ResolveSrgb { srgb, .. } => Some(&srgb.view),
         }
     }

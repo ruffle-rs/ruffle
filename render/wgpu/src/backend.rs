@@ -1,5 +1,4 @@
 use crate::commands::CommandRenderer;
-use crate::descriptors::DescriptorsTargetData;
 use crate::frame::Frame;
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
@@ -566,7 +565,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: self.surface.view(&frame_output),
+                view: self.surface.view(frame_output.view()),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: f64::from(clear.r) / 255.0,
@@ -576,7 +575,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     }),
                     store: true,
                 },
-                resolve_target: self.surface.resolve_target(&frame_output),
+                resolve_target: self.surface.resolve_target(frame_output.view()),
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: self.surface.depth(),
@@ -817,11 +816,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .texture_wrapper
                 .texture_offscreen
                 .unwrap_or_else(|| {
-                    let depth_texture_view = create_depth_texture_view(
-                        &self.descriptors,
-                        &self.descriptors.offscreen,
-                        extent,
-                    );
                     let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
                     let buffer_label = create_debug_label!("Render target buffer");
                     let buffer = self
@@ -835,9 +829,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             mapped_at_creation: false,
                         });
                     TextureOffscreen {
-                        depth_texture_view,
                         buffer,
                         buffer_dimensions,
+                        surface: Surface::new(
+                            &self.descriptors,
+                            self.descriptors.msaa_sample_count,
+                            width,
+                            height,
+                            wgpu::TextureFormat::Rgba8Unorm,
+                            wgpu::TextureFormat::Rgba8Unorm,
+                        ),
                     }
                 });
 
@@ -877,7 +878,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: frame_output.view(),
+                view: texture_offscreen.surface.view(frame_output.view()),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: f64::from(clear_color.r) / 255.0,
@@ -887,10 +888,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     }),
                     store: true,
                 },
-                resolve_target: None,
+                resolve_target: texture_offscreen
+                    .surface
+                    .resolve_target(frame_output.view()),
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &texture_offscreen.depth_texture_view,
+                view: texture_offscreen.surface.depth(),
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(0.0),
                     store: false,
@@ -949,23 +952,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         Ok(image.unwrap())
     }
-}
-
-fn create_depth_texture_view(
-    descriptors: &Descriptors,
-    target_data: &DescriptorsTargetData,
-    extent: wgpu::Extent3d,
-) -> wgpu::TextureView {
-    let depth_texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-        label: create_debug_label!("Depth texture").as_deref(),
-        size: extent,
-        mip_level_count: 1,
-        sample_count: target_data.msaa_sample_count,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth24PlusStencil8,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-    });
-    depth_texture.create_view(&Default::default())
 }
 
 // We try to request the highest limits we can get away with
