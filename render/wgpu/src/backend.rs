@@ -1,12 +1,11 @@
-use crate::mesh::{Draw, DrawType, Mesh};
+use crate::mesh::{Draw, Mesh};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Error,
-    Globals, RegistryData, RenderTarget, SwapChainTarget, Texture, TextureOffscreen,
-    TextureTransforms, Transforms, Vertex,
+    format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals, RegistryData,
+    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -14,7 +13,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::tessellator::{DrawType as TessDrawType, ShapeTessellator};
+use ruffle_render::tessellator::ShapeTessellator;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
@@ -228,60 +227,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
-        let shape_id = shape.id; // TODO: remove?
+        let shape_id = shape.id;
         let lyon_mesh = self
             .shape_tessellator
             .tessellate_shape(shape, bitmap_source);
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
-            let vertex_buffer = create_buffer_with_data(
-                &self.descriptors.device,
-                bytemuck::cast_slice(&vertices),
-                wgpu::BufferUsages::VERTEX,
-                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
-            );
-
-            let index_buffer = create_buffer_with_data(
-                &self.descriptors.device,
-                bytemuck::cast_slice(&draw.indices),
-                wgpu::BufferUsages::INDEX,
-                create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
-            );
-
-            let index_count = draw.indices.len() as u32;
             let draw_id = draws.len();
-
-            draws.push(match draw.draw_type {
-                TessDrawType::Color => Draw {
-                    draw_type: DrawType::color(),
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices: index_count,
-                    num_mask_indices: draw.mask_index_count,
-                },
-                TessDrawType::Gradient(gradient) => Draw {
-                    draw_type: DrawType::gradient(&self.descriptors, gradient, shape_id, draw_id),
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices: index_count,
-                    num_mask_indices: draw.mask_index_count,
-                },
-                TessDrawType::Bitmap(bitmap) => Draw {
-                    draw_type: DrawType::bitmap(
-                        &self.descriptors,
-                        &self.bitmap_registry,
-                        bitmap,
-                        shape_id,
-                        draw_id,
-                    ),
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices: index_count,
-                    num_mask_indices: draw.mask_index_count,
-                },
-            });
+            draws.push(Draw::new(
+                &self.descriptors,
+                draw,
+                shape_id,
+                draw_id,
+                &self.bitmap_registry,
+            ));
         }
 
         Mesh { draws }
