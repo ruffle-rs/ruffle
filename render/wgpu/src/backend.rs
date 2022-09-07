@@ -1,3 +1,4 @@
+use crate::commands::CommandRenderer;
 use crate::descriptors::DescriptorsTargetData;
 use crate::frame::Frame;
 use crate::target::RenderTargetFrame;
@@ -756,14 +757,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors.onscreen.pipelines,
             &self.descriptors,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
-            self.quad_vbo.slice(..),
-            self.quad_ibo.slice(..),
-            &self.meshes,
             render_pass,
             &mut uniform_encoder,
-            &self.bitmap_registry,
         );
-        commands.execute(&mut frame);
+        commands.execute(&mut CommandRenderer::new(
+            &mut frame,
+            &self.meshes,
+            &self.bitmap_registry,
+            self.quad_vbo.slice(..),
+            self.quad_ibo.slice(..),
+        ));
 
         // If we have an sRGB surface, copy from our linear intermediate buffer to the sRGB surface.
         let copy_encoder = if let Some(copy_srgb_bind_group) = &self.copy_srgb_bind_group {
@@ -774,6 +777,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 copy_srgb_bind_group,
                 self.target.width() as f32,
                 self.target.height() as f32,
+                self.quad_vbo.slice(..),
+                self.quad_ibo.slice(..),
             ))
         } else {
             None
@@ -1072,14 +1077,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors.offscreen.pipelines,
             &self.descriptors,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
-            self.quad_vbo.slice(..),
-            self.quad_ibo.slice(..),
-            &self.meshes,
             render_pass,
             &mut uniform_encoder,
-            &self.bitmap_registry,
         );
-        commands.execute(&mut frame);
+        commands.execute(&mut CommandRenderer::new(
+            &mut frame,
+            &self.meshes,
+            &self.bitmap_registry,
+            self.quad_vbo.slice(..),
+            self.quad_ibo.slice(..),
+        ));
         frame.finish();
 
         target.submit(

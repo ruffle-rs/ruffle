@@ -26,6 +26,7 @@ mod uniform_buffer;
 pub mod backend;
 #[cfg(feature = "clap")]
 pub mod clap;
+mod commands;
 pub mod descriptors;
 mod frame;
 mod layouts;
@@ -59,7 +60,7 @@ struct TextureTransforms {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct ColorAdjustments {
+pub struct ColorAdjustments {
     mult_color: [f32; 4],
     add_color: [f32; 4],
 }
