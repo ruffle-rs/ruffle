@@ -11,6 +11,7 @@ pub struct DescriptorsTargetData {
 }
 
 impl DescriptorsTargetData {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         device: &wgpu::Device,
         shaders: &Shaders,
@@ -19,6 +20,8 @@ impl DescriptorsTargetData {
         msaa_sample_count: u32,
         globals_layout: &wgpu::BindGroupLayout,
         uniform_buffers_layout: &wgpu::BindGroupLayout,
+        bitmap_bind_layout: &wgpu::BindGroupLayout,
+        gradient_bind_layout: &wgpu::BindGroupLayout,
     ) -> Self {
         // We want to render directly onto a linear render target to avoid any gamma correction.
         // If our surface is sRGB, render to a linear texture and than copy over to the surface.
@@ -52,6 +55,8 @@ impl DescriptorsTargetData {
             bitmap_samplers.layout(),
             globals_layout,
             uniform_buffers_layout,
+            bitmap_bind_layout,
+            gradient_bind_layout,
         );
 
         DescriptorsTargetData {
@@ -74,6 +79,9 @@ pub struct Descriptors {
     pub msaa_sample_count: u32,
     pub onscreen: DescriptorsTargetData,
     pub offscreen: DescriptorsTargetData,
+    pub bitmap_bind_layout: wgpu::BindGroupLayout,
+    pub gradient_bind_layout: wgpu::BindGroupLayout,
+    pub copy_srgb_bind_layout: wgpu::BindGroupLayout,
 }
 
 impl Descriptors {
@@ -142,6 +150,93 @@ impl Descriptors {
             }],
         });
 
+        let bitmap_bind_layout_label = create_debug_label!("Bitmap shape bind group layout");
+        let bitmap_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                ],
+                label: bitmap_bind_layout_label.as_deref(),
+            });
+
+        let gradient_bind_layout_label = create_debug_label!("Gradient shape bind group");
+        let gradient_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: if device.limits().max_storage_buffers_per_shader_stage > 0 {
+                                wgpu::BufferBindingType::Storage { read_only: true }
+                            } else {
+                                wgpu::BufferBindingType::Uniform
+                            },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+                label: gradient_bind_layout_label.as_deref(),
+            });
+
+        let copy_srgb_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                ],
+                label: create_debug_label!("Copy sRGB bind group layout").as_deref(),
+            });
+
         let onscreen = DescriptorsTargetData::new(
             &device,
             &shaders,
@@ -150,6 +245,8 @@ impl Descriptors {
             msaa_sample_count,
             &globals_layout,
             &uniform_buffers_layout,
+            &bitmap_bind_layout,
+            &gradient_bind_layout,
         );
 
         // FIXME - get MSAA working for `TextureTarget`
@@ -161,6 +258,8 @@ impl Descriptors {
             1,
             &globals_layout,
             &uniform_buffers_layout,
+            &bitmap_bind_layout,
+            &gradient_bind_layout,
         );
 
         Self {
@@ -176,6 +275,9 @@ impl Descriptors {
             msaa_sample_count,
             onscreen,
             offscreen,
+            bitmap_bind_layout,
+            gradient_bind_layout,
+            copy_srgb_bind_layout,
         }
     }
 }

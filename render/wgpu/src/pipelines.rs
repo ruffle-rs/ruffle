@@ -64,13 +64,10 @@ pub struct Pipelines {
     pub color_pipelines: ShapePipeline,
 
     pub bitmap_pipelines: ShapePipeline,
-    pub bitmap_layout: wgpu::BindGroupLayout,
 
     pub gradient_pipelines: ShapePipeline,
-    pub gradient_layout: wgpu::BindGroupLayout,
 
     pub copy_srgb_pipeline: wgpu::RenderPipeline,
-    pub copy_srgb_layout: wgpu::BindGroupLayout,
 }
 
 impl ShapePipeline {
@@ -110,6 +107,7 @@ impl ShapePipeline {
 }
 
 impl Pipelines {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         device: &wgpu::Device,
         shaders: &Shaders,
@@ -119,6 +117,8 @@ impl Pipelines {
         sampler_layout: &wgpu::BindGroupLayout,
         globals_layout: &wgpu::BindGroupLayout,
         dynamic_uniforms_layout: &wgpu::BindGroupLayout,
+        bitmap_bind_layout: &wgpu::BindGroupLayout,
+        gradient_bind_layout: &wgpu::BindGroupLayout,
     ) -> Self {
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
@@ -139,34 +139,6 @@ impl Pipelines {
             &[globals_layout, dynamic_uniforms_layout],
         );
 
-        let bitmap_bind_layout_label = create_debug_label!("Bitmap shape bind group layout");
-        let bitmap_bind_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                        },
-                        count: None,
-                    },
-                ],
-                label: bitmap_bind_layout_label.as_deref(),
-            });
-
         let bitmap_pipelines = create_shape_pipeline(
             "Bitmap",
             device,
@@ -182,38 +154,6 @@ impl Pipelines {
             ],
         );
 
-        let gradient_bind_layout_label = create_debug_label!("Gradient shape bind group");
-        let gradient_bind_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: if device.limits().max_storage_buffers_per_shader_stage > 0 {
-                                wgpu::BufferBindingType::Storage { read_only: true }
-                            } else {
-                                wgpu::BufferBindingType::Uniform
-                            },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                ],
-                label: gradient_bind_layout_label.as_deref(),
-            });
-
         let gradient_pipelines = create_shape_pipeline(
             "Gradient",
             device,
@@ -228,32 +168,6 @@ impl Pipelines {
             ],
         );
 
-        let copy_srgb_bind_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                        },
-                        count: None,
-                    },
-                ],
-                label: create_debug_label!("Copy sRGB bind group layout").as_deref(),
-            });
         let copy_texture_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
@@ -283,11 +197,8 @@ impl Pipelines {
         Self {
             color_pipelines,
             bitmap_pipelines,
-            bitmap_layout: bitmap_bind_layout,
             gradient_pipelines,
-            gradient_layout: gradient_bind_layout,
             copy_srgb_pipeline,
-            copy_srgb_layout: copy_srgb_bind_layout,
         }
     }
 }
