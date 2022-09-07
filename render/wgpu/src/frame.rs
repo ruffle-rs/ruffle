@@ -12,13 +12,12 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color};
 
-pub struct Frame<'a, T: RenderTargetFrame> {
+pub struct Frame<'a> {
     pipelines: &'a Pipelines,
     descriptors: &'a Descriptors,
     uniform_buffers: UniformBuffer<'a, Transforms>,
     mask_state: MaskState,
     num_masks: u32,
-    target: &'a T,
     uniform_encoder: &'a mut wgpu::CommandEncoder,
     render_pass: wgpu::RenderPass<'a>,
     blend_modes: Vec<BlendMode>,
@@ -29,13 +28,12 @@ pub struct Frame<'a, T: RenderTargetFrame> {
     meshes: &'a Vec<Mesh>,
 }
 
-impl<'a, T: RenderTargetFrame> Frame<'a, T> {
+impl<'a> Frame<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'a Pipelines,
         descriptors: &'a Descriptors,
         uniform_buffers: UniformBuffer<'a, Transforms>,
-        target: &'a T,
         quad_vertices: wgpu::BufferSlice<'a>,
         quad_indices: wgpu::BufferSlice<'a>,
         meshes: &'a Vec<Mesh>,
@@ -49,7 +47,6 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
             uniform_buffers,
             mask_state: MaskState::NoMask,
             num_masks: 0,
-            target,
             uniform_encoder,
             render_pass,
             blend_modes: vec![BlendMode::Normal],
@@ -61,9 +58,10 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
         }
     }
 
-    pub fn swap_srgb(
+    pub fn swap_srgb<T: RenderTargetFrame>(
         &mut self,
         globals: &Globals,
+        target: &'a T,
         copy_srgb_bind_group: &wgpu::BindGroup,
         width: f32,
         height: f32,
@@ -77,7 +75,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
 
         let mut render_pass = copy_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: self.target.view(),
+                view: target.view(),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: true,
@@ -230,7 +228,7 @@ impl<'a, T: RenderTargetFrame> Frame<'a, T> {
     }
 }
 
-impl<'a, T: RenderTargetFrame> CommandHandler for Frame<'a, T> {
+impl<'a> CommandHandler for Frame<'a> {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         if let Some(entry) = self.bitmap_registry.get(&bitmap) {
             let texture = &entry.texture_wrapper;
