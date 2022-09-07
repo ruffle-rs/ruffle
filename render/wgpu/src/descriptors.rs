@@ -5,8 +5,6 @@ use crate::{BitmapSamplers, Pipelines};
 pub struct DescriptorsTargetData {
     // These fields are specific to our `RenderTarget`, and
     // cannot be re-used
-    pub surface_format: wgpu::TextureFormat,
-    pub frame_buffer_format: wgpu::TextureFormat,
     pub pipelines: Pipelines,
     pub msaa_sample_count: u32,
 }
@@ -54,8 +52,6 @@ impl DescriptorsTargetData {
         );
 
         DescriptorsTargetData {
-            surface_format,
-            frame_buffer_format,
             pipelines,
             msaa_sample_count,
         }
