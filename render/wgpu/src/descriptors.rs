@@ -1,6 +1,6 @@
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{BitmapSamplers, Pipelines};
+use crate::{create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex};
 
 /// Contains data specific to a `RenderTarget`.
 /// We cannot re-use this data in `with_offscreen_backend`
@@ -70,6 +70,7 @@ pub struct Descriptors {
     pub onscreen: DescriptorsTargetData,
     pub offscreen: DescriptorsTargetData,
     pub bind_layouts: BindLayouts,
+    pub quad: Quad,
 }
 
 impl Descriptors {
@@ -84,6 +85,7 @@ impl Descriptors {
         let bind_layouts = BindLayouts::new(&device);
         let bitmap_samplers = BitmapSamplers::new(&device, &bind_layouts);
         let shaders = Shaders::new(&device);
+        let quad = Quad::new(&device);
 
         // We want to render directly onto a linear render target to avoid any gamma correction.
         // If our surface is sRGB, render to a linear texture and than copy over to the surface.
@@ -137,6 +139,71 @@ impl Descriptors {
             onscreen,
             offscreen,
             bind_layouts,
+            quad,
+        }
+    }
+}
+
+pub struct Quad {
+    pub vertices: wgpu::Buffer,
+    pub indices: wgpu::Buffer,
+    pub texture_transforms: wgpu::Buffer,
+}
+
+impl Quad {
+    pub fn new(device: &wgpu::Device) -> Self {
+        let vertices = [
+            Vertex {
+                position: [0.0, 0.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [1.0, 0.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [1.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+            Vertex {
+                position: [0.0, 1.0],
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+        ];
+        let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
+
+        let vbo = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&vertices),
+            wgpu::BufferUsages::VERTEX,
+            create_debug_label!("Quad vbo"),
+        );
+
+        let ibo = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&indices),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Quad ibo"),
+        );
+
+        let tex_transforms = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&[TextureTransforms {
+                u_matrix: [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+            }]),
+            wgpu::BufferUsages::UNIFORM,
+            create_debug_label!("Quad tex transforms"),
+        );
+
+        Self {
+            vertices: vbo,
+            indices: ibo,
+            texture_transforms: tex_transforms,
         }
     }
 }
