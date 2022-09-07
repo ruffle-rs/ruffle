@@ -1,3 +1,4 @@
+use crate::shaders::Shaders;
 use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
 use wgpu::vertex_attr_array;
@@ -111,6 +112,7 @@ impl ShapePipeline {
 impl Pipelines {
     pub fn new(
         device: &wgpu::Device,
+        shaders: &Shaders,
         surface_format: wgpu::TextureFormat,
         frame_buffer_format: wgpu::TextureFormat,
         msaa_sample_count: u32,
@@ -118,20 +120,6 @@ impl Pipelines {
         globals_layout: &wgpu::BindGroupLayout,
         dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     ) -> Self {
-        let color_shader = create_shader(device, "color", include_str!("../shaders/color.wgsl"));
-        let bitmap_shader = create_shader(device, "bitmap", include_str!("../shaders/bitmap.wgsl"));
-        let gradient_shader = if device.limits().max_storage_buffers_per_shader_stage > 0 {
-            include_str!("../shaders/gradient_storage.wgsl")
-        } else {
-            include_str!("../shaders/gradient_uniform.wgsl")
-        };
-        let gradient_shader = create_shader(device, "gradient", gradient_shader);
-        let copy_srgb_shader = create_shader(
-            device,
-            "copy sRGB",
-            include_str!("../shaders/copy_srgb.wgsl"),
-        );
-
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -145,7 +133,7 @@ impl Pipelines {
             "Color",
             device,
             frame_buffer_format,
-            &color_shader,
+            &shaders.color_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             &[globals_layout, dynamic_uniforms_layout],
@@ -183,7 +171,7 @@ impl Pipelines {
             "Bitmap",
             device,
             frame_buffer_format,
-            &bitmap_shader,
+            &shaders.bitmap_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             &[
@@ -230,7 +218,7 @@ impl Pipelines {
             "Gradient",
             device,
             frame_buffer_format,
-            &gradient_shader,
+            &shaders.gradient_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             &[
@@ -279,8 +267,8 @@ impl Pipelines {
             });
         let copy_srgb_pipeline = device.create_render_pipeline(&create_pipeline_descriptor(
             create_debug_label!("Copy sRGB pipeline").as_deref(),
-            &copy_srgb_shader,
-            &copy_srgb_shader,
+            &shaders.copy_srgb_shader,
+            &shaders.copy_srgb_shader,
             &copy_texture_pipeline_layout,
             None,
             &[Some(wgpu::ColorTargetState {
@@ -302,25 +290,6 @@ impl Pipelines {
             copy_srgb_layout: copy_srgb_bind_layout,
         }
     }
-}
-
-/// Builds a `wgpu::ShaderModule` the given WGSL source in `src`.
-///
-/// The source is prepended with common code in `common.wgsl`, simulating a `#include` preprocessor.
-/// We could possibly does this as an offline build step instead.
-fn create_shader(
-    device: &wgpu::Device,
-    name: &'static str,
-    src: &'static str,
-) -> wgpu::ShaderModule {
-    const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
-    let src = [COMMON_SRC, src].concat();
-    let label = create_debug_label!("Shader {}", name,);
-    let desc = wgpu::ShaderModuleDescriptor {
-        label: label.as_deref(),
-        source: wgpu::ShaderSource::Wgsl(src.into()),
-    };
-    device.create_shader_module(desc)
 }
 
 #[allow(clippy::too_many_arguments)]
