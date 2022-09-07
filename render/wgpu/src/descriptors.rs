@@ -1,3 +1,4 @@
+use crate::shaders::Shaders;
 use crate::{BitmapSamplers, Pipelines};
 
 /// Contains data specific to a `RenderTarget`.
@@ -12,6 +13,7 @@ pub struct DescriptorsTargetData {
 impl DescriptorsTargetData {
     fn new(
         device: &wgpu::Device,
+        shaders: &Shaders,
         surface_format: wgpu::TextureFormat,
         bitmap_samplers: &BitmapSamplers,
         msaa_sample_count: u32,
@@ -42,7 +44,8 @@ impl DescriptorsTargetData {
         };
 
         let pipelines = Pipelines::new(
-            &device,
+            device,
+            shaders,
             surface_format,
             frame_buffer_format,
             msaa_sample_count,
@@ -83,6 +86,7 @@ impl Descriptors {
     ) -> Self {
         let limits = device.limits();
         let bitmap_samplers = BitmapSamplers::new(&device);
+        let shaders = Shaders::new(&device);
 
         let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
         let uniform_buffers_layout =
@@ -140,6 +144,7 @@ impl Descriptors {
 
         let onscreen = DescriptorsTargetData::new(
             &device,
+            &shaders,
             surface_format,
             &bitmap_samplers,
             msaa_sample_count,
@@ -150,6 +155,7 @@ impl Descriptors {
         // FIXME - get MSAA working for `TextureTarget`
         let offscreen = DescriptorsTargetData::new(
             &device,
+            &shaders,
             wgpu::TextureFormat::Rgba8Unorm,
             &bitmap_samplers,
             1,

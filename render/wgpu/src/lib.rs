@@ -28,6 +28,7 @@ pub mod backend;
 pub mod clap;
 pub mod descriptors;
 mod frame;
+mod shaders;
 
 pub struct RegistryData {
     bitmap: Bitmap,
