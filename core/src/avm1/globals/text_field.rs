@@ -8,6 +8,7 @@ use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
 use gc_arena::{GcCell, MutationContext};
+use swf::Color;
 
 macro_rules! tf_method {
     ($fn:expr) => {
@@ -396,7 +397,7 @@ pub fn background_color<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.background_color().into())
+    Ok(this.background_color().to_rgb().into())
 }
 
 pub fn set_background_color<'gc>(
@@ -405,7 +406,8 @@ pub fn set_background_color<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
-    this.set_background_color(activation.context.gc_context, rgb & 0xFFFFFF);
+    let color = Color::from_rgb(rgb, 255);
+    this.set_background_color(activation.context.gc_context, color);
     Ok(())
 }
 
@@ -430,7 +432,7 @@ pub fn border_color<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.border_color().into())
+    Ok(this.border_color().to_rgb().into())
 }
 
 pub fn set_border_color<'gc>(
@@ -439,7 +441,8 @@ pub fn set_border_color<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
-    this.set_border_color(activation.context.gc_context, rgb & 0xFFFFFF);
+    let color = Color::from_rgb(rgb, 255);
+    this.set_border_color(activation.context.gc_context, color);
     Ok(())
 }
 
