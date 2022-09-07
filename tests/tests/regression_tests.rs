@@ -193,6 +193,7 @@ swf_tests! {
     // We need a render backend in order to call `BitmapData.draw`
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_draw, "avm2/bitmapdata_draw", 1, img = true),
     #[ignore] (as3_bitmapdata_embedded, "avm2/bitmapdata_embedded", 1),
+    (as3_bitmapdata_fillrect, "avm2/bitmapdata_fillrect", 1),
     (as3_bitnot, "avm2/bitnot", 1),
     (as3_bitor, "avm2/bitor", 1),
     (as3_bitxor, "avm2/bitxor", 1),
