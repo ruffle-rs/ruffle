@@ -42,7 +42,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
-    offscreen: bool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -257,7 +256,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
             viewport_scale_factor: 1.0,
-            offscreen: false,
         })
     }
 
@@ -416,7 +414,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &target_data!(self).pipelines.gradient_layout,
+                                layout: &self.descriptors.pipelines.gradient_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -491,7 +489,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &target_data!(self).pipelines.bitmap_layout,
+                                layout: &self.descriptors.pipelines.bitmap_layout,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -546,142 +544,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
     }
-
-    fn render_offscreen_internal(
-        mut self,
-        handle: BitmapHandle,
-        width: u32,
-        height: u32,
-        commands: CommandList,
-        clear_color: Color,
-    ) -> Result<(Self, Bitmap), ruffle_render::error::Error> {
-        // We need ownership of `Texture` to access the non-`Clone`
-        // `wgpu` fields. At the end of this method, we re-insert
-        // `texture` into the map.
-        //
-        // This means that the target texture will be inaccessible
-        // while the callback `f` is a problem. This would only be
-        // an issue if a caller tried to render the target texture
-        // to itself, which probably isn't supported by Flash. If it
-        // is, then we could change `TextureTarget` to use an `Rc<wgpu::Texture>`
-        let mut texture = self.bitmap_registry.remove(&handle).unwrap();
-
-        let extent = wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        };
-
-        if self.offscreen {
-            panic!("Nested render_onto_bitmap is not supported!")
-        }
-
-        let descriptors = self.descriptors.clone();
-
-        // We will (presumably) never render to the majority of textures, so
-        // we lazily create the buffer and depth texture.
-        // Once created, we never destroy this data, under the assumption
-        // that the SWF will try to render to this more than once.
-        //
-        // If we end up hitting wgpu device limits due to having too
-        // many buffers / depth textures rendered at once, we could
-        // try storing this data in an LRU cache, evicting entries
-        // as needed.
-        let mut texture_offscreen =
-            texture
-                .texture_wrapper
-                .texture_offscreen
-                .unwrap_or_else(|| {
-                    let depth_texture_view =
-                        create_depth_texture_view(&descriptors, &descriptors.offscreen, extent);
-                    let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
-                    let buffer_label = create_debug_label!("Render target buffer");
-                    let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
-                        label: buffer_label.as_deref(),
-                        size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                            * buffer_dimensions.height as u64),
-                        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                        mapped_at_creation: false,
-                    });
-                    TextureOffscreen {
-                        depth_texture_view,
-                        buffer,
-                        buffer_dimensions,
-                    }
-                });
-
-        let target = TextureTarget {
-            size: extent,
-            texture: texture.texture_wrapper.texture,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: texture_offscreen.buffer,
-            buffer_dimensions: texture_offscreen.buffer_dimensions,
-        };
-
-        let (old_width, old_height) = self.globals.resolution();
-
-        // Is it worth caching this?
-        self.globals.set_resolution(width, height);
-
-        let mut texture_backend = WgpuRenderBackend {
-            descriptors,
-            target,
-            // FIXME - Enable MSAA for textures
-            frame_buffer_view: None,
-            depth_texture_view: texture_offscreen.depth_texture_view,
-            // We explicitly request a non-SRGB format for textures
-            copy_srgb_view: None,
-            copy_srgb_bind_group: None,
-            meshes: self.meshes,
-            shape_tessellator: self.shape_tessellator,
-            quad_vbo: self.quad_vbo,
-            quad_ibo: self.quad_ibo,
-            quad_tex_transforms: self.quad_tex_transforms,
-            bitmap_registry: self.bitmap_registry,
-            offscreen: true,
-            next_bitmap_handle: self.next_bitmap_handle,
-            globals: self.globals,
-            uniform_buffers_storage: self.uniform_buffers_storage,
-            viewport_scale_factor: self.viewport_scale_factor,
-        };
-
-        texture_backend.submit_frame(clear_color, commands);
-
-        // Capture with premultiplied alpha, which is what we use for all textures
-        let image = texture_backend
-            .target
-            .capture(&texture_backend.descriptors.device, true);
-
-        let image = image.map(|image| {
-            Bitmap::new(
-                image.dimensions().0,
-                image.dimensions().1,
-                ruffle_render::bitmap::BitmapFormat::Rgba,
-                image.into_raw(),
-            )
-        });
-
-        self.offscreen = false;
-        self.meshes = texture_backend.meshes;
-        self.shape_tessellator = texture_backend.shape_tessellator;
-        self.bitmap_registry = texture_backend.bitmap_registry;
-        self.quad_tex_transforms = texture_backend.quad_tex_transforms;
-        self.quad_ibo = texture_backend.quad_ibo;
-        self.quad_vbo = texture_backend.quad_vbo;
-        self.globals = texture_backend.globals;
-        self.uniform_buffers_storage = texture_backend.uniform_buffers_storage;
-        self.next_bitmap_handle = texture_backend.next_bitmap_handle;
-        self.globals.set_resolution(old_width, old_height);
-
-        texture_offscreen.buffer = texture_backend.target.buffer;
-        texture_offscreen.buffer_dimensions = texture_backend.target.buffer_dimensions;
-        texture_offscreen.depth_texture_view = texture_backend.depth_texture_view;
-        texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
-        texture.texture_wrapper.texture = texture_backend.target.texture;
-        self.bitmap_registry.insert(handle, texture);
-
-        Ok((self, image.unwrap()))
-    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -710,7 +572,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        self.frame_buffer_view = if target_data!(self).msaa_sample_count > 1 {
+        self.frame_buffer_view = if self.descriptors.msaa_sample_count > 1 {
             let frame_buffer = self
                 .descriptors
                 .device
@@ -718,9 +580,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     label: create_debug_label!("Framebuffer texture").as_deref(),
                     size,
                     mip_level_count: 1,
-                    sample_count: target_data!(self).msaa_sample_count,
+                    sample_count: self.descriptors.msaa_sample_count,
                     dimension: wgpu::TextureDimension::D2,
-                    format: target_data!(self).frame_buffer_format,
+                    format: self.descriptors.frame_buffer_format,
                     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 });
             Some(frame_buffer.create_view(&Default::default()))
@@ -735,15 +597,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 label: create_debug_label!("Depth texture").as_deref(),
                 size,
                 mip_level_count: 1,
-                sample_count: target_data!(self).msaa_sample_count,
+                sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
 
-        (self.copy_srgb_view, self.copy_srgb_bind_group) = if target_data!(self).frame_buffer_format
-            != target_data!(self).surface_format
+        (self.copy_srgb_view, self.copy_srgb_bind_group) = if self.descriptors.frame_buffer_format
+            != self.descriptors.surface_format
         {
             let copy_srgb_buffer =
                 self.descriptors
@@ -754,7 +616,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         mip_level_count: 1,
                         sample_count: 1,
                         dimension: wgpu::TextureDimension::D2,
-                        format: target_data!(self).frame_buffer_format,
+                        format: self.descriptors.frame_buffer_format,
                         usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                             | wgpu::TextureUsages::TEXTURE_BINDING,
                     });
@@ -763,7 +625,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &target_data!(self).pipelines.bitmap_layout,
+                        layout: &self.descriptors.pipelines.bitmap_layout,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -911,7 +773,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             render_pass,
             &mut uniform_encoder,
             &self.bitmap_registry,
-            self.offscreen,
+            false,
         );
         commands.execute(&mut frame);
 
@@ -1004,7 +866,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &target_data!(self).pipelines.bitmap_layout,
+                layout: &self.descriptors.pipelines.bitmap_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
@@ -1098,34 +960,166 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
-        // Rendering to a texture backend requires us to use non-`Clone`
-        // wgpu resources (e.g. `wgpu::Device`, `wgpu::Queue`.
+        // We need ownership of `Texture` to access the non-`Clone`
+        // `wgpu` fields. At the end of this method, we re-insert
+        // `texture` into the map.
         //
-        // We expect that in the majority of SWFs, we will spend most
-        // of our time performing 'normal' (non-offscreen) renders.
-        // Therefore, we want to avoid penalizing this case by adding
-        // in a check for 'normal' or 'offscreen' mode in the main
-        // rendering code.
+        // This means that the target texture will be inaccessible
+        // while the callback `f` is a problem. This would only be
+        // an issue if a caller tried to render the target texture
+        // to itself, which probably isn't supported by Flash. If it
+        // is, then we could change `TextureTarget` to use an `Rc<wgpu::Texture>`
+        let mut texture = self.bitmap_registry.remove(&handle).unwrap();
+
+        let extent = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        // We will (presumably) never render to the majority of textures, so
+        // we lazily create the buffer and depth texture.
+        // Once created, we never destroy this data, under the assumption
+        // that the SWF will try to render to this more than once.
         //
-        // To accomplish this, we use `take_mut` to temporarily
-        // move out of `self`. This allows us to construct a new
-        // `WgpuRenderBackend` with a `TextureTarget` corresponding to
-        // `handle`. This allows us to re-use many of the fields from
-        // our normal `WgpuRenderBackend` without wrapping in an `Rc`
-        // or other indirection.
-        //
-        // Note that `take_mut` causes the process to abort if the
-        // `with_offscreen_render_backend_internal` panics, since
-        // the `&mut self` reference would be logically uninitialized.
-        // However, we normally compile Ruffle with `panic=abort`,
-        // so this shouldn't actually have an effect in practice.
-        // Even with `panic=unwind`, we would still get a backtrace
-        // printed, and there's not really much point in attempting
-        // to recover from a partially failed render operation, anyway.
-        Ok(take_mut(self, |this| {
-            this.render_offscreen_internal(handle, width, height, commands, clear_color)
-                .expect("Failed to render to offscreen backend")
-        }))
+        // If we end up hitting wgpu device limits due to having too
+        // many buffers / depth textures rendered at once, we could
+        // try storing this data in an LRU cache, evicting entries
+        // as needed.
+        let mut texture_offscreen =
+            texture
+                .texture_wrapper
+                .texture_offscreen
+                .unwrap_or_else(|| {
+                    let depth_texture_view = create_depth_texture_view(
+                        &self.descriptors,
+                        &self.descriptors.offscreen,
+                        extent,
+                    );
+                    let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
+                    let buffer_label = create_debug_label!("Render target buffer");
+                    let buffer = self
+                        .descriptors
+                        .device
+                        .create_buffer(&wgpu::BufferDescriptor {
+                            label: buffer_label.as_deref(),
+                            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                                * buffer_dimensions.height as u64),
+                            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                            mapped_at_creation: false,
+                        });
+                    TextureOffscreen {
+                        depth_texture_view,
+                        buffer,
+                        buffer_dimensions,
+                    }
+                });
+
+        let mut target = TextureTarget {
+            size: extent,
+            texture: texture.texture_wrapper.texture,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            buffer: texture_offscreen.buffer,
+            buffer_dimensions: texture_offscreen.buffer_dimensions,
+        };
+
+        let (old_width, old_height) = self.globals.resolution();
+
+        let frame_output = target
+            .get_next_texture()
+            .expect("TextureTargetFrame.get_next_texture is infallible");
+
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let mut uniform_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+
+        self.globals.set_resolution(width, height);
+        self.globals
+            .update_uniform(&self.descriptors.device, &mut draw_encoder);
+
+        let render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: frame_output.view(),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: f64::from(clear_color.r) / 255.0,
+                        g: f64::from(clear_color.g) / 255.0,
+                        b: f64::from(clear_color.b) / 255.0,
+                        a: f64::from(clear_color.a) / 255.0,
+                    }),
+                    store: true,
+                },
+                resolve_target: None,
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &texture_offscreen.depth_texture_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0.0),
+                    store: false,
+                }),
+                stencil_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0),
+                    store: true,
+                }),
+            }),
+            label: None,
+        });
+
+        let mut frame = Frame::new(
+            &self.descriptors,
+            &self.globals,
+            UniformBuffer::new(&mut self.uniform_buffers_storage),
+            &frame_output,
+            &self.quad_vbo,
+            &self.quad_ibo,
+            &self.meshes,
+            render_pass,
+            &mut uniform_encoder,
+            &self.bitmap_registry,
+            true,
+        );
+        commands.execute(&mut frame);
+        frame.finish();
+
+        target.submit(
+            &self.descriptors.device,
+            &self.descriptors.queue,
+            vec![uniform_encoder.finish(), draw_encoder.finish()],
+            frame_output,
+        );
+
+        // Capture with premultiplied alpha, which is what we use for all textures
+        let image = target.capture(&self.descriptors.device, true);
+
+        let image = image.map(|image| {
+            Bitmap::new(
+                image.dimensions().0,
+                image.dimensions().1,
+                ruffle_render::bitmap::BitmapFormat::Rgba,
+                image.into_raw(),
+            )
+        });
+
+        self.globals.set_resolution(old_width, old_height);
+        texture_offscreen.buffer = target.buffer;
+        texture_offscreen.buffer_dimensions = target.buffer_dimensions;
+        texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
+        texture.texture_wrapper.texture = target.texture;
+        self.bitmap_registry.insert(handle, texture);
+
+        Ok(image.unwrap())
     }
 }
 
@@ -1196,24 +1190,6 @@ fn create_depth_texture_view(
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
     });
     depth_texture.create_view(&Default::default())
-}
-
-// Based on https://github.com/Sgeo/take_mut
-fn take_mut<T, R, F>(mut_ref: &mut T, closure: F) -> R
-where
-    F: FnOnce(T) -> (T, R),
-{
-    unsafe {
-        let old_t = std::ptr::read(mut_ref);
-        let (new_t, ret) =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| closure(old_t)))
-                .unwrap_or_else(|e| {
-                    eprintln!("Caught panic: {:?}", e);
-                    ::std::process::abort()
-                });
-        std::ptr::write(mut_ref, new_t);
-        ret
-    }
 }
 
 // We try to request the highest limits we can get away with
