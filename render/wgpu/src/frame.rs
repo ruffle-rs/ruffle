@@ -1,16 +1,7 @@
 use crate::pipelines::BlendMode as ActualBlendMode;
 use crate::target::RenderTargetFrame;
 use crate::Pipelines;
-use crate::{
-    ColorAdjustments, Descriptors, DrawType, Globals, MaskState, Mesh, RegistryData, Transforms,
-    UniformBuffer,
-};
-use fnv::FnvHashMap;
-use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::commands::CommandHandler;
-use ruffle_render::transform::Transform;
-use swf::{BlendMode, Color};
+use crate::{ColorAdjustments, Descriptors, Globals, MaskState, Transforms, UniformBuffer};
 
 pub struct Frame<'a> {
     pipelines: &'a Pipelines,
@@ -20,26 +11,16 @@ pub struct Frame<'a> {
     num_masks: u32,
     uniform_encoder: &'a mut wgpu::CommandEncoder,
     render_pass: wgpu::RenderPass<'a>,
-    blend_modes: Vec<BlendMode>,
     blend_mode: ActualBlendMode,
-    bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
-    quad_vertices: wgpu::BufferSlice<'a>,
-    quad_indices: wgpu::BufferSlice<'a>,
-    meshes: &'a Vec<Mesh>,
 }
 
 impl<'a> Frame<'a> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'a Pipelines,
         descriptors: &'a Descriptors,
         uniform_buffers: UniformBuffer<'a, Transforms>,
-        quad_vertices: wgpu::BufferSlice<'a>,
-        quad_indices: wgpu::BufferSlice<'a>,
-        meshes: &'a Vec<Mesh>,
         render_pass: wgpu::RenderPass<'a>,
         uniform_encoder: &'a mut wgpu::CommandEncoder,
-        bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
     ) -> Self {
         Self {
             pipelines,
@@ -49,15 +30,11 @@ impl<'a> Frame<'a> {
             num_masks: 0,
             uniform_encoder,
             render_pass,
-            blend_modes: vec![BlendMode::Normal],
             blend_mode: ActualBlendMode::Normal,
-            bitmap_registry,
-            quad_vertices,
-            quad_indices,
-            meshes,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn swap_srgb<T: RenderTargetFrame>(
         &mut self,
         globals: &Globals,
@@ -65,6 +42,8 @@ impl<'a> Frame<'a> {
         copy_srgb_bind_group: &wgpu::BindGroup,
         width: f32,
         height: f32,
+        quad_vertices: wgpu::BufferSlice<'a>,
+        quad_indices: wgpu::BufferSlice<'a>,
     ) -> wgpu::CommandBuffer {
         let mut copy_encoder =
             self.descriptors
@@ -115,8 +94,8 @@ impl<'a> Frame<'a> {
                 .get_bind_group(false, false),
             &[],
         );
-        render_pass.set_vertex_buffer(0, self.quad_vertices);
-        render_pass.set_index_buffer(self.quad_indices, wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(0, quad_vertices);
+        render_pass.set_index_buffer(quad_indices, wgpu::IndexFormat::Uint32);
         render_pass.draw_indexed(0..6, 0, 0..1);
         drop(render_pass);
 
@@ -127,7 +106,7 @@ impl<'a> Frame<'a> {
         self.uniform_buffers.finish()
     }
 
-    fn draw_color(
+    pub fn draw_color(
         &mut self,
         vertices: wgpu::BufferSlice<'a>,
         indices: wgpu::BufferSlice<'a>,
@@ -146,7 +125,7 @@ impl<'a> Frame<'a> {
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    fn draw_gradient(
+    pub fn draw_gradient(
         &mut self,
         vertices: wgpu::BufferSlice<'a>,
         indices: wgpu::BufferSlice<'a>,
@@ -167,7 +146,7 @@ impl<'a> Frame<'a> {
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    fn draw_bitmap(
+    pub fn draw_bitmap(
         &mut self,
         vertices: wgpu::BufferSlice<'a>,
         indices: wgpu::BufferSlice<'a>,
@@ -197,7 +176,7 @@ impl<'a> Frame<'a> {
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    fn apply_transform(
+    pub fn apply_transform(
         &mut self,
         matrix: &ruffle_render::matrix::Matrix,
         color_adjustments: ColorAdjustments,
@@ -226,150 +205,26 @@ impl<'a> Frame<'a> {
             },
         );
     }
-}
 
-impl<'a> CommandHandler for Frame<'a> {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if let Some(entry) = self.bitmap_registry.get(&bitmap) {
-            let texture = &entry.texture_wrapper;
-
-            self.apply_transform(
-                &(transform.matrix
-                    * ruffle_render::matrix::Matrix {
-                        a: texture.width as f32,
-                        d: texture.height as f32,
-                        ..Default::default()
-                    }),
-                ColorAdjustments::from(transform.color_transform),
-            );
-
-            self.draw_bitmap(
-                self.quad_vertices,
-                self.quad_indices,
-                6,
-                &texture.bind_group,
-                false,
-                smoothing,
-            );
-        }
+    pub fn set_mask_state(&mut self, state: MaskState) {
+        self.mask_state = state;
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        self.apply_transform(
-            &transform.matrix,
-            ColorAdjustments::from(transform.color_transform),
-        );
+    pub fn set_mask_count(&mut self, num: u32) {
+        self.num_masks = num;
 
-        let mesh = &self.meshes[shape.0];
-        for draw in &mesh.draws {
-            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
-                && self.mask_state != MaskState::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
-                continue;
-            }
-
-            match &draw.draw_type {
-                DrawType::Color => {
-                    self.draw_color(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                    );
-                }
-                DrawType::Gradient { bind_group, .. } => {
-                    self.draw_gradient(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                        bind_group,
-                    );
-                }
-                DrawType::Bitmap {
-                    is_repeating,
-                    is_smoothed,
-                    bind_group,
-                    ..
-                } => {
-                    self.draw_bitmap(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                        bind_group,
-                        *is_repeating,
-                        *is_smoothed,
-                    );
-                }
-            }
-        }
-    }
-
-    fn draw_rect(&mut self, color: Color, matrix: &ruffle_render::matrix::Matrix) {
-        self.apply_transform(
-            &matrix,
-            ColorAdjustments {
-                mult_color: [
-                    f32::from(color.r) / 255.0,
-                    f32::from(color.g) / 255.0,
-                    f32::from(color.b) / 255.0,
-                    f32::from(color.a) / 255.0,
-                ],
-                add_color: [0.0, 0.0, 0.0, 0.0],
-            },
-        );
-
-        self.draw_color(self.quad_vertices, self.quad_indices, 6);
-    }
-
-    fn push_mask(&mut self) {
-        debug_assert!(
-            self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
-        );
-        self.num_masks += 1;
-        self.mask_state = MaskState::DrawMaskStencil;
-
-        self.render_pass.set_stencil_reference(self.num_masks - 1);
-    }
-
-    fn activate_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskStencil);
-        self.mask_state = MaskState::DrawMaskedContent;
         self.render_pass.set_stencil_reference(self.num_masks);
     }
 
-    fn deactivate_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::DrawMaskedContent);
-        self.mask_state = MaskState::ClearMaskStencil;
-        self.render_pass.set_stencil_reference(self.num_masks);
+    pub fn set_blend_mode(&mut self, blend_mode: ActualBlendMode) {
+        self.blend_mode = blend_mode;
     }
 
-    fn pop_mask(&mut self) {
-        debug_assert!(self.num_masks > 0 && self.mask_state == MaskState::ClearMaskStencil);
-        self.num_masks -= 1;
-        self.mask_state = if self.num_masks == 0 {
-            MaskState::NoMask
-        } else {
-            self.render_pass.set_stencil_reference(self.num_masks);
-            MaskState::DrawMaskedContent
-        };
+    pub fn mask_state(&self) -> MaskState {
+        self.mask_state
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        self.blend_modes.push(blend);
-        self.blend_mode = blend.into();
-    }
-
-    fn pop_blend_mode(&mut self) {
-        self.blend_modes.pop();
-        self.blend_mode = self
-            .blend_modes
-            .last()
-            .map(|b| ActualBlendMode::from(*b))
-            .unwrap_or(ActualBlendMode::Normal);
+    pub fn num_masks(&self) -> u32 {
+        self.num_masks
     }
 }
