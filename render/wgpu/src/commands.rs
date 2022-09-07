@@ -15,6 +15,7 @@ pub struct CommandRenderer<'a, 'b> {
     quad_vertices: wgpu::BufferSlice<'a>,
     quad_indices: wgpu::BufferSlice<'a>,
     blend_modes: Vec<BlendMode>,
+    num_masks: u32,
 }
 
 impl<'a, 'b> CommandRenderer<'a, 'b> {
@@ -32,6 +33,7 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
             quad_vertices,
             quad_indices,
             blend_modes: vec![BlendMode::Normal],
+            num_masks: 0,
         }
     }
 }
@@ -128,31 +130,30 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
             self.frame.mask_state() == MaskState::NoMask
                 || self.frame.mask_state() == MaskState::DrawMaskedContent
         );
+        self.num_masks += 1;
         self.frame.set_mask_state(MaskState::DrawMaskStencil);
-        self.frame.set_mask_count(self.frame.num_masks() + 1);
+        self.frame.set_stencil(self.num_masks - 1);
     }
 
     fn activate_mask(&mut self) {
-        debug_assert!(
-            self.frame.num_masks() > 0 && self.frame.mask_state() == MaskState::DrawMaskStencil
-        );
+        debug_assert!(self.num_masks > 0 && self.frame.mask_state() == MaskState::DrawMaskStencil);
         self.frame.set_mask_state(MaskState::DrawMaskedContent);
+        self.frame.set_stencil(self.num_masks);
     }
 
     fn deactivate_mask(&mut self) {
         debug_assert!(
-            self.frame.num_masks() > 0 && self.frame.mask_state() == MaskState::DrawMaskedContent
+            self.num_masks > 0 && self.frame.mask_state() == MaskState::DrawMaskedContent
         );
         self.frame.set_mask_state(MaskState::ClearMaskStencil);
+        self.frame.set_stencil(self.num_masks);
     }
 
     fn pop_mask(&mut self) {
-        debug_assert!(
-            self.frame.num_masks() > 0 && self.frame.mask_state() == MaskState::ClearMaskStencil
-        );
-        let num_masks = self.frame.num_masks() - 1;
-        self.frame.set_mask_count(num_masks);
-        if num_masks == 0 {
+        debug_assert!(self.num_masks > 0 && self.frame.mask_state() == MaskState::ClearMaskStencil);
+        self.num_masks -= 1;
+        self.frame.set_stencil(self.num_masks);
+        if self.num_masks == 0 {
             self.frame.set_mask_state(MaskState::NoMask);
         } else {
             self.frame.set_mask_state(MaskState::DrawMaskedContent);
