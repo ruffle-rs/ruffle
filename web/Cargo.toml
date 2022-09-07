@@ -49,7 +49,7 @@ base64 = "0.20.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["audio", "nellymoser", "symphonia", "wasm-bindgen"]
+features = ["audio", "mp3", "nellymoser", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.60"
