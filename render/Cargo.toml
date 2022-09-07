@@ -16,7 +16,6 @@ downcast-rs = "1.2.0"
 lyon = { version = "1.0.0", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.82", optional = true }
-image = "0.24.3"
 
 [dependencies.jpeg-decoder]
 version = "0.2.6"
