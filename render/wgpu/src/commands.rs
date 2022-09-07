@@ -51,14 +51,10 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                 ColorAdjustments::from(transform.color_transform),
             );
 
-            self.frame.draw_bitmap(
-                self.quad_vertices,
-                self.quad_indices,
-                6,
-                &texture.bind_group,
-                false,
-                smoothing,
-            );
+            self.frame
+                .prep_bitmap(&texture.bind_group, false, smoothing);
+
+            self.frame.draw(self.quad_vertices, self.quad_indices, 6);
         }
     }
 
@@ -85,19 +81,10 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
 
             match &draw.draw_type {
                 DrawType::Color => {
-                    self.frame.draw_color(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                    );
+                    self.frame.prep_color();
                 }
                 DrawType::Gradient { bind_group, .. } => {
-                    self.frame.draw_gradient(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                        bind_group,
-                    );
+                    self.frame.prep_gradient(bind_group);
                 }
                 DrawType::Bitmap {
                     is_repeating,
@@ -105,16 +92,16 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                     bind_group,
                     ..
                 } => {
-                    self.frame.draw_bitmap(
-                        draw.vertex_buffer.slice(..),
-                        draw.index_buffer.slice(..),
-                        num_indices,
-                        bind_group,
-                        *is_repeating,
-                        *is_smoothed,
-                    );
+                    self.frame
+                        .prep_bitmap(bind_group, *is_repeating, *is_smoothed);
                 }
             }
+
+            self.frame.draw(
+                draw.vertex_buffer.slice(..),
+                draw.index_buffer.slice(..),
+                num_indices,
+            );
         }
     }
 
@@ -132,8 +119,8 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
             },
         );
 
-        self.frame
-            .draw_color(self.quad_vertices, self.quad_indices, 6);
+        self.frame.prep_color();
+        self.frame.draw(self.quad_vertices, self.quad_indices, 6);
     }
 
     fn push_mask(&mut self) {
