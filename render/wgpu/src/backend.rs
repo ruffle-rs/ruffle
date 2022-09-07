@@ -131,17 +131,6 @@ impl WgpuRenderBackend<target::TextureTarget> {
     }
 }
 
-#[macro_export]
-macro_rules! target_data {
-    ($this:expr) => {{
-        if $this.offscreen {
-            &$this.descriptors.offscreen
-        } else {
-            &$this.descriptors.onscreen
-        }
-    }};
-}
-
 impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
@@ -763,6 +752,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             label: None,
         });
         let mut frame = Frame::new(
+            &self.descriptors.onscreen.pipelines,
             &self.descriptors,
             &self.globals,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
@@ -773,7 +763,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             render_pass,
             &mut uniform_encoder,
             &self.bitmap_registry,
-            false,
         );
         commands.execute(&mut frame);
 
@@ -1078,6 +1067,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         });
 
         let mut frame = Frame::new(
+            &self.descriptors.offscreen.pipelines,
             &self.descriptors,
             &self.globals,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
@@ -1088,7 +1078,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             render_pass,
             &mut uniform_encoder,
             &self.bitmap_registry,
-            true,
         );
         commands.execute(&mut frame);
         frame.finish();
