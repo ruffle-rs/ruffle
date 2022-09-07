@@ -1,11 +1,12 @@
+use crate::mesh::{Draw, DrawType, Mesh};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Draw,
-    DrawType, Error, Globals, GradientStorage, GradientUniforms, Mesh, RegistryData, RenderTarget,
-    SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms, Vertex,
+    create_buffer_with_data, format_list, get_backend_names, BufferDimensions, Descriptors, Error,
+    Globals, RegistryData, RenderTarget, SwapChainTarget, Texture, TextureOffscreen,
+    TextureTransforms, Transforms, Vertex,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -254,187 +255,32 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
             draws.push(match draw.draw_type {
                 TessDrawType::Color => Draw {
-                    draw_type: DrawType::Color,
+                    draw_type: DrawType::color(),
                     vertex_buffer,
                     index_buffer,
                     num_indices: index_count,
                     num_mask_indices: draw.mask_index_count,
                 },
-                TessDrawType::Gradient(gradient) => {
-                    // TODO: Extract to function?
-                    let mut texture_transform = [[0.0; 4]; 4];
-                    texture_transform[0][..3].copy_from_slice(&gradient.matrix[0]);
-                    texture_transform[1][..3].copy_from_slice(&gradient.matrix[1]);
-                    texture_transform[2][..3].copy_from_slice(&gradient.matrix[2]);
-
-                    let tex_transforms_ubo = create_buffer_with_data(
-                        &self.descriptors.device,
-                        bytemuck::cast_slice(&[texture_transform]),
-                        wgpu::BufferUsages::UNIFORM,
-                        create_debug_label!(
-                            "Shape {} draw {} textransforms ubo transfer buffer",
-                            shape_id,
-                            draw_id
-                        ),
-                    );
-
-                    let (gradient_ubo, buffer_size) = if self
-                        .descriptors
-                        .limits
-                        .max_storage_buffers_per_shader_stage
-                        > 0
-                    {
-                        (
-                            create_buffer_with_data(
-                                &self.descriptors.device,
-                                bytemuck::cast_slice(&[GradientStorage::from(gradient)]),
-                                wgpu::BufferUsages::STORAGE,
-                                create_debug_label!(
-                                    "Shape {} draw {} gradient ubo transfer buffer",
-                                    shape_id,
-                                    draw_id
-                                ),
-                            ),
-                            wgpu::BufferSize::new(std::mem::size_of::<GradientStorage>() as u64),
-                        )
-                    } else {
-                        (
-                            create_buffer_with_data(
-                                &self.descriptors.device,
-                                bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-                                wgpu::BufferUsages::UNIFORM,
-                                create_debug_label!(
-                                    "Shape {} draw {} gradient ubo transfer buffer",
-                                    shape_id,
-                                    draw_id
-                                ),
-                            ),
-                            wgpu::BufferSize::new(std::mem::size_of::<GradientUniforms>() as u64),
-                        )
-                    };
-
-                    let bind_group_label = create_debug_label!(
-                        "Shape {} (gradient) draw {} bindgroup",
+                TessDrawType::Gradient(gradient) => Draw {
+                    draw_type: DrawType::gradient(&self.descriptors, gradient, shape_id, draw_id),
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices: index_count,
+                    num_mask_indices: draw.mask_index_count,
+                },
+                TessDrawType::Bitmap(bitmap) => Draw {
+                    draw_type: DrawType::bitmap(
+                        &self.descriptors,
+                        &self.bitmap_registry,
+                        bitmap,
                         shape_id,
-                        draw_id
-                    );
-                    let bind_group =
-                        self.descriptors
-                            .device
-                            .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.bind_layouts.gradient,
-                                entries: &[
-                                    wgpu::BindGroupEntry {
-                                        binding: 0,
-                                        resource: wgpu::BindingResource::Buffer(
-                                            wgpu::BufferBinding {
-                                                buffer: &tex_transforms_ubo,
-                                                offset: 0,
-                                                size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                    TextureTransforms,
-                                                >(
-                                                )
-                                                    as u64),
-                                            },
-                                        ),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 1,
-                                        resource: wgpu::BindingResource::Buffer(
-                                            wgpu::BufferBinding {
-                                                buffer: &gradient_ubo,
-                                                offset: 0,
-                                                size: buffer_size,
-                                            },
-                                        ),
-                                    },
-                                ],
-                                label: bind_group_label.as_deref(),
-                            });
-
-                    Draw {
-                        draw_type: DrawType::Gradient {
-                            texture_transforms: tex_transforms_ubo,
-                            gradient: gradient_ubo,
-                            bind_group,
-                        },
-                        vertex_buffer,
-                        index_buffer,
-                        num_indices: index_count,
-                        num_mask_indices: draw.mask_index_count,
-                    }
-                }
-                TessDrawType::Bitmap(bitmap) => {
-                    let entry = self.bitmap_registry.get(&bitmap.bitmap).unwrap();
-                    let texture_view = entry
-                        .texture_wrapper
-                        .texture
-                        .create_view(&Default::default());
-
-                    // TODO: Extract to function?
-                    let mut texture_transform = [[0.0; 4]; 4];
-                    texture_transform[0][..3].copy_from_slice(&bitmap.matrix[0]);
-                    texture_transform[1][..3].copy_from_slice(&bitmap.matrix[1]);
-                    texture_transform[2][..3].copy_from_slice(&bitmap.matrix[2]);
-
-                    let tex_transforms_ubo = create_buffer_with_data(
-                        &self.descriptors.device,
-                        bytemuck::cast_slice(&[texture_transform]),
-                        wgpu::BufferUsages::UNIFORM,
-                        create_debug_label!(
-                            "Shape {} draw {} textransforms ubo transfer buffer",
-                            shape_id,
-                            draw_id
-                        ),
-                    );
-
-                    let bind_group_label = create_debug_label!(
-                        "Shape {} (bitmap) draw {} bindgroup",
-                        shape_id,
-                        draw_id
-                    );
-                    let bind_group =
-                        self.descriptors
-                            .device
-                            .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.bind_layouts.bitmap,
-                                entries: &[
-                                    wgpu::BindGroupEntry {
-                                        binding: 0,
-                                        resource: wgpu::BindingResource::Buffer(
-                                            wgpu::BufferBinding {
-                                                buffer: &tex_transforms_ubo,
-                                                offset: 0,
-                                                size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                    TextureTransforms,
-                                                >(
-                                                )
-                                                    as u64),
-                                            },
-                                        ),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 1,
-                                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                                    },
-                                ],
-                                label: bind_group_label.as_deref(),
-                            });
-
-                    Draw {
-                        draw_type: DrawType::Bitmap {
-                            texture_transforms: tex_transforms_ubo,
-                            texture_view,
-                            is_smoothed: bitmap.is_smoothed,
-                            is_repeating: bitmap.is_repeating,
-                            bind_group,
-                        },
-                        vertex_buffer,
-                        index_buffer,
-                        num_indices: index_count,
-                        num_mask_indices: draw.mask_index_count,
-                    }
-                }
+                        draw_id,
+                    ),
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices: index_count,
+                    num_mask_indices: draw.mask_index_count,
+                },
             });
         }
 

@@ -1,6 +1,7 @@
 use crate::frame::Frame;
+use crate::mesh::{DrawType, Mesh};
 use crate::pipelines::BlendMode as ActualBlendMode;
-use crate::{ColorAdjustments, DrawType, MaskState, Mesh, RegistryData};
+use crate::{ColorAdjustments, MaskState, RegistryData};
 use fnv::FnvHashMap;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
