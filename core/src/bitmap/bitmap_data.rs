@@ -150,6 +150,11 @@ pub struct BitmapData<'gc> {
     height: u32,
     transparency: bool,
 
+    // Note that it's technically possible to have a BitmapData with zero width and height,
+    // (by embedding it in the SWF instead of using the BitmapData constructor),
+    // so we need a separate 'disposed' flag.
+    disposed: bool,
+
     /// The bitmap handle for this data.
     ///
     /// This is lazily initialized; a value of `None` indicates that
@@ -176,6 +181,17 @@ impl<'gc> BitmapData<'gc> {
         self.dirty = true;
     }
 
+    pub fn check_valid(&self) -> Result<(), crate::avm2::Error> {
+        if self.disposed() {
+            return Err("ArgumentError: Error #2015: Invalid BitmapData.".into());
+        }
+        Ok(())
+    }
+
+    pub fn disposed(&self) -> bool {
+        self.disposed
+    }
+
     pub fn dispose(&mut self, renderer: &mut dyn RenderBackend) {
         self.width = 0;
         self.height = 0;
@@ -186,6 +202,7 @@ impl<'gc> BitmapData<'gc> {
         }
         // There's no longer a handle to update
         self.dirty = false;
+        self.disposed = true;
     }
 
     pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
@@ -923,6 +940,7 @@ impl<'gc> BitmapData<'gc> {
                 transparency: true,
                 bitmap_handle: None,
                 avm2_object: None,
+                disposed: false,
             })
         } else {
             None
