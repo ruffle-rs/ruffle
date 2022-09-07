@@ -755,7 +755,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let mut frame = Frame::new(
             &self.descriptors.onscreen.pipelines,
             &self.descriptors,
-            &self.globals,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
             &frame_output,
             self.quad_vbo.slice(..),
@@ -771,6 +770,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let copy_encoder = if let Some(copy_srgb_bind_group) = &self.copy_srgb_bind_group {
             debug_assert!(self.copy_srgb_view.is_some());
             Some(frame.swap_srgb(
+                &self.globals,
                 copy_srgb_bind_group,
                 self.target.width() as f32,
                 self.target.height() as f32,
@@ -1071,7 +1071,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let mut frame = Frame::new(
             &self.descriptors.offscreen.pipelines,
             &self.descriptors,
-            &self.globals,
             UniformBuffer::new(&mut self.uniform_buffers_storage),
             &frame_output,
             self.quad_vbo.slice(..),
