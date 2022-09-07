@@ -130,9 +130,11 @@ impl TextureTarget {
     pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Result<Self, Error> {
         if size.0 > device.limits().max_texture_dimension_2d
             || size.1 > device.limits().max_texture_dimension_2d
+            || size.0 < 1
+            || size.1 < 1
         {
             return Err(format!(
-                "Texture target cannot be larger than {}px on either dimension (requested {} x {})",
+                "Texture target cannot be smaller than 1 or larger than {}px on either dimension (requested {} x {})",
                 device.limits().max_texture_dimension_2d,
                 size.0,
                 size.1
