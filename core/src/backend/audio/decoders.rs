@@ -1,17 +1,15 @@
 //! Audio decoders.
 
 mod adpcm;
-#[cfg(any(feature = "minimp3", feature = "symphonia"))]
+#[cfg(feature = "symphonia")]
 mod mp3;
 #[cfg(feature = "nellymoser")]
 mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
-#[cfg(feature = "minimp3")]
-pub use mp3::minimp3::{mp3_metadata, Mp3Decoder};
-#[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
-pub use mp3::symphonia::{mp3_metadata, Mp3Decoder};
+#[cfg(feature = "symphonia")]
+pub use mp3::{mp3_metadata, Mp3Decoder};
 #[cfg(feature = "nellymoser")]
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
@@ -23,13 +21,9 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[cfg(feature = "minimp3")]
-    #[error("Couldn't decode MP3 using minimp3")]
-    InvalidMp3(#[from] mp3::minimp3::Error),
-
-    #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
-    #[error("Couldn't decode MP3 using symphonia")]
-    InvalidMp3(#[from] mp3::symphonia::Error),
+    #[cfg(all(feature = "symphonia"))]
+    #[error("Couldn't decode MP3")]
+    InvalidMp3(#[from] mp3::Error),
 
     #[error("Couldn't decode ADPCM")]
     InvalidAdpcm(#[from] adpcm::Error),
@@ -75,7 +69,7 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
             format.is_stereo,
             format.sample_rate,
         )?),
-        #[cfg(any(feature = "minimp3", feature = "symphonia"))]
+        #[cfg(feature = "symphonia")]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(data)?),
         #[cfg(feature = "nellymoser")]
         AudioCompression::Nellymoser => {
