@@ -197,7 +197,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &descriptors.bitmap_bind_layout,
+                        layout: &descriptors.bind_layouts.bitmap,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -221,7 +221,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             (None, None)
         };
 
-        let mut globals = Globals::new(&descriptors.device, &descriptors.globals_layout);
+        let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
         globals.set_resolution(target.width(), target.height());
 
         let uniform_buffers_storage =
@@ -403,7 +403,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.gradient_bind_layout,
+                                layout: &self.descriptors.bind_layouts.gradient,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -478,7 +478,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         self.descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                layout: &self.descriptors.bitmap_bind_layout,
+                                layout: &self.descriptors.bind_layouts.bitmap,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
@@ -614,7 +614,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .device
                     .create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.descriptors.bitmap_bind_layout,
+                        layout: &self.descriptors.bind_layouts.bitmap,
                         entries: &[
                             wgpu::BindGroupEntry {
                                 binding: 0,
@@ -855,7 +855,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.bitmap_bind_layout,
+                layout: &self.descriptors.bind_layouts.bitmap,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,

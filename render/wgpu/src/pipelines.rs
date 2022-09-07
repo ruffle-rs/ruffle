@@ -1,3 +1,4 @@
+use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
@@ -107,18 +108,13 @@ impl ShapePipeline {
 }
 
 impl Pipelines {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         device: &wgpu::Device,
         shaders: &Shaders,
         surface_format: wgpu::TextureFormat,
         frame_buffer_format: wgpu::TextureFormat,
         msaa_sample_count: u32,
-        sampler_layout: &wgpu::BindGroupLayout,
-        globals_layout: &wgpu::BindGroupLayout,
-        dynamic_uniforms_layout: &wgpu::BindGroupLayout,
-        bitmap_bind_layout: &wgpu::BindGroupLayout,
-        gradient_bind_layout: &wgpu::BindGroupLayout,
+        bind_layouts: &BindLayouts,
     ) -> Self {
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
@@ -136,7 +132,7 @@ impl Pipelines {
             &shaders.color_shader,
             msaa_sample_count,
             &vertex_buffers_description,
-            &[globals_layout, dynamic_uniforms_layout],
+            &[&bind_layouts.globals, &bind_layouts.transforms],
         );
 
         let bitmap_pipelines = create_shape_pipeline(
@@ -147,10 +143,10 @@ impl Pipelines {
             msaa_sample_count,
             &vertex_buffers_description,
             &[
-                globals_layout,
-                dynamic_uniforms_layout,
-                &bitmap_bind_layout,
-                sampler_layout,
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.bitmap,
+                &bind_layouts.bitmap_sampler,
             ],
         );
 
@@ -162,9 +158,9 @@ impl Pipelines {
             msaa_sample_count,
             &vertex_buffers_description,
             &[
-                globals_layout,
-                dynamic_uniforms_layout,
-                &gradient_bind_layout,
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.gradient,
             ],
         );
 
@@ -172,10 +168,10 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
                 bind_group_layouts: &[
-                    globals_layout,
-                    dynamic_uniforms_layout,
-                    &bitmap_bind_layout,
-                    sampler_layout,
+                    &bind_layouts.globals,
+                    &bind_layouts.transforms,
+                    &bind_layouts.bitmap,
+                    &bind_layouts.bitmap_sampler,
                 ],
                 push_constant_ranges: &[],
             });
