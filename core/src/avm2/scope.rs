@@ -162,65 +162,30 @@ impl<'gc> ScopeChain<'gc> {
     }
 }
 
-/// Represents a ScopeStack to be used in the AVM2 activation. A new ScopeStack should be created
-/// per activation. A ScopeStack allows mutations, such as pushing new scopes, or popping scopes off.
-/// A ScopeStack should only ever be accessed by the activation it was created in.
-#[derive(Debug, Collect, Clone)]
-#[collect(no_drop)]
-pub struct ScopeStack<'gc> {
-    scopes: Vec<Scope<'gc>>,
-}
+/// Searches for a scope in the scope stack by a multiname.
+///
+/// The `global` parameter indicates whether we are on global$init (script initializer).
+/// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
+/// searched for dynamic properties.
+#[allow(clippy::collapsible_if)]
+pub fn search_scope_stack<'gc>(
+    scopes: &[Scope<'gc>],
+    multiname: &Multiname<'gc>,
+    global: bool,
+) -> Result<Option<Object<'gc>>, Error<'gc>> {
+    for (depth, scope) in scopes.iter().enumerate().rev() {
+        let values = scope.values();
 
-impl<'gc> ScopeStack<'gc> {
-    pub fn new() -> Self {
-        Self { scopes: Vec::new() }
-    }
-
-    pub fn clear(&mut self) {
-        self.scopes.clear();
-    }
-
-    pub fn push(&mut self, scope: Scope<'gc>) {
-        self.scopes.push(scope);
-    }
-
-    pub fn pop(&mut self) -> Option<Scope<'gc>> {
-        self.scopes.pop()
-    }
-
-    pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
-        self.scopes.get(index).cloned()
-    }
-
-    pub fn scopes(&self) -> &[Scope<'gc>] {
-        &self.scopes
-    }
-
-    /// Searches for a scope in this ScopeStack by a multiname.
-    ///
-    /// The `global` parameter indicates whether we are on global$init (script initializer).
-    /// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
-    /// searched for dynamic properties.
-    #[allow(clippy::collapsible_if)]
-    pub fn find(
-        &self,
-        multiname: &Multiname<'gc>,
-        global: bool,
-    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
-        for (depth, scope) in self.scopes.iter().enumerate().rev() {
-            let values = scope.values();
-
-            if values.has_trait(multiname) {
+        if values.has_trait(multiname) {
+            return Ok(Some(values));
+        } else if scope.with() || (global && depth == 0) {
+            // We search the dynamic properties if either conditions are met:
+            // 1. Scope is a `with` scope
+            // 2. We are at depth 0 AND we are at global$init (script initializer).
+            if values.has_own_property(multiname) {
                 return Ok(Some(values));
-            } else if scope.with() || (global && depth == 0) {
-                // We search the dynamic properties if either conditions are met:
-                // 1. Scope is a `with` scope
-                // 2. We are at depth 0 AND we are at global$init (script initializer).
-                if values.has_own_property(multiname) {
-                    return Ok(Some(values));
-                }
             }
         }
-        Ok(None)
     }
+    Ok(None)
 }
