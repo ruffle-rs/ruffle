@@ -71,9 +71,9 @@ pub struct ShapePipeline {
 
 #[derive(Debug)]
 pub struct Pipelines {
-    pub color_pipelines: ShapePipeline,
-    pub bitmap_pipelines: ShapePipeline,
-    pub gradient_pipelines: ShapePipeline,
+    pub color: ShapePipeline,
+    pub bitmap: ShapePipeline,
+    pub gradient: ShapePipeline,
 }
 
 impl ShapePipeline {
@@ -160,9 +160,9 @@ impl Pipelines {
         );
 
         Self {
-            color_pipelines,
-            bitmap_pipelines,
-            gradient_pipelines,
+            color: color_pipelines,
+            bitmap: bitmap_pipelines,
+            gradient: gradient_pipelines,
         }
     }
 }

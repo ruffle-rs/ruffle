@@ -55,7 +55,7 @@ impl<'a> Frame<'a> {
     pub fn prep_color(&mut self) {
         self.render_pass.set_pipeline(
             self.pipelines
-                .color_pipelines
+                .color
                 .pipeline_for(self.blend_mode, self.mask_state),
         );
     }
@@ -63,7 +63,7 @@ impl<'a> Frame<'a> {
     pub fn prep_gradient(&mut self, bind_group: &'a wgpu::BindGroup) {
         self.render_pass.set_pipeline(
             self.pipelines
-                .gradient_pipelines
+                .gradient
                 .pipeline_for(self.blend_mode, self.mask_state),
         );
 
@@ -78,7 +78,7 @@ impl<'a> Frame<'a> {
     ) {
         self.render_pass.set_pipeline(
             self.pipelines
-                .bitmap_pipelines
+                .bitmap
                 .pipeline_for(self.blend_mode, self.mask_state),
         );
 
