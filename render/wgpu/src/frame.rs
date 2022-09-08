@@ -150,4 +150,8 @@ impl<'a> Frame<'a> {
     pub fn mask_state(&self) -> MaskState {
         self.mask_state
     }
+
+    pub fn descriptors(&self) -> &Descriptors {
+        self.descriptors
+    }
 }

@@ -53,9 +53,16 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                     }),
                 ColorAdjustments::from(transform.color_transform),
             );
+            let descriptors = self.frame.descriptors();
+            let bind = texture.bind_group(
+                smoothing,
+                &descriptors.device,
+                &descriptors.bind_layouts.bitmap,
+                &descriptors.quad,
+                bitmap,
+            );
 
-            self.frame
-                .prep_bitmap(&texture.bind_group, false, smoothing);
+            self.frame.prep_bitmap(&bind.bind_group, false, smoothing);
 
             self.frame.draw(self.quad_vertices, self.quad_indices, 6);
         }
