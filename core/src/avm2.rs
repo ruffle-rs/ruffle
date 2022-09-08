@@ -63,6 +63,8 @@ pub use crate::avm2::object::{
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
+use self::scope::Scope;
+
 const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
 
 /// The state of an AVM2 interpreter.
@@ -71,6 +73,9 @@ const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstru
 pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
+
+    /// Scopes currently present of the scope stack.
+    scope_stack: Vec<Scope<'gc>>,
 
     /// The current call stack of the player.
     call_stack: GcCell<'gc, CallStack<'gc>>,
@@ -111,6 +116,7 @@ impl<'gc> Avm2<'gc> {
 
         Self {
             stack: Vec::new(),
+            scope_stack: Vec::new(),
             call_stack: GcCell::allocate(mc, CallStack::new()),
             globals,
             system_classes: None,
