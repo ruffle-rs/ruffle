@@ -13,6 +13,28 @@ macro_rules! create_debug_label {
     )
 }
 
+pub fn remove_srgb(format: wgpu::TextureFormat) -> wgpu::TextureFormat {
+    match format {
+        wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
+        wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
+        wgpu::TextureFormat::Bc1RgbaUnormSrgb => wgpu::TextureFormat::Bc1RgbaUnorm,
+        wgpu::TextureFormat::Bc2RgbaUnormSrgb => wgpu::TextureFormat::Bc2RgbaUnorm,
+        wgpu::TextureFormat::Bc3RgbaUnormSrgb => wgpu::TextureFormat::Bc3RgbaUnorm,
+        wgpu::TextureFormat::Bc7RgbaUnormSrgb => wgpu::TextureFormat::Bc7RgbaUnorm,
+        wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
+        wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
+        wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
+        wgpu::TextureFormat::Astc {
+            block,
+            channel: wgpu::AstcChannel::UnormSrgb,
+        } => wgpu::TextureFormat::Astc {
+            block,
+            channel: wgpu::AstcChannel::Unorm,
+        },
+        _ => format,
+    }
+}
+
 pub fn format_list<'a>(values: &[&'a str], connector: &'a str) -> Cow<'a, str> {
     match values.len() {
         0 => Cow::Borrowed(""),

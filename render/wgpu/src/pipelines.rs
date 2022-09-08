@@ -4,7 +4,7 @@ use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
 use wgpu::vertex_attr_array;
 
-const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
+pub const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
     array_stride: std::mem::size_of::<Vertex>() as u64,
     step_mode: wgpu::VertexStepMode::Vertex,
     attributes: &vertex_attr_array![
@@ -72,12 +72,8 @@ pub struct ShapePipeline {
 #[derive(Debug)]
 pub struct Pipelines {
     pub color_pipelines: ShapePipeline,
-
     pub bitmap_pipelines: ShapePipeline,
-
     pub gradient_pipelines: ShapePipeline,
-
-    pub copy_srgb_pipeline: wgpu::RenderPipeline,
 }
 
 impl ShapePipeline {
@@ -120,15 +116,14 @@ impl Pipelines {
     pub fn new(
         device: &wgpu::Device,
         shaders: &Shaders,
-        surface_format: wgpu::TextureFormat,
-        frame_buffer_format: wgpu::TextureFormat,
+        format: wgpu::TextureFormat,
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
         let color_pipelines = create_shape_pipeline(
             "Color",
             device,
-            frame_buffer_format,
+            format,
             &shaders.color_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
@@ -138,7 +133,7 @@ impl Pipelines {
         let bitmap_pipelines = create_shape_pipeline(
             "Bitmap",
             device,
-            frame_buffer_format,
+            format,
             &shaders.bitmap_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
@@ -153,7 +148,7 @@ impl Pipelines {
         let gradient_pipelines = create_shape_pipeline(
             "Gradient",
             device,
-            frame_buffer_format,
+            format,
             &shaders.gradient_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
@@ -164,37 +159,10 @@ impl Pipelines {
             ],
         );
 
-        let copy_texture_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
-                bind_group_layouts: &[
-                    &bind_layouts.globals,
-                    &bind_layouts.transforms,
-                    &bind_layouts.bitmap,
-                    &bind_layouts.bitmap_sampler,
-                ],
-                push_constant_ranges: &[],
-            });
-        let copy_srgb_pipeline = device.create_render_pipeline(&create_pipeline_descriptor(
-            create_debug_label!("Copy sRGB pipeline").as_deref(),
-            &shaders.copy_srgb_shader,
-            &shaders.copy_srgb_shader,
-            &copy_texture_pipeline_layout,
-            None,
-            &[Some(wgpu::ColorTargetState {
-                format: surface_format,
-                blend: Some(wgpu::BlendState::REPLACE),
-                write_mask: Default::default(),
-            })],
-            &VERTEX_BUFFERS_DESCRIPTION,
-            1,
-        ));
-
         Self {
             color_pipelines,
             bitmap_pipelines,
             gradient_pipelines,
-            copy_srgb_pipeline,
         }
     }
 }

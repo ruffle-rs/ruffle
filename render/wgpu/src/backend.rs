@@ -139,11 +139,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let surface = Surface::new(
             &descriptors,
-            descriptors.msaa_sample_count,
+            DEFAULT_SAMPLE_COUNT,
             target.width(),
             target.height(),
-            descriptors.surface_format,
-            descriptors.frame_buffer_format,
+            target.format(),
         );
 
         let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
@@ -213,13 +212,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
         // TODO: Allow the sample count to be set from command line/settings file.
-        Ok(Descriptors::new(
-            device,
-            queue,
-            info,
-            surface_format,
-            DEFAULT_SAMPLE_COUNT,
-        ))
+        Ok(Descriptors::new(device, queue, info, surface_format))
     }
 
     fn register_shape_internal(
@@ -279,14 +272,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             1,
         );
         self.target.resize(&self.descriptors.device, width, height);
-        self.surface = Surface::new(
-            &self.descriptors,
-            self.descriptors.msaa_sample_count,
-            width,
-            height,
-            self.descriptors.surface_format,
-            self.descriptors.frame_buffer_format,
-        );
+        self.surface = Surface::new(&self.descriptors, 4, width, height, self.target.format());
 
         self.globals.set_resolution(width, height);
         self.viewport_scale_factor = dimensions.scale_factor;
@@ -357,7 +343,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             &self.descriptors,
             &mut self.globals,
-            &self.descriptors.onscreen.pipelines,
             &mut self.uniform_buffers_storage,
             &self.meshes,
             &self.bitmap_registry,
@@ -576,10 +561,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         buffer_dimensions,
                         surface: Surface::new(
                             &self.descriptors,
-                            self.descriptors.msaa_sample_count,
+                            DEFAULT_SAMPLE_COUNT,
                             width,
                             height,
-                            wgpu::TextureFormat::Rgba8Unorm,
                             wgpu::TextureFormat::Rgba8Unorm,
                         ),
                     }
@@ -610,7 +594,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             &self.descriptors,
             &mut self.globals,
-            &self.descriptors.offscreen.pipelines,
             &mut self.uniform_buffers_storage,
             &self.meshes,
             &self.bitmap_registry,

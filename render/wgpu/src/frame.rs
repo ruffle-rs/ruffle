@@ -31,9 +31,12 @@ impl<'a> Frame<'a> {
         }
     }
 
-    pub fn prep_srgb_copy(&mut self, bind_group: &'a wgpu::BindGroup) {
-        self.render_pass
-            .set_pipeline(&self.pipelines.copy_srgb_pipeline);
+    pub fn prep_srgb_copy(
+        &mut self,
+        bind_group: &'a wgpu::BindGroup,
+        pipeline: &'a wgpu::RenderPipeline,
+    ) {
+        self.render_pass.set_pipeline(&pipeline);
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
         self.render_pass.set_bind_group(
