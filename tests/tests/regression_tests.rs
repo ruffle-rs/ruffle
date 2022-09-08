@@ -556,6 +556,7 @@ swf_tests! {
     (bevel_filter, "avm1/bevel_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
     (bitmap_data_compare, "avm1/bitmap_data_compare", 1),
+    (bitmap_data_copypixels, "avm1/bitmap_data_copypixels", 2, img = true),
     (bitmap_data_max_size_swf10, "avm1/bitmap_data_max_size_swf10", 1),
     (bitmap_data_max_size_swf9, "avm1/bitmap_data_max_size_swf9", 1),
     (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
