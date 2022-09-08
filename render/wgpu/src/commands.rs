@@ -60,9 +60,10 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                 &descriptors.bind_layouts.bitmap,
                 &descriptors.quad,
                 bitmap,
+                &descriptors.bitmap_samplers,
             );
 
-            self.frame.prep_bitmap(&bind.bind_group, false, smoothing);
+            self.frame.prep_bitmap(&bind.bind_group);
 
             self.frame.draw(self.quad_vertices, self.quad_indices, 6);
         }
@@ -97,11 +98,7 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                     self.frame.prep_gradient(bind_group);
                 }
                 DrawType::Bitmap { binds, .. } => {
-                    self.frame.prep_bitmap(
-                        &binds.bind_group,
-                        binds.is_repeating,
-                        binds.is_smoothed,
-                    );
+                    self.frame.prep_bitmap(&binds.bind_group);
                 }
             }
 

@@ -5,22 +5,10 @@ pub struct BindLayouts {
     pub bitmap: wgpu::BindGroupLayout,
     pub gradient: wgpu::BindGroupLayout,
     pub copy_srgb: wgpu::BindGroupLayout,
-    pub bitmap_sampler: wgpu::BindGroupLayout,
 }
 
 impl BindLayouts {
     pub fn new(device: &wgpu::Device) -> Self {
-        let bitmap_sampler_layout_label = create_debug_label!("Sampler layout");
-        let bitmap_sampler = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: bitmap_sampler_layout_label.as_deref(),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            }],
-        });
-
         let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
         let transforms = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -72,6 +60,12 @@ impl BindLayouts {
                         sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2,
                     },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
             ],
@@ -131,6 +125,12 @@ impl BindLayouts {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
             label: create_debug_label!("Copy sRGB bind group layout").as_deref(),
         });
@@ -141,7 +141,6 @@ impl BindLayouts {
             bitmap,
             gradient,
             copy_srgb,
-            bitmap_sampler,
         }
     }
 }

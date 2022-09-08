@@ -28,7 +28,7 @@ impl Descriptors {
     ) -> Self {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
-        let bitmap_samplers = BitmapSamplers::new(&device, &bind_layouts);
+        let bitmap_samplers = BitmapSamplers::new(&device);
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
 
@@ -64,7 +64,6 @@ impl Descriptors {
                                 &self.bind_layouts.globals,
                                 &self.bind_layouts.transforms,
                                 &self.bind_layouts.bitmap,
-                                &self.bind_layouts.bitmap_sampler,
                             ],
                             push_constant_ranges: &[],
                         });
