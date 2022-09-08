@@ -143,7 +143,7 @@ pub struct WebGlRenderBackend {
 
 struct RegistryData {
     bitmap: Bitmap,
-    texture_wrapper: Texture,
+    texture: WebGlTexture,
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -935,13 +935,9 @@ impl RenderBackend for WebGlRenderBackend {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
         if let Some(entry) = self.bitmap_registry.get(&bitmap) {
-            let bitmap = &entry.texture_wrapper;
-            let texture = &bitmap.texture;
             // Adjust the quad draw to use the target bitmap.
             let mesh = &self.meshes[self.bitmap_quad_shape.0];
             let draw = &mesh.draws[0];
-            let width = bitmap.width as f32;
-            let height = bitmap.height as f32;
             let bitmap_matrix = if let DrawType::Bitmap(BitmapDraw { matrix, .. }) = &draw.draw_type
             {
                 matrix
@@ -951,11 +947,10 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Scale the quad to the bitmap's dimensions.
             let matrix = transform.matrix
-                * ruffle_render::matrix::Matrix {
-                    a: width,
-                    d: height,
-                    ..Default::default()
-                };
+                * ruffle_render::matrix::Matrix::scale(
+                    entry.bitmap.width() as f32,
+                    entry.bitmap.height() as f32,
+                );
 
             let world_matrix = [
                 [matrix.a, matrix.b, 0.0, 0.0],
@@ -1003,7 +998,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Bind texture.
             self.gl.active_texture(Gl::TEXTURE0);
-            self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
+            self.gl.bind_texture(Gl::TEXTURE_2D, Some(&entry.texture));
             program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
             // Set texture parameters.
@@ -1135,7 +1130,7 @@ impl RenderBackend for WebGlRenderBackend {
                 }
                 DrawType::Bitmap(bitmap) => {
                     let texture = if let Some(entry) = self.bitmap_registry.get(&bitmap.handle) {
-                        &entry.texture_wrapper
+                        &entry.texture
                     } else {
                         // Bitmap not registered
                         continue;
@@ -1149,7 +1144,7 @@ impl RenderBackend for WebGlRenderBackend {
 
                     // Bind texture.
                     self.gl.active_texture(Gl::TEXTURE0);
-                    self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture.texture));
+                    self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
                     program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
                     // Set texture parameters.
@@ -1330,19 +1325,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        let width = bitmap.width();
-        let height = bitmap.height();
-        self.bitmap_registry.insert(
-            handle,
-            RegistryData {
-                bitmap,
-                texture_wrapper: Texture {
-                    width,
-                    height,
-                    texture,
-                },
-            },
-        );
+        self.bitmap_registry
+            .insert(handle, RegistryData { bitmap, texture });
 
         Ok(handle)
     }
@@ -1359,13 +1343,13 @@ impl RenderBackend for WebGlRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
-            &entry.texture_wrapper
+            &entry.texture
         } else {
             log::warn!("Tried to replace nonexistent texture");
             return Ok(handle);
         };
 
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture.texture));
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
 
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1384,12 +1368,6 @@ impl RenderBackend for WebGlRenderBackend {
 
         Ok(handle)
     }
-}
-
-struct Texture {
-    width: u32,
-    height: u32,
-    texture: WebGlTexture,
 }
 
 #[derive(Clone, Debug)]
