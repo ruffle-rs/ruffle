@@ -1,5 +1,7 @@
 use crate::bitmaps::BitmapSamplers;
+use crate::descriptors::Quad;
 use crate::globals::Globals;
+use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::surface::Surface;
 use crate::target::{RenderTarget, SwapChainTarget};
@@ -8,7 +10,8 @@ use crate::utils::{create_buffer_with_data, format_list, get_backend_names, Buff
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
-use ruffle_render::bitmap::Bitmap;
+use once_cell::sync::OnceCell;
+use ruffle_render::bitmap::{Bitmap, BitmapHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
 pub use wgpu;
@@ -188,8 +191,36 @@ struct Texture {
     width: u32,
     height: u32,
     texture: wgpu::Texture,
-    bind_group: wgpu::BindGroup,
+    bind_linear: OnceCell<BitmapBinds>,
+    bind_nearest: OnceCell<BitmapBinds>,
     texture_offscreen: Option<TextureOffscreen>,
+}
+
+impl Texture {
+    pub fn bind_group(
+        &self,
+        smoothed: bool,
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+        quad: &Quad,
+        handle: BitmapHandle,
+    ) -> &BitmapBinds {
+        let bind = match smoothed {
+            true => &self.bind_linear,
+            false => &self.bind_nearest,
+        };
+        bind.get_or_init(|| {
+            BitmapBinds::new(
+                &device,
+                &layout,
+                smoothed,
+                false,
+                &quad.texture_transforms,
+                self.texture.create_view(&Default::default()),
+                create_debug_label!("Bitmap {} bind group (smoothed: {})", handle.0, smoothed),
+            )
+        })
+    }
 }
 
 #[derive(Debug)]

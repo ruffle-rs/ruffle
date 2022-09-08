@@ -5,7 +5,7 @@ use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
     format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals, RegistryData,
-    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, TextureTransforms, Transforms,
+    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -413,32 +413,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let width = bitmap.width();
         let height = bitmap.height();
 
-        // Make bind group for bitmap quad.
-        let texture_view = texture.create_view(&Default::default());
-        let bind_group = self
-            .descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.bind_layouts.bitmap,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &self.descriptors.quad.texture_transforms,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                ],
-                label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
-            });
-
         if self
             .bitmap_registry
             .insert(
@@ -449,7 +423,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         width,
                         height,
                         texture,
-                        bind_group,
+                        bind_linear: Default::default(),
+                        bind_nearest: Default::default(),
                         texture_offscreen: None,
                     },
                 },
