@@ -9,6 +9,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cmp::Ordering;
 use swf::avm2::read::Reader;
 use swf::{DoAbc, DoAbcFlag};
 
@@ -346,7 +347,11 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Push a value onto the operand stack.
-    fn push(&mut self, value: impl Into<Value<'gc>>) {
+    fn push(&mut self, value: impl Into<Value<'gc>>, depth: usize, max: usize) {
+        if self.stack.len() - depth > max {
+            log::warn!("Avm2::push: Stack overflow");
+            return;
+        }
         let mut value = value.into();
         if let Value::Object(o) = value {
             if let Some(prim) = o.as_primitive() {
@@ -360,11 +365,14 @@ impl<'gc> Avm2<'gc> {
 
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().unwrap_or_else(|| {
-            log::warn!("Avm1::pop: Stack underflow");
-            Value::Undefined
-        });
+    fn pop(&mut self, depth: usize) -> Value<'gc> {
+        let value = match self.stack.len().cmp(&depth) {
+            Ordering::Equal | Ordering::Less => {
+                log::warn!("Avm2::pop: Stack underflow");
+                Value::Undefined
+            }
+            Ordering::Greater => self.stack.pop().unwrap_or(Value::Undefined),
+        };
 
         avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
 
@@ -388,10 +396,10 @@ impl<'gc> Avm2<'gc> {
         value
     }
 
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
+    fn pop_args(&mut self, arg_count: u32, depth: usize) -> Vec<Value<'gc>> {
         let mut args = vec![Value::Undefined; arg_count as usize];
         for arg in args.iter_mut().rev() {
-            *arg = self.pop();
+            *arg = self.pop(depth);
         }
         args
     }
