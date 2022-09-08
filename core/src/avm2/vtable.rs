@@ -33,7 +33,7 @@ pub struct VTableData<'gc> {
 
     /// Stores the `PropertyClass` for each slot,
     /// indexed by `slot_id`
-    slot_classes: Vec<PropertyClass<'gc>>,
+    pub slot_classes: Vec<PropertyClass<'gc>>,
 
     method_table: Vec<ClassBoundMethod<'gc>>,
 
@@ -148,6 +148,10 @@ impl<'gc> VTable<'gc> {
 
     pub fn default_slots(&self) -> Ref<Vec<Option<Value<'gc>>>> {
         Ref::map(self.0.read(), |v| &v.default_slots)
+    }
+
+    pub fn slot_classes(&self) -> Ref<Vec<PropertyClass<'gc>>> {
+        Ref::map(self.0.read(), |v| &v.slot_classes)
     }
 
     /// Calculate the flattened list of instance traits that this class

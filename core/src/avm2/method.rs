@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
+use crate::avm2::ClassObject;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
@@ -9,6 +10,8 @@ use crate::avm2::Multiname;
 use crate::string::AvmString;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::borrow::Cow;
+use std::cell::Cell;
+use std::cell::RefCell;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -118,6 +121,9 @@ pub struct BytecodeMethod<'gc> {
     /// The ABC method body this function uses.
     pub abc_method_body: Option<u32>,
 
+    pub try_optimize: Cell<bool>,
+    pub optimized_method_body: RefCell<Option<AbcMethodBody>>,
+
     /// The parameter signature of this method.
     pub signature: Vec<ParamConfig<'gc>>,
 
@@ -160,6 +166,8 @@ impl<'gc> BytecodeMethod<'gc> {
                         abc: txunit.abc(),
                         abc_method: abc_method.0,
                         abc_method_body: Some(index as u32),
+                        try_optimize: Cell::new(true),
+                        optimized_method_body: RefCell::new(None),
                         signature,
                         return_type,
                         is_function,
@@ -173,6 +181,8 @@ impl<'gc> BytecodeMethod<'gc> {
             abc: txunit.abc(),
             abc_method: abc_method.0,
             abc_method_body: None,
+            try_optimize: Cell::new(true),
+            optimized_method_body: RefCell::new(None),
             signature,
             return_type: Multiname::any(),
             is_function,
@@ -203,6 +213,213 @@ impl<'gc> BytecodeMethod<'gc> {
         } else {
             None
         }
+    }
+
+    #[inline(never)]
+    pub fn optimize(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        this_class: Option<ClassObject<'gc>>,
+    ) {
+        let this_class = if let Some(cls) = this_class { cls } else { return; };
+        if let Some(this) = activation.this() {
+            if !this.is_of_type(this_class, activation) { return; } // it's a static method
+        }
+
+        let body = self.body().unwrap();
+
+        let mut new_body = body.clone(); // todo skip cloning vec?
+        new_body.code.clear();
+        let mut writer = Writer::new(&mut new_body.code);
+
+        use swf::avm2::read::Reader;
+        use swf::avm2::write::Writer;
+        use swf::avm2::types::Op;
+        use crate::avm2::property::Property;
+        use crate::avm2::object::TObject;
+        use crate::avm2::property::resolve_class_private;
+        use crate::avm2::property::PropertyClass;
+        use crate::avm2::property::ResolveOutcome;
+
+        // idea:
+        // - record all jump targets (basic block edges)
+        // - create a set of valid optimizable locals
+        //   - local is optimizable if:
+        //     - its setLocal is always preceded by the same cast (and is not a jump target)
+        //     - if it's `this` (in an instance method) or typed argument, its type also needs to match
+        // - for every getlocal->get/set/init/callproperty pair:
+        //   - the *property op can be optimized if:
+        //     - local is a valid optimizable local
+        //     - the pair doesn't cross a jump target
+        //     - the *property op multiname is a static multiname
+        //     - the lookup succeeds in a valid replacement
+        //     - do a replacement:
+        //       - get/set/initproperty on slot -> get/set/init(?)slot
+        //       - get/set/initproperty on getter -> callmethod
+        //       - callproperty on method -> callmethod
+        //   - if the getproperty pair is followed by another *property:
+        //     - we can grab the property's type from `slot_classes`
+        //     - (again, need to make sure this doesn't cross a jump target)
+
+        // questions:
+        //  - are we sure initproperty ops behave the same? Maybe they just get optimized to setslot?
+
+        // missing parts in the current implementation:
+        // - anything regarding basic blocks
+        //   - more careful validation
+        //   - within basic blocks, we could track variables that are set to typed value and immediately
+        //     used, even if they aren't typed consistently across entire function, or not at all
+        // - a lot of checks end in a panic - they aren't supposed to be generated
+        //   by "normal" compilers so MVP treated them as sanity checks,
+        //   but generally they are supposed to disable optimizations for the local
+        //   (one example is a `coerce->setlocal` to a different type than variable's previous type)
+        // - set/initproperty
+        // - can there be holes in bytecode? Can we safely read_op() in a loop?
+
+        // longer term:
+        // - fancier patterns (`++this.thing`)
+        // - support optimizing in static methods?
+        //   - this might require ClassObject/vtable refactor
+        // - pretty sure this is also a good place for verification
+        // - refactor to not rely on current Activation state
+        //   - (it's extremely ugly that we grab `this_class` from activation
+        //      instead from method information itself,
+        //      and use runtime type of `this` to check if method is static)
+        // - allow generating smaller/bigger opcodes
+        //   - this requires recalculating all jump targets
+        //   - alternatively... just don't write bytecode at all and store Vec<Op>
+        //     this would remove read_op() overhead entirely
+
+        pub fn encoded_u30_len(mut n: u32) -> u32 {
+            // needed to calculate if new opcode will fit in space of previous opcode
+            let mut result = 0;
+            loop {
+                n >>= 7;
+                result += 1;
+                if n == 0 {
+                    break;
+                }
+            }
+            result
+        }
+
+        let mut local_types: Vec<Option<ClassObject<'gc>>> = vec![None; body.num_locals as usize];
+        local_types[0] = Some(this_class);
+
+        let signature = self.signature();
+        for (i, param) in signature.iter().enumerate() {
+            let param_type = activation.resolve_type(&param.param_type_name).unwrap();
+            local_types[i+1] = param_type;
+        }
+
+        let mut current_type: Option<ClassObject<'gc>> = None;
+        let mut reader = Reader::new(&body.code);
+        while let Ok(op) = reader.read_op() {
+            if let Op::Coerce { index: coerce_index } = op {
+                let multiname = self
+                    .translation_unit()
+                    .pool_maybe_uninitialized_multiname(coerce_index, activation.context.gc_context).unwrap();
+                if !multiname.has_lazy_component() {
+                    let cls = activation.resolve_type(&multiname).unwrap();
+                    current_type = cls;
+                }
+            } else if let Op::SetLocal { index: local_index } = op {
+                let local_index = local_index as usize;
+
+                if local_index < signature.len() + 1 {
+                    if local_types[local_index] != current_type {
+                        // todo: does verifier accept code like this?
+                        // if it does, we should just deoptimize (set type to None)
+                        panic!("arg {:?} does not match {:?}", local_types[local_index], current_type);
+                    }
+                } else {
+                    if local_types[local_index].is_some() && local_types[local_index] != current_type {
+                        // todo: does verifier accept code like this?
+                        // if it does, we should just deoptimize (set type to None)
+                        panic!("local {:?} does not match {:?}", local_types[local_index], current_type);
+                    }
+                    local_types[local_index] = current_type;
+                }
+                current_type = None;
+            }
+        }
+
+        let mut current_type: Option<ClassObject<'gc>> = None;
+        let mut reader = Reader::new(&body.code);
+        while let Ok(mut op) = reader.read_op() {
+            let mut old_len = 0;
+            let mut new_len = 0;
+            if let Op::GetLocal { index: local_index } = op {
+                current_type = local_types[local_index as usize];
+            } else if let Op::GetProperty { index: name_index } = op {
+                let cls = current_type;
+                current_type = None;
+                if let Some(cls) = cls {
+                    let multiname = self
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(name_index, activation.context.gc_context).unwrap();
+                    if !multiname.has_lazy_component() {
+                        match cls.instance_vtable().get_trait(&multiname) {
+                            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                                // we need to fit in previous opcode's encoding
+                                // thankfully it's true most of the time
+                                let name_len = encoded_u30_len(name_index.0);
+                                let slot_len = encoded_u30_len(slot_id);
+                                if slot_len <= name_len {
+                                    // todo: I hate this :D
+                                    // slot_classes _really_ shouldn't be this lazy,
+                                    // they should all be ready by the time class is instantiated, if not earlier
+                                    let new_cls = cls.instance_vtable().slot_classes()[slot_id as usize].clone();
+                                    match new_cls {
+                                        PropertyClass::Class(class) => { current_type = Some(class); },
+                                        PropertyClass::Name(gc) => {
+                                            let (name, unit) = &*gc;
+                                            let outcome = resolve_class_private(name, *unit, activation).unwrap();
+                                            if let ResolveOutcome::Class(class) = outcome {
+                                                current_type = Some(class);
+                                            }
+                                        }
+                                        PropertyClass::Any => {},
+                                    }
+
+                                    old_len = name_len;
+                                    new_len = slot_len;
+                                    op = Op::GetSlot { index: slot_id };
+                                }
+                            },
+                            Some(Property::Virtual { get: Some(get), .. }) => {
+                                let name_len = encoded_u30_len(name_index.0);
+                                let zero_len = encoded_u30_len(0);
+                                let meth_id_len = encoded_u30_len(get);
+                                // this usually works as often name_id > 127
+                                // but meth_id < 127 to it just about fits
+                                if name_len >= zero_len + meth_id_len {
+                                    old_len = name_len;
+                                    new_len = zero_len + meth_id_len;
+                                    op = Op::CallMethod { num_args: 0, index: Index::new(get) };
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            } else {
+                current_type = None;
+            }
+
+            writer.write_op(&op).expect("failed to write???");
+            if old_len > new_len {
+                for _ in 0..(old_len-new_len) {
+                    writer.write_op(&Op::Nop).expect("failed to write???");
+                }
+            }
+        }
+
+        if body.code.len() != new_body.code.len() {
+            panic!("size mismatch");
+        }
+
+        *self.optimized_method_body.borrow_mut() = Some(new_body);
     }
 
     /// Get the list of method params for this method.

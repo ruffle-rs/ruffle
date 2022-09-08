@@ -128,7 +128,7 @@ impl<'gc> PropertyClass<'gc> {
     }
 }
 
-enum ResolveOutcome<'gc> {
+pub enum ResolveOutcome<'gc> {
     Class(ClassObject<'gc>),
     Any,
     NotFound,
@@ -140,7 +140,7 @@ enum ResolveOutcome<'gc> {
 ///
 /// This is an internal operation used to resolve property type names.
 /// It does not correspond to any opcode or native method.
-fn resolve_class_private<'gc>(
+pub fn resolve_class_private<'gc>(
     name: &Multiname<'gc>,
     unit: Option<TranslationUnit<'gc>>,
     activation: &mut Activation<'_, 'gc, '_>,

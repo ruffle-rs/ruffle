@@ -253,7 +253,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// This returns an error if a type is named but does not exist; or if the
     /// typed named is not a class object.
-    fn resolve_type(
+    pub fn resolve_type(
         &mut self,
         type_name: &Multiname<'gc>,
     ) -> Result<Option<ClassObject<'gc>>, Error> {
@@ -630,6 +630,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.context.avm2
     }
 
+    pub fn this(&self) -> Option<Object<'gc>> {
+        self.this
+    }
+
     /// Set the return value.
     pub fn set_return_value(&mut self, value: Value<'gc>) {
         self.return_value = Some(value);
@@ -792,10 +796,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let body: Result<_, Error> = method
-            .body()
-            .ok_or_else(|| "Cannot execute non-native method without body".into());
-        let body = body?;
+
+        if method.try_optimize.get() {
+            method.optimize(self, self.subclass_object);
+            method.try_optimize.set(false);
+        }
+
+        let optimized = method.optimized_method_body.borrow();
+
+        let body = if let Some(optimized) = &*optimized {
+            optimized
+        } else {
+            let body: Result<_, Error> = method
+                .body()
+                .ok_or_else(|| "Cannot execute non-native method without body".into());
+            body?
+        };
+
         let mut reader = Reader::new(&body.code);
 
         loop {
@@ -1206,24 +1223,27 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         // The entire implementation of VTable assumes that
-        // call_method is never encountered. (see the long comment there)
+        // call_method is never encountered in SWF. (see the long comment there)
         // This was also the conlusion from analysing avmplus behavior - they
         // unconditionally VerifyError upon noticing it.
         // If we ever reach here, let's immediately panic instead of erroring,
         // so we get an issue report ASAP.
-        panic!("Call_method is not supported");
 
-        #[allow(unreachable_code)]
-        {
+        // TODO: do this in verifier, it's valid for optimizer to gen this
+
+        //panic!("Call_method is not supported");
+
+        //#[allow(unreachable_code)]
+        //{
             let args = self.context.avm2.pop_args(arg_count);
-            let receiver = self.context.avm2.pop().as_callable(self, None, None)?;
+            let receiver = self.context.avm2.pop().coerce_to_receiver(self, None)?;
 
             let value = receiver.call_method(index.0, &args, self)?;
 
             self.context.avm2.push(value);
 
             Ok(FrameControl::Continue)
-        }
+        //}
     }
 
     fn op_call_property(
