@@ -89,14 +89,12 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
                 DrawType::Gradient { bind_group, .. } => {
                     self.frame.prep_gradient(bind_group);
                 }
-                DrawType::Bitmap {
-                    is_repeating,
-                    is_smoothed,
-                    bind_group,
-                    ..
-                } => {
-                    self.frame
-                        .prep_bitmap(bind_group, *is_repeating, *is_smoothed);
+                DrawType::Bitmap { binds, .. } => {
+                    self.frame.prep_bitmap(
+                        &binds.bind_group,
+                        binds.is_repeating,
+                        binds.is_smoothed,
+                    );
                 }
             }
 

@@ -88,10 +88,7 @@ pub enum DrawType {
     },
     Bitmap {
         texture_transforms: wgpu::Buffer,
-        texture_view: wgpu::TextureView,
-        is_smoothed: bool,
-        is_repeating: bool,
-        bind_group: wgpu::BindGroup,
+        binds: BitmapBinds,
     },
 }
 
@@ -194,7 +191,7 @@ impl DrawType {
             .texture_wrapper
             .texture
             .create_view(&Default::default());
-        let tex_transforms_ubo = create_texture_transforms(
+        let texture_transforms = create_texture_transforms(
             &descriptors.device,
             &bitmap.matrix,
             create_debug_label!(
@@ -206,15 +203,48 @@ impl DrawType {
 
         let bind_group_label =
             create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
-        let bind_group = descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &descriptors.bind_layouts.bitmap,
+        let binds = BitmapBinds::new(
+            &descriptors.device,
+            &descriptors.bind_layouts.bitmap,
+            bitmap.is_smoothed,
+            bitmap.is_repeating,
+            &texture_transforms,
+            texture_view,
+            bind_group_label,
+        );
+
+        DrawType::Bitmap {
+            texture_transforms,
+            binds,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct BitmapBinds {
+    pub is_smoothed: bool,
+    pub is_repeating: bool,
+    pub bind_group: wgpu::BindGroup,
+}
+
+impl BitmapBinds {
+    pub fn new(
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+        is_smoothed: bool,
+        is_repeating: bool,
+        texture_transforms: &wgpu::Buffer,
+        texture_view: wgpu::TextureView,
+        label: Option<String>,
+    ) -> Self {
+        let bind_group =
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &tex_transforms_ubo,
+                            buffer: &texture_transforms,
                             offset: 0,
                             size: wgpu::BufferSize::new(
                                 std::mem::size_of::<TextureTransforms>() as u64
@@ -226,13 +256,11 @@ impl DrawType {
                         resource: wgpu::BindingResource::TextureView(&texture_view),
                     },
                 ],
-                label: bind_group_label.as_deref(),
+                label: label.as_deref(),
             });
-        DrawType::Bitmap {
-            texture_transforms: tex_transforms_ubo,
-            texture_view,
-            is_smoothed: bitmap.is_smoothed,
-            is_repeating: bitmap.is_repeating,
+        Self {
+            is_smoothed,
+            is_repeating,
             bind_group,
         }
     }
