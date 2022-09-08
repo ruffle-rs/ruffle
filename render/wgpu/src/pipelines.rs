@@ -4,6 +4,15 @@ use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
 use wgpu::vertex_attr_array;
 
+const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
+    array_stride: std::mem::size_of::<Vertex>() as u64,
+    step_mode: wgpu::VertexStepMode::Vertex,
+    attributes: &vertex_attr_array![
+        0 => Float32x2,
+        1 => Float32x4,
+    ],
+}];
+
 #[derive(Debug, Enum, Copy, Clone)]
 pub enum BlendMode {
     Normal,
@@ -116,22 +125,13 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
-        let vertex_buffers_description = [wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as u64,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &vertex_attr_array![
-                0 => Float32x2,
-                1 => Float32x4,
-            ],
-        }];
-
         let color_pipelines = create_shape_pipeline(
             "Color",
             device,
             frame_buffer_format,
             &shaders.color_shader,
             msaa_sample_count,
-            &vertex_buffers_description,
+            &VERTEX_BUFFERS_DESCRIPTION,
             &[&bind_layouts.globals, &bind_layouts.transforms],
         );
 
@@ -141,7 +141,7 @@ impl Pipelines {
             frame_buffer_format,
             &shaders.bitmap_shader,
             msaa_sample_count,
-            &vertex_buffers_description,
+            &VERTEX_BUFFERS_DESCRIPTION,
             &[
                 &bind_layouts.globals,
                 &bind_layouts.transforms,
@@ -156,7 +156,7 @@ impl Pipelines {
             frame_buffer_format,
             &shaders.gradient_shader,
             msaa_sample_count,
-            &vertex_buffers_description,
+            &VERTEX_BUFFERS_DESCRIPTION,
             &[
                 &bind_layouts.globals,
                 &bind_layouts.transforms,
@@ -186,7 +186,7 @@ impl Pipelines {
                 blend: Some(wgpu::BlendState::REPLACE),
                 write_mask: Default::default(),
             })],
-            &vertex_buffers_description,
+            &VERTEX_BUFFERS_DESCRIPTION,
             1,
         ));
 
