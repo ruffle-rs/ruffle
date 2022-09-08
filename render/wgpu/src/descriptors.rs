@@ -1,76 +1,22 @@
 use crate::layouts::BindLayouts;
+use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
 use crate::shaders::Shaders;
 use crate::{create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex};
-
-/// Contains data specific to a `RenderTarget`.
-/// We cannot re-use this data in `with_offscreen_backend`
-pub struct DescriptorsTargetData {
-    // These fields are specific to our `RenderTarget`, and
-    // cannot be re-used
-    pub pipelines: Pipelines,
-    pub msaa_sample_count: u32,
-}
-
-impl DescriptorsTargetData {
-    fn new(
-        device: &wgpu::Device,
-        shaders: &Shaders,
-        surface_format: wgpu::TextureFormat,
-        msaa_sample_count: u32,
-        bind_layouts: &BindLayouts,
-    ) -> Self {
-        // We want to render directly onto a linear render target to avoid any gamma correction.
-        // If our surface is sRGB, render to a linear texture and than copy over to the surface.
-        // Remove Srgb from texture format.
-        let frame_buffer_format = match surface_format {
-            wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
-            wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
-            wgpu::TextureFormat::Bc1RgbaUnormSrgb => wgpu::TextureFormat::Bc1RgbaUnorm,
-            wgpu::TextureFormat::Bc2RgbaUnormSrgb => wgpu::TextureFormat::Bc2RgbaUnorm,
-            wgpu::TextureFormat::Bc3RgbaUnormSrgb => wgpu::TextureFormat::Bc3RgbaUnorm,
-            wgpu::TextureFormat::Bc7RgbaUnormSrgb => wgpu::TextureFormat::Bc7RgbaUnorm,
-            wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
-            wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
-            wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
-            wgpu::TextureFormat::Astc {
-                block,
-                channel: wgpu::AstcChannel::UnormSrgb,
-            } => wgpu::TextureFormat::Astc {
-                block,
-                channel: wgpu::AstcChannel::Unorm,
-            },
-            _ => surface_format,
-        };
-
-        let pipelines = Pipelines::new(
-            device,
-            shaders,
-            surface_format,
-            frame_buffer_format,
-            msaa_sample_count,
-            bind_layouts,
-        );
-
-        DescriptorsTargetData {
-            pipelines,
-            msaa_sample_count,
-        }
-    }
-}
+use fnv::FnvHashMap;
+use std::sync::{Arc, Mutex};
 
 pub struct Descriptors {
     pub device: wgpu::Device,
     pub info: wgpu::AdapterInfo,
     pub limits: wgpu::Limits,
     pub surface_format: wgpu::TextureFormat,
-    pub frame_buffer_format: wgpu::TextureFormat,
     pub queue: wgpu::Queue,
     pub bitmap_samplers: BitmapSamplers,
-    pub msaa_sample_count: u32,
-    pub onscreen: DescriptorsTargetData,
-    pub offscreen: DescriptorsTargetData,
     pub bind_layouts: BindLayouts,
     pub quad: Quad,
+    copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
+    shaders: Shaders,
+    pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
 }
 
 impl Descriptors {
@@ -79,7 +25,6 @@ impl Descriptors {
         queue: wgpu::Queue,
         info: wgpu::AdapterInfo,
         surface_format: wgpu::TextureFormat,
-        msaa_sample_count: u32,
     ) -> Self {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
@@ -87,59 +32,100 @@ impl Descriptors {
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
 
-        // We want to render directly onto a linear render target to avoid any gamma correction.
-        // If our surface is sRGB, render to a linear texture and than copy over to the surface.
-        // Remove Srgb from texture format.
-        let frame_buffer_format = match surface_format {
-            wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
-            wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
-            wgpu::TextureFormat::Bc1RgbaUnormSrgb => wgpu::TextureFormat::Bc1RgbaUnorm,
-            wgpu::TextureFormat::Bc2RgbaUnormSrgb => wgpu::TextureFormat::Bc2RgbaUnorm,
-            wgpu::TextureFormat::Bc3RgbaUnormSrgb => wgpu::TextureFormat::Bc3RgbaUnorm,
-            wgpu::TextureFormat::Bc7RgbaUnormSrgb => wgpu::TextureFormat::Bc7RgbaUnorm,
-            wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
-            wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
-            wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
-            wgpu::TextureFormat::Astc {
-                block,
-                channel: wgpu::AstcChannel::UnormSrgb,
-            } => wgpu::TextureFormat::Astc {
-                block,
-                channel: wgpu::AstcChannel::Unorm,
-            },
-            _ => surface_format,
-        };
-
-        let onscreen = DescriptorsTargetData::new(
-            &device,
-            &shaders,
-            surface_format,
-            msaa_sample_count,
-            &bind_layouts,
-        );
-
-        let offscreen = DescriptorsTargetData::new(
-            &device,
-            &shaders,
-            wgpu::TextureFormat::Rgba8Unorm,
-            msaa_sample_count,
-            &bind_layouts,
-        );
-
         Self {
             device,
             info,
             limits,
             surface_format,
-            frame_buffer_format,
             queue,
             bitmap_samplers,
-            msaa_sample_count,
-            onscreen,
-            offscreen,
             bind_layouts,
             quad,
+            copy_srgb_pipeline: Default::default(),
+            shaders,
+            pipelines: Default::default(),
         }
+    }
+
+    pub fn copy_srgb_pipeline(&self, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
+        let mut pipelines = self
+            .copy_srgb_pipeline
+            .lock()
+            .expect("Pipelines should not be already locked");
+        pipelines
+            .entry(format)
+            .or_insert_with(|| {
+                let copy_texture_pipeline_layout =
+                    &self
+                        .device
+                        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                            label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
+                            bind_group_layouts: &[
+                                &self.bind_layouts.globals,
+                                &self.bind_layouts.transforms,
+                                &self.bind_layouts.bitmap,
+                                &self.bind_layouts.bitmap_sampler,
+                            ],
+                            push_constant_ranges: &[],
+                        });
+                Arc::new(
+                    self.device
+                        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                            label: create_debug_label!("Copy sRGB pipeline").as_deref(),
+                            layout: Some(&copy_texture_pipeline_layout),
+                            vertex: wgpu::VertexState {
+                                module: &self.shaders.copy_srgb_shader,
+                                entry_point: "main_vertex",
+                                buffers: &VERTEX_BUFFERS_DESCRIPTION,
+                            },
+                            fragment: Some(wgpu::FragmentState {
+                                module: &self.shaders.copy_srgb_shader,
+                                entry_point: "main_fragment",
+                                targets: &[Some(wgpu::ColorTargetState {
+                                    format,
+                                    blend: Some(wgpu::BlendState::REPLACE),
+                                    write_mask: Default::default(),
+                                })],
+                            }),
+                            primitive: wgpu::PrimitiveState {
+                                topology: wgpu::PrimitiveTopology::TriangleList,
+                                strip_index_format: None,
+                                front_face: wgpu::FrontFace::Ccw,
+                                cull_mode: None,
+                                polygon_mode: wgpu::PolygonMode::default(),
+                                unclipped_depth: false,
+                                conservative: false,
+                            },
+                            depth_stencil: None,
+                            multisample: wgpu::MultisampleState {
+                                count: 1,
+                                mask: !0,
+                                alpha_to_coverage_enabled: false,
+                            },
+                            multiview: None,
+                        }),
+                )
+            })
+            .clone()
+    }
+
+    pub fn pipelines(&self, msaa_sample_count: u32, format: wgpu::TextureFormat) -> Arc<Pipelines> {
+        let mut pipelines = self
+            .pipelines
+            .lock()
+            .expect("Pipelines should not be already locked");
+        pipelines
+            .entry((msaa_sample_count, format))
+            .or_insert_with(|| {
+                Arc::new(Pipelines::new(
+                    &self.device,
+                    &self.shaders,
+                    format,
+                    msaa_sample_count,
+                    &self.bind_layouts,
+                ))
+            })
+            .clone()
     }
 }
 

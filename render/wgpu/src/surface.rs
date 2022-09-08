@@ -5,6 +5,7 @@ use crate::layouts::BindLayouts;
 use crate::mesh::Mesh;
 use crate::surface::Surface::{Direct, DirectSrgb, Resolve, ResolveSrgb};
 use crate::uniform_buffer::BufferStorage;
+use crate::utils::remove_srgb;
 use crate::{
     create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, RegistryData,
     TextureTransforms, Transforms, UniformBuffer,
@@ -12,6 +13,7 @@ use crate::{
 use fnv::FnvHashMap;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::CommandList;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct FrameBuffer {
@@ -75,6 +77,7 @@ impl DepthTexture {
 pub struct Srgb {
     view: wgpu::TextureView,
     bind_group: wgpu::BindGroup,
+    copy_pipeline: Arc<wgpu::RenderPipeline>,
     _transforms_buffer: wgpu::Buffer,
     transforms_bind_group: wgpu::BindGroup,
 }
@@ -83,6 +86,7 @@ impl Srgb {
     pub fn new(
         device: &wgpu::Device,
         layouts: &BindLayouts,
+        copy_pipeline: Arc<wgpu::RenderPipeline>,
         quad: &Quad,
         format: wgpu::TextureFormat,
         width: u32,
@@ -157,6 +161,7 @@ impl Srgb {
         Self {
             view,
             bind_group,
+            copy_pipeline,
             _transforms_buffer: transforms_buffer,
             transforms_bind_group,
         }
@@ -169,6 +174,7 @@ impl Srgb {
         globals: &Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         uniform_encoder: &mut wgpu::CommandEncoder,
+        pipelines: &Pipelines,
     ) -> wgpu::CommandBuffer {
         let mut copy_encoder =
             descriptors
@@ -193,14 +199,14 @@ impl Srgb {
         srgb_render_pass.set_bind_group(1, &self.transforms_bind_group, &[0]);
 
         let mut srgb_frame = Frame::new(
-            &descriptors.onscreen.pipelines,
+            &pipelines,
             &descriptors,
             UniformBuffer::new(uniform_buffers_storage),
             srgb_render_pass,
             uniform_encoder,
         );
 
-        srgb_frame.prep_srgb_copy(&self.bind_group);
+        srgb_frame.prep_srgb_copy(&self.bind_group, &self.copy_pipeline);
         srgb_frame.draw(
             descriptors.quad.vertices.slice(..),
             descriptors.quad.indices.slice(..),
@@ -216,19 +222,23 @@ impl Srgb {
 pub enum Surface {
     Direct {
         depth: DepthTexture,
+        pipelines: Arc<Pipelines>,
     },
     DirectSrgb {
         srgb: Srgb,
         depth: DepthTexture,
+        pipelines: Arc<Pipelines>,
     },
     Resolve {
         frame_buffer: FrameBuffer,
         depth: DepthTexture,
+        pipelines: Arc<Pipelines>,
     },
     ResolveSrgb {
         frame_buffer: FrameBuffer,
         srgb: Srgb,
         depth: DepthTexture,
+        pipelines: Arc<Pipelines>,
     },
 }
 
@@ -239,8 +249,9 @@ impl Surface {
         width: u32,
         height: u32,
         surface_format: wgpu::TextureFormat,
-        frame_buffer_format: wgpu::TextureFormat,
     ) -> Self {
+        let frame_buffer_format = remove_srgb(surface_format);
+
         let frame_buffer = if msaa_sample_count > 1 {
             Some(FrameBuffer::new(
                 &descriptors.device,
@@ -257,6 +268,7 @@ impl Surface {
             Some(Srgb::new(
                 &descriptors.device,
                 &descriptors.bind_layouts,
+                descriptors.copy_srgb_pipeline(surface_format),
                 &descriptors.quad,
                 frame_buffer_format,
                 width,
@@ -267,19 +279,26 @@ impl Surface {
         };
 
         let depth = DepthTexture::new(&descriptors.device, msaa_sample_count, width, height);
+        let pipelines = descriptors.pipelines(msaa_sample_count, frame_buffer_format);
 
         match (frame_buffer, srgb) {
             (Some(frame_buffer), None) => Resolve {
                 frame_buffer,
                 depth,
+                pipelines,
             },
-            (None, None) => Direct { depth },
+            (None, None) => Direct { depth, pipelines },
             (Some(frame_buffer), Some(srgb)) => ResolveSrgb {
                 frame_buffer,
                 depth,
                 srgb,
+                pipelines,
             },
-            (None, Some(srgb)) => DirectSrgb { depth, srgb },
+            (None, Some(srgb)) => DirectSrgb {
+                depth,
+                srgb,
+                pipelines,
+            },
         }
     }
 
@@ -313,6 +332,15 @@ impl Surface {
         }
     }
 
+    pub fn pipelines(&self) -> &Pipelines {
+        match self {
+            Direct { pipelines, .. } => pipelines,
+            DirectSrgb { pipelines, .. } => pipelines,
+            Resolve { pipelines, .. } => pipelines,
+            ResolveSrgb { pipelines, .. } => pipelines,
+        }
+    }
+
     pub fn copy_srgb(
         &self,
         frame: &wgpu::TextureView,
@@ -329,6 +357,7 @@ impl Surface {
                 globals,
                 uniform_buffers_storage,
                 uniform_encoder,
+                self.pipelines(),
             )),
             Resolve { .. } => None,
             ResolveSrgb { srgb, .. } => Some(srgb.copy_srgb(
@@ -337,6 +366,7 @@ impl Surface {
                 globals,
                 uniform_buffers_storage,
                 uniform_encoder,
+                self.pipelines(),
             )),
         }
     }
@@ -348,7 +378,6 @@ impl Surface {
         clear_color: wgpu::Color,
         descriptors: &Descriptors,
         globals: &mut Globals,
-        pipelines: &Pipelines,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
         bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
@@ -398,7 +427,7 @@ impl Surface {
 
         uniform_buffers_storage.recall();
         let mut frame = Frame::new(
-            &pipelines,
+            &self.pipelines(),
             &descriptors,
             UniformBuffer::new(uniform_buffers_storage),
             render_pass,
