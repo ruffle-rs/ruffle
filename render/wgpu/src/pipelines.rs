@@ -141,7 +141,6 @@ impl Pipelines {
                 &bind_layouts.globals,
                 &bind_layouts.transforms,
                 &bind_layouts.bitmap,
-                &bind_layouts.bitmap_sampler,
             ],
         );
 

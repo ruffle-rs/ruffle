@@ -204,6 +204,7 @@ impl Texture {
         layout: &wgpu::BindGroupLayout,
         quad: &Quad,
         handle: BitmapHandle,
+        samplers: &BitmapSamplers,
     ) -> &BitmapBinds {
         let bind = match smoothed {
             true => &self.bind_linear,
@@ -213,8 +214,7 @@ impl Texture {
             BitmapBinds::new(
                 &device,
                 &layout,
-                smoothed,
-                false,
+                samplers.get_sampler(false, smoothed),
                 &quad.texture_transforms,
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {} bind group (smoothed: {})", handle.0, smoothed),

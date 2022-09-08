@@ -33,18 +33,12 @@ These should be set for the current mesh being rendered.
 |   0   | uniform | World matrix and color adjustments |
 
 # Bitmaps
-**TODO**: These two groups should be merged.
-
 ## Group 2: Texture transforms
 | Index | Type       | Description                          |
 |:-----:|------------|:-------------------------------------|
 |   0   | uniform    | Transformation matrix of the texture |
 |   1   | texture_2d | Texture to be drawn                  |
-
-## Group 3: Sampler
-| Index | Type    | Description                  |
-|:-----:|---------|:-----------------------------|
-|   0   | sampler | Sampler used for the texture |
+|   2   | sampler    | Sampler used for the texture         |
 
 # Gradient
 ## Group 2: Texture transforms

@@ -206,8 +206,9 @@ impl DrawType {
         let binds = BitmapBinds::new(
             &descriptors.device,
             &descriptors.bind_layouts.bitmap,
-            bitmap.is_smoothed,
-            bitmap.is_repeating,
+            descriptors
+                .bitmap_samplers
+                .get_sampler(bitmap.is_smoothed, bitmap.is_repeating),
             &texture_transforms,
             texture_view,
             bind_group_label,
@@ -222,8 +223,6 @@ impl DrawType {
 
 #[derive(Debug)]
 pub struct BitmapBinds {
-    pub is_smoothed: bool,
-    pub is_repeating: bool,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -231,8 +230,7 @@ impl BitmapBinds {
     pub fn new(
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
-        is_smoothed: bool,
-        is_repeating: bool,
+        sampler: &wgpu::Sampler,
         texture_transforms: &wgpu::Buffer,
         texture_view: wgpu::TextureView,
         label: Option<String>,
@@ -255,14 +253,14 @@ impl BitmapBinds {
                         binding: 1,
                         resource: wgpu::BindingResource::TextureView(&texture_view),
                     },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
                 ],
                 label: label.as_deref(),
             });
-        Self {
-            is_smoothed,
-            is_repeating,
-            bind_group,
-        }
+        Self { bind_group }
     }
 }
 

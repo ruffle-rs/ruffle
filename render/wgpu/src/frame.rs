@@ -39,13 +39,6 @@ impl<'a> Frame<'a> {
         self.render_pass.set_pipeline(&pipeline);
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
-        self.render_pass.set_bind_group(
-            3,
-            self.descriptors
-                .bitmap_samplers
-                .get_bind_group(false, false),
-            &[],
-        );
     }
 
     pub fn finish(self) {
@@ -70,12 +63,7 @@ impl<'a> Frame<'a> {
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
-    pub fn prep_bitmap(
-        &mut self,
-        bind_group: &'a wgpu::BindGroup,
-        is_repeating: bool,
-        is_smoothed: bool,
-    ) {
+    pub fn prep_bitmap(&mut self, bind_group: &'a wgpu::BindGroup) {
         self.render_pass.set_pipeline(
             self.pipelines
                 .bitmap
@@ -83,13 +71,6 @@ impl<'a> Frame<'a> {
         );
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
-        self.render_pass.set_bind_group(
-            3,
-            self.descriptors
-                .bitmap_samplers
-                .get_bind_group(is_repeating, is_smoothed),
-            &[],
-        );
     }
 
     pub fn draw(

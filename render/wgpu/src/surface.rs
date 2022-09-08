@@ -83,9 +83,11 @@ pub struct Srgb {
 }
 
 impl Srgb {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         device: &wgpu::Device,
         layouts: &BindLayouts,
+        sampler: &wgpu::Sampler,
         copy_pipeline: Arc<wgpu::RenderPipeline>,
         quad: &Quad,
         format: wgpu::TextureFormat,
@@ -123,6 +125,10 @@ impl Srgb {
                     wgpu::BindGroupEntry {
                         binding: 1,
                         resource: wgpu::BindingResource::TextureView(&view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
                     },
                 ],
                 label: create_debug_label!("Copy sRGB bind group").as_deref(),
@@ -268,6 +274,7 @@ impl Surface {
             Some(Srgb::new(
                 &descriptors.device,
                 &descriptors.bind_layouts,
+                &descriptors.bitmap_samplers.get_sampler(false, false),
                 descriptors.copy_srgb_pipeline(surface_format),
                 &descriptors.quad,
                 frame_buffer_format,
