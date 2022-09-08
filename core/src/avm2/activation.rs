@@ -140,6 +140,18 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// and we will not allocate a class for one.
     activation_class: Option<ClassObject<'gc>>,
 
+    /// The index where the stack frame starts.
+    stack_depth: usize,
+
+    /// The index where the scope frame starts.
+    scope_depth: usize,
+
+    /// Maximum size for the stack frame.
+    max_stack_size: usize,
+
+    /// Maximum size for the scope frame.
+    max_scope_size: usize,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
 
@@ -167,6 +179,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: context.avm2.globals,
             subclass_object: None,
             activation_class: None,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: 0,
+            max_stack_size: 0,
+            max_scope_size: 0,
             context,
         }
     }
@@ -179,13 +195,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
-        let num_locals = match method {
-            Method::Native { .. } => 0,
+        let (num_locals, max_stack, max_scope) = match method {
+            Method::Native { .. } => (0, 0, 0),
             Method::Bytecode(bytecode) => {
-                let body: Result<_, Error<'gc>> = bytecode.body().ok_or_else(|| {
-                    "Cannot execute non-native method (for script) without body".into()
-                });
-                body?.num_locals
+                let body = bytecode
+                    .body()
+                    .ok_or("Cannot execute non-native method (for script) without body")?;
+                (
+                    body.num_locals,
+                    body.max_stack,
+                    body.max_scope_depth - body.init_scope_depth,
+                )
             }
         };
         let mut local_registers = RegisterSet::new(num_locals + 1);
@@ -204,6 +224,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: domain,
             subclass_object: None,
             activation_class: None,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: 0,
+            max_stack_size: max_stack as usize,
+            max_scope_size: max_scope as usize,
             context,
         })
     }
@@ -436,6 +460,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: outer.domain(),
             subclass_object,
             activation_class,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: 0,
+            max_stack_size: body.max_stack as usize,
+            max_scope_size: (body.max_scope_depth - body.init_scope_depth) as usize,
             context,
         };
 
@@ -519,6 +547,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain,
             subclass_object,
             activation_class: None,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: 0,
+            max_stack_size: 0,
+            max_scope_size: 0,
             context,
         })
     }
