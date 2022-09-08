@@ -459,6 +459,7 @@ macro_rules! impl_display_object_container {
 
             child.set_place_frame(context.gc_context, 0);
             child.set_parent(context.gc_context, Some((*self).into()));
+            child.set_removed(context.gc_context, false);
 
             self.0
                 .write(context.gc_context)
