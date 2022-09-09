@@ -681,6 +681,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.avm2().pop_args(arg_count, stack_depth)
     }
 
+    pub fn push_scope(&mut self, scope: Scope<'gc>) {
+        let scope_depth = self.scope_depth;
+        let max_scope_size = self.max_scope_size;
+        self.avm2().push_scope(scope, scope_depth, max_scope_size)
+    }
+
+    pub fn pop_scope(&mut self) -> Option<Scope<'gc>> {
+        let scope_depth = self.scope_depth;
+        self.avm2().pop_scope(scope_depth)
+    }
+
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
@@ -1656,20 +1667,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_push_scope(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.pop_stack().coerce_to_object(self)?;
-        self.avm2().scope_stack.push(Scope::new(object));
+        self.push_scope(Scope::new(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_push_with(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.pop_stack().coerce_to_object(self)?;
-        self.avm2().scope_stack.push(Scope::new_with(object));
+        self.push_scope(Scope::new_with(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_pop_scope(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.avm2().scope_stack.pop();
+        self.pop_scope();
 
         Ok(FrameControl::Continue)
     }
