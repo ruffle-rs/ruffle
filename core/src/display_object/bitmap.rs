@@ -248,32 +248,30 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if let (Some(bitmap_data), Some(bitmap_handle)) =
-            (&self.0.read().bitmap_data, self.0.read().bitmap_handle)
-        {
-            let bd = bitmap_data.read();
-            if bd.dirty() {
-                let _ = context.renderer.update_texture(
-                    bitmap_handle,
-                    bd.width(),
-                    bd.height(),
-                    bd.pixels_rgba(),
-                );
-                drop(bd);
-                bitmap_data.write(context.gc_context).set_dirty(false);
-            }
-        }
-    }
-
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }
 
         let bitmap_data = self.0.read();
-        if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
+        if let (Some(bitmap_handle), Some(inner_bitmap_data)) =
+            (bitmap_data.bitmap_handle, bitmap_data.bitmap_data)
+        {
+            let bd = inner_bitmap_data.read();
+            if bd.dirty() {
+                if let Err(e) = context.renderer.update_texture(
+                    bitmap_handle,
+                    bd.width(),
+                    bd.height(),
+                    bd.pixels_rgba(),
+                ) {
+                    log::error!("Failed to update dirty bitmap {:?}: {:?}", bitmap_handle, e);
+                }
+                drop(bd);
+                inner_bitmap_data.write(context.gc_context).set_dirty(false);
+            }
+
             context.renderer.render_bitmap(
                 bitmap_handle,
                 context.transform_stack.transform(),
