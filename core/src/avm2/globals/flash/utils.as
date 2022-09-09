@@ -9,4 +9,5 @@ package flash.utils {
 	public native function setTimeout(closure:Function, delay:Number, ... arguments):uint;
 	public native function clearTimeout(id:uint):void;
 	public native function escapeMultiByte(s:String):String;
+	public native function unescapeMultiByte(s:String):String;
 }
