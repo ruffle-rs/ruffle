@@ -444,12 +444,6 @@ pub fn load_player_globals<'gc>(
         flash::system::application_domain::create_class(mc),
         script
     );
-    class(
-        activation,
-        flash::system::capabilities::create_class(mc),
-        script,
-    )?;
-    class(activation, flash::system::system::create_class(mc), script)?;
 
     class(
         activation,
