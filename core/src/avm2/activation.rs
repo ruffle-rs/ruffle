@@ -692,6 +692,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.avm2().pop_scope(scope_depth)
     }
 
+    pub fn clear_stack(&mut self) {
+        let stack_depth = self.stack_depth;
+        self.avm2().stack.truncate(stack_depth)
+    }
+
+    pub fn clear_scope(&mut self) {
+        let scope_depth = self.scope_depth;
+        self.avm2().scope_stack.truncate(scope_depth)
+    }
+
     /// Get the superclass of the class that defined the currently-executing
     /// method, if it exists.
     ///
@@ -891,10 +901,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     }
 
                     if matches {
+                        self.clear_stack();
                         self.push_stack(error);
 
-                        let scope_depth = self.scope_depth;
-                        self.avm2().scope_stack.truncate(scope_depth);
+                        self.clear_scope();
                         reader.seek_absolute(full_data, e.target_offset as usize);
                         return Ok(FrameControl::Continue);
                     }
