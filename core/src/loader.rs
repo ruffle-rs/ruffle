@@ -865,7 +865,9 @@ impl<'gc> Loader<'gc> {
                     mc.replace_with_movie(uc, None, None);
                 }
 
-                Loader::movie_loader_start(handle, uc)
+                // NOTE: We do NOT call `movie_loader_start` as `loadBytes` does
+                // not emit `open`
+                Ok(())
             })?;
 
             let sniffed_type = ContentType::sniff(&bytes);
