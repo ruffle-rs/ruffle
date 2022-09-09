@@ -167,7 +167,6 @@ impl<'gc> ScopeChain<'gc> {
 /// The `global` parameter indicates whether we are on global$init (script initializer).
 /// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
 /// searched for dynamic properties.
-#[allow(clippy::collapsible_if)]
 pub fn search_scope_stack<'gc>(
     scopes: &[Scope<'gc>],
     multiname: &Multiname<'gc>,
