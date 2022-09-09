@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{textformat_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::ecma_conversions::round_to_even;
@@ -489,11 +490,10 @@ fn set_tab_stops<'gc>(
             let tab_stops: Result<Vec<_>, Error> = (0..length)
                 .map(|i| {
                     let element = object.get_property(
-                        &QName::new(
-                            Namespace::public(),
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                        )
-                        .into(),
+                        &Multiname::public(AvmString::new_utf8(
+                            activation.context.gc_context,
+                            i.to_string(),
+                        )),
                         activation,
                     )?;
                     Ok(round_to_even(element.coerce_to_number(activation)?).into())
@@ -573,7 +573,7 @@ fn set_url<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "TextFormat"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<TextFormat instance initializer>", mc),
         Method::from_builtin(class_init, "<TextFormat class initializer>", mc),
         mc,

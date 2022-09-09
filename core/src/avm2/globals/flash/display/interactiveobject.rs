@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
@@ -142,8 +143,8 @@ fn set_context_menu<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls_name = QName::new(Namespace::package("flash.display"), "NativeMenu");
-        let cls = activation.resolve_class(&cls_name.into())?;
+        let cls_name = Multiname::new(Namespace::package("flash.display"), "NativeMenu");
+        let cls = activation.resolve_class(&cls_name)?;
         let value = args
             .get(0)
             .cloned()
@@ -159,7 +160,10 @@ fn set_context_menu<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "InteractiveObject"),
-        Some(QName::new(Namespace::package("flash.display"), "DisplayObject").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObject",
+        )),
         Method::from_builtin(
             instance_init,
             "<InteractiveObject instance initializer>",

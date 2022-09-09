@@ -267,7 +267,7 @@ fn value_of<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "uint"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<uint instance initializer>", mc),
         Method::from_builtin(class_init, "<uint class initializer>", mc),
         mc,
@@ -278,10 +278,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_native_instance_init(Method::from_builtin_and_params(
         native_instance_init,
         "<uint native instance initializer>",
-        vec![ParamConfig::of_type(
-            "num",
-            QName::new(Namespace::public(), "Object").into(),
-        )],
+        vec![ParamConfig::of_type("num", Multiname::public("Object"))],
         false,
         mc,
     ));

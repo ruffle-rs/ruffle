@@ -78,12 +78,12 @@ macro_rules! define_indirect_properties {
                     this: Option<Object<'gc>>,
                     _args: &[Value<'gc>]
                 ) -> Result<Value<'gc>, Error> {
-                    use crate::avm2::QName;
+                    use crate::avm2::Multiname;
                     use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 
                     if let Some(this) = this {
                         return this.get_property(
-                            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), $name).into(),
+                            &Multiname::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), $name),
                             activation,
                         );
                     }
@@ -97,7 +97,7 @@ macro_rules! define_indirect_properties {
 
                 $self.define_instance_trait(Trait::from_slot(
                     QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), $name),
-                    QName::new(Namespace::Package($type_ns.into()), $type_name).into(),
+                    Multiname::new(Namespace::Package($type_ns.into()), $type_name),
                     None,
                 ));
             })();
@@ -590,7 +590,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::public(), "String").into(),
+                Multiname::public("String"),
                 Some(value.into()),
             ));
         }
@@ -600,7 +600,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::public(), "Number").into(),
+                Multiname::public("Number"),
                 Some(value.into()),
             ));
         }
@@ -610,7 +610,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::public(), "uint").into(),
+                Multiname::public("uint"),
                 Some(value.into()),
             ));
         }
@@ -620,7 +620,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::public(), "int").into(),
+                Multiname::public("int"),
                 Some(value.into()),
             ));
         }
@@ -749,7 +749,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::public(), "Number").into(),
+                Multiname::public("Number"),
                 value.map(|v| v.into()),
             ));
         }
@@ -763,7 +763,7 @@ impl<'gc> Class<'gc> {
         for &(name, type_ns, type_name) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(Namespace::public(), name),
-                QName::new(Namespace::Package(type_ns.into()), type_name).into(),
+                Multiname::new(Namespace::Package(type_ns.into()), type_name),
                 None,
             ));
         }
@@ -791,7 +791,7 @@ impl<'gc> Class<'gc> {
         for &(ns, name, type_ns, type_name) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(Namespace::Private(ns.into()), name),
-                QName::new(Namespace::Package(type_ns.into()), type_name).into(),
+                Multiname::new(Namespace::Package(type_ns.into()), type_name),
                 None,
             ));
         }

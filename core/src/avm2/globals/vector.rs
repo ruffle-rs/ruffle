@@ -102,7 +102,7 @@ pub fn class_init<'gc>(
         //at this point Vector hasn't actually been defined yet. It doesn't
         //matter because we only have one script for our globals.
         let (_, script) = domain
-            .get_defining_script(&QName::new(Namespace::public(), "Object").into())?
+            .get_defining_script(&Multiname::public("Object"))?
             .unwrap();
 
         let class_class = activation.avm2().classes().class;
@@ -181,7 +181,7 @@ pub fn specialized_class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let mut proto = this
-            .get_property(&QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&Multiname::public("prototype"), activation)?
             .as_object()
             .ok_or_else(|| {
                 format!(
@@ -214,7 +214,7 @@ pub fn specialized_class_init<'gc>(
         ];
         for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
             proto.set_property(
-                &QName::dynamic_name(*pubname).into(),
+                &Multiname::public(*pubname),
                 FunctionObject::from_function(
                     activation,
                     Method::from_builtin(*func, *pubname, activation.context.gc_context),
@@ -437,11 +437,7 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
-            o.call_property(
-                &QName::new(Namespace::public(), "toLocaleString").into(),
-                &[],
-                act,
-            )
+            o.call_property(&Multiname::public("toLocaleString"), &[], act)
         } else {
             Ok(v)
         }
@@ -596,10 +592,7 @@ pub fn index_of<'gc>(
 
         let from_index = if from_index < 0 {
             let length = this
-                .get_property(
-                    &QName::new(Namespace::public(), "length").into(),
-                    activation,
-                )?
+                .get_property(&Multiname::public("length"), activation)?
                 .coerce_to_i32(activation)?;
             max(length + from_index, 0) as u32
         } else {
@@ -636,10 +629,7 @@ pub fn last_index_of<'gc>(
 
         let from_index = if from_index < 0 {
             let length = this
-                .get_property(
-                    &QName::new(Namespace::public(), "length").into(),
-                    activation,
-                )?
+                .get_property(&Multiname::public("length"), activation)?
                 .coerce_to_i32(activation)?;
             max(length + from_index, 0) as u32
         } else {
@@ -1019,7 +1009,7 @@ pub fn splice<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package(NS_VECTOR), "Vector"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Vector instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector class initializer>", mc),
         mc,

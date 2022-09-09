@@ -6,6 +6,7 @@ use crate::avm2::object::{regexp_allocator, ArrayObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
@@ -233,16 +234,12 @@ pub fn exec<'gc>(
             let object = ArrayObject::from_storage(activation, storage)?;
 
             object.set_property_local(
-                &QName::new(Namespace::public(), "index").into(),
+                &Multiname::public("index"),
                 Value::Number(index as f64),
                 activation,
             )?;
 
-            object.set_property_local(
-                &QName::new(Namespace::public(), "input").into(),
-                text.into(),
-                activation,
-            )?;
+            object.set_property_local(&Multiname::public("input"), text.into(), activation)?;
 
             return Ok(object.into());
         }
@@ -274,17 +271,13 @@ pub fn test<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "RegExp"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin_and_params(
             instance_init,
             "<RegExp instance initializer>",
             vec![
-                ParamConfig::optional("re", QName::new(Namespace::public(), "String").into(), ""),
-                ParamConfig::optional(
-                    "flags",
-                    QName::new(Namespace::public(), "String").into(),
-                    "",
-                ),
+                ParamConfig::optional("re", Multiname::public("String"), ""),
+                ParamConfig::optional("flags", Multiname::public("String"), ""),
             ],
             false,
             mc,

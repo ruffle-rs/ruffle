@@ -10,6 +10,7 @@ use crate::avm2::method::Method;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
@@ -36,7 +37,7 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     Class::new(
         QName::new(Namespace::public(), "global"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
         Method::from_builtin(class_init, "<global class initializer>", mc),
         mc,

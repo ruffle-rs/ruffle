@@ -8,7 +8,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::QName;
+use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -51,10 +51,10 @@ impl<'gc> ErrorObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error> {
         let name = self
-            .get_property(&QName::dynamic_name("name").into(), activation)?
+            .get_property(&Multiname::public("name"), activation)?
             .coerce_to_string(activation)?;
         let message = self
-            .get_property(&QName::dynamic_name("message").into(), activation)?
+            .get_property(&Multiname::public("message"), activation)?
             .coerce_to_string(activation)?;
         if message.is_empty() {
             return Ok(name);

@@ -4,8 +4,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -381,7 +381,7 @@ pub fn dispatch_event_to_target<'gc>(
     );
     let dispatch_list = target
         .get_property(
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
+            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
             activation,
         )?
         .as_object();
@@ -438,7 +438,7 @@ pub fn dispatch_event<'gc>(
 ) -> Result<bool, Error> {
     let target = this
         .get_property(
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
+            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
             activation,
         )?
         .as_object()

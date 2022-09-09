@@ -7,6 +7,7 @@ use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
@@ -613,7 +614,7 @@ fn to_upper_case<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "String"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<String instance initializer>", mc),
         Method::from_builtin(class_init, "<String class initializer>", mc),
         mc,

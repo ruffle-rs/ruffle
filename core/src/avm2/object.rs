@@ -573,7 +573,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let name = self
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        self.get_property(&QName::dynamic_name(name).into(), activation)
+        self.get_property(&Multiname::public(name), activation)
     }
 
     /// Determine if a property is currently enumerable.
@@ -783,7 +783,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: Object<'gc>,
     ) -> Result<bool, Error> {
         let type_proto = class
-            .get_property(&QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&Multiname::public("prototype"), activation)?
             .as_object();
 
         if let Some(type_proto) = type_proto {

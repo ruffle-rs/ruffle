@@ -172,7 +172,7 @@ fn set_prototype<'gc>(
 pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,

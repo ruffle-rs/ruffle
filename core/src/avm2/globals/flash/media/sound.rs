@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{sound_allocator, Object, SoundChannelObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::backend::navigator::Request;
@@ -203,7 +204,7 @@ pub fn load<'gc>(
         };
 
         let url = url_request
-            .get_property(&QName::dynamic_name("url").into(), activation)?
+            .get_property(&Multiname::public("url"), activation)?
             .coerce_to_string(activation)?;
 
         // TODO: context parameter currently unused.
@@ -242,7 +243,10 @@ pub fn load_pcm_from_byte_array<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.media"), "Sound"),
-        Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.events"),
+            "EventDispatcher",
+        )),
         Method::from_builtin(instance_init, "<Sound instance initializer>", mc),
         Method::from_builtin(class_init, "<Sound class initializer>", mc),
         mc,

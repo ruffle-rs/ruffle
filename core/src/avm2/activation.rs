@@ -473,7 +473,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
                 args_object.set_property(
-                    &QName::new(Namespace::public(), "callee").into(),
+                    &Multiname::public("callee"),
                     callee.into(),
                     &mut activation,
                 )?;
@@ -1808,7 +1808,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let name = self.context.avm2.pop();
 
             object.set_property(
-                &QName::dynamic_name(name.coerce_to_string(self)?).into(),
+                &Multiname::public(name.coerce_to_string(self)?),
                 value,
                 self,
             )?;

@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
@@ -48,7 +49,7 @@ fn prototype<'gc>(
 pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class_class = Class::new(
         QName::new(Namespace::public(), "Class"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,

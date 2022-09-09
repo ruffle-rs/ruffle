@@ -8,6 +8,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -46,9 +47,9 @@ fn deserialize_json_inner<'gc>(
                     Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_property(activation, &QName::dynamic_name(key).into())?;
+                    obj.delete_property(activation, &Multiname::public(key))?;
                 } else {
-                    obj.set_property(&QName::dynamic_name(key).into(), mapped_val, activation)?;
+                    obj.set_property(&Multiname::public(key), mapped_val, activation)?;
                 }
             }
             obj.into()
@@ -123,10 +124,7 @@ impl<'gc> AvmSerializer<'gc> {
         } else {
             let obj = value.as_object().unwrap();
             let to_json = obj
-                .get_property(
-                    &QName::new(Namespace::public(), "toJSON").into(),
-                    activation,
-                )?
+                .get_property(&Multiname::public("toJSON"), activation)?
                 .as_object()
                 .and_then(|obj| obj.as_function_object());
             if let Some(to_json) = to_json {
@@ -159,8 +157,7 @@ impl<'gc> AvmSerializer<'gc> {
             while let Some(r) = iter.next(activation) {
                 let item = r?.1;
                 let key = item.coerce_to_string(activation)?;
-                let value =
-                    obj.get_property(&QName::new(Namespace::public(), key).into(), activation)?;
+                let value = obj.get_property(&Multiname::public(key), activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
                 if !matches!(mapped, Value::Undefined) {
                     js_obj.insert(
@@ -176,8 +173,7 @@ impl<'gc> AvmSerializer<'gc> {
                     Value::Undefined => break,
                     name_val => {
                         let name = name_val.coerce_to_string(activation)?;
-                        let value =
-                            obj.get_property(&QName::dynamic_name(name).into(), activation)?;
+                        let value = obj.get_property(&Multiname::public(name), activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
                         if !matches!(mapped, Value::Undefined) {
                             js_obj.insert(
@@ -357,7 +353,7 @@ pub fn stringify<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "JSON"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<JSON instance initializer>", mc),
         Method::from_builtin(class_init, "<JSON class initializer>", mc),
         mc,

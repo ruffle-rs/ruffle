@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{Bitmap, TDisplayObject};
@@ -48,7 +49,7 @@ pub fn instance_init<'gc>(
                     let bd_object = bd_class.construct(activation, &[])?;
 
                     this.set_property(
-                        &QName::new(Namespace::public(), "bitmapData").into(),
+                        &Multiname::public("bitmapData"),
                         bd_object.into(),
                         activation,
                     )?;
@@ -196,7 +197,10 @@ pub fn set_smoothing<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Bitmap"),
-        Some(QName::new(Namespace::package("flash.display"), "DisplayObject").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObject",
+        )),
         Method::from_builtin(instance_init, "<Bitmap instance initializer>", mc),
         Method::from_builtin(class_init, "<Bitmap class initializer>", mc),
         mc,

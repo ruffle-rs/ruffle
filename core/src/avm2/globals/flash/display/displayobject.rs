@@ -626,10 +626,10 @@ pub fn set_transform<'gc>(
 
         // FIXME - consider 3D matrix and pixel bounds
         let matrix = transform
-            .get_property(&QName::dynamic_name("matrix").into(), activation)?
+            .get_property(&Multiname::public("matrix"), activation)?
             .coerce_to_object(activation)?;
         let color_transform = transform
-            .get_property(&QName::dynamic_name("matrix").into(), activation)?
+            .get_property(&Multiname::public("matrix"), activation)?
             .coerce_to_object(activation)?;
 
         let matrix =
@@ -871,7 +871,10 @@ fn set_mask<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "DisplayObject"),
-        Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.events"),
+            "EventDispatcher",
+        )),
         Method::from_builtin(instance_init, "<DisplayObject instance initializer>", mc),
         Method::from_builtin(class_init, "<DisplayObject class initializer>", mc),
         mc,
@@ -886,7 +889,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     ));
 
-    write.implements(QName::new(Namespace::package("flash.display"), "IBitmapDrawable").into());
+    write.implements(Multiname::new(
+        Namespace::package("flash.display"),
+        "IBitmapDrawable",
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

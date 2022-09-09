@@ -70,8 +70,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty")
-                            .into(),
+                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty"),
                         &[qname.into()],
                         activation,
                     );
@@ -107,8 +106,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty")
-                            .into(),
+                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty"),
                         &[qname.into(), value],
                         activation,
                     )?;
@@ -153,8 +151,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     args.extend_from_slice(arguments);
 
                     return self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "callProperty")
-                            .into(),
+                        &Multiname::new(
+                            Namespace::Namespace(NS_FLASH_PROXY.into()),
+                            "callProperty",
+                        ),
                         &args[..],
                         activation,
                     );
@@ -186,11 +186,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
 
                     return Ok(self
                         .call_property(
-                            &QName::new(
+                            &Multiname::new(
                                 Namespace::Namespace(NS_FLASH_PROXY.into()),
                                 "deleteProperty",
-                            )
-                            .into(),
+                            ),
                             &[qname.into()],
                             activation,
                         )?
@@ -213,7 +212,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<bool, Error> {
         Ok(self
             .call_property(
-                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty").into(),
+                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty"),
                 // this should probably pass the multiname as-is? See above
                 &[name.local_name().unwrap().into()],
                 activation,
@@ -228,7 +227,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<Option<u32>, Error> {
         Ok(Some(
             self.call_property(
-                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex").into(),
+                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex"),
                 &[last_index.into()],
                 activation,
             )?
@@ -242,7 +241,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         self.call_property(
-            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName").into(),
+            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName"),
             &[index.into()],
             activation,
         )
@@ -254,7 +253,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         self.call_property(
-            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue").into(),
+            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue"),
             &[index.into()],
             activation,
         )

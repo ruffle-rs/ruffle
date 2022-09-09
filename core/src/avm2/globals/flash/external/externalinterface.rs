@@ -2,6 +2,7 @@
 
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, QName, Value};
 use crate::external::{Callback, Value as ExternalValue};
 use gc_arena::{GcCell, MutationContext};
@@ -86,7 +87,7 @@ pub fn add_callback<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.external"), "ExternalInterface"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(
             instance_init,
             "<ExternalInterface instance initializer>",

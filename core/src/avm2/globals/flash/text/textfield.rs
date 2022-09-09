@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject, TextFormatObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
@@ -897,7 +898,10 @@ pub fn set_anti_alias_type<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "TextField"),
-        Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "InteractiveObject",
+        )),
         Method::from_builtin(instance_init, "<TextField instance initializer>", mc),
         Method::from_builtin(class_init, "<TextField class initializer>", mc),
         mc,

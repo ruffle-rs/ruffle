@@ -61,13 +61,13 @@ pub fn graphics<'gc>(
         if let Some(dobj) = this.as_display_object() {
             // Lazily initialize the `Graphics` object in a hidden property.
             let graphics = match this.get_property(
-                &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
+                &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
                     let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
-                        &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
+                        &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
                         graphics,
                         activation,
                     )?;
@@ -236,13 +236,10 @@ fn stop_drag<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Sprite"),
-        Some(
-            QName::new(
-                Namespace::package("flash.display"),
-                "DisplayObjectContainer",
-            )
-            .into(),
-        ),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObjectContainer",
+        )),
         Method::from_builtin(instance_init, "<Sprite instance initializer>", mc),
         Method::from_builtin(class_init, "<Sprite class initializer>", mc),
         mc,
@@ -274,7 +271,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
-        QName::new(Namespace::package("flash.display"), "Graphics").into(),
+        Multiname::new(Namespace::package("flash.display"), "Graphics"),
         None,
     ));
 

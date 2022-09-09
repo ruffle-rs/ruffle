@@ -8,6 +8,7 @@ use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::Graphic;
@@ -51,13 +52,13 @@ pub fn graphics<'gc>(
         if let Some(dobj) = this.as_display_object() {
             // Lazily initialize the `Graphics` object in a hidden property.
             let graphics = match this.get_property(
-                &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
+                &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
                     let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
-                        &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
+                        &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
                         graphics,
                         activation,
                     )?;
@@ -76,7 +77,10 @@ pub fn graphics<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Shape"),
-        Some(QName::new(Namespace::package("flash.display"), "DisplayObject").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObject",
+        )),
         Method::from_builtin(instance_init, "<Shape instance initializer>", mc),
         Method::from_builtin(class_init, "<Shape class initializer>", mc),
         mc,
@@ -94,7 +98,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
-        QName::new(Namespace::package("flash.display"), "Graphics").into(),
+        Multiname::new(Namespace::package("flash.display"), "Graphics"),
         None,
     ));
 

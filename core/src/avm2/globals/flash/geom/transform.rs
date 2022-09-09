@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
-use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
+use crate::avm2::Multiname;
+use crate::avm2::{Activation, Error, Namespace, Object, TObject, Value};
 use crate::display_object::{StageQuality, TDisplayObject};
 use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
 use swf::Fixed8;
@@ -11,7 +12,7 @@ fn get_display_object<'gc>(
 ) -> Result<DisplayObject<'gc>, Error> {
     Ok(this
         .get_property(
-            &QName::new(Namespace::Private("".into()), "_displayObject").into(),
+            &Multiname::new(Namespace::Private("".into()), "_displayObject"),
             activation,
         )?
         .as_object()
@@ -26,7 +27,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     this.unwrap().set_property(
-        &QName::new(Namespace::Private("".into()), "_displayObject").into(),
+        &Multiname::new(Namespace::Private("".into()), "_displayObject"),
         args[0],
         activation,
     )?;
@@ -138,28 +139,28 @@ pub fn object_to_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<ColorTransform, Error> {
     let red_multiplier = object
-        .get_property(&QName::dynamic_name("redMultiplier").into(), activation)?
+        .get_property(&Multiname::public("redMultiplier"), activation)?
         .coerce_to_number(activation)?;
     let green_multiplier = object
-        .get_property(&QName::dynamic_name("greenMultiplier").into(), activation)?
+        .get_property(&Multiname::public("greenMultiplier"), activation)?
         .coerce_to_number(activation)?;
     let blue_multiplier = object
-        .get_property(&QName::dynamic_name("blueMultiplier").into(), activation)?
+        .get_property(&Multiname::public("blueMultiplier"), activation)?
         .coerce_to_number(activation)?;
     let alpha_multiplier = object
-        .get_property(&QName::dynamic_name("alphaMultiplier").into(), activation)?
+        .get_property(&Multiname::public("alphaMultiplier"), activation)?
         .coerce_to_number(activation)?;
     let red_offset = object
-        .get_property(&QName::dynamic_name("redOffset").into(), activation)?
+        .get_property(&Multiname::public("redOffset"), activation)?
         .coerce_to_number(activation)?;
     let green_offset = object
-        .get_property(&QName::dynamic_name("greenOffset").into(), activation)?
+        .get_property(&Multiname::public("greenOffset"), activation)?
         .coerce_to_number(activation)?;
     let blue_offset = object
-        .get_property(&QName::dynamic_name("blueOffset").into(), activation)?
+        .get_property(&Multiname::public("blueOffset"), activation)?
         .coerce_to_number(activation)?;
     let alpha_offset = object
-        .get_property(&QName::dynamic_name("alphaOffset").into(), activation)?
+        .get_property(&Multiname::public("alphaOffset"), activation)?
         .coerce_to_number(activation)?;
     Ok(ColorTransform {
         r_mult: Fixed8::from_f64(red_multiplier),
@@ -217,25 +218,25 @@ pub fn object_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Matrix, Error> {
     let a = object
-        .get_property(&QName::dynamic_name("a").into(), activation)?
+        .get_property(&Multiname::public("a"), activation)?
         .coerce_to_number(activation)? as f32;
     let b = object
-        .get_property(&QName::dynamic_name("b").into(), activation)?
+        .get_property(&Multiname::public("b"), activation)?
         .coerce_to_number(activation)? as f32;
     let c = object
-        .get_property(&QName::dynamic_name("c").into(), activation)?
+        .get_property(&Multiname::public("c"), activation)?
         .coerce_to_number(activation)? as f32;
     let d = object
-        .get_property(&QName::dynamic_name("d").into(), activation)?
+        .get_property(&Multiname::public("d"), activation)?
         .coerce_to_number(activation)? as f32;
     let tx = Twips::from_pixels(
         object
-            .get_property(&QName::dynamic_name("tx").into(), activation)?
+            .get_property(&Multiname::public("tx"), activation)?
             .coerce_to_number(activation)?,
     );
     let ty = Twips::from_pixels(
         object
-            .get_property(&QName::dynamic_name("ty").into(), activation)?
+            .get_property(&Multiname::public("ty"), activation)?
             .coerce_to_number(activation)?,
     );
 
