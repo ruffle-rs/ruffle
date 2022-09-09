@@ -862,14 +862,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let body = body?;
         let mut reader = Reader::new(&body.code);
 
-        loop {
+        let val = loop {
             let result = self.do_next_opcode(method, &mut reader, &body.code);
             match result {
                 Ok(FrameControl::Return(value)) => break Ok(value),
                 Ok(FrameControl::Continue) => {}
                 Err(e) => break Err(e),
             }
-        }
+        };
+
+        self.clear_stack();
+        self.clear_scope();
+        val
     }
 
     /// If a local exception handler exists for the error, use it to handle
