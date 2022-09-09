@@ -723,6 +723,7 @@ impl<'gc> Loader<'gc> {
                         &response.body,
                         Some(response.url),
                         loader_url,
+                        false,
                     )?;
                 }
                 Err(e) => {
@@ -780,7 +781,7 @@ impl<'gc> Loader<'gc> {
                 return Ok(());
             }
 
-            Loader::movie_loader_data(handle, player, &bytes, Some("file:///".into()), None)
+            Loader::movie_loader_data(handle, player, &bytes, Some("file:///".into()), None, true)
         })
     }
 
@@ -1264,6 +1265,7 @@ impl<'gc> Loader<'gc> {
         data: &[u8],
         url: Option<String>,
         loader_url: Option<String>,
+        in_memory: bool,
     ) -> Result<(), Error> {
         let sniffed_type = ContentType::sniff(data);
         let mut length = data.len();
@@ -1283,13 +1285,6 @@ impl<'gc> Loader<'gc> {
                 length = 0;
             }
 
-            if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(_)) = event_handler {
-                // Flash always fires an initial 'progress' event with
-                // bytesLoaded=0 and bytesTotal set to the proper value.
-                // This only seems to happen for an AVM2 event handler
-                Loader::movie_loader_progress(handle, uc, 0, length)?;
-            }
-
             match sniffed_type {
                 ContentType::Swf => {
                     let movie = Arc::new(SwfMovie::from_data(data, url, loader_url)?);
@@ -1305,6 +1300,25 @@ impl<'gc> Loader<'gc> {
                         }
                         _ => unreachable!(),
                     };
+
+                    if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) =
+                        event_handler
+                    {
+                        if in_memory {
+                            loader_info
+                                .as_loader_info_object()
+                                .unwrap()
+                                .set_loader_stream(
+                                    LoaderStream::NotYetLoaded(movie.clone(), Some(clip)),
+                                    uc.gc_context,
+                                );
+                        }
+
+                        // Flash always fires an initial 'progress' event with
+                        // bytesLoaded=0 and bytesTotal set to the proper value.
+                        // This only seems to happen for an AVM2 event handler
+                        Loader::movie_loader_progress(handle, uc, 0, length)?;
+                    }
 
                     let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                     let parent_domain = activation.avm2().global_domain();
@@ -1344,6 +1358,13 @@ impl<'gc> Loader<'gc> {
                     return Ok(());
                 }
                 ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                    if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(_)) = event_handler {
+                        // Flash always fires an initial 'progress' event with
+                        // bytesLoaded=0 and bytesTotal set to the proper value.
+                        // This only seems to happen for an AVM2 event handler
+                        Loader::movie_loader_progress(handle, uc, 0, length)?;
+                    }
+
                     let bitmap = uc.renderer.register_bitmap_jpeg_2(&data)?;
                     let bitmap_obj = Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
 
