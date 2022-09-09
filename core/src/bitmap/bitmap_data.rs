@@ -989,9 +989,12 @@ impl<'gc> BitmapData<'gc> {
                     allow_mask: true,
                 };
 
+                // Make the screen opacity match the opacity of this bitmap
+                let initial_alpha = if self.transparency { 0 } else { 0xFF };
+
                 render_context
                     .renderer
-                    .begin_frame(swf::Color::from_rgb(0x000000, 0));
+                    .begin_frame(swf::Color::from_rgb(0x000000, initial_alpha));
                 render_context.renderer.push_blend_mode(blend_mode);
                 match &mut source {
                     IBitmapDrawable::BitmapData(data) => {

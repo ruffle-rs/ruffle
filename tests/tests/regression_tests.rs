@@ -193,6 +193,7 @@ swf_tests! {
     (as3_bitmapdata_dispose, "avm2/bitmapdata_dispose", 1),
     // We need a render backend in order to call `BitmapData.draw`
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_draw, "avm2/bitmapdata_draw", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_opaque, "avm2/bitmapdata_opaque", 1, img = true),
     (as3_bitmapdata_zero_size, "avm2/bitmapdata_zero_size", 1),
     #[ignore] (as3_bitmapdata_embedded, "avm2/bitmapdata_embedded", 1),
     (as3_bitmapdata_fillrect, "avm2/bitmapdata_fillrect", 1),
