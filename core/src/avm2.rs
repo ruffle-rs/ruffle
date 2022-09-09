@@ -8,8 +8,7 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
-use std::cmp::Ordering;
+use gc_arena::{Collect, GcCell, MutationContext}; 
 use swf::avm2::read::Reader;
 use swf::{DoAbc, DoAbcFlag};
 
@@ -366,12 +365,11 @@ impl<'gc> Avm2<'gc> {
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
     fn pop(&mut self, depth: usize) -> Value<'gc> {
-        let value = match self.stack.len().cmp(&depth) {
-            Ordering::Equal | Ordering::Less => {
-                log::warn!("Avm2::pop: Stack underflow");
-                Value::Undefined
-            }
-            Ordering::Greater => self.stack.pop().unwrap_or(Value::Undefined),
+        let value = if self.stack.len() <= depth {
+            log::warn!("Avm2::pop: Stack underflow");
+            Value::Undefined
+        } else {
+            self.stack.pop().unwrap_or(Value::Undefined)
         };
 
         avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
@@ -414,12 +412,11 @@ impl<'gc> Avm2<'gc> {
     }
 
     fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
-        match self.scope_stack.len().cmp(&depth) {
-            Ordering::Equal | Ordering::Less => {
-                log::warn!("Avm2::pop_scope: Scope Stack underflow");
-                None
-            }
-            Ordering::Greater => self.scope_stack.pop(),
+        if self.scope_stack.len() <= depth {
+            log::warn!("Avm2::pop_scope: Scope Stack underflow");
+            None
+        } else {
+            self.scope_stack.pop()
         }
     }
 
