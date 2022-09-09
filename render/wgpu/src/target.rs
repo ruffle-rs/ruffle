@@ -174,8 +174,12 @@ impl TextureTarget {
     }
 
     /// Captures the current contents of our texture buffer
-    /// as an `RgbaImage` (using straight alpha).
-    pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
+    /// as an `RgbaImage`
+    pub fn capture(
+        &self,
+        device: &wgpu::Device,
+        premultiplied_alpha: bool,
+    ) -> Option<image::RgbaImage> {
         let (sender, receiver) = std::sync::mpsc::channel();
         let buffer_slice = self.buffer.slice(..);
         buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -196,9 +200,11 @@ impl TextureTarget {
                         .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
                 }
 
-                // Our texture uses premutliplied alpha - convert to straight alpha
-                // so that this image can be saved directly as a PNG.
-                unmultiply_alpha_rgba(&mut buffer);
+                // The image copied from the GPU uses premultiplied alpha, so
+                // convert to straight alpha if requested by the user.
+                if !premultiplied_alpha {
+                    unmultiply_alpha_rgba(&mut buffer);
+                }
 
                 let image = image::RgbaImage::from_raw(self.size.width, self.size.height, buffer);
                 drop(map);

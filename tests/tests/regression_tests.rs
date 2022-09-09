@@ -1482,7 +1482,11 @@ fn run_swf(
             .renderer_mut()
             .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
             .unwrap();
-        let actual_image = renderer.capture_frame().expect("Failed to capture image");
+
+        // Use straight alpha, since we want to save this as a PNG
+        let actual_image = renderer
+            .capture_frame(false)
+            .expect("Failed to capture image");
 
         let suffix = get_img_platform_suffix(&renderer.descriptors().info);
 
