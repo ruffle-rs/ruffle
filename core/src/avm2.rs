@@ -404,6 +404,25 @@ impl<'gc> Avm2<'gc> {
         args
     }
 
+    fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
+        if self.scope_stack.len() - depth > max {
+            log::warn!("Avm2::push_scope: Scope Stack overflow");
+            return;
+        }
+
+        self.scope_stack.push(scope);
+    }
+
+    fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
+        match self.scope_stack.len().cmp(&depth) {
+            Ordering::Equal | Ordering::Less => {
+                log::warn!("Avm2::pop_scope: Scope Stack underflow");
+                None
+            }
+            Ordering::Greater => self.scope_stack.pop(),
+        }
+    }
+
     #[cfg(feature = "avm_debug")]
     #[inline]
     pub fn show_debug_output(&self) -> bool {
