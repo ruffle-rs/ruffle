@@ -664,39 +664,45 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &self.context.avm2.scope_stack[self.scope_depth..]
     }
 
-    /// Pushes a value onto the stack.
+    /// Pushes a value onto the operand stack.
     pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
         let stack_depth = self.stack_depth;
         let max_stack_size = self.max_stack_size;
         self.avm2().push(value.into(), stack_depth, max_stack_size)
     }
 
+    /// Pops a value off the operand stack.
     pub fn pop_stack(&mut self) -> Value<'gc> {
         let stack_depth = self.stack_depth;
         self.avm2().pop(stack_depth)
     }
 
+    /// Pops multiple values off the operand stack.
     pub fn pop_stack_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
         let stack_depth = self.stack_depth;
         self.avm2().pop_args(arg_count, stack_depth)
     }
 
+    /// Pushes a scope onto the scope stack.
     pub fn push_scope(&mut self, scope: Scope<'gc>) {
         let scope_depth = self.scope_depth;
         let max_scope_size = self.max_scope_size;
         self.avm2().push_scope(scope, scope_depth, max_scope_size)
     }
 
+    /// Pops a scope off of the scope stack.
     pub fn pop_scope(&mut self) -> Option<Scope<'gc>> {
         let scope_depth = self.scope_depth;
         self.avm2().pop_scope(scope_depth)
     }
 
+    /// Clears the operand stack used by this activation.
     pub fn clear_stack(&mut self) {
         let stack_depth = self.stack_depth;
         self.avm2().stack.truncate(stack_depth)
     }
 
+    /// Clears the scope stack used by this activation.
     pub fn clear_scope(&mut self) {
         let scope_depth = self.scope_depth;
         self.avm2().scope_stack.truncate(scope_depth)
