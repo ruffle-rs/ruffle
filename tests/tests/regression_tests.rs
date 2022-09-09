@@ -371,6 +371,7 @@ swf_tests! {
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),
     (as3_loader_events, "avm2/loader_events", 3, img = true),
+    (as3_loader_loadbytes_events, "avm2/loader_loadbytes_events", 3, img = true),
     (as3_loaderinfo_events, "avm2/loaderinfo_events", 2),
     (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 2),
     (as3_loaderinfo_root, "avm2/loaderinfo_root", 1),
