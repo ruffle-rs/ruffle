@@ -140,6 +140,54 @@ pub fn escape_multi_byte<'gc>(
     Ok(v.into())
 }
 
+fn handle_percent<I>(chars: &mut I) -> Option<u8>
+where
+    I: Iterator<Item = char>,
+{
+    let high = chars.next()?.to_digit(16)? as u8;
+    let low = chars.next()?.to_digit(16)? as u8;
+    Some(low | (high << 4))
+}
+
+/// Implements `flash.utils.unescapeMultiByte`
+pub fn unescape_multi_byte<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let s = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let bs = s.as_wstr();
+    let mut buf = WString::new();
+    let chars = bs.chars().map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER));
+
+    let mut chars = chars.peekable();
+    while let Some(c) = chars.next() {
+        if c == '\0' {
+            break;
+        }
+        if c == '%' {
+            let mut bytes = Vec::new();
+            while let Some(b) = handle_percent(&mut chars) {
+                bytes.push(b);
+                if !matches!(chars.peek(), Some('%')) {
+                    break;
+                }
+                chars.next();
+            }
+            buf.push_str(&WString::from_utf8_bytes(bytes));
+
+            continue;
+        }
+
+        buf.push_char(c);
+    }
+    let v = AvmString::new(activation.context.gc_context, buf);
+    Ok(v.into())
+}
+
 /// Implements `flash.utils.getQualifiedClassName`
 pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
