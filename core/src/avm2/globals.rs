@@ -10,6 +10,7 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
@@ -692,8 +693,8 @@ fn load_playerglobal<'gc>(
     macro_rules! avm2_system_classes_playerglobal {
         ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
             $(
-                let qname = QName::new(Namespace::package($package), $class_name);
-                let class_object = activation.resolve_class(&qname.into())?;
+                let name = Multiname::new(Namespace::package($package), $class_name);
+                let class_object = activation.resolve_class(&name)?;
                 let sc = $activation.avm2().system_classes.as_mut().unwrap();
                 sc.$field = class_object;
             )*

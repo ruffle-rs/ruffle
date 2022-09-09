@@ -7,6 +7,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
@@ -133,11 +134,10 @@ pub fn resolve_array_hole<'gc>(
         this.proto()
             .map(|p| {
                 p.get_property(
-                    &QName::new(
-                        Namespace::public(),
-                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                    )
-                    .into(),
+                    &Multiname::public(AvmString::new_utf8(
+                        activation.context.gc_context,
+                        i.to_string(),
+                    )),
                     activation,
                 )
             })
@@ -211,11 +211,7 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     join_inner(act, this, &[",".into()], |v, activation| {
         if let Ok(o) = v.coerce_to_object(activation) {
-            o.call_property(
-                &QName::new(Namespace::public(), "toLocaleString").into(),
-                &[],
-                activation,
-            )
+            o.call_property(&Multiname::public("toLocaleString"), &[], activation)
         } else {
             Ok(v)
         }
@@ -272,10 +268,7 @@ impl<'gc> ArrayIter<'gc> {
         end_index: u32,
     ) -> Result<Self, Error> {
         let length = array_object
-            .get_property(
-                &QName::new(Namespace::public(), "length").into(),
-                activation,
-            )?
+            .get_property(&Multiname::public("length"), activation)?
             .coerce_to_u32(activation)?;
 
         Ok(Self {
@@ -301,11 +294,10 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_property(
-                        &QName::new(
-                            Namespace::public(),
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                        )
-                        .into(),
+                        &Multiname::public(AvmString::new_utf8(
+                            activation.context.gc_context,
+                            i.to_string(),
+                        )),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -331,11 +323,10 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_property(
-                        &QName::new(
-                            Namespace::public(),
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                        )
-                        .into(),
+                        &Multiname::public(AvmString::new_utf8(
+                            activation.context.gc_context,
+                            i.to_string(),
+                        )),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -1146,16 +1137,12 @@ pub fn sort_on<'gc>(
                 constrain(|activation, a, b| {
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
                         let a_object = a.coerce_to_receiver(activation, None)?;
-                        let a_field = a_object.get_property(
-                            &QName::new(Namespace::public(), *field_name).into(),
-                            activation,
-                        )?;
+                        let a_field =
+                            a_object.get_property(&Multiname::public(*field_name), activation)?;
 
                         let b_object = b.coerce_to_receiver(activation, None)?;
-                        let b_field = b_object.get_property(
-                            &QName::new(Namespace::public(), *field_name).into(),
-                            activation,
-                        )?;
+                        let b_field =
+                            b_object.get_property(&Multiname::public(*field_name), activation)?;
 
                         let ord = if options.contains(SortOptions::NUMERIC) {
                             compare_numeric(activation, a_field, b_field)?
@@ -1191,7 +1178,7 @@ pub fn sort_on<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "Array"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Array instance initializer>", mc),
         Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,

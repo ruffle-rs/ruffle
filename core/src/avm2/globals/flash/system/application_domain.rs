@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{appdomain_allocator, DomainObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
@@ -70,10 +71,10 @@ pub fn get_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let qname = QName::new(Namespace::public(), local_name);
+        let name = Multiname::public(local_name);
 
         let (qname, mut defined_script) = appdomain
-            .get_defining_script(&qname.into())?
+            .get_defining_script(&name)?
             .ok_or_else(|| format!("No definition called {} exists", local_name))?;
         let globals = defined_script.globals(&mut activation.context)?;
         let definition = globals.get_property(&qname.into(), activation)?;
@@ -139,7 +140,7 @@ pub fn domain_memory<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.system"), "ApplicationDomain"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(
             instance_init,
             "<ApplicationDomain instance initializer>",

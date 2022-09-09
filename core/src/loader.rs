@@ -9,11 +9,9 @@ use crate::avm2::object::ByteArrayObject;
 use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object, QName,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Multiname as Avm2Multiname,
+    Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -654,7 +652,10 @@ impl<'gc> Loader<'gc> {
                                     event_handler
                                 {
                                     let mut loader = loader_info
-                                        .get_property(&Multiname::public("loader"), &mut activation)
+                                        .get_property(
+                                            &Avm2Multiname::public("loader"),
+                                            &mut activation,
+                                        )
                                         .map_err(|e| Error::Avm2Error(e.to_string()))?
                                         .as_object()
                                         .unwrap()
@@ -898,11 +899,7 @@ impl<'gc> Loader<'gc> {
                     };
 
                     target
-                        .set_property(
-                            &QName::new(Namespace::public(), "data").into(),
-                            data_object,
-                            activation,
-                        )
+                        .set_property(&Avm2Multiname::public("data"), data_object, activation)
                         .unwrap();
                 }
 

@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{qname_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
@@ -70,7 +71,7 @@ pub fn class_init<'gc>(
     let mut qname_proto = this_class.prototype();
 
     qname_proto.set_property(
-        &QName::dynamic_name("toString").into(),
+        &Multiname::public("toString"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(to_string, "toString", activation.context.gc_context),
@@ -83,7 +84,7 @@ pub fn class_init<'gc>(
     )?;
 
     qname_proto.set_property(
-        &QName::dynamic_name("valueOf").into(),
+        &Multiname::public("valueOf"),
         FunctionObject::from_method(
             activation,
             Method::from_builtin(value_of, "valueOf", activation.context.gc_context),
@@ -174,7 +175,7 @@ pub fn value_of<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "QName"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<QName instance initializer>", mc),
         Method::from_builtin(class_init, "<QName class initializer>", mc),
         mc,

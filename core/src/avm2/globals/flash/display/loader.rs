@@ -6,7 +6,6 @@ use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::Request;
 use crate::display_object::LoaderDisplay;
@@ -35,7 +34,7 @@ pub fn init<'gc>(
             Some(this),
         )?;
         this.set_property(
-            &QName::new(Namespace::private(""), "_contentLoaderInfo").into(),
+            &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
             loader_info.into(),
             activation,
         )?;
@@ -72,7 +71,7 @@ pub fn load<'gc>(
 
         let loader_info = this
             .get_property(
-                &QName::new(Namespace::private(""), "_contentLoaderInfo").into(),
+                &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
                 activation,
             )?
             .as_object()

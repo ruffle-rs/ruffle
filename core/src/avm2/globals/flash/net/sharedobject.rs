@@ -27,11 +27,7 @@ fn instance_init<'gc>(
             .classes()
             .object
             .construct(activation, &[])?;
-        this.set_property(
-            &QName::new(Namespace::public(), "data").into(),
-            data.into(),
-            activation,
-        )?;
+        this.set_property(&Multiname::public("data"), data.into(), activation)?;
     }
 
     Ok(Value::Undefined)
@@ -177,11 +173,7 @@ pub fn get_local<'gc>(
     let mut this = constructor.construct(activation, &[])?;
 
     // Set the internal name
-    let ruffle_name: Multiname = QName::new(
-        Namespace::Private(AvmString::new_utf8(activation.context.gc_context, "")),
-        "_ruffleName",
-    )
-    .into();
+    let ruffle_name = Multiname::new(Namespace::Private("".into()), "_ruffleName");
     this.set_property(
         &ruffle_name,
         AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
@@ -226,11 +218,7 @@ pub fn flush<'gc>(
             .get_property(&Multiname::public("data"), activation)?
             .coerce_to_object(activation)?;
 
-        let ruffle_name: Multiname = QName::new(
-            Namespace::Private(AvmString::new_utf8(activation.context.gc_context, "")),
-            "_ruffleName",
-        )
-        .into();
+        let ruffle_name = Multiname::new(Namespace::Private("".into()), "_ruffleName");
         let name = this
             .get_property(&ruffle_name, activation)?
             .coerce_to_string(activation)?;
@@ -263,7 +251,10 @@ pub fn flush<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.net"), "SharedObject"),
-        Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.events"),
+            "EventDispatcher",
+        )),
         Method::from_builtin(instance_init, "<SharedObject instance initializer>", mc),
         Method::from_builtin(class_init, "<SharedObject class initializer>", mc),
         mc,
@@ -274,13 +265,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::public(), "data"),
-        QName::new(Namespace::public(), "Object").into(),
+        Multiname::public("Object"),
         None,
     ));
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(""), "_ruffleName"),
-        QName::new(Namespace::public(), "String").into(),
+        Multiname::public("String"),
         None,
     ));
 

@@ -3,8 +3,7 @@ use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::{Activation, Error, Object, QName, Value};
+use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use enumset::EnumSet;
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
@@ -136,11 +135,10 @@ pub fn deserialize_value<'gc>(
             // Now let's add each element as a property
             for element in elements {
                 array.set_property(
-                    &QName::new(
-                        Namespace::public(),
-                        AvmString::new_utf8(activation.context.gc_context, element.name()),
-                    )
-                    .into(),
+                    &Multiname::public(AvmString::new_utf8(
+                        activation.context.gc_context,
+                        element.name(),
+                    )),
                     deserialize_value(activation, element.value())?,
                     activation,
                 )?;

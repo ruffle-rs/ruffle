@@ -598,13 +598,9 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("toString").into(), activation)?
+                    object.get_property(&Multiname::public("toString"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("toString").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -612,13 +608,9 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("valueOf").into(), activation)?
+                    object.get_property(&Multiname::public("valueOf"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("valueOf").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -632,13 +624,9 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("valueOf").into(), activation)?
+                    object.get_property(&Multiname::public("valueOf"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("valueOf").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -646,13 +634,9 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("toString").into(), activation)?
+                    object.get_property(&Multiname::public("toString"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("toString").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {

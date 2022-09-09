@@ -276,7 +276,7 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
 
     write.define_class_trait(Trait::from_const(
         QName::new(Namespace::public(), "length"),
-        QName::new(Namespace::public(), "int").into(),
+        Multiname::public("int"),
         None,
     ));
 

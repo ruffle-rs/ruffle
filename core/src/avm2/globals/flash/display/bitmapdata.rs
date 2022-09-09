@@ -487,7 +487,7 @@ pub fn apply_filter<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "BitmapData"),
-        Some(QName::new(Namespace::package(""), "Object").into()),
+        Some(Multiname::new(Namespace::package(""), "Object")),
         Method::from_builtin(instance_init, "<BitmapData instance initializer>", mc),
         Method::from_builtin(class_init, "<BitmapData class initializer>", mc),
         mc,
@@ -498,7 +498,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_allocator(bitmapdata_allocator);
 
-    write.implements(QName::new(Namespace::package("flash.display"), "IBitmapDrawable").into());
+    write.implements(Multiname::new(
+        Namespace::package("flash.display"),
+        "IBitmapDrawable",
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

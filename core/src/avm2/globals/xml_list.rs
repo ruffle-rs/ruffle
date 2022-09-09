@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::object::{xml_allocator, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
@@ -31,13 +32,13 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "XMLList"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin_and_params(
             instance_init,
             "<XMLList instance initializer>",
             vec![ParamConfig::optional(
                 "value",
-                QName::new(Namespace::public(), "Object").into(),
+                Multiname::public("Object"),
                 Value::Undefined,
             )],
             false,

@@ -3,8 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{Error, Object};
 use crate::timer::TimerCallback;
 
@@ -17,7 +17,7 @@ pub fn stop<'gc>(
     let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(
-            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            &Multiname::new(Namespace::Private("".into()), "_timerId"),
             activation,
         )
         .unwrap()
@@ -26,7 +26,7 @@ pub fn stop<'gc>(
     if id != -1 {
         activation.context.timers.remove(id);
         this.set_property(
-            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            &Multiname::new(Namespace::Private("".into()), "_timerId"),
             (-1).into(),
             activation,
         )?;
@@ -44,7 +44,7 @@ pub fn start<'gc>(
     let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(
-            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            &Multiname::new(Namespace::Private("".into()), "_timerId"),
             activation,
         )
         .unwrap()
@@ -52,7 +52,7 @@ pub fn start<'gc>(
 
     let delay = this
         .get_property(
-            &QName::new(Namespace::Private("".into()), "_delay").into(),
+            &Multiname::new(Namespace::Private("".into()), "_delay"),
             activation,
         )
         .unwrap()
@@ -61,7 +61,7 @@ pub fn start<'gc>(
     if id == -1 {
         let on_update = this
             .get_property(
-                &QName::new(Namespace::Private("".into()), "onUpdate").into(),
+                &Multiname::new(Namespace::Private("".into()), "onUpdate"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -74,7 +74,7 @@ pub fn start<'gc>(
             false,
         );
         this.set_property(
-            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            &Multiname::new(Namespace::Private("".into()), "_timerId"),
             id.into(),
             activation,
         )?;

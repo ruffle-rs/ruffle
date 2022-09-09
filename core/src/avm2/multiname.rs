@@ -273,6 +273,15 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    pub fn new(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
+        Self {
+            ns: NamespaceSet::single(ns),
+            name: Some(name.into()),
+            params: Vec::new(),
+            flags: Default::default(),
+        }
+    }
+
     pub fn public(name: impl Into<AvmString<'gc>>) -> Self {
         Self {
             ns: NamespaceSet::single(Namespace::public()),

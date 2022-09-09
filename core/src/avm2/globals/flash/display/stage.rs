@@ -7,6 +7,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{StageDisplayState, TDisplayObject};
@@ -702,13 +703,10 @@ pub fn set_quality<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Stage"),
-        Some(
-            QName::new(
-                Namespace::package("flash.display"),
-                "DisplayObjectContainer",
-            )
-            .into(),
-        ),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObjectContainer",
+        )),
         Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
         Method::from_builtin(class_init, "<Stage class initializer>", mc),
         mc,

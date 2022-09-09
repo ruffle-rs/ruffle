@@ -4,7 +4,7 @@ use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Namespace as Avm2Namespace,
+    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Multiname as Avm2Multiname,
     Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
     TObject as Avm2TObject, Value as Avm2Value,
 };
@@ -1284,10 +1284,9 @@ impl<'gc> MovieClip<'gc> {
                 if placed_with_name {
                     if let Avm2Value::Object(mut p) = self.object2() {
                         if let Avm2Value::Object(c) = child.object2() {
-                            let name = Avm2QName::new(Avm2Namespace::public(), child.name());
+                            let name = Avm2Multiname::public(child.name());
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                            if let Err(e) = p.init_property(&name.into(), c.into(), &mut activation)
-                            {
+                            if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
                                 log::error!(
                                     "Got error when setting AVM2 child named \"{}\": {}",
                                     &child.name(),
