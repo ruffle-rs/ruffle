@@ -299,7 +299,7 @@ pub fn url<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf, _) => swf,
+                LoaderStream::NotYetLoaded(_, _) => return Ok(Value::Null),
                 LoaderStream::Swf(root, _) => root,
             };
 
