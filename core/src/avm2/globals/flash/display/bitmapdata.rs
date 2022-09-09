@@ -452,6 +452,37 @@ pub fn dispose<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `BitmapData.rect`
+pub fn rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        let bd = bitmap_data.read();
+        return Ok(activation
+            .avm2()
+            .classes()
+            .rectangle
+            .construct(
+                activation,
+                &[0.into(), 0.into(), bd.width().into(), bd.height().into()],
+            )?
+            .into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implement `BitmapData.applyFilter`
+pub fn apply_filter<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("BitmapData.applyFilter: Not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -476,6 +507,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[
         ("width", Some(width), None),
         ("height", Some(height), None),
+        ("rect", Some(rect), None),
         ("transparent", Some(transparent), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
@@ -490,6 +522,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("draw", draw),
         ("fillRect", fill_rect),
         ("dispose", dispose),
+        ("applyFilter", apply_filter),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
