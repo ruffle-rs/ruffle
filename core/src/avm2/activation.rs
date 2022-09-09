@@ -1718,7 +1718,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_scope_object(&mut self, index: u8) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let scope = self.avm2().scope_stack.get(index as usize).copied();
+        let scope = self.scope_frame().get(index as usize).copied();
 
         if let Some(scope) = scope {
             self.push_stack(scope.values());
