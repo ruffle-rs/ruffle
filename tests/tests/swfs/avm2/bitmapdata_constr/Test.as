@@ -1,4 +1,4 @@
-package {
+﻿package {
 	public class Test {
 	}
 }
@@ -14,6 +14,9 @@ trace(bd.width);
 trace("///bd.height;");
 trace(bd.height);
 
+trace("///bd.rect;");
+trace(bd.rect);
+
 trace("///bd.transparent;");
 trace(bd.transparent);
 
@@ -28,6 +31,9 @@ trace(bd.width);
 
 trace("///bd.height;");
 trace(bd.height);
+
+trace("///bd.rect;");
+trace(bd.rect);
 
 trace("///bd.transparent;");
 trace(bd.transparent);
