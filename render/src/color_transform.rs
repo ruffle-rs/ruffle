@@ -1,4 +1,5 @@
-use swf::Fixed8;
+use std::ops::{Mul, MulAssign};
+use swf::{Color, Fixed8};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ColorTransform {
@@ -28,17 +29,16 @@ impl From<swf::ColorTransform> for ColorTransform {
 }
 
 impl ColorTransform {
-    #[allow(clippy::float_cmp)]
-    pub fn is_identity(&self) -> bool {
-        self.r_mult.is_one()
-            && self.g_mult.is_one()
-            && self.b_mult.is_one()
-            && self.a_mult.is_one()
-            && self.r_add == 0
-            && self.g_add == 0
-            && self.b_add == 0
-            && self.a_add == 0
-    }
+    pub const IDENTITY: Self = Self {
+        r_mult: Fixed8::ONE,
+        b_mult: Fixed8::ONE,
+        g_mult: Fixed8::ONE,
+        a_mult: Fixed8::ONE,
+        r_add: 0,
+        b_add: 0,
+        g_add: 0,
+        a_add: 0,
+    };
 
     /// Returns the multiplicative component of this color transform in RGBA order
     /// with the values normalized [0.0, 1.0].
@@ -63,7 +63,7 @@ impl ColorTransform {
     }
 
     /// Sets the multiplicate component of this color transform.
-    pub fn set_mult_color(&mut self, color: &swf::Color) {
+    pub fn set_mult_color(&mut self, color: &Color) {
         self.r_mult = Fixed8::from_f32(f32::from(color.r) / 255.0);
         self.g_mult = Fixed8::from_f32(f32::from(color.g) / 255.0);
         self.b_mult = Fixed8::from_f32(f32::from(color.b) / 255.0);
@@ -72,29 +72,20 @@ impl ColorTransform {
 }
 
 impl Default for ColorTransform {
-    fn default() -> ColorTransform {
-        ColorTransform {
-            r_mult: Fixed8::ONE,
-            b_mult: Fixed8::ONE,
-            g_mult: Fixed8::ONE,
-            a_mult: Fixed8::ONE,
-            r_add: 0,
-            b_add: 0,
-            g_add: 0,
-            a_add: 0,
-        }
+    fn default() -> Self {
+        Self::IDENTITY
     }
 }
 
-impl std::ops::Mul for ColorTransform {
+impl Mul for ColorTransform {
     type Output = Self;
+
     fn mul(self, rhs: Self) -> Self {
-        ColorTransform {
+        Self {
             r_mult: self.r_mult.wrapping_mul(rhs.r_mult),
             g_mult: self.g_mult.wrapping_mul(rhs.g_mult),
             b_mult: self.b_mult.wrapping_mul(rhs.b_mult),
             a_mult: self.a_mult.wrapping_mul(rhs.a_mult),
-
             r_add: self
                 .r_add
                 .wrapping_add(self.r_mult.wrapping_mul_int(rhs.r_add)),
@@ -111,8 +102,32 @@ impl std::ops::Mul for ColorTransform {
     }
 }
 
-impl std::ops::MulAssign for ColorTransform {
+impl MulAssign for ColorTransform {
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
+    }
+}
+
+impl Mul<Color> for ColorTransform {
+    type Output = Color;
+
+    fn mul(self, mut color: Color) -> Color {
+        color.r = self
+            .r_mult
+            .wrapping_mul_int(i16::from(color.r))
+            .wrapping_add(self.r_add) as u8;
+        color.g = self
+            .g_mult
+            .wrapping_mul_int(i16::from(color.g))
+            .wrapping_add(self.g_add) as u8;
+        color.b = self
+            .b_mult
+            .wrapping_mul_int(i16::from(color.b))
+            .wrapping_add(self.b_add) as u8;
+        color.a = self
+            .a_mult
+            .wrapping_mul_int(i16::from(color.a))
+            .wrapping_add(self.a_add) as u8;
+        color
     }
 }

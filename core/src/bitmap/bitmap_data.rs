@@ -1,19 +1,18 @@
-use gc_arena::{Collect, GcCell};
-use swf::BlendMode;
-
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
+use gc_arena::{Collect, GcCell};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::Transform;
 use std::ops::Range;
+use swf::BlendMode;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
 /// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
@@ -128,6 +127,22 @@ impl From<Color> for u32 {
 impl From<i32> for Color {
     fn from(i: i32) -> Self {
         Color(i)
+    }
+}
+
+impl From<swf::Color> for Color {
+    fn from(c: swf::Color) -> Self {
+        Self::argb(c.a, c.r, c.g, c.b)
+    }
+}
+
+impl From<Color> for swf::Color {
+    fn from(c: Color) -> Self {
+        let r = c.red();
+        let g = c.green();
+        let b = c.blue();
+        let a = c.alpha();
+        Self { r, g, b, a }
     }
 }
 
@@ -490,33 +505,22 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn color_transform(
         &mut self,
-        min_x: u32,
-        min_y: u32,
-        end_x: u32,
-        end_y: u32,
-        color_transform: &ColorTransformParams,
+        x_min: u32,
+        y_min: u32,
+        x_max: u32,
+        y_max: u32,
+        color_transform: ColorTransform,
     ) {
-        for x in min_x..end_x.min(self.width()) {
-            for y in min_y..end_y.min(self.height()) {
-                let color = self
-                    .get_pixel_raw(x, y)
-                    .unwrap_or_else(|| 0.into())
-                    .to_un_multiplied_alpha();
+        for x in x_min..x_max.min(self.width()) {
+            for y in y_min..y_max.min(self.height()) {
+                let color = self.get_pixel_raw(x, y).unwrap().to_un_multiplied_alpha();
 
-                let alpha = ((color.alpha() as f32 * color_transform.alpha_multiplier as f32)
-                    + color_transform.alpha_offset as f32) as u8;
-                let red = ((color.red() as f32 * color_transform.red_multiplier as f32)
-                    + color_transform.red_offset as f32) as u8;
-                let green = ((color.green() as f32 * color_transform.green_multiplier as f32)
-                    + color_transform.green_offset as f32) as u8;
-                let blue = ((color.blue() as f32 * color_transform.blue_multiplier as f32)
-                    + color_transform.blue_offset as f32) as u8;
+                let color = color_transform * swf::Color::from(color);
 
                 self.set_pixel32_raw(
                     x,
                     y,
-                    Color::argb(alpha, red, green, blue)
-                        .to_premultiplied_alpha(self.transparency()),
+                    Color::from(color).to_premultiplied_alpha(self.transparency()),
                 )
             }
         }
