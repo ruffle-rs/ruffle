@@ -497,8 +497,9 @@ impl WgpuRenderBackend<target::TextureTarget> {
         Self::new(Arc::new(descriptors), target)
     }
 
-    pub fn capture_frame(&self) -> Option<image::RgbaImage> {
-        self.target.capture(&self.descriptors.device)
+    pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
+        self.target
+            .capture(&self.descriptors.device, premultiplied_alpha)
     }
 }
 
@@ -1027,10 +1028,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         };
 
         let f_res = f(&mut texture_backend);
-
+        // Capture with premultiplied alpha, which is what we use for all textures
         let image = texture_backend
             .target
-            .capture(&texture_backend.descriptors.device);
+            .capture(&texture_backend.descriptors.device, true);
 
         let image = image.map(|image| {
             ruffle_render::bitmap::Bitmap::new(

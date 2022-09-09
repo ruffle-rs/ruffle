@@ -79,6 +79,7 @@ struct Opt {
     skip_unsupported: bool,
 }
 
+/// Captures a screenshot. The resulting image uses straight alpha
 fn take_screenshot(
     descriptors: Arc<Descriptors>,
     swf_path: &Path,
@@ -136,7 +137,8 @@ fn take_screenshot(
                     .renderer_mut()
                     .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                     .unwrap();
-                renderer.capture_frame()
+                // Use straight alpha
+                renderer.capture_frame(false)
             }) {
                 Ok(Some(image)) => result.push(image),
                 Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
