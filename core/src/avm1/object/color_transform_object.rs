@@ -65,29 +65,24 @@ impl<'gc> ColorTransformObject<'gc> {
     }
 
     add_field_accessors!(
-        [set_red_multiplier, get_red_multiplier, red_multiplier, f64],
+        [set_red_multiplier, red_multiplier, red_multiplier, f64],
         [
             set_green_multiplier,
-            get_green_multiplier,
+            green_multiplier,
             green_multiplier,
             f64
         ],
-        [
-            set_blue_multiplier,
-            get_blue_multiplier,
-            blue_multiplier,
-            f64
-        ],
+        [set_blue_multiplier, blue_multiplier, blue_multiplier, f64],
         [
             set_alpha_multiplier,
-            get_alpha_multiplier,
+            alpha_multiplier,
             alpha_multiplier,
             f64
         ],
-        [set_red_offset, get_red_offset, red_offset, f64],
-        [set_green_offset, get_green_offset, green_offset, f64],
-        [set_blue_offset, get_blue_offset, blue_offset, f64],
-        [set_alpha_offset, get_alpha_offset, alpha_offset, f64],
+        [set_red_offset, red_offset, red_offset, f64],
+        [set_green_offset, green_offset, green_offset, f64],
+        [set_blue_offset, blue_offset, blue_offset, f64],
+        [set_alpha_offset, alpha_offset, alpha_offset, f64],
     );
 }
 
@@ -100,14 +95,14 @@ impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
 impl From<ColorTransformObject<'_>> for ColorTransform {
     fn from(object: ColorTransformObject) -> Self {
         Self {
-            r_mult: Fixed8::from_f64(object.get_red_multiplier()),
-            g_mult: Fixed8::from_f64(object.get_green_multiplier()),
-            b_mult: Fixed8::from_f64(object.get_blue_multiplier()),
-            a_mult: Fixed8::from_f64(object.get_alpha_multiplier()),
-            r_add: object.get_red_offset() as i16,
-            g_add: object.get_green_offset() as i16,
-            b_add: object.get_blue_offset() as i16,
-            a_add: object.get_alpha_offset() as i16,
+            r_mult: Fixed8::from_f64(object.red_multiplier()),
+            g_mult: Fixed8::from_f64(object.green_multiplier()),
+            b_mult: Fixed8::from_f64(object.blue_multiplier()),
+            a_mult: Fixed8::from_f64(object.alpha_multiplier()),
+            r_add: object.red_offset() as i16,
+            g_add: object.green_offset() as i16,
+            b_add: object.blue_offset() as i16,
+            a_add: object.alpha_offset() as i16,
         }
     }
 }
