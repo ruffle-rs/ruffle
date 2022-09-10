@@ -113,15 +113,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
                 [r as u8, g as u8, b as u8]
             })
             .collect(),
-        jpeg_decoder::PixelFormat::L8 => {
-            let mut rgb = Vec::with_capacity(decoded_data.len() * 3);
-            for elem in decoded_data {
-                rgb.push(elem);
-                rgb.push(elem);
-                rgb.push(elem);
-            }
-            rgb
-        }
+        jpeg_decoder::PixelFormat::L8 => decoded_data.iter().flat_map(|&c| [c, c, c]).collect(),
         jpeg_decoder::PixelFormat::L16 => {
             log::warn!("Unimplemented L16 JPEG pixel format");
             decoded_data
@@ -133,22 +125,21 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
         let alpha_data = decompress_zlib(alpha_data)?;
 
         if alpha_data.len() == decoded_data.len() / 3 {
-            let mut rgba = Vec::with_capacity((decoded_data.len() / 3) * 4);
-            let mut i = 0;
-            let mut a = 0;
-            while i < decoded_data.len() {
-                // The JPEG data should be premultiplied alpha, but it isn't in some incorrect SWFs (see #6893).
-                // This means 0% alpha pixels may have color and incorrectly show as visible.
-                // Flash Player clamps color to the alpha value to fix this case.
-                // Only applies to DefineBitsJPEG3; DefineBitsLossless does not seem to clamp.
-                let alpha = alpha_data[a];
-                rgba.push(decoded_data[i].min(alpha));
-                rgba.push(decoded_data[i + 1].min(alpha));
-                rgba.push(decoded_data[i + 2].min(alpha));
-                rgba.push(alpha);
-                i += 3;
-                a += 1;
-            }
+            let rgba = decoded_data
+                .chunks_exact(3)
+                .zip(alpha_data)
+                .flat_map(|(rgb, a)| {
+                    // The JPEG data should be premultiplied alpha, but it isn't in some incorrect
+                    // SWFs (see #6893).
+                    // This means 0% alpha pixels may have color and incorrectly show as visible.
+                    // Flash Player clamps color to the alpha value to fix this case.
+                    // Only applies to DefineBitsJPEG3; DefineBitsLossless does not seem to clamp.
+                    let r = rgb[0].min(a);
+                    let g = rgb[1].min(a);
+                    let b = rgb[2].min(a);
+                    [r, g, b, a]
+                })
+                .collect();
             return Ok(Bitmap::new(
                 metadata.width.into(),
                 metadata.height.into(),
@@ -188,39 +179,28 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
                 for _ in 0..swf_tag.width {
                     let compressed = u16::from_be_bytes([decoded_data[i], decoded_data[i + 1]]);
                     let rgb5_component = |shift: u16| {
-                        let component = compressed >> shift & 0x1F;
+                        let component = (compressed >> shift) & 0x1F;
                         ((component * 255 + 15) / 31) as u8
                     };
-                    out_data.push(rgb5_component(10));
-                    out_data.push(rgb5_component(5));
-                    out_data.push(rgb5_component(0));
-                    out_data.push(0xff);
+                    out_data.extend([
+                        rgb5_component(10),
+                        rgb5_component(5),
+                        rgb5_component(0),
+                        0xff,
+                    ]);
                     i += 2;
                 }
                 i += (padded_width - swf_tag.width) as usize * 2;
             }
             out_data
         }
-        (1, swf::BitmapFormat::Rgb32) => {
-            let mut i = 0;
-            while i < decoded_data.len() {
-                decoded_data[i] = decoded_data[i + 1];
-                decoded_data[i + 1] = decoded_data[i + 2];
-                decoded_data[i + 2] = decoded_data[i + 3];
-                decoded_data[i + 3] = 0xff;
-                i += 4;
-            }
-            decoded_data
-        }
-        (2, swf::BitmapFormat::Rgb32) => {
-            let mut i = 0;
-            while i < decoded_data.len() {
-                let alpha = decoded_data[i];
-                decoded_data[i] = decoded_data[i + 1];
-                decoded_data[i + 1] = decoded_data[i + 2];
-                decoded_data[i + 2] = decoded_data[i + 3];
-                decoded_data[i + 3] = alpha;
-                i += 4;
+        (1 | 2, swf::BitmapFormat::Rgb32) => {
+            let has_alpha = swf_tag.version == 2;
+            for rgba in decoded_data.chunks_exact_mut(4) {
+                rgba.rotate_left(1);
+                if !has_alpha {
+                    rgba[3] = 0xff;
+                }
             }
             decoded_data
         }
@@ -243,18 +223,8 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
-                    if entry < palette.len() {
-                        let color = &palette[entry];
-                        out_data.push(color.r);
-                        out_data.push(color.g);
-                        out_data.push(color.b);
-                        out_data.push(color.a);
-                    } else {
-                        out_data.push(0);
-                        out_data.push(0);
-                        out_data.push(0);
-                        out_data.push(255);
-                    }
+                    let color = palette.get(entry).unwrap_or(&Color::BLACK);
+                    out_data.extend([color.r, color.g, color.b, color.a]);
                     i += 1;
                 }
                 i += (padded_width - swf_tag.width) as usize;
@@ -280,18 +250,9 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
-                    if entry < palette.len() {
-                        let color = &palette[entry];
-                        out_data.push(color.r);
-                        out_data.push(color.g);
-                        out_data.push(color.b);
-                        out_data.push(color.a);
-                    } else {
-                        out_data.push(0);
-                        out_data.push(0);
-                        out_data.push(0);
-                        out_data.push(0);
-                    }
+                    const TRANSPARENT: Color = Color::from_rgb(0, 0);
+                    let color = palette.get(entry).unwrap_or(&TRANSPARENT);
+                    out_data.extend([color.r, color.g, color.b, color.a]);
                     i += 1;
                 }
                 i += (padded_width - swf_tag.width) as usize;
