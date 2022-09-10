@@ -1392,7 +1392,7 @@ impl Player {
     pub fn run_frame(&mut self) {
         let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
 
-        self.preload(&mut ExecutionLimit::with_max_actions_and_time(
+        self.preload(&mut ExecutionLimit::with_max_ops_and_time(
             10000, frame_time,
         ));
 

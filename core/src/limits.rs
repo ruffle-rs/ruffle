@@ -5,29 +5,31 @@ use std::time::Duration;
 ///
 /// Execution is limited by two mechanisms:
 ///
-/// 1. An *action limit*, which is a certain number of *actions* that can be
-///    taken before checking...
-/// 2. A *time limit*, which is checked every time the action limit runs out.
-///    If it has not yet expired, then the action limit is refreshed.
+/// 1. An *operation limit*, or oplimit, which is a certain number of actions
+///    executed, bytes processed, or other things that can be done before
+///    checking...
+/// 2. A *time limit*, which is checked every time the oplimit runs out.
+///    If it has not yet expired, then the oplimit is refreshed and we
+///    continue.
 ///
 /// This two-tiered system is intended to reduce the overhead of enforcing
 /// execution limits.
 ///
-/// What constitutes an "action" is up to the user of this structure. It may
+/// What constitutes an "operation" is up to the user of this structure. It may
 /// cover individual interpreter opcodes, bytes decoded in a data stream, or so
 /// on.
 pub struct ExecutionLimit {
-    /// How many actions remain before the next timelimit check.
+    /// How many operations remain before the next timelimit check.
     ///
     /// If `None`, then the execution limit is not enforced.
-    current_action_limit: Option<usize>,
+    current_oplimit: Option<usize>,
 
-    /// The number of actions allowed between timelimit checks.
+    /// The number of operations allowed between timelimit checks.
     ///
     /// If `None`, then the execution limit is not enforced.
-    max_actions_per_check: Option<usize>,
+    max_ops_per_check: Option<usize>,
 
-    /// The amount of time allowed to be taken regardless of the action count.
+    /// The amount of time allowed to be taken regardless of the opcount.
     time_limit: Duration,
 }
 
@@ -35,58 +37,54 @@ impl ExecutionLimit {
     /// Construct an execution limit that allows unlimited execution.
     pub fn none() -> ExecutionLimit {
         Self {
-            current_action_limit: None,
-            max_actions_per_check: None,
+            current_oplimit: None,
+            max_ops_per_check: None,
             time_limit: Duration::MAX,
         }
     }
 
     /// Construct an execution limit that checks the current wall-clock time
-    /// after a certain number of actions are taken.
-    pub fn with_max_actions_and_time(actions: usize, time_limit: Duration) -> ExecutionLimit {
+    /// after a certain number of operations are executed.
+    pub fn with_max_ops_and_time(ops: usize, time_limit: Duration) -> ExecutionLimit {
         Self {
-            current_action_limit: Some(actions),
-            max_actions_per_check: Some(actions),
+            current_oplimit: Some(ops),
+            max_ops_per_check: Some(ops),
             time_limit,
         }
     }
 
-    /// Create an execution limit that is already expired.
-    ///
-    /// This is intended to indicate that only the smallest action possible be
-    /// taken before returning. Code that obeys an execution limit must be able
-    /// to make forward progress even when restricted to this limit.
+    /// Create an execution limit that is already exhausted.
     pub fn exhausted() -> ExecutionLimit {
         Self {
-            current_action_limit: Some(0),
-            max_actions_per_check: Some(0),
+            current_oplimit: Some(0),
+            max_ops_per_check: Some(0),
             time_limit: Duration::from_secs(0),
         }
     }
 
-    /// Check if the execution of a certain number of actions has exceeded the
-    /// execution limit.
+    /// Check if the execution of a certain number of operations has exceeded
+    /// the execution limit.
     ///
-    /// This is intended to be called after the given actions have been
-    /// executed. The actions will be deducted from the action limit and, if
+    /// This is intended to be called after the given operations have been
+    /// executed. The ops will be deducted from the operation limit and, if
     /// that limit is zero, the time limit will be checked. If both limits have
     /// been breached, this returns `true`. Otherwise, this returns `false`,
-    /// and if the action limit was exhausted, it will be returned to the
+    /// and if the operation limit was exhausted, it will be returned to the
     /// starting maximum.
-    pub fn did_actions_breach_limit(
+    pub fn did_ops_breach_limit(
         &mut self,
         context: &mut UpdateContext<'_, '_, '_>,
-        actions: usize,
+        ops: usize,
     ) -> bool {
-        if let Some(ref mut action_limit) = self.current_action_limit {
-            *action_limit = action_limit.saturating_sub(actions);
+        if let Some(ref mut oplimit) = self.current_oplimit {
+            *oplimit = oplimit.saturating_sub(ops);
 
-            if *action_limit == 0 {
+            if *oplimit == 0 {
                 if context.update_start.elapsed() >= self.time_limit {
                     return true;
                 }
 
-                self.current_action_limit = self.max_actions_per_check;
+                self.current_oplimit = self.max_ops_per_check;
             }
         }
 

@@ -613,8 +613,8 @@ impl<'gc> MovieClip<'gc> {
                 _ => Ok(()),
             }?;
 
-            // Each preloaded byte is treated as an action.
-            if chunk_limit.did_actions_breach_limit(context, tag_len) {
+            // Each preloaded byte is treated as an operation.
+            if chunk_limit.did_ops_breach_limit(context, tag_len) {
                 return Ok(ControlFlow::Exit);
             }
 
@@ -3479,7 +3479,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .write(context.gc_context)
             .cur_preload_symbol = Some(id);
 
-        let should_exit = chunk_limit.did_actions_breach_limit(context, 4);
+        let should_exit = chunk_limit.did_ops_breach_limit(context, 4);
         if should_exit {
             return Ok(ControlFlow::Exit);
         }
