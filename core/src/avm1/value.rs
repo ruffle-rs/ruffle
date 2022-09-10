@@ -565,8 +565,7 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
                 // 1.2345e+15
                 // This case fails to push an extra 0 to handle the rounding 9.9999 -> 10, which
                 // causes the -9999999999999999.0 -> "-e+16" bug later.
-                buf.push(digit());
-                buf.push(b'.');
+                buf.extend([digit(), b'.']);
                 for _ in 0..MAX_DECIMAL_PLACES - 1 {
                     buf.push(digit());
                 }

@@ -397,9 +397,7 @@ pub fn escape<'gc>(
             // ECMA-262 violation: Avm1 does not support unicode escapes.
             _ => {
                 const DIGITS: &[u8; 16] = b"0123456789ABCDEF";
-                buffer.push(b'%');
-                buffer.push(DIGITS[(c / 16) as usize]);
-                buffer.push(DIGITS[(c % 16) as usize]);
+                buffer.extend([b'%', DIGITS[(c / 16) as usize], DIGITS[(c % 16) as usize]]);
             }
         };
     }
