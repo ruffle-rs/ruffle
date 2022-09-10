@@ -883,15 +883,30 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        if value < 0.0 {
+            return;
+        }
+
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
-        let aspect_ratio = object_height / object_width;
-
-        let (target_scale_x, target_scale_y) = if object_width != 0.0 {
-            (value / object_width, value / object_height)
+        let (aspect_ratio, target_scale_x, target_scale_y) = if object_width > 0.0 {
+            let height = if object_height > 0.0 {
+                object_height
+            } else {
+                1.0
+            };
+            (height / object_width, value / object_width, value / height)
         } else {
-            (0.0, 0.0)
+            (
+                if self.base().instantiated_by_timeline() {
+                    1.0
+                } else {
+                    0.0
+                },
+                0.0,
+                value / object_height,
+            )
         };
 
         // No idea about the derivation of this -- figured it out via lots of trial and error.
@@ -911,8 +926,7 @@ pub trait TDisplayObject<'gc>:
         if !new_scale_x.is_finite() {
             new_scale_x = 0.0;
         }
-
-        if !new_scale_y.is_finite() {
+        if !new_scale_y.is_finite() || (object_height == 0.0 && self.swf_version() >= 8) {
             new_scale_y = 0.0;
         }
 
@@ -930,15 +944,30 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        if value < 0.0 {
+            return;
+        }
+
         let object_bounds = self.bounds();
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
-        let aspect_ratio = object_width / object_height;
-
-        let (target_scale_x, target_scale_y) = if object_height != 0.0 {
-            (value / object_width, value / object_height)
+        let (aspect_ratio, target_scale_x, target_scale_y) = if object_height > 0.0 {
+            let width = if object_width > 0.0 {
+                object_width
+            } else {
+                1.0
+            };
+            (width / object_height, value / width, value / object_height)
         } else {
-            (0.0, 0.0)
+            (
+                if self.base().instantiated_by_timeline() {
+                    1.0
+                } else {
+                    0.0
+                },
+                value / object_width,
+                0.0,
+            )
         };
 
         // No idea about the derivation of this -- figured it out via lots of trial and error.
@@ -955,10 +984,9 @@ pub trait TDisplayObject<'gc>:
         let mut new_scale_y = aspect_ratio * (sin * target_scale_x + cos * target_scale_y)
             / ((cos + aspect_ratio * sin) * (aspect_ratio * cos + sin));
 
-        if !new_scale_x.is_finite() {
+        if !new_scale_x.is_finite() || (object_width == 0.0 && self.swf_version() >= 8) {
             new_scale_x = 0.0;
         }
-
         if !new_scale_y.is_finite() {
             new_scale_y = 0.0;
         }
