@@ -255,21 +255,21 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
 
         let bitmap_data = self.0.read();
-        if let (Some(bitmap_handle), Some(inner_bitmap_data)) =
-            (bitmap_data.bitmap_handle, bitmap_data.bitmap_data)
-        {
-            let bd = inner_bitmap_data.read();
-            if bd.dirty() {
-                if let Err(e) = context.renderer.update_texture(
-                    bitmap_handle,
-                    bd.width(),
-                    bd.height(),
-                    bd.pixels_rgba(),
-                ) {
-                    log::error!("Failed to update dirty bitmap {:?}: {:?}", bitmap_handle, e);
+        if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
+            if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
+                let bd = inner_bitmap_data.read();
+                if bd.dirty() {
+                    if let Err(e) = context.renderer.update_texture(
+                        bitmap_handle,
+                        bd.width(),
+                        bd.height(),
+                        bd.pixels_rgba(),
+                    ) {
+                        log::error!("Failed to update dirty bitmap {:?}: {:?}", bitmap_handle, e);
+                    }
+                    drop(bd);
+                    inner_bitmap_data.write(context.gc_context).set_dirty(false);
                 }
-                drop(bd);
-                inner_bitmap_data.write(context.gc_context).set_dirty(false);
             }
 
             context.renderer.render_bitmap(
