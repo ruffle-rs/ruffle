@@ -51,7 +51,10 @@ pub fn instance_init<'gc>(
                 let bd_object = if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
                     bd_class.construct(activation, &[])?
                 } else if let Some(b_class) = bitmap.avm2_bitmap_class() {
-                    // Timeline-instantiating Bitmap from a Flex-style bitmap asset
+                    // Instantiating Bitmap from a Flex-style bitmap asset.
+                    // Contrary to the above comment, this code path DOES
+                    // trigger from AVM2, since the DisplayObject instantiation
+                    // logic does its job in this case.
                     if let Some((movie, symbol_id)) = activation
                         .context
                         .library
@@ -106,7 +109,8 @@ pub fn instance_init<'gc>(
 
             bitmap.set_smoothing(activation.context.gc_context, smoothing);
         } else {
-            //We are being initialized by AVM2.
+            //We are being initialized by AVM2 (and aren't associated with a
+            //Bitmap subclass).
             let bitmap_handle = if let Some(bd) = bitmap_data {
                 bd.write(activation.context.gc_context)
                     .bitmap_handle(activation.context.renderer)
