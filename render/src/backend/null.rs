@@ -75,7 +75,7 @@ impl RenderBackend for NullRenderer {
         _width: u32,
         _height: u32,
         _rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        Ok(BitmapHandle(0))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 }

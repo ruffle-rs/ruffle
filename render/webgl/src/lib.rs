@@ -997,12 +997,11 @@ impl RenderBackend for WebGlRenderBackend {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, BitmapError> {
+    ) -> Result<(), BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
             &entry.texture
         } else {
-            log::warn!("Tried to replace nonexistent texture");
-            return Ok(handle);
+            return Err(BitmapError::UnknownHandle(handle));
         };
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
@@ -1022,7 +1021,7 @@ impl RenderBackend for WebGlRenderBackend {
             .into_js_result()
             .map_err(|e| BitmapError::JavascriptError(e.into()))?;
 
-        Ok(handle)
+        Ok(())
     }
 }
 

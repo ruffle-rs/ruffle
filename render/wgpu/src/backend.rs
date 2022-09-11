@@ -447,12 +447,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, BitmapError> {
+    ) -> Result<(), BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
             &entry.texture_wrapper.texture
         } else {
-            log::warn!("Tried to replace nonexistent texture");
-            return Ok(handle);
+            return Err(BitmapError::UnknownHandle(handle));
         };
 
         let extent = wgpu::Extent3d {
@@ -477,7 +476,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        Ok(handle)
+        Ok(())
     }
 
     fn render_offscreen(
