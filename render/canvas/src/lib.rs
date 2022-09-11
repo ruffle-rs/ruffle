@@ -484,7 +484,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
+    ) -> Result<(), Error> {
         // TODO: Could be optimized to a single put_image_data call
         // in case it is already stored as a canvas+context.
         self.bitmaps.insert(
@@ -492,7 +492,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
                 .map_err(Error::JavascriptError)?,
         );
-        Ok(handle)
+        Ok(())
     }
 }
 

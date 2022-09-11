@@ -110,7 +110,7 @@ pub trait RenderBackend: Downcast {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error>;
+    ) -> Result<(), Error>;
 }
 impl_downcast!(RenderBackend);
 
