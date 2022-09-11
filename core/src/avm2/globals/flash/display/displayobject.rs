@@ -328,6 +328,96 @@ pub fn set_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stubs `z`'s getter.
+pub fn z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(0.into())
+}
+
+/// Stubs `z`'s setter.
+pub fn set_z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Stubs `rotationX`'s getter.
+pub fn rotation_x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(0.into())
+}
+
+/// Stubs `rotationX`'s setter.
+pub fn set_rotation_x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Stubs `rotationY`'s getter.
+pub fn rotation_y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(0.into())
+}
+
+/// Stubs `rotationY`'s setter.
+pub fn set_rotation_y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Stubs `rotationZ`'s getter.
+pub fn rotation_z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(0.into())
+}
+
+/// Stubs `rotationZ`'s setter.
+pub fn set_rotation_z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Stubs `scaleZ`'s getter.
+pub fn scale_z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(1.into())
+}
+
+/// Stubs `scaleZ`'s setter.
+pub fn set_scale_z<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
 /// Implements `rotation`'s getter.
 pub fn rotation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -907,7 +997,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("scaleX", Some(scale_x), Some(set_scale_x)),
         ("x", Some(x), Some(set_x)),
         ("y", Some(y), Some(set_y)),
+        ("z", Some(z), Some(set_z)),
         ("rotation", Some(rotation), Some(set_rotation)),
+        ("rotationX", Some(rotation_x), Some(set_rotation_x)),
+        ("rotationY", Some(rotation_y), Some(set_rotation_y)),
+        ("rotationZ", Some(rotation_z), Some(set_rotation_z)),
+        ("scaleZ", Some(scale_z), Some(set_scale_z)),
         ("name", Some(name), Some(set_name)),
         ("parent", Some(parent), None),
         ("root", Some(root), None),
