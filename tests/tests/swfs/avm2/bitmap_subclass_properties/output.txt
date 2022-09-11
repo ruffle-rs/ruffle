@@ -1,0 +1,9 @@
+///var tb = new Test.TestBitmap();
+///tb.bitmapData.width;
+32
+///tb.bitmapData.height;
+24
+///tb.bitmapData.getPixel(0,0);
+16777215
+///tb.bitmapData.getPixel(12,12);
+0
