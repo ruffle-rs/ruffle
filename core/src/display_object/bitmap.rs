@@ -14,6 +14,32 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 
+/// The AVM2 class for the Bitmap associated with this object.
+///
+/// Bitmaps may be associated with either a `Bitmap` or a `BitmapData`
+/// subclass. Its superclass determines how the Bitmap will be constructed.
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub enum BitmapClass<'gc> {
+    /// This Bitmap uses the stock Flash Player classes for itself.
+    NoSubclass,
+
+    /// This Bitmap overrides its `Bitmap` class and holds a stock `BitmapData`
+    /// with its pixel data.
+    ///
+    /// This is the normal symbol class association for Flex image embeds.
+    /// Adobe Animate does not support compiling Bitmaps with `Bitmap`
+    /// subclasses (as of version 2022).
+    Bitmap(Avm2ClassObject<'gc>),
+
+    /// This Bitmap uses the stock `Bitmap` class with a custom `BitmapData`
+    /// subclass to hold its pixel data.
+    ///
+    /// This is the normal symbol class association for Adobe Animate image
+    /// embeds.
+    BitmapData(Avm2ClassObject<'gc>),
+}
+
 /// A Bitmap display object is a raw bitamp on the stage.
 /// This can only be instanitated on the display list in SWFv9 AVM2 files.
 /// In AVM1, this is only a library symbol that is referenced by `Graphic`.
@@ -52,15 +78,8 @@ pub struct BitmapData<'gc> {
     /// storing an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
 
-    /// The AVM2 class for the BitmapData associated with this object.
-    ///
-    /// When bitmaps are instantiated by the timeline, they are constructed as
-    /// AVM2's `Bitmap` class, and then they are associated with `BitmapData`
-    /// that is constructed from the given symbol class.
-    ///
-    /// This association is unusual relative to other things that use AS3
-    /// linkage, where the symbol class usually directly represents the symbol.
-    avm2_bitmapdata_class: Option<Avm2ClassObject<'gc>>,
+    /// The class associated with this Bitmap.
+    avm2_bitmap_class: BitmapClass<'gc>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -92,7 +111,7 @@ impl<'gc> Bitmap<'gc> {
                 bitmap_handle,
                 smoothing,
                 avm2_object: None,
-                avm2_bitmapdata_class: None,
+                avm2_bitmap_class: BitmapClass::NoSubclass,
             },
         ))
     }
@@ -167,15 +186,33 @@ impl<'gc> Bitmap<'gc> {
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
-        self.0.read().avm2_bitmapdata_class
+        match self.0.read().avm2_bitmap_class {
+            BitmapClass::BitmapData(c) => Some(c),
+            _ => None,
+        }
+    }
+
+    pub fn avm2_bitmap_class(self) -> Option<Avm2ClassObject<'gc>> {
+        match self.0.read().avm2_bitmap_class {
+            BitmapClass::Bitmap(c) => Some(c),
+            _ => None,
+        }
     }
 
     pub fn set_avm2_bitmapdata_class(
         self,
-        mc: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         class: Avm2ClassObject<'gc>,
     ) {
-        self.0.write(mc).avm2_bitmapdata_class = Some(class);
+        let bitmap_class = if class.has_class_in_chain(context.avm2.classes().bitmap) {
+            BitmapClass::Bitmap(class)
+        } else if class.has_class_in_chain(context.avm2.classes().bitmapdata) {
+            BitmapClass::BitmapData(class)
+        } else {
+            return log::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
+        };
+
+        self.0.write(context.gc_context).avm2_bitmap_class = bitmap_class;
     }
 
     pub fn smoothing(self) -> bool {
@@ -227,7 +264,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     ) {
         if context.is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let bitmap = activation.avm2().classes().bitmap;
+            let bitmap = self
+                .avm2_bitmap_class()
+                .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),

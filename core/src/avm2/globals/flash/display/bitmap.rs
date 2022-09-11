@@ -2,13 +2,16 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::globals::flash::display::bitmapdata::fill_bitmap_data_from_symbol;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{BitmapDataObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::bitmap::bitmap_data::BitmapData;
+use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 
@@ -45,20 +48,60 @@ pub fn instance_init<'gc>(
                 //need to create bitmap data right away, since all AVM2 bitmaps
                 //hold bitmap data.
 
-                if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
-                    let bd_object = bd_class.construct(activation, &[])?;
+                let bd_object = if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
+                    bd_class.construct(activation, &[])?
+                } else if let Some(b_class) = bitmap.avm2_bitmap_class() {
+                    // Timeline-instantiating Bitmap from a Flex-style bitmap asset
+                    if let Some((movie, symbol_id)) = activation
+                        .context
+                        .library
+                        .avm2_class_registry()
+                        .class_symbol(b_class)
+                    {
+                        if let Some(Character::Bitmap(bitmap)) = activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie)
+                            .character_by_id(symbol_id)
+                            .cloned()
+                        {
+                            let new_bitmap_data = GcCell::allocate(
+                                activation.context.gc_context,
+                                BitmapData::default(),
+                            );
 
-                    this.set_property(
-                        &Multiname::public("bitmapData"),
-                        bd_object.into(),
-                        activation,
-                    )?;
+                            fill_bitmap_data_from_symbol(
+                                activation,
+                                bitmap,
+                                new_bitmap_data,
+                                Some(b_class.inner_class_definition().read().name()),
+                            );
+                            BitmapDataObject::from_bitmap_data(
+                                activation,
+                                new_bitmap_data,
+                                activation.context.avm2.classes().bitmapdata,
+                            )?
+                        } else {
+                            //Class association not to a Bitmap
+                            return Err("Attempted to instantiate Bitmap from timeline with symbol class associated to non-Bitmap!".into());
+                        }
+                    } else {
+                        //Class association not bidirectional
+                        return Err("Cannot instantiate Bitmap from timeline without bidirectional symbol class association".into());
+                    }
                 } else {
+                    // No class association
                     return Err(
                         "Cannot instantiate Bitmap from timeline without associated symbol class"
                             .into(),
                     );
-                }
+                };
+
+                this.set_property(
+                    &Multiname::public("bitmapData"),
+                    bd_object.into(),
+                    activation,
+                )?;
             }
 
             bitmap.set_smoothing(activation.context.gc_context, smoothing);

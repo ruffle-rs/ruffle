@@ -787,7 +787,7 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::Sound(_)) => {}
                             Some(Character::Bitmap(bitmap)) => {
                                 bitmap.set_avm2_bitmapdata_class(
-                                    activation.context.gc_context,
+                                    &mut activation.context,
                                     class_object,
                                 );
                             }
