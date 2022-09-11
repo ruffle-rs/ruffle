@@ -13,10 +13,45 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
+use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
+
+/// Copy the static data from a given Bitmap into a new BitmapData.
+///
+/// `bd` is assumed to be an uninstantiated library symbol, associated with the
+/// class named by `name`.
+pub fn fill_bitmap_data_from_symbol<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    bd: Bitmap<'gc>,
+    new_bitmap_data: GcCell<'gc, BitmapData<'gc>>,
+    name: Option<QName<'gc>>,
+) {
+    let bitmap_handle = bd.bitmap_handle();
+
+    if let Some(bitmap_handle) = bitmap_handle {
+        if let Some(bitmap_pixels) = activation.context.renderer.get_bitmap_pixels(bitmap_handle) {
+            let bitmap_pixels: Vec<i32> = bitmap_pixels.into();
+            new_bitmap_data
+                .write(activation.context.gc_context)
+                .set_pixels(
+                    bd.width().into(),
+                    bd.height().into(),
+                    true,
+                    bitmap_pixels.into_iter().map(|p| p.into()).collect(),
+                );
+        } else {
+            log::warn!(
+                "Could not read bitmap data associated with class {:?}",
+                name
+            );
+        }
+    } else {
+        log::error!("Failed to get bitmap handle for {:?}", bd);
+    }
+}
 
 /// Implements `flash.display.BitmapData`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -27,94 +62,74 @@ pub fn instance_init<'gc>(
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
-        let name = this.instance_of_class_definition().map(|c| c.read().name());
-        let character = this
-            .instance_of()
-            .and_then(|t| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(t)
-            })
-            .and_then(|(movie, chara_id)| {
-                activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie)
-                    .character_by_id(chara_id)
-                    .cloned()
-            });
+        if this.as_bitmap_data().is_none() {
+            let name = this.instance_of_class_definition().map(|c| c.read().name());
+            let character = this
+                .instance_of()
+                .and_then(|t| {
+                    activation
+                        .context
+                        .library
+                        .avm2_class_registry()
+                        .class_symbol(t)
+                })
+                .and_then(|(movie, chara_id)| {
+                    activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie)
+                        .character_by_id(chara_id)
+                        .cloned()
+                });
 
-        let new_bitmap_data =
-            GcCell::allocate(activation.context.gc_context, BitmapData::default());
+            let new_bitmap_data =
+                GcCell::allocate(activation.context.gc_context, BitmapData::default());
 
-        if let Some(Character::Bitmap(bd)) = character {
-            let bitmap_handle = bd.bitmap_handle();
-
-            if let Some(bitmap_handle) = bitmap_handle {
-                if let Some(bitmap_pixels) =
-                    activation.context.renderer.get_bitmap_pixels(bitmap_handle)
-                {
-                    let bitmap_pixels: Vec<i32> = bitmap_pixels.into();
-                    new_bitmap_data
-                        .write(activation.context.gc_context)
-                        .set_pixels(
-                            bd.width().into(),
-                            bd.height().into(),
-                            true,
-                            bitmap_pixels.into_iter().map(|p| p.into()).collect(),
-                        );
-                } else {
+            if let Some(Character::Bitmap(bd)) = character {
+                // Instantiating BitmapData from an Animate-style bitmap asset
+                fill_bitmap_data_from_symbol(activation, bd, new_bitmap_data, name);
+            } else {
+                if character.is_some() {
+                    //TODO: Determine if mismatched symbols will still work as a
+                    //regular BitmapData subclass, or if this should throw
                     log::warn!(
-                        "Could not read bitmap data associated with class {:?}",
+                        "BitmapData subclass {:?} is associated with a non-bitmap symbol",
                         name
                     );
                 }
-            } else {
-                log::error!("Failed to get bitmap handle for {:?}", bd);
-            }
-        } else {
-            if character.is_some() {
-                //TODO: Determine if mismatched symbols will still work as a
-                //regular BitmapData subclass, or if this should throw
-                log::warn!(
-                    "BitmapData subclass {:?} is associated with a non-bitmap symbol",
-                    name
-                );
-            }
 
-            let width = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)? as u32;
-            let height = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)? as u32;
-            let transparency = args
-                .get(2)
-                .unwrap_or(&Value::Bool(true))
-                .coerce_to_boolean();
-            let fill_color = if let Some(value) = args.get(3) {
-                value.coerce_to_u32(activation)?
-            } else {
-                0xFFFFFFFF
-            };
+                let width = args
+                    .get(0)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_i32(activation)? as u32;
+                let height = args
+                    .get(1)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_i32(activation)? as u32;
+                let transparency = args
+                    .get(2)
+                    .unwrap_or(&Value::Bool(true))
+                    .coerce_to_boolean();
+                let fill_color = if let Some(value) = args.get(3) {
+                    value.coerce_to_u32(activation)?
+                } else {
+                    0xFFFFFFFF
+                };
 
-            if !is_size_valid(activation.context.swf.version(), width, height) {
-                return Err("Bitmap size is not valid".into());
+                if !is_size_valid(activation.context.swf.version(), width, height) {
+                    return Err("Bitmap size is not valid".into());
+                }
+
+                new_bitmap_data
+                    .write(activation.context.gc_context)
+                    .init_pixels(width, height, transparency, fill_color as i32);
             }
 
             new_bitmap_data
                 .write(activation.context.gc_context)
-                .init_pixels(width, height, transparency, fill_color as i32);
+                .init_object2(this);
+            this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
         }
-
-        new_bitmap_data
-            .write(activation.context.gc_context)
-            .init_object2(this);
-        this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
     }
 
     Ok(Value::Undefined)
