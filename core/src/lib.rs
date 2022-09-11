@@ -1,3 +1,5 @@
+#![allow(clippy::bool_to_int_with_if)]
+
 #[macro_use]
 mod display_object;
 pub use display_object::StageDisplayState;

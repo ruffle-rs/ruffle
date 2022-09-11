@@ -1,3 +1,5 @@
+#![allow(clippy::bool_to_int_with_if)]
+
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
 use ruffle_render::backend::null::NullBitmapSource;
