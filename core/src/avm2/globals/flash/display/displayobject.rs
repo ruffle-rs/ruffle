@@ -997,7 +997,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("scaleX", Some(scale_x), Some(set_scale_x)),
         ("x", Some(x), Some(set_x)),
         ("y", Some(y), Some(set_y)),
-        ("z", Some(z), Some(set_z)),
+        ("z", Some(z), Some(set_z)), //TODO: This property needs to be version-gated to SWF10+
         ("rotation", Some(rotation), Some(set_rotation)),
         ("rotationX", Some(rotation_x), Some(set_rotation_x)),
         ("rotationY", Some(rotation_y), Some(set_rotation_y)),
