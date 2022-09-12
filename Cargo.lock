@@ -1470,7 +1470,7 @@ dependencies = [
 [[package]]
 name = "gc-arena"
 version = "0.2.2"
-source = "git+https://github.com/ruffle-rs/gc-arena#4743f2d029aa271281b5dec0cb75304c43f6cf82"
+source = "git+https://github.com/ruffle-rs/gc-arena#081b6883a522b38030b13744c80c84efbfcbae1f"
 dependencies = [
  "gc-arena-derive",
 ]
@@ -1478,7 +1478,7 @@ dependencies = [
 [[package]]
 name = "gc-arena-derive"
 version = "0.2.2"
-source = "git+https://github.com/ruffle-rs/gc-arena#4743f2d029aa271281b5dec0cb75304c43f6cf82"
+source = "git+https://github.com/ruffle-rs/gc-arena#081b6883a522b38030b13744c80c84efbfcbae1f"
 dependencies = [
  "proc-macro2",
  "quote",
