@@ -28,7 +28,7 @@ quick-xml = { git = "https://github.com/ruffle-rs/quick-xml", rev = "8496365ec14
 downcast-rs = "1.2.0"
 url = "2.2.2"
 weak-table = "0.3.2"
-percent-encoding = "2.1.0"
+percent-encoding = "2.2.0"
 thiserror = "1.0"
 chrono = "0.4"
 instant = "0.1"
