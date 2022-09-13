@@ -440,6 +440,7 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub fn abc_int<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<i32>,
@@ -457,6 +458,7 @@ pub fn abc_int<'gc>(
         .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub fn abc_uint<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<u32>,
@@ -474,6 +476,7 @@ pub fn abc_uint<'gc>(
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub fn abc_double<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<f64>,
