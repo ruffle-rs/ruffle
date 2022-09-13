@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-convert_case = "0.5.0"
+convert_case = "0.6.0"
 proc-macro2 = "1.0.43"
 quote = "1.0.21"
 swf = { path = "../../swf" }
