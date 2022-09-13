@@ -96,14 +96,14 @@ impl ByteArrayStorage {
 
     /// Write bytes at the next position in the ByteArray, growing if needed.
     #[inline]
-    pub fn write_bytes(&mut self, buf: &[u8]) -> Result<(), Error> {
+    pub fn write_bytes<'gc>(&mut self, buf: &[u8]) -> Result<(), Error<'gc>> {
         self.write_at(buf, self.position.get())?;
         self.position.set(self.position.get() + buf.len());
         Ok(())
     }
 
     #[inline]
-    pub fn write_bytes_within(&mut self, start: usize, amnt: usize) -> Result<(), Error> {
+    pub fn write_bytes_within<'gc>(&mut self, start: usize, amnt: usize) -> Result<(), Error<'gc>> {
         self.write_at_within(start, amnt, self.position.get())?;
         self.position.set(self.position.get() + amnt);
         Ok(())
@@ -111,7 +111,7 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes from the current position in the ByteArray
     #[inline]
-    pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], Error> {
+    pub fn read_bytes<'gc>(&self, amnt: usize) -> Result<&[u8], Error<'gc>> {
         let bytes = self.read_at(amnt, self.position.get())?;
         self.position.set(self.position.get() + amnt);
         Ok(bytes)
@@ -119,7 +119,7 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
-    pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], Error> {
+    pub fn read_at<'gc>(&self, amnt: usize, offset: usize) -> Result<&[u8], Error<'gc>> {
         self.bytes
             .get(offset..)
             .and_then(|bytes| bytes.get(..amnt))
@@ -128,7 +128,7 @@ impl ByteArrayStorage {
 
     /// Write bytes at any offset in the ByteArray
     /// Will automatically grow the ByteArray to fit the new buffer
-    pub fn write_at(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
+    pub fn write_at<'gc>(&mut self, buf: &[u8], offset: usize) -> Result<(), Error<'gc>> {
         let new_len = offset
             .checked_add(buf.len())
             .ok_or("RangeError: Cannot overflow usize")?;
@@ -144,7 +144,11 @@ impl ByteArrayStorage {
 
     /// Write bytes at any offset in the ByteArray
     /// Will return an error if the new buffer does not fit the ByteArray
-    pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
+    pub fn write_at_nongrowing<'gc>(
+        &mut self,
+        buf: &[u8],
+        offset: usize,
+    ) -> Result<(), Error<'gc>> {
         self.bytes
             .get_mut(offset..)
             .and_then(|bytes| bytes.get_mut(..buf.len()))
@@ -155,12 +159,12 @@ impl ByteArrayStorage {
 
     /// Write bytes at any offset in the ByteArray from within the current ByteArray using a memmove.
     /// Will automatically grow the ByteArray to fit the new buffer
-    pub fn write_at_within(
+    pub fn write_at_within<'gc>(
         &mut self,
         start: usize,
         amnt: usize,
         offset: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         // First verify that reading from `start` to `amnt` is valid
         let end = start
             .checked_add(amnt)
@@ -180,7 +184,10 @@ impl ByteArrayStorage {
     }
 
     /// Compress the ByteArray into a temporary buffer
-    pub fn compress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
+    pub fn compress<'gc>(
+        &mut self,
+        algorithm: CompressionAlgorithm,
+    ) -> Result<Vec<u8>, Error<'gc>> {
         let mut buffer = Vec::new();
         match algorithm {
             CompressionAlgorithm::Zlib => {
@@ -202,7 +209,10 @@ impl ByteArrayStorage {
     }
 
     /// Decompress the ByteArray into a temporary buffer
-    pub fn decompress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
+    pub fn decompress<'gc>(
+        &mut self,
+        algorithm: CompressionAlgorithm,
+    ) -> Result<Vec<u8>, Error<'gc>> {
         let mut buffer = Vec::new();
         match algorithm {
             CompressionAlgorithm::Zlib => {
@@ -223,22 +233,22 @@ impl ByteArrayStorage {
         Ok(buffer)
     }
 
-    pub fn read_utf(&self) -> Result<&[u8], Error> {
+    pub fn read_utf<'gc>(&self) -> Result<&[u8], Error<'gc>> {
         let len = self.read_unsigned_short()?;
         let val = self.read_bytes(len.into())?;
         Ok(val)
     }
 
-    pub fn write_boolean(&mut self, val: bool) -> Result<(), Error> {
+    pub fn write_boolean<'gc>(&mut self, val: bool) -> Result<(), Error<'gc>> {
         self.write_bytes(&[val as u8; 1])
     }
 
-    pub fn read_boolean(&self) -> Result<bool, Error> {
+    pub fn read_boolean<'gc>(&self) -> Result<bool, Error<'gc>> {
         Ok(self.read_bytes(1)? != [0])
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
-    pub fn write_utf(&mut self, utf_string: &str) -> Result<(), Error> {
+    pub fn write_utf<'gc>(&mut self, utf_string: &str) -> Result<(), Error<'gc>> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size)?;
             self.write_bytes(utf_string.as_bytes())
@@ -393,7 +403,7 @@ macro_rules! impl_write{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&mut self, val: $data_type) -> Result<(), Error> {
+            $( pub fn $method_name<'gc> (&mut self, val: $data_type) -> Result<(), Error<'gc>> {
                 let val_bytes = match self.endian {
                     Endian::Big => val.to_be_bytes(),
                     Endian::Little => val.to_le_bytes(),
@@ -409,7 +419,7 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&self) -> Result<$data_type, Error> {
+            $( pub fn $method_name<'gc> (&self) -> Result<$data_type, Error<'gc>> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())

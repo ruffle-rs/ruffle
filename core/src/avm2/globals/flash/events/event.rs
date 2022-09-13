@@ -11,7 +11,7 @@ pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let mut evt = this.as_event_mut(activation.context.gc_context).unwrap();
     evt.set_event_type(
@@ -40,7 +40,7 @@ pub fn get_bubbles<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt.is_bubbling().into());
     }
@@ -53,7 +53,7 @@ pub fn get_cancelable<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt.is_cancelable().into());
     }
@@ -66,7 +66,7 @@ pub fn get_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt.event_type().into());
     }
@@ -79,7 +79,7 @@ pub fn get_target<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt.target().map(|o| o.into()).unwrap_or(Value::Null));
     }
@@ -92,7 +92,7 @@ pub fn get_current_target<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt
             .current_target()
@@ -108,7 +108,7 @@ pub fn get_event_phase<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         let event_phase = evt.phase() as u32;
         return Ok(event_phase.into());
@@ -122,7 +122,7 @@ pub fn is_default_prevented<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(evt) = this.unwrap().as_event() {
         return Ok(evt.is_cancelled().into());
     }
@@ -135,7 +135,7 @@ pub fn prevent_default<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
         evt.cancel();
     }
@@ -148,7 +148,7 @@ pub fn stop_propagation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
         evt.stop_propagation();
     }
@@ -161,7 +161,7 @@ pub fn stop_immediate_propagation<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut evt) = this.unwrap().as_event_mut(activation.context.gc_context) {
         evt.stop_immediate_propagation();
     }

@@ -122,7 +122,7 @@ impl<'gc> ScopeChain<'gc> {
         &self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<Object<'gc>>, Error> {
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // First search our scopes
         if let Some(scopes) = self.scopes {
             for (depth, scope) in scopes.iter().enumerate().rev() {
@@ -153,7 +153,7 @@ impl<'gc> ScopeChain<'gc> {
         &self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<Value<'gc>>, Error> {
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         if let Some(object) = self.find(name, activation)? {
             Ok(Some(object.get_property(name, activation)?))
         } else {
@@ -206,7 +206,7 @@ impl<'gc> ScopeStack<'gc> {
         &self,
         multiname: &Multiname<'gc>,
         global: bool,
-    ) -> Result<Option<Object<'gc>>, Error> {
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         for (depth, scope) in self.scopes.iter().enumerate().rev() {
             let values = scope.values();
 

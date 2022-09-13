@@ -12,7 +12,7 @@ macro_rules! wrap_std {
             activation: &mut Activation<'_, 'gc, '_>,
             _this: Option<Object<'gc>>,
             args: &[Value<'gc>],
-        ) -> Result<Value<'gc>, Error> {
+        ) -> Result<Value<'gc>, Error<'gc>> {
             if let Some(input) = args.get(0) {
                 Ok($std(input.coerce_to_number(activation)?).into())
             } else {
@@ -39,7 +39,7 @@ pub fn round<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(x) = args.get(0) {
         let x = x.coerce_to_number(activation)?;
         // Note that Flash Math.round always rounds toward infinity,
@@ -54,7 +54,7 @@ pub fn atan2<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let y = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -70,7 +70,7 @@ pub fn max<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut cur_max = f64::NEG_INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
@@ -87,7 +87,7 @@ pub fn min<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut cur_min = f64::INFINITY;
     for arg in args {
         let val = arg.coerce_to_number(activation)?;
@@ -104,7 +104,7 @@ pub fn pow<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let n = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -120,6 +120,6 @@ pub fn random<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
 }

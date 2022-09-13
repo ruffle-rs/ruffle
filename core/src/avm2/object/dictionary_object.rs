@@ -14,7 +14,7 @@ use std::cell::{Ref, RefMut};
 pub fn dictionary_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(DictionaryObject(GcCell::allocate(
@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Object::from(*self).into())
     }
 
@@ -102,7 +102,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<u32>, Error> {
+    ) -> Result<Option<u32>, Error<'gc>> {
         let read = self.0.read();
         let num_enumerants = read.base.num_enumerants();
         let object_space_length = read.object_space.keys().len() as u32;
@@ -118,7 +118,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         self,
         index: u32,
         _activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
         let object_space_len = read.object_space.keys().len() as u32;
         if object_space_len >= index {

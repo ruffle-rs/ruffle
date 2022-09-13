@@ -13,7 +13,7 @@ pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(
@@ -40,7 +40,7 @@ pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let mut this = this.expect("`this` should be set in native method!");
     let id = this
         .get_property(

@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -30,7 +30,7 @@ pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let scope = activation.create_scopechain();
         let this_class = this.as_class_object().unwrap();
@@ -79,7 +79,7 @@ fn call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = args
         .get(0)
         .and_then(|v| v.coerce_to_object(activation).ok())
@@ -101,7 +101,7 @@ fn apply<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     func: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = args
         .get(0)
         .and_then(|v| v.coerce_to_object(activation).ok())
@@ -137,7 +137,7 @@ fn prototype<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(function) = this.as_function_object() {
             if let Some(proto) = function.prototype() {
@@ -154,7 +154,7 @@ fn set_prototype<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(function) = this.as_function_object() {
             let new_proto = args

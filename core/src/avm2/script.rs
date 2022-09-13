@@ -133,7 +133,7 @@ impl<'gc> TranslationUnit<'gc> {
         method_index: Index<AbcMethod>,
         is_function: bool,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Method<'gc>, Error> {
+    ) -> Result<Method<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
             return Ok(method.clone());
@@ -175,7 +175,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         class_index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
+    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(class)) = read.classes.get(class_index as usize) {
             return Ok(*class);
@@ -198,7 +198,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         script_index: u32,
         uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Script<'gc>, Error> {
+    ) -> Result<Script<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
             return Ok(*scripts);
@@ -232,7 +232,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         string_index: u32,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Option<AvmString<'gc>>, Error> {
+    ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
         let mut write = self.0.write(mc);
         if let Some(Some(string)) = write.strings.get(string_index as usize) {
             return Ok(Some(*string));
@@ -266,7 +266,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         string_index: u32,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(self
             .pool_string_option(string_index, mc)?
             .unwrap_or_default())
@@ -278,7 +278,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(multiname)) = read.multinames.get(multiname_index.0 as usize) {
             return Ok(*multiname);
@@ -301,7 +301,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, mc)?;
         if multiname.has_lazy_component() {
             return Err(format!("Multiname {} is not static", multiname_index.0).into());
@@ -318,7 +318,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             Ok(Gc::allocate(mc, Multiname::any()))
         } else {
@@ -402,9 +402,9 @@ impl<'gc> Script<'gc> {
         globals: Object<'gc>,
         domain: Domain<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let abc = unit.abc();
-        let script: Result<&AbcScript, Error> = abc
+        let script: Result<&AbcScript, Error<'gc>> = abc
             .scripts
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());
@@ -436,7 +436,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script_index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
         if write.traits_loaded {
@@ -446,7 +446,7 @@ impl<'gc> Script<'gc> {
         write.traits_loaded = true;
 
         let abc = unit.abc();
-        let script: Result<_, Error> = abc
+        let script: Result<_, Error<'gc>> = abc
             .scripts
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());
@@ -486,7 +486,7 @@ impl<'gc> Script<'gc> {
     pub fn globals(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 
         if !write.initialized {
@@ -521,7 +521,7 @@ impl<'gc> Script<'gc> {
     ///
     /// This function will return an error if it is incorrectly called before
     /// traits are loaded.
-    pub fn traits<'a>(&'a self) -> Result<Ref<'a, [Trait<'gc>]>, Error> {
+    pub fn traits<'a>(&'a self) -> Result<Ref<'a, [Trait<'gc>]>, Error<'gc>> {
         let read = self.0.read();
 
         if !read.traits_loaded {

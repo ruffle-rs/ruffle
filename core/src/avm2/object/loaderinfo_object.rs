@@ -18,7 +18,7 @@ use std::sync::Arc;
 pub fn loaderinfo_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(LoaderInfoObject(GcCell::allocate(
@@ -87,7 +87,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
         loader: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
@@ -120,7 +120,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         loader: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
@@ -210,7 +210,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object((*self).into()))
     }
 

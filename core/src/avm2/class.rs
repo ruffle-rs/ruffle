@@ -77,7 +77,7 @@ macro_rules! define_indirect_properties {
                     activation: &mut Activation<'_, 'gc, '_>,
                     this: Option<Object<'gc>>,
                     _args: &[Value<'gc>]
-                ) -> Result<Value<'gc>, Error> {
+                ) -> Result<Value<'gc>, Error<'gc>> {
                     use crate::avm2::Multiname;
                     use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 
@@ -121,7 +121,7 @@ pub(crate) use define_indirect_properties;
 ///  read for traits).
 ///  * `activation` - The current AVM2 activation.
 pub type AllocatorFn =
-    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error>;
+    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error<'gc>>;
 
 #[derive(Clone, Collect)]
 #[collect(require_static)]
@@ -303,15 +303,15 @@ impl<'gc> Class<'gc> {
         unit: TranslationUnit<'gc>,
         class_index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<GcCell<'gc, Self>, Error> {
+    ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let abc = unit.abc();
-        let abc_class: Result<&AbcClass, Error> = abc
+        let abc_class: Result<&AbcClass, Error<'gc>> = abc
             .classes
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Class index not valid".into());
         let abc_class = abc_class?;
 
-        let abc_instance: Result<&AbcInstance, Error> = abc
+        let abc_instance: Result<&AbcInstance, Error<'gc>> = abc
             .instances
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Instance index not valid".into());
@@ -406,7 +406,7 @@ impl<'gc> Class<'gc> {
         unit: TranslationUnit<'gc>,
         class_index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if self.traits_loaded {
             return Ok(());
         }
@@ -414,13 +414,13 @@ impl<'gc> Class<'gc> {
         self.traits_loaded = true;
 
         let abc = unit.abc();
-        let abc_class: Result<&AbcClass, Error> = abc
+        let abc_class: Result<&AbcClass, Error<'gc>> = abc
             .classes
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Class index not valid".into());
         let abc_class = abc_class?;
 
-        let abc_instance: Result<&AbcInstance, Error> = abc
+        let abc_instance: Result<&AbcInstance, Error<'gc>> = abc
             .instances
             .get(class_index as usize)
             .ok_or_else(|| "LoadError: Instance index not valid".into());
@@ -444,7 +444,7 @@ impl<'gc> Class<'gc> {
     /// This should be called at class creation time once the superclass name
     /// has been resolved. It will return Ok for a valid class, and a
     /// VerifyError for any invalid class.
-    pub fn validate_class(&self, superclass: Option<ClassObject<'gc>>) -> Result<(), Error> {
+    pub fn validate_class(&self, superclass: Option<ClassObject<'gc>>) -> Result<(), Error<'gc>> {
         // System classes do not throw verify errors.
         if self.is_system {
             return Ok(());
@@ -513,7 +513,7 @@ impl<'gc> Class<'gc> {
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
         body: &AbcMethodBody,
-    ) -> Result<GcCell<'gc, Self>, Error> {
+    ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let name =
             translation_unit.pool_string(method.name.as_u30(), activation.context.gc_context)?;
         let mut traits = Vec::with_capacity(body.traits.len());

@@ -107,7 +107,7 @@ impl<'gc> Domain<'gc> {
     pub fn get_defining_script(
         self,
         multiname: &Multiname<'gc>,
-    ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error> {
+    ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error<'gc>> {
         let read = self.0.read();
 
         if let Some(name) = multiname.local_name() {
@@ -129,7 +129,7 @@ impl<'gc> Domain<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: QName<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let (name, mut script) = self
             .get_defining_script(&name.into())?
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
@@ -147,7 +147,7 @@ impl<'gc> Domain<'gc> {
         name: QName<'gc>,
         script: Script<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if self.has_definition(name) {
             return Err(format!(
                 "VerifyError: Attempted to redefine existing name {}",
@@ -185,7 +185,7 @@ impl<'gc> Domain<'gc> {
     pub fn init_default_domain_memory(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let bytearray_class = activation.avm2().classes().bytearray;
 
         let domain_memory = bytearray_class.construct(activation, &[])?;

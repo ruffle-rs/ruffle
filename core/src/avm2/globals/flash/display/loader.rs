@@ -18,7 +18,7 @@ pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
         if this.as_display_object().is_none() {
             let new_do = LoaderDisplay::new_with_avm2(activation.context.gc_context, this);
@@ -47,7 +47,7 @@ pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let url_request = args[0].as_object().unwrap();
 

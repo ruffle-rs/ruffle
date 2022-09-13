@@ -7,7 +7,7 @@ pub fn hide_built_in_items<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: replace this by a proper implementation.
     log::warn!("flash.ui.ContextMenu is a stub");
     activation

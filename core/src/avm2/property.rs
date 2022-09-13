@@ -58,7 +58,7 @@ impl<'gc> PropertyClass<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
-    ) -> Result<(Value<'gc>, bool), Error> {
+    ) -> Result<(Value<'gc>, bool), Error<'gc>> {
         let (class, changed) = match self {
             PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
@@ -144,7 +144,7 @@ fn resolve_class_private<'gc>(
     name: &Multiname<'gc>,
     unit: Option<TranslationUnit<'gc>>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<ResolveOutcome<'gc>, Error> {
+) -> Result<ResolveOutcome<'gc>, Error<'gc>> {
     // A Property may have a type of '*' (which corresponds to 'Multiname::any()')
     // We don't want to perform any coercions in this case - in particular,
     // this means that the property can have a value of `Undefined`.

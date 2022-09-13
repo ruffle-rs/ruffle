@@ -17,7 +17,7 @@ use std::cell::{Ref, RefMut};
 pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(ErrorObject(GcCell::allocate(
@@ -49,7 +49,7 @@ impl<'gc> ErrorObject<'gc> {
     pub fn display(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         let name = self
             .get_property(&Multiname::public("name"), activation)?
             .coerce_to_string(activation)?;
@@ -70,7 +70,7 @@ impl<'gc> ErrorObject<'gc> {
     pub fn display_full(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         let mut output = WString::new();
         output.push_str(&self.display(activation)?);
         self.call_stack().display(&mut output);
@@ -96,11 +96,14 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn to_string(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.display(activation)?.into())
     }
 
