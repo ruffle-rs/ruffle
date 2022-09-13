@@ -1,0 +1,119 @@
+use crate::avm2::object::TObject;
+use crate::avm2::Activation;
+use crate::avm2::AvmString;
+use crate::avm2::Value;
+
+use super::ClassObject;
+
+/// An error generated while handling AVM2 logic
+#[derive(Debug)]
+pub enum Error<'gc> {
+    /// A thrown error. This can be produced by an explicit 'throw'
+    /// opcode, or by a native implementation that throws an exception.
+    /// This can be caught by any catch blocks created by ActionScript code
+    AvmError(Value<'gc>),
+    /// An internal VM error. This cannot be caught by ActionScript code -
+    /// it will either be logged by Ruffle, or cause the player to
+    /// stop executing.
+    RustError(Box<dyn std::error::Error>),
+}
+
+#[inline(never)]
+#[cold]
+pub fn range_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().rangeerror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
+pub fn argument_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().argumenterror;
+    error_constructor(activation, class, message, code)
+}
+
+pub fn error_constructor<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    class: ClassObject<'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let message = AvmString::new_utf8(activation.context.gc_context, message);
+    Ok(class
+        .construct(activation, &[message.into(), code.into()])?
+        .into())
+}
+
+impl<'gc> std::fmt::Display for Error<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+// Ideally, all of these impls would be unified under a single
+// `impl<E: std::error::Error> From<E> for Error<'gc>`
+// However, this would conflict with the 'str' and 'String'
+// impls, which are still widely used.
+
+impl<'gc, 'a> From<&'a str> for Error<'gc> {
+    fn from(val: &'a str) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<String> for Error<'gc> {
+    fn from(val: String) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<std::io::Error> for Error<'gc> {
+    fn from(val: std::io::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<std::fmt::Error> for Error<'gc> {
+    fn from(val: std::fmt::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<swf::error::Error> for Error<'gc> {
+    fn from(val: swf::error::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<crate::tag_utils::Error> for Error<'gc> {
+    fn from(val: crate::tag_utils::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<serde_json::Error> for Error<'gc> {
+    fn from(val: serde_json::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc> From<Box<dyn std::error::Error>> for Error<'gc> {
+    fn from(val: Box<dyn std::error::Error>) -> Error<'gc> {
+        Error::RustError(val)
+    }
+}
+
+#[cfg(feature = "lzma")]
+impl<'gc> From<lzma_rs::error::Error> for Error<'gc> {
+    fn from(val: lzma_rs::error::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}

@@ -1,2 +1,3 @@
 Caught error!
-Ruffle thrown error: "[object IllegalOperationError]"
+ArgumentError
+ArgumentError: My Error

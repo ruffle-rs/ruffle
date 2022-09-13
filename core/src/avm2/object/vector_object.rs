@@ -100,7 +100,10 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    return Ok(read.vector.get(index).unwrap_or(Value::Undefined));
+                    return Ok(read
+                        .vector
+                        .get(index, activation)
+                        .unwrap_or(Value::Undefined));
                 }
             }
         }

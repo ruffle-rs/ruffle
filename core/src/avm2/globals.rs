@@ -104,6 +104,9 @@ pub struct SystemClasses<'gc> {
     pub rectangle: ClassObject<'gc>,
     pub keyboardevent: ClassObject<'gc>,
     pub point: ClassObject<'gc>,
+    pub rangeerror: ClassObject<'gc>,
+    pub referenceerror: ClassObject<'gc>,
+    pub argumenterror: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -175,6 +178,9 @@ impl<'gc> SystemClasses<'gc> {
             rectangle: object,
             keyboardevent: object,
             point: object,
+            rangeerror: object,
+            referenceerror: object,
+            argumenterror: object,
         }
     }
 }
@@ -694,6 +700,9 @@ fn load_playerglobal<'gc>(
         activation,
         script,
         [
+            ("", "ArgumentError", argumenterror),
+            ("", "RangeError", rangeerror),
+            ("", "ReferenceError", referenceerror),
             ("flash.display", "Scene", scene),
             (
                 "flash.errors",

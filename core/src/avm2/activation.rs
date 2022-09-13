@@ -806,8 +806,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         reader: &mut Reader<'b>,
         full_data: &'b [u8],
         instruction_start: usize,
-        error: Error,
+        error: Error<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let error = match error {
+            Error::AvmError(err) => err,
+            Error::RustError(_) => return Err(error),
+        };
+
         if let Some(body) = method.body() {
             for e in body.exceptions.iter() {
                 if instruction_start >= e.from_offset as usize
@@ -816,9 +821,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // Currently we support only typeless catch clauses
                 {
                     // Emulate pushing the exception object
-                    let ws = WString::from_utf8_owned(error.to_string());
-                    let exception = AvmString::new(self.context.gc_context, ws);
-                    self.context.avm2.push(exception);
+                    self.context.avm2.push(error);
 
                     self.scope_stack.clear();
                     reader.seek_absolute(full_data, e.target_offset as usize);
@@ -827,8 +830,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        log::error!("AVM2 error: {}", error);
-        Err(error)
+        log::error!("AVM2 error: {:?}", error);
+        Err(Error::AvmError(error))
     }
 
     /// Run a single action from a given action reader.
@@ -1044,7 +1047,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             result
         } else if let Err(e) = op {
             log::error!("Parse error: {:?}", e);
-            Err(e.into())
+            Err(Error::RustError(Box::new(e)))
         } else {
             unreachable!();
         }
@@ -3172,14 +3175,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_throw(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let error_val = self.context.avm2.pop();
-        // FIXME - preserve the original thrown value.
-        // We include 'Ruffle' in the message to make it obvious that
-        // this is a temporary hack, and that the original object
-        // may not have been a String
-        let error_string = format!(
-            "Ruffle thrown error: {}",
-            error_val.coerce_to_debug_string(self)?
-        );
-        Err(error_string.into())
+        Err(Error::AvmError(error_val))
     }
 }

@@ -146,12 +146,12 @@ pub fn class_init<'gc>(
 
 /// Implements `BitmapData.width`'s getter.
 pub fn width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         return Ok((bitmap_data.read().width() as i32).into());
     }
 
@@ -160,12 +160,12 @@ pub fn width<'gc>(
 
 /// Implements `BitmapData.height`'s getter.
 pub fn height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         return Ok((bitmap_data.read().height() as i32).into());
     }
 
@@ -174,12 +174,12 @@ pub fn height<'gc>(
 
 /// Implements `BitmapData.transparent`'s getter.
 pub fn transparent<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         return Ok(bitmap_data.read().transparency().into());
     }
 
@@ -193,7 +193,7 @@ pub fn scroll<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -218,7 +218,7 @@ pub fn copy_pixels<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -255,7 +255,7 @@ pub fn copy_pixels<'gc>(
             .coerce_to_i32(activation)?;
 
         if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
-            src_bitmap.read().check_valid()?;
+            src_bitmap.read().check_valid(activation)?;
             // dealing with object aliasing...
             let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
             let src_bitmap_data_cell = src_bitmap;
@@ -338,7 +338,7 @@ pub fn get_pixel<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -391,7 +391,7 @@ pub fn draw<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        bitmap_data.read().check_valid()?;
+        bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 

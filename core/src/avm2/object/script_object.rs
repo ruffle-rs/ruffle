@@ -189,12 +189,27 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            Err(format!(
-                "Cannot get undefined property {:?} on class {:?}",
-                local_name,
-                self.instance_of()
-            )
-            .into())
+            let class_name = self
+                .instance_of()
+                .map(|cls| {
+                    cls.inner_class_definition()
+                        .read()
+                        .name()
+                        .to_qualified_name_err_message(activation.context.gc_context)
+                })
+                .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+
+            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                "Error #1069: Property {local_name} not found on {class_name} and there is no default value.",
+            ));
+            Err(Error::AvmError(
+                activation
+                    .avm2()
+                    .classes()
+                    .referenceerror
+                    .construct(activation, &[message.into(), 1069.into()])?
+                    .into(),
+            ))
         } else {
             Ok(Value::Undefined)
         }
