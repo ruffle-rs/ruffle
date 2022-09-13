@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
         activation.super_init(this, &[])?;
 
@@ -96,7 +96,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -105,7 +105,7 @@ pub fn bitmap_data<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -124,7 +124,7 @@ pub fn set_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -147,7 +147,7 @@ pub fn pixel_snapping<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok("auto".into())
 }
 
@@ -156,7 +156,7 @@ pub fn set_pixel_snapping<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Bitmap.pixelSnapping is a stub".into())
 }
 
@@ -165,7 +165,7 @@ pub fn smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -181,7 +181,7 @@ pub fn set_smoothing<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())

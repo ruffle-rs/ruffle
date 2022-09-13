@@ -9,7 +9,7 @@ use swf::Fixed8;
 fn get_display_object<'gc>(
     this: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<DisplayObject<'gc>, Error> {
+) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
         .get_property(
             &Multiname::new(Namespace::Private("".into()), "_displayObject"),
@@ -25,7 +25,7 @@ pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     this.unwrap().set_property(
         &Multiname::new(Namespace::Private("".into()), "_displayObject"),
         args[0],
@@ -38,7 +38,7 @@ pub fn get_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let ct_obj = *get_display_object(this, activation)?
         .base()
@@ -50,7 +50,7 @@ pub fn set_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let ct = object_to_color_transform(args[0].coerce_to_object(activation)?, activation)?;
     get_display_object(this, activation)?
@@ -63,7 +63,7 @@ pub fn get_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let matrix = *get_display_object(this, activation)?.base().matrix();
     matrix_to_object(matrix, activation)
@@ -73,7 +73,7 @@ pub fn set_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let matrix = object_to_matrix(args[0].coerce_to_object(activation)?, activation)?;
     get_display_object(this, activation)?
@@ -86,7 +86,7 @@ pub fn get_concatenated_matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
 
     let dobj = get_display_object(this, activation)?;
@@ -127,7 +127,7 @@ pub fn get_concatenated_color_transform<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("Transform.concatenatedColorTransform: not yet implemented");
     Ok(Value::Undefined)
 }
@@ -137,7 +137,7 @@ pub fn get_concatenated_color_transform<'gc>(
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<ColorTransform, Error> {
+) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
         .get_property(&Multiname::public("redMultiplier"), activation)?
         .coerce_to_number(activation)?;
@@ -177,7 +177,7 @@ pub fn object_to_color_transform<'gc>(
 pub fn color_transform_to_object<'gc>(
     color_transform: &ColorTransform,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         color_transform.r_mult.to_f64().into(),
         color_transform.g_mult.to_f64().into(),
@@ -196,7 +196,7 @@ pub fn color_transform_to_object<'gc>(
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         matrix.a.into(),
         matrix.b.into(),
@@ -216,7 +216,7 @@ pub fn matrix_to_object<'gc>(
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Matrix, Error> {
+) -> Result<Matrix, Error<'gc>> {
     let a = object
         .get_property(&Multiname::public("a"), activation)?
         .coerce_to_number(activation)? as f32;

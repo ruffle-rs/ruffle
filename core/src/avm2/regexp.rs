@@ -211,7 +211,7 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         f: &FunctionObject<'gc>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.replace_with_fn(activation, &text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
@@ -236,7 +236,7 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.replace_with_fn(activation, &text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
@@ -250,13 +250,13 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: &AvmString<'gc>,
         mut f: F,
-    ) -> Result<AvmString<'gc>, Error>
+    ) -> Result<AvmString<'gc>, Error<'gc>>
     where
         F: FnMut(
             &mut Activation<'_, 'gc, '_>,
             &AvmString<'gc>,
             &regress::Match,
-        ) -> Result<WString, Error>,
+        ) -> Result<WString, Error<'gc>>,
     {
         let mut ret = WString::new();
         let mut start = 0;
@@ -288,7 +288,7 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         limit: usize,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let mut storage = ArrayStorage::new(0);
         // The empty regex is a special case which splits into characters.
         if self.source.is_empty() {

@@ -67,7 +67,7 @@ const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstru
 ///
 /// As AVM2 is a far stricter VM than AVM1, this may eventually be replaced
 /// with a proper Avm2Error enum.
-pub type Error = Box<dyn std::error::Error>;
+pub type Error<'gc> = Box<dyn std::error::Error>;
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
@@ -124,7 +124,7 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
         globals::load_player_globals(&mut activation, globals)
@@ -141,7 +141,7 @@ impl<'gc> Avm2<'gc> {
     pub fn run_script_initializer(
         script: Script<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
         let (method, scope, _domain) = script.init();
@@ -185,7 +185,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         use crate::avm2::events::dispatch_event;
         let mut activation = Activation::from_nothing(context.reborrow());
         dispatch_event(&mut activation, target, event)
@@ -234,7 +234,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Object<'gc>,
         on_type: ClassObject<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let base_event = event.as_event().unwrap(); // TODO: unwrap?
         let event_name = base_event.event_type();
         drop(base_event);
@@ -278,7 +278,7 @@ impl<'gc> Avm2<'gc> {
         reciever: Option<Object<'gc>>,
         args: &[Value<'gc>],
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut evt_activation = Activation::from_nothing(context.reborrow());
         callable.call(reciever, args, &mut evt_activation)?;
 
@@ -290,7 +290,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         do_abc: DoAbc,
         domain: Domain<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut read = Reader::new(do_abc.data);
 
         let abc_file = Rc::new(read.read()?);

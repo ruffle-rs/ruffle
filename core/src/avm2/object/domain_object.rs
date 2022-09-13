@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 pub fn appdomain_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let domain = activation.domain();
     let base = ScriptObjectData::new(class);
 
@@ -46,7 +46,7 @@ impl<'gc> DomainObject<'gc> {
     pub fn from_domain(
         activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().application_domain;
         let base = ScriptObjectData::new(class);
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
         Some(self.0.read().domain)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         let this: Object<'gc> = Object::DomainObject(*self);
 
         Ok(this.into())

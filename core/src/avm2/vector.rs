@@ -96,7 +96,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         new_length: usize,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -143,7 +143,7 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Retrieve a value from the vector.
-    pub fn get(&self, pos: usize) -> Result<Value<'gc>, Error> {
+    pub fn get(&self, pos: usize) -> Result<Value<'gc>, Error<'gc>> {
         self.storage
             .get(pos)
             .cloned()
@@ -164,7 +164,7 @@ impl<'gc> VectorStorage<'gc> {
         pos: usize,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if !self.is_fixed && pos == self.length() {
             self.storage.resize(pos + 1, self.default(activation));
         }
@@ -183,7 +183,7 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn push(&mut self, value: Value<'gc>) -> Result<(), Error> {
+    pub fn push(&mut self, value: Value<'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -196,7 +196,10 @@ impl<'gc> VectorStorage<'gc> {
     /// Pop a value off the end of the vector.
     ///
     /// This function returns an error if the vector is fixed.
-    pub fn pop(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    pub fn pop(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -221,7 +224,7 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn unshift(&mut self, value: Value<'gc>) -> Result<(), Error> {
+    pub fn unshift(&mut self, value: Value<'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -234,7 +237,10 @@ impl<'gc> VectorStorage<'gc> {
     /// Pop a value off the start of the vector.
     ///
     /// This function returns an error if the vector is fixed.
-    pub fn shift(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    pub fn shift(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -268,7 +274,7 @@ impl<'gc> VectorStorage<'gc> {
     ///
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards.
-    pub fn insert(&mut self, position: i32, value: Value<'gc>) -> Result<(), Error> {
+    pub fn insert(&mut self, position: i32, value: Value<'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -291,7 +297,7 @@ impl<'gc> VectorStorage<'gc> {
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards. Negative arrays are *not* subject to the bounds
     /// check error.
-    pub fn remove(&mut self, position: i32) -> Result<Value<'gc>, Error> {
+    pub fn remove(&mut self, position: i32) -> Result<Value<'gc>, Error<'gc>> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -335,7 +341,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         range: R,
         replace_with: Vec<Value<'gc>>,
-    ) -> Result<Vec<Value<'gc>>, Error>
+    ) -> Result<Vec<Value<'gc>>, Error<'gc>>
     where
         R: Clone + SliceIndex<[Value<'gc>], Output = [Value<'gc>]> + RangeBounds<usize>,
     {

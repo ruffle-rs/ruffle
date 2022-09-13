@@ -186,7 +186,7 @@ fn function<'gc>(
     name: &'static str,
     nf: NativeMethodImpl,
     script: Script<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let (_, mut global, mut domain) = script.init();
     let mc = activation.context.gc_context;
     let scope = activation.create_scopechain();
@@ -209,7 +209,7 @@ fn dynamic_class<'gc>(
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class
     class_class: ClassObject<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let (_, mut global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
@@ -226,12 +226,12 @@ fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,
     script: Script<'gc>,
-) -> Result<ClassObject<'gc>, Error> {
+) -> Result<ClassObject<'gc>, Error<'gc>> {
     let (_, mut global, mut domain) = script.init();
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
-        let super_class: Result<Object<'gc>, Error> = activation
+        let super_class: Result<Object<'gc>, Error<'gc>> = activation
             .resolve_definition(sc_name)
             .ok()
             .and_then(|v| v)
@@ -278,7 +278,7 @@ fn constant<'gc>(
     value: Value<'gc>,
     script: Script<'gc>,
     class: ClassObject<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name, script, mc)?;
@@ -293,7 +293,7 @@ fn namespace<'gc>(
     name: impl Into<AvmString<'gc>>,
     uri: impl Into<AvmString<'gc>>,
     script: Script<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let namespace = NamespaceObject::from_namespace(activation, Namespace::Namespace(uri.into()))?;
     constant(
         activation.context.gc_context,
@@ -323,7 +323,7 @@ macro_rules! avm2_system_class {
 pub fn load_player_globals<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     domain: Domain<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let mc = activation.context.gc_context;
 
     let globals = ScriptObject::custom_object(activation.context.gc_context, None, None);
@@ -657,7 +657,7 @@ mod native {
 fn load_playerglobal<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     domain: Domain<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
 

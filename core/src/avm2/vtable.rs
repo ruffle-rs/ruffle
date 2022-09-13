@@ -111,7 +111,7 @@ impl<'gc> VTable<'gc> {
         slot_id: u32,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
         let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
 
@@ -163,7 +163,7 @@ impl<'gc> VTable<'gc> {
         scope: ScopeChain<'gc>,
         superclass_vtable: Option<Self>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 

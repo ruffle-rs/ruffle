@@ -108,7 +108,7 @@ impl<'gc> Executable<'gc> {
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         callee: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let ret = match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;

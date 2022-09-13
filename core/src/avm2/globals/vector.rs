@@ -24,7 +24,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -52,7 +52,7 @@ fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
         return Err("Argument count mismatch on class coercion".into());
     }
@@ -93,7 +93,7 @@ pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let mut globals = activation.global_scope().unwrap();
         let mut domain = activation.domain();
@@ -178,7 +178,7 @@ pub fn specialized_class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let mut proto = this
             .get_property(&Multiname::public("prototype"), activation)?
@@ -239,7 +239,7 @@ pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(vector) = this.as_vector_storage() {
             return Ok(vector.length().into());
@@ -254,7 +254,7 @@ pub fn set_length<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
             let new_length = args
@@ -275,7 +275,7 @@ pub fn fixed<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(vector) = this.as_vector_storage() {
             return Ok(vector.is_fixed().into());
@@ -290,7 +290,7 @@ pub fn set_fixed<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
             let new_fixed = args
@@ -311,7 +311,7 @@ pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
             vector.clone()
@@ -378,9 +378,12 @@ fn join_inner<'gc, 'a, 'ctxt, C>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
     mut conv: C,
-) -> Result<Value<'gc>, Error>
+) -> Result<Value<'gc>, Error<'gc>>
 where
-    C: for<'b> FnMut(Value<'gc>, &'b mut Activation<'a, 'gc, 'ctxt>) -> Result<Value<'gc>, Error>,
+    C: for<'b> FnMut(
+        Value<'gc>,
+        &'b mut Activation<'a, 'gc, 'ctxt>,
+    ) -> Result<Value<'gc>, Error<'gc>>,
 {
     let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
     if separator == Value::Undefined {
@@ -416,7 +419,7 @@ pub fn join<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, args, |v, _act| Ok(v))
 }
 
@@ -425,7 +428,7 @@ pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
@@ -434,7 +437,7 @@ pub fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
             o.call_property(&Multiname::public("toLocaleString"), &[], act)
@@ -449,7 +452,7 @@ pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let callback = args
             .get(0)
@@ -482,7 +485,7 @@ pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let callback = args
             .get(0)
@@ -515,7 +518,7 @@ pub fn filter<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let callback = args
             .get(0)
@@ -556,7 +559,7 @@ pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let callback = args
             .get(0)
@@ -581,7 +584,7 @@ pub fn index_of<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from_index = args
@@ -618,7 +621,7 @@ pub fn last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from_index = args
@@ -655,7 +658,7 @@ pub fn map<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let callback = args
             .get(0)
@@ -693,7 +696,7 @@ pub fn pop<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             return vs.pop(activation);
@@ -708,7 +711,7 @@ pub fn push<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let value_type = vs.value_type();
@@ -731,7 +734,7 @@ pub fn shift<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             return vs.shift(activation);
@@ -746,7 +749,7 @@ pub fn unshift<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let value_type = vs.value_type();
@@ -769,7 +772,7 @@ pub fn insert_at<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let index = args
@@ -796,7 +799,7 @@ pub fn remove_at<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let index = args
@@ -817,7 +820,7 @@ pub fn reverse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             vs.reverse();
@@ -834,7 +837,7 @@ pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let from = args
@@ -874,7 +877,7 @@ pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
@@ -961,7 +964,7 @@ pub fn splice<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
             let start_len = args

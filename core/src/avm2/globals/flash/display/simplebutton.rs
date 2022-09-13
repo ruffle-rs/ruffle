@@ -20,7 +20,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -73,7 +73,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -82,7 +82,7 @@ pub fn down_state<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -101,7 +101,7 @@ pub fn set_down_state<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -124,7 +124,7 @@ pub fn over_state<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -143,7 +143,7 @@ pub fn set_over_state<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -166,7 +166,7 @@ pub fn hit_test_state<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -185,7 +185,7 @@ pub fn set_hit_test_state<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -208,7 +208,7 @@ pub fn up_state<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -227,7 +227,7 @@ pub fn set_up_state<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -250,7 +250,7 @@ pub fn track_as_menu<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -266,7 +266,7 @@ pub fn set_track_as_menu<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -290,7 +290,7 @@ pub fn enabled<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -306,7 +306,7 @@ pub fn set_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -328,7 +328,7 @@ pub fn use_hand_cursor<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
@@ -344,7 +344,7 @@ pub fn set_use_hand_cursor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(btn) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())

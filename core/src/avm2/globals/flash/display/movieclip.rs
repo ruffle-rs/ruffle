@@ -21,7 +21,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -44,7 +44,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -54,7 +54,7 @@ pub fn add_frame_script<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -77,7 +77,7 @@ pub fn current_frame<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -102,7 +102,7 @@ pub fn current_frame_label<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -127,7 +127,7 @@ pub fn current_label<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -151,7 +151,7 @@ fn labels_for_scene<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     mc: MovieClip<'gc>,
     scene: &Scene,
-) -> Result<(String, u16, Object<'gc>), Error> {
+) -> Result<(String, u16, Object<'gc>), Error<'gc>> {
     let Scene {
         name: scene_name,
         start: scene_start,
@@ -182,7 +182,7 @@ pub fn current_labels<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -203,7 +203,7 @@ pub fn current_scene<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -234,7 +234,7 @@ pub fn scenes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -279,7 +279,7 @@ pub fn frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -295,7 +295,7 @@ pub fn is_playing<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -311,7 +311,7 @@ pub fn total_frames<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -327,7 +327,7 @@ pub fn goto_and_play<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -344,7 +344,7 @@ pub fn goto_and_stop<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -360,7 +360,7 @@ pub fn goto_frame<'gc>(
     mc: MovieClip<'gc>,
     args: &[Value<'gc>],
     stop: bool,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let frame_or_label = args.get(0).cloned().unwrap_or(Value::Null);
 
     let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
@@ -410,7 +410,7 @@ pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -426,7 +426,7 @@ pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -443,7 +443,7 @@ pub fn prev_frame<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -459,7 +459,7 @@ pub fn next_frame<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -475,7 +475,7 @@ pub fn prev_scene<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
@@ -498,7 +498,7 @@ pub fn next_scene<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())

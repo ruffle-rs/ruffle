@@ -1739,7 +1739,7 @@ impl SoundTransform {
     pub fn from_avm2_object<'gc>(
         activation: &mut Avm2Activation<'_, 'gc, '_>,
         as3_st: Avm2Object<'gc>,
-    ) -> Result<Self, Avm2Error> {
+    ) -> Result<Self, Avm2Error<'gc>> {
         Ok(SoundTransform {
             left_to_left: (as3_st
                 .get_property(&Avm2Multiname::public("leftToLeft"), activation)?
@@ -1767,7 +1767,7 @@ impl SoundTransform {
     pub fn into_avm2_object<'gc>(
         self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
-    ) -> Result<Avm2Object<'gc>, Avm2Error> {
+    ) -> Result<Avm2Object<'gc>, Avm2Error<'gc>> {
         let mut as3_st = activation
             .avm2()
             .classes()

@@ -9,7 +9,7 @@ pub fn generate_random_bytes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let length = args
         .get(0)
         .unwrap_or(&Value::Undefined)

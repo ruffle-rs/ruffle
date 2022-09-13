@@ -13,7 +13,7 @@ pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let request = match args.get(0) {
             Some(Value::Object(request)) => request,
@@ -45,7 +45,7 @@ fn spawn_fetch<'gc>(
     loader_object: Object<'gc>,
     url_request: &Object<'gc>,
     data_format: DataFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let url = url_request
         .get_property(&Multiname::public("url"), activation)?
         .coerce_to_string(activation)?;
