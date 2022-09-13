@@ -1,9 +1,8 @@
 use crate::avm2::activation::Activation;
+pub use crate::avm2::object::error_allocator;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-
-pub use crate::avm2::object::error_allocator;
 
 #[cfg(feature = "avm_debug")]
 pub fn get_stack_trace<'gc>(

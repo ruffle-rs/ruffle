@@ -82,7 +82,7 @@ fn class_call<'gc>(
     while let Some(r) = iter.next(activation) {
         let (_, item) = r?;
         let coerced_item = item.coerce_to_type(activation, value_type)?;
-        new_storage.push(coerced_item)?;
+        new_storage.push(coerced_item, activation)?;
     }
 
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
@@ -363,7 +363,7 @@ pub fn concat<'gc>(
                 }
 
                 let coerced_val = val.coerce_to_type(activation, val_class)?;
-                new_vector_storage.push(coerced_val)?;
+                new_vector_storage.push(coerced_val, activation)?;
             }
         }
 
@@ -544,7 +544,7 @@ pub fn filter<'gc>(
                 .coerce_to_boolean();
 
             if result {
-                new_storage.push(item)?;
+                new_storage.push(item, activation)?;
             }
         }
 
@@ -682,7 +682,7 @@ pub fn map<'gc>(
             let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
-            new_storage.push(coerced_item)?;
+            new_storage.push(coerced_item, activation)?;
         }
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());
@@ -719,7 +719,7 @@ pub fn push<'gc>(
             for arg in args {
                 let coerced_arg = arg.coerce_to_type(activation, value_type)?;
 
-                vs.push(coerced_arg)?;
+                vs.push(coerced_arg, activation)?;
             }
 
             return Ok(vs.length().into());
@@ -757,7 +757,7 @@ pub fn unshift<'gc>(
             for arg in args.iter().rev() {
                 let coerced_arg = arg.coerce_to_type(activation, value_type)?;
 
-                vs.unshift(coerced_arg)?;
+                vs.unshift(coerced_arg, activation)?;
             }
 
             return Ok(vs.length().into());
@@ -787,7 +787,7 @@ pub fn insert_at<'gc>(
                 .unwrap_or(Value::Undefined)
                 .coerce_to_type(activation, value_type)?;
 
-            vs.insert(index, value)?;
+            vs.insert(index, value, activation)?;
         }
     }
 
@@ -808,7 +808,7 @@ pub fn remove_at<'gc>(
                 .unwrap_or(Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            return vs.remove(index);
+            return vs.remove(index, activation);
         }
     }
 
@@ -859,7 +859,7 @@ pub fn slice<'gc>(
 
             if to > from {
                 for value in vs.iter().skip(from).take(to - from) {
-                    new_vs.push(value)?;
+                    new_vs.push(value, activation)?;
                 }
             }
 

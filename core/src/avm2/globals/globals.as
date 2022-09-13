@@ -2,7 +2,11 @@
 // need to come before subclasses.
 
 include "Error.as"
+
+include "ArgumentError.as"
 include "Math.as"
+include "RangeError.as"
+include "ReferenceError.as"
 
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/crypto.as"

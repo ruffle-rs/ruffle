@@ -1,6 +1,4 @@
-// compiled with mxmlc
-
-package {
+﻿package {
     import flash.display.MovieClip;
     public class Test extends MovieClip {
         public function Test() {
@@ -11,10 +9,9 @@ try {
   v.push("a");
   v.push("bcd");
 } catch(foobar) {
-  // This cuts the error description to "RangeError"
-  // which is a cheat to mask the fact that the full error
-  // descriptions are different between Ruffle and Flash
-  trace(foobar.toString().slice(0,10));
+  trace(foobar.toString());
+  trace(foobar.name);
+  trace(foobar.errorID);
 }
 
 try {
@@ -44,8 +41,9 @@ function try_passing() {
    try {
       triggerException();
    } catch(foobar) {
-     // Like above, cut the part where the error messages agree between Ruffle and FP
-     trace(foobar.toString().slice(0,10));
+     trace(foobar.toString());
+	 trace(foobar.name);
+	 trace(foobar.errorID);
    }
 }
 

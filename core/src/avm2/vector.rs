@@ -1,6 +1,7 @@
 //! Storage for AS3 Vectors
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::range_error;
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -60,6 +61,17 @@ impl<'gc> VectorStorage<'gc> {
         self_vec
     }
 
+    fn check_fixed(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+        if self.is_fixed {
+            return Err(Error::AvmError(range_error(
+                activation,
+                "Error #1126: Cannot change the length of a fixed Vector.",
+                1126,
+            )?));
+        }
+        Ok(())
+    }
+
     /// Create a new vector storage from a list of values.
     ///
     /// The values are assumed to already have been coerced to the value type
@@ -97,10 +109,7 @@ impl<'gc> VectorStorage<'gc> {
         new_length: usize,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
-
+        self.check_fixed(activation)?;
         self.storage.resize(new_length, self.default(activation));
 
         Ok(())
@@ -143,11 +152,20 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Retrieve a value from the vector.
-    pub fn get(&self, pos: usize) -> Result<Value<'gc>, Error<'gc>> {
-        self.storage
-            .get(pos)
-            .cloned()
-            .ok_or_else(|| format!("RangeError: {} is outside the range of the vector", pos).into())
+    pub fn get(
+        &self,
+        pos: usize,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if let Some(val) = self.storage.get(pos).cloned() {
+            Ok(val)
+        } else {
+            Err(Error::AvmError(range_error(
+                activation,
+                &format!("{pos} is outside the range of the vector"),
+                0,
+            )?))
+        }
     }
 
     /// Store a value into the vector.
@@ -169,10 +187,16 @@ impl<'gc> VectorStorage<'gc> {
             self.storage.resize(pos + 1, self.default(activation));
         }
 
-        self.storage
-            .get_mut(pos)
-            .map(|v| *v = value)
-            .ok_or_else(|| format!("RangeError: {} is outside the range of the vector", pos).into())
+        if let Some(v) = self.storage.get_mut(pos) {
+            *v = value;
+            Ok(())
+        } else {
+            Err(Error::AvmError(range_error(
+                activation,
+                &format!("{pos} is outside the range of the vector"),
+                0,
+            )?))
+        }
     }
 
     /// Push a value to the end of the vector.
@@ -183,11 +207,12 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn push(&mut self, value: Value<'gc>) -> Result<(), Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
-
+    pub fn push(
+        &mut self,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error<'gc>> {
+        self.check_fixed(activation)?;
         self.storage.push(value);
 
         Ok(())
@@ -200,9 +225,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
+        self.check_fixed(activation)?;
 
         match self.storage.pop() {
             Some(v) => Ok(v),
@@ -224,10 +247,12 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn unshift(&mut self, value: Value<'gc>) -> Result<(), Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
+    pub fn unshift(
+        &mut self,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error<'gc>> {
+        self.check_fixed(activation)?;
 
         self.storage.insert(0, value);
 
@@ -241,9 +266,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
+        self.check_fixed(activation)?;
 
         let unshifted = if self.storage.is_empty() {
             None
@@ -274,10 +297,13 @@ impl<'gc> VectorStorage<'gc> {
     ///
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards.
-    pub fn insert(&mut self, position: i32, value: Value<'gc>) -> Result<(), Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
+    pub fn insert(
+        &mut self,
+        position: i32,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error<'gc>> {
+        self.check_fixed(activation)?;
 
         let position = self.clamp_parameter_index(position);
         if position >= self.storage.len() {
@@ -297,10 +323,12 @@ impl<'gc> VectorStorage<'gc> {
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards. Negative arrays are *not* subject to the bounds
     /// check error.
-    pub fn remove(&mut self, position: i32) -> Result<Value<'gc>, Error<'gc>> {
-        if self.is_fixed {
-            return Err("RangeError: Vector is fixed".into());
-        }
+    pub fn remove(
+        &mut self,
+        position: i32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.check_fixed(activation)?;
 
         let position = if position < 0 {
             max(position + self.storage.len() as i32, 0) as usize

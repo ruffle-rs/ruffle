@@ -131,6 +131,20 @@ impl<'gc> QName<'gc> {
         }
     }
 
+    // Like `to_qualified_name`, but uses a `.` instead of `::` separate
+    // the namespace and local name. This matches the output produced by
+    // Flash Player in error messages
+    pub fn to_qualified_name_err_message(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        let mut buf = WString::new();
+        let uri = self.namespace().as_uri();
+        if !uri.is_empty() {
+            buf.push_str(&uri);
+            buf.push_char('.');
+        }
+        buf.push_str(&self.local_name());
+        AvmString::new(mc, buf)
+    }
+
     pub fn local_name(&self) -> AvmString<'gc> {
         self.name
     }

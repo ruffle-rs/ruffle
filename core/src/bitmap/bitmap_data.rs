@@ -182,9 +182,18 @@ impl<'gc> BitmapData<'gc> {
         self.dirty = true;
     }
 
-    pub fn check_valid(&self) -> Result<(), crate::avm2::Error> {
+    pub fn check_valid(
+        &self,
+        activation: &mut crate::avm2::Activation<'_, 'gc, '_>,
+    ) -> Result<(), crate::avm2::Error<'gc>> {
         if self.disposed() {
-            return Err("ArgumentError: Error #2015: Invalid BitmapData.".into());
+            return Err(crate::avm2::Error::AvmError(
+                crate::avm2::error::argument_error(
+                    activation,
+                    "Error #2015: Invalid BitmapData.",
+                    2015,
+                )?,
+            ));
         }
         Ok(())
     }

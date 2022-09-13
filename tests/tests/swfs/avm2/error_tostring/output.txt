@@ -1,0 +1,30 @@
+Class: [class Error]
+cls.prototype.name = Error
+Error: My Error
+Error
+42
+
+Class: [class RangeError]
+cls.prototype.name = RangeError
+RangeError: My Error
+RangeError
+42
+
+Class: [class IllegalOperationError]
+cls.prototype.name = IllegalOperationError
+Error: My Error
+Error
+42
+
+Class: [class ArgumentError]
+cls.prototype.name = ArgumentError
+ArgumentError: My Error
+ArgumentError
+42
+
+Class: [class ReferenceError]
+cls.prototype.name = ReferenceError
+ReferenceError: My Error
+ReferenceError
+42
+

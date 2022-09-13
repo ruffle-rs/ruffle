@@ -1,7 +1,11 @@
 // Trying to raise and catch an error
+RangeError: Error #1126: Cannot change the length of a fixed Vector.
 RangeError
+1126
 // Check if scope is cleared on exception
 number
 undefined
 // Errors propagate through the stack
+RangeError: Error #1126: Cannot change the length of a fixed Vector.
 RangeError
+1126

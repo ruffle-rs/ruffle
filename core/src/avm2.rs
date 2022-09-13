@@ -29,6 +29,7 @@ pub mod bytearray;
 mod call_stack;
 mod class;
 mod domain;
+pub mod error;
 mod events;
 mod function;
 pub mod globals;
@@ -52,6 +53,7 @@ pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
 pub use crate::avm2::domain::Domain;
+pub use crate::avm2::error::Error;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
@@ -62,12 +64,6 @@ pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
 const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
-
-/// Boxed error alias.
-///
-/// As AVM2 is a far stricter VM than AVM1, this may eventually be replaced
-/// with a proper Avm2Error enum.
-pub type Error<'gc> = Box<dyn std::error::Error>;
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
