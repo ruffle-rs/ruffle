@@ -205,9 +205,9 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
-    pub fn stream_from(&mut self, movie_url: String, parameters: &JsValue) -> Result<(), JsValue> {
+    pub fn stream_from(&mut self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
-            let parameters_to_load = parse_movie_parameters(parameters);
+            let parameters_to_load = parse_movie_parameters(&parameters);
 
             let ruffle = *self;
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
@@ -222,10 +222,10 @@ impl Ruffle {
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
+    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: JsValue) -> Result<(), JsValue> {
         let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
             .map_err(|e| format!("Error loading movie: {}", e))?;
-        movie.append_parameters(parse_movie_parameters(parameters));
+        movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
 
