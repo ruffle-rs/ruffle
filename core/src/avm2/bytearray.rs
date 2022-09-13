@@ -35,7 +35,8 @@ impl Display for CompressionAlgorithm {
 }
 
 impl FromWStr for CompressionAlgorithm {
-    type Err = Error;
+    // FIXME - this should be an `Error<'gc>`
+    type Err = Box<dyn std::error::Error>;
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"zlib" {
