@@ -43,51 +43,39 @@ pub fn make_context_menu_state<'gc>(
 ) -> context_menu::ContextMenuState<'gc> {
     let mut result = context_menu::ContextMenuState::new();
 
+    macro_rules! check_bool {
+        ( $obj:expr, $name:expr, $value:expr ) => {
+            matches!(
+                $obj.get_property(&Multiname::public($name), activation),
+                Ok(Value::Bool($value))
+            )
+        };
+    }
+
     let mut builtin_items = context_menu::BuiltInItemFlags::for_stage(activation.context.stage);
     if let Some(menu) = menu {
         if let Ok(Value::Object(builtins)) =
             menu.get_property(&Multiname::public("builtInItems"), activation)
         {
-            if matches!(
-                builtins.get_property(&Multiname::public("zoom"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "zoom", false) {
                 builtin_items.zoom = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("quality"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "quality", false) {
                 builtin_items.quality = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("play"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "play", false) {
                 builtin_items.play = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("loop"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "loop", false) {
                 builtin_items.loop_ = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("rewind"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "rewind", false) {
                 builtin_items.rewind = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("forwardAndBack"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "forwardAndBack", false) {
                 builtin_items.forward_and_back = false;
             }
-            if matches!(
-                builtins.get_property(&Multiname::public("print"), activation),
-                Ok(Value::Bool(false))
-            ) {
+            if check_bool!(builtins, "print", false) {
                 builtin_items.print = false;
             }
         }
@@ -113,18 +101,9 @@ pub fn make_context_menu_state<'gc>(
                             // It's a CustomMenuItem, so this shouldn't happen
                             continue;
                         };
-                        let enabled = matches!(
-                            item.get_property(&Multiname::public("enabled"), activation),
-                            Ok(Value::Bool(true))
-                        );
-                        let visible = matches!(
-                            item.get_property(&Multiname::public("visible"), activation),
-                            Ok(Value::Bool(true))
-                        );
-                        let separator_before = matches!(
-                            item.get_property(&Multiname::public("separatorBefore"), activation),
-                            Ok(Value::Bool(true))
-                        );
+                        let enabled = check_bool!(item, "enabled", true);
+                        let visible = check_bool!(item, "visible", true);
+                        let separator_before = check_bool!(item, "separatorBefore", true);
 
                         if !visible {
                             continue;
