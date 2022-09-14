@@ -626,7 +626,7 @@ impl<'gc> MovieClip<'gc> {
         } else {
             Ok(true)
         };
-        let is_finished = end_tag_found || result.is_err() || !result.unwrap();
+        let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
 
         // These variables will be persisted to be picked back up in the next
         // chunk.

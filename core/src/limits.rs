@@ -76,7 +76,7 @@ impl ExecutionLimit {
         context: &mut UpdateContext<'_, '_, '_>,
         ops: usize,
     ) -> bool {
-        if let Some(ref mut oplimit) = self.current_oplimit {
+        if let Some(oplimit) = &mut self.current_oplimit {
             *oplimit = oplimit.saturating_sub(ops);
 
             if *oplimit == 0 {
