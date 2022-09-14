@@ -2180,8 +2180,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         action: WaitForFrame,
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Always true for now.
-        let loaded = true;
+        let loaded = self
+            .target_clip()
+            .and_then(|dobj| dobj.as_movie_clip())
+            .map(|mc| mc.frames_loaded() > action.frame)
+            .unwrap_or(true);
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
@@ -2195,9 +2198,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         action: WaitForFrame2,
         r: &mut Reader<'_>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Always true for now.
-        let _frame_num = self.context.avm1.pop().coerce_to_f64(self)? as u16;
-        let loaded = true;
+        let frame_num = self.context.avm1.pop().coerce_to_f64(self)? as u16;
+        let loaded = self
+            .target_clip()
+            .and_then(|dobj| dobj.as_movie_clip())
+            .map(|mc| mc.frames_loaded() > frame_num)
+            .unwrap_or(true);
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
             // Read the actions and toss them away.
