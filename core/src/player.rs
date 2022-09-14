@@ -18,7 +18,9 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
+use crate::context_menu::{
+    BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
+};
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
     StageScaleMode, TInteractiveObject, WindowMode,
@@ -556,38 +558,50 @@ impl Player {
                 return vec![];
             }
 
-            let mut activation = Activation::from_stub(
-                context.reborrow(),
-                ActivationIdentifier::root("[ContextMenu]"),
-            );
-
             // TODO: This should use a pointed display object with `.menu`
-            let menu_object = {
-                let dobj = activation.context.stage.root_clip();
-                if let Value::Object(obj) = dobj.object() {
-                    if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
-                        Some(menu)
-                    } else {
-                        None
+            let root_dobj = context.stage.root_clip();
+
+            let menu = if let Value::Object(obj) = root_dobj.object() {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[ContextMenu]"),
+                );
+                let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
+                {
+                    if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
+                        Self::run_context_menu_custom_callback(
+                            menu,
+                            on_select,
+                            &mut activation.context,
+                        );
                     }
+                    Some(menu)
                 } else {
                     None
-                }
+                };
+                crate::avm1::make_context_menu_state(menu_object, &mut activation)
+            } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
+                // TODO: send "menuSelect" event
+                log::warn!("AVM2 Context menu callbacks are not implemented");
+
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                let menu_object = root_dobj
+                    .as_interactive()
+                    .map(|iobj| iobj.context_menu())
+                    .and_then(|v| v.as_object());
+
+                crate::avm2::make_context_menu_state(menu_object, &mut activation)
+            } else {
+                // no AVM1 or AVM2 object - so just prepare the builtin items
+                let mut menu = ContextMenuState::new();
+                let builtin_items = BuiltInItemFlags::for_stage(context.stage);
+                menu.build_builtin_items(builtin_items, context.stage);
+                menu
             };
 
-            if let Some(menu) = menu_object {
-                if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
-                    Self::run_context_menu_custom_callback(
-                        menu,
-                        on_select,
-                        &mut activation.context,
-                    );
-                }
-            }
-
-            let menu = crate::avm1::make_context_menu_state(menu_object, &mut activation);
             let ret = menu.info().clone();
-            *activation.context.current_context_menu = Some(menu);
+            *context.current_context_menu = Some(menu);
             ret
         })
     }
@@ -611,6 +625,9 @@ impl Player {
                     ContextMenuCallback::Forward => Self::forward_root_movie(context),
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
+                    ContextMenuCallback::Avm2 { .. } => {
+                        // TODO: Send menuItemSelect event
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
