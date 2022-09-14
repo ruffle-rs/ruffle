@@ -1665,8 +1665,7 @@ impl<'gc> MovieClip<'gc> {
         let mut index = 0;
 
         // Sanity; let's make sure we don't seek way too far.
-        // TODO: This should be self.frames_loaded() when we implement that.
-        let clamped_frame = frame.min(mc.total_frames());
+        let clamped_frame = frame.min(mc.frames_loaded());
         drop(mc);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
@@ -2852,6 +2851,14 @@ impl<'gc> MovieClipData<'gc> {
 
     fn total_frames(&self) -> FrameNumber {
         self.static_data.total_frames
+    }
+
+    fn frames_loaded(&self) -> FrameNumber {
+        self.static_data
+            .preload_progress
+            .read()
+            .cur_preload_frame
+            .saturating_sub(1)
     }
 
     fn playing(&self) -> bool {
