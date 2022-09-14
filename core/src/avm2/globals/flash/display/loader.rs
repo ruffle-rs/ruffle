@@ -95,7 +95,7 @@ pub fn load_bytes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let arg0 = args[0].as_object().unwrap();
         let bytearray = arg0.as_bytearray().unwrap();
