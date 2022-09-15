@@ -14,6 +14,7 @@ use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{Bitmap, BitmapHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
+use std::sync::Arc;
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
@@ -190,7 +191,7 @@ impl From<TessGradient> for GradientStorage {
 struct Texture {
     width: u32,
     height: u32,
-    texture: wgpu::Texture,
+    texture: Arc<wgpu::Texture>,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     texture_offscreen: Option<TextureOffscreen>,
@@ -225,7 +226,7 @@ impl Texture {
 
 #[derive(Debug)]
 struct TextureOffscreen {
-    buffer: wgpu::Buffer,
+    buffer: Arc<wgpu::Buffer>,
     buffer_dimensions: BufferDimensions,
     surface: Surface,
 }

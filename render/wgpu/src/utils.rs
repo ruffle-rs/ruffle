@@ -88,7 +88,7 @@ pub fn create_buffer_with_data(
 }
 
 // Based off wgpu example 'capture'
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BufferDimensions {
     pub width: usize,
     pub height: usize,

@@ -422,7 +422,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     texture_wrapper: Texture {
                         width,
                         height,
-                        texture,
+                        texture: Arc::new(texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
                         texture_offscreen: None,
@@ -488,16 +488,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         commands: CommandList,
         clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
-        // We need ownership of `Texture` to access the non-`Clone`
-        // `wgpu` fields. At the end of this method, we re-insert
-        // `texture` into the map.
-        //
-        // This means that the target texture will be inaccessible
-        // while the callback `f` is a problem. This would only be
-        // an issue if a caller tried to render the target texture
-        // to itself, which probably isn't supported by Flash. If it
-        // is, then we could change `TextureTarget` to use an `Rc<wgpu::Texture>`
-        let mut texture = self.bitmap_registry.remove(&handle).unwrap();
+        let mut texture = self.bitmap_registry.get_mut(&handle).unwrap();
 
         let extent = wgpu::Extent3d {
             width,
@@ -514,42 +505,43 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         // many buffers / depth textures rendered at once, we could
         // try storing this data in an LRU cache, evicting entries
         // as needed.
-        let mut texture_offscreen =
-            texture
-                .texture_wrapper
-                .texture_offscreen
-                .unwrap_or_else(|| {
-                    let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
-                    let buffer_label = create_debug_label!("Render target buffer");
-                    let buffer = self
-                        .descriptors
-                        .device
-                        .create_buffer(&wgpu::BufferDescriptor {
-                            label: buffer_label.as_deref(),
-                            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                                * buffer_dimensions.height as u64),
-                            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                            mapped_at_creation: false,
-                        });
-                    TextureOffscreen {
-                        buffer,
-                        buffer_dimensions,
-                        surface: Surface::new(
-                            &self.descriptors,
-                            DEFAULT_SAMPLE_COUNT,
-                            width,
-                            height,
-                            wgpu::TextureFormat::Rgba8Unorm,
-                        ),
-                    }
+
+        if texture.texture_wrapper.texture_offscreen.is_none() {
+            let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
+            let buffer_label = create_debug_label!("Render target buffer");
+            let buffer = self
+                .descriptors
+                .device
+                .create_buffer(&wgpu::BufferDescriptor {
+                    label: buffer_label.as_deref(),
+                    size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                        * buffer_dimensions.height as u64),
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
                 });
+
+            let offscreen = TextureOffscreen {
+                buffer: Arc::new(buffer),
+                buffer_dimensions,
+                surface: Surface::new(
+                    &self.descriptors,
+                    DEFAULT_SAMPLE_COUNT,
+                    width,
+                    height,
+                    wgpu::TextureFormat::Rgba8Unorm,
+                ),
+            };
+            texture.texture_wrapper.texture_offscreen = Some(offscreen);
+        }
+
+        let texture_offscreen = texture.texture_wrapper.texture_offscreen.as_ref().unwrap();
 
         let mut target = TextureTarget {
             size: extent,
-            texture: texture.texture_wrapper.texture,
+            texture: texture.texture_wrapper.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: texture_offscreen.buffer,
-            buffer_dimensions: texture_offscreen.buffer_dimensions,
+            buffer: texture_offscreen.buffer.clone(),
+            buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
         };
 
         let (old_width, old_height) = self.globals.resolution();
@@ -558,6 +550,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
+
+        let texture_offscreen = self.bitmap_registry[&handle]
+            .texture_wrapper
+            .texture_offscreen
+            .as_ref()
+            .unwrap();
 
         let command_buffers = texture_offscreen.surface.draw_commands(
             frame_output.view(),
@@ -594,12 +592,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         });
 
         self.globals.set_resolution(old_width, old_height);
-        texture_offscreen.buffer = target.buffer;
-        texture_offscreen.buffer_dimensions = target.buffer_dimensions;
-        texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
-        texture.texture_wrapper.texture = target.texture;
-        self.bitmap_registry.insert(handle, texture);
-
         Ok(image.unwrap())
     }
 }

@@ -2,6 +2,7 @@ use crate::utils::BufferDimensions;
 use crate::Error;
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 pub trait RenderTargetFrame: Debug {
     fn view(&self) -> &wgpu::TextureView;
@@ -111,9 +112,9 @@ impl RenderTarget for SwapChainTarget {
 #[derive(Debug)]
 pub struct TextureTarget {
     pub size: wgpu::Extent3d,
-    pub texture: wgpu::Texture,
+    pub texture: Arc<wgpu::Texture>,
     pub format: wgpu::TextureFormat,
-    pub buffer: wgpu::Buffer,
+    pub buffer: Arc<wgpu::Buffer>,
     pub buffer_dimensions: BufferDimensions,
 }
 
@@ -168,9 +169,9 @@ impl TextureTarget {
         });
         Ok(Self {
             size,
-            texture,
+            texture: Arc::new(texture),
             format,
-            buffer,
+            buffer: Arc::new(buffer),
             buffer_dimensions,
         })
     }
