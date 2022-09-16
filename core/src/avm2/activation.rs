@@ -3078,7 +3078,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[cfg(avm_debug)]
+    #[cfg(feature = "avm_debug")]
     fn op_debug(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -3087,7 +3087,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if is_local_register {
-            let register_name = self.pool_string(method, register_name)?;
+            let register_name = self.pool_string(&method, register_name)?;
             let value = self.local_register(register as u32)?;
 
             avm_debug!(self.avm2(), "Debug: {} = {:?}", register_name, value);
@@ -3098,7 +3098,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[cfg(not(avm_debug))]
+    #[cfg(not(feature = "avm_debug"))]
     fn op_debug(
         &mut self,
         _method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -3109,20 +3109,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[cfg(avm_debug)]
+    #[cfg(feature = "avm_debug")]
     fn op_debug_file(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         file_name: Index<String>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let file_name = self.pool_string(method, file_name)?;
+        let file_name = self.pool_string(&method, file_name)?;
 
         avm_debug!(self.avm2(), "File: {}", file_name);
 
         Ok(FrameControl::Continue)
     }
 
-    #[cfg(not(avm_debug))]
+    #[cfg(not(feature = "avm_debug"))]
     fn op_debug_file(
         &mut self,
         _method: Gc<'gc, BytecodeMethod<'gc>>,
