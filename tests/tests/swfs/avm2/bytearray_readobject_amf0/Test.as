@@ -24,7 +24,6 @@
 		public function testToObject(arr)
 		{
 			var ba = new ByteArray();
-			ba.objectEncoding = "AMF0";
 			for (var i = 0; i < arr.length; i++)
 			{
 				ba.writeByte(arr[i]);
@@ -34,6 +33,7 @@
 		}
 		public function Test()
 		{
+			ByteArray.defaultObjectEncoding = 0;
 			for (var i = 0; i < TESTS.length; i++)
 			{
 				var obj = testToObject(TESTS[i]);

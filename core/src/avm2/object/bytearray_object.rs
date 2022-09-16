@@ -9,7 +9,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
-pub fn bytearray_allocator<'gc>(
+pub fn byte_array_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error<'gc>> {

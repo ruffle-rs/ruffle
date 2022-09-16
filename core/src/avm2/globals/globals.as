@@ -6,6 +6,7 @@ include "Math.as"
 
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/crypto.as"
+include "flash/utils/ByteArray.as"
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
 include "flash/display/ActionScriptVersion.as"
