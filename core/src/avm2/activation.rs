@@ -3088,9 +3088,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if is_local_register {
             let register_name = self.pool_string(&method, register_name)?;
-            let value = self.local_register(register as u32)?;
+            if (register as usize) < self.local_registers.0.len() {
+                let value = self.local_register(register as u32)?;
 
-            avm_debug!(self.avm2(), "Debug: {} = {:?}", register_name, value);
+                avm_debug!(self.avm2(), "Debug: {} = {:?}", register_name, value);
+            } else {
+                avm_debug!(
+                    self.avm2(),
+                    "Debug: {} = <out-of-bounds register #{}>",
+                    register_name,
+                    register
+                );
+            }
         } else {
             avm_debug!(self.avm2(), "Unknown debugging mode!");
         }
