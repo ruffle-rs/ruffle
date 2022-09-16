@@ -458,14 +458,6 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.utils`
-    avm2_system_class!(
-        bytearray,
-        activation,
-        flash::utils::bytearray::create_class(mc),
-        script
-    );
-
-    domain.init_default_domain_memory(activation)?;
 
     class(
         activation,
@@ -722,8 +714,11 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
+            ("flash.utils", "ByteArray", bytearray),
         ]
     );
 
+    // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
+    domain.init_default_domain_memory(activation)?;
     Ok(())
 }

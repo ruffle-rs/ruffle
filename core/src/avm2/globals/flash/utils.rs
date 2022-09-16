@@ -8,7 +8,7 @@ use crate::string::WString;
 use instant::Instant;
 use std::fmt::Write;
 
-pub mod bytearray;
+pub mod byte_array;
 pub mod dictionary;
 pub mod proxy;
 pub mod timer;

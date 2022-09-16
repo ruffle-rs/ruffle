@@ -1,23 +1,18 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{bytearray_allocator, Object, TObject};
+pub use crate::avm2::object::byte_array_allocator;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::character::Character;
 use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
-use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
-pub fn instance_init<'gc>(
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -47,15 +42,6 @@ pub fn instance_init<'gc>(
         }
     }
 
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.utils.ByteArray`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -251,7 +237,7 @@ pub fn clear<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn position<'gc>(
+pub fn get_position<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -283,7 +269,7 @@ pub fn set_position<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn bytes_available<'gc>(
+pub fn get_bytes_available<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -297,7 +283,7 @@ pub fn bytes_available<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -329,7 +315,7 @@ pub fn set_length<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn endian<'gc>(
+pub fn get_endian<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -623,7 +609,7 @@ pub fn write_short<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn write_multibyte<'gc>(
+pub fn write_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -649,7 +635,7 @@ pub fn write_multibyte<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn read_multibyte<'gc>(
+pub fn read_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -804,7 +790,7 @@ pub fn read_object<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn object_encoding<'gc>(
+pub fn get_object_encoding<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -838,78 +824,4 @@ pub fn set_object_encoding<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    let class = Class::new(
-        QName::new(Namespace::package("flash.utils"), "ByteArray"),
-        Some(Multiname::public("Object")),
-        Method::from_builtin(instance_init, "<ByteArray instance initializer>", mc),
-        Method::from_builtin(class_init, "<ByteArray class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_allocator(bytearray_allocator);
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("writeByte", write_byte),
-        ("writeBytes", write_bytes),
-        ("readBytes", read_bytes),
-        ("toString", to_string),
-        ("readShort", read_short),
-        ("writeShort", write_short),
-        ("readUnsignedShort", read_unsigned_short),
-        ("readDouble", read_double),
-        ("writeDouble", write_double),
-        ("readFloat", read_float),
-        ("writeFloat", write_float),
-        ("readInt", read_int),
-        ("writeInt", write_int),
-        ("readUnsignedInt", read_unsigned_int),
-        ("writeUnsignedInt", write_unsigned_int),
-        ("readBoolean", read_boolean),
-        ("writeBoolean", write_boolean),
-        ("readByte", read_byte),
-        ("readUnsignedByte", read_unsigned_byte),
-        ("writeUTF", write_utf),
-        ("readUTF", read_utf),
-        ("clear", clear),
-        ("compress", compress),
-        ("uncompress", uncompress),
-        ("inflate", inflate),
-        ("deflate", deflate),
-        ("writeMultiByte", write_multibyte),
-        ("readMultiByte", read_multibyte),
-        ("writeUTFBytes", write_utf_bytes),
-        ("readUTFBytes", read_utf_bytes),
-        ("readObject", read_object),
-    ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("bytesAvailable", Some(bytes_available), None),
-        ("length", Some(length), Some(set_length)),
-        ("position", Some(position), Some(set_position)),
-        ("endian", Some(endian), Some(set_endian)),
-        (
-            "objectEncoding",
-            Some(object_encoding),
-            Some(set_object_encoding),
-        ),
-    ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
-
-    // TODO: This property should have a setter
-    const CONSTANTS: &[(&str, u32)] = &[("defaultObjectEncoding", 3)];
-
-    write.define_public_constant_uint_class_traits(CONSTANTS);
-
-    class
 }
