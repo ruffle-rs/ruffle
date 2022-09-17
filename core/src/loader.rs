@@ -595,7 +595,7 @@ impl<'gc> Loader<'gc> {
                 // the actual MovieClip display object has not run its first
                 // frame yet.
                 loader_info.set_loader_stream(
-                    LoaderStream::NotYetLoaded(movie, Some(mc.into())),
+                    LoaderStream::NotYetLoaded(movie, Some(mc.into()), false),
                     context.gc_context,
                 );
             }
@@ -1309,7 +1309,7 @@ impl<'gc> Loader<'gc> {
                                 .as_loader_info_object()
                                 .unwrap()
                                 .set_loader_stream(
-                                    LoaderStream::NotYetLoaded(movie.clone(), Some(clip)),
+                                    LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
                                     uc.gc_context,
                                 );
                         }
