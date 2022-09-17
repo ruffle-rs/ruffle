@@ -30,6 +30,7 @@ use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
@@ -39,6 +40,7 @@ use url::form_urlencoded;
 pub type Handle = Index;
 
 /// How Ruffle should load movies.
+#[derive(Debug, Clone, Copy)]
 pub enum LoadBehavior {
     /// Allow movies to execute before they have finished loading.
     ///
@@ -59,6 +61,22 @@ pub enum LoadBehavior {
     /// done synchronously. Complex movies will visibly block the player from
     /// accepting user input and the application will appear to freeze.
     Blocking,
+}
+
+impl FromStr for LoadBehavior {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "streaming" {
+            Ok(LoadBehavior::Streaming)
+        } else if s == "delayed" {
+            Ok(LoadBehavior::Delayed)
+        } else if s == "blocking" {
+            Ok(LoadBehavior::Blocking)
+        } else {
+            Err("Not a valid load behavior")
+        }
+    }
 }
 
 /// Enumeration of all content types that `Loader` can handle.
