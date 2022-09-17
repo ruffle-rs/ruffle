@@ -232,6 +232,44 @@ fn stop_drag<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `useHandCursor`'s getter
+pub fn use_hand_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        return Ok(mc.use_hand_cursor().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `useHandCursor`'s setter
+pub fn set_use_hand_cursor<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        mc.set_use_hand_cursor(
+            &mut activation.context,
+            args.get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_boolean(),
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -261,6 +299,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_sound_transform),
         ),
         ("buttonMode", Some(button_mode), Some(set_button_mode)),
+        (
+            "useHandCursor",
+            Some(use_hand_cursor),
+            Some(set_use_hand_cursor),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
