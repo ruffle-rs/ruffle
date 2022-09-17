@@ -20,8 +20,8 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState, StaticCallstack, ViewportDimensions,
+    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
+    PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -100,6 +100,9 @@ struct Opt {
 
     #[clap(long, action)]
     dont_warn_on_unsupported_content: bool,
+
+    #[clap(long, default_value = "streaming")]
+    load_behavior: LoadBehavior,
 }
 
 #[cfg(feature = "render_trace")]
@@ -267,7 +270,8 @@ impl App {
             .with_autoplay(true)
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
-            .with_fullscreen(opt.fullscreen);
+            .with_fullscreen(opt.fullscreen)
+            .with_load_behavior(opt.load_behavior);
 
         let player = builder.build();
 
