@@ -1,6 +1,6 @@
 package flash.utils {
 	[Ruffle(InstanceAllocator)]
-	public class ByteArray implements IDataInput {
+	public class ByteArray implements IDataInput, IDataOutput {
 		private static var _defaultObjectEncoding:uint = 3;
 		public static function get defaultObjectEncoding():uint {
 			return _defaultObjectEncoding;
@@ -68,5 +68,9 @@ package flash.utils {
 		public native function writeUnsignedInt(value:uint):void;
 		public native function writeUTF(value:String):void;
 		public native function writeUTFBytes(value:String):void;
+		public function writeObject(object:*):void { 
+			// STUB
+			throw new Error("ByteArray.writeObject not implemented");
+		}
 	}
 }
