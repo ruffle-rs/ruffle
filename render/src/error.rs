@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::bitmap::BitmapHandle;
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Bitmap texture is larger than the rendering device supports")]
@@ -29,6 +31,9 @@ pub enum Error {
     #[cfg(feature = "web")]
     #[error("Javascript error")]
     JavascriptError(wasm_bindgen::JsValue),
+
+    #[error("Unknown handle {0:?}")]
+    UnknownHandle(BitmapHandle),
 
     #[error("Not yet implemented")]
     Unimplemented,
