@@ -1,10 +1,24 @@
 //this.stage.loaderInfo.bytesLoaded
-753
+943
 //this.stage.loaderInfo.bytesTotal
-753
+943
 //this.stage.loaderInfo.content === this
 true
 //this.stage.loaderInfo.loaderURL.indexOf("test.swf") != -1
+true
+//this.stage.loaderInfo.applicationDomain !== null
+true
+//this.stage.loaderInfo.content === this
+true
+//this.stage.loaderInfo.isURLInaccessible
+false
+//this.stage.loaderInfo.url.indexOf("test.swf") != -1
+true
+//this.stage.loaderInfo.loader
+null
+//this.stage.loaderInfo.parameters !== null
+true
+//this.stage.loaderInfo.sharedEvents !== null
 true
 //this.stage.loaderInfo.contentType
 null
