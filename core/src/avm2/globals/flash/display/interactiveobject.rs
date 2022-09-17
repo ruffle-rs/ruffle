@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("You cannot directly construct InteractiveObject.".into())
 }
 
@@ -26,7 +26,7 @@ pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -39,7 +39,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -48,7 +48,7 @@ pub fn mouse_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -64,7 +64,7 @@ pub fn set_mouse_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -85,7 +85,7 @@ pub fn double_click_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -101,7 +101,7 @@ pub fn set_double_click_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -122,7 +122,7 @@ fn context_menu<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -138,7 +138,7 @@ fn set_context_menu<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())

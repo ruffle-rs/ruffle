@@ -189,7 +189,7 @@ impl<'gc> Trait<'gc> {
         unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let mc = activation.context.gc_context;
         let name = QName::from_abc_multiname(unit, abc_trait.name, mc)?;
 
@@ -378,7 +378,7 @@ fn slot_default_value<'gc>(
     value: &Option<AbcDefaultValue>,
     type_name: &Multiname<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = value {
         // TODO: This should verify that the default value is compatible with the type.
         abc_default_value(translation_unit, value, activation)

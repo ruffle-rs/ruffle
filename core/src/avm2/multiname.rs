@@ -106,7 +106,7 @@ impl<'gc> Multiname<'gc> {
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<NamespaceSet<'gc>, Error> {
+    ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
         if namespace_set_index.0 == 0 {
             //TODO: What is namespace set zero?
             let result = NamespaceSet::multiple(vec![], mc);
@@ -115,7 +115,7 @@ impl<'gc> Multiname<'gc> {
 
         let actual_index = namespace_set_index.0 as usize - 1;
         let abc = translation_unit.abc();
-        let ns_set: Result<_, Error> = abc
+        let ns_set: Result<_, Error<'gc>> = abc
             .constant_pool
             .namespace_sets
             .get(actual_index)
@@ -143,7 +143,7 @@ impl<'gc> Multiname<'gc> {
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let abc = translation_unit.abc();
         let abc_multiname = Self::resolve_multiname_index(&abc, multiname_index)?;
 
@@ -223,7 +223,7 @@ impl<'gc> Multiname<'gc> {
     pub fn fill_with_runtime_params(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let name = if self.has_lazy_name() {
             Some(activation.avm2().pop().coerce_to_string(activation)?)
         } else {
@@ -251,8 +251,8 @@ impl<'gc> Multiname<'gc> {
     pub fn resolve_multiname_index(
         abc: &AbcFile,
         multiname_index: Index<AbcMultiname>,
-    ) -> Result<&AbcMultiname, Error> {
-        let actual_index: Result<usize, Error> = (multiname_index.0 as usize)
+    ) -> Result<&AbcMultiname, Error<'gc>> {
+        let actual_index: Result<usize, Error<'gc>> = (multiname_index.0 as usize)
             .checked_sub(1)
             .ok_or_else(|| "Attempted to resolve a multiname at index zero. This is a bug.".into());
 

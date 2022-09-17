@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -25,7 +25,7 @@ fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.subclass_object().unwrap();
 
     if args.is_empty() {
@@ -43,7 +43,7 @@ pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
@@ -164,7 +164,7 @@ fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     this.map(|t| t.to_string(activation))
         .unwrap_or(Ok(Value::Undefined))
 }
@@ -174,7 +174,7 @@ fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     this.map(|t| t.to_locale_string(activation))
         .unwrap_or(Ok(Value::Undefined))
 }
@@ -184,7 +184,7 @@ fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     this.map(|t| t.value_of(activation.context.gc_context))
         .unwrap_or(Ok(Value::Undefined))
 }
@@ -194,10 +194,12 @@ pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     let multiname = Multiname::public(name);
@@ -209,8 +211,8 @@ pub fn is_prototype_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let search_proto: Result<Object<'gc>, Error> =
+) -> Result<Value<'gc>, Error<'gc>> {
+    let search_proto: Result<Object<'gc>, Error<'gc>> =
         this.ok_or_else(|| "No valid this parameter".into());
     let search_proto = search_proto?;
     let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
@@ -231,10 +233,12 @@ pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     Ok(this.property_is_enumerable(name).into())
@@ -245,10 +249,12 @@ pub fn set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {

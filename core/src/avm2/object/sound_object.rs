@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 pub fn sound_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(SoundObject(GcCell::allocate(
@@ -48,7 +48,7 @@ impl<'gc> SoundObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: ClassObject<'gc>,
         sound: SoundHandle,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let base = ScriptObjectData::new(class);
 
         let mut sound_object: Object<'gc> = SoundObject(GcCell::allocate(
@@ -80,7 +80,7 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Object::from(*self).into())
     }
 

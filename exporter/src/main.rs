@@ -3,6 +3,7 @@ use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -130,6 +131,9 @@ fn take_screenshot(
                 i
             ));
         }
+
+        player.lock().unwrap().preload(&mut ExecutionLimit::none());
+
         player.lock().unwrap().run_frame();
         if i >= skipframes {
             match catch_unwind(|| {

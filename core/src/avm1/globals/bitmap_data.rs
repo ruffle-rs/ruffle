@@ -789,6 +789,16 @@ pub fn copy_pixels<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
+                    let merge_alpha = if args.len() >= 6 {
+                        Some(
+                            args.get(5)
+                                .unwrap_or(&Value::Undefined)
+                                .as_bool(activation.swf_version()),
+                        )
+                    } else {
+                        None
+                    };
+
                     // dealing with object aliasing...
                     let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
                     let src_bitmap_data_cell = src_bitmap.bitmap_data();
@@ -802,62 +812,53 @@ pub fn copy_pixels<'gc>(
                             &src_bitmap_gc_ref
                         };
 
-                    if args.len() >= 5 {
-                        let alpha_point = args
-                            .get(4)
-                            .unwrap_or(&Value::Undefined)
-                            .coerce_to_object(activation);
+                    let alpha_bitmap = args
+                        .get(3)
+                        .unwrap_or(&Value::Undefined)
+                        .coerce_to_object(activation);
 
-                        let alpha_x = alpha_point
-                            .get("x", activation)?
-                            .coerce_to_f64(activation)?
-                            as i32;
+                    if let Some(alpha_bitmap) = alpha_bitmap.as_bitmap_data_object() {
+                        if !alpha_bitmap.disposed() {
+                            let alpha_point = args
+                                .get(4)
+                                .unwrap_or(&Value::Undefined)
+                                .coerce_to_object(activation);
 
-                        let alpha_y = alpha_point
-                            .get("y", activation)?
-                            .coerce_to_f64(activation)?
-                            as i32;
+                            let alpha_x = alpha_point
+                                .get("x", activation)?
+                                .coerce_to_f64(activation)?
+                                as i32;
 
-                        let alpha_bitmap = args
-                            .get(3)
-                            .unwrap_or(&Value::Undefined)
-                            .coerce_to_object(activation);
+                            let alpha_y = alpha_point
+                                .get("y", activation)?
+                                .coerce_to_f64(activation)?
+                                as i32;
 
-                        if let Some(alpha_bitmap) = alpha_bitmap.as_bitmap_data_object() {
-                            if !alpha_bitmap.disposed() {
-                                // dealing with aliasing the same way as for the source
-                                let alpha_bitmap_clone: BitmapData;
-                                let alpha_bitmap_data_cell = alpha_bitmap.bitmap_data();
-                                let alpha_bitmap_gc_ref;
-                                let alpha_bitmap_ref = if GcCell::ptr_eq(
-                                    alpha_bitmap.bitmap_data(),
-                                    bitmap_data.bitmap_data(),
-                                ) {
-                                    alpha_bitmap_clone = alpha_bitmap_data_cell.read().clone();
-                                    &alpha_bitmap_clone
-                                } else {
-                                    alpha_bitmap_gc_ref = alpha_bitmap_data_cell.read();
-                                    &alpha_bitmap_gc_ref
-                                };
+                            // dealing with aliasing the same way as for the source
+                            let alpha_bitmap_clone: BitmapData;
+                            let alpha_bitmap_data_cell = alpha_bitmap.bitmap_data();
+                            let alpha_bitmap_gc_ref;
+                            let alpha_bitmap_ref = if GcCell::ptr_eq(
+                                alpha_bitmap.bitmap_data(),
+                                bitmap_data.bitmap_data(),
+                            ) {
+                                alpha_bitmap_clone = alpha_bitmap_data_cell.read().clone();
+                                &alpha_bitmap_clone
+                            } else {
+                                alpha_bitmap_gc_ref = alpha_bitmap_data_cell.read();
+                                &alpha_bitmap_gc_ref
+                            };
 
-                                let merge_alpha = if args.len() >= 6 {
-                                    args.get(5)
-                                        .unwrap_or(&Value::Undefined)
-                                        .as_bool(activation.swf_version())
-                                } else {
-                                    true
-                                };
-
-                                bitmap_data
-                                    .bitmap_data()
-                                    .write(activation.context.gc_context)
-                                    .copy_pixels(
-                                        source_bitmap_ref,
-                                        (src_min_x, src_min_y, src_width, src_height),
-                                        (dest_x, dest_y),
-                                        Some((alpha_bitmap_ref, (alpha_x, alpha_y), merge_alpha)),
-                                    );
-                            }
+                            bitmap_data
+                                .bitmap_data()
+                                .write(activation.context.gc_context)
+                                .copy_pixels(
+                                    source_bitmap_ref,
+                                    (src_min_x, src_min_y, src_width, src_height),
+                                    (dest_x, dest_y),
+                                    Some((alpha_bitmap_ref, (alpha_x, alpha_y))),
+                                    merge_alpha.unwrap_or(true),
+                                );
                         }
                     } else {
                         bitmap_data
@@ -868,6 +869,9 @@ pub fn copy_pixels<'gc>(
                                 (src_min_x, src_min_y, src_width, src_height),
                                 (dest_x, dest_y),
                                 None,
+                                // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
+                                // when no 'alphaBitmap' is specified (e.g. only 3 args are passed)
+                                merge_alpha.unwrap_or(false),
                             );
                     }
                 }

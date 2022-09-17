@@ -16,7 +16,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_qname_object()) {
         if this.qname().is_none() {
             let (namespace, local_arg) = if args.len() > 1 {
@@ -64,7 +64,7 @@ pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let scope = activation.create_scopechain();
     let this_class = this.as_class_object().unwrap();
@@ -115,7 +115,7 @@ pub fn local_name<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_qname_object()) {
         if let Some(qname) = this.qname() {
             return Ok(qname.local_name().into());
@@ -130,7 +130,7 @@ pub fn uri<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_qname_object()) {
         if let Some(qname) = this.qname() {
             return Ok(match qname.namespace() {
@@ -148,7 +148,7 @@ pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_qname_object()) {
         if let Some(qname) = this.qname() {
             return Ok(qname.as_uri(activation.context.gc_context).into());
@@ -163,7 +163,7 @@ pub fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         return Ok(this.into());
     }

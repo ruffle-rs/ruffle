@@ -1,6 +1,7 @@
-import flash.display.BitmapData;
+﻿import flash.display.BitmapData;
 import flash.geom.Rectangle;
 import flash.geom.Point;
+
 
 class BitmapCopyPixels {
 
@@ -27,7 +28,7 @@ class BitmapCopyPixels {
         src_img._x = sx + 110;
         src_img._y = sy + 20;
 
-        dest.copyPixels(src, new Rectangle(0,0,80,20), new Point(10, 10));
+       	dest.copyPixels(src, new Rectangle(0,0,80,20), new Point(10, 10));
 
 
         var alpha:BitmapData = new BitmapData(40, 20, transp_alpha, 0x66884422);
@@ -41,7 +42,71 @@ class BitmapCopyPixels {
         dest.copyPixels(src, new Rectangle(0,0,80,20), new Point(10, 50), alpha, new Point(0,0), merge);
     }
 
-    static function main(mc) {
+    public static function test(mc) {
+			// These values are straight alpha.
+			// BitmapData internally converts to premultiplied alpha,
+			// and converts back to straight alpha in 'getPixel'. This results
+			// in rounding, which Ruffle currently doesn't match. These values
+			// were chosen to produce the same rounded result in Flash and Ruffle.
+			// FIXME - determine the correct roudning behavior to use for Ruffle,
+			// and test that a 'getPixel/setPixel' round-trip always agrees between
+			// Flash and Ruffle.
+			var target = new BitmapData(5, 5, true, 0x45112233);
+			var source = new BitmapData(5, 5, true, 0x22445566);
+			var otherSource = new BitmapData(5, 5, true, 0x80aabbcc);
+			
+			target.copyPixels(source, new Rectangle(0, 0, 2, 2), new Point(0, 0), null, null, true);
+			target.copyPixels(otherSource, new Rectangle(0, 0, 1, 1), new Point(4, 4), null, null, false);
+			for (var py = 0; py < target.height; py++) {
+				var line = "";
+				for (var px = 0; px < target.height; px++) {
+					line += target.getPixel32(px, py).toString(16) + " ";
+				}
+				trace(line);
+			}
+		
+		
+			var transparent = new BitmapData(1, 1, false, 0x80FFFFFF);
+			var nonTransparent = new BitmapData(1, 1, false, 0x0);
+			var transparentSource = new BitmapData(1, 1, true, 0xF00E0E0E);
+
+			trace("transparentSource: " + transparentSource.getPixel32(0, 0).toString(16));
+
+			trace("Non-transparent testing");
+		
+			var nonTransparentSource = new BitmapData(1, 1, false, 0x80020406);
+			trace("Original pixel: " +  nonTransparent.getPixel32(0, 0).toString(16));
+		
+			nonTransparent.copyPixels(transparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, false);
+			trace("transparent source mergeAlpha=false " + nonTransparent.getPixel32(0, 0).toString(16));
+		
+			nonTransparent.copyPixels(transparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, true);
+			trace("transparent source mergeAlpha=true " + nonTransparent.getPixel32(0, 0).toString(16));
+		
+			nonTransparent.copyPixels(nonTransparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, false);
+			trace("nontransparent source mergeAlpha=false " + nonTransparent.getPixel32(0, 0).toString(16));
+		
+			nonTransparent.copyPixels(nonTransparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, true);
+			trace("nontransparent source mergeAlpha=true " + nonTransparent.getPixel32(0, 0).toString(16));
+			
+			trace("");
+			trace("Transparent testing");
+			trace("Original pixel: " +  transparent.getPixel32(0, 0).toString(16));
+			
+			// FIXME - enable these when Ruffle rounding is correct
+		
+			//transparent.copyPixels(transparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, false);
+			//trace("transparent source mergeAlpha=false " + transparent.getPixel32(0, 0).toString(16));
+		
+			//transparent.copyPixels(transparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, true);
+			//trace("transparent source mergeAlpha=true " + transparent.getPixel32(0, 0).toString(16));
+		
+			transparent.copyPixels(nonTransparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, false);
+			trace("nontransparent source mergeAlpha=false " + transparent.getPixel32(0, 0).toString(16));
+		
+			transparent.copyPixels(nonTransparentSource, new Rectangle(0, 0, 1, 1), new Point(0, 0), null, null, true);
+			trace("nontransparent source mergeAlpha=true " + transparent.getPixel32(0, 0).toString(16));
+
         BitmapCopyPixels.plop(mc,  10, 20, true, true, true      , false);
         BitmapCopyPixels.plop(mc, 210, 20, true, true, false     , false);
         BitmapCopyPixels.plop(mc, 410, 20, true, false, true     , false);

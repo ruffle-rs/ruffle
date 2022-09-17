@@ -22,7 +22,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -42,7 +42,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -50,7 +50,7 @@ pub fn autosize<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -70,7 +70,7 @@ pub fn set_autosize<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -101,7 +101,7 @@ pub fn background<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -116,7 +116,7 @@ pub fn set_background<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -136,7 +136,7 @@ pub fn background_color<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -151,7 +151,7 @@ pub fn set_background_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -171,7 +171,7 @@ pub fn border<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -186,7 +186,7 @@ pub fn set_border<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -206,7 +206,7 @@ pub fn border_color<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -221,7 +221,7 @@ pub fn set_border_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -241,7 +241,7 @@ pub fn default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -256,7 +256,7 @@ pub fn set_default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -277,7 +277,7 @@ pub fn display_as_password<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -292,7 +292,7 @@ pub fn set_display_as_password<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -313,7 +313,7 @@ pub fn embed_fonts<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -328,7 +328,7 @@ pub fn set_embed_fonts<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -349,7 +349,7 @@ pub fn html_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -364,7 +364,7 @@ pub fn set_html_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -385,7 +385,7 @@ pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -400,7 +400,7 @@ pub fn multiline<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -415,7 +415,7 @@ pub fn set_multiline<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -436,7 +436,7 @@ pub fn selectable<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -451,7 +451,7 @@ pub fn set_selectable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -472,7 +472,7 @@ pub fn text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -487,7 +487,7 @@ pub fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -508,7 +508,7 @@ pub fn text_color<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -527,7 +527,7 @@ pub fn set_text_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -558,7 +558,7 @@ pub fn text_height<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -574,7 +574,7 @@ pub fn text_width<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -590,7 +590,7 @@ pub fn get_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -608,7 +608,7 @@ pub fn set_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -635,7 +635,7 @@ pub fn word_wrap<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -650,7 +650,7 @@ pub fn set_word_wrap<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -671,7 +671,7 @@ pub fn append_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -698,7 +698,7 @@ pub fn get_text_format<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -733,7 +733,7 @@ pub fn replace_selected_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -762,7 +762,7 @@ pub fn replace_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -798,7 +798,7 @@ pub fn set_selection<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -830,7 +830,7 @@ pub fn set_text_format<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
@@ -880,7 +880,7 @@ pub fn anti_alias_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("TextField.antiAliasType getter: not yet implemented");
     Ok(Value::Undefined)
 }
@@ -889,7 +889,7 @@ pub fn set_anti_alias_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("TextField.antiAliasType setter: not yet implemented");
     Ok(Value::Undefined)
 }

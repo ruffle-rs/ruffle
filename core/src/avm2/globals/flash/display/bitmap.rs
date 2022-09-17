@@ -2,13 +2,16 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::globals::flash::display::bitmapdata::fill_bitmap_data_from_symbol;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{BitmapDataObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::bitmap::bitmap_data::BitmapData;
+use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 
@@ -17,7 +20,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
         activation.super_init(this, &[])?;
 
@@ -45,25 +48,69 @@ pub fn instance_init<'gc>(
                 //need to create bitmap data right away, since all AVM2 bitmaps
                 //hold bitmap data.
 
-                if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
-                    let bd_object = bd_class.construct(activation, &[])?;
+                let bd_object = if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
+                    bd_class.construct(activation, &[])?
+                } else if let Some(b_class) = bitmap.avm2_bitmap_class() {
+                    // Instantiating Bitmap from a Flex-style bitmap asset.
+                    // Contrary to the above comment, this code path DOES
+                    // trigger from AVM2, since the DisplayObject instantiation
+                    // logic does its job in this case.
+                    if let Some((movie, symbol_id)) = activation
+                        .context
+                        .library
+                        .avm2_class_registry()
+                        .class_symbol(b_class)
+                    {
+                        if let Some(Character::Bitmap(bitmap)) = activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie)
+                            .character_by_id(symbol_id)
+                            .cloned()
+                        {
+                            let new_bitmap_data = GcCell::allocate(
+                                activation.context.gc_context,
+                                BitmapData::default(),
+                            );
 
-                    this.set_property(
-                        &Multiname::public("bitmapData"),
-                        bd_object.into(),
-                        activation,
-                    )?;
+                            fill_bitmap_data_from_symbol(
+                                activation,
+                                bitmap,
+                                new_bitmap_data,
+                                Some(b_class.inner_class_definition().read().name()),
+                            );
+                            BitmapDataObject::from_bitmap_data(
+                                activation,
+                                new_bitmap_data,
+                                activation.context.avm2.classes().bitmapdata,
+                            )?
+                        } else {
+                            //Class association not to a Bitmap
+                            return Err("Attempted to instantiate Bitmap from timeline with symbol class associated to non-Bitmap!".into());
+                        }
+                    } else {
+                        //Class association not bidirectional
+                        return Err("Cannot instantiate Bitmap from timeline without bidirectional symbol class association".into());
+                    }
                 } else {
+                    // No class association
                     return Err(
                         "Cannot instantiate Bitmap from timeline without associated symbol class"
                             .into(),
                     );
-                }
+                };
+
+                this.set_property(
+                    &Multiname::public("bitmapData"),
+                    bd_object.into(),
+                    activation,
+                )?;
             }
 
             bitmap.set_smoothing(activation.context.gc_context, smoothing);
         } else {
-            //We are being initialized by AVM2.
+            //We are being initialized by AVM2 (and aren't associated with a
+            //Bitmap subclass).
             let bitmap_handle = if let Some(bd) = bitmap_data {
                 bd.write(activation.context.gc_context)
                     .bitmap_handle(activation.context.renderer)
@@ -96,7 +143,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -105,7 +152,7 @@ pub fn bitmap_data<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -124,7 +171,7 @@ pub fn set_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -147,7 +194,7 @@ pub fn pixel_snapping<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok("auto".into())
 }
 
@@ -156,7 +203,7 @@ pub fn set_pixel_snapping<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Bitmap.pixelSnapping is a stub".into())
 }
 
@@ -165,7 +212,7 @@ pub fn smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
@@ -181,7 +228,7 @@ pub fn set_smoothing<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())

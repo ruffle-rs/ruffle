@@ -1,0 +1,17 @@
+5d243147 5d243147 45122134 45122134 45122134 
+5d243147 5d243147 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 -7f564435 
+transparentSource: -ff1f1f2
+Non-transparent testing
+Original pixel: -1000000
+transparent source mergeAlpha=false -f2f2f3
+transparent source mergeAlpha=true -f2f2f3
+nontransparent source mergeAlpha=false -fdfbfa
+nontransparent source mergeAlpha=true -fdfbfa
+
+Transparent testing
+Original pixel: -1
+nontransparent source mergeAlpha=false -fdfbfa
+nontransparent source mergeAlpha=true -fdfbfa

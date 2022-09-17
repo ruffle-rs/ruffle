@@ -55,14 +55,14 @@ impl<'gc> QName<'gc> {
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         if multiname_index.0 == 0 {
             return Err("Attempted to load a trait name of index zero".into());
         }
 
         let actual_index = multiname_index.0 as usize - 1;
         let abc = translation_unit.abc();
-        let abc_multiname: Result<_, Error> = abc
+        let abc_multiname: Result<_, Error<'gc>> = abc
             .constant_pool
             .multinames
             .get(actual_index)

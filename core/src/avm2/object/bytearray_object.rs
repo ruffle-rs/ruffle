@@ -12,7 +12,7 @@ use std::cell::{Ref, RefMut};
 pub fn bytearray_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(ByteArrayObject(GcCell::allocate(
@@ -42,7 +42,7 @@ impl<'gc> ByteArrayObject<'gc> {
     pub fn from_storage(
         activation: &mut Activation<'_, 'gc, '_>,
         bytes: ByteArrayStorage,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().bytearray;
         let base = ScriptObjectData::new(class);
 
@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
 
         if name.contains_public_namespace() {
@@ -102,7 +102,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
         if name.contains_public_namespace() {
@@ -125,7 +125,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
         if name.contains_public_namespace() {
@@ -147,7 +147,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &Multiname<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
@@ -179,7 +179,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

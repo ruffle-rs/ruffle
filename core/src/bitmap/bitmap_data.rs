@@ -559,7 +559,8 @@ impl<'gc> BitmapData<'gc> {
         source_bitmap: &Self,
         src_rect: (i32, i32, i32, i32),
         dest_point: (i32, i32),
-        alpha_source: Option<(&Self, (i32, i32), bool)>,
+        alpha_source: Option<(&Self, (i32, i32))>,
+        merge_alpha: bool,
     ) {
         let (src_min_x, src_min_y, src_width, src_height) = src_rect;
         let (dest_min_x, dest_min_y) = dest_point;
@@ -581,8 +582,7 @@ impl<'gc> BitmapData<'gc> {
 
                 let mut dest_color = self.get_pixel_raw(dest_x as u32, dest_y as u32).unwrap();
 
-                if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y), merge_alpha)) = alpha_source
-                {
+                if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y))) = alpha_source {
                     let alpha_x = src_x - src_min_x + alpha_min_x;
                     let alpha_y = src_y - src_min_y + alpha_min_y;
 
@@ -627,11 +627,16 @@ impl<'gc> BitmapData<'gc> {
                         intermediate_color
                     };
                 } else {
-                    dest_color = if source_bitmap.transparency && !self.transparency {
-                        dest_color.blend_over(&source_color)
-                    } else {
-                        source_color
-                    };
+                    dest_color =
+                        if (source_bitmap.transparency && !self.transparency) || merge_alpha {
+                            dest_color.blend_over(&source_color)
+                        } else {
+                            source_color
+                        };
+
+                    if !self.transparency {
+                        dest_color = dest_color.with_alpha(0xFF)
+                    }
                 }
 
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);

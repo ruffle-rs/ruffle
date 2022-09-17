@@ -27,14 +27,14 @@ impl<'gc> Namespace<'gc> {
         translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
             return Ok(Self::Any);
         }
 
         let actual_index = namespace_index.0 as usize - 1;
         let abc = translation_unit.abc();
-        let abc_namespace: Result<_, Error> = abc
+        let abc_namespace: Result<_, Error<'gc>> = abc
             .constant_pool
             .namespaces
             .get(actual_index)

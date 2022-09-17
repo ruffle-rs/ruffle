@@ -103,7 +103,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let proto = activation
             .avm2()
             .classes()
@@ -130,7 +130,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let class_object = Self::from_class_partial(activation, class, superclass_object)?;
         let class_proto = class_object.allocate_prototype(activation, superclass_object)?;
 
@@ -159,7 +159,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let scope = activation.create_scopechain();
         if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.read().is_final() {
@@ -239,7 +239,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn into_finished_class(
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let class = self.inner_class_definition();
         self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
@@ -282,7 +282,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         class_proto: Object<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.0.write(activation.context.gc_context).prototype = Some(class_proto);
         class_proto.set_property_local(
             &Multiname::public("constructor"),
@@ -303,7 +303,10 @@ impl<'gc> ClassObject<'gc> {
     /// This should be done after all instance traits has been resolved, as
     /// instance traits will be resolved to their corresponding methods at this
     /// time.
-    pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
+    pub fn link_interfaces(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let class = write.class;
         let scope = write.class_scope;
@@ -392,7 +395,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn run_class_initializer(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let object: Object<'gc> = self.into();
 
         let scope = self.0.read().class_scope;
@@ -466,7 +469,7 @@ impl<'gc> ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
         let constructor =
             Executable::from_method(self.0.read().constructor.clone(), scope, None, Some(self));
@@ -484,7 +487,7 @@ impl<'gc> ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
         let constructor = Executable::from_method(
             self.0.read().native_constructor.clone(),
@@ -526,7 +529,7 @@ impl<'gc> ClassObject<'gc> {
         reciever: Object<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
             return Err(format!(
@@ -585,7 +588,7 @@ impl<'gc> ClassObject<'gc> {
         multiname: &Multiname<'gc>,
         reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
             return Err(format!(
@@ -649,7 +652,7 @@ impl<'gc> ClassObject<'gc> {
         value: Value<'gc>,
         mut reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
             return Err(format!(
@@ -773,7 +776,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
             format!("[class {}]", self.0.read().class.read().name().local_name()),
@@ -784,11 +790,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn to_locale_string(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -797,7 +803,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.0.read().call_handler.clone() {
             let scope = self.0.read().class_scope;
             let func = Executable::from_method(call_handler, scope, None, Some(self));
@@ -816,7 +822,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let instance_allocator = self.0.read().instance_allocator.0;
 
         let mut instance = instance_allocator(self, activation)?;
@@ -854,7 +860,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         nullable_params: &[Value<'gc>],
-    ) -> Result<ClassObject<'gc>, Error> {
+    ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
 
         if !self_class.read().is_generic() {

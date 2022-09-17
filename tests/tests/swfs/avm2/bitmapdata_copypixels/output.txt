@@ -1,0 +1,23 @@
+5d243147 5d243147 45122134 45122134 45122134 
+5d243147 5d243147 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 45122134 
+45122134 45122134 45122134 45122134 80a9bbcb 
+transparentSource: f00e0e0e
+Non-transparent testing
+Original pixel: ff000000
+transparent source mergeAlpha=false ff0d0d0d
+transparent source mergeAlpha=true ff0d0d0d
+nontransparent source mergeAlpha=false ff020406
+nontransparent source mergeAlpha=true ff020406
+
+Transparent testing
+Original pixel: ffffffff
+nontransparent source mergeAlpha=false ff020406
+nontransparent source mergeAlpha=true ff020406
+Copy with alphaPoint=undefined:
+ff800000 ff800000 0 0 0 
+ff800000 ff800000 0 0 0 
+0 0 0 0 0 
+0 0 0 0 0 
+0 0 0 0 0 

@@ -21,7 +21,7 @@ pub fn get_timer<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok((Instant::now()
         .duration_since(activation.context.start_time)
         .as_millis() as u32)
@@ -33,7 +33,7 @@ pub fn set_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
         return Err(Error::from("setInterval: not enough arguments"));
     }
@@ -62,7 +62,7 @@ pub fn clear_interval<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let id = args
         .get(0)
         .ok_or("clearInterval: not enough arguments")?
@@ -76,7 +76,7 @@ pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() < 2 {
         return Err(Error::from("setTimeout: not enough arguments"));
     }
@@ -105,7 +105,7 @@ pub fn clear_timeout<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let id = args
         .get(0)
         .ok_or("clearTimeout: not enough arguments")?
@@ -119,7 +119,7 @@ pub fn escape_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let s = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -145,7 +145,7 @@ pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let obj = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -172,7 +172,7 @@ pub fn get_qualified_superclass_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let obj = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -203,7 +203,7 @@ pub fn get_definition_by_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let appdomain = activation.caller_domain();
     let name = args
         .get(0)

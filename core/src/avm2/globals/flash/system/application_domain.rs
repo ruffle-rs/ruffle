@@ -16,7 +16,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -29,7 +29,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -38,7 +38,7 @@ pub fn current_domain<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let appdomain = activation.caller_domain();
 
     Ok(DomainObject::from_domain(activation, appdomain)?.into())
@@ -49,7 +49,7 @@ pub fn parent_domain<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
             return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
@@ -64,7 +64,7 @@ pub fn get_definition<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         let local_name = args
             .get(0)
@@ -90,7 +90,7 @@ pub fn has_definition<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         let local_name = args
             .get(0)
@@ -110,7 +110,7 @@ pub fn set_domain_memory<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(Value::Object(arg)) = args.get(0) {
         if let Some(bytearray_obj) = arg.as_bytearray_object() {
             if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
@@ -127,7 +127,7 @@ pub fn domain_memory<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         let bytearray_object: Object<'gc> = appdomain.domain_memory().into();
         return Ok(bytearray_object.into());

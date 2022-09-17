@@ -14,7 +14,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 pub fn primitive_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(PrimitiveObject(GcCell::allocate(
@@ -53,7 +53,7 @@ impl<'gc> PrimitiveObject<'gc> {
     pub fn from_primitive(
         primitive: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         if !primitive.is_primitive() {
             return Err("Attempted to box an object as a primitive".into());
         }
@@ -102,14 +102,17 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.0.read().primitive)
     }
 
     fn to_locale_string(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         match self.0.read().primitive {
             val @ Value::Integer(_) => Ok(val),
             _ => {
@@ -127,7 +130,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         }
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.0.read().primitive)
     }
 

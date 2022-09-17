@@ -372,7 +372,7 @@ pub fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     target: Object<'gc>,
     event: Object<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
         "Event dispatch: {} to {:?}",
@@ -435,7 +435,7 @@ pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     event: Object<'gc>,
-) -> Result<bool, Error> {
+) -> Result<bool, Error<'gc>> {
     let target = this
         .get_property(
             &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),

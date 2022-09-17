@@ -6,7 +6,7 @@ use crate::display_object::{
 use crate::font::Font;
 use gc_arena::Collect;
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Character<'gc> {
     EditText(EditText<'gc>),

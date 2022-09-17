@@ -30,6 +30,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
+use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
@@ -344,8 +345,9 @@ impl Player {
             // and has no associated `Loader` instance.
             // However, some properties are always accessible, and take their values
             // from the root SWF.
-            let stage_loader_info = LoaderInfoObject::not_yet_loaded(&mut activation, swf, None)
-                .expect("Failed to construct Stage LoaderInfo");
+            let stage_loader_info =
+                LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root))
+                    .expect("Failed to construct Stage LoaderInfo");
             activation
                 .context
                 .stage
@@ -400,7 +402,10 @@ impl Player {
             stage.build_matrices(&mut activation.context);
         });
 
-        self.preload();
+        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
+            self.ui.display_unsupported_message();
+        }
+
         self.audio.set_frame_rate(self.frame_rate);
     }
 
@@ -1322,21 +1327,75 @@ impl Player {
         needs_render
     }
 
-    /// Preload the first movie in the player.
+    /// Preload all pending movies in the player, including the root movie.
     ///
-    /// This should only be called once. Further movie loads should preload the
-    /// specific `MovieClip` referenced.
-    fn preload(&mut self) {
+    /// This should be called periodically with a reasonable execution limit.
+    /// By default, the Player will do so after every `run_frame` using a limit
+    /// derived from the current frame rate and execution time. Clients that
+    /// want synchronous or 'lockstep' preloading may call this function with
+    /// an unlimited execution limit.
+    ///
+    /// Returns true if all preloading work has completed. Clients that want to
+    /// simulate a particular load condition or stress chunked loading may use
+    /// this in lieu of an unlimited execution limit.
+    pub fn preload(&mut self, limit: &mut ExecutionLimit) -> bool {
         self.mutate_with_update_context(|context| {
-            let root = context.stage.root_clip();
-            root.as_movie_clip().unwrap().preload(context);
-        });
-        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
-            self.ui.display_unsupported_message();
-        }
+            let mut did_finish = true;
+
+            if let Some(root) = context.stage.root_clip().as_movie_clip() {
+                let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
+                did_finish = root.preload(context, limit);
+
+                if !was_root_movie_loaded {
+                    if let Some(loader_info) = root.loader_info() {
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                        let progress_evt = activation.avm2().classes().progressevent.construct(
+                            &mut activation,
+                            &[
+                                "progress".into(),
+                                false.into(),
+                                false.into(),
+                                root.compressed_loaded_bytes().into(),
+                                root.compressed_total_bytes().into(),
+                            ],
+                        );
+
+                        match progress_evt {
+                            Err(e) => log::error!(
+                                "Encountered AVM2 error when broadcasting `progress` event: {}",
+                                e
+                            ),
+                            Ok(progress_evt) => {
+                                if let Err(e) =
+                                    Avm2::dispatch_event(context, progress_evt, loader_info)
+                                {
+                                    log::error!(
+                                        "Encountered AVM2 error when broadcasting `progress` event: {}",
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if did_finish {
+                did_finish = LoadManager::preload_tick(context, limit);
+            }
+
+            did_finish
+        })
     }
 
     pub fn run_frame(&mut self) {
+        let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
+
+        self.preload(&mut ExecutionLimit::with_max_ops_and_time(
+            10000, frame_time,
+        ));
+
         self.update(|context| {
             if context.is_action_script_3() {
                 run_all_phases_avm2(context);
@@ -1345,6 +1404,7 @@ impl Player {
             }
             context.update_sounds();
         });
+
         self.needs_render = true;
     }
 

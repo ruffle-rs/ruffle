@@ -13,6 +13,7 @@ use ruffle_core::context::UpdateContext;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
+use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
@@ -189,7 +190,10 @@ swf_tests! {
     (as3_astypelate, "avm2/astypelate", 1),
     (as3_bitand, "avm2/bitand", 1),
     (as3_bitmap_constr, "avm2/bitmap_constr", 1),
+    (as3_bitmapdata_copypixels, "avm2/bitmapdata_copypixels", 2, img = true),
     #[ignore] (as3_bitmap_properties, "avm2/bitmap_properties", 1),
+    (as3_bitmap_subclass, "avm2/bitmap_subclass", 1),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmap_subclass_properties, "avm2/bitmap_subclass_properties", 1, img = true),
     (as3_bitmap_timeline, "avm2/bitmap_timeline", 1),
     (as3_bitmapdata_constr, "avm2/bitmapdata_constr", 1),
     (as3_bitmapdata_dispose, "avm2/bitmapdata_dispose", 1),
@@ -197,7 +201,7 @@ swf_tests! {
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_draw, "avm2/bitmapdata_draw", 1, img = true),
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_opaque, "avm2/bitmapdata_opaque", 1, img = true),
     (as3_bitmapdata_zero_size, "avm2/bitmapdata_zero_size", 1),
-    #[ignore] (as3_bitmapdata_embedded, "avm2/bitmapdata_embedded", 1),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_embedded, "avm2/bitmapdata_embedded", 1, img = true),
     (as3_bitmapdata_fillrect, "avm2/bitmapdata_fillrect", 1),
     (as3_bitnot, "avm2/bitnot", 1),
     (as3_bitor, "avm2/bitor", 1),
@@ -369,6 +373,7 @@ swf_tests! {
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),
     (as3_loader_events, "avm2/loader_events", 3, img = true),
+    (as3_loader_loadbytes_events, "avm2/loader_loadbytes_events", 3, img = true),
     (as3_loaderinfo_events, "avm2/loaderinfo_events", 2),
     (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 2),
     (as3_loaderinfo_root, "avm2/loaderinfo_root", 1),
@@ -1328,6 +1333,7 @@ fn test_swf_approx(
                         expected_captures.len(),
                         "Differing numbers of regex captures"
                     );
+
                     // Each capture group (other than group 0, which is always the entire regex
                     // match) represents a floating-point value
                     for (actual_val, expected_val) in actual_captures
@@ -1443,6 +1449,13 @@ fn run_swf(
         if frame_time_sleep {
             std::thread::sleep(frame_time_duration);
         }
+
+        while !player
+            .lock()
+            .unwrap()
+            .preload(&mut ExecutionLimit::exhausted())
+        {}
+
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.run();

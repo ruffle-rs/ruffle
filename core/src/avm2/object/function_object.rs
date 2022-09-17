@@ -38,7 +38,7 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-    ) -> Result<FunctionObject<'gc>, Error> {
+    ) -> Result<FunctionObject<'gc>, Error<'gc>> {
         let this = Self::from_method(activation, method, scope, None, None);
         let es3_proto = ScriptObject::custom_object(
             activation.context.gc_context,
@@ -99,18 +99,21 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok("function Function() {}".into())
     }
 
     fn to_locale_string(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -127,7 +130,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.0
             .read()
             .exec
@@ -138,7 +141,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let prototype = self.prototype().unwrap();
 
         let instance =

@@ -35,7 +35,7 @@ pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
-) -> Result<Value<'gc>, Error>;
+) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Configuration of a single parameter of a method.
 #[derive(Clone, Collect, Debug)]
@@ -56,7 +56,7 @@ impl<'gc> ParamConfig<'gc> {
         config: &AbcMethodParam,
         txunit: TranslationUnit<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
             txunit.pool_string(name.0, activation.context.gc_context)?
         } else {
@@ -138,7 +138,7 @@ impl<'gc> BytecodeMethod<'gc> {
         abc_method: Index<AbcMethod>,
         is_function: bool,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
         let mut signature = Vec::new();
 
@@ -348,7 +348,7 @@ impl<'gc> Method<'gc> {
     /// Access the bytecode of this method.
     ///
     /// This function returns `Err` if there is no bytecode for this method.
-    pub fn into_bytecode(self) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
+    pub fn into_bytecode(self) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error<'gc>> {
         match self {
             Method::Native { .. } => {
                 Err("Attempted to unwrap a native method as a user-defined one".into())

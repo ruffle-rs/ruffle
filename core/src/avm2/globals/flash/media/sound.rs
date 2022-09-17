@@ -20,7 +20,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -57,7 +57,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -66,7 +66,7 @@ pub fn bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         if let Some(length) = activation.context.audio.get_sound_size(sound) {
             return Ok((length).into());
@@ -81,7 +81,7 @@ pub fn is_buffering<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     //STUB: We do not yet support network-loaded sounds.
     Ok(false.into())
 }
@@ -91,7 +91,7 @@ pub fn url<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     //STUB: We do not yet support network-loaded sounds.
     Ok(Value::Null)
 }
@@ -101,7 +101,7 @@ pub fn length<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
             return Ok((duration).into());
@@ -116,7 +116,7 @@ pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         let position = args
             .get(0)
@@ -177,7 +177,7 @@ pub fn extract<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Sound.extract is a stub.".into())
 }
 
@@ -186,7 +186,7 @@ pub fn close<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Sound.close is a stub.".into())
 }
 
@@ -195,7 +195,7 @@ pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let url_request = match args.get(0) {
             Some(Value::Object(request)) => request,
@@ -226,7 +226,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Sound.loadCompressedDataFromByteArray is a stub.".into())
 }
 
@@ -235,7 +235,7 @@ pub fn load_pcm_from_byte_array<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Sound.loadPCMFromByteArray is a stub.".into())
 }
 

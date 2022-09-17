@@ -23,7 +23,7 @@ fn deserialize_json_inner<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     json: JsonValue,
     reviver: Option<Object<'gc>>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match json {
         JsonValue::Null => Value::Null,
         JsonValue::String(s) => AvmString::new_utf8(activation.context.gc_context, s).into(),
@@ -75,7 +75,7 @@ fn deserialize_json<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     json: JsonValue,
     reviver: Option<Object<'gc>>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
@@ -118,7 +118,7 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         key: impl Fn() -> AvmString<'gc>,
         value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let (eval_key, value) = if value.is_primitive() {
             (None, value)
         } else {
@@ -149,7 +149,7 @@ impl<'gc> AvmSerializer<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         obj: Object<'gc>,
-    ) -> Result<JsonValue, Error> {
+    ) -> Result<JsonValue, Error<'gc>> {
         let mut js_obj = JsonObject::new();
         // If the user supplied a PropList, we use that to find properties on the object.
         if let Some(Replacer::PropList(props)) = self.replacer {
@@ -194,7 +194,7 @@ impl<'gc> AvmSerializer<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         iterable: Object<'gc>,
-    ) -> Result<JsonValue, Error> {
+    ) -> Result<JsonValue, Error<'gc>> {
         let mut js_arr = Vec::new();
         let mut iter = ArrayIter::new(activation, iterable)?;
         while let Some(r) = iter.next(activation) {
@@ -211,7 +211,7 @@ impl<'gc> AvmSerializer<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
-    ) -> Result<JsonValue, Error> {
+    ) -> Result<JsonValue, Error<'gc>> {
         Ok(match value {
             Value::Null => JsonValue::Null,
             Value::Undefined => JsonValue::Null,
@@ -247,7 +247,7 @@ impl<'gc> AvmSerializer<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
-    ) -> Result<JsonValue, Error> {
+    ) -> Result<JsonValue, Error<'gc>> {
         let mapped = self.map_value(activation, || "".into(), value)?;
         self.serialize_value(activation, mapped)
     }
@@ -258,7 +258,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("ArgumentError: Error #2012: JSON class cannot be instantiated.".into())
 }
 
@@ -267,7 +267,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -276,7 +276,7 @@ pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let input = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -292,7 +292,7 @@ pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get(0).unwrap_or(&Value::Undefined);
     let replacer = args.get(1).unwrap_or(&Value::Undefined).as_object();
     let spaces = args.get(2).unwrap_or(&Value::Undefined);

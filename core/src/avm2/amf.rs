@@ -91,7 +91,7 @@ pub fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     obj: Object<'gc>,
     elements: &mut Vec<Element>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let mut last_index = obj.get_next_enumerant(0, activation)?;
     while let Some(index) = last_index {
         let name = obj
@@ -111,7 +111,7 @@ pub fn recursive_serialize<'gc>(
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     val: &AmfValue,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match val {
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
@@ -215,7 +215,7 @@ pub fn deserialize_value<'gc>(
 pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     lso: &Lso,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let mut obj = activation
         .avm2()
         .classes()
