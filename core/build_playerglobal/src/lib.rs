@@ -272,13 +272,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     // generate a reference to an allocator function in the native instance
     // allocators table.
     let mut check_instance_allocator = |trait_: &Trait| {
-        let class_id = if let TraitKind::Class { slot_id, .. } = trait_.kind {
-            slot_id
+        let class_id = if let TraitKind::Class { class, .. } = trait_.kind {
+            class.0
         } else {
             return;
         };
 
-        let class_name_idx = abc.instances[class_id as usize - 1].name.0;
+        let class_name_idx = abc.instances[class_id as usize].name.0;
         let class_name = resolve_multiname_name(
             &abc,
             &abc.constant_pool.multinames[class_name_idx as usize - 1],
@@ -306,7 +306,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     (None, METADATA_INSTANCE_ALLOCATOR) => {
                         // This results in a path of the form
                         // `crate::avm2::globals::<path::to::class>::<class_allocator>`
-                        rust_instance_allocators[class_id as usize - 1] =
+                        rust_instance_allocators[class_id as usize] =
                             rust_method_path(&abc, trait_, None, "", &method_name);
                     }
                     _ => panic!("Unexpected metadata pair ({:?}, {})", key, value),
