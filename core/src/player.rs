@@ -346,7 +346,7 @@ impl Player {
             // However, some properties are always accessible, and take their values
             // from the root SWF.
             let stage_loader_info =
-                LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root))
+                LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
                     .expect("Failed to construct Stage LoaderInfo");
             activation
                 .context

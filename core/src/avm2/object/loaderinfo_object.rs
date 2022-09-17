@@ -44,14 +44,21 @@ pub fn loaderinfo_allocator<'gc>(
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
-    /// While it makes no sense to actually retrieve loader info properties off
-    /// the stage, it's possible to do so. Some properties yield the
-    /// not-yet-loaded error while others are pulled from the root SWF.
+    /// An SWF movie that has not yet loaded.
     ///
-    /// For loader infos that point to an actual loaded movie rather than the
-    /// stage, the DisplayObject parameter is provided. It is always `None` for
-    /// the stage.
-    NotYetLoaded(Arc<SwfMovie>, Option<DisplayObject<'gc>>),
+    /// The main differences from `Swf` loader streams is that certain loader
+    /// info properties are `null` until the SWF is fully loaded. Furthermore,
+    /// the `DisplayObject` parameter is optional, to represent movies that do
+    /// not yet have a root clip.
+    ///
+    /// While the `Stage` is not a loadable object, it has `loaderInfo`, with
+    /// properties that roughly mirror an unloaded movie clip. Properties that
+    /// are valid on `Stage.loaderInfo` will be pulled from the root SWF.
+    ///
+    /// The `bool` parameter indicates if this is the `Stage`'s loader info;
+    /// this is because certain `Stage` properties are accessible even when the
+    /// associated movie is not yet loaded.
+    NotYetLoaded(Arc<SwfMovie>, Option<DisplayObject<'gc>>, bool),
 
     /// A loaded SWF movie.
     ///
@@ -133,6 +140,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         movie: Arc<SwfMovie>,
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
+        is_stage: bool,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
@@ -141,7 +149,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
-                loaded_stream: Some(LoaderStream::NotYetLoaded(movie, root_clip)),
+                loaded_stream: Some(LoaderStream::NotYetLoaded(movie, root_clip, is_stage)),
                 loader,
                 init_event_fired: false,
                 complete_event_fired: false,

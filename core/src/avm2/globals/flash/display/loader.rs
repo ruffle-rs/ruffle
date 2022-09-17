@@ -33,6 +33,7 @@ pub fn init<'gc>(
             Arc::new(SwfMovie::empty(activation.context.swf.version())),
             Some(this),
             None,
+            false,
         )?;
         this.set_property(
             &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),

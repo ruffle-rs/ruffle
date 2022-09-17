@@ -61,7 +61,7 @@ pub fn action_script_version<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err(INSUFFICIENT.into());
                 }
                 LoaderStream::Swf(movie, _) => {
@@ -87,7 +87,7 @@ pub fn application_domain<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Ok(DomainObject::from_domain(activation, activation.domain())?.into());
                 }
                 LoaderStream::Swf(movie, _) => {
@@ -117,7 +117,7 @@ pub fn bytes_total<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf, _) => return Ok(swf.compressed_len().into()),
+                LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
                 LoaderStream::Swf(movie, _) => {
                     return Ok(movie.compressed_len().into());
                 }
@@ -140,8 +140,8 @@ pub fn bytes_loaded<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, None) => return Ok(0.into()),
-                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root)) => {
+                LoaderStream::NotYetLoaded(_, None, _) => return Ok(0.into()),
+                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                     return Ok(root
                         .as_movie_clip()
                         .map(|mc| mc.compressed_loaded_bytes())
@@ -167,7 +167,7 @@ pub fn content<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root)) => {
+                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                     return Ok(root.object2());
                 }
                 _ => {
@@ -192,7 +192,7 @@ pub fn content_type<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => return Ok(Value::Null),
+                LoaderStream::NotYetLoaded(_, _, _) => return Ok(Value::Null),
                 LoaderStream::Swf(_, _) => {
                     return Ok("application/x-shockwave-flash".into());
                 }
@@ -215,7 +215,7 @@ pub fn frame_rate<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a frame rate".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -240,7 +240,7 @@ pub fn height<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a height".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -274,7 +274,7 @@ pub fn swf_version<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a SWF version".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -299,7 +299,7 @@ pub fn url<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => return Ok(Value::Null),
+                LoaderStream::NotYetLoaded(_, _, _) => return Ok(Value::Null),
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -325,7 +325,7 @@ pub fn width<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a width".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -350,7 +350,7 @@ pub fn bytes<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf, _) => swf,
+                LoaderStream::NotYetLoaded(swf, _, _) => swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -420,7 +420,7 @@ pub fn loader_url<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf, _) => swf,
+                LoaderStream::NotYetLoaded(swf, _, _) => swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -444,7 +444,7 @@ pub fn parameters<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _) => activation.context.swf,
+                LoaderStream::NotYetLoaded(_, _, _) => activation.context.swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
