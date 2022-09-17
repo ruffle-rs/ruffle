@@ -38,6 +38,29 @@ use url::form_urlencoded;
 
 pub type Handle = Index;
 
+/// How Ruffle should load movies.
+pub enum LoadBehavior {
+    /// Allow movies to execute before they have finished loading.
+    ///
+    /// Frames/bytes loaded values will tick up normally and progress events
+    /// will be fired at regular intervals. Movie preload animations will play
+    /// normally.
+    Streaming,
+
+    /// Delay execution of loaded movies until they have finished loading.
+    ///
+    /// Movies will see themselves load immediately. Preload animations will be
+    /// skipped. This may break movies that depend on loading during execution.
+    Delayed,
+
+    /// Block Ruffle until movies have finished loading.
+    ///
+    /// This has the same implications as `Delay`, but tag processing will be
+    /// done synchronously. Complex movies will visibly block the player from
+    /// accepting user input and the application will appear to freeze.
+    Blocking,
+}
+
 /// Enumeration of all content types that `Loader` can handle.
 ///
 /// This is a superset of `JpegTagFormat`.
