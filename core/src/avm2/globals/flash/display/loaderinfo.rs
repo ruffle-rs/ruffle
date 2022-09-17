@@ -299,8 +299,8 @@ pub fn url<'gc>(
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_, _, _) => return Ok(Value::Null),
-                LoaderStream::Swf(root, _) => root,
+                LoaderStream::NotYetLoaded(_, _, false) => return Ok(Value::Null),
+                LoaderStream::NotYetLoaded(root, _, true) | LoaderStream::Swf(root, _) => root,
             };
 
             let url = root.url().map_or(Value::Null, |url| {
