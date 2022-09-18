@@ -22,6 +22,7 @@ type Error = Box<dyn std::error::Error>;
 mod utils;
 
 mod bitmaps;
+mod context3d;
 mod globals;
 mod pipelines;
 pub mod target;

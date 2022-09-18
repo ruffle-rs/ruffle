@@ -23,7 +23,9 @@ impl Globals {
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
             size: std::mem::size_of::<GlobalsUniform>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::STORAGE,
             mapped_at_creation: false,
         });
 

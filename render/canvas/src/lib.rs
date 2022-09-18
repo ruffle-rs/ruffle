@@ -1,6 +1,9 @@
 use fnv::FnvHashMap;
+use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{
+    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
+};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
@@ -461,6 +464,18 @@ impl RenderBackend for WebCanvasRenderBackend {
                 .map_err(Error::JavascriptError)?,
         );
         Ok(())
+    }
+
+    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error> {
+        Err(Error::Unimplemented)
+    }
+    fn context3d_present<'gc>(
+        &mut self,
+        _context: &mut dyn Context3D,
+        _commands: Vec<Context3DCommand<'gc>>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        Err(Error::Unimplemented)
     }
 }
 

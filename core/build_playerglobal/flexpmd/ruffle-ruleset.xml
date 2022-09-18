@@ -479,10 +479,6 @@ public class UnknownMetaDataAttribute
       </property>
     </properties>
   </rule>
-  <rule since="" class="com.adobe.ac.pmd.rules.performance.HeavyConstructorRule" message="Constructor must be as lightweight as possible. No control statement allowed, whereas a cyclomatic complexe of {0} has been detected">
-    <description>The Just-In-Time compiler does not compile constructors. Make them as lightweight as possible, or move the complexity of the code to a method called by the constructor. Then the complexity will be compiled by the JIT.</description>
-    <priority>3</priority>
-  </rule>
   <rule since="" class="com.adobe.ac.pmd.rules.performance.CreationPolicySetToAllRule" message="creationPolicy to ALL impacts the performance significantly">
     <description/>
     <priority>1</priority>
@@ -508,7 +504,7 @@ public class UnknownMetaDataAttribute
     <priority>3</priority>
     <properties>
       <property name="maximum">
-        <value>20</value>
+        <value>40</value>
       </property>
     </properties>
     <example><![CDATA[public class Foo 

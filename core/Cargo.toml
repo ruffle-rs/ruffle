@@ -45,6 +45,7 @@ symphonia = { version = "0.5.1", default-features = false, features = ["mp3"], o
 enumset = "1.0.12"
 static_assertions = "1.1.0"
 rustversion = "1.0.9"
+bytemuck = "1.12.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.25"
