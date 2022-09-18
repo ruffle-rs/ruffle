@@ -480,6 +480,18 @@ pub fn shared_events<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `uncaughtErrorEvents` getter
+pub fn uncaught_error_events<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(loader_info) = this.as_ref().and_then(|this| this.as_loader_info_object()) {
+        return Ok(loader_info.uncaught_error_events().into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `LoaderInfo`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -525,6 +537,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("loaderURL", Some(loader_url), None),
         ("parameters", Some(parameters), None),
         ("sharedEvents", Some(shared_events), None),
+        ("uncaughtErrorEvents", Some(uncaught_error_events), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

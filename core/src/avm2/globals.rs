@@ -111,6 +111,7 @@ pub struct SystemClasses<'gc> {
     pub verifyerror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
+    pub uncaughterrorevents: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -189,6 +190,7 @@ impl<'gc> SystemClasses<'gc> {
             verifyerror: object,
             ioerror: object,
             eoferror: object,
+            uncaughterrorevents: object,
         }
     }
 }
@@ -721,6 +723,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "IOErrorEvent", ioerrorevent),
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
+            ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
