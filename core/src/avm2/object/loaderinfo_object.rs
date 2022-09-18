@@ -35,6 +35,12 @@ pub fn loaderinfo_allocator<'gc>(
                 .classes()
                 .eventdispatcher
                 .construct(activation, &[])?,
+            uncaught_error_events: activation
+                .context
+                .avm2
+                .classes()
+                .uncaughterrorevents
+                .construct(activation, &[])?,
         },
     ))
     .into())
@@ -93,6 +99,8 @@ pub struct LoaderInfoObjectData<'gc> {
     // FIXME: If we ever implement sandboxing, then ensure that we allow
     // events to be fired across security boundaries using this object.
     shared_events: Object<'gc>,
+
+    uncaught_error_events: Object<'gc>,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -120,6 +128,12 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .avm2
                     .classes()
                     .eventdispatcher
+                    .construct(activation, &[])?,
+                uncaught_error_events: activation
+                    .context
+                    .avm2
+                    .classes()
+                    .uncaughterrorevents
                     .construct(activation, &[])?,
             },
         ))
@@ -159,6 +173,12 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .classes()
                     .eventdispatcher
                     .construct(activation, &[])?,
+                uncaught_error_events: activation
+                    .context
+                    .avm2
+                    .classes()
+                    .uncaughterrorevents
+                    .construct(activation, &[])?,
             },
         ))
         .into();
@@ -175,6 +195,10 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn shared_events(&self) -> Object<'gc> {
         return self.0.read().shared_events;
+    }
+
+    pub fn uncaught_error_events(&self) -> Object<'gc> {
+        return self.0.read().uncaught_error_events;
     }
 
     pub fn fire_init_and_complete_events(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
