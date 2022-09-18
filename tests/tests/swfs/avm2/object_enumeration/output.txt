@@ -1,7 +1,12 @@
+enumerating: [object Object]
 key2
 value2
 key
 value
 Delete key2
+enumerating: [object Object]
 key
 value
+enumerating: [object Object]
+enumerating: null
+enumerating: undefined

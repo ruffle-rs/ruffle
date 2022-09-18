@@ -2576,12 +2576,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_has_next(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let cur_index = self.context.avm2.pop().coerce_to_u32(self)?;
-        let object = self.context.avm2.pop().coerce_to_receiver(self, None)?;
 
-        if let Some(next_index) = object.get_next_enumerant(cur_index, self)? {
-            self.context.avm2.push(next_index);
-        } else {
+        let object = self.context.avm2.pop();
+        if matches!(object, Value::Undefined | Value::Null) {
             self.context.avm2.push(0.0);
+        } else {
+            let object = object.coerce_to_object(self)?;
+            if let Some(next_index) = object.get_next_enumerant(cur_index, self)? {
+                self.context.avm2.push(next_index);
+            } else {
+                self.context.avm2.push(0.0);
+            }
         }
 
         Ok(FrameControl::Continue)
@@ -2593,10 +2598,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index_register: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let mut cur_index = self.local_register(index_register)?.coerce_to_u32(self)?;
-        let mut object = Some(
-            self.local_register(object_register)?
-                .coerce_to_receiver(self, None)?,
-        );
+
+        let object = self.local_register(object_register)?;
+
+        let mut object = if matches!(object, Value::Undefined | Value::Null) {
+            None
+        } else {
+            Some(object.coerce_to_object(self)?)
+        };
 
         while let Some(cur_object) = object {
             if let Some(index) = cur_object.get_next_enumerant(cur_index, self)? {
