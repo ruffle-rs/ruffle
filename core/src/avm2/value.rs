@@ -45,6 +45,18 @@ pub enum Value<'gc> {
     Object(Object<'gc>),
 }
 
+// This type is used very frequently, so make sure it doesn't unexpectedly grow.
+// For now, we only test on Nightly, since a new niche optimization was recently
+// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
+// relative to stable.
+
+#[cfg(target_arch = "wasm32")]
+static_assertions::assert_eq_size!(Value<'_>, [u8; 16]);
+
+#[rustversion::nightly]
+#[cfg(target_pointer_width = "64")]
+static_assertions::assert_eq_size!(Value<'_>, [u8; 24]);
+
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)

@@ -18,6 +18,19 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
+// This type is used very frequently, so make sure it doesn't unexpectedly grow.
+// For now, we only test on Nightly, since a new niche optimization was recently
+// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
+// relative to stable.
+
+#[rustversion::nightly]
+#[cfg(target_arch = "wasm32")]
+static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 24]);
+
+#[rustversion::nightly]
+#[cfg(target_pointer_width = "64")]
+static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 32]);
+
 #[inline(never)]
 #[cold]
 pub fn range_error<'gc>(
