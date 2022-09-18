@@ -142,3 +142,9 @@ impl<'gc> From<String> for Error<'gc> {
         Error::RustError(val.into())
     }
 }
+
+impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
+    fn from(val: ruffle_render::error::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}

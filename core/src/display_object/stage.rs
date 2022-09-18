@@ -106,6 +106,9 @@ pub struct StageData<'gc> {
 
     /// The AVM2 'LoaderInfo' object for this stage object
     loader_info: Avm2Object<'gc>,
+
+    /// An array of AVM2 'Stage3D' instances
+    stage3ds: Vec<Avm2Object<'gc>>,
 }
 
 impl<'gc> Stage<'gc> {
@@ -136,6 +139,7 @@ impl<'gc> Stage<'gc> {
                 stage_focus_rect: true,
                 avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
                 loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
+                stage3ds: vec![],
             },
         ));
         stage.set_is_root(gc_context, true);
@@ -208,6 +212,10 @@ impl<'gc> Stage<'gc> {
                 | StageQuality::High16x16
                 | StageQuality::High16x16Linear
         );
+    }
+
+    pub fn stage3ds(&self) -> Ref<Vec<Avm2Object<'gc>>> {
+        Ref::map(self.0.read(), |this| &this.stage3ds)
     }
 
     /// Get the boolean flag which determines whether or not objects display a glowing border
@@ -667,10 +675,19 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             stage_constr,
         );
 
+        // Just create a single Stage3D for now
+        let stage3d = activation
+            .avm2()
+            .classes()
+            .stage3d
+            .construct(&mut activation, &[])
+            .expect("Failed to construct Stage3D");
+
         match avm2_stage {
             Ok(avm2_stage) => {
                 let mut write = self.0.write(activation.context.gc_context);
                 write.avm2_object = avm2_stage.into();
+                write.stage3ds = vec![stage3d];
             }
             Err(e) => log::error!("Unable to construct AVM2 Stage: {}", e),
         }
@@ -701,6 +718,15 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+        // All of our Stage3D instances get rendered *underneath* the main stage.
+        // Note that the stage background color is actually the lowest possible layer,
+        // and get applied when we start the frame (before `render` is called).
+        for stage3d in self.stage3ds().iter() {
+            if let Some(context3d) = stage3d.as_stage_3d().unwrap().context3d() {
+                context3d.as_context_3d().unwrap().render(context);
+            }
+        }
+
         render_base((*self).into(), context);
 
         if self.should_letterbox() {

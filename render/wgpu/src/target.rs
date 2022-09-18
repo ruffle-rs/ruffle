@@ -4,6 +4,8 @@ use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
+    fn into_view(self) -> wgpu::TextureView;
+
     fn view(&self) -> &wgpu::TextureView;
 }
 
@@ -42,6 +44,10 @@ pub struct SwapChainTargetFrame {
 }
 
 impl RenderTargetFrame for SwapChainTargetFrame {
+    fn into_view(self) -> wgpu::TextureView {
+        self.view
+    }
+
     fn view(&self) -> &wgpu::TextureView {
         &self.view
     }
@@ -142,6 +148,10 @@ pub struct TextureTargetFrame(wgpu::TextureView);
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
+    }
+
+    fn into_view(self) -> wgpu::TextureView {
+        self.0
     }
 }
 
