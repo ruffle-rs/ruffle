@@ -1,18 +1,27 @@
-﻿package {
-	public class Test {}
+﻿// compiled with mxmlc
+
+package {
+    import flash.display.MovieClip;
+    public class Test extends MovieClip {
+        public function Test() {
+
+        }
+    }
 }
 
+function enumerate(x) {
+	trace("enumerating: " + x)
+	for (var name in x) {
+		trace(name);
+		trace(x[name]);
+	}
+}
 var x = {"key": "value", "key2": "value2"};
 
-for (var name in x) {
-	trace(name);
-	trace(x[name]);
-}
-
+enumerate(x);
 trace("Delete key2");
 delete x["key2"];
-
-for (var name in x) {
-	trace(name);
-	trace(x[name]);
-}
+enumerate(x);
+enumerate({});
+enumerate(null);
+enumerate(undefined);
