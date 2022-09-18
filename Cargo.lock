@@ -3100,9 +3100,11 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "ruffle_wstr",
+ "rustversion",
  "serde",
  "serde_json",
  "smallvec",
+ "static_assertions",
  "swf",
  "symphonia",
  "thiserror",
@@ -3354,6 +3356,12 @@ dependencies = [
  "strength_reduce",
  "transpose",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97477e48b4cf8603ad5f7aaf897467cf42ab4218a38ef76fb14c2d6773a6d6a8"
 
 [[package]]
 name = "ryu"

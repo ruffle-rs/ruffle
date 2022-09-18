@@ -43,6 +43,8 @@ lzma-rs = {version = "0.2.0", optional = true }
 dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.1", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.0.11"
+static_assertions = "1.1.0"
+rustversion = "1.0.9"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.24"
