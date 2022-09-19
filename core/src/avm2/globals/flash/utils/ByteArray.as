@@ -68,9 +68,6 @@ package flash.utils {
 		public native function writeUnsignedInt(value:uint):void;
 		public native function writeUTF(value:String):void;
 		public native function writeUTFBytes(value:String):void;
-		public function writeObject(object:*):void { 
-			// STUB
-			throw new Error("ByteArray.writeObject not implemented");
-		}
+		public native function writeObject(object:*):void;
 	}
 }

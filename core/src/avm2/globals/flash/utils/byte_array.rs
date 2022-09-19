@@ -10,6 +10,7 @@ use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
+use flash_lso::types::{AMFVersion, Element};
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
 pub fn init<'gc>(
@@ -787,6 +788,39 @@ pub fn read_object<'gc>(
         }
     }
 
+    Ok(Value::Undefined)
+}
+
+pub fn write_object<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+            let obj = args.get(0).cloned().unwrap_or(Value::Undefined);
+            let amf_version = match bytearray.object_encoding() {
+                ObjectEncoding::Amf0 => AMFVersion::AMF0,
+                ObjectEncoding::Amf3 => AMFVersion::AMF3,
+            };
+            if let Some(amf) = crate::avm2::amf::serialize_value(activation, obj, amf_version) {
+                let element = Element::new("", amf);
+                let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
+                let bytes = flash_lso::write::write_to_bytes(&mut lso)
+                    .map_err(|_| "Failed to serialize object")?;
+                // This is kind of hacky: We need to strip out the header and any padding so that we only write
+                // the value. In the future, there should be a method to do this in the flash_lso crate.
+                let element_padding = match amf_version {
+                    AMFVersion::AMF0 => 8,
+                    AMFVersion::AMF3 => 7,
+                };
+                bytearray.write_bytes(
+                    &bytes[flash_lso::write::header_length(&lso.header) + element_padding
+                        ..bytes.len() - 1],
+                )?;
+            }
+        }
+    }
     Ok(Value::Undefined)
 }
 

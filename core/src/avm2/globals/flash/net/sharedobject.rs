@@ -225,7 +225,7 @@ pub fn flush<'gc>(
         let name = name.to_utf8_lossy();
 
         let mut elements = Vec::new();
-        crate::avm2::amf::recursive_serialize(activation, data, &mut elements)?;
+        crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
         let mut lso = Lso::new(
             elements,
             &name

@@ -6,13 +6,14 @@ use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use enumset::EnumSet;
+use flash_lso::types::{AMFVersion, Element, Lso};
 use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
-use flash_lso::types::{Element, Lso};
 
 /// Serialize a Value to an AmfValue
-fn serialize_value<'gc>(
+pub fn serialize_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     elem: Value<'gc>,
+    amf_version: AMFVersion,
 ) -> Option<AmfValue> {
     match elem {
         Value::Undefined => Some(AmfValue::Undefined),
@@ -22,7 +23,9 @@ fn serialize_value<'gc>(
         Value::Integer(num) => {
             // NOTE - we should really be converting `Value::Integer` to `Value::Number`
             // whenever it's outside this range, instead of performing this during AMF serialization.
-            if num >= (1 << 28) || num < -(1 << 28) {
+            // Integers are unsupported in AMF0, and must be converted to Number regardless of whether
+            // it can be represented as an integer.
+            if amf_version == AMFVersion::AMF0 || num >= (1 << 28) || num < -(1 << 28) {
                 Some(AmfValue::Number(num as f64))
             } else {
                 Some(AmfValue::Integer(num))
@@ -38,7 +41,7 @@ fn serialize_value<'gc>(
                 Some(AmfValue::Undefined)
             } else if let Some(array) = o.as_array_storage() {
                 let mut values = Vec::new();
-                recursive_serialize(activation, o, &mut values).unwrap();
+                recursive_serialize(activation, o, &mut values, amf_version).unwrap();
 
                 let mut dense = vec![];
                 let mut sparse = vec![];
@@ -65,7 +68,7 @@ fn serialize_value<'gc>(
                     .map_or(false, |c| c == activation.avm2().classes().object);
                 if is_object {
                     let mut object_body = Vec::new();
-                    recursive_serialize(activation, o, &mut object_body).unwrap();
+                    recursive_serialize(activation, o, &mut object_body, amf_version).unwrap();
                     Some(AmfValue::Object(
                         object_body,
                         Some(ClassDefinition {
@@ -91,6 +94,7 @@ pub fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     obj: Object<'gc>,
     elements: &mut Vec<Element>,
+    amf_version: AMFVersion,
 ) -> Result<(), Error<'gc>> {
     let mut last_index = obj.get_next_enumerant(0, activation)?;
     while let Some(index) = last_index {
@@ -99,7 +103,7 @@ pub fn recursive_serialize<'gc>(
             .coerce_to_string(activation)?;
         let value = obj.get_property(&Multiname::public(name), activation)?;
 
-        if let Some(value) = serialize_value(activation, value) {
+        if let Some(value) = serialize_value(activation, value, amf_version) {
             elements.push(Element::new(name.to_utf8_lossy(), value));
         }
         last_index = obj.get_next_enumerant(index, activation)?;
