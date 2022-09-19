@@ -211,6 +211,7 @@ swf_tests! {
     (as3_boolean_tostring, "avm2/boolean_tostring", 1),
     (as3_bytearray_readobject_amf0, "avm2/bytearray_readobject_amf0", 1),
     (as3_bytearray_readobject_amf3, "avm2/bytearray_readobject_amf3", 1),
+    (as3_bytearray_writeobject, "avm2/bytearray_writeobject", 1),
     (as3_bytearray, "avm2/bytearray", 1),
     (as3_class_call, "avm2/class_call", 1),
     (as3_class_cast_call, "avm2/class_cast_call", 1),
