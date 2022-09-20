@@ -1000,11 +1000,10 @@ impl<'gc> BitmapData<'gc> {
         let mut transform_stack = ruffle_render::transform::TransformStack::new();
         transform_stack.push(&transform);
         let handle = self.bitmap_handle(context.renderer).unwrap();
-        let mut commands = CommandList::new();
 
         let mut render_context = RenderContext {
             renderer: context.renderer,
-            commands: &mut commands,
+            commands: CommandList::new(),
             gc_context: context.gc_context,
             ui: context.ui,
             library: &context.library,
@@ -1016,7 +1015,6 @@ impl<'gc> BitmapData<'gc> {
         };
 
         // Make the screen opacity match the opacity of this bitmap
-        render_context.commands.push_blend_mode(blend_mode);
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
                 // if try_write fails,
@@ -1037,9 +1035,16 @@ impl<'gc> BitmapData<'gc> {
                 object.render_self(&mut render_context);
             }
         }
-        render_context.commands.pop_blend_mode();
 
         self.update_dirty_texture(&mut render_context);
+
+        let commands = if blend_mode == BlendMode::Normal {
+            render_context.commands
+        } else {
+            let mut commands = CommandList::new();
+            commands.blend(&render_context.commands, blend_mode);
+            commands
+        };
 
         let image = context.renderer.render_offscreen(
             handle,
