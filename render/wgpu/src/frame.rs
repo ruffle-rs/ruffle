@@ -1,4 +1,3 @@
-use crate::pipelines::BlendMode;
 use crate::Pipelines;
 use crate::{ColorAdjustments, Descriptors, MaskState, Transforms, UniformBuffer};
 
@@ -9,7 +8,6 @@ pub struct Frame<'a> {
     mask_state: MaskState,
     uniform_encoder: &'a mut wgpu::CommandEncoder,
     render_pass: wgpu::RenderPass<'a>,
-    blend_mode: BlendMode,
 }
 
 impl<'a> Frame<'a> {
@@ -27,7 +25,6 @@ impl<'a> Frame<'a> {
             mask_state: MaskState::NoMask,
             uniform_encoder,
             render_pass,
-            blend_mode: BlendMode::Normal,
         }
     }
 
@@ -46,29 +43,20 @@ impl<'a> Frame<'a> {
     }
 
     pub fn prep_color(&mut self) {
-        self.render_pass.set_pipeline(
-            self.pipelines
-                .color
-                .pipeline_for(self.blend_mode, self.mask_state),
-        );
+        self.render_pass
+            .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
     }
 
     pub fn prep_gradient(&mut self, bind_group: &'a wgpu::BindGroup) {
-        self.render_pass.set_pipeline(
-            self.pipelines
-                .gradient
-                .pipeline_for(self.blend_mode, self.mask_state),
-        );
+        self.render_pass
+            .set_pipeline(self.pipelines.gradient.pipeline_for(self.mask_state));
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
     pub fn prep_bitmap(&mut self, bind_group: &'a wgpu::BindGroup) {
-        self.render_pass.set_pipeline(
-            self.pipelines
-                .bitmap
-                .pipeline_for(self.blend_mode, self.mask_state),
-        );
+        self.render_pass
+            .set_pipeline(self.pipelines.bitmap.pipeline_for(self.mask_state));
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
@@ -122,10 +110,6 @@ impl<'a> Frame<'a> {
 
     pub fn set_stencil(&mut self, num: u32) {
         self.render_pass.set_stencil_reference(num);
-    }
-
-    pub fn set_blend_mode(&mut self, blend_mode: BlendMode) {
-        self.blend_mode = blend_mode;
     }
 
     pub fn mask_state(&self) -> MaskState {
