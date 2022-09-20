@@ -69,6 +69,7 @@ pub struct Surface {
     frame_buffer: Option<FrameBuffer>,
     depth: DepthTexture,
     pipelines: Arc<Pipelines>,
+    globals: Globals,
 }
 
 impl Surface {
@@ -91,22 +92,28 @@ impl Surface {
             None
         };
 
+        let globals = Globals::new(
+            &descriptors.device,
+            &descriptors.bind_layouts.globals,
+            width,
+            height,
+        );
+
         let depth = DepthTexture::new(&descriptors.device, msaa_sample_count, width, height);
         let pipelines = descriptors.pipelines(msaa_sample_count, frame_buffer_format);
         Self {
             frame_buffer,
             depth,
             pipelines,
+            globals,
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn draw_commands(
         &self,
         frame_view: &wgpu::TextureView,
         clear_color: Option<wgpu::Color>,
         descriptors: &Descriptors,
-        globals: &mut Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
         commands: CommandList,
@@ -126,8 +133,6 @@ impl Surface {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: uniform_encoder_label.as_deref(),
                 });
-
-        globals.update_uniform(&descriptors.device, &mut draw_encoder);
 
         let load = match clear_color {
             Some(color) => wgpu::LoadOp::Clear(color),
@@ -157,7 +162,7 @@ impl Surface {
             }),
             label: None,
         });
-        render_pass.set_bind_group(0, globals.bind_group(), &[]);
+        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
 
         uniform_buffers_storage.recall();
         let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
@@ -176,5 +181,9 @@ impl Surface {
         uniform_buffer.finish();
 
         vec![uniform_encoder.finish(), draw_encoder.finish()]
+    }
+
+    pub fn globals(&self) -> &Globals {
+        &self.globals
     }
 }

@@ -7,8 +7,8 @@ use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
 use crate::{
-    as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals,
-    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
+    as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, RenderTarget,
+    SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use gc_arena::MutationContext;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
@@ -25,11 +25,10 @@ use std::sync::Arc;
 use swf::Color;
 use wgpu::Extent3d;
 
-const DEFAULT_SAMPLE_COUNT: u32 = 1;
+const DEFAULT_SAMPLE_COUNT: u32 = 4;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Arc<Descriptors>,
-    globals: Globals,
     uniform_buffers_storage: BufferStorage<Transforms>,
     target: T,
     surface: Surface,
@@ -158,15 +157,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             frame_buffer_format,
         );
 
-        let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
-        globals.set_resolution(target.width(), target.height());
-
         let uniform_buffers_storage =
             BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
 
         Ok(Self {
             descriptors,
-            globals,
             uniform_buffers_storage,
             target,
             surface,
@@ -282,7 +277,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_buffer_format,
         );
 
-        self.globals.set_resolution(width, height);
         self.viewport_scale_factor = dimensions.scale_factor;
     }
 
@@ -404,7 +398,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 a: f64::from(clear.a) / 255.0,
             }),
             &self.descriptors,
-            &mut self.globals,
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
@@ -414,7 +407,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             command_buffers.push(srgb.copy_srgb(
                 frame_output.view(),
                 &self.descriptors,
-                &self.globals,
+                &self.surface.globals(),
             ));
         }
 
@@ -577,9 +570,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
         };
 
-        let (old_width, old_height) = self.globals.resolution();
-        self.globals.set_resolution(width, height);
-
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
@@ -588,7 +578,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_output.view(),
             None,
             &self.descriptors,
-            &mut self.globals,
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
@@ -611,8 +600,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 image.into_raw(),
             )
         });
-
-        self.globals.set_resolution(old_width, old_height);
 
         Ok(image.unwrap())
     }
