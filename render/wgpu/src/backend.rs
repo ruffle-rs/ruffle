@@ -1,9 +1,11 @@
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Draw, Mesh};
+use crate::srgb::Srgb;
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
+use crate::utils::remove_srgb;
 use crate::{
     as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals,
     RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
@@ -31,6 +33,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     uniform_buffers_storage: BufferStorage<Transforms>,
     target: T,
     surface: Surface,
+    srgb: Option<Srgb>,
     meshes: Vec<Mesh>,
     shape_tessellator: ShapeTessellator,
     // This is currently unused - we just store it to report in
@@ -130,13 +133,29 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .into());
         }
 
-        // TODO: Allow the sample count to be set from command line/settings file.
+        let surface_format = target.format();
+        let frame_buffer_format = remove_srgb(surface_format);
+        let srgb = if surface_format != frame_buffer_format {
+            Some(Srgb::new(
+                &descriptors.device,
+                &descriptors.bind_layouts,
+                &descriptors.bitmap_samplers.get_sampler(false, false),
+                descriptors.copy_srgb_pipeline(surface_format),
+                &descriptors.quad,
+                frame_buffer_format,
+                target.width(),
+                target.height(),
+            ))
+        } else {
+            None
+        };
+
         let surface = Surface::new(
             &descriptors,
             DEFAULT_SAMPLE_COUNT,
             target.width(),
             target.height(),
-            target.format(),
+            frame_buffer_format,
         );
 
         let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
@@ -151,6 +170,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             uniform_buffers_storage,
             target,
             surface,
+            srgb,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
@@ -236,7 +256,25 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             1,
         );
         self.target.resize(&self.descriptors.device, width, height);
-        self.surface = Surface::new(&self.descriptors, 4, width, height, self.target.format());
+
+        let surface_format = self.target.format();
+        let frame_buffer_format = remove_srgb(surface_format);
+        if surface_format != frame_buffer_format {
+            self.srgb = Some(Srgb::new(
+                &self.descriptors.device,
+                &self.descriptors.bind_layouts,
+                &self.descriptors.bitmap_samplers.get_sampler(false, false),
+                self.descriptors.copy_srgb_pipeline(surface_format),
+                &self.descriptors.quad,
+                frame_buffer_format,
+                self.target.width(),
+                self.target.height(),
+            ))
+        } else {
+            self.srgb = None;
+        }
+
+        self.surface = Surface::new(&self.descriptors, 4, width, height, frame_buffer_format);
 
         self.globals.set_resolution(width, height);
         self.viewport_scale_factor = dimensions.scale_factor;
@@ -347,8 +385,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands(
-            frame_output.view(),
+        let mut command_buffers = self.surface.draw_commands(
+            if let Some(srgb) = &self.srgb {
+                srgb.view()
+            } else {
+                frame_output.view()
+            },
             Some(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
                 g: f64::from(clear.g) / 255.0,
@@ -361,6 +403,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.meshes,
             commands,
         );
+
+        if let Some(srgb) = &self.srgb {
+            command_buffers.push(srgb.copy_srgb(
+                frame_output.view(),
+                &self.descriptors,
+                &self.globals,
+            ));
+        }
 
         self.target.submit(
             &self.descriptors.device,

@@ -38,6 +38,7 @@ mod frame;
 mod layouts;
 mod mesh;
 mod shaders;
+mod srgb;
 mod surface;
 
 impl BitmapHandleImpl for Texture {}
