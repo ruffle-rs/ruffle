@@ -1,22 +1,22 @@
 use crate::Pipelines;
 use crate::{ColorAdjustments, Descriptors, MaskState, Transforms, UniformBuffer};
 
-pub struct Frame<'a> {
-    pipelines: &'a Pipelines,
-    descriptors: &'a Descriptors,
-    uniform_buffers: UniformBuffer<'a, Transforms>,
+pub struct Frame<'pass, 'frame: 'pass, 'global: 'frame> {
+    pipelines: &'global Pipelines,
+    descriptors: &'global Descriptors,
+    uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
     mask_state: MaskState,
-    uniform_encoder: &'a mut wgpu::CommandEncoder,
-    render_pass: wgpu::RenderPass<'a>,
+    uniform_encoder: &'pass mut wgpu::CommandEncoder,
+    render_pass: wgpu::RenderPass<'pass>,
 }
 
-impl<'a> Frame<'a> {
+impl<'pass, 'frame: 'pass, 'global: 'frame> Frame<'pass, 'frame, 'global> {
     pub fn new(
-        pipelines: &'a Pipelines,
-        descriptors: &'a Descriptors,
-        uniform_buffers: UniformBuffer<'a, Transforms>,
-        render_pass: wgpu::RenderPass<'a>,
-        uniform_encoder: &'a mut wgpu::CommandEncoder,
+        pipelines: &'global Pipelines,
+        descriptors: &'global Descriptors,
+        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+        render_pass: wgpu::RenderPass<'pass>,
+        uniform_encoder: &'pass mut wgpu::CommandEncoder,
     ) -> Self {
         Self {
             pipelines,
@@ -28,23 +28,19 @@ impl<'a> Frame<'a> {
         }
     }
 
-    pub fn finish(self) {
-        self.uniform_buffers.finish()
-    }
-
     pub fn prep_color(&mut self) {
         self.render_pass
             .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
     }
 
-    pub fn prep_gradient(&mut self, bind_group: &'a wgpu::BindGroup) {
+    pub fn prep_gradient(&mut self, bind_group: &'pass wgpu::BindGroup) {
         self.render_pass
             .set_pipeline(self.pipelines.gradient.pipeline_for(self.mask_state));
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
-    pub fn prep_bitmap(&mut self, bind_group: &'a wgpu::BindGroup) {
+    pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup) {
         self.render_pass
             .set_pipeline(self.pipelines.bitmap.pipeline_for(self.mask_state));
 
@@ -53,8 +49,8 @@ impl<'a> Frame<'a> {
 
     pub fn draw(
         &mut self,
-        vertices: wgpu::BufferSlice<'a>,
-        indices: wgpu::BufferSlice<'a>,
+        vertices: wgpu::BufferSlice<'pass>,
+        indices: wgpu::BufferSlice<'pass>,
         num_indices: u32,
     ) {
         self.render_pass.set_vertex_buffer(0, vertices);

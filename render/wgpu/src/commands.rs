@@ -7,20 +7,20 @@ use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color};
 
-pub struct CommandRenderer<'a, 'b> {
-    frame: &'b mut Frame<'a>,
-    meshes: &'a Vec<Mesh>,
-    quad_vertices: wgpu::BufferSlice<'a>,
-    quad_indices: wgpu::BufferSlice<'a>,
+pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
+    frame: Frame<'pass, 'frame, 'global>,
+    meshes: &'global Vec<Mesh>,
+    quad_vertices: wgpu::BufferSlice<'global>,
+    quad_indices: wgpu::BufferSlice<'global>,
     num_masks: u32,
 }
 
-impl<'a, 'b> CommandRenderer<'a, 'b> {
+impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'global> {
     pub fn new(
-        frame: &'b mut Frame<'a>,
-        meshes: &'a Vec<Mesh>,
-        quad_vertices: wgpu::BufferSlice<'a>,
-        quad_indices: wgpu::BufferSlice<'a>,
+        frame: Frame<'pass, 'frame, 'global>,
+        meshes: &'global Vec<Mesh>,
+        quad_vertices: wgpu::BufferSlice<'global>,
+        quad_indices: wgpu::BufferSlice<'global>,
     ) -> Self {
         Self {
             frame,
@@ -32,8 +32,15 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
     }
 }
 
-impl<'a, 'b> CommandHandler<'a> for CommandRenderer<'a, 'b> {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
+impl<'pass, 'frame: 'pass, 'global: 'frame> CommandHandler<'frame>
+    for CommandRenderer<'pass, 'frame, 'global>
+{
+    fn render_bitmap(
+        &mut self,
+        bitmap: &'frame BitmapHandle,
+        transform: &Transform,
+        smoothing: bool,
+    ) {
         let texture = as_texture(bitmap);
 
         self.frame.apply_transform(
@@ -154,7 +161,7 @@ impl<'a, 'b> CommandHandler<'a> for CommandRenderer<'a, 'b> {
         };
     }
 
-    fn blend(&mut self, commands: &'a CommandList, _blend: BlendMode) {
+    fn blend(&mut self, commands: &'frame CommandList, _blend: BlendMode) {
         commands.execute(self);
     }
 }
