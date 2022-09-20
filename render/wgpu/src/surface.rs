@@ -65,16 +65,10 @@ impl DepthTexture {
 }
 
 #[derive(Debug)]
-pub enum Surface {
-    Direct {
-        depth: DepthTexture,
-        pipelines: Arc<Pipelines>,
-    },
-    Resolve {
-        frame_buffer: FrameBuffer,
-        depth: DepthTexture,
-        pipelines: Arc<Pipelines>,
-    },
+pub struct Surface {
+    frame_buffer: Option<FrameBuffer>,
+    depth: DepthTexture,
+    pipelines: Arc<Pipelines>,
 }
 
 impl Surface {
@@ -99,45 +93,10 @@ impl Surface {
 
         let depth = DepthTexture::new(&descriptors.device, msaa_sample_count, width, height);
         let pipelines = descriptors.pipelines(msaa_sample_count, frame_buffer_format);
-
-        match frame_buffer {
-            Some(frame_buffer) => Surface::Resolve {
-                frame_buffer,
-                depth,
-                pipelines,
-            },
-            None => Surface::Direct { depth, pipelines },
-        }
-    }
-
-    pub fn view<'a>(&'a self, frame: &'a wgpu::TextureView) -> &wgpu::TextureView {
-        match self {
-            Surface::Direct { .. } => frame,
-            Surface::Resolve { frame_buffer, .. } => &frame_buffer.view,
-        }
-    }
-
-    pub fn resolve_target<'a>(
-        &'a self,
-        frame: &'a wgpu::TextureView,
-    ) -> Option<&wgpu::TextureView> {
-        match self {
-            Surface::Direct { .. } => None,
-            Surface::Resolve { .. } => Some(&frame),
-        }
-    }
-
-    pub fn depth(&self) -> &wgpu::TextureView {
-        match self {
-            Surface::Direct { depth, .. } => &depth.view,
-            Surface::Resolve { depth, .. } => &depth.view,
-        }
-    }
-
-    pub fn pipelines(&self) -> &Pipelines {
-        match self {
-            Surface::Direct { pipelines, .. } => pipelines,
-            Surface::Resolve { pipelines, .. } => pipelines,
+        Self {
+            frame_buffer,
+            depth,
+            pipelines,
         }
     }
 
@@ -177,12 +136,16 @@ impl Surface {
 
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: self.view(frame_view),
+                view: self.frame_buffer.as_ref().map_or(&frame_view, |f| &f.view),
                 ops: wgpu::Operations { load, store: true },
-                resolve_target: self.resolve_target(frame_view),
+                resolve_target: if self.frame_buffer.is_some() {
+                    Some(&frame_view)
+                } else {
+                    None
+                },
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: self.depth(),
+                view: &self.depth.view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(0.0),
                     store: false,
@@ -200,7 +163,7 @@ impl Surface {
         let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
         commands.execute(&mut CommandRenderer::new(
             Frame::new(
-                self.pipelines(),
+                &self.pipelines,
                 &descriptors,
                 &mut uniform_buffer,
                 render_pass,
