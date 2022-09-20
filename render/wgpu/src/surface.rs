@@ -197,20 +197,20 @@ impl Surface {
         render_pass.set_bind_group(0, globals.bind_group(), &[]);
 
         uniform_buffers_storage.recall();
-        let mut frame = Frame::new(
-            &self.pipelines(),
-            &descriptors,
-            UniformBuffer::new(uniform_buffers_storage),
-            render_pass,
-            &mut uniform_encoder,
-        );
+        let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
         commands.execute(&mut CommandRenderer::new(
-            &mut frame,
+            Frame::new(
+                self.pipelines(),
+                &descriptors,
+                &mut uniform_buffer,
+                render_pass,
+                &mut uniform_encoder,
+            ),
             meshes,
             descriptors.quad.vertices.slice(..),
             descriptors.quad.indices.slice(..),
         ));
-        frame.finish();
+        uniform_buffer.finish();
 
         vec![uniform_encoder.finish(), draw_encoder.finish()]
     }
