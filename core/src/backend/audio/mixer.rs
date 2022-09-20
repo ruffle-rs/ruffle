@@ -7,6 +7,39 @@ use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
 
+/// Holds the last 2048 output audio frames. Frames can be written to it one by
+/// one, and the last completely filled 1024-wide window can be read from it.
+struct CircBuf {
+    pub samples: [[f32; 2]; 2048],
+    pub pos: usize,
+}
+
+impl CircBuf {
+    /// Creates an empty circular buffer.
+    pub fn new() -> Self {
+        Self {
+            samples: [[0.0; 2]; 2048],
+            pos: 0,
+        }
+    }
+
+    /// Writes a value into the buffer, pushing the write position forward.
+    pub fn push(&mut self, sample: [f32; 2]) {
+        self.samples[self.pos] = sample;
+        self.pos = (self.pos + 1) % 2048;
+    }
+
+    /// Returns one half of the inner buffer, the one that is not currently
+    /// being written to.
+    pub fn get(&self) -> &[[f32; 2]; 1024] {
+        if self.pos < 1024 {
+            self.samples[1024..2048].try_into().unwrap()
+        } else {
+            self.samples[0..1024].try_into().unwrap()
+        }
+    }
+}
+
 /// An audio mixer for a Flash movie.
 ///
 /// `AudioMixer` manages the audio state for a Flash movie. This can be used by any backend that
@@ -29,6 +62,9 @@ pub struct AudioMixer {
 
     /// The sample rate of the output stream in Hz.
     output_sample_rate: u32,
+
+    /// The last two windows of output samples.
+    output_memory: Arc<RwLock<CircBuf>>,
 }
 
 /// An audio stream.
@@ -155,6 +191,7 @@ impl AudioMixer {
             volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
             output_sample_rate,
+            output_memory: Arc::new(RwLock::new(CircBuf::new())),
         }
     }
 
@@ -164,6 +201,7 @@ impl AudioMixer {
             sound_instances: Arc::clone(&self.sound_instances),
             volume: Arc::clone(&self.volume),
             num_output_channels: self.num_output_channels,
+            output_memory: Arc::clone(&self.output_memory),
         }
     }
 
@@ -173,18 +211,22 @@ impl AudioMixer {
     /// `output_buffer` is expected to be in 2-channel interleaved format.
     pub fn mix<'a, T>(&mut self, output_buffer: &mut [T])
     where
-        T: 'a + dasp::Sample + Default,
-        T::Signed: dasp::sample::conv::FromSample<i16>,
-        T::Float: dasp::sample::conv::FromSample<f32>,
+        T: 'a
+            + Default
+            + dasp::Sample<Signed = T>
+            + dasp::sample::ToSample<f32>
+            + dasp::sample::FromSample<i16>,
     {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let volume = *self.volume.read().unwrap();
+        let mut output_memory = self.output_memory.write().unwrap();
         Self::mix_audio::<T>(
             &mut sound_instances,
             volume,
             self.num_output_channels,
             output_buffer,
-        )
+            &mut output_memory,
+        );
     }
 
     /// Instantiate a seekable decoder for audio data with the given format.
@@ -319,10 +361,13 @@ impl AudioMixer {
         volume: f32,
         num_channels: u8,
         mut output_buffer: &mut [T],
+        output_memory: &mut CircBuf,
     ) where
-        T: 'a + Default + dasp::Sample,
-        T::Signed: dasp::sample::conv::FromSample<i16>,
-        T::Float: dasp::sample::conv::FromSample<f32>,
+        T: 'a
+            + Default
+            + dasp::Sample<Signed = T>
+            + dasp::sample::ToSample<f32>
+            + dasp::sample::FromSample<i16>,
     {
         use dasp::{
             frame::{Frame, Stereo},
@@ -343,7 +388,7 @@ impl AudioMixer {
                     let sound_frame = sound.stream.next();
                     let [left_0, left_1] = sound_frame.mul_amp(sound.left_transform);
                     let [right_0, right_1] = sound_frame.mul_amp(sound.right_transform);
-                    let mut sound_frame: Stereo<T::Signed> = [
+                    let mut sound_frame: Stereo<T> = [
                         Sample::add_amp(left_0, left_1).to_sample(),
                         Sample::add_amp(right_0, right_1).to_sample(),
                     ];
@@ -354,13 +399,21 @@ impl AudioMixer {
                 }
             }
 
+            output_memory.push([output_frame[0].to_sample(), output_frame[1].to_sample()]);
+
             for (buf_sample, output_sample) in buf_frame.iter_mut().zip(output_frame.iter()) {
-                *buf_sample = output_sample.to_sample();
+                *buf_sample = *output_sample;
             }
         }
 
         // Remove all dead sounds.
         sound_instances.retain(|_, sound| sound.active);
+    }
+
+    pub fn get_sample_history(&self) -> [[f32; 2]; 1024] {
+        let output_memory = self.output_memory.read().unwrap();
+
+        *output_memory.get()
     }
 
     /// Registers an embedded SWF sound with the audio mixer.
@@ -559,6 +612,8 @@ pub struct AudioMixerProxy {
 
     /// The number of channels in the output stream. Must be 1 or 2.
     num_output_channels: u8,
+
+    output_memory: Arc<RwLock<CircBuf>>,
 }
 
 impl AudioMixerProxy {
@@ -568,17 +623,21 @@ impl AudioMixerProxy {
     /// `output_buffer` is expected to be in 2-channel interleaved format.
     pub fn mix<'a, T>(&self, output_buffer: &mut [T])
     where
-        T: 'a + dasp::Sample + Default,
-        T::Signed: dasp::sample::conv::FromSample<i16>,
-        T::Float: dasp::sample::conv::FromSample<f32>,
+        T: 'a
+            + Default
+            + dasp::Sample<Signed = T>
+            + dasp::sample::ToSample<f32>
+            + dasp::sample::FromSample<i16>,
     {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let volume = *self.volume.read().unwrap();
+        let mut output_memory = self.output_memory.write().unwrap();
         AudioMixer::mix_audio::<T>(
             &mut sound_instances,
             volume,
             self.num_output_channels,
             output_buffer,
+            &mut output_memory,
         )
     }
 }
@@ -969,6 +1028,10 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn set_volume(&mut self, volume: f32) {
             self.$mixer.set_volume(volume)
+        }
+
+        fn get_sample_history(&self) -> [[f32; 2]; 1024] {
+            self.$mixer.get_sample_history()
         }
     };
 }

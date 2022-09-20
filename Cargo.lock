@@ -3340,6 +3340,7 @@ name = "ruffle_desktop"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "clap",
  "clipboard",
  "cpal",
