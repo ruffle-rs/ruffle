@@ -22,6 +22,7 @@ dirs = "4.0"
 isahc = "1.7.2"
 rfd = "0.10.0"
 anyhow = "1.0"
+bytemuck = "1.7.2"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
