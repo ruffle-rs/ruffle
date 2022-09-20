@@ -4,7 +4,7 @@ use crate::pipelines::BlendMode as ActualBlendMode;
 use crate::{as_texture, ColorAdjustments, MaskState};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::commands::CommandHandler;
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color};
 
@@ -157,12 +157,10 @@ impl<'a, 'b> CommandHandler<'a> for CommandRenderer<'a, 'b> {
         };
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
+    fn blend(&mut self, commands: &'a CommandList, blend: BlendMode) {
         self.blend_modes.push(blend);
         self.frame.set_blend_mode(blend.into());
-    }
-
-    fn pop_blend_mode(&mut self) {
+        commands.execute(self);
         self.blend_modes.pop();
         self.frame.set_blend_mode(
             self.blend_modes

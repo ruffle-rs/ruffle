@@ -426,7 +426,7 @@ pub struct RenderContext<'a, 'gc, 'gc_context> {
     pub renderer: &'a mut dyn RenderBackend,
 
     /// The command list, used by the display objects to draw themselves.
-    pub commands: &'a mut CommandList,
+    pub commands: CommandList,
 
     /// The GC MutationContext, used to perform any GcCell writes
     /// that must occur during rendering.

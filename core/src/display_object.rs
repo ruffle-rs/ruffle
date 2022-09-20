@@ -512,9 +512,11 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     }
     context.transform_stack.push(this.base().transform());
     let blend_mode = this.blend_mode();
-    if blend_mode != BlendMode::Normal {
-        context.commands.push_blend_mode(this.blend_mode());
-    }
+    let original_commands = if blend_mode != BlendMode::Normal {
+        Some(std::mem::take(&mut context.commands))
+    } else {
+        None
+    };
 
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
         let cur_transform = context.transform_stack.transform();
@@ -590,8 +592,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.allow_mask = true;
         context.commands.pop_mask();
     }
-    if blend_mode != BlendMode::Normal {
-        context.commands.pop_blend_mode();
+
+    if let Some(original_commands) = original_commands {
+        let sub_commands = std::mem::replace(&mut context.commands, original_commands);
+        context.commands.blend(&sub_commands, blend_mode);
     }
 
     if scroll_rect_matrix.is_some() {
