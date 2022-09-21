@@ -3,7 +3,6 @@ use crate::descriptors::Quad;
 use crate::globals::Globals;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
-use crate::surface::Surface;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names, BufferDimensions};
@@ -34,11 +33,9 @@ pub mod backend;
 pub mod clap;
 mod commands;
 pub mod descriptors;
-mod frame;
 mod layouts;
 mod mesh;
 mod shaders;
-mod srgb;
 mod surface;
 
 impl BitmapHandleImpl for Texture {}
@@ -231,5 +228,4 @@ impl Texture {
 struct TextureOffscreen {
     buffer: Arc<wgpu::Buffer>,
     buffer_dimensions: BufferDimensions,
-    surface: Surface,
 }

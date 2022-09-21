@@ -17,7 +17,7 @@ pub trait CommandHandler<'a> {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct CommandList(Vec<Command>);
+pub struct CommandList(pub Vec<Command>);
 
 impl CommandList {
     pub fn new() -> Self {
