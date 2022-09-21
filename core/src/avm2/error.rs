@@ -53,6 +53,17 @@ pub fn argument_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
+#[inline(never)]
+#[cold]
+pub fn type_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().typeerror;
+    error_constructor(activation, class, message, code)
+}
+
 pub fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class: ClassObject<'gc>,

@@ -4,6 +4,7 @@
 include "Error.as"
 
 include "ArgumentError.as"
+include "TypeError.as"
 include "Math.as"
 include "RangeError.as"
 include "ReferenceError.as"
