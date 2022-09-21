@@ -49,4 +49,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
+
+    fn as_xml(&self) -> Option<Self> {
+        Some(*self)
+    }
 }

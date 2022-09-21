@@ -3,6 +3,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::error::type_error;
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -1024,6 +1025,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     full_data,
                 ),
                 Op::Coerce { index } => self.op_coerce(method, index),
+                Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
                 Op::Si32 => self.op_si32(),
@@ -1993,6 +1995,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm2.push(value);
 
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let xml = self.avm2().classes().xml;
+        let xml_list = self.avm2().classes().xml_list;
+        let value = self.context.avm2.pop().coerce_to_object(self)?;
+
+        if value.is_of_type(xml, self) || value.is_of_type(xml_list, self) {
+            self.context.avm2.push(value);
+        } else {
+            return Err(Error::AvmError(type_error(
+                self,
+                &format!(
+                    "Error #1123: Filter operator not supported on type {}.",
+                    value.instance_of_class_name(self.context.gc_context)
+                ),
+                1123,
+            )?));
+        }
         Ok(FrameControl::Continue)
     }
 
