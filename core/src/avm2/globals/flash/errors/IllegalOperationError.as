@@ -1,6 +1,6 @@
 package flash.errors {
 	public dynamic class IllegalOperationError extends Error {
-		prototype.name = "IllegalOperationError"
+		IllegalOperationError.prototype.name = "IllegalOperationError"
 
 		// Despite what the documentation claims, user code can pass in an 'id'
 		// parameter (which defaults to 0)

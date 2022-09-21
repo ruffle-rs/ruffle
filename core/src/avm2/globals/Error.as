@@ -1,7 +1,7 @@
 package {
 	[Ruffle(InstanceAllocator)]
 	public dynamic class Error {
-		prototype.name = "Error"
+		Error.prototype.name = "Error"
 
 		public var name:String = "Error";
 		public var message:String;

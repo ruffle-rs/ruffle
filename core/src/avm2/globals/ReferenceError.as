@@ -1,6 +1,6 @@
 package {
     public dynamic class ReferenceError extends Error {
-        prototype.name = "ReferenceError";
+        ReferenceError.prototype.name = "ReferenceError";
         
         public function ReferenceError(message:String = "", code:* = 0) {
             super(message, code);
