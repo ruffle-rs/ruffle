@@ -838,6 +838,7 @@ swf_tests! {
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (use_hand_cursor, "avm1/use_hand_cursor", 1),
     (variable_args, "avm1/variable_args", 1),
+    (waitforframe, "avm1/waitforframe", 1),
     (watch_textfield, "avm1/watch_textfield", 1),
     (watch_virtual_property_proto, "avm1/watch_virtual_property_proto", 1),
     #[ignore] (watch_virtual_property, "avm1/watch_virtual_property", 1),

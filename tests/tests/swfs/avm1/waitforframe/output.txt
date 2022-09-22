@@ -1,0 +1,7 @@
+/// frame 0 marked as loaded
+/// frame -43 marked as loaded
+/// _totalframes marked as loaded
+/// _totalframes + 5 marked as loaded
+/// frame Infinity marked as loaded
+/// frame NaN marked as loaded
+s
