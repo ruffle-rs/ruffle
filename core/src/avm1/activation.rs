@@ -2184,7 +2184,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let loaded = self
             .target_clip()
             .and_then(|dobj| dobj.as_movie_clip())
-            .map(|mc| mc.frames_loaded() > min(action.frame, mc.frames_loaded() - 1))
+            .map(|mc| mc.frames_loaded() > min(action.frame, mc.total_frames() - 1))
             .unwrap_or(true);
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
@@ -2203,7 +2203,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let loaded = self
             .target_clip()
             .and_then(|dobj| dobj.as_movie_clip())
-            .map(|mc| mc.frames_loaded() > min(frame_num, mc.frames_loaded() - 1))
+            .map(|mc| mc.frames_loaded() > min(frame_num, mc.total_frames() - 1))
             .unwrap_or(true);
         if !loaded {
             // Note that the offset is given in # of actions, NOT in bytes.
