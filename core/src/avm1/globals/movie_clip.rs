@@ -124,7 +124,7 @@ pub fn constructor<'gc>(
 
 fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    rectangle: Rectangle,
+    rectangle: Rectangle<Twips>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
     let y = rectangle.y_min.to_pixels();
@@ -138,7 +138,7 @@ fn new_rectangle<'gc>(
 fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     object: Object<'gc>,
-) -> Result<Option<Rectangle>, Error<'gc>> {
+) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {
     const NAMES: &[&str] = &["x", "y", "width", "height"];
     let mut values = [0; 4];
     for (&name, value) in NAMES.iter().zip(&mut values) {

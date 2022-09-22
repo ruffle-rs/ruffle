@@ -602,7 +602,7 @@ impl<'a> Reader<'a> {
         Ok(tag)
     }
 
-    pub fn read_rectangle(&mut self) -> Result<Rectangle> {
+    pub fn read_rectangle(&mut self) -> Result<Rectangle<Twips>> {
         let mut bits = self.bits();
         let num_bits = bits.read_ubits(5)?;
         Ok(Rectangle {

@@ -12,11 +12,13 @@ use std::str::FromStr;
 mod color;
 mod fixed;
 mod matrix;
+mod rectangle;
 mod twips;
 
 pub use color::Color;
 pub use fixed::{Fixed16, Fixed8};
 pub use matrix::Matrix;
+pub use rectangle::Rectangle;
 pub use twips::Twips;
 
 /// A complete header and tags in the SWF file.
@@ -46,7 +48,7 @@ pub struct SwfBuf {
 pub struct Header {
     pub compression: Compression,
     pub version: u8,
-    pub stage_size: Rectangle,
+    pub stage_size: Rectangle<Twips>,
     pub frame_rate: Fixed8,
     pub num_frames: u16,
 }
@@ -138,7 +140,7 @@ impl HeaderExt {
 
     /// The stage dimensions of this SWF.
     #[inline]
-    pub fn stage_size(&self) -> &Rectangle {
+    pub fn stage_size(&self) -> &Rectangle<Twips> {
         &self.header.stage_size
     }
 
@@ -187,24 +189,6 @@ pub enum Compression {
     None,
     Zlib,
     Lzma,
-}
-
-/// A rectangular region defined by minimum
-/// and maximum x- and y-coordinate positions
-/// measured in [`Twips`].
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Rectangle {
-    /// The minimum x-position of the rectangle.
-    pub x_min: Twips,
-
-    /// The maximum x-position of the rectangle.
-    pub x_max: Twips,
-
-    /// The minimum y-position of the rectangle.
-    pub y_min: Twips,
-
-    /// The maximum y-position of the rectangle.
-    pub y_max: Twips,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -635,7 +619,7 @@ pub enum Tag<'a> {
     DefineMorphShape(Box<DefineMorphShape>),
     DefineScalingGrid {
         id: CharacterId,
-        splitter_rect: Rectangle,
+        splitter_rect: Rectangle<Twips>,
     },
     DefineShape(Shape),
     DefineSound(Box<Sound<'a>>),
@@ -724,8 +708,8 @@ pub struct ShapeContext {
 pub struct Shape {
     pub version: u8,
     pub id: CharacterId,
-    pub shape_bounds: Rectangle,
-    pub edge_bounds: Rectangle,
+    pub shape_bounds: Rectangle<Twips>,
+    pub edge_bounds: Rectangle<Twips>,
     pub flags: ShapeFlag,
     pub styles: ShapeStyles,
     pub shape: Vec<ShapeRecord>,
@@ -1215,8 +1199,8 @@ bitflags! {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MorphShape {
-    pub shape_bounds: Rectangle,
-    pub edge_bounds: Rectangle,
+    pub shape_bounds: Rectangle<Twips>,
+    pub edge_bounds: Rectangle<Twips>,
     pub fill_styles: Vec<FillStyle>,
     pub line_styles: Vec<LineStyle>,
     pub shape: Vec<ShapeRecord>,
@@ -1266,7 +1250,7 @@ pub struct Glyph {
     pub shape_records: Vec<ShapeRecord>,
     pub code: u16,
     pub advance: i16,
-    pub bounds: Option<Rectangle>,
+    pub bounds: Option<Rectangle<Twips>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1314,7 +1298,7 @@ pub struct DefineBinaryData<'a> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Text {
     pub id: CharacterId,
-    pub bounds: Rectangle,
+    pub bounds: Rectangle<Twips>,
     pub matrix: Matrix,
     pub records: Vec<TextRecord>,
 }
@@ -1338,7 +1322,7 @@ pub struct GlyphEntry {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EditText<'a> {
     pub(crate) id: CharacterId,
-    pub(crate) bounds: Rectangle,
+    pub(crate) bounds: Rectangle<Twips>,
     pub(crate) font_id: CharacterId,
     pub(crate) font_class: &'a SwfStr,
     pub(crate) height: Twips,
@@ -1357,12 +1341,12 @@ impl<'a> EditText<'a> {
     }
 
     #[inline]
-    pub fn bounds(&self) -> &Rectangle {
+    pub fn bounds(&self) -> &Rectangle<Twips> {
         &self.bounds
     }
 
     #[inline]
-    pub fn with_bounds(mut self, bounds: Rectangle) -> Self {
+    pub fn with_bounds(mut self, bounds: Rectangle<Twips>) -> Self {
         self.bounds = bounds;
         self
     }
