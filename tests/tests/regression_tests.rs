@@ -517,6 +517,7 @@ swf_tests! {
     (as3_string_replace, "avm2/string_replace", 1),
     (as3_string_search, "avm2/string_search", 1),
     (as3_try_catch, "avm2/try_catch", 1),
+    (as3_try_catch_typed, "avm2/try_catch_typed", 1),
     (as3_string_slice_substr_substring, "avm2/string_slice_substr_substring", 1),
     (as3_string_split, "avm2/string_split", 1),
     (as3_subtract, "avm2/subtract", 1),

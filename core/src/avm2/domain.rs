@@ -130,9 +130,19 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (name, mut script) = self
-            .get_defining_script(&name.into())?
-            .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
+        let (name, mut script) = match self.get_defining_script(&name.into())? {
+            Some(val) => val,
+            None => {
+                return Err(Error::AvmError(crate::avm2::error::reference_error(
+                    activation,
+                    &format!(
+                        "Error #1065: Variable {} is not defined.",
+                        name.local_name()
+                    ),
+                    1065,
+                )?));
+            }
+        };
         let globals = script.globals(&mut activation.context)?;
 
         globals.get_property(&name.into(), activation)
