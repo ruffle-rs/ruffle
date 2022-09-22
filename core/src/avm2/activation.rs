@@ -815,23 +815,39 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         if let Some(body) = method.body() {
+            // Use `coerce_to_object` so that we handle primitives correctly.
+            let err_object = error.coerce_to_object(self);
             for e in body.exceptions.iter() {
                 if instruction_start >= e.from_offset as usize
                     && instruction_start < e.to_offset as usize
-                    && e.type_name.0 == 0
-                // Currently we support only typeless catch clauses
                 {
-                    // Emulate pushing the exception object
-                    self.context.avm2.push(error);
+                    let mut matches = false;
+                    // A typeless catch block (e.g. `catch(er) { ... }`) will
+                    // always match.
+                    if e.type_name.0 == 0 {
+                        matches = true;
+                    } else if let Ok(err_object) = err_object {
+                        let type_name = self.pool_multiname_static(method, e.type_name)?;
+                        let ty_class = self.resolve_class(&type_name)?;
 
-                    self.scope_stack.clear();
-                    reader.seek_absolute(full_data, e.target_offset as usize);
-                    return Ok(FrameControl::Continue);
+                        matches = err_object.is_of_type(ty_class, self);
+                    }
+
+                    if matches {
+                        self.context.avm2.push(error);
+
+                        self.scope_stack.clear();
+                        reader.seek_absolute(full_data, e.target_offset as usize);
+                        return Ok(FrameControl::Continue);
+                    }
                 }
             }
         }
 
         log::error!("AVM2 error: {:?}", error);
+        if let Some(err) = error.as_object().and_then(|obj| obj.as_error_object()) {
+            log::error!("{}", err.display_full(self)?);
+        }
         Err(Error::AvmError(error))
     }
 

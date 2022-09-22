@@ -1,0 +1,8 @@
+Caught ArgumentError: ArgumentError: My argument error
+Caught Error: Error: My error
+Caught Error: RangeError: My range error
+Caught Object: [object Object]
+Caught Object: true
+Caught value: null
+Caught value: undefined
+getDefinitionByName threw: ReferenceError: Error #1065: Variable FakeClass is not defined.
