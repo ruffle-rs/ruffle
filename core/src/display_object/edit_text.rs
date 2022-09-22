@@ -1780,7 +1780,7 @@ bitflags::bitflags! {
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    bounds: swf::Rectangle,
+    bounds: swf::Rectangle<Twips>,
     layout: Option<swf::TextLayout>,
     initial_text: Option<WString>,
 }

@@ -154,8 +154,8 @@ impl BoundingBox {
     }
 }
 
-impl From<swf::Rectangle> for BoundingBox {
-    fn from(rect: swf::Rectangle) -> Self {
+impl From<swf::Rectangle<Twips>> for BoundingBox {
+    fn from(rect: swf::Rectangle<Twips>) -> Self {
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,
@@ -166,8 +166,8 @@ impl From<swf::Rectangle> for BoundingBox {
     }
 }
 
-impl From<&swf::Rectangle> for BoundingBox {
-    fn from(rect: &swf::Rectangle) -> Self {
+impl From<&swf::Rectangle<Twips>> for BoundingBox {
+    fn from(rect: &swf::Rectangle<Twips>) -> Self {
         Self {
             x_min: rect.x_min,
             y_min: rect.y_min,

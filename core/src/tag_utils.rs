@@ -173,7 +173,7 @@ impl SwfMovie {
         self.header.is_action_script_3()
     }
 
-    pub fn stage_size(&self) -> &Rectangle {
+    pub fn stage_size(&self) -> &Rectangle<Twips> {
         self.header.stage_size()
     }
 

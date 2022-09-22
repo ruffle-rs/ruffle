@@ -3,7 +3,7 @@ use crate::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
-pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
+pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
         y_min: Twips::new(i32::MAX),

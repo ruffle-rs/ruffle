@@ -288,7 +288,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_rectangle(&mut self, rectangle: &Rectangle) -> Result<()> {
+    fn write_rectangle(&mut self, rectangle: &Rectangle<Twips>) -> Result<()> {
         let num_bits = [
             rectangle.x_min,
             rectangle.x_max,
@@ -2614,7 +2614,7 @@ mod tests {
 
     #[test]
     fn write_rectangle_zero() {
-        let rect: Rectangle = Default::default();
+        let rect: Rectangle<Twips> = Default::default();
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);

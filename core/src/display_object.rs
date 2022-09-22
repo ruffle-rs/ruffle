@@ -107,13 +107,13 @@ pub struct DisplayObjectBase<'gc> {
     /// The 'internal' scroll rect used for rendering and methods like 'localToGlobal'.
     /// This is updated from 'pre_render'
     #[collect(require_static)]
-    scroll_rect: Option<Rectangle>,
+    scroll_rect: Option<Rectangle<Twips>>,
 
     /// The 'next' scroll rect, which we will copy to 'scroll_rect' from 'pre_render'.
     /// This is used by the ActionScript 'DisplayObject.scrollRect' getter, which sees
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
-    next_scroll_rect: Rectangle,
+    next_scroll_rect: Rectangle<Twips>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -1031,15 +1031,19 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_maskee(node);
     }
 
-    fn scroll_rect(&self) -> Option<Rectangle> {
+    fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
         self.base().scroll_rect.clone()
     }
 
-    fn next_scroll_rect(&self) -> Rectangle {
+    fn next_scroll_rect(&self) -> Rectangle<Twips> {
         self.base().next_scroll_rect.clone()
     }
 
-    fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rectangle: Rectangle) {
+    fn set_next_scroll_rect(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        rectangle: Rectangle<Twips>,
+    ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
     }
 
