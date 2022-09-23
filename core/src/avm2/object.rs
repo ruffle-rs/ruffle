@@ -1093,6 +1093,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_error_object(&self) -> Option<ErrorObject<'gc>> {
         None
     }
+
+    fn as_xml(&self) -> Option<XmlObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}

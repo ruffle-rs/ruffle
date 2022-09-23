@@ -605,17 +605,16 @@ pub fn color_transform<'gc>(
                 .get("height", activation)?
                 .coerce_to_f64(activation)? as i32;
 
-            let min_x = x.max(0) as u32;
-            let end_x = (x + width) as u32;
-            let min_y = y.max(0) as u32;
-            let end_y = (y + height) as u32;
+            let x_min = x.max(0) as u32;
+            let x_max = (x + width) as u32;
+            let y_min = y.max(0) as u32;
+            let y_max = (y + height) as u32;
 
             if let Some(color_transform) = color_transform.as_color_transform_object() {
-                let params = color_transform.get_params();
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .color_transform(min_x, min_y, end_x, end_y, &params);
+                    .color_transform(x_min, y_min, x_max, y_max, color_transform.into());
             }
 
             return Ok(Value::Undefined);

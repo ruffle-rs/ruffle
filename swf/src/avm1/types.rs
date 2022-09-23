@@ -143,7 +143,7 @@ impl<'a> From<DefineFunction<'a>> for DefineFunction2<'a> {
             name: function.name,
             register_count: 0,
             params,
-            flags: FunctionFlags::default(),
+            flags: FunctionFlags::empty(),
             actions: function.actions,
         }
     }
@@ -166,12 +166,6 @@ bitflags! {
         const PRELOAD_ROOT = 1 << 6;
         const PRELOAD_PARENT = 1 << 7;
         const PRELOAD_GLOBAL = 1 << 8;
-    }
-}
-
-impl Default for FunctionFlags {
-    fn default() -> Self {
-        Self::empty()
     }
 }
 

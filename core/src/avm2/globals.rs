@@ -107,6 +107,7 @@ pub struct SystemClasses<'gc> {
     pub rangeerror: ClassObject<'gc>,
     pub referenceerror: ClassObject<'gc>,
     pub argumenterror: ClassObject<'gc>,
+    pub typeerror: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -181,6 +182,7 @@ impl<'gc> SystemClasses<'gc> {
             rangeerror: object,
             referenceerror: object,
             argumenterror: object,
+            typeerror: object,
         }
     }
 }
@@ -438,8 +440,6 @@ pub fn load_player_globals<'gc>(
     class(activation, json::create_class(mc), script)?;
     avm2_system_class!(regexp, activation, regexp::create_class(mc), script);
     avm2_system_class!(vector, activation, vector::create_class(mc), script);
-    avm2_system_class!(xml, activation, xml::create_class(mc), script);
-    avm2_system_class!(xml_list, activation, xml_list::create_class(mc), script);
 
     avm2_system_class!(date, activation, date::create_class(mc), script);
 
@@ -703,6 +703,9 @@ fn load_playerglobal<'gc>(
             ("", "ArgumentError", argumenterror),
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),
+            ("", "TypeError", typeerror),
+            ("", "XML", xml),
+            ("", "XMLList", xml_list),
             ("flash.display", "Scene", scene),
             (
                 "flash.errors",

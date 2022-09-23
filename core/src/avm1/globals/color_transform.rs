@@ -121,9 +121,9 @@ pub fn get_rgb<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ct) = this.as_color_transform_object() {
-        let rgb = ((ct.get_red_offset() as u32) << 16)
-            | ((ct.get_green_offset() as u32) << 8)
-            | (ct.get_blue_offset() as u32);
+        let rgb = ((ct.red_offset() as u32) << 16)
+            | ((ct.green_offset() as u32) << 8)
+            | (ct.blue_offset() as u32);
         Ok(rgb.into())
     } else {
         Ok(Value::Undefined)
@@ -155,7 +155,7 @@ pub fn set_rgb<'gc>(
 }
 
 macro_rules! color_transform_value_accessor {
-    ($([$get_ident: ident, $set_ident: ident],)*) => {
+    ($([$get_ident: ident, $ident: ident, $set_ident: ident],)*) => {
         $(
             pub fn $set_ident<'gc>(
                 activation: &mut Activation<'_, 'gc, '_>,
@@ -179,7 +179,7 @@ macro_rules! color_transform_value_accessor {
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
                 if let Some(ct) = this.as_color_transform_object() {
-                    Ok(ct.$get_ident().into())
+                    Ok(ct.$ident().into())
                 } else {
                     Ok(Value::Undefined)
                 }
@@ -189,14 +189,14 @@ macro_rules! color_transform_value_accessor {
 }
 
 color_transform_value_accessor!(
-    [get_red_multiplier, set_red_multiplier],
-    [get_green_multiplier, set_green_multiplier],
-    [get_blue_multiplier, set_blue_multiplier],
-    [get_alpha_multiplier, set_alpha_multiplier],
-    [get_red_offset, set_red_offset],
-    [get_green_offset, set_green_offset],
-    [get_blue_offset, set_blue_offset],
-    [get_alpha_offset, set_alpha_offset],
+    [get_red_multiplier, red_multiplier, set_red_multiplier],
+    [get_green_multiplier, green_multiplier, set_green_multiplier],
+    [get_blue_multiplier, blue_multiplier, set_blue_multiplier],
+    [get_alpha_multiplier, alpha_multiplier, set_alpha_multiplier],
+    [get_red_offset, red_offset, set_red_offset],
+    [get_green_offset, green_offset, set_green_offset],
+    [get_blue_offset, blue_offset, set_blue_offset],
+    [get_alpha_offset, alpha_offset, set_alpha_offset],
 );
 
 pub fn create_proto<'gc>(
@@ -247,18 +247,18 @@ fn concat<'gc>(
             other.as_color_transform_object(),
             this.as_color_transform_object(),
         ) {
-            let red_multiplier = other_ct.get_red_multiplier() * this_ct.get_red_multiplier();
-            let green_multiplier = other_ct.get_green_multiplier() * this_ct.get_green_multiplier();
-            let blue_multiplier = other_ct.get_blue_multiplier() * this_ct.get_blue_multiplier();
-            let alpha_multiplier = other_ct.get_alpha_multiplier() * this_ct.get_alpha_multiplier();
-            let red_offset = (other_ct.get_red_offset() * this_ct.get_red_multiplier())
-                + this_ct.get_red_offset();
-            let green_offset = (other_ct.get_green_offset() * this_ct.get_green_multiplier())
-                + this_ct.get_green_offset();
-            let blue_offset = (other_ct.get_blue_offset() * this_ct.get_blue_multiplier())
-                + this_ct.get_blue_offset();
-            let alpha_offset = (other_ct.get_alpha_offset() * this_ct.get_alpha_multiplier())
-                + this_ct.get_alpha_offset();
+            let red_multiplier = other_ct.red_multiplier() * this_ct.red_multiplier();
+            let green_multiplier = other_ct.green_multiplier() * this_ct.green_multiplier();
+            let blue_multiplier = other_ct.blue_multiplier() * this_ct.blue_multiplier();
+            let alpha_multiplier = other_ct.alpha_multiplier() * this_ct.alpha_multiplier();
+            let red_offset =
+                (other_ct.red_offset() * this_ct.red_multiplier()) + this_ct.red_offset();
+            let green_offset =
+                (other_ct.green_offset() * this_ct.green_multiplier()) + this_ct.green_offset();
+            let blue_offset =
+                (other_ct.blue_offset() * this_ct.blue_multiplier()) + this_ct.blue_offset();
+            let alpha_offset =
+                (other_ct.alpha_offset() * this_ct.alpha_multiplier()) + this_ct.alpha_offset();
 
             this_ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
             this_ct.set_green_multiplier(activation.context.gc_context, green_multiplier);

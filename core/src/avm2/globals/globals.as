@@ -4,6 +4,7 @@
 include "Error.as"
 
 include "ArgumentError.as"
+include "TypeError.as"
 include "Math.as"
 include "RangeError.as"
 include "ReferenceError.as"
@@ -187,3 +188,5 @@ include "flash/utils.as"
 include "flash/utils/CompressionAlgorithm.as"
 include "flash/utils/Endian.as"
 include "flash/utils/Timer.as"
+include "XML.as"
+include "XMLList.as"
