@@ -133,6 +133,18 @@ fn apply<'gc>(
     }
 }
 
+fn length<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.and_then(|this| this.as_function_object()) {
+        return Ok(this.num_parameters().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 fn prototype<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -188,7 +200,10 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("prototype", Some(prototype), Some(set_prototype))];
+    )] = &[
+        ("prototype", Some(prototype), Some(set_prototype)),
+        ("length", Some(length), None),
+    ];
     write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
 
     function_class

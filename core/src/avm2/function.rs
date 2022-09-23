@@ -274,6 +274,13 @@ impl<'gc> Executable<'gc> {
         }
         output.push_utf8("()");
     }
+
+    pub fn num_parameters(&self) -> usize {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => method.signature.len(),
+            Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
+        }
+    }
 }
 
 impl<'gc> fmt::Debug for Executable<'gc> {
