@@ -1,0 +1,6 @@
+noArgs.length = 0
+twoArgs.length = 2
+threeArgsWithRest.length = 3
+lambdaNoArgs.length = 0
+lambdaTwoArgs.length = 2
+lambdaThreeArgsWithRest.length = 3

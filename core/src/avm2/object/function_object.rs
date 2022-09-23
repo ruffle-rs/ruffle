@@ -84,6 +84,10 @@ impl<'gc> FunctionObject<'gc> {
     pub fn set_prototype(&self, proto: Object<'gc>, mc: MutationContext<'gc, '_>) {
         self.0.write(mc).prototype = Some(proto);
     }
+
+    pub fn num_parameters(&self) -> usize {
+        self.0.read().exec.num_parameters()
+    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
