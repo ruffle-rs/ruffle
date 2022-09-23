@@ -291,6 +291,7 @@ swf_tests! {
     (as3_equals, "avm2/equals", 1),
     (as3_error_stack_trace, "avm2/error_stack_trace", 1),
     (as3_error_tostring, "avm2/error_tostring", 1),
+    (as3_error_tostring_more, "avm2/error_tostring_more", 1),
     (as3_es3_inheritance, "avm2/es3_inheritance", 1),
     (as3_es4_inheritance, "avm2/es4_inheritance", 1),
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
