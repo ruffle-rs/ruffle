@@ -1,0 +1,21 @@
+---
+source: tests/wgsl.rs
+assertion_line: 70
+expression: output
+---
+struct FragmentOutput {
+    @location(0) member: vec4<f32>,
+}
+
+@group(0) @binding(1) 
+var<uniform> constant_registers: array<vec4<f32>,28u>;
+
+@fragment 
+fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
+    var dest_temp: vec4<f32>;
+
+    dest_temp = param;
+    let _e3: vec4<f32> = dest_temp;
+    return FragmentOutput(_e3);
+}
+

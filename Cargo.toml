@@ -13,6 +13,7 @@ members = [
 
     "render",
     "render/canvas",
+    "render/naga-agal",
     "render/wgpu",
     "render/webgl",
 
