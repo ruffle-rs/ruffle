@@ -1,0 +1,77 @@
+Class: [class DefinitionError]
+cls.prototype.name = DefinitionError
+DefinitionError: My Error
+DefinitionError
+42
+
+
+
+Class: [class EOFError]
+cls.prototype.name = EOFError
+Error: My Error
+Error
+42
+
+
+
+Class: [class EvalError]
+cls.prototype.name = EvalError
+EvalError: My Error
+EvalError
+42
+
+
+
+Class: [class IOError]
+cls.prototype.name = IOError
+Error: My Error
+Error
+42
+
+
+
+Class: [class InvalidSWFError]
+cls.prototype.name = InvalidSWFError
+Error: My Error
+Error
+42
+
+
+
+Class: [class MemoryError]
+cls.prototype.name = MemoryError
+Error: My Error
+Error
+42
+
+
+
+Class: [class ScriptTimeoutError]
+cls.prototype.name = ScriptTimeoutError
+Error: My Error
+Error
+42
+
+
+
+Class: [class StackOverflowError]
+cls.prototype.name = StackOverflowError
+Error: My Error
+Error
+42
+
+
+
+Class: [class URIError]
+cls.prototype.name = URIError
+URIError: My Error
+URIError
+42
+
+
+
+Class: [class VerifyError]
+cls.prototype.name = VerifyError
+VerifyError: My Error
+VerifyError
+42
