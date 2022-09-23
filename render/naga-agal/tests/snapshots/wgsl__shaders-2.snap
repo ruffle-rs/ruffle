@@ -1,0 +1,25 @@
+---
+source: tests/wgsl.rs
+assertion_line: 53
+expression: output
+---
+struct VertexOutput {
+    @builtin(position) member: vec4<f32>,
+    @location(0) varying_0_: vec4<f32>,
+}
+
+@group(0) @binding(0) 
+var<uniform> constant_registers: array<vec4<f32>,128u>;
+
+@vertex 
+fn main(@location(0) param: vec4<f32>, @location(1) param_1: vec4<f32>) -> VertexOutput {
+    var dest_temp: vec4<f32>;
+    var varying_0_: vec4<f32>;
+
+    dest_temp = param;
+    varying_0_ = param_1;
+    let _e5: vec4<f32> = dest_temp;
+    let _e6: vec4<f32> = varying_0_;
+    return VertexOutput(_e5, _e6);
+}
+
