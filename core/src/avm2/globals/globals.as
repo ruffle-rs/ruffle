@@ -193,16 +193,20 @@ include "flash/text/TextFieldType.as"
 include "flash/text/TextFormatAlign.as"
 include "flash/text/TextInteractionMode.as"
 include "flash/text/TextLineMetrics.as"
+
 include "flash/ui/ContextMenu.as"
 include "flash/ui/ContextMenuBuiltInItems.as"
 include "flash/ui/ContextMenuItem.as"
 include "flash/ui/GameInput.as"
-include "flash/ui/KeyLocation.as"
 include "flash/ui/KeyboardType.as"
+include "flash/ui/KeyLocation.as"
+include "flash/ui/Mouse.as"
 include "flash/ui/MouseCursor.as"
-// MultitouchInputMode needs to come before Multitouch, since Multitouch uses constants from MultitouchInputMode
+// `MultitouchInputMode` needs to come before `Multitouch`, since `Multitouch` uses constants from
+// `MultitouchInputMode`.
 include "flash/ui/MultitouchInputMode.as"
 include "flash/ui/Multitouch.as"
+
 include "flash/utils.as"
 include "flash/utils/CompressionAlgorithm.as"
 include "flash/utils/Endian.as"
