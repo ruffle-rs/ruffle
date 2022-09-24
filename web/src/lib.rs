@@ -204,8 +204,8 @@ pub struct Ruffle(Index);
 impl Ruffle {
     #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
-    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
-        let config: Config = serde_wasm_bindgen::from_value(config).unwrap_or_default();
+    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: &JsValue) -> Promise {
+        let config: Config = config.into_serde().unwrap_or_default();
         wasm_bindgen_futures::future_to_promise(async move {
             if RUFFLE_GLOBAL_PANIC.is_completed() {
                 // If an actual panic happened, then we can't trust the state it left us in.
@@ -224,9 +224,9 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
-    pub fn stream_from(&mut self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
+    pub fn stream_from(&mut self, movie_url: String, parameters: &JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
-            let parameters_to_load = parse_movie_parameters(&parameters);
+            let parameters_to_load = parse_movie_parameters(parameters);
 
             let ruffle = *self;
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
@@ -241,10 +241,10 @@ impl Ruffle {
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: JsValue) -> Result<(), JsValue> {
+    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
         let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
             .map_err(|e| format!("Error loading movie: {}", e))?;
-        movie.append_parameters(parse_movie_parameters(&parameters));
+        movie.append_parameters(parse_movie_parameters(parameters));
 
         self.on_metadata(movie.header());
 
@@ -289,7 +289,7 @@ impl Ruffle {
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
             let info = core.prepare_context_menu();
-            serde_wasm_bindgen::to_value(&info).unwrap_or(JsValue::UNDEFINED)
+            JsValue::from_serde(&info).unwrap_or(JsValue::UNDEFINED)
         })
         .unwrap_or(JsValue::UNDEFINED)
     }
@@ -1032,7 +1032,7 @@ impl Ruffle {
                 is_action_script_3: swf_header.is_action_script_3(),
             };
 
-            if let Ok(value) = serde_wasm_bindgen::to_value(&metadata) {
+            if let Ok(value) = JsValue::from_serde(&metadata) {
                 instance.js_player.set_metadata(value);
             }
         });
