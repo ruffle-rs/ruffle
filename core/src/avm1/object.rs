@@ -1,14 +1,12 @@
 //! Object trait to expose objects to AVM
 
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
+use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
-use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::object::date_object::DateObject;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
@@ -22,8 +20,7 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
-use crate::avm1::property::Attribute;
-use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
+use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -37,7 +34,6 @@ pub mod bevel_filter;
 pub mod bitmap_data;
 pub mod blur_filter;
 pub mod color_matrix_filter;
-pub mod color_transform_object;
 pub mod convolution_filter;
 mod custom_object;
 pub mod date_object;
@@ -60,6 +56,7 @@ pub mod xml_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
+    ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
 }
 
@@ -80,7 +77,6 @@ pub enum NativeObject<'gc> {
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
-        ColorTransformObject(ColorTransformObject<'gc>),
         TransformObject(TransformObject<'gc>),
         BlurFilterObject(BlurFilterObject<'gc>),
         BevelFilterObject(BevelFilterObject<'gc>),
@@ -559,11 +555,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `DateObject`, if it exists
     fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `ColorTransformObject`, if it exists
-    fn as_color_transform_object(&self) -> Option<ColorTransformObject<'gc>> {
         None
     }
 

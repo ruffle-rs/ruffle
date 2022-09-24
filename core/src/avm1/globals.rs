@@ -21,7 +21,7 @@ pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
 pub mod color_matrix_filter;
-mod color_transform;
+pub(crate) mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 pub mod convolution_filter;

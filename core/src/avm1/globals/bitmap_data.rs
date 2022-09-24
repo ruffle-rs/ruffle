@@ -1,12 +1,11 @@
 //! flash.display.BitmapData object
 
-use super::{color_transform::object_to_color_transform, matrix::object_to_matrix};
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
+use super::matrix::object_to_matrix;
 use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Activation, Error, Object, TObject, Value};
 use crate::avm_error;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
@@ -503,8 +502,8 @@ pub fn draw<'gc>(
 
             let color_transform = args
                 .get(2)
-                .map(|o| o.coerce_to_object(activation))
-                .and_then(|o| object_to_color_transform(o, activation).ok())
+                .and_then(|v| ColorTransformObject::cast(*v))
+                .map(|color_transform| color_transform.read().clone().into())
                 .unwrap_or_default();
 
             if args.get(3).is_some() {
@@ -586,38 +585,33 @@ pub fn color_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let rectangle = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+            if let [rectangle, color_transform, ..] = args {
+                // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
+                let rectangle = rectangle.coerce_to_object(activation);
+                let x = rectangle.get("x", activation)?.coerce_to_f64(activation)? as i32;
+                let y = rectangle.get("y", activation)?.coerce_to_f64(activation)? as i32;
+                let width = rectangle
+                    .get("width", activation)?
+                    .coerce_to_f64(activation)? as i32;
+                let height = rectangle
+                    .get("height", activation)?
+                    .coerce_to_f64(activation)? as i32;
 
-            let color_transform = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+                let x_min = x.max(0) as u32;
+                let x_max = (x + width) as u32;
+                let y_min = y.max(0) as u32;
+                let y_max = (y + height) as u32;
 
-            let x = rectangle.get("x", activation)?.coerce_to_f64(activation)? as i32;
-            let y = rectangle.get("y", activation)?.coerce_to_f64(activation)? as i32;
-            let width = rectangle
-                .get("width", activation)?
-                .coerce_to_f64(activation)? as i32;
-            let height = rectangle
-                .get("height", activation)?
-                .coerce_to_f64(activation)? as i32;
+                let color_transform = match ColorTransformObject::cast(*color_transform) {
+                    Some(color_transform) => color_transform.read().clone(),
+                    None => return Ok((-3).into()),
+                };
 
-            let x_min = x.max(0) as u32;
-            let x_max = (x + width) as u32;
-            let y_min = y.max(0) as u32;
-            let y_max = (y + height) as u32;
-
-            if let Some(color_transform) = color_transform.as_color_transform_object() {
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
                     .color_transform(x_min, y_min, x_max, y_max, color_transform.into());
             }
-
-            return Ok(Value::Undefined);
         }
     }
 
