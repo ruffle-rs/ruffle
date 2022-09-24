@@ -32,7 +32,7 @@ use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use swf::read::read_compression_type;
+use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::form_urlencoded;
 
@@ -1270,6 +1270,11 @@ impl<'gc> Loader<'gc> {
         let sniffed_type = ContentType::sniff(data);
         let mut length = data.len();
 
+        if sniffed_type == ContentType::Unknown {
+            if let Ok(data) = extract_swz(data) {
+                return Self::movie_loader_data(handle, player, &data, url, loader_url, in_memory);
+            }
+        }
         player.lock().unwrap().update(|uc| {
             let (clip, event_handler) = match uc.load_manager.get_loader(handle) {
                 Some(Loader::Movie {

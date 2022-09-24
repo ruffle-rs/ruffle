@@ -7,6 +7,7 @@ use crate::{
 };
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
+use simple_asn1::ASN1Block;
 use std::io::{self, Read};
 
 /// Parse a decompressed SWF.
@@ -26,6 +27,28 @@ pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
         header: swf_buf.header.clone(),
         tags: reader.read_tag_list()?,
     })
+}
+
+/// Extracts an SWF inside of an SWZ file.
+pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
+    let asn1_blocks =
+        simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
+    if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().nth(0) {
+        for t in s {
+            if let ASN1Block::Explicit(_, _, _, block) = t {
+                if let ASN1Block::Sequence(_, s) = *block {
+                    if let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2) {
+                        if let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1) {
+                            if let ASN1Block::OctetString(_, bytes) = *octet {
+                                return Ok(bytes);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Err(Error::invalid_data("Invalid ASN1 blob"))
 }
 
 /// Parses an SWF header and returns a `Reader` that can be used
