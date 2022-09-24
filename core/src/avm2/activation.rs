@@ -1669,7 +1669,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
+        avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
         let result = self
             .find_definition(&multiname)?
             .or_else(|| self.global_scope());
@@ -1687,7 +1687,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
+        avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
         let found: Result<Object<'gc>, Error<'gc>> = self
             .find_definition(&multiname)?
             .ok_or_else(|| format!("Property does not exist: {:?}", *multiname).into());
@@ -1704,7 +1704,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_static(method, index)?;
-        avm_debug!(self.avm2(), "Resolving {:?}", multiname);
+        avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let found: Result<Value<'gc>, Error<'gc>> = self
             .resolve_definition(&multiname)?
             .ok_or_else(|| format!("Property does not exist: {:?}", *multiname).into());
