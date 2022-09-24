@@ -33,7 +33,7 @@ pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
 pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
     let asn1_blocks =
         simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
-    if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().nth(0) {
+    if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().next() {
         for t in s {
             if let ASN1Block::Explicit(_, _, _, block) = t {
                 if let ASN1Block::Sequence(_, s) = *block {
