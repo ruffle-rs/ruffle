@@ -121,6 +121,9 @@ pub struct SystemClasses<'gc> {
     pub glowfilter: ClassObject<'gc>,
     pub gradientbevelfilter: ClassObject<'gc>,
     pub gradientglowfilter: ClassObject<'gc>,
+    pub texture: ClassObject<'gc>,
+    pub cubetexture: ClassObject<'gc>,
+    pub rectangletexture: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -217,6 +220,9 @@ impl<'gc> SystemClasses<'gc> {
             glowfilter: object,
             gradientbevelfilter: object,
             gradientglowfilter: object,
+            texture: object,
+            cubetexture: object,
+            rectangletexture: object,
         }
     }
 }
@@ -632,6 +638,13 @@ fn load_playerglobal<'gc>(
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
             ("flash.display3D", "Program3D", program3d),
+            ("flash.display3D.textures", "CubeTexture", cubetexture),
+            ("flash.display3D.textures", "Texture", texture),
+            (
+                "flash.display3D.textures",
+                "RectangleTexture",
+                rectangletexture
+            ),
             ("flash.display3D", "VertexBuffer3D", vertexbuffer3d),
             (
                 "flash.errors",

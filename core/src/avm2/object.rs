@@ -53,6 +53,7 @@ mod soundchannel_object;
 mod stage3d_object;
 mod stage_object;
 mod textformat_object;
+mod texture_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
 mod xml_list_object;
@@ -86,6 +87,7 @@ pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, Sound
 pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
 pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
+pub use crate::avm2::object::texture_object::TextureObject;
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
 pub use crate::avm2::object::xml_list_object::{xml_list_allocator, E4XOrXml, XmlListObject};
@@ -127,6 +129,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         Context3DObject(Context3DObject<'gc>),
         IndexBuffer3DObject(IndexBuffer3DObject<'gc>),
         VertexBuffer3DObject(VertexBuffer3DObject<'gc>),
+        TextureObject(TextureObject<'gc>),
         Program3DObject(Program3DObject<'gc>),
     }
 )]
@@ -1278,6 +1281,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn as_stage_3d(&self) -> Option<Stage3DObject<'gc>> {
+        None
+    }
+
+    fn as_texture(&self) -> Option<TextureObject<'gc>> {
         None
     }
 }

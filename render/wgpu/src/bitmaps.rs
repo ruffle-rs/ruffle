@@ -1,9 +1,9 @@
 #[derive(Debug)]
 pub struct BitmapSamplers {
-    repeat_linear: wgpu::Sampler,
-    repeat_nearest: wgpu::Sampler,
-    clamp_linear: wgpu::Sampler,
-    clamp_nearest: wgpu::Sampler,
+    pub repeat_linear: wgpu::Sampler,
+    pub repeat_nearest: wgpu::Sampler,
+    pub clamp_linear: wgpu::Sampler,
+    pub clamp_nearest: wgpu::Sampler,
 }
 
 fn create_sampler(

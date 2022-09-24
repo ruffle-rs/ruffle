@@ -495,7 +495,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error> {
-        Err(Error::Unimplemented)
+        Err(Error::Unimplemented("createContext3D".into()))
     }
     fn context3d_present<'gc>(
         &mut self,
@@ -503,7 +503,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         _commands: Vec<Context3DCommand<'gc>>,
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        Err(Error::Unimplemented)
+        Err(Error::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {

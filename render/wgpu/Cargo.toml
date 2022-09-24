@@ -26,6 +26,7 @@ gc-arena = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
+naga = { version = "0.10.0", features = ["validate", "wgsl-out"] }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]

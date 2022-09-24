@@ -1098,7 +1098,7 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
-        Err(BitmapError::Unimplemented)
+        Err(BitmapError::Unimplemented("createContext3D".into()))
     }
     fn context3d_present<'gc>(
         &mut self,
@@ -1106,7 +1106,7 @@ impl RenderBackend for WebGlRenderBackend {
         _commands: Vec<Context3DCommand<'gc>>,
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), BitmapError> {
-        Err(BitmapError::Unimplemented)
+        Err(BitmapError::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {

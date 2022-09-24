@@ -3418,6 +3418,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
+ "naga",
  "naga-agal",
  "naga_oil",
  "once_cell",

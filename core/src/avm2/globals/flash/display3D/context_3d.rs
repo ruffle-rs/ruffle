@@ -1,4 +1,5 @@
 use ruffle_render::backend::BufferUsage;
+use ruffle_render::backend::Context3DTextureFormat;
 use ruffle_render::backend::Context3DTriangleFace;
 use ruffle_render::backend::Context3DVertexBufferFormat;
 use ruffle_render::backend::ProgramType;
@@ -83,10 +84,18 @@ pub fn set_vertex_buffer_at<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        let buffer = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let buffer = if matches!(args[1], Value::Null) {
+            None
+        } else {
+            Some(
+                args.get(1)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_object(activation)?
+                    .as_vertex_buffer()
+                    .unwrap(),
+            )
+        };
+
         let buffer_offset = args
             .get(2)
             .unwrap_or(&Value::Undefined)
@@ -112,7 +121,6 @@ pub fn set_vertex_buffer_at<'gc>(
             panic!("Unknown vertex format {format:?}");
         };
 
-        let buffer = buffer.as_vertex_buffer().unwrap();
         context.set_vertex_buffer_at(index, buffer, buffer_offset, format, activation);
     }
     Ok(Value::Undefined)
@@ -280,6 +288,69 @@ pub fn set_program_constants_from_matrix<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn set_program_constants_from_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        let program_type = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        let program_type = if &*program_type == b"vertex" {
+            ProgramType::Vertex
+        } else if &*program_type == b"fragment" {
+            ProgramType::Fragment
+        } else {
+            panic!("Unknown program type {:?}", program_type);
+        };
+
+        let first_register = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
+
+        let vector = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+
+        let vector = vector.as_vector_storage().unwrap();
+
+        let num_registers = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+
+        let to_take = if num_registers != -1 {
+            // Each register requries 4 floating-point values
+            // FIXME - throw an error if 'vector' is too small
+            num_registers as usize * 4
+        } else {
+            vector.length()
+        };
+
+        let raw_data = vector
+            .iter()
+            .map(|val| {
+                val.as_number(activation.context.gc_context)
+                    .map(|val| val as f32)
+            })
+            .take(to_take)
+            .collect::<Result<Vec<f32>, _>>()?;
+
+        context.set_program_constants_from_matrix(
+            activation,
+            program_type,
+            first_register,
+            raw_data,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -295,6 +366,126 @@ pub fn clear<'gc>(
         let stencil = args[5].as_integer(activation.context.gc_context)? as u32;
         let mask = args[6].as_integer(activation.context.gc_context)? as u32;
         context.set_clear(activation, red, green, blue, alpha, depth, stencil, mask);
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn create_texture<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let width = args[0].as_integer(activation.context.gc_context)? as u32;
+        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let format = args[2].coerce_to_string(activation)?;
+        let optimize_for_render_to_texture = args[3].coerce_to_boolean();
+        let streaming_levels = args[4].as_integer(activation.context.gc_context)? as u32;
+        let format = if &*format == b"bgra" {
+            Context3DTextureFormat::Bgra
+        } else {
+            panic!("Unsupported texture format in createTexture: {:?}", format);
+        };
+
+        let class = activation.avm2().classes().texture;
+
+        return context.create_texture(
+            width,
+            height,
+            format,
+            optimize_for_render_to_texture,
+            streaming_levels,
+            class,
+            activation,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn create_rectangle_texture<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let width = args[0].as_integer(activation.context.gc_context)? as u32;
+        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let format = args[2].coerce_to_string(activation)?;
+        let optimize_for_render_to_texture = args[3].coerce_to_boolean();
+        let format = if &*format == b"bgra" {
+            Context3DTextureFormat::Bgra
+        } else {
+            panic!(
+                "Unsupported texture format in createRectangleTexture: {:?}",
+                format
+            );
+        };
+
+        let class = activation.avm2().classes().rectangletexture;
+
+        return context.create_texture(
+            width,
+            height,
+            format,
+            optimize_for_render_to_texture,
+            0,
+            class,
+            activation,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn create_cube_texture<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let size = args[0].as_integer(activation.context.gc_context)? as u32;
+        let format = args[1].coerce_to_string(activation)?;
+        let optimize_for_render_to_texture = args[2].coerce_to_boolean();
+        let streaming_levels = args[3].as_integer(activation.context.gc_context)? as u32;
+        let format = if &*format == b"bgra" {
+            Context3DTextureFormat::Bgra
+        } else {
+            panic!(
+                "Unsupported texture format in createCubeTexture: {:?}",
+                format
+            );
+        };
+
+        return context.create_cube_texture(
+            size,
+            format,
+            optimize_for_render_to_texture,
+            streaming_levels,
+            activation,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_texture_at<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let mut cube = false;
+        let texture = if matches!(args[1], Value::Null) {
+            None
+        } else {
+            let obj = args[1].coerce_to_object(activation)?;
+            cube = obj.is_of_type(activation.avm2().classes().cubetexture, activation);
+            Some(obj.as_texture().unwrap().handle())
+        };
+        context.set_texture_at(activation, sampler, texture, cube);
     }
     Ok(Value::Undefined)
 }

@@ -5,18 +5,22 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::{
-    BufferUsage, Context3D, Context3DCommand, Context3DTriangleFace, Context3DVertexBufferFormat,
-    ProgramType,
+    BufferUsage, Context3D, Context3DCommand, Context3DTextureFormat, Context3DTriangleFace,
+    Context3DVertexBufferFormat, ProgramType, Texture,
 };
+use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
+use std::rc::Rc;
 
 use super::program_3d_object::Program3DObject;
-use super::{IndexBuffer3DObject, VertexBuffer3DObject};
+use super::texture_object::TextureObject;
+use super::{ClassObject, IndexBuffer3DObject, VertexBuffer3DObject};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -89,6 +93,36 @@ impl<'gc> Context3DObject<'gc> {
         )?))
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_texture(
+        &self,
+        width: u32,
+        height: u32,
+        format: Context3DTextureFormat,
+        optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+        class: ClassObject<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let texture = self
+            .0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .create_texture(
+                width,
+                height,
+                format,
+                optimize_for_render_to_texture,
+                streaming_levels,
+            )?;
+
+        Ok(Value::Object(TextureObject::from_handle(
+            activation, *self, texture, class,
+        )?))
+    }
+
     pub fn create_vertex_buffer(
         &self,
         num_vertices: u32,
@@ -148,7 +182,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn set_vertex_buffer_at(
         &self,
         index: u32,
-        buffer: VertexBuffer3DObject<'gc>,
+        buffer: Option<VertexBuffer3DObject<'gc>>,
         buffer_offset: u32,
         buffer_format: Context3DVertexBufferFormat,
         activation: &mut Activation<'_, 'gc>,
@@ -156,7 +190,7 @@ impl<'gc> Context3DObject<'gc> {
         self.0.write(activation.context.gc_context).commands.push(
             Context3DCommand::SetVertexBufferAt {
                 index,
-                buffer: buffer.handle(),
+                buffer: buffer.map(|b| b.handle()),
                 buffer_offset,
                 format: buffer_format,
             },
@@ -297,6 +331,74 @@ impl<'gc> Context3DObject<'gc> {
                 stencil,
                 mask,
             });
+    }
+
+    pub(crate) fn copy_bitmap_to_texture(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        source: GcCell<'gc, BitmapData>,
+        dest: Rc<dyn Texture>,
+        layer: u32,
+    ) {
+        let bitmap = source.read();
+
+        self.0.write(activation.context.gc_context).commands.push(
+            Context3DCommand::CopyBitmapToTexture {
+                source: Bitmap::new(
+                    bitmap.width(),
+                    bitmap.height(),
+                    BitmapFormat::Rgba,
+                    bitmap.pixels_rgba(),
+                ),
+                dest,
+                layer,
+            },
+        )
+    }
+
+    pub(crate) fn set_texture_at(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        sampler: u32,
+        texture: Option<Rc<dyn Texture>>,
+        cube: bool,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .commands
+            .push(Context3DCommand::SetTextureAt {
+                sampler,
+                texture,
+                cube,
+            })
+    }
+
+    pub(crate) fn create_cube_texture(
+        &self,
+        size: u32,
+        format: Context3DTextureFormat,
+        optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let texture = self
+            .0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .create_cube_texture(
+                size,
+                format,
+                optimize_for_render_to_texture,
+                streaming_levels,
+            );
+
+        let class = activation.avm2().classes().cubetexture;
+
+        Ok(Value::Object(TextureObject::from_handle(
+            activation, *self, texture, class,
+        )?))
     }
 }
 
