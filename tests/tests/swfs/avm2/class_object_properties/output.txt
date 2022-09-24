@@ -1,0 +1,10 @@
+pubConst: undefined
+protectedConst: undefined
+privConst: undefined
+pubVar: Public static variable
+protectedVar: undefined
+privVar: undefined
+pubMethod: function Function() {}
+protectedMethod: undefined
+privMethod: undefined
+obj.prototype["pubVar"]: undefined
