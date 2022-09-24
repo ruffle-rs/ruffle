@@ -603,12 +603,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    class(
-        activation,
-        flash::net::object_encoding::create_class(mc),
-        script,
-    )?;
-
     // package `flash.text`
     avm2_system_class!(
         textfield,
