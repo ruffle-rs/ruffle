@@ -481,11 +481,6 @@ pub fn load_player_globals<'gc>(
     class(activation, flash::utils::proxy::create_class(mc), script)?;
 
     // package `flash.display`
-    class(
-        activation,
-        flash::display::ibitmapdrawable::create_interface(mc),
-        script,
-    )?;
     avm2_system_class!(
         display_object,
         activation,
