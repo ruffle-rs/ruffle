@@ -451,11 +451,7 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    class(
-        activation,
-        flash::events::ieventdispatcher::create_interface(mc),
-        script,
-    )?;
+    // package `flash.events`
     avm2_system_class!(
         eventdispatcher,
         activation,
@@ -464,7 +460,6 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.utils`
-
     class(
         activation,
         flash::utils::dictionary::create_class(mc),
