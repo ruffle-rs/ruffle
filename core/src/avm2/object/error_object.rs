@@ -77,6 +77,14 @@ impl<'gc> ErrorObject<'gc> {
         Ok(AvmString::new(activation.context.gc_context, output))
     }
 
+    #[cfg(not(feature = "avm_debug"))]
+    pub fn display_full(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
+        self.display(activation)
+    }
+
     #[cfg(feature = "avm_debug")]
     fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
