@@ -592,7 +592,6 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.ui`
-    class(activation, flash::ui::mouse::create_class(mc), script)?;
     class(activation, flash::ui::keyboard::create_class(mc), script)?;
 
     // package `flash.net`
