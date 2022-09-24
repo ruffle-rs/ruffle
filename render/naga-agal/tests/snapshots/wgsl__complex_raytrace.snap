@@ -1,0 +1,40 @@
+---
+source: render/naga-agal/tests/wgsl.rs
+assertion_line: 90
+expression: output
+---
+struct VertexOutput {
+    @builtin(position) member: vec4<f32>,
+    @location(0) varying_0_: vec4<f32>,
+}
+
+@group(0) @binding(0) 
+var<uniform> constant_registers: array<vec4<f32>,128u>;
+
+@vertex 
+fn main(@location(0) param: vec4<f32>) -> VertexOutput {
+    var dest_temp: vec4<f32>;
+    var temporary0_: vec4<f32>;
+    var varying_0_: vec4<f32>;
+
+    let _e3: vec4<f32> = param.xyzz;
+    temporary0_.x = _e3.x;
+    temporary0_.y = _e3.y;
+    temporary0_.z = _e3.z;
+    let _e13: vec4<f32> = constant_registers[4u];
+    temporary0_.w = _e13.yyyy.x;
+    let _e19: vec4<f32> = constant_registers[0u];
+    let _e22: vec4<f32> = constant_registers[1u];
+    let _e25: vec4<f32> = constant_registers[2u];
+    let _e28: vec4<f32> = constant_registers[3u];
+    let _e31: vec4<f32> = temporary0_;
+    temporary0_ = (transpose(mat4x4<f32>(_e19, _e22, _e25, _e28)) * _e31);
+    let _e33: vec4<f32> = temporary0_;
+    dest_temp = _e33;
+    let _e34: vec4<f32> = temporary0_;
+    varying_0_ = _e34.xyyy;
+    let _e37: vec4<f32> = dest_temp;
+    let _e38: vec4<f32> = varying_0_;
+    return VertexOutput(_e37, _e38);
+}
+

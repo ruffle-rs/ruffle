@@ -5,7 +5,7 @@ mod types;
 
 use builder::NagaBuilder;
 
-const ENTRY_POINT: &str = "main";
+pub const SHADER_ENTRY_POINT: &str = "main";
 
 pub const MAX_VERTEX_ATTRIBUTES: usize = 8;
 
@@ -26,6 +26,7 @@ pub enum Error {
     Unimplemented(String),
     ReadError(std::io::Error),
     InvalidOpcode(u32),
+    InvalidVersion(u32),
 }
 
 impl From<std::io::Error> for Error {

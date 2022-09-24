@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use thiserror::Error;
 
 use crate::bitmap::BitmapHandle;
@@ -35,6 +37,6 @@ pub enum Error {
     #[error("Unknown handle {0:?}")]
     UnknownHandle(BitmapHandle),
 
-    #[error("Not yet implemented")]
-    Unimplemented,
+    #[error("Not yet implemented: {0}")]
+    Unimplemented(Cow<'static, str>),
 }

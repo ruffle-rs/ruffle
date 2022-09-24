@@ -81,3 +81,30 @@ fn test_shaders() {
         ShaderType::Fragment,
     );
 }
+
+#[test]
+fn test_complex_raytrace() {
+    const RAYTRACE_VERTEX: &[u8] = include!("raytrace_vertex.agal");
+    const RAYTRACE_FRAGMENT: &[u8] = include!("raytrace_fragment.agal");
+
+    test_shader!(
+        RAYTRACE_VERTEX,
+        &[
+            Some(VertexAttributeFormat::Float4),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        ],
+        ShaderType::Vertex
+    );
+
+    test_shader!(
+        RAYTRACE_FRAGMENT,
+        &[None, None, None, None, None, None, None, None],
+        ShaderType::Fragment
+    );
+}

@@ -1,21 +1,24 @@
 use ruffle_render::backend::{
-    Context3D, Context3DCommand, Context3DVertexBufferFormat, IndexBuffer, ProgramType,
-    ShaderModule, VertexBuffer,
+    Context3D, Context3DCommand, Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer,
+    ProgramType, ShaderModule, VertexBuffer,
 };
-use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
+use ruffle_render::error::Error;
 use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BindGroupEntry, BindGroupLayout, BindingResource, BufferDescriptor, BufferUsages,
+    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
+use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
 use crate::Texture;
 use gc_arena::{Collect, MutationContext};
 
-use std::num::NonZeroU64;
+use std::num::{NonZeroU32, NonZeroU64};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -50,12 +53,6 @@ pub struct WgpuContext3D {
     // we need in individual `Arc`s.
     descriptors: Arc<Descriptors>,
 
-    // Currently, the only resources we bind are the 'program constants' uniform buffers
-    // (one for the vertex shader, and one for the fragment shader).
-    // These never change, so we can just create them once and reuse them.
-    bind_group: BindGroup,
-    bind_group_layout: BindGroupLayout,
-
     buffer_staging_belt: StagingBelt,
 
     texture_view: Option<wgpu::TextureView>,
@@ -66,114 +63,27 @@ pub struct WgpuContext3D {
     // Therefore, we only use a single texture for rendering.
     raw_texture_handle: BitmapHandle,
 
-    vertex_shader_uniforms: wgpu::Buffer,
-    fragment_shader_uniforms: wgpu::Buffer,
-
     current_pipeline: CurrentPipeline,
     compiled_pipeline: Option<wgpu::RenderPipeline>,
+    bind_group: Option<BindGroup>,
 
     vertex_attributes: [Option<VertexAttributeInfo>; MAX_VERTEX_ATTRIBUTES],
 }
 
-const AGAL_NUM_VERTEX_CONSTANTS: u64 = 128;
-const AGAL_NUM_FRAGMENT_CONSTANTS: u64 = 28;
-const AGAL_FLOATS_PER_REGISTER: u64 = 4;
-
-const VERTEX_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
-    AGAL_NUM_VERTEX_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
-const FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
-    AGAL_NUM_FRAGMENT_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
-
 impl WgpuContext3D {
     pub fn new(descriptors: Arc<Descriptors>, raw_texture_handle: BitmapHandle) -> Self {
-        let globals_layout_label = create_debug_label!("Globals bind group layout");
-        let bind_group_layout =
-            descriptors
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: globals_layout_label.as_deref(),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::VERTEX,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                    ],
-                });
-
         // FIXME - determine the best chunk size for this
         let buffer_staging_belt = StagingBelt::new(1024);
-
-        let vertex_shader_uniforms = descriptors.device.create_buffer(&BufferDescriptor {
-            label: Some("Vertex shader uniforms"),
-            size: VERTEX_SHADER_UNIFORMS_BUFFER_SIZE,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let fragment_shader_uniforms = descriptors.device.create_buffer(&BufferDescriptor {
-            label: Some("Fragment shader uniforms"),
-            size: FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let bind_group_label = create_debug_label!("Bind group");
-        let bind_group = descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: bind_group_label.as_deref(),
-                layout: &bind_group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &vertex_shader_uniforms,
-                            offset: 0,
-                            size: Some(
-                                NonZeroU64::new(VERTEX_SHADER_UNIFORMS_BUFFER_SIZE).unwrap(),
-                            ),
-                        }),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &fragment_shader_uniforms,
-                            offset: 0,
-                            size: Some(
-                                NonZeroU64::new(FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE).unwrap(),
-                            ),
-                        }),
-                    },
-                ],
-            });
+        let current_pipeline = CurrentPipeline::new(&descriptors);
 
         Self {
             descriptors,
-            bind_group_layout,
-            bind_group,
             buffer_staging_belt,
             texture_view: None,
             raw_texture_handle,
-            vertex_shader_uniforms,
-            fragment_shader_uniforms,
-            current_pipeline: CurrentPipeline::new(),
+            current_pipeline,
             compiled_pipeline: None,
+            bind_group: None,
             vertex_attributes: std::array::from_fn(|_| None),
         }
     }
@@ -190,6 +100,7 @@ impl WgpuContext3D {
                     label: Some("Context3D command encoder"),
                 });
         let mut compiled_pipeline: Option<wgpu::RenderPipeline> = self.compiled_pipeline.take();
+        let mut compiled_bind_group = self.bind_group.take();
         let mut render_pass = RenderPassWrapper::new(None);
 
         let mut buffer_command_encoder =
@@ -356,34 +267,61 @@ impl WgpuContext3D {
 
                     let indices = (*first_index as u32 * 3)..(*num_triangles as u32 * 3);
 
-                    let new_pipeline = self.current_pipeline.rebuild_pipeline(
-                        &self.descriptors.device,
-                        &self.bind_group_layout,
-                        &self.vertex_attributes,
-                    );
+                    let new_pipeline = self
+                        .current_pipeline
+                        .rebuild_pipeline(&self.descriptors, &self.vertex_attributes);
 
                     if !seen_clear_command {
                         tracing::warn!("Context3D::present: drawTriangles called without first calling clear()");
                     }
 
-                    if new_pipeline.is_some() || render_pass.is_none() {
-                        finish_render_pass!(render_pass);
+                    finish_render_pass!(render_pass);
 
-                        *render_pass = Some(make_render_pass(
-                            self.texture_view.as_ref().unwrap(),
-                            &mut render_command_encoder,
-                            &self.bind_group,
-                            &self.vertex_attributes,
-                            // Subsequent draw calls (without an intermediate 'clear()' call)
-                            // will use a clear color of None. This ensures that by itself,
-                            // re-creating the render pass has no effect on the output
-                            clear_color.take(),
-                        ));
+                    self.buffer_staging_belt.finish();
 
-                        if let Some(new_pipeline) = new_pipeline {
-                            compiled_pipeline = Some(new_pipeline);
-                        }
+                    let command_buffers = [
+                        // Submit the commands from the *previous* render pass first.
+                        // This will be empty for the first `DrawTriangles` command in our list.
+                        render_command_encoder.finish(),
+                        // Then, submit all of the buffer commands we've collected.
+                        buffer_command_encoder.finish(),
+                    ];
+
+                    self.descriptors.queue.submit(command_buffers);
+                    self.buffer_staging_belt.recall();
+
+                    buffer_command_encoder = self.descriptors.device.create_command_encoder(
+                        &wgpu::CommandEncoderDescriptor {
+                            label: create_debug_label!("Buffer command encoder").as_deref(),
+                        },
+                    );
+
+                    render_command_encoder = self.descriptors.device.create_command_encoder(
+                        &wgpu::CommandEncoderDescriptor {
+                            label: Some("Context3D command encoder"),
+                        },
+                    );
+
+                    // Note - we need to unconditionally re-create the render pass, since we had to submit the
+                    // buffer command encoder above.
+
+                    //if new_pipeline.is_some() || render_pass.is_none() {
+
+                    if let Some((new_pipeline, new_bind_group)) = new_pipeline {
+                        compiled_pipeline = Some(new_pipeline);
+                        compiled_bind_group = Some(new_bind_group);
                     }
+
+                    *render_pass = Some(make_render_pass(
+                        self.texture_view.as_ref().unwrap(),
+                        &mut render_command_encoder,
+                        compiled_bind_group.as_ref().unwrap(),
+                        &self.vertex_attributes,
+                        // Subsequent draw calls (without an intermediate 'clear()' call)
+                        // will use a clear color of None. This ensures that by itself,
+                        // re-creating the render pass has no effect on the output
+                        clear_color.take(),
+                    ));
 
                     let render_pass_mut = render_pass.as_mut().unwrap();
 
@@ -395,6 +333,8 @@ impl WgpuContext3D {
 
                     render_pass_mut
                         .set_index_buffer(index_buffer.0.slice(..), wgpu::IndexFormat::Uint16);
+
+                    // Note - we don't submit this yet. This will be done at the end of the function (or if we hit another DrawTriangles command).
                     render_pass_mut.draw_indexed(indices, 0, 0..1);
                 }
 
@@ -404,20 +344,31 @@ impl WgpuContext3D {
                     buffer_offset,
                     format,
                 } => {
-                    let buffer: Rc<VertexBufferWrapper> = buffer
-                        .clone()
-                        .into_any_rc()
-                        .downcast::<VertexBufferWrapper>()
-                        .unwrap();
+                    let buffer = if let Some(buffer) = buffer {
+                        Some(
+                            buffer
+                                .clone()
+                                .into_any_rc()
+                                .downcast::<VertexBufferWrapper>()
+                                .unwrap(),
+                        )
+                    } else {
+                        None
+                    };
 
                     finish_render_pass!(render_pass);
 
-                    let info = VertexAttributeInfo {
-                        buffer,
-                        offset_in_32bit_units: *buffer_offset as u64,
-                        format: *format,
+                    let info = if let Some(buffer) = buffer {
+                        Some(VertexAttributeInfo {
+                            buffer,
+                            offset_in_32bit_units: *buffer_offset as u64,
+                            format: *format,
+                        })
+                    } else {
+                        None
                     };
-                    self.vertex_attributes[*index as usize] = Some(info);
+
+                    self.vertex_attributes[*index as usize] = info;
                     self.current_pipeline
                         .update_vertex_buffer_at(*index as usize);
                 }
@@ -466,8 +417,8 @@ impl WgpuContext3D {
                     matrix_raw_data_column_major,
                 } => {
                     let buffer = match program_type {
-                        ProgramType::Vertex => &self.vertex_shader_uniforms,
-                        ProgramType::Fragment => &self.fragment_shader_uniforms,
+                        ProgramType::Vertex => &self.current_pipeline.vertex_shader_uniforms,
+                        ProgramType::Fragment => &self.current_pipeline.fragment_shader_uniforms,
                     };
 
                     let offset = *first_register as u64
@@ -496,6 +447,101 @@ impl WgpuContext3D {
                 Context3DCommand::SetCulling { face } => {
                     self.current_pipeline.set_culling(*face);
                 }
+                Context3DCommand::CopyBitmapToTexture {
+                    source,
+                    dest,
+                    layer,
+                } => {
+                    // FIXME - handle non-BGRA8Unorm textures
+                    match source.format() {
+                        BitmapFormat::Rgba => {}
+                        _ => unimplemented!(),
+                    }
+
+                    let bgra_data = source
+                        .data()
+                        .chunks_exact(4)
+                        .flat_map(|chunk| {
+                            // Convert from RGBA to BGRA
+                            [chunk[2], chunk[1], chunk[0], chunk[3]]
+                        })
+                        .collect::<Vec<_>>();
+
+                    let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
+
+                    // Note - this is very inefficient, since we allocate, and then destroy a buffer
+                    // every time we copy a bitmap to a texture.
+                    // Unfortunately, we cannot copy directly from the Ruffle texture, since the format
+                    // is incorrect (RGBA vs BGRA).
+                    // The `StagingBelt` helper doesn't support writing to textures, so we're using
+                    // our own setup for now.
+                    //
+                    // Hopefully, writing to textures is rare enough that this isn't a big deal.
+
+                    let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
+                        label: None,
+                        size: 4 * source.width() as u64 * source.height() as u64,
+                        usage: BufferUsages::COPY_SRC,
+                        mapped_at_creation: true,
+                    });
+
+                    let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
+                    texture_buffer_view.copy_from_slice(&bgra_data);
+                    drop(texture_buffer_view);
+                    texture_buffer.unmap();
+
+                    buffer_command_encoder.copy_buffer_to_texture(
+                        wgpu::ImageCopyBuffer {
+                            buffer: &texture_buffer,
+                            layout: wgpu::ImageDataLayout {
+                                offset: 0,
+                                bytes_per_row: NonZeroU32::new(4 * source.width()),
+                                rows_per_image: Some(NonZeroU32::new(source.height()).unwrap()),
+                            },
+                        },
+                        wgpu::ImageCopyTexture {
+                            texture: &dest.0,
+                            mip_level: 0,
+                            origin: wgpu::Origin3d {
+                                x: 0,
+                                y: 0,
+                                z: *layer,
+                            },
+                            aspect: wgpu::TextureAspect::All,
+                        },
+                        wgpu::Extent3d {
+                            width: source.width(),
+                            height: source.height(),
+                            depth_or_array_layers: 1,
+                        },
+                    );
+                }
+                Context3DCommand::SetTextureAt {
+                    sampler,
+                    texture,
+                    cube,
+                } => {
+                    finish_render_pass!(render_pass);
+                    let bound_texture = if let Some(texture) = texture {
+                        let texture = texture.as_any().downcast_ref::<TextureWrapper>().unwrap();
+
+                        let mut view: wgpu::TextureViewDescriptor = Default::default();
+                        if *cube {
+                            view.dimension = Some(wgpu::TextureViewDimension::Cube);
+                            view.array_layer_count = Some(NonZeroU32::new(6).unwrap());
+                        }
+
+                        Some(BoundTextureData {
+                            view: texture.0.create_view(&view),
+                            cube: *cube,
+                        })
+                    } else {
+                        None
+                    };
+
+                    self.current_pipeline
+                        .update_texture_at(*sampler as usize, bound_texture);
+                }
             }
         }
 
@@ -503,15 +549,21 @@ impl WgpuContext3D {
 
         self.buffer_staging_belt.finish();
 
-        let command_buffers = vec![
-            buffer_command_encoder.finish(),
+        let command_buffers = [
+            // Submit the last DrawTriangles command we hit (this may be empty)
             render_command_encoder.finish(),
+            // Any buffer commands were issued after the last DrawTriangles (since we
+            // submit and reset the buffers after each DrawTriangles). They cannot affect
+            // the current DrawTriangles, but they may update state used by future present()
+            // calls.
+            buffer_command_encoder.finish(),
         ];
 
         self.descriptors.queue.submit(command_buffers);
         self.buffer_staging_belt.recall();
 
         self.compiled_pipeline = compiled_pipeline;
+        self.bind_group = compiled_bind_group;
     }
 }
 
@@ -527,9 +579,14 @@ pub struct VertexBufferWrapper(wgpu::Buffer);
 #[collect(require_static)]
 pub struct ShaderModuleAgal(Vec<u8>);
 
+#[derive(Collect)]
+#[collect(require_static)]
+pub struct TextureWrapper(wgpu::Texture);
+
 impl IndexBuffer for IndexBufferWrapper {}
 impl VertexBuffer for VertexBufferWrapper {}
 impl ShaderModule for ShaderModuleAgal {}
+impl ruffle_render::backend::Texture for TextureWrapper {}
 
 // Context3D.setVertexBufferAt supports up to 8 vertex buffer attributes
 const MAX_VERTEX_ATTRIBUTES: usize = 8;
@@ -587,6 +644,85 @@ impl Context3D for WgpuContext3D {
 
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer> {
         todo!()
+    }
+
+    fn create_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+        format: ruffle_render::backend::Context3DTextureFormat,
+        _optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+    ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
+        let format = match format {
+            Context3DTextureFormat::Bgra => TextureFormat::Bgra8Unorm,
+            _ => {
+                return Err(Error::Unimplemented(
+                    format!("Texture format {format:?}").into(),
+                ))
+            }
+        };
+
+        if streaming_levels != 0 {
+            return Err(Error::Unimplemented(
+                format!("streamingLevels={streaming_levels}").into(),
+            ));
+        }
+
+        let texture = self.descriptors.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format,
+            view_formats: &[format],
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+        });
+        Ok(Rc::new(TextureWrapper(texture)))
+    }
+
+    fn create_cube_texture(
+        &mut self,
+        size: u32,
+        format: ruffle_render::backend::Context3DTextureFormat,
+        _optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+    ) -> Rc<dyn ruffle_render::backend::Texture> {
+        let format = match format {
+            Context3DTextureFormat::Bgra => TextureFormat::Bgra8Unorm,
+            _ => panic!("Unsupported texture format {:?}", format),
+        };
+
+        if streaming_levels != 0 {
+            tracing::warn!(
+                "createCubeTexture: streaming_levels={} is not yet implemented",
+                streaming_levels,
+            );
+        }
+
+        let texture = self.descriptors.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: Extent3d {
+                width: size,
+                height: size,
+                depth_or_array_layers: 6,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format,
+            view_formats: &[format],
+            // Note - `optimize_for_render_to_texture` is just a hint, so
+            // have to use `TextureUsages::TEXTURE_BINDING` even if the hint
+            // is `false`.
+            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
+        });
+        Rc::new(TextureWrapper(texture))
     }
 }
 

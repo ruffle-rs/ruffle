@@ -1,3 +1,4 @@
+use gc_arena::Collect;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -47,7 +48,8 @@ impl Clone for Box<dyn SyncHandle> {
 }
 
 /// Decoded bitmap data from an SWF tag.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct Bitmap {
     width: u32,
     height: u32,

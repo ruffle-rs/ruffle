@@ -100,6 +100,20 @@ impl_downcast!(VertexBuffer);
 pub trait ShaderModule: Downcast + Collect {}
 impl_downcast!(ShaderModule);
 
+pub trait Texture: Downcast + Collect {}
+impl_downcast!(Texture);
+
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub enum Context3DTextureFormat {
+    Bgra,
+    BgraPacked,
+    BgrPacked,
+    Compressed,
+    CompressedAlpha,
+    RgbaHalfFloat,
+}
+
 #[derive(Collect)]
 #[collect(require_static)]
 pub enum BufferUsage {
@@ -136,6 +150,22 @@ pub trait Context3D: Collect + Downcast {
         num_vertices: u32,
         vertex_size: u32,
     ) -> Rc<dyn VertexBuffer>;
+
+    fn create_texture(
+        &mut self,
+        width: u32,
+        height: u32,
+        format: Context3DTextureFormat,
+        optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+    ) -> Result<Rc<dyn Texture>, Error>;
+    fn create_cube_texture(
+        &mut self,
+        size: u32,
+        format: Context3DTextureFormat,
+        optimize_for_render_to_texture: bool,
+        streaming_levels: u32,
+    ) -> Rc<dyn Texture>;
 }
 impl_downcast!(Context3D);
 
@@ -200,7 +230,7 @@ pub enum Context3DCommand<'gc> {
 
     SetVertexBufferAt {
         index: u32,
-        buffer: Rc<dyn VertexBuffer>,
+        buffer: Option<Rc<dyn VertexBuffer>>,
         buffer_offset: u32,
         format: Context3DVertexBufferFormat,
     },
@@ -223,6 +253,16 @@ pub enum Context3DCommand<'gc> {
     },
     SetCulling {
         face: Context3DTriangleFace,
+    },
+    CopyBitmapToTexture {
+        source: crate::bitmap::Bitmap,
+        dest: Rc<dyn Texture>,
+        layer: u32,
+    },
+    SetTextureAt {
+        sampler: u32,
+        texture: Option<Rc<dyn Texture>>,
+        cube: bool,
     },
 }
 

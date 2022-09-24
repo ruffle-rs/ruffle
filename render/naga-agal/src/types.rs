@@ -34,7 +34,7 @@ pub enum Opcode {
     Tex = 0x28,
     Sge = 0x29,
     Slt = 0x2a,
-    Seq = 0x2b,
+    Seq = 0x2c,
     Sne = 0x2d,
     Ddx = 0x1a,
     Ddy = 0x1b,
@@ -126,31 +126,32 @@ impl SourceField {
     }
 }
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum Filter {
     Nearest = 0,
     Linear = 1,
 }
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug)]
 pub enum Mipmap {
     Disable = 0,
     Nearest = 1,
     Linear = 2,
 }
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum Wrapping {
     Clamp = 0,
     Repeat = 1,
 }
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, Debug, Copy, Clone)]
 pub enum Dimension {
     TwoD = 0,
     Cube = 1,
 }
 
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct SamplerField {
     pub filter: Filter,
@@ -189,7 +190,23 @@ impl SamplerField {
     }
 }
 
+#[derive(Debug)]
 pub enum Source2 {
     SourceField(SourceField),
     Sampler(SamplerField),
+}
+
+impl Source2 {
+    pub fn assert_source_field(&self) -> &SourceField {
+        match self {
+            Source2::SourceField(s) => s,
+            _ => panic!("Expected SourceField"),
+        }
+    }
+    pub fn assert_sampler(&self) -> &SamplerField {
+        match self {
+            Source2::Sampler(s) => s,
+            _ => panic!("Expected SamplerField"),
+        }
+    }
 }
