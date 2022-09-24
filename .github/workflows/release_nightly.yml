@@ -318,7 +318,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: wasm-bindgen-cli --version 0.2.83
+          args: wasm-bindgen-cli --version 0.2.82
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
