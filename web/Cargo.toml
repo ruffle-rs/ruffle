@@ -38,13 +38,14 @@ ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = "2.3.1"
-wasm-bindgen = { version = "=0.2.82", features = ["serde-serialize"] }
+wasm-bindgen = { version = "=0.2.82" }
 wasm-bindgen-futures = "0.4.32"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.144", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.13.0"
+serde-wasm-bindgen = "0.4.3"
 
 [dependencies.ruffle_core]
 path = "../core"

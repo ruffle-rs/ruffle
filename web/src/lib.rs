@@ -204,8 +204,8 @@ pub struct Ruffle(Index);
 impl Ruffle {
     #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
-    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: &JsValue) -> Promise {
-        let config: Config = config.into_serde().unwrap_or_default();
+    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
+        let config: Config = serde_wasm_bindgen::from_value(config).unwrap_or_default();
         wasm_bindgen_futures::future_to_promise(async move {
             if RUFFLE_GLOBAL_PANIC.is_completed() {
                 // If an actual panic happened, then we can't trust the state it left us in.
@@ -289,7 +289,7 @@ impl Ruffle {
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
             let info = core.prepare_context_menu();
-            JsValue::from_serde(&info).unwrap_or(JsValue::UNDEFINED)
+            serde_wasm_bindgen::to_value(&info).unwrap_or(JsValue::UNDEFINED)
         })
         .unwrap_or(JsValue::UNDEFINED)
     }
@@ -1032,7 +1032,7 @@ impl Ruffle {
                 is_action_script_3: swf_header.is_action_script_3(),
             };
 
-            if let Ok(value) = JsValue::from_serde(&metadata) {
+            if let Ok(value) = serde_wasm_bindgen::to_value(&metadata) {
                 instance.js_player.set_metadata(value);
             }
         });
