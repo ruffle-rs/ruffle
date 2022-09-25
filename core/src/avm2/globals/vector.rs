@@ -217,7 +217,7 @@ pub fn specialized_class_init<'gc>(
                 &Multiname::public(*pubname),
                 FunctionObject::from_function(
                     activation,
-                    Method::from_builtin(*func, *pubname, activation.context.gc_context),
+                    Method::from_builtin(*func, pubname, activation.context.gc_context),
                     scope,
                 )?
                 .into(),

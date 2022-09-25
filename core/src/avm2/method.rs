@@ -8,7 +8,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
-use std::borrow::Cow;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -263,7 +262,7 @@ pub struct NativeMethod<'gc> {
     pub method: NativeMethodImpl,
 
     /// The name of the method.
-    pub name: Cow<'static, str>,
+    pub name: &'static str,
 
     /// The parameter signature of the method.
     pub signature: Vec<ParamConfig<'gc>>,
@@ -312,7 +311,7 @@ impl<'gc> Method<'gc> {
     /// Define a builtin method with a particular param configuration.
     pub fn from_builtin_and_params(
         method: NativeMethodImpl,
-        name: impl Into<Cow<'static, str>>,
+        name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
@@ -321,7 +320,7 @@ impl<'gc> Method<'gc> {
             mc,
             NativeMethod {
                 method,
-                name: name.into(),
+                name,
                 signature,
                 is_variadic,
             },
@@ -331,14 +330,14 @@ impl<'gc> Method<'gc> {
     /// Define a builtin with no parameter constraints.
     pub fn from_builtin(
         method: NativeMethodImpl,
-        name: impl Into<Cow<'static, str>>,
+        name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         Self::Native(Gc::allocate(
             mc,
             NativeMethod {
                 method,
-                name: name.into(),
+                name,
                 signature: Vec::new(),
                 is_variadic: true,
             },

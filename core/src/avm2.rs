@@ -81,10 +81,10 @@ pub struct Avm2<'gc> {
     system_classes: Option<SystemClasses<'gc>>,
 
     #[collect(require_static)]
-    native_method_table: &'static [Option<NativeMethodImpl>],
+    native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     #[collect(require_static)]
-    native_instance_allocator_table: &'static [Option<AllocatorFn>],
+    native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
 
     /// A list of objects which are capable of recieving broadcasts.
     ///

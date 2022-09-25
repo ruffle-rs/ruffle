@@ -14,7 +14,6 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use std::borrow::Cow;
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
@@ -149,12 +148,14 @@ impl<'gc> TranslationUnit<'gc> {
         // allowing us to use 'bc_method' later on without a borrow-checker error.
         let method = (|| {
             if is_global {
-                if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize]
+                if let Some((name, native)) =
+                    activation.avm2().native_method_table[method_index.0 as usize]
                 {
                     let variadic = bc_method.is_variadic();
+                    // Set the method name and function pointer from the table.
                     return Method::from_builtin_and_params(
                         native,
-                        Cow::Owned(bc_method.method_name().to_string()),
+                        name,
                         bc_method.signature,
                         variadic,
                         activation.context.gc_context,
