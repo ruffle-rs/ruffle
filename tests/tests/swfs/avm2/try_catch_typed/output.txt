@@ -6,3 +6,7 @@ Caught Object: true
 Caught value: null
 Caught value: undefined
 getDefinitionByName threw: ReferenceError: Error #1065: Variable FakeClass is not defined.
+ReferenceError: Error #1065: Variable FakeClass is not defined.
+	at global/flash.utils::getDefinitionByName()
+	at Test()
+	at test_fla::MainTimeline/frame1()

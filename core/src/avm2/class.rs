@@ -364,7 +364,7 @@ impl<'gc> Class<'gc> {
         if unit.domain().is_avm2_global_domain(activation) {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
-                .map(Allocator);
+                .map(|(_name, ptr)| Allocator(ptr));
         }
 
         Ok(GcCell::allocate(

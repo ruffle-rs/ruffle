@@ -308,7 +308,7 @@ pub fn class_init<'gc>(
                 &Multiname::public(*name),
                 FunctionObject::from_method(
                     activation,
-                    Method::from_builtin(*method, *name, gc_context),
+                    Method::from_builtin(*method, name, gc_context),
                     scope,
                     None,
                     Some(this_class),

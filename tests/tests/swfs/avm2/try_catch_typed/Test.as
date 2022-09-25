@@ -33,6 +33,7 @@
 				getDefinitionByName("some.package.FakeClass");
 			} catch (err:Error) {
 				trace("getDefinitionByName threw: " + err);
+				trace(err.getStackTrace());
 			}
 		}
 	}
