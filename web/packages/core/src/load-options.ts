@@ -1,3 +1,6 @@
+/**
+ * Represents the various types of auto-play behaviours that are supported.
+ */
 export const enum AutoPlay {
     /**
      * The player should automatically play the movie as soon as it is loaded.
@@ -135,6 +138,8 @@ export interface BaseLoadOptions {
      * If a URL if specified when loading the movie, some parameters will
      * be extracted by the query portion of that URL and then overwritten
      * by any explicitly set here.
+     *
+     * @default {}
      */
     parameters?: URLSearchParams | string | Record<string, string>;
 
@@ -225,7 +230,7 @@ export interface BaseLoadOptions {
      * Maximum amount of time a script can take before scripting
      * is disabled.
      *
-     * @default {"secs": 15, "nanos": 0}
+     * @default { secs: 15, nanos: 0 }
      */
     maxExecutionDuration?: {
         secs: number;
@@ -250,7 +255,6 @@ export interface BaseLoadOptions {
     menu?: boolean;
 
     /**
-     *
      * This is equivalent to Stage.align.
      *
      * @default ""
@@ -258,7 +262,6 @@ export interface BaseLoadOptions {
     salign?: string;
 
     /**
-     *
      * This is equivalent to Stage.quality.
      *
      * @default "high"
@@ -266,7 +269,6 @@ export interface BaseLoadOptions {
     quality?: string;
 
     /**
-     *
      * This is equivalent to Stage.scaleMode.
      *
      * @default "showAll"

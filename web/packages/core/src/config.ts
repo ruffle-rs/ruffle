@@ -1,7 +1,11 @@
-/**
- * Represents the various types of auto-play behaviours that are supported.
- */
 import type { BaseLoadOptions } from "./load-options";
+import {
+    AutoPlay,
+    UnmuteOverlay,
+    WindowMode,
+    Letterbox,
+    LogLevel,
+} from "./load-options";
 
 /**
  * The configuration object to control Ruffle's behaviour on the website
@@ -10,8 +14,10 @@ import type { BaseLoadOptions } from "./load-options";
 export interface Config extends BaseLoadOptions {
     /**
      * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
+     *
+     * @default null
      */
-    publicPath?: string;
+    publicPath?: string | null;
 
     /**
      * Whether or not to enable polyfills on the page.
@@ -24,3 +30,27 @@ export interface Config extends BaseLoadOptions {
      */
     polyfills?: boolean;
 }
+
+export const DEFAULT_CONFIG: Required<Config> = {
+    allowScriptAccess: false,
+    parameters: {},
+    autoplay: AutoPlay.Auto,
+    backgroundColor: null,
+    letterbox: Letterbox.Fullscreen,
+    unmuteOverlay: UnmuteOverlay.Visible,
+    upgradeToHttps: true,
+    warnOnUnsupportedContent: true,
+    logLevel: LogLevel.Error,
+    showSwfDownload: false,
+    contextMenu: true,
+    preloader: true,
+    maxExecutionDuration: { secs: 15, nanos: 0 },
+    base: null,
+    menu: true,
+    salign: "",
+    quality: "high",
+    scale: "showAll",
+    wmode: WindowMode.Opaque,
+    publicPath: null,
+    polyfills: true,
+};

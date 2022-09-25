@@ -117,8 +117,7 @@ struct JavascriptInterface {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(default = "Default::default")]
-pub struct Config {
+struct Config {
     #[serde(rename = "allowScriptAccess")]
     allow_script_access: bool,
 
@@ -154,26 +153,6 @@ pub struct Config {
     max_execution_duration: Duration,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            allow_script_access: false,
-            show_menu: true,
-            salign: Some("".to_owned()),
-            quality: Some("high".to_owned()),
-            scale: Some("showAll".to_owned()),
-            wmode: Some("opaque".to_owned()),
-            background_color: Default::default(),
-            letterbox: Default::default(),
-            upgrade_to_https: true,
-            base_url: None,
-            warn_on_unsupported_content: true,
-            log_level: log::Level::Error,
-            max_execution_duration: Duration::from_secs(15),
-        }
-    }
-}
-
 /// Metadata about the playing SWF file to be passed back to JavaScript.
 #[derive(Serialize)]
 struct MovieMetadata {
@@ -205,8 +184,10 @@ impl Ruffle {
     #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
     pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
-        let config: Config = serde_wasm_bindgen::from_value(config).unwrap_or_default();
         wasm_bindgen_futures::future_to_promise(async move {
+            let config: Config = serde_wasm_bindgen::from_value(config)
+                .map_err(|e| format!("Error parsing config: {}", e))?;
+
             if RUFFLE_GLOBAL_PANIC.is_completed() {
                 // If an actual panic happened, then we can't trust the state it left us in.
                 // Prevent future players from loading so that they can inform the user about the error.
