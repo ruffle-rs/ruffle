@@ -1,11 +1,10 @@
 import type { Ruffle } from "../pkg/ruffle_web";
-
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import type { Config } from "./config";
+import { DEFAULT_CONFIG } from "./config";
 import {
-    BaseLoadOptions,
     DataLoadOptions,
     URLLoadOptions,
     AutoPlay,
@@ -127,24 +126,21 @@ export class RufflePlayer extends HTMLElement {
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
     private contextMenuElement: HTMLElement;
-    private hasContextMenu = false;
 
     // Allows the user to permanently disable the context menu.
     private contextMenuForceDisabled = false;
-
-    // Whether to show a preloader while Ruffle is still loading the SWF
-    private hasPreloader = true;
 
     // Whether this device is a touch device.
     // Set to true when a touch event is encountered.
     private isTouch = false;
 
+    // The effective config loaded upon `.load()`.
+    private loadedConfig: Required<Config> = DEFAULT_CONFIG;
+
     private swfUrl?: URL;
     private instance: Ruffle | null;
-    private options: BaseLoadOptions | null;
     private lastActivePlayingState: boolean;
 
-    private showSwfDownload = false;
     private _metadata: MovieMetadata | null;
     private _readyState: ReadyState;
 
@@ -237,7 +233,6 @@ export class RufflePlayer extends HTMLElement {
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
-        this.options = null;
         this.onFSCommand = null;
 
         this._readyState = ReadyState.HaveNothing;
@@ -395,14 +390,14 @@ export class RufflePlayer extends HTMLElement {
      *
      * @private
      */
-    private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
+    private async ensureFreshInstance(): Promise<void> {
         this.destroy();
 
-        if (this.hasPreloader) {
+        if (this.loadedConfig.preloader !== false) {
             this.showPreloader();
         }
         const ruffleConstructor = await loadRuffle(
-            config,
+            this.loadedConfig,
             this.onRuffleDownloadProgress.bind(this)
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
@@ -446,7 +441,7 @@ export class RufflePlayer extends HTMLElement {
         this.instance = await new ruffleConstructor(
             this.container,
             this,
-            config
+            this.loadedConfig
         );
         console.log(
             "New Ruffle instance created (WebAssembly extensions: " +
@@ -469,17 +464,17 @@ export class RufflePlayer extends HTMLElement {
 
         this.unmuteAudioContext();
 
-        // Treat unspecified and invalid values as `AutoPlay.Auto`.
+        // Treat invalid values as `AutoPlay.Auto`.
         if (
-            config.autoplay === AutoPlay.On ||
-            (config.autoplay !== AutoPlay.Off &&
+            this.loadedConfig.autoplay === AutoPlay.On ||
+            (this.loadedConfig.autoplay !== AutoPlay.Off &&
                 this.audioState() === "running")
         ) {
             this.play();
 
             if (this.audioState() !== "running") {
-                // Treat unspecified and invalid values as `UnmuteOverlay.Visible`.
-                if (config.unmuteOverlay !== UnmuteOverlay.Hidden) {
+                // Treat invalid values as `UnmuteOverlay.Visible`.
+                if (this.loadedConfig.unmuteOverlay !== UnmuteOverlay.Hidden) {
                     this.unmuteOverlay.style.display = "block";
                 }
 
@@ -541,6 +536,39 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private checkOptions(
+        options: string | URLLoadOptions | DataLoadOptions
+    ): URLLoadOptions | DataLoadOptions {
+        if (typeof options === "string") {
+            return { url: options };
+        }
+
+        const check: (
+            condition: boolean,
+            message: string
+        ) => asserts condition = (condition, message) => {
+            if (!condition) {
+                const error = new TypeError(message);
+                error.ruffleIndexError = PanicError.JavascriptConfiguration;
+                this.panic(error);
+                throw error;
+            }
+        };
+        check(
+            options !== null && typeof options === "object",
+            "Argument 0 must be a string or object"
+        );
+        check(
+            "url" in options || "data" in options,
+            "Argument 0 must contain a `url` or `data` key"
+        );
+        check(
+            !("url" in options) || typeof options.url === "string",
+            "`url` must be a string"
+        );
+        return options;
+    }
+
     /**
      * Loads a specified movie into this player.
      *
@@ -557,34 +585,7 @@ export class RufflePlayer extends HTMLElement {
     async load(
         options: string | URLLoadOptions | DataLoadOptions
     ): Promise<void> {
-        let optionsError = "";
-        switch (typeof options) {
-            case "string":
-                options = { url: options };
-                break;
-            case "object":
-                if (options === null) {
-                    optionsError = "Argument 0 must be a string or object";
-                } else if (!("url" in options) && !("data" in options)) {
-                    optionsError =
-                        "Argument 0 must contain a `url` or `data` key";
-                } else if (
-                    "url" in options &&
-                    typeof options.url !== "string"
-                ) {
-                    optionsError = "`url` must be a string";
-                }
-                break;
-            default:
-                optionsError = "Argument 0 must be a string or object";
-                break;
-        }
-        if (optionsError.length > 0) {
-            const error = new TypeError(optionsError);
-            error.ruffleIndexError = PanicError.JavascriptConfiguration;
-            this.panic(error);
-            throw error;
-        }
+        options = this.checkOptions(options);
 
         if (!this.isConnected || this.isUnusedFallbackObject()) {
             console.warn(
@@ -599,28 +600,27 @@ export class RufflePlayer extends HTMLElement {
         }
 
         try {
-            const config: BaseLoadOptions = {
+            this.loadedConfig = {
+                ...DEFAULT_CONFIG,
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
             };
-            // `allowScriptAccess` can only be set in `options`.
-            config.allowScriptAccess = options.allowScriptAccess;
 
-            this.showSwfDownload = config.showSwfDownload === true;
-            this.options = options;
-            this.hasContextMenu = config.contextMenu !== false;
-            this.hasPreloader = config.preloader !== false;
+            // `allowScriptAccess` can only be set in `options`.
+            this.loadedConfig.allowScriptAccess =
+                options.allowScriptAccess === true;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
-                config.backgroundColor &&
-                config.wmode !== WindowMode.Transparent
+                this.loadedConfig.backgroundColor &&
+                this.loadedConfig.wmode !== WindowMode.Transparent
             ) {
-                this.container.style.backgroundColor = config.backgroundColor;
+                this.container.style.backgroundColor =
+                    this.loadedConfig.backgroundColor;
             }
 
-            await this.ensureFreshInstance(config);
+            await this.ensureFreshInstance();
 
             if ("url" in options) {
                 console.log(`Loading SWF file ${options.url}`);
@@ -844,7 +844,11 @@ export class RufflePlayer extends HTMLElement {
             }
         }
 
-        if (this.instance && this.swfUrl && this.showSwfDownload) {
+        if (
+            this.instance &&
+            this.swfUrl &&
+            this.loadedConfig.showSwfDownload === true
+        ) {
             items.push(null);
             items.push({
                 text: "Download .swf",
@@ -882,7 +886,10 @@ export class RufflePlayer extends HTMLElement {
     private showContextMenu(e: MouseEvent): void {
         e.preventDefault();
 
-        if (!this.hasContextMenu || this.contextMenuForceDisabled) {
+        if (
+            this.loadedConfig.contextMenu === false ||
+            this.contextMenuForceDisabled
+        ) {
             return;
         }
 
@@ -1515,9 +1522,7 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        let result = `Allows script access: ${
-            this.options?.allowScriptAccess ?? false
-        }\n`;
+        let result = `Allows script access: ${this.loadedConfig.allowScriptAccess}\n`;
         if (this.instance) {
             result += `Renderer: ${this.instance.renderer_name()}\n`;
         }
