@@ -597,9 +597,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    // package `flash.ui`
-    class(activation, flash::ui::keyboard::create_class(mc), script)?;
-
     // package `flash.net`
     avm2_system_class!(
         sharedobject,
