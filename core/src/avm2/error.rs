@@ -75,7 +75,7 @@ pub fn reference_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
-pub fn error_constructor<'gc>(
+fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class: ClassObject<'gc>,
     message: &str,
@@ -130,12 +130,6 @@ impl<'gc> From<swf::error::Error> for Error<'gc> {
 
 impl<'gc> From<crate::tag_utils::Error> for Error<'gc> {
     fn from(val: crate::tag_utils::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
-impl<'gc> From<serde_json::Error> for Error<'gc> {
-    fn from(val: serde_json::Error) -> Error<'gc> {
         Error::RustError(val.into())
     }
 }
