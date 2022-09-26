@@ -124,20 +124,19 @@ pub fn escape_multi_byte<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let bs = s.as_wstr().to_utf8_lossy();
-    let mut buf = WString::new();
-    for b in bs.as_bytes() {
-        if *b == 0 {
+    let utf8 = s.as_wstr().to_utf8_lossy();
+    let mut result = WString::new();
+    for byte in utf8.as_bytes() {
+        if *byte == 0 {
             break;
         }
-        if b.is_ascii_alphanumeric() {
-            buf.push_char(*b as char);
+        if byte.is_ascii_alphanumeric() {
+            result.push_byte(*byte);
         } else {
-            write!(&mut buf, "%{b:02X}")?;
+            let _ = write!(&mut result, "%{byte:02X}");
         }
     }
-    let v = AvmString::new(activation.context.gc_context, buf);
-    Ok(v.into())
+    Ok(AvmString::new(activation.context.gc_context, result).into())
 }
 
 fn handle_percent<I>(chars: &mut I) -> Option<u8>
