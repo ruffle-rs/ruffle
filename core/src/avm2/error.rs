@@ -132,12 +132,6 @@ impl<'gc> From<String> for Error<'gc> {
     }
 }
 
-impl<'gc> From<crate::tag_utils::Error> for Error<'gc> {
-    fn from(val: crate::tag_utils::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
 impl<'gc> From<Box<dyn std::error::Error>> for Error<'gc> {
     fn from(val: Box<dyn std::error::Error>) -> Error<'gc> {
         Error::RustError(val)
