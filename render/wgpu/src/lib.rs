@@ -188,8 +188,6 @@ impl From<TessGradient> for GradientStorage {
 
 #[derive(Debug)]
 struct Texture {
-    width: u32,
-    height: u32,
     texture: wgpu::Texture,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
