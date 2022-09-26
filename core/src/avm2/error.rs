@@ -132,12 +132,6 @@ impl<'gc> From<String> for Error<'gc> {
     }
 }
 
-impl<'gc> From<std::fmt::Error> for Error<'gc> {
-    fn from(val: std::fmt::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
 impl<'gc> From<crate::tag_utils::Error> for Error<'gc> {
     fn from(val: crate::tag_utils::Error) -> Error<'gc> {
         Error::RustError(val.into())
