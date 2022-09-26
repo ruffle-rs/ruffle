@@ -557,6 +557,7 @@ pub fn draw<'gc>(
                 },
                 smoothing,
                 blend_mode,
+                None,
                 &mut activation.context,
             );
             return Ok(Value::Undefined);

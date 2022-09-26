@@ -6,6 +6,8 @@
 	import flash.display.Shape;
 	import flash.display.Stage;
 	import flash.display.Sprite;
+	import flash.geom.Matrix;
+	import flash.geom.Rectangle;
 
 	public class Test {
 		public static function run(container: DisplayObjectContainer) {
@@ -25,7 +27,6 @@
 			container.addChild(bmp);
 			container.addChild(tf);
 			
-					
 			var backgroundRect = new Sprite();
 			backgroundRect.graphics.beginFill(0x0088FF);
 			backgroundRect.graphics.drawRect(0, 0, 250, 250);
@@ -70,6 +71,25 @@
 			opaqueBmp.x = 100;
 			opaqueBmp.y = 110;
 			container.addChild(opaqueBmp);
+
+			var circleTarget = new BitmapData(200, 200);
+			var circle = new Sprite();
+			circle.graphics.beginFill(0xaa0000);
+			circle.graphics.drawCircle(40, 40, 80);
+			
+			
+			var borderRect = new Sprite();
+			borderRect.graphics.lineStyle(2, 0x0000FF);
+			borderRect.graphics.drawRect(0, 0, 200, 200);
+		
+			circleTarget.draw(borderRect);
+			circleTarget.draw(circle, new Matrix(1.1, 0.3, 0.4, 0.9, 50, 50), null, null, new Rectangle(0, 0, 100, 100));
+			
+			var circleBmp = new Bitmap(circleTarget, "auto");
+			circleBmp.x = 10;
+			circleBmp.y = 300;
+			container.addChild(circleBmp);
+			
 		}
 	}
 }
