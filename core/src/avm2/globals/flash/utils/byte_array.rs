@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{CompressionAlgorithm, Endian, ObjectEncoding};
+use crate::avm2::bytearray::{Endian, ObjectEncoding};
 pub use crate::avm2::object::byte_array_allocator;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -691,7 +691,17 @@ pub fn compress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer = bytearray.compress(algorithm.parse()?)?;
+            let algorithm = match algorithm.parse() {
+                Ok(algorithm) => algorithm,
+                Err(_) => {
+                    return Err(Error::AvmError(crate::avm2::error::io_error(
+                        activation,
+                        "Error #2058: There was an error decompressing the data.",
+                        2058,
+                    )?))
+                }
+            };
+            let buffer = bytearray.compress(algorithm);
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }
@@ -711,39 +721,26 @@ pub fn uncompress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer = bytearray.decompress(algorithm.parse()?)?;
-            bytearray.clear();
-            bytearray.write_bytes(&buffer)?;
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn deflate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            let buffer = bytearray.compress(CompressionAlgorithm::Deflate)?;
-            bytearray.clear();
-            bytearray.write_bytes(&buffer)?;
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-pub fn inflate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            let buffer = bytearray.decompress(CompressionAlgorithm::Deflate)?;
+            let algorithm = match algorithm.parse() {
+                Ok(algorithm) => algorithm,
+                Err(_) => {
+                    return Err(Error::AvmError(crate::avm2::error::io_error(
+                        activation,
+                        "Error #2058: There was an error decompressing the data.",
+                        2058,
+                    )?))
+                }
+            };
+            let buffer = match bytearray.decompress(algorithm) {
+                Some(buffer) => buffer,
+                None => {
+                    return Err(Error::AvmError(crate::avm2::error::io_error(
+                        activation,
+                        "Error #2058: There was an error decompressing the data.",
+                        2058,
+                    )?))
+                }
+            };
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }

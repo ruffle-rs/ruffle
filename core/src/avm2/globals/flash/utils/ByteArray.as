@@ -32,10 +32,18 @@ package flash.utils {
 		private native function init():void;
 
 		public native function clear():void;
-		public native function compress(algorithm:String):void;
-		public native function deflate():void;
-		public native function inflate():void;
-		public native function uncompress(algorithm:String):void;
+
+		public function deflate(): void {
+			this.compress("deflate");
+		}
+
+		public native function compress(algorithm: String = CompressionAlgorithm.ZLIB): void;
+
+		public function inflate(): void {
+			this.uncompress("deflate");
+		}
+
+		public native function uncompress(algorithm: String = CompressionAlgorithm.ZLIB): void;
 
 		public native function toString():String;
 		public function toJSON(k:String):String {
