@@ -691,7 +691,7 @@ fn attach_movie<'gc>(
         .context
         .library
         .library_for_movie(movie_clip.movie().unwrap())
-        .ok_or_else(|| "Movie is missing!".into())
+        .ok_or("Movie is missing!")
         .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc_context))
     {
         // Set name and attach to parent.
@@ -860,7 +860,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             .context
             .library
             .library_for_movie(movie)
-            .ok_or_else(|| "Movie is missing!".into())
+            .ok_or("Movie is missing!")
             .and_then(|l| l.instantiate_by_id(id, activation.context.gc_context))
     } else {
         // Dynamically created clip; create a new empty movie clip.
