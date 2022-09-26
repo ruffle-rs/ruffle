@@ -86,6 +86,17 @@ pub fn verify_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
+#[inline(never)]
+#[cold]
+pub fn io_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().ioerror;
+    error_constructor(activation, class, message, code)
+}
+
 fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class: ClassObject<'gc>,
@@ -121,12 +132,6 @@ impl<'gc> From<String> for Error<'gc> {
     }
 }
 
-impl<'gc> From<std::io::Error> for Error<'gc> {
-    fn from(val: std::io::Error) -> Error<'gc> {
-        Error::RustError(val.into())
-    }
-}
-
 impl<'gc> From<std::fmt::Error> for Error<'gc> {
     fn from(val: std::fmt::Error) -> Error<'gc> {
         Error::RustError(val.into())
@@ -142,12 +147,5 @@ impl<'gc> From<crate::tag_utils::Error> for Error<'gc> {
 impl<'gc> From<Box<dyn std::error::Error>> for Error<'gc> {
     fn from(val: Box<dyn std::error::Error>) -> Error<'gc> {
         Error::RustError(val)
-    }
-}
-
-#[cfg(feature = "lzma")]
-impl<'gc> From<lzma_rs::error::Error> for Error<'gc> {
-    fn from(val: lzma_rs::error::Error) -> Error<'gc> {
-        Error::RustError(val.into())
     }
 }

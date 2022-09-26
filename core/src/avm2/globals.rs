@@ -109,6 +109,7 @@ pub struct SystemClasses<'gc> {
     pub argumenterror: ClassObject<'gc>,
     pub typeerror: ClassObject<'gc>,
     pub verifyerror: ClassObject<'gc>,
+    pub ioerror: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -185,6 +186,7 @@ impl<'gc> SystemClasses<'gc> {
             argumenterror: object,
             typeerror: object,
             verifyerror: object,
+            ioerror: object,
         }
     }
 }
@@ -708,6 +710,7 @@ fn load_playerglobal<'gc>(
                 "IllegalOperationError",
                 illegaloperationerror
             ),
+            ("flash.errors", "IOError", ioerror),
             ("flash.events", "Event", event),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),

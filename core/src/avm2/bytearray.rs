@@ -184,54 +184,58 @@ impl ByteArrayStorage {
         Ok(())
     }
 
-    /// Compress the ByteArray into a temporary buffer
-    pub fn compress<'gc>(
-        &mut self,
-        algorithm: CompressionAlgorithm,
-    ) -> Result<Vec<u8>, Error<'gc>> {
+    /// Compress the ByteArray into a temporary buffer.
+    pub fn compress(&mut self, algorithm: CompressionAlgorithm) -> Vec<u8> {
         let mut buffer = Vec::new();
-        match algorithm {
+        let error: Option<Box<dyn std::error::Error>> = match algorithm {
             CompressionAlgorithm::Zlib => {
-                let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
-                compresser.read_to_end(&mut buffer)?;
+                let mut encoder = ZlibEncoder::new(&*self.bytes, Compression::fast());
+                encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             CompressionAlgorithm::Deflate => {
-                let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
-                compresser.read_to_end(&mut buffer)?;
+                let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::fast());
+                encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             #[cfg(feature = "lzma")]
-            CompressionAlgorithm::Lzma => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)?,
+            CompressionAlgorithm::Lzma => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)
+                .err()
+                .map(|e| e.into()),
             #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => {
-                return Err("Ruffle was not compiled with LZMA support".into())
-            }
+            CompressionAlgorithm::Lzma => Some("Ruffle was not compiled with LZMA support".into()),
+        };
+        if let Some(error) = error {
+            // On error, just return an empty buffer.
+            log::warn!("ByteArray.compress: {}", error);
+            buffer.clear();
         }
-        Ok(buffer)
+        buffer
     }
 
-    /// Decompress the ByteArray into a temporary buffer
-    pub fn decompress<'gc>(
-        &mut self,
-        algorithm: CompressionAlgorithm,
-    ) -> Result<Vec<u8>, Error<'gc>> {
+    /// Decompress the ByteArray into a temporary buffer.
+    pub fn decompress(&mut self, algorithm: CompressionAlgorithm) -> Option<Vec<u8>> {
         let mut buffer = Vec::new();
-        match algorithm {
+        let error: Option<Box<dyn std::error::Error>> = match algorithm {
             CompressionAlgorithm::Zlib => {
-                let mut compresser = ZlibDecoder::new(&*self.bytes);
-                compresser.read_to_end(&mut buffer)?;
+                let mut decoder = ZlibDecoder::new(&*self.bytes);
+                decoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             CompressionAlgorithm::Deflate => {
-                let mut compresser = DeflateDecoder::new(&*self.bytes);
-                compresser.read_to_end(&mut buffer)?;
+                let mut decoder = DeflateDecoder::new(&*self.bytes);
+                decoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             #[cfg(feature = "lzma")]
-            CompressionAlgorithm::Lzma => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)?,
+            CompressionAlgorithm::Lzma => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)
+                .err()
+                .map(|e| e.into()),
             #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => {
-                return Err("Ruffle was not compiled with LZMA support".into())
-            }
+            CompressionAlgorithm::Lzma => Some("Ruffle was not compiled with LZMA support".into()),
+        };
+        if let Some(error) = error {
+            log::warn!("ByteArray.decompress: {}", error);
+            None
+        } else {
+            Some(buffer)
         }
-        Ok(buffer)
     }
 
     pub fn read_utf<'gc>(&self) -> Result<&[u8], Error<'gc>> {
