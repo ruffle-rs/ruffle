@@ -1387,7 +1387,7 @@ fn run_swf(
     let base_path = Path::new(swf_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
-    let frame_time = Duration::from_millis(1000.0 / movie.frame_rate().to_f64());
+    let frame_time = Duration::from_secs(1.0 / movie.frame_rate().to_f64());
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
     #[allow(unused_mut)]
@@ -1447,7 +1447,7 @@ fn run_swf(
         // with timer execution (timers will see an elapsed time of *at least*
         // the requested timer interval).
         if frame_time_sleep {
-            std::thread::sleep(StdDuration::from_nanos(frame_time.as_nanos() as u64));
+            std::thread::sleep(frame_time.into());
         }
 
         while !player
