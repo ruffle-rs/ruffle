@@ -165,12 +165,12 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.characters.get(&id) {
             self.instantiate_display_object(character, gc_context)
         } else {
             log::error!("Tried to instantiate non-registered character ID {}", id);
-            Err("Character id doesn't exist".into())
+            Err("Character id doesn't exist")
         }
     }
 
@@ -180,7 +180,7 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         export_name: AvmString<'gc>,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
@@ -188,7 +188,7 @@ impl<'gc> MovieLibrary<'gc> {
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
-            Err("Character id doesn't exist".into())
+            Err("Character id doesn't exist")
         }
     }
 
@@ -198,7 +198,7 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         character: &Character<'gc>,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         match character {
             Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
             Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
@@ -209,7 +209,7 @@ impl<'gc> MovieLibrary<'gc> {
             Character::Avm2Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
             Character::Video(video) => Ok(video.instantiate(gc_context)),
-            _ => Err("Not a DisplayObject".into()),
+            _ => Err("Not a DisplayObject"),
         }
     }
 
