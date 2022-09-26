@@ -108,6 +108,7 @@ pub struct SystemClasses<'gc> {
     pub referenceerror: ClassObject<'gc>,
     pub argumenterror: ClassObject<'gc>,
     pub typeerror: ClassObject<'gc>,
+    pub verifyerror: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -183,6 +184,7 @@ impl<'gc> SystemClasses<'gc> {
             referenceerror: object,
             argumenterror: object,
             typeerror: object,
+            verifyerror: object,
         }
     }
 }
@@ -697,6 +699,7 @@ fn load_playerglobal<'gc>(
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),
             ("", "TypeError", typeerror),
+            ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "Scene", scene),

@@ -87,7 +87,7 @@ pub struct TranslationUnitData<'gc> {
 impl<'gc> TranslationUnit<'gc> {
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
-    pub fn from_abc(abc: Rc<AbcFile>, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn from_abc(abc: AbcFile, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
         let classes = vec![None; abc.classes.len()];
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
@@ -99,7 +99,7 @@ impl<'gc> TranslationUnit<'gc> {
             mc,
             TranslationUnitData {
                 domain,
-                abc,
+                abc: Rc::new(abc),
                 classes,
                 methods,
                 scripts,

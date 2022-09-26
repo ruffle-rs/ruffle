@@ -9,7 +9,6 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::rc::Rc;
 use swf::avm2::read::Reader;
 use swf::{DoAbc, DoAbcFlag};
 
@@ -287,19 +286,28 @@ impl<'gc> Avm2<'gc> {
         do_abc: DoAbc,
         domain: Domain<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut read = Reader::new(do_abc.data);
+        let mut reader = Reader::new(do_abc.data);
+        let abc = match reader.read() {
+            Ok(abc) => abc,
+            Err(_) => {
+                let mut activation = Activation::from_nothing(context.reborrow());
+                return Err(Error::AvmError(crate::avm2::error::verify_error(
+                    &mut activation,
+                    "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
+                    1107,
+                )?));
+            }
+        };
 
-        let abc_file = Rc::new(read.read()?);
-        let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
-
-        for i in (0..abc_file.scripts.len()).rev() {
+        let num_scripts = abc.scripts.len();
+        let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
+        for i in (0..num_scripts).rev() {
             let mut script = tunit.load_script(i as u32, context)?;
 
             if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
                 script.globals(context)?;
             }
         }
-
         Ok(())
     }
 
