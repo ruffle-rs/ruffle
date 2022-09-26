@@ -735,8 +735,15 @@ pub fn draw<'gc>(
             }
         }
 
-        if args.get(4).is_some() {
-            tracing::warn!("BitmapData.draw with clip rect - not implemented")
+        let mut clip_rect = None;
+
+        let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
+        if !matches!(clip_rect_val, Value::Null) {
+            let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
+            clip_rect = Some(super::displayobject::object_to_rectangle(
+                activation,
+                clip_rect_obj,
+            )?);
         }
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
@@ -761,6 +768,7 @@ pub fn draw<'gc>(
             transform,
             smoothing,
             blend_mode,
+            clip_rect,
             &mut activation.context,
         );
     }

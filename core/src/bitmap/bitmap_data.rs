@@ -11,9 +11,10 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use std::ops::Range;
-use swf::BlendMode;
+use swf::{BlendMode, Rectangle, Twips};
 
 /// An implementation of the Lehmer/Park-Miller random number generator
 /// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
@@ -1023,6 +1024,7 @@ impl<'gc> BitmapData<'gc> {
         transform: Transform,
         smoothing: bool,
         blend_mode: BlendMode,
+        clip_rect: Option<Rectangle<Twips>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         let bitmapdata_width = self.width();
@@ -1046,6 +1048,29 @@ impl<'gc> BitmapData<'gc> {
         };
 
         // Make the screen opacity match the opacity of this bitmap
+
+        let clip_mat = clip_rect.map(|clip_rect| {
+            // Note - we do *not* apply the matrix to the clip rect,
+            // to match Flash's behavior.
+            let clip_mat = Matrix {
+                a: (clip_rect.x_max - clip_rect.x_min).to_pixels() as f32,
+                b: 0.0,
+                c: 0.0,
+                d: (clip_rect.y_max - clip_rect.y_min).to_pixels() as f32,
+                tx: clip_rect.x_min,
+                ty: clip_rect.y_min,
+            };
+
+            render_context.commands.push_mask();
+            // The color doesn't matter, as this is a mask.
+            render_context
+                .commands
+                .draw_rect(swf::Color::BLACK, &clip_mat);
+            render_context.commands.activate_mask();
+
+            clip_mat
+        });
+
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
                 // if try_write fails,
@@ -1065,6 +1090,16 @@ impl<'gc> BitmapData<'gc> {
                 // as we want to ignore the object's mask and normal transform
                 object.render_self(&mut render_context);
             }
+        }
+
+        if let Some(clip_mat) = clip_mat {
+            // Draw the rectangle again after deactivating the mask,
+            // to reset the stencil buffer.
+            render_context.commands.deactivate_mask();
+            render_context
+                .commands
+                .draw_rect(swf::Color::BLACK, &clip_mat);
+            render_context.commands.pop_mask();
         }
 
         self.update_dirty_texture(&mut render_context);

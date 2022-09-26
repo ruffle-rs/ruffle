@@ -856,7 +856,7 @@ fn scroll_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-fn object_to_rectangle<'gc>(
+pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Rectangle<Twips>, Error<'gc>> {
