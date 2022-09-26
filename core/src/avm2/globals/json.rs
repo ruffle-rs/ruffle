@@ -335,18 +335,16 @@ pub fn stringify<'gc>(
     let json = serializer.serialize(activation, *val)?;
     let result = match indent {
         Some(indent) => {
-            let mut vec = Vec::with_capacity(128);
+            let mut result = Vec::with_capacity(128);
             let formatter = serde_json::ser::PrettyFormatter::with_indent(&indent);
-            let mut serializer = serde_json::Serializer::with_formatter(&mut vec, formatter);
-            json.serialize(&mut serializer)?;
-            unsafe {
-                // `serde_json` never emits invalid UTF-8.
-                String::from_utf8_unchecked(vec)
-            }
+            let mut serializer = serde_json::Serializer::with_formatter(&mut result, formatter);
+            json.serialize(&mut serializer)
+                .expect("JSON serialization cannot fail");
+            result
         }
-        None => serde_json::to_string(&json)?,
+        None => serde_json::to_vec(&json).expect("JSON serialization cannot fail"),
     };
-    Ok(AvmString::new_utf8(activation.context.gc_context, result).into())
+    Ok(AvmString::new_utf8_bytes(activation.context.gc_context, &result).into())
 }
 
 /// Construct `JSON`'s class.
