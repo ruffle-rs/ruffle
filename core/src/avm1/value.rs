@@ -126,10 +126,10 @@ impl<'gc> Value<'gc> {
     /// expected that their `toString`/`valueOf` handlers have already had a
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
-        !matches!(self, Value::Object(object) if object.as_display_object().is_none())
+        !matches!(self, Value::Object(_))
     }
 
-    /// ECMA-262 2nd edition s. 9.3 ToNumber
+    /// ECMA-262 2nd edition s. 9.3 ToNumber (after calling `to_primitive_num`)
     ///
     /// Flash diverges from spec in a number of ways. These ways are, as far as
     /// we are aware, version-gated:
@@ -139,21 +139,55 @@ impl<'gc> Value<'gc> {
     /// * In SWF5 and lower, hexadecimal is unsupported.
     /// * In SWF4 and lower, `0.0` is returned rather than `NaN` if a string cannot
     /// be converted to a number.
+    fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
+        match self {
+            Value::Undefined if activation.swf_version() < 7 => 0.0,
+            Value::Null if activation.swf_version() < 7 => 0.0,
+            Value::Object(_) if activation.swf_version() < 5 => 0.0,
+            Value::Undefined => f64::NAN,
+            Value::Null => f64::NAN,
+            Value::Bool(false) => 0.0,
+            Value::Bool(true) => 1.0,
+            Value::Number(v) => *v,
+            Value::Object(_) => f64::NAN,
+            Value::String(v) => string_to_f64(v, activation.swf_version()),
+        }
+    }
+
+    /// ECMA-262 2nd edition s. 9.3 ToNumber
     pub fn coerce_to_f64(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<f64, Error<'gc>> {
-        let result = match self.to_primitive(activation)? {
-            Value::Undefined | Value::Null if activation.swf_version() < 7 => 0.0,
-            Value::Undefined | Value::Null => f64::NAN,
-            Value::Bool(false) => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Number(number) => number,
-            Value::Object(_) if activation.swf_version() < 5 => 0.0,
-            Value::Object(_) => f64::NAN,
-            Value::String(string) => string_to_f64(&string, activation.swf_version()),
-        };
-        Ok(result)
+        Ok(match self {
+            Value::Object(_) => self
+                .to_primitive_num(activation)?
+                .primitive_as_number(activation),
+            val => val.primitive_as_number(activation),
+        })
+    }
+
+    /// ECMA-262 2nd edition s. 9.1 ToPrimitive (hint: Number)
+    ///
+    /// Flash diverges from spec in a number of ways. These ways are, as far as
+    /// we are aware, version-gated:
+    ///
+    /// * `toString` is never called when `ToPrimitive` is invoked with number
+    ///   hint.
+    /// * Objects with uncallable `valueOf` implementations are coerced to
+    ///   `undefined`. This is not a special-cased behavior: All values are
+    ///   callable in `AVM1`. Values that are not callable objects instead
+    ///   return `undefined` rather than yielding a runtime error.
+    pub fn to_primitive_num(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(match self {
+            Value::Object(object) if object.as_display_object().is_none() => {
+                object.call_method("valueOf".into(), &[], activation, ExecutionReason::Special)?
+            }
+            val => val.to_owned(),
+        })
     }
 
     /// Attempts to coerce a value to a primitive type.
@@ -172,7 +206,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let result = match self {
-            Value::Object(object) if object.as_display_object().is_none() => {
+            Value::Object(object) => {
                 let val = if activation.swf_version() > 5 && object.as_date_object().is_some() {
                     // In SWFv6 and higher, Date objects call `toString`.
                     object.call_method(
@@ -212,27 +246,28 @@ impl<'gc> Value<'gc> {
         // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
         // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
         // For example, `{} < {}` is false.
-        let self_primitive = self.to_primitive(activation)?;
-        if !self_primitive.is_primitive() {
+        let prim_self = self.to_primitive_num(activation)?;
+        if matches!(prim_self, Value::Object(o) if o.as_display_object().is_none()) {
             return Ok(false.into());
         }
-        let other_primitive = other.to_primitive(activation)?;
-        if !other_primitive.is_primitive() {
+        let prim_other = other.to_primitive_num(activation)?;
+        if matches!(prim_other, Value::Object(o) if o.as_display_object().is_none()) {
             return Ok(false.into());
         }
 
-        let result = match (self_primitive, other_primitive) {
+        let result = match (prim_self, prim_other) {
             (Value::String(a), Value::String(b)) => {
                 let a = a.to_string();
                 let b = b.to_string();
                 a.bytes().lt(b.bytes()).into()
             }
-            _ => {
+            (a, b) => {
                 // Coerce to number and compare, with any NaN resulting in undefined.
-                let a = self_primitive.coerce_to_f64(activation)?;
-                let b = other_primitive.coerce_to_f64(activation)?;
-                a.partial_cmp(&b)
-                    .map_or(Value::Undefined, |o| (o == std::cmp::Ordering::Less).into())
+                let a = a.primitive_as_number(activation);
+                let b = b.primitive_as_number(activation);
+                a.partial_cmp(&b).map_or(Value::Undefined, |o| {
+                    Value::Bool(o == std::cmp::Ordering::Less)
+                })
             }
         };
         Ok(result)
@@ -248,11 +283,11 @@ impl<'gc> Value<'gc> {
             (other, self)
         } else {
             // SWFv5 always calls `valueOf` even in Object-Object comparisons.
-            // `Object.prototype.valueOf` returns `this`, which will do pointer comparison below.
+            // Object.prototype.valueOf returns `this`, which will do pointer comparison below.
             // In Object-primitive comparisons, `valueOf` will be called a second time below.
             (
-                other.to_primitive(activation)?,
-                self.to_primitive(activation)?,
+                other.to_primitive_num(activation)?,
+                self.to_primitive_num(activation)?,
             )
         };
         let result = match (a, b) {
@@ -268,26 +303,20 @@ impl<'gc> Value<'gc> {
 
             // Bool-to-value-comparison: Coerce bool to 0/1 and compare.
             (Value::Bool(bool), val) | (val, Value::Bool(bool)) => {
-                val.abstract_eq((bool as i32).into(), activation)?
+                val.abstract_eq(Value::Number(bool as i64 as f64), activation)?
             }
 
             // Number-to-value comparison: Coerce value to f64 and compare.
             // Note that "NaN" == NaN returns false.
-            (Value::Number(number), Value::String(string))
-            | (Value::String(string), Value::Number(number)) => {
-                number == string_to_f64(&string, activation.swf_version())
+            (Value::Number(num), string @ Value::String(_))
+            | (string @ Value::String(_), Value::Number(num)) => {
+                num == string.primitive_as_number(activation)
             }
 
-            // Object-to-value comparison: Convert to primitives and compare.
-            (object, _) | (_, object) if !object.is_primitive() => {
-                let a = a.to_primitive(activation)?;
-                if a.is_primitive() {
-                    let b = b.to_primitive(activation)?;
-                    if b.is_primitive() {
-                        return a.abstract_eq(b, activation);
-                    }
-                }
-                false
+            // Object-to-value comparison: Call `obj.valueOf` and compare.
+            (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
+                let obj_val = obj.to_primitive_num(activation)?;
+                obj_val.is_primitive() && val.abstract_eq(obj_val, activation)?
             }
 
             _ => false,
@@ -824,22 +853,25 @@ mod test {
     use crate::string::AvmString;
 
     #[test]
-    fn to_primitive() {
+    fn to_primitive_num() {
         with_avm(6, |activation, _this| -> Result<(), Error> {
             let true_value = Value::Bool(true);
             let undefined = Value::Undefined;
             let false_value = Value::Bool(false);
             let null = Value::Null;
 
-            assert_eq!(true_value.to_primitive(activation).unwrap(), true_value);
-            assert_eq!(undefined.to_primitive(activation).unwrap(), undefined);
-            assert_eq!(false_value.to_primitive(activation).unwrap(), false_value);
-            assert_eq!(null.to_primitive(activation).unwrap(), null);
+            assert_eq!(true_value.to_primitive_num(activation).unwrap(), true_value);
+            assert_eq!(undefined.to_primitive_num(activation).unwrap(), undefined);
+            assert_eq!(
+                false_value.to_primitive_num(activation).unwrap(),
+                false_value
+            );
+            assert_eq!(null.to_primitive_num(activation).unwrap(), null);
 
             let (protos, global, _) = create_globals(activation.context.gc_context);
             let vglobal = Value::Object(global);
 
-            assert_eq!(vglobal.to_primitive(activation).unwrap(), undefined);
+            assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
             fn value_of_impl<'gc>(
                 _activation: &mut Activation<'_, 'gc, '_>,
@@ -864,7 +896,10 @@ mod test {
                 Attribute::empty(),
             );
 
-            assert_eq!(Value::from(o).to_primitive(activation).unwrap(), 5.into());
+            assert_eq!(
+                Value::from(o).to_primitive_num(activation).unwrap(),
+                5.into()
+            );
 
             Ok(())
         });
