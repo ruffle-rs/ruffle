@@ -47,8 +47,8 @@ impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
             self.frame.apply_transform(
                 &(transform.matrix
                     * ruffle_render::matrix::Matrix {
-                        a: texture.width as f32,
-                        d: texture.height as f32,
+                        a: entry.bitmap.width() as f32,
+                        d: entry.bitmap.height() as f32,
                         ..Default::default()
                     }),
                 ColorAdjustments::from(transform.color_transform),

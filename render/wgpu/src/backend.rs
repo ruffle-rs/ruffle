@@ -410,8 +410,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        let width = bitmap.width();
-        let height = bitmap.height();
 
         if self
             .bitmap_registry
@@ -420,8 +418,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 RegistryData {
                     bitmap,
                     texture_wrapper: Texture {
-                        width,
-                        height,
                         texture,
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
