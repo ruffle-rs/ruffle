@@ -193,10 +193,14 @@ pub fn get_qualified_class_name<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let obj = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
+    // This is a native method, which enforces the argument count.
+    let val = args[0];
+    match val {
+        Value::Null => return Ok("null".into()),
+        Value::Undefined => return Ok("void".into()),
+        _ => {}
+    }
+    let obj = val.coerce_to_object(activation)?;
 
     let class = match obj.as_class_object() {
         Some(class) => class,
