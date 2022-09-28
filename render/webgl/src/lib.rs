@@ -911,7 +911,6 @@ impl RenderBackend for WebGlRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-        _clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
         Err(ruffle_render::error::Error::Unimplemented)
     }

@@ -382,7 +382,7 @@ impl Surface {
     pub fn draw_commands(
         &self,
         frame_view: &wgpu::TextureView,
-        clear_color: wgpu::Color,
+        clear_color: Option<wgpu::Color>,
         descriptors: &Descriptors,
         globals: &mut Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
@@ -408,13 +408,15 @@ impl Surface {
 
         globals.update_uniform(&descriptors.device, &mut draw_encoder);
 
+        let load = match clear_color {
+            Some(color) => wgpu::LoadOp::Clear(color),
+            None => wgpu::LoadOp::Load,
+        };
+
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: self.view(frame_view),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(clear_color),
-                    store: true,
-                },
+                ops: wgpu::Operations { load, store: true },
                 resolve_target: self.resolve_target(frame_view),
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {

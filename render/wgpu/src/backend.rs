@@ -307,12 +307,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let command_buffers = self.surface.draw_commands(
             frame_output.view(),
-            wgpu::Color {
+            Some(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
                 g: f64::from(clear.g) / 255.0,
                 b: f64::from(clear.b) / 255.0,
                 a: f64::from(clear.a) / 255.0,
-            },
+            }),
             &self.descriptors,
             &mut self.globals,
             &mut self.uniform_buffers_storage,
@@ -453,7 +453,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         commands: CommandList,
-        clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
         // We need ownership of `Texture` to access the non-`Clone`
         // `wgpu` fields. At the end of this method, we re-insert
@@ -528,12 +527,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let command_buffers = texture_offscreen.surface.draw_commands(
             frame_output.view(),
-            wgpu::Color {
-                r: f64::from(clear_color.r) / 255.0,
-                g: f64::from(clear_color.g) / 255.0,
-                b: f64::from(clear_color.b) / 255.0,
-                a: f64::from(clear_color.a) / 255.0,
-            },
+            None,
             &self.descriptors,
             &mut self.globals,
             &mut self.uniform_buffers_storage,
@@ -565,6 +559,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         texture_offscreen.buffer_dimensions = target.buffer_dimensions;
         texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
         texture.texture_wrapper.texture = target.texture;
+        texture.bitmap = image.clone().unwrap();
         self.bitmap_registry.insert(handle, texture);
 
         Ok(image.unwrap())
