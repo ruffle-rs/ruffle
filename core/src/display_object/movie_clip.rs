@@ -1313,9 +1313,7 @@ impl<'gc> MovieClip<'gc> {
         match next_frame {
             NextFrame::Next => {
                 let mut write = self.0.write(context.gc_context);
-                if (write.current_frame + 1)
-                    >= write.static_data.preload_progress.read().cur_preload_frame
-                {
+                if (write.current_frame + 1) >= write.frames_loaded() {
                     return;
                 }
 
@@ -3923,6 +3921,10 @@ struct PreloadProgress {
     next_preload_chunk: u64,
 
     /// The current frame being preloaded.
+    ///
+    /// NOTE: This property is indexed from one. Comparing it directly to the
+    /// current frame count may break loading. If you need to know if a
+    /// particular frame is loaded, compare against frames_loaded().
     cur_preload_frame: u16,
 
     /// The SWF offset that the current frame started in.
