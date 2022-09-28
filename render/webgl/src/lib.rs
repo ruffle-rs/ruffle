@@ -145,8 +145,15 @@ pub struct WebGlRenderBackend {
 }
 
 struct RegistryData {
+    gl: Gl,
     bitmap: Bitmap,
     texture: WebGlTexture,
+}
+
+impl Drop for RegistryData {
+    fn drop(&mut self) {
+        self.gl.delete_texture(Some(&self.texture));
+    }
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -402,8 +409,14 @@ impl WebGlRenderBackend {
                     DrawType::Color
                 },
                 vao,
-                vertex_buffer,
-                index_buffer,
+                vertex_buffer: Buffer {
+                    gl: self.gl.clone(),
+                    buffer: vertex_buffer,
+                },
+                index_buffer: Buffer {
+                    gl: self.gl.clone(),
+                    buffer: index_buffer,
+                },
                 num_indices: 6,
                 num_mask_indices: 6,
             }],
@@ -621,16 +634,28 @@ impl WebGlRenderBackend {
                 TessDrawType::Color => Draw {
                     draw_type: DrawType::Color,
                     vao,
-                    vertex_buffer,
-                    index_buffer,
+                    vertex_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: vertex_buffer,
+                    },
+                    index_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: index_buffer,
+                    },
                     num_indices,
                     num_mask_indices,
                 },
                 TessDrawType::Gradient(gradient) => Draw {
                     draw_type: DrawType::Gradient(Box::new(Gradient::from(gradient))),
                     vao,
-                    vertex_buffer,
-                    index_buffer,
+                    vertex_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: vertex_buffer,
+                    },
+                    index_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: index_buffer,
+                    },
                     num_indices,
                     num_mask_indices,
                 },
@@ -642,8 +667,14 @@ impl WebGlRenderBackend {
                         is_repeating: bitmap.is_repeating,
                     }),
                     vao,
-                    vertex_buffer,
-                    index_buffer,
+                    vertex_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: vertex_buffer,
+                    },
+                    index_buffer: Buffer {
+                        gl: self.gl.clone(),
+                        buffer: index_buffer,
+                    },
                     num_indices,
                     num_mask_indices,
                 },
@@ -683,6 +714,18 @@ impl WebGlRenderBackend {
         } else {
             self.vao_ext.bind_vertex_array_oes(vao);
         };
+    }
+
+    fn delete_mesh(&self, mesh: &Mesh) {
+        if let Some(gl2) = &self.gl2 {
+            for draw in &mesh.draws {
+                gl2.delete_vertex_array(Some(&draw.vao));
+            }
+        } else {
+            for draw in &mesh.draws {
+                self.vao_ext.delete_vertex_array_oes(Some(&draw.vao));
+            }
+        }
     }
 
     fn set_stencil_state(&mut self) {
@@ -924,6 +967,7 @@ impl RenderBackend for WebGlRenderBackend {
         bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
+        self.delete_mesh(&self.meshes[handle.0]);
         let mesh = self.register_shape_internal(shape, bitmap_source);
         self.meshes[handle.0] = mesh;
     }
@@ -981,8 +1025,14 @@ impl RenderBackend for WebGlRenderBackend {
 
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        self.bitmap_registry
-            .insert(handle, RegistryData { bitmap, texture });
+        self.bitmap_registry.insert(
+            handle,
+            RegistryData {
+                gl: self.gl.clone(),
+                bitmap,
+                texture,
+            },
+        );
 
         Ok(handle)
     }
@@ -1431,11 +1481,22 @@ struct Mesh {
     draws: Vec<Draw>,
 }
 
+struct Buffer {
+    gl: Gl,
+    buffer: WebGlBuffer,
+}
+
+impl Drop for Buffer {
+    fn drop(&mut self) {
+        self.gl.delete_buffer(Some(&self.buffer));
+    }
+}
+
 #[allow(dead_code)]
 struct Draw {
     draw_type: DrawType,
-    vertex_buffer: WebGlBuffer,
-    index_buffer: WebGlBuffer,
+    vertex_buffer: Buffer,
+    index_buffer: Buffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,
     num_mask_indices: i32,
