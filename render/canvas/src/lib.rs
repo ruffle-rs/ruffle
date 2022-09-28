@@ -451,7 +451,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-        _clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
         Err(Error::Unimplemented)
     }

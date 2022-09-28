@@ -54,7 +54,6 @@ impl RenderBackend for NullRenderer {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-        _clear_color: Color,
     ) -> Result<Bitmap, Error> {
         Err(Error::Unimplemented)
     }

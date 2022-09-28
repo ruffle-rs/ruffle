@@ -908,6 +908,23 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
+    // Updates the data stored with our `BitmapHandle` if this `BitmapData`
+    // is dirty
+    pub fn update_dirty_texture(&mut self, context: &mut RenderContext) {
+        let handle = self.bitmap_handle(context.renderer).unwrap();
+        if self.dirty() {
+            if let Err(e) = context.renderer.update_texture(
+                handle,
+                self.width(),
+                self.height(),
+                self.pixels_rgba(),
+            ) {
+                log::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
+            }
+            self.set_dirty(false);
+        }
+    }
+
     /// Compare two BitmapData objects.
     /// Returns `None` if the bitmaps are equivalent.
     pub fn compare(bitmap: &Self, other: &Self) -> Option<Self> {
@@ -1002,16 +1019,15 @@ impl<'gc> BitmapData<'gc> {
         };
 
         // Make the screen opacity match the opacity of this bitmap
-        let initial_alpha = if self.transparency { 0 } else { 0xFF };
         render_context.commands.push_blend_mode(blend_mode);
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
-                let source_handle = data
-                    .write(context.gc_context)
-                    .bitmap_handle(render_context.renderer)
-                    .unwrap();
+                let mut bitmap_data = data.write(context.gc_context);
+
+                bitmap_data.update_dirty_texture(&mut render_context);
+                let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
                 render_context.commands.render_bitmap(
-                    source_handle,
+                    bitmap_handle,
                     render_context.transform_stack.transform(),
                     smoothing,
                 );
@@ -1024,12 +1040,13 @@ impl<'gc> BitmapData<'gc> {
         }
         render_context.commands.pop_blend_mode();
 
+        self.update_dirty_texture(&mut render_context);
+
         let image = context.renderer.render_offscreen(
             handle,
             bitmapdata_width,
             bitmapdata_height,
             commands,
-            swf::Color::from_rgb(0x000000, initial_alpha),
         );
 
         match image {
@@ -1060,15 +1077,18 @@ fn copy_pixels_to_bitmapdata(write: &mut BitmapData, bytes: &[u8]) {
             let r = bytes[ind];
             let g = bytes[ind + 1usize];
             let b = bytes[ind + 2usize];
-            let a = bytes[ind + 3usize];
+            let a = if write.transparency() {
+                bytes[ind + 3usize]
+            } else {
+                255
+            };
 
             // TODO(later): we might want to swap Color storage from argb to rgba, to make it cheaper
             let nc = Color::argb(a, r, g, b);
 
-            let oc = write.get_pixel_raw(x, y).unwrap();
-
-            // FIXME: this blending is completely broken on transparent content
-            write.set_pixel32_raw(x, y, oc.blend_over(&nc));
+            // Ignore the original color entirely - the blending (including alpha)
+            // was done by the renderer when it wrote over the previous texture contents.
+            write.set_pixel32_raw(x, y, nc);
         }
     }
 }

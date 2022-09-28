@@ -6,7 +6,6 @@ use crate::error::Error;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use swf;
-use swf::Color;
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -41,7 +40,6 @@ pub trait RenderBackend: Downcast {
         width: u32,
         height: u32,
         commands: CommandList,
-        clear_color: Color,
     ) -> Result<Bitmap, Error>;
 
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);

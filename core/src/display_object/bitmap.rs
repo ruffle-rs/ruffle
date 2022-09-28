@@ -308,23 +308,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         let bitmap_data = self.0.read();
         if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
             if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
-                let bd = if let Ok(bd) = inner_bitmap_data.try_read() {
-                    bd
+                if let Ok(mut bd) = inner_bitmap_data.try_write(context.gc_context) {
+                    bd.update_dirty_texture(context);
                 } else {
                     return; // bail, this is caused by recursive render attempt. TODO: support this.
                 };
-                if bd.dirty() {
-                    if let Err(e) = context.renderer.update_texture(
-                        bitmap_handle,
-                        bd.width(),
-                        bd.height(),
-                        bd.pixels_rgba(),
-                    ) {
-                        log::error!("Failed to update dirty bitmap {:?}: {:?}", bitmap_handle, e);
-                    }
-                    drop(bd);
-                    inner_bitmap_data.write(context.gc_context).set_dirty(false);
-                }
             }
 
             context.commands.render_bitmap(
