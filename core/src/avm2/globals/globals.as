@@ -156,6 +156,7 @@ include "flash/media/VideoStatus.as"
 
 include "flash/net/IDynamicPropertyOutput.as"
 include "flash/net/IDynamicPropertyWriter.as"
+include "flash/net/LocalConnection.as"
 include "flash/net/NetGroupReceiveMode.as"
 include "flash/net/NetGroupReplicationStrategy.as"
 include "flash/net/NetGroupSendMode.as"
