@@ -19,7 +19,7 @@ use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
 use std::str::FromStr;
-use crate::prelude::Twips;
+use swf::Twips;
 use swf::{BlendMode, Rectangle};
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.

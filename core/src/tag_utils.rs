@@ -1,8 +1,7 @@
 use gc_arena::Collect;
 use std::sync::Arc;
-use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode};
+use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
-use crate::prelude::Twips;
 
 #[derive(Error, Debug)]
 pub enum Error {
