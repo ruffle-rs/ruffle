@@ -7,7 +7,7 @@ pub use ruffle_render::bounding_box::BoundingBox;
 pub use ruffle_render::color_transform::ColorTransform;
 pub use ruffle_render::matrix::Matrix;
 pub use std::ops::{Bound, RangeBounds};
-pub use swf::{CharacterId, Color, Twips,Twips2d};
+pub use swf::{CharacterId, Color, Twips};
 
 /// A depth for a Flash display object in AVM1.
 /// This is different than defined in `swf`; during execution, clips

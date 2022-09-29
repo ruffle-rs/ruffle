@@ -11,7 +11,7 @@ use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
 use std::sync::Arc;
-use crate::prelude::Twips;
+use swf::Twips;
 
 /// Draw an underline on a particular drawing.
 ///

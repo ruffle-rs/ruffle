@@ -3,7 +3,6 @@ use crate::{
     string::SwfStr,
     tag_code::TagCode,
     types::*,
-    types::Twips
 };
 use bitstream_io::BitWrite;
 use byteorder::{LittleEndian, WriteBytesExt};

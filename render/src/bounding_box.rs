@@ -1,5 +1,5 @@
 use crate::matrix::Matrix;
-use crate::prelude::Twips;
+use swf::Twips;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct BoundingBox {
