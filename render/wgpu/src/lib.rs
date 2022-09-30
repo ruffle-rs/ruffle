@@ -11,7 +11,7 @@ use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{Bitmap, BitmapHandle};
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
 pub use wgpu;
@@ -37,11 +37,6 @@ mod layouts;
 mod mesh;
 mod shaders;
 mod surface;
-
-pub struct RegistryData {
-    bitmap: Bitmap,
-    texture_wrapper: Texture,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
 pub enum MaskState {
@@ -187,11 +182,13 @@ impl From<TessGradient> for GradientStorage {
 }
 
 #[derive(Debug)]
-struct Texture {
+pub struct Texture {
     texture: wgpu::Texture,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     texture_offscreen: Option<TextureOffscreen>,
+    width: u32,
+    height: u32,
 }
 
 impl Texture {

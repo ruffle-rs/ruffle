@@ -987,10 +987,6 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
-    }
-
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let format = match bitmap.format() {
             BitmapFormat::Rgb => Gl::RGB,

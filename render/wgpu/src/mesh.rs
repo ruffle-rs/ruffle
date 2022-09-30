@@ -1,8 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, TextureTransforms,
-    Vertex,
+    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, Texture,
+    TextureTransforms, Vertex,
 };
 
 use ruffle_render::bitmap::BitmapSource;
@@ -30,6 +30,7 @@ impl Draw {
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
+        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
     ) -> Self {
         let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
         let descriptors = backend.descriptors();
@@ -176,21 +177,16 @@ impl DrawType {
         }
     }
 
-    pub fn bitmap<T: RenderTarget>(
-        backend: &mut WgpuRenderBackend<T>,
-        source: &dyn BitmapSource,
+    pub fn bitmap(
+        descriptors: &Descriptors,
+        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
         bitmap: Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Self {
-        let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
-        let entry = backend.bitmap_registry().get(&bitmap_handle).unwrap();
-        let descriptors = backend.descriptors();
+        let entry = bitmap_registry.get(&bitmap.bitmap).unwrap();
+        let texture_view = entry.texture.create_view(&Default::default());
 
-        let texture_view = entry
-            .texture_wrapper
-            .texture
-            .create_view(&Default::default());
         let texture_transforms = create_texture_transforms(
             &backend.descriptors().device,
             &bitmap.matrix,

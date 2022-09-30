@@ -1,7 +1,7 @@
 use crate::frame::Frame;
 use crate::mesh::{DrawType, Mesh};
 use crate::pipelines::BlendMode as ActualBlendMode;
-use crate::{ColorAdjustments, MaskState, RegistryData};
+use crate::{ColorAdjustments, MaskState, Texture};
 use fnv::FnvHashMap;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -11,7 +11,7 @@ use swf::{BlendMode, Color};
 
 pub struct CommandRenderer<'a, 'b> {
     frame: &'b mut Frame<'a>,
-    bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
+    bitmap_registry: &'a FnvHashMap<BitmapHandle, Texture>,
     meshes: &'a Vec<Mesh>,
     quad_vertices: wgpu::BufferSlice<'a>,
     quad_indices: wgpu::BufferSlice<'a>,
@@ -23,7 +23,7 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
     pub fn new(
         frame: &'b mut Frame<'a>,
         meshes: &'a Vec<Mesh>,
-        bitmap_registry: &'a FnvHashMap<BitmapHandle, RegistryData>,
+        bitmap_registry: &'a FnvHashMap<BitmapHandle, Texture>,
         quad_vertices: wgpu::BufferSlice<'a>,
         quad_indices: wgpu::BufferSlice<'a>,
     ) -> Self {
@@ -41,14 +41,12 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
 
 impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if let Some(entry) = self.bitmap_registry.get(&bitmap) {
-            let texture = &entry.texture_wrapper;
-
+        if let Some(texture) = self.bitmap_registry.get(&bitmap) {
             self.frame.apply_transform(
                 &(transform.matrix
                     * ruffle_render::matrix::Matrix {
-                        a: entry.bitmap.width() as f32,
-                        d: entry.bitmap.height() as f32,
+                        a: texture.width as f32,
+                        d: texture.height as f32,
                         ..Default::default()
                     }),
                 ColorAdjustments::from(transform.color_transform),

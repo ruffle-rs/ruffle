@@ -61,7 +61,10 @@ pub fn instance_init<'gc>(
                         .avm2_class_registry()
                         .class_symbol(b_class)
                     {
-                        if let Some(Character::Bitmap(bitmap)) = activation
+                        if let Some(Character::Bitmap {
+                            bitmap,
+                            initial_data,
+                        }) = activation
                             .context
                             .library
                             .library_for_movie_mut(movie)
@@ -77,7 +80,7 @@ pub fn instance_init<'gc>(
                                 activation,
                                 bitmap,
                                 new_bitmap_data,
-                                Some(b_class.inner_class_definition().read().name()),
+                                initial_data,
                             );
                             BitmapDataObject::from_bitmap_data(
                                 activation,

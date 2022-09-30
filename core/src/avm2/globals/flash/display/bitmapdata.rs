@@ -27,30 +27,16 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     bd: Bitmap<'gc>,
     new_bitmap_data: GcCell<'gc, BitmapData<'gc>>,
-    name: Option<QName<'gc>>,
+    pixels: Vec<i32>,
 ) {
-    let bitmap_handle = bd.bitmap_handle();
-
-    if let Some(bitmap_handle) = bitmap_handle {
-        if let Some(bitmap_pixels) = activation.context.renderer.get_bitmap_pixels(bitmap_handle) {
-            let bitmap_pixels: Vec<i32> = bitmap_pixels.into();
-            new_bitmap_data
-                .write(activation.context.gc_context)
-                .set_pixels(
-                    bd.width().into(),
-                    bd.height().into(),
-                    true,
-                    bitmap_pixels.into_iter().map(|p| p.into()).collect(),
-                );
-        } else {
-            log::warn!(
-                "Could not read bitmap data associated with class {:?}",
-                name
-            );
-        }
-    } else {
-        log::error!("Failed to get bitmap handle for {:?}", bd);
-    }
+    new_bitmap_data
+        .write(activation.context.gc_context)
+        .set_pixels(
+            bd.width().into(),
+            bd.height().into(),
+            true,
+            pixels.into_iter().map(|p| p.into()).collect(),
+        );
 }
 
 /// Implements `flash.display.BitmapData`'s instance constructor.
@@ -85,9 +71,13 @@ pub fn instance_init<'gc>(
             let new_bitmap_data =
                 GcCell::allocate(activation.context.gc_context, BitmapData::default());
 
-            if let Some(Character::Bitmap(bd)) = character {
+            if let Some(Character::Bitmap {
+                bitmap,
+                initial_data,
+            }) = character
+            {
                 // Instantiating BitmapData from an Animate-style bitmap asset
-                fill_bitmap_data_from_symbol(activation, bd, new_bitmap_data, name);
+                fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data, initial_data);
             } else {
                 if character.is_some() {
                     //TODO: Determine if mismatched symbols will still work as a
