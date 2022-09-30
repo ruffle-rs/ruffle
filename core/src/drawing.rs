@@ -409,7 +409,7 @@ impl BitmapSource for Drawing {
         })
     }
     fn bitmap_handle(&self, id: u16, _backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.bitmaps.get(id as usize).map(|bm| bm.handle)
+        self.bitmaps.get(id as usize).map(|bm| bm.handle.clone())
     }
 }
 

@@ -7,11 +7,10 @@ use crate::surface::Surface::{Direct, DirectSrgb, Resolve, ResolveSrgb};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
 use crate::{
-    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, Texture,
-    TextureTransforms, Transforms, UniformBuffer,
+    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, TextureTransforms,
+    Transforms, UniformBuffer,
 };
-use fnv::FnvHashMap;
-use ruffle_render::bitmap::BitmapHandle;
+
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 
@@ -387,7 +386,6 @@ impl Surface {
         globals: &mut Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
-        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
         commands: CommandList,
     ) -> Vec<wgpu::CommandBuffer> {
         let label = create_debug_label!("Draw encoder");
@@ -445,7 +443,6 @@ impl Surface {
         commands.execute(&mut CommandRenderer::new(
             &mut frame,
             meshes,
-            bitmap_registry,
             descriptors.quad.vertices.slice(..),
             descriptors.quad.indices.slice(..),
         ));

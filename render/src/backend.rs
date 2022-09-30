@@ -47,12 +47,9 @@ pub trait RenderBackend: Downcast {
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
-    // Frees memory used by the bitmap. After this call, `handle` can no longer
-    // be used.
-    fn unregister_bitmap(&mut self, handle: BitmapHandle);
     fn update_texture(
         &mut self,
-        bitmap: BitmapHandle,
+        bitmap: &BitmapHandle,
         width: u32,
         height: u32,
         rgba: Vec<u8>,

@@ -1,8 +1,7 @@
 use crate::frame::Frame;
 use crate::mesh::{DrawType, Mesh};
 use crate::pipelines::BlendMode as ActualBlendMode;
-use crate::{ColorAdjustments, MaskState, Texture};
-use fnv::FnvHashMap;
+use crate::{as_texture, ColorAdjustments, MaskState};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::CommandHandler;
@@ -11,7 +10,6 @@ use swf::{BlendMode, Color};
 
 pub struct CommandRenderer<'a, 'b> {
     frame: &'b mut Frame<'a>,
-    bitmap_registry: &'a FnvHashMap<BitmapHandle, Texture>,
     meshes: &'a Vec<Mesh>,
     quad_vertices: wgpu::BufferSlice<'a>,
     quad_indices: wgpu::BufferSlice<'a>,
@@ -23,13 +21,11 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
     pub fn new(
         frame: &'b mut Frame<'a>,
         meshes: &'a Vec<Mesh>,
-        bitmap_registry: &'a FnvHashMap<BitmapHandle, Texture>,
         quad_vertices: wgpu::BufferSlice<'a>,
         quad_indices: wgpu::BufferSlice<'a>,
     ) -> Self {
         Self {
             frame,
-            bitmap_registry,
             meshes,
             quad_vertices,
             quad_indices,
@@ -39,32 +35,32 @@ impl<'a, 'b> CommandRenderer<'a, 'b> {
     }
 }
 
-impl<'a, 'b> CommandHandler for CommandRenderer<'a, 'b> {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if let Some(texture) = self.bitmap_registry.get(&bitmap) {
-            self.frame.apply_transform(
-                &(transform.matrix
-                    * ruffle_render::matrix::Matrix {
-                        a: texture.width as f32,
-                        d: texture.height as f32,
-                        ..Default::default()
-                    }),
-                ColorAdjustments::from(transform.color_transform),
-            );
-            let descriptors = self.frame.descriptors();
-            let bind = texture.bind_group(
-                smoothing,
-                &descriptors.device,
-                &descriptors.bind_layouts.bitmap,
-                &descriptors.quad,
-                bitmap,
-                &descriptors.bitmap_samplers,
-            );
+impl<'a, 'b> CommandHandler<'a> for CommandRenderer<'a, 'b> {
+    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
+        let texture = as_texture(bitmap);
 
-            self.frame.prep_bitmap(&bind.bind_group);
+        self.frame.apply_transform(
+            &(transform.matrix
+                * ruffle_render::matrix::Matrix {
+                    a: texture.width as f32,
+                    d: texture.height as f32,
+                    ..Default::default()
+                }),
+            ColorAdjustments::from(transform.color_transform),
+        );
+        let descriptors = self.frame.descriptors();
+        let bind = texture.bind_group(
+            smoothing,
+            &descriptors.device,
+            &descriptors.bind_layouts.bitmap,
+            &descriptors.quad,
+            bitmap.clone(),
+            &descriptors.bitmap_samplers,
+        );
 
-            self.frame.draw(self.quad_vertices, self.quad_indices, 6);
-        }
+        self.frame.prep_bitmap(&bind.bind_group);
+
+        self.frame.draw(self.quad_vertices, self.quad_indices, 6);
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {

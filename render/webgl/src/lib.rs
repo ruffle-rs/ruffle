@@ -2,13 +2,14 @@
 #![allow(clippy::uninlined_format_args)]
 
 use bytemuck::{Pod, Zeroable};
-use fnv::FnvHashMap;
+
+use downcast_rs::Downcast;
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
@@ -17,6 +18,7 @@ use ruffle_render::tessellator::{
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::sync::Arc;
 use swf::{BlendMode, Color};
 use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
@@ -140,14 +142,12 @@ pub struct WebGlRenderBackend {
     renderbuffer_height: i32,
     view_matrix: [[f32; 4]; 4],
 
-    bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
-    next_bitmap_handle: BitmapHandle,
-
     // This is currently unused - we just hold on to it
     // to expose via `get_viewport_dimensions`
     viewport_scale_factor: f64,
 }
 
+#[derive(Debug)]
 struct RegistryData {
     gl: Gl,
     bitmap: Bitmap,
@@ -158,6 +158,12 @@ impl Drop for RegistryData {
     fn drop(&mut self) {
         self.gl.delete_texture(Some(&self.texture));
     }
+}
+
+impl BitmapHandleImpl for RegistryData {}
+
+fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
+    handle.as_any().downcast_ref::<RegistryData>().unwrap()
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -311,8 +317,6 @@ impl WebGlRenderBackend {
             blend_modes: vec![],
             mult_color: None,
             add_color: None,
-            bitmap_registry: Default::default(),
-            next_bitmap_handle: BitmapHandle(0),
 
             viewport_scale_factor: 1.0,
         };
@@ -404,8 +408,7 @@ impl WebGlRenderBackend {
                 draw_type: if program.program == self.bitmap_program.program {
                     DrawType::Bitmap(BitmapDraw {
                         matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-                        handle: BitmapHandle(0),
-
+                        handle: None,
                         is_smoothed: true,
                         is_repeating: false,
                     })
@@ -668,7 +671,7 @@ impl WebGlRenderBackend {
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
-                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self).unwrap(),
+                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
                     }),
@@ -1024,36 +1027,21 @@ impl RenderBackend for WebGlRenderBackend {
         self.gl
             .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
 
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        self.bitmap_registry.insert(
-            handle,
-            RegistryData {
-                gl: self.gl.clone(),
-                bitmap,
-                texture,
-            },
-        );
-
-        Ok(handle)
-    }
-
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
-        self.bitmap_registry.remove(&bitmap);
+        Ok(BitmapHandle(Arc::new(RegistryData {
+            gl: self.gl.clone(),
+            bitmap,
+            texture,
+        })))
     }
 
     fn update_texture(
         &mut self,
-        handle: BitmapHandle,
+        handle: &BitmapHandle,
         width: u32,
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<(), BitmapError> {
-        let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
-            &entry.texture
-        } else {
-            return Err(BitmapError::UnknownHandle(handle));
-        };
+        let texture = &as_registry_data(handle).texture;
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
 
@@ -1088,97 +1076,95 @@ impl RenderBackend for WebGlRenderBackend {
     }
 }
 
-impl CommandHandler for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
+impl<'a> CommandHandler<'a> for WebGlRenderBackend {
+    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
-        if let Some(entry) = self.bitmap_registry.get(&bitmap) {
-            // Adjust the quad draw to use the target bitmap.
-            let mesh = &self.meshes[self.bitmap_quad_shape.0];
-            let draw = &mesh.draws[0];
-            let bitmap_matrix = if let DrawType::Bitmap(BitmapDraw { matrix, .. }) = &draw.draw_type
-            {
-                matrix
-            } else {
-                unreachable!()
-            };
+        let entry = as_registry_data(bitmap);
+        // Adjust the quad draw to use the target bitmap.
+        let mesh = &self.meshes[self.bitmap_quad_shape.0];
+        let draw = &mesh.draws[0];
+        let bitmap_matrix = if let DrawType::Bitmap(BitmapDraw { matrix, .. }) = &draw.draw_type {
+            matrix
+        } else {
+            unreachable!()
+        };
 
-            // Scale the quad to the bitmap's dimensions.
-            let matrix = transform.matrix
-                * ruffle_render::matrix::Matrix::scale(
-                    entry.bitmap.width() as f32,
-                    entry.bitmap.height() as f32,
-                );
+        // Scale the quad to the bitmap's dimensions.
+        let matrix = transform.matrix
+            * ruffle_render::matrix::Matrix::scale(
+                entry.bitmap.width() as f32,
+                entry.bitmap.height() as f32,
+            );
 
-            let world_matrix = [
-                [matrix.a, matrix.b, 0.0, 0.0],
-                [matrix.c, matrix.d, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [
-                    matrix.tx.to_pixels() as f32,
-                    matrix.ty.to_pixels() as f32,
-                    0.0,
-                    1.0,
-                ],
-            ];
+        let world_matrix = [
+            [matrix.a, matrix.b, 0.0, 0.0],
+            [matrix.c, matrix.d, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [
+                matrix.tx.to_pixels() as f32,
+                matrix.ty.to_pixels() as f32,
+                0.0,
+                1.0,
+            ],
+        ];
 
-            let mult_color = transform.color_transform.mult_rgba_normalized();
-            let add_color = transform.color_transform.add_rgba_normalized();
+        let mult_color = transform.color_transform.mult_rgba_normalized();
+        let add_color = transform.color_transform.add_rgba_normalized();
 
-            self.bind_vertex_array(Some(&draw.vao));
+        self.bind_vertex_array(Some(&draw.vao));
 
-            let program = &self.bitmap_program;
+        let program = &self.bitmap_program;
 
-            // Set common render state, while minimizing unnecessary state changes.
-            // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
-            // are in the same location between shaders, and avoid changing them unless necessary.
-            if program as *const ShaderProgram != self.active_program {
-                self.gl.use_program(Some(&program.program));
-                self.active_program = program as *const ShaderProgram;
+        // Set common render state, while minimizing unnecessary state changes.
+        // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
+        // are in the same location between shaders, and avoid changing them unless necessary.
+        if program as *const ShaderProgram != self.active_program {
+            self.gl.use_program(Some(&program.program));
+            self.active_program = program as *const ShaderProgram;
 
-                program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
+            program.uniform_matrix4fv(&self.gl, ShaderUniform::ViewMatrix, &self.view_matrix);
 
-                self.mult_color = None;
-                self.add_color = None;
-            }
-
-            program.uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
-            if Some(mult_color) != self.mult_color {
-                program.uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
-                self.mult_color = Some(mult_color);
-            }
-            if Some(add_color) != self.add_color {
-                program.uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
-                self.add_color = Some(add_color);
-            }
-
-            program.uniform_matrix3fv(&self.gl, ShaderUniform::TextureMatrix, bitmap_matrix);
-
-            // Bind texture.
-            self.gl.active_texture(Gl::TEXTURE0);
-            self.gl.bind_texture(Gl::TEXTURE_2D, Some(&entry.texture));
-            program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
-
-            // Set texture parameters.
-            let filter = if smoothing {
-                Gl::LINEAR as i32
-            } else {
-                Gl::NEAREST as i32
-            };
-            self.gl
-                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
-            self.gl
-                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
-
-            let wrap = Gl::CLAMP_TO_EDGE as i32;
-            self.gl
-                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, wrap);
-            self.gl
-                .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, wrap);
-
-            // Draw the triangles.
-            self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
+            self.mult_color = None;
+            self.add_color = None;
         }
+
+        program.uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
+        if Some(mult_color) != self.mult_color {
+            program.uniform4fv(&self.gl, ShaderUniform::MultColor, &mult_color);
+            self.mult_color = Some(mult_color);
+        }
+        if Some(add_color) != self.add_color {
+            program.uniform4fv(&self.gl, ShaderUniform::AddColor, &add_color);
+            self.add_color = Some(add_color);
+        }
+
+        program.uniform_matrix3fv(&self.gl, ShaderUniform::TextureMatrix, bitmap_matrix);
+
+        // Bind texture.
+        self.gl.active_texture(Gl::TEXTURE0);
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&entry.texture));
+        program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
+
+        // Set texture parameters.
+        let filter = if smoothing {
+            Gl::LINEAR as i32
+        } else {
+            Gl::NEAREST as i32
+        };
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
+
+        let wrap = Gl::CLAMP_TO_EDGE as i32;
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, wrap);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, wrap);
+
+        // Draw the triangles.
+        self.gl
+            .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
@@ -1281,12 +1267,7 @@ impl CommandHandler for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = if let Some(entry) = self.bitmap_registry.get(&bitmap.handle) {
-                        &entry.texture
-                    } else {
-                        // Bitmap not registered
-                        continue;
-                    };
+                    let texture = &as_registry_data(&bitmap.handle.as_ref().unwrap()).texture;
 
                     program.uniform_matrix3fv(
                         &self.gl,
@@ -1485,7 +1466,7 @@ impl From<TessGradient> for Gradient {
 #[derive(Clone, Debug)]
 struct BitmapDraw {
     matrix: [[f32; 3]; 3],
-    handle: BitmapHandle,
+    handle: Option<BitmapHandle>,
     is_repeating: bool,
     is_smoothed: bool,
 }

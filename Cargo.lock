@@ -3489,6 +3489,7 @@ dependencies = [
 name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
+ "downcast-rs",
  "fnv",
  "gc-arena",
  "js-sys",
@@ -3505,6 +3506,7 @@ name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "downcast-rs",
  "fnv",
  "gc-arena",
  "js-sys",

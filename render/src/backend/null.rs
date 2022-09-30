@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSize, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
@@ -28,6 +30,9 @@ impl NullRenderer {
         Self { dimensions }
     }
 }
+#[derive(Clone, Debug)]
+struct NullBitmapHandle;
+impl BitmapHandleImpl for NullBitmapHandle {}
 
 impl RenderBackend for NullRenderer {
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -66,13 +71,12 @@ impl RenderBackend for NullRenderer {
 
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        Ok(BitmapHandle(0))
+        Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
-    fn unregister_bitmap(&mut self, _bitmap: BitmapHandle) {}
 
     fn update_texture(
         &mut self,
-        _bitmap: BitmapHandle,
+        _bitmap: &BitmapHandle,
         _width: u32,
         _height: u32,
         _rgba: Vec<u8>,

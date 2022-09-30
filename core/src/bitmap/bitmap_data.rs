@@ -217,14 +217,11 @@ impl<'gc> BitmapData<'gc> {
         self.disposed
     }
 
-    pub fn dispose(&mut self, renderer: &mut dyn RenderBackend) {
+    pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
         self.pixels.clear();
-        if let Some(handle) = self.bitmap_handle {
-            renderer.unregister_bitmap(handle);
-            self.bitmap_handle = None;
-        }
+        self.bitmap_handle = None;
         // There's no longer a handle to update
         self.dirty = false;
         self.disposed = true;
@@ -245,7 +242,7 @@ impl<'gc> BitmapData<'gc> {
             self.bitmap_handle = bitmap_handle.ok();
         }
 
-        self.bitmap_handle
+        self.bitmap_handle.clone()
     }
 
     pub fn transparency(&self) -> bool {
@@ -914,7 +911,7 @@ impl<'gc> BitmapData<'gc> {
         let handle = self.bitmap_handle(context.renderer).unwrap();
         if self.dirty() {
             if let Err(e) = context.renderer.update_texture(
-                handle,
+                &handle,
                 self.width(),
                 self.height(),
                 self.pixels_rgba(),
@@ -1028,7 +1025,7 @@ impl<'gc> BitmapData<'gc> {
                     bitmap_data.update_dirty_texture(&mut render_context);
                     let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
                     render_context.commands.render_bitmap(
-                        bitmap_handle,
+                        &bitmap_handle,
                         render_context.transform_stack.transform(),
                         smoothing,
                     );

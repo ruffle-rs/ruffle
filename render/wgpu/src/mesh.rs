@@ -1,10 +1,11 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, Texture,
+    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms,
     TextureTransforms, Vertex,
 };
 
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::CharacterId;
@@ -32,7 +33,7 @@ impl Draw {
         draw_id: usize,
     ) -> Self {
         let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
-        let descriptors = backend.descriptors();
+        let descriptors = backend.descriptors().clone();
         let vertex_buffer = create_buffer_with_data(
             &descriptors.device,
             bytemuck::cast_slice(&vertices),
@@ -63,23 +64,20 @@ impl Draw {
                 num_indices: index_count,
                 num_mask_indices: draw.mask_index_count,
             },
-            TessDrawType::Bitmap(bitmap) => {
-                let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
-                let texture = &backend.bitmap_registry()[&bitmap_handle];
-                Draw {
-                    draw_type: DrawType::bitmap(
-                        &backend.descriptors(),
-                        bitmap,
-                        texture,
-                        shape_id,
-                        draw_id,
-                    ),
-                    vertex_buffer,
-                    index_buffer,
-                    num_indices: index_count,
-                    num_mask_indices: draw.mask_index_count,
-                }
-            }
+            TessDrawType::Bitmap(bitmap) => Draw {
+                draw_type: DrawType::bitmap(
+                    &descriptors,
+                    bitmap,
+                    shape_id,
+                    draw_id,
+                    source,
+                    backend,
+                ),
+                vertex_buffer,
+                index_buffer,
+                num_indices: index_count,
+                num_mask_indices: draw.mask_index_count,
+            },
         }
     }
 }
@@ -189,12 +187,14 @@ impl DrawType {
     pub fn bitmap(
         descriptors: &Descriptors,
         bitmap: Bitmap,
-        texture: &Texture,
         shape_id: CharacterId,
         draw_id: usize,
+        source: &dyn BitmapSource,
+        backend: &mut dyn RenderBackend,
     ) -> Self {
+        let handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
+        let texture = as_texture(&handle);
         let texture_view = texture.texture.create_view(&Default::default());
-
         let texture_transforms = create_texture_transforms(
             &descriptors.device,
             &bitmap.matrix,

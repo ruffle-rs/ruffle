@@ -1,8 +1,17 @@
+use std::fmt::Debug;
+use std::sync::Arc;
+
+use downcast_rs::{impl_downcast, Downcast};
+
 use crate::backend::RenderBackend;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct BitmapHandle(pub usize);
+#[derive(Clone, Debug)]
+pub struct BitmapHandle(pub Arc<dyn BitmapHandleImpl>);
 
+pub trait BitmapHandleImpl: Downcast + Debug {}
+impl_downcast!(BitmapHandleImpl);
+
+/// Info returned by the `register_bitmap` methods.
 #[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,

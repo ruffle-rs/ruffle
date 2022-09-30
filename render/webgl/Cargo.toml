@@ -16,6 +16,7 @@ gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 thiserror = "1.0"
+downcast-rs = "1.2.0"
 
 [dependencies.web-sys]
 version = "0.3.60"
