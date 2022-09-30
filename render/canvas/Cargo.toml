@@ -14,6 +14,7 @@ fnv = "1.0.7"
 ruffle_render = { path = "..", features = ["web"] }
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 swf = { path = "../../swf" }
+downcast-rs = "1.2.0"
 
 [dependencies.web-sys]
 version = "0.3.60"

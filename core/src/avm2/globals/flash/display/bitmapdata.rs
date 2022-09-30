@@ -818,9 +818,7 @@ pub fn dispose<'gc>(
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         // Don't check if we've already disposed this BitmapData - 'BitmapData.dispose()' can be called
         // multiple times
-        bitmap_data
-            .write(activation.context.gc_context)
-            .dispose(activation.context.renderer);
+        bitmap_data.write(activation.context.gc_context).dispose();
     }
     Ok(Value::Undefined)
 }

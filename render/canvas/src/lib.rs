@@ -1,6 +1,8 @@
 #![allow(clippy::uninlined_format_args)]
 
-use fnv::FnvHashMap;
+use std::sync::Arc;
+
+use downcast_rs::Downcast;
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
@@ -28,12 +30,10 @@ pub struct WebCanvasRenderBackend {
     context: CanvasRenderingContext2d,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
-    bitmaps: FnvHashMap<BitmapHandle, BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
     rect: Path2d,
     mask_state: MaskState,
-    next_bitmap_handle: BitmapHandle,
     blend_modes: Vec<BlendMode>,
 
     // This is currnetly unused - we just store it to report
@@ -135,11 +135,18 @@ struct CanvasBitmap {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 struct BitmapData {
     bitmap: Bitmap,
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
+}
+
+impl ruffle_render::bitmap::BitmapHandleImpl for BitmapData {}
+
+fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
+    handle.as_any().downcast_ref::<BitmapData>().unwrap()
 }
 
 impl BitmapData {
@@ -174,6 +181,19 @@ impl BitmapData {
             canvas,
             context,
         })
+    }
+
+    fn update_pixels(&self, bitmap: Bitmap) -> Result<(), JsValue> {
+        let bitmap = bitmap.to_rgba();
+        let image_data =
+            ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
+                .into_js_result()?;
+        self.canvas.set_width(bitmap.width());
+        self.canvas.set_height(bitmap.height());
+        self.context
+            .put_image_data(&image_data, 0.0, 0.0)
+            .into_js_result()?;
+        Ok(())
     }
 }
 
@@ -269,13 +289,11 @@ impl WebCanvasRenderBackend {
             color_matrix,
             context,
             shapes: vec![],
-            bitmaps: Default::default(),
             viewport_width: 0,
             viewport_height: 0,
             viewport_scale_factor: 1.0,
             rect,
             mask_state: MaskState::DrawContent,
-            next_bitmap_handle: BitmapHandle(0),
             blend_modes: vec![BlendMode::Normal],
         };
         Ok(renderer)
@@ -440,31 +458,20 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
         let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
-        self.bitmaps.insert(handle, bitmap_data);
-        Ok(handle)
-    }
-
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
-        self.bitmaps.remove(&bitmap);
+        Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 
     fn update_texture(
         &mut self,
-        handle: BitmapHandle,
+        handle: &BitmapHandle,
         width: u32,
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<(), Error> {
-        // TODO: Could be optimized to a single put_image_data call
-        // in case it is already stored as a canvas+context.
-        self.bitmaps.insert(
-            handle,
-            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
-                .map_err(Error::JavascriptError)?,
-        );
+        let data = as_bitmap_data(handle);
+        data.update_pixels(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
+            .map_err(Error::JavascriptError)?;
         Ok(())
     }
 
@@ -481,8 +488,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
-impl CommandHandler for WebCanvasRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
+impl<'a> CommandHandler<'a> for WebCanvasRenderBackend {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         if self.mask_state == MaskState::ClearMask {
             return;
         }
@@ -491,11 +498,10 @@ impl CommandHandler for WebCanvasRenderBackend {
 
         self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
-        if let Some(bitmap) = self.bitmaps.get(&bitmap) {
-            let _ = self
-                .context
-                .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
-        }
+        let bitmap = as_bitmap_data(bitmap);
+        let _ = self
+            .context
+            .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
         self.clear_color_filter();
     }
 
@@ -1149,10 +1155,8 @@ fn create_bitmap_pattern(
     bitmap_source: &dyn BitmapSource,
     backend: &mut WebCanvasRenderBackend,
 ) -> Option<CanvasBitmap> {
-    if let Some(bitmap) = bitmap_source
-        .bitmap_handle(id, backend)
-        .and_then(|handle| backend.bitmaps.get(&handle))
-    {
+    if let Some(handle) = bitmap_source.bitmap_handle(id, backend) {
+        let bitmap = as_bitmap_data(&handle);
         let repeat = if !is_repeating {
             // NOTE: The WebGL backend does clamping in this case, just like
             // Flash Player, but CanvasPattern has no such option...

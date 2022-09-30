@@ -5,10 +5,9 @@ use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals, RenderTarget,
-    SwapChainTarget, Texture, TextureOffscreen, Transforms,
+    as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals,
+    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
-use fnv::FnvHashMap;
 use gc_arena::MutationContext;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use ruffle_render::backend::{Context3D, Context3DCommand};
@@ -34,8 +33,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     surface: Surface,
     meshes: Vec<Mesh>,
     shape_tessellator: ShapeTessellator,
-    bitmap_registry: FnvHashMap<BitmapHandle, Texture>,
-    next_bitmap_handle: BitmapHandle,
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
@@ -156,9 +153,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             surface,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
-
-            bitmap_registry: Default::default(),
-            next_bitmap_handle: BitmapHandle(0),
             viewport_scale_factor: 1.0,
         })
     }
@@ -221,19 +215,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
     }
-
-    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, Texture> {
-        &self.bitmap_registry
-    }
-
-    fn raw_register_bitmap(&mut self, data: Texture) -> BitmapHandle {
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle.0 += 1;
-        if self.bitmap_registry.insert(handle, data).is_some() {
-            panic!("Overwrote existing bitmap {:?}", handle);
-        }
-        handle
-    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -283,14 +264,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 usage: wgpu::TextureUsages::COPY_SRC,
             });
 
-        let handle = self.raw_register_bitmap(Texture {
+        let handle = BitmapHandle(Arc::new(Texture {
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
-            texture: dummy_texture,
-            texture_offscreen: None,
+            texture: Arc::new(dummy_texture),
+            texture_offscreen: Default::default(),
             width: 0,
             height: 0,
-        });
+        }));
         Ok(Box::new(WgpuContext3D::new(
             self.descriptors.clone(),
             handle,
@@ -307,14 +288,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .as_any_mut()
             .downcast_mut::<WgpuContext3D>()
             .unwrap();
-        if let Some(new_registry_data) = context.present(commands, mc) {
-            // Update the registry with the new texture, which will later
-            // be rendered by `Stage`
-            *self
-                .bitmap_registry
-                .get_mut(&context.bitmap_handle())
-                .unwrap() = new_registry_data;
-        }
+        context.present(commands, mc);
         Ok(())
     }
 
@@ -385,7 +359,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.globals,
             &mut self.uniform_buffers_storage,
             &self.meshes,
-            &self.bitmap_registry,
             commands,
         );
 
@@ -444,34 +417,26 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        let handle = self.raw_register_bitmap(Texture {
-            texture,
+        let handle = BitmapHandle(Arc::new(Texture {
+            texture: Arc::new(texture),
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
-            texture_offscreen: None,
-            width: extent.width,
-            height: extent.height,
-        });
+            texture_offscreen: Default::default(),
+            width: bitmap.width(),
+            height: bitmap.height(),
+        }));
 
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, handle: BitmapHandle) {
-        self.bitmap_registry.remove(&handle);
-    }
-
     fn update_texture(
         &mut self,
-        handle: BitmapHandle,
+        handle: &BitmapHandle,
         width: u32,
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<(), BitmapError> {
-        let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
-            &entry.texture
-        } else {
-            return Err(BitmapError::UnknownHandle(handle));
-        };
+        let texture = as_texture(handle);
 
         let extent = wgpu::Extent3d {
             width,
@@ -481,7 +446,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
-                texture,
+                texture: &texture.texture,
                 mip_level: 0,
                 origin: Default::default(),
                 aspect: wgpu::TextureAspect::All,
@@ -505,16 +470,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         height: u32,
         commands: CommandList,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
-        // We need ownership of `Texture` to access the non-`Clone`
-        // `wgpu` fields. At the end of this method, we re-insert
-        // `texture` into the map.
-        //
-        // This means that the target texture will be inaccessible
-        // while the callback `f` is a problem. This would only be
-        // an issue if a caller tried to render the target texture
-        // to itself, which probably isn't supported by Flash. If it
-        // is, then we could change `TextureTarget` to use an `Rc<wgpu::Texture>`
-        let mut texture = self.bitmap_registry.remove(&handle).unwrap();
+        let texture = as_texture(&handle);
 
         let extent = wgpu::Extent3d {
             width,
@@ -531,7 +487,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         // many buffers / depth textures rendered at once, we could
         // try storing this data in an LRU cache, evicting entries
         // as needed.
-        let mut texture_offscreen = texture.texture_offscreen.unwrap_or_else(|| {
+        let texture_offscreen = texture.texture_offscreen.get_or_init(|| {
             let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
             let buffer_label = create_debug_label!("Render target buffer");
             let buffer = self
@@ -545,7 +501,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     mapped_at_creation: false,
                 });
             TextureOffscreen {
-                buffer,
+                buffer: Arc::new(buffer),
                 buffer_dimensions,
                 surface: Surface::new(
                     &self.descriptors,
@@ -559,10 +515,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut target = TextureTarget {
             size: extent,
-            texture: texture.texture,
+            texture: texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: texture_offscreen.buffer,
-            buffer_dimensions: texture_offscreen.buffer_dimensions,
+            buffer: texture_offscreen.buffer.clone(),
+            buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
         };
 
         let (old_width, old_height) = self.globals.resolution();
@@ -579,7 +535,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.globals,
             &mut self.uniform_buffers_storage,
             &self.meshes,
-            &self.bitmap_registry,
             commands,
         );
         target.submit(
@@ -602,11 +557,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         });
 
         self.globals.set_resolution(old_width, old_height);
-        texture_offscreen.buffer = target.buffer;
-        texture_offscreen.buffer_dimensions = target.buffer_dimensions;
-        texture.texture_offscreen = Some(texture_offscreen);
-        texture.texture = target.texture;
-        self.bitmap_registry.insert(handle, texture);
 
         Ok(image.unwrap())
     }

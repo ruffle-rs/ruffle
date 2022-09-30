@@ -4,8 +4,8 @@ use crate::matrix::Matrix;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
-pub trait CommandHandler {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool);
+pub trait CommandHandler<'a> {
+    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn push_mask(&mut self);
@@ -25,33 +25,33 @@ impl CommandList {
         Self::default()
     }
 
-    pub fn execute(self, handler: &mut impl CommandHandler) {
-        for command in self.0 {
+    pub fn execute<'a>(&'a self, handler: &mut impl CommandHandler<'a>) {
+        for command in &self.0 {
             match command {
                 Command::RenderBitmap {
                     bitmap,
                     transform,
                     smoothing,
-                } => handler.render_bitmap(bitmap, &transform, smoothing),
+                } => handler.render_bitmap(bitmap, &transform, *smoothing),
                 Command::RenderShape { shape, transform } => {
-                    handler.render_shape(shape, &transform)
+                    handler.render_shape(*shape, &transform)
                 }
-                Command::DrawRect { color, matrix } => handler.draw_rect(color, &matrix),
+                Command::DrawRect { color, matrix } => handler.draw_rect(color.clone(), &matrix),
                 Command::PushMask => handler.push_mask(),
                 Command::ActivateMask => handler.activate_mask(),
                 Command::DeactivateMask => handler.deactivate_mask(),
                 Command::PopMask => handler.pop_mask(),
-                Command::PushBlendMode(blend) => handler.push_blend_mode(blend),
+                Command::PushBlendMode(blend) => handler.push_blend_mode(*blend),
                 Command::PopBlendMode => handler.pop_blend_mode(),
             }
         }
     }
 }
 
-impl CommandHandler for CommandList {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
+impl<'a> CommandHandler<'a> for CommandList {
+    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
         self.0.push(Command::RenderBitmap {
-            bitmap,
+            bitmap: bitmap.clone(),
             transform: transform.clone(),
             smoothing,
         });

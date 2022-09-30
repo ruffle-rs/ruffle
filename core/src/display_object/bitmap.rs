@@ -140,7 +140,7 @@ impl<'gc> Bitmap<'gc> {
 
     #[allow(dead_code)]
     pub fn bitmap_handle(self) -> Option<BitmapHandle> {
-        self.0.read().bitmap_handle
+        self.0.read().bitmap_handle.clone()
     }
 
     pub fn width(self) -> u16 {
@@ -306,7 +306,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
 
         let bitmap_data = self.0.read();
-        if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
+        if let Some(bitmap_handle) = &bitmap_data.bitmap_handle {
             if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
                 if let Ok(mut bd) = inner_bitmap_data.try_write(context.gc_context) {
                     bd.update_dirty_texture(context);
@@ -316,7 +316,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             }
 
             context.commands.render_bitmap(
-                bitmap_handle,
+                &bitmap_handle,
                 context.transform_stack.transform(),
                 bitmap_data.smoothing,
             );

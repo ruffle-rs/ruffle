@@ -273,7 +273,7 @@ impl<'gc> Context3DObject<'gc> {
         if context3d.should_render() {
             let handle = context3d.bitmap_handle();
             context.commands.render_bitmap(
-                handle,
+                &handle,
                 // FIXME - apply x and y translation from Stage3D
                 &Transform::default(),
                 false,

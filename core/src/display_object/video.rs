@@ -467,7 +467,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
             context
                 .commands
-                .render_bitmap(bitmap.handle, &transform, smoothing);
+                .render_bitmap(&bitmap.handle, &transform, smoothing);
         } else {
             log::warn!("Video has no decoded frame to render.");
         }

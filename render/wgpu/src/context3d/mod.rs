@@ -177,14 +177,11 @@ impl WgpuContext3D {
         }
     }
     // Executes all of the given `commands` in response to a `Context3D.present` call.
-    // If we needed to re-create the target Texture due to a `ConfigureBackBuffer` command,
-    // then we return the new Texture.
-    // If we re-used the same Texture, then we return `None`.
     pub(crate) fn present<'gc>(
         &mut self,
         commands: Vec<Context3DCommand<'gc>>,
         mc: MutationContext<'gc, '_>,
-    ) -> Option<Texture> {
+    ) {
         let mut render_command_encoder =
             self.descriptors
                 .device
@@ -215,10 +212,6 @@ impl WgpuContext3D {
         // seen a `Context3DCommand::Clear` so far. Note that this is separate from
         // `clear_color`, which may be `None` even if we've seen a `Clear` command.
         let mut seen_clear_command = false;
-
-        // If we execute any `ConfigureBackBuffer` commands, this will store the newly-create
-        // Texture.
-        let mut recreated_texture = None;
 
         for command in &commands {
             match command {
@@ -293,14 +286,14 @@ impl WgpuContext3D {
                     finish_render_pass!(render_pass);
                     self.texture_view = Some(wgpu_texture.create_view(&Default::default()));
 
-                    recreated_texture = Some(Texture {
-                        texture: wgpu_texture,
+                    self.raw_texture_handle = BitmapHandle(Arc::new(Texture {
+                        texture: Arc::new(wgpu_texture),
                         bind_linear: Default::default(),
                         bind_nearest: Default::default(),
-                        texture_offscreen: None,
+                        texture_offscreen: Default::default(),
                         width: *width,
                         height: *height,
-                    });
+                    }));
                 }
                 Context3DCommand::UploadToIndexBuffer {
                     buffer,
@@ -514,8 +507,6 @@ impl WgpuContext3D {
         self.buffer_staging_belt.recall();
 
         self.compiled_pipeline = compiled_pipeline;
-
-        recreated_texture
     }
 }
 
@@ -548,7 +539,7 @@ pub struct VertexAttributeInfo {
 
 impl Context3D for WgpuContext3D {
     fn bitmap_handle(&self) -> BitmapHandle {
-        self.raw_texture_handle
+        self.raw_texture_handle.clone()
     }
     fn should_render(&self) -> bool {
         // If this is None, we haven't called configureBackBuffer yet.
