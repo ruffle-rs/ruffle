@@ -257,8 +257,8 @@ impl<'gc> Video<'gc> {
                         .decode_video_stream_frame(*stream, encframe, context.renderer)
                 }
                 None => {
-                    if let Some((_old_id, old_frame)) = read.decoded_frame {
-                        Ok(old_frame)
+                    if let Some((_old_id, old_frame)) = &read.decoded_frame {
+                        Ok(old_frame.clone())
                     } else {
                         Err(Error::SeekingBeforeDecoding(frame_id))
                     }

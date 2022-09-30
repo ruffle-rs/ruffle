@@ -170,30 +170,6 @@ impl BitmapData {
             context,
         })
     }
-
-    fn get_pixels(&self) -> Option<Bitmap> {
-        if let Ok(bitmap_pixels) =
-            self.context
-                .get_image_data(0.0, 0.0, self.width().into(), self.height().into())
-        {
-            Some(Bitmap::new(
-                self.width(),
-                self.height(),
-                BitmapFormat::Rgba,
-                bitmap_pixels.data().to_vec(),
-            ))
-        } else {
-            None
-        }
-    }
-
-    fn width(&self) -> u32 {
-        self.bitmap.width()
-    }
-
-    fn height(&self) -> u32 {
-        self.bitmap.height()
-    }
 }
 
 impl WebCanvasRenderBackend {
@@ -456,11 +432,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
         self.begin_frame(clear);
         commands.execute(self);
-    }
-
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        let bitmap = &self.bitmaps[&bitmap];
-        bitmap.get_pixels()
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {

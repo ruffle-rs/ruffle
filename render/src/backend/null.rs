@@ -62,10 +62,6 @@ impl RenderBackend for NullRenderer {
     }
 
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
-
-    fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
-        None
-    }
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }

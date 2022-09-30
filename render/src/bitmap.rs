@@ -3,8 +3,7 @@ use crate::backend::RenderBackend;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BitmapHandle(pub usize);
 
-/// Info returned by the `register_bitmap` methods.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
     pub width: u16,
