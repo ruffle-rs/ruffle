@@ -577,6 +577,7 @@ pub fn push<'gc>(
             for arg in args {
                 array.push(*arg)
             }
+            return Ok(array.length().into());
         }
     }
 
@@ -646,6 +647,7 @@ pub fn unshift<'gc>(
             for arg in args.iter().rev() {
                 array.unshift(*arg)
             }
+            return Ok(array.length().into());
         }
     }
 
