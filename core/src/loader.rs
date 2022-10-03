@@ -697,7 +697,15 @@ impl<'gc> Loader<'gc> {
                 error
             })?;
 
-            let mut movie = SwfMovie::from_data(&response.body, Some(response.url), None)?;
+            // The spoofed root movie URL takes precedence over the actual URL.
+            let url = player
+                .lock()
+                .unwrap()
+                .spoofed_url()
+                .map(|u| u.to_string())
+                .unwrap_or(response.url);
+
+            let mut movie = SwfMovie::from_data(&response.body, Some(url), None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().set_root_movie(movie);

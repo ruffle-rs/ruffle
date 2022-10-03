@@ -148,6 +148,10 @@ impl SwfMovie {
         self.url.as_deref()
     }
 
+    pub fn set_url(&mut self, url: Option<String>) {
+        self.url = url;
+    }
+
     /// Get the URL that triggered the fetch of this SWF.
     pub fn loader_url(&self) -> Option<&str> {
         self.loader_url.as_deref()

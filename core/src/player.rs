@@ -281,6 +281,10 @@ pub struct Player {
 
     /// How Ruffle should load movies.
     load_behavior: LoadBehavior,
+
+    /// The root SWF URL provided to ActionScript. If None,
+    /// the actual loaded url will be used
+    spoofed_url: Option<String>,
 }
 
 impl Player {
@@ -1826,6 +1830,10 @@ impl Player {
         })
     }
 
+    pub fn spoofed_url(&self) -> Option<&str> {
+        self.spoofed_url.as_deref()
+    }
+
     pub fn log_backend(&self) -> &Log {
         &self.log
     }
@@ -1868,6 +1876,7 @@ pub struct PlayerBuilder {
     viewport_scale_factor: f64,
     warn_on_unsupported_content: bool,
     load_behavior: LoadBehavior,
+    spoofed_url: Option<String>,
 }
 
 impl PlayerBuilder {
@@ -1902,6 +1911,7 @@ impl PlayerBuilder {
             viewport_scale_factor: 1.0,
             warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
+            spoofed_url: None,
         }
     }
 
@@ -2015,6 +2025,12 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets the root SWF URL provided to ActionScript.
+    pub fn with_spoofed_url(mut self, url: Option<String>) -> Self {
+        self.spoofed_url = url;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2091,6 +2107,7 @@ impl PlayerBuilder {
                 warn_on_unsupported_content: self.warn_on_unsupported_content,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
+                spoofed_url: self.spoofed_url.clone(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
@@ -2147,7 +2164,10 @@ impl PlayerBuilder {
             height: self.viewport_height,
             scale_factor: self.viewport_scale_factor,
         });
-        if let Some(movie) = self.movie {
+        if let Some(mut movie) = self.movie {
+            if let Some(url) = self.spoofed_url.clone() {
+                movie.set_url(Some(url));
+            }
             player_lock.set_root_movie(movie);
         }
         drop(player_lock);
