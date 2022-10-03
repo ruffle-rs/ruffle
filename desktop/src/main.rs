@@ -103,6 +103,10 @@ struct Opt {
 
     #[clap(long, default_value = "streaming")]
     load_behavior: LoadBehavior,
+
+    /// Spoofs the root SWF URL provided to ActionScript.
+    #[clap(long, value_parser)]
+    spoof_url: Option<Url>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -271,7 +275,8 @@ impl App {
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_fullscreen(opt.fullscreen)
-            .with_load_behavior(opt.load_behavior);
+            .with_load_behavior(opt.load_behavior)
+            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()));
 
         let player = builder.build();
 
