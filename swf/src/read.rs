@@ -1593,6 +1593,8 @@ impl<'a> Reader<'a> {
             }
 
             0x13 => {
+                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineShape4,
+                // but it works even in earlier tags (#2730).
                 let gradient = self.read_gradient(shape_version)?;
                 let focal_point = self.read_fixed8()?;
                 if let Some(gradient) = gradient {
