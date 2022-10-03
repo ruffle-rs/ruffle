@@ -1203,11 +1203,6 @@ impl CommandHandler for WebGlRenderBackend {
                     );
                     program.uniform1i(
                         &self.gl,
-                        ShaderUniform::GradientNumColors,
-                        gradient.num_colors as i32,
-                    );
-                    program.uniform1i(
-                        &self.gl,
                         ShaderUniform::GradientRepeatMode,
                         gradient.repeat_mode,
                     );
@@ -1387,7 +1382,6 @@ struct Gradient {
     gradient_type: i32,
     ratios: [f32; MAX_GRADIENT_COLORS],
     colors: [[f32; 4]; MAX_GRADIENT_COLORS],
-    num_colors: u32,
     repeat_mode: i32,
     focal_point: f32,
     interpolation: swf::GradientInterpolation,
@@ -1414,7 +1408,6 @@ impl From<TessGradient> for Gradient {
             },
             ratios,
             colors,
-            num_colors: gradient.num_colors as u32,
             repeat_mode: match gradient.repeat_mode {
                 swf::GradientSpread::Pad => 0,
                 swf::GradientSpread::Repeat => 1,
@@ -1474,7 +1467,7 @@ struct ShaderProgram {
 }
 
 // These should match the uniform names in the shaders.
-const NUM_UNIFORMS: usize = 13;
+const NUM_UNIFORMS: usize = 12;
 const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "world_matrix",
     "view_matrix",
@@ -1484,7 +1477,6 @@ const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "u_gradient_type",
     "u_ratios",
     "u_colors",
-    "u_num_colors",
     "u_repeat_mode",
     "u_focal_point",
     "u_interpolation",
@@ -1500,7 +1492,6 @@ enum ShaderUniform {
     GradientType,
     GradientRatios,
     GradientColors,
-    GradientNumColors,
     GradientRepeatMode,
     GradientFocalPoint,
     GradientInterpolation,
