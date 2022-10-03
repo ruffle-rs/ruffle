@@ -1576,16 +1576,34 @@ impl<'a> Reader<'a> {
                 FillStyle::Color(color)
             }
 
-            0x10 => FillStyle::LinearGradient(self.read_gradient(shape_version)?),
+            0x10 => {
+                if let Some(gradient) = self.read_gradient(shape_version)? {
+                    FillStyle::LinearGradient(gradient)
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
-            0x12 => FillStyle::RadialGradient(self.read_gradient(shape_version)?),
+            0x12 => {
+                if let Some(gradient) = self.read_gradient(shape_version)? {
+                    FillStyle::RadialGradient(gradient)
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
-            0x13 => FillStyle::FocalGradient {
-                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineShape4,
-                // but it works even in earlier tags (#2730).
-                gradient: self.read_gradient(shape_version)?,
-                focal_point: self.read_fixed8()?,
-            },
+            0x13 => {
+                let gradient = self.read_gradient(shape_version)?;
+                let focal_point = self.read_fixed8()?;
+                if let Some(gradient) = gradient {
+                    FillStyle::FocalGradient {
+                        gradient,
+                        focal_point,
+                    }
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
             0x40..=0x43 => FillStyle::Bitmap {
                 id: self.read_u16()?,
@@ -1646,9 +1664,15 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_gradient(&mut self, shape_version: u8) -> Result<Gradient> {
+    fn read_gradient(&mut self, shape_version: u8) -> Result<Option<Gradient>> {
         let matrix = self.read_matrix()?;
         let (num_records, spread, interpolation) = self.read_gradient_flags()?;
+
+        // this can happen in some malformed SWFs (#4499, #4414, #3365)
+        if num_records == 0 {
+            return Ok(None);
+        }
+
         let mut records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
             records.push(GradientRecord {
@@ -1660,12 +1684,12 @@ impl<'a> Reader<'a> {
                 },
             });
         }
-        Ok(Gradient {
+        Ok(Some(Gradient {
             matrix,
             spread,
             interpolation,
             records,
-        })
+        }))
     }
 
     fn read_gradient_flags(&mut self) -> Result<(usize, GradientSpread, GradientInterpolation)> {
