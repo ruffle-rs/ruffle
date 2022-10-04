@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = { version = "3.2.20", features = ["derive"] }
+clap = { version = "4.0.9", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
