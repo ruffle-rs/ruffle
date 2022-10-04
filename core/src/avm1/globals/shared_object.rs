@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -82,9 +83,8 @@ fn serialize_value<'gc>(
                 // TODO: What happens if an exception is thrown here?
                 let string = xml_node.into_string(activation).unwrap();
                 Some(AmfValue::XML(string.to_utf8_lossy().into_owned(), true))
-            } else if let Some(date) = o.as_date_object() {
-                date.date_time()
-                    .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
+            } else if let NativeObject::Date(date) = o.native() {
+                Some(AmfValue::Date(date.read().time(), None))
             } else {
                 let mut object_body = Vec::new();
                 recursive_serialize(activation, o, &mut object_body);
