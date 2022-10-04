@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 convert_case = "0.6.0"
-proc-macro2 = "1.0.43"
+proc-macro2 = "1.0.46"
 quote = "1.0.21"
 swf = { path = "../../swf" }
 clap = {version = "3.2.20", features = ["derive"]}
