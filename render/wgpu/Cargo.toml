@@ -16,7 +16,7 @@ enum-map = "2.4.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.4", default-features = false }
-ouroboros = "0.15.4"
+ouroboros = "0.15.5"
 typed-arena = "2.0.1"
 once_cell = "1.15.0"
 
