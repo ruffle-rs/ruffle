@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::{Object, TObject};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
@@ -207,7 +208,8 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let result = match self {
             Value::Object(object) => {
-                let val = if activation.swf_version() > 5 && object.as_date_object().is_some() {
+                let is_date = matches!(object.native(), NativeObject::Date(_));
+                let val = if activation.swf_version() > 5 && is_date {
                     // In SWFv6 and higher, Date objects call `toString`.
                     object.call_method(
                         "toString".into(),

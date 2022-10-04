@@ -1,938 +1,601 @@
-use crate::avm1::activation::Activation;
-use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::date_object::DateObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
-use chrono::{DateTime, Datelike, Duration, LocalResult, TimeZone, Timelike, Utc};
-use gc_arena::{Collect, MutationContext};
-use num_traits::ToPrimitive;
+use gc_arena::{Collect, GcCell, MutationContext};
+use std::fmt;
 
-macro_rules! local_getter {
-    ($fn:expr) => {
-        |_activation, this, _args| {
-            if let Some(this) = this.as_date_object() {
-                if let Some(date) = this.date_time() {
-                    let local = date.with_timezone(&get_timezone());
-                    Ok($fn(&local).into())
-                } else {
-                    Ok(f64::NAN.into())
-                }
-            } else {
-                Ok(Value::Undefined)
-            }
-        }
-    };
+fn clamp_to_i32(value: f64) -> i32 {
+    // Values outside of `i32` range get clamped to `i32::MIN`.
+    if value.is_finite() && value >= i32::MIN.into() && value <= i32::MAX.into() {
+        value as i32
+    } else {
+        i32::MIN
+    }
 }
 
-macro_rules! utc_getter {
-    ($fn:expr) => {
-        |_activation, this, _args| {
-            if let Some(this) = this.as_date_object() {
-                if let Some(date) = this.date_time() {
-                    Ok($fn(&date).into())
-                } else {
-                    Ok(f64::NAN.into())
-                }
-            } else {
-                Ok(Value::Undefined)
-            }
-        }
-    };
+#[inline]
+fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
+    let result = clamp_to_i32(lhs % f64::from(rhs));
+    if result < 0 {
+        result + rhs
+    } else {
+        result
+    }
 }
 
-macro_rules! setter {
-    ($fn:expr) => {
-        |activation, this, args| {
-            if let Some(this) = this.as_date_object() {
-                $fn(activation, this, args)
+/// Date and time, represented by milliseconds since epoch.
+#[derive(Clone, PartialEq, PartialOrd, Debug, Collect)]
+#[collect(require_static)]
+#[repr(transparent)]
+pub struct Date(f64);
+
+impl Date {
+    const MS_PER_SECOND: i32 = 1000;
+    const SECONDS_PER_MINUTE: i32 = 60;
+    const MS_PER_MINUTE: i32 = Self::MS_PER_SECOND * Self::SECONDS_PER_MINUTE;
+    const MINUTES_PER_HOUR: i32 = 60;
+    const MS_PER_HOUR: i32 = Self::MS_PER_MINUTE * Self::MINUTES_PER_HOUR;
+    const HOURS_PER_DAY: i32 = 24;
+    const MS_PER_DAY: i32 = Self::MS_PER_HOUR * Self::HOURS_PER_DAY;
+
+    const MONTH_OFFSETS: [[u16; 13]; 2] = [
+        [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365],
+        [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366], // Leap year
+    ];
+
+    const EPOCH: Self = Self(0.0);
+    const INVALID: Self = Self(f64::NAN);
+
+    /// Create from specified date and time.
+    fn new(
+        mut year: f64,
+        month: f64,
+        date: f64,
+        hour: f64,
+        minute: f64,
+        second: f64,
+        millisecond: f64,
+    ) -> Self {
+        if year < 100.0 {
+            year += 1900.0;
+        }
+        Self::make_date(
+            Self::make_day(year, month, date),
+            Self::make_time(hour, minute, second, millisecond),
+        )
+    }
+
+    /// Create from current date and time.
+    fn now() -> Self {
+        Self(get_current_date_time().timestamp_millis() as f64)
+    }
+
+    /// Get milliseconds since epoch.
+    pub const fn time(&self) -> f64 {
+        self.0
+    }
+
+    fn is_valid(&self) -> bool {
+        self.0.is_finite()
+    }
+
+    /// ECMA-262 Day - Get days since epoch.
+    fn day(&self) -> f64 {
+        (self.0 / f64::from(Self::MS_PER_DAY)).floor()
+    }
+
+    /// ECMA-262 TimeWithinDay - Get milliseconds within day.
+    fn time_within_day(&self, swf_version: u8) -> f64 {
+        if swf_version > 7 {
+            self.0.rem_euclid(Self::MS_PER_DAY.into())
+        } else {
+            self.0 % f64::from(Self::MS_PER_DAY)
+        }
+    }
+
+    /// ECMA-262 DayFromYear - Return days passed since epoch to January 1st of `year`.
+    fn day_from_year(year: f64) -> f64 {
+        (365.0 * (year - 1970.0)) + ((year - 1969.0) / 4.0).floor()
+            - ((year - 1901.0) / 100.0).floor()
+            + ((year - 1601.0) / 400.0).floor()
+    }
+
+    /// ECMA-262 TimeFromYear - Return January 1st of `year`.
+    fn from_year(year: i32) -> Self {
+        Self(f64::from(Self::MS_PER_DAY) * Self::day_from_year(year.into()))
+    }
+
+    /// ECMA-262 YearFromTime - Get year.
+    fn year(&self) -> i32 {
+        let day = self.day();
+        // Perform binary search to find the largest `year: i32` such that `Self::from_year(year) <= *self`.
+        let mut low =
+            clamp_to_i32((day / if *self < Self::EPOCH { 365.0 } else { 366.0 }).floor()) + 1970;
+        let mut high =
+            clamp_to_i32((day / if *self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()) + 1970;
+        while low < high {
+            let pivot = clamp_to_i32((f64::from(low) + f64::from(high)) / 2.0);
+            if Self::from_year(pivot) <= *self {
+                if Self::from_year(pivot + 1) > *self {
+                    return pivot;
+                }
+                low = pivot + 1;
             } else {
-                Ok(Value::Undefined)
+                debug_assert!(Self::from_year(pivot) > *self);
+                high = pivot - 1;
             }
         }
+        low
+    }
+
+    /// Determine whether or not `year` is a leap year (i.e. has 366 days instead of 365).
+    const fn is_leap_year(year: i32) -> bool {
+        year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+    }
+
+    /// ECMA-262 InLeapYear
+    fn in_leap_year(&self) -> bool {
+        Self::is_leap_year(self.year())
+    }
+
+    /// ECMA-262 MonthFromTime - Get month (0-11).
+    fn month(&self) -> i32 {
+        let day = self.day_within_year();
+        let in_leap_year = self.in_leap_year();
+        for i in 0..11 {
+            if day < Self::MONTH_OFFSETS[usize::from(in_leap_year)][i as usize + 1].into() {
+                return i;
+            }
+        }
+        11
+    }
+
+    /// ECMA-262 DayWithinYear - Get days within year (0-365).
+    fn day_within_year(&self) -> i32 {
+        clamp_to_i32(self.day() - Self::day_from_year(self.year().into()))
+    }
+
+    /// ECMA-262 DateFromTime - Get days within month (1-31).
+    fn date(&self) -> i32 {
+        let month = self.month();
+        let month_offset = Self::MONTH_OFFSETS[usize::from(self.in_leap_year())][month as usize];
+        self.day_within_year() - i32::from(month_offset) + 1
+    }
+
+    /// ECMA-262 WeekDay - Get days within week (0-6).
+    fn week_day(&self) -> i32 {
+        rem_euclid_i32(self.day() + 4.0, 7)
+    }
+
+    /// ECMA-262 LocalTZA - Get local timezone adjustment in milliseconds.
+    fn local_tza(&self, _is_utc: bool) -> i32 {
+        // TODO: Honor `is_utc` flag.
+        get_timezone().local_minus_utc() * Self::MS_PER_SECOND
+    }
+
+    /// ECMA-262 LocalTime - Convert from UTC to local timezone.
+    fn local(self) -> Self {
+        Self(self.0 + f64::from(self.local_tza(true)))
+    }
+
+    /// ECMA-262 UTC - Convert from local timezone to UTC.
+    fn utc(self) -> Self {
+        Self(self.0 - f64::from(self.local_tza(false)))
+    }
+
+    /// Get timezone offset in minutes.
+    fn timezone_offset(&self) -> f64 {
+        (self.0 - self.clone().local().0) / f64::from(Self::MS_PER_MINUTE)
+    }
+
+    /// ECMA-262 HourFromTime - Get hours (0-23).
+    fn hours(&self) -> i32 {
+        rem_euclid_i32(
+            ((self.0 + 0.5) / f64::from(Self::MS_PER_HOUR)).floor(),
+            Self::HOURS_PER_DAY,
+        )
+    }
+
+    /// ECMA-262 MinFromTime - Get minutes (0-59).
+    fn minutes(&self) -> i32 {
+        rem_euclid_i32(
+            (self.0 / f64::from(Self::MS_PER_MINUTE)).floor(),
+            Self::MINUTES_PER_HOUR,
+        )
+    }
+
+    /// ECMA-262 SecFromTime - Get seconds (0-59).
+    fn seconds(&self) -> i32 {
+        rem_euclid_i32(
+            (self.0 / f64::from(Self::MS_PER_SECOND)).floor(),
+            Self::SECONDS_PER_MINUTE,
+        )
+    }
+
+    /// ECMA-262 msFromTime - Get milliseconds (0-999).
+    fn milliseconds(&self) -> i32 {
+        rem_euclid_i32(self.0, Self::MS_PER_SECOND)
+    }
+
+    /// ECMA-262 MakeTime
+    fn make_time(hours: f64, minutes: f64, seconds: f64, milliseconds: f64) -> f64 {
+        let hours = hours.floor(); // TODO: Round towards zero.
+        let minutes = minutes.floor(); // TODO: Round towards zero.
+        let seconds = seconds.floor(); // TODO: Round towards zero.
+        let milliseconds = milliseconds.floor(); // TODO: Round towards zero.
+
+        hours * f64::from(Self::MS_PER_HOUR)
+            + minutes * f64::from(Self::MS_PER_MINUTE)
+            + seconds * f64::from(Self::MS_PER_SECOND)
+            + milliseconds
+    }
+
+    fn day_from_month(year: f64, month: f64) -> f64 {
+        let year = clamp_to_i32(year);
+        let month = clamp_to_i32(month.floor());
+        if !(0..12).contains(&month) {
+            return f64::NAN;
+        }
+        let is_leap_year = Self::is_leap_year(year);
+        let month_offset = Self::MONTH_OFFSETS[usize::from(is_leap_year)][month as usize];
+        Self::day_from_year(year.into()) + f64::from(month_offset)
+    }
+
+    /// ECMA-262 MakeDay
+    fn make_day(year: f64, month: f64, date: f64) -> f64 {
+        let mut year = year.floor(); // TODO: Round towards zero.
+        let month = month.floor(); // TODO: Round towards zero.
+        let date = date.floor(); // TODO: Round towards zero.
+
+        year += (month / 12.0).floor();
+        let month = month.rem_euclid(12.0);
+
+        Self::day_from_month(year, month) + date - 1.0
+    }
+
+    /// ECMA-262 MakeDate - Create from days since epoch and milliseconds within day.
+    fn make_date(day: f64, time: f64) -> Self {
+        Self(day * f64::from(Self::MS_PER_DAY) + time)
+    }
+
+    /// ECMA-262 TimeClip
+    fn clip(self) -> Self {
+        const LIMIT: f64 = 100_000_000.0 * Date::MS_PER_DAY as f64;
+        if !self.is_valid() || self.0.abs() > LIMIT {
+            return Self::INVALID;
+        }
+
+        Self(self.0.floor())
+    }
+}
+
+impl fmt::Display for Date {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if !self.is_valid() {
+            return write!(f, "Invalid Date");
+        }
+
+        const DAYS_OF_WEEK: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const MONTHS: [&str; 12] = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        ];
+
+        let timezone_offset = clamp_to_i32(-self.timezone_offset());
+        write!(
+            f,
+            "{} {} {} {:02}:{:02}:{:02} GMT{}{:02}{:02} {}",
+            DAYS_OF_WEEK[self.week_day() as usize],
+            MONTHS[self.month() as usize],
+            self.date(),
+            self.hours(),
+            self.minutes(),
+            self.seconds(),
+            if timezone_offset < 0 { '-' } else { '+' },
+            timezone_offset.abs() / Self::MINUTES_PER_HOUR,
+            timezone_offset.abs() % Self::MINUTES_PER_HOUR,
+            self.year(),
+        )
+    }
+}
+
+macro_rules! date_method {
+    ($index:literal) => {
+        |activation, this, args| method(activation, this, args, $index)
     };
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getDay" => method(local_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE);
-    "getFullYear" => method(local_getter!(Datelike::year); DONT_ENUM | DONT_DELETE);
-    "getDate" => method(local_getter!(Datelike::day); DONT_ENUM | DONT_DELETE);
-    "getHours" => method(local_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE);
-    "getMilliseconds" => method(local_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE);
-    "getMinutes" => method(local_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE);
-    "getMonth" => method(local_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE);
-    "getSeconds" => method(local_getter!(Timelike::second); DONT_ENUM | DONT_DELETE);
-    "getYear" => method(local_getter!(year_1900_based); DONT_ENUM | DONT_DELETE);
-    "valueOf" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE);
-    "getTime" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE);
-    "getUTCDate" => method(utc_getter!(Datelike::day); DONT_ENUM | DONT_DELETE);
-    "getUTCDay" => method(utc_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE);
-    "getUTCFullYear" => method(utc_getter!(Datelike::year); DONT_ENUM | DONT_DELETE);
-    "getUTCHours" => method(utc_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE);
-    "getUTCMilliseconds" => method(utc_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE);
-    "getUTCMinutes" => method(utc_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE);
-    "getUTCMonth" => method(utc_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE);
-    "getUTCSeconds" => method(utc_getter!(Timelike::second); DONT_ENUM | DONT_DELETE);
-    "getUTCYear" => method(utc_getter!(year_1900_based); DONT_ENUM | DONT_DELETE);
-    "toString" => method(setter!(to_string); DONT_ENUM | DONT_DELETE);
-    "getTimezoneOffset" => method(setter!(get_timezone_offset); DONT_ENUM | DONT_DELETE);
-    "setDate" => method(setter!(set_date); DONT_ENUM | DONT_DELETE);
-    "setUTCDate" => method(setter!(set_utc_date); DONT_ENUM | DONT_DELETE);
-    "setYear" => method(setter!(set_year); DONT_ENUM | DONT_DELETE);
-    "setFullYear" => method(setter!(set_full_year); DONT_ENUM | DONT_DELETE);
-    "setUTCFullYear" => method(setter!(set_utc_full_year); DONT_ENUM | DONT_DELETE);
-    "setHours" => method(setter!(set_hours); DONT_ENUM | DONT_DELETE);
-    "setUTCHours" => method(setter!(set_utc_hours); DONT_ENUM | DONT_DELETE);
-    "setMilliseconds" => method(setter!(set_milliseconds); DONT_ENUM | DONT_DELETE);
-    "setUTCMilliseconds" => method(setter!(set_utc_milliseconds); DONT_ENUM | DONT_DELETE);
-    "setMinutes" => method(setter!(set_minutes); DONT_ENUM | DONT_DELETE);
-    "setUTCMinutes" => method(setter!(set_utc_minutes); DONT_ENUM | DONT_DELETE);
-    "setMonth" => method(setter!(set_month); DONT_ENUM | DONT_DELETE);
-    "setUTCMonth" => method(setter!(set_utc_month); DONT_ENUM | DONT_DELETE);
-    "setSeconds" => method(setter!(set_seconds); DONT_ENUM | DONT_DELETE);
-    "setUTCSeconds" => method(setter!(set_utc_seconds); DONT_ENUM | DONT_DELETE);
-    "setTime" => method(setter!(set_time); DONT_ENUM | DONT_DELETE);
+    "getFullYear" => method(date_method!(0); DONT_ENUM | DONT_DELETE);
+    "getYear" => method(date_method!(1); DONT_ENUM | DONT_DELETE);
+    "getMonth" => method(date_method!(2); DONT_ENUM | DONT_DELETE);
+    "getDate" => method(date_method!(3); DONT_ENUM | DONT_DELETE);
+    "getDay" => method(date_method!(4); DONT_ENUM | DONT_DELETE);
+    "getHours" => method(date_method!(5); DONT_ENUM | DONT_DELETE);
+    "getMinutes" => method(date_method!(6); DONT_ENUM | DONT_DELETE);
+    "getSeconds" => method(date_method!(7); DONT_ENUM | DONT_DELETE);
+    "getMilliseconds" => method(date_method!(8); DONT_ENUM | DONT_DELETE);
+    "setFullYear" => method(date_method!(9); DONT_ENUM | DONT_DELETE);
+    "setMonth" => method(date_method!(10); DONT_ENUM | DONT_DELETE);
+    "setDate" => method(date_method!(11); DONT_ENUM | DONT_DELETE);
+    "setHours" => method(date_method!(12); DONT_ENUM | DONT_DELETE);
+    "setMinutes" => method(date_method!(13); DONT_ENUM | DONT_DELETE);
+    "setSeconds" => method(date_method!(14); DONT_ENUM | DONT_DELETE);
+    "setMilliseconds" => method(date_method!(15); DONT_ENUM | DONT_DELETE);
+    "getTime" => method(date_method!(16); DONT_ENUM | DONT_DELETE);
+    "valueOf" => method(date_method!(16); DONT_ENUM | DONT_DELETE);
+    "setTime" => method(date_method!(17); DONT_ENUM | DONT_DELETE);
+    "getTimezoneOffset" => method(date_method!(18); DONT_ENUM | DONT_DELETE);
+    "toString" => method(date_method!(19); DONT_ENUM | DONT_DELETE);
+    "setYear" => method(date_method!(20); DONT_ENUM | DONT_DELETE);
+    "getUTCFullYear" => method(date_method!(128); DONT_ENUM | DONT_DELETE);
+    "getUTCYear" => method(date_method!(129); DONT_ENUM | DONT_DELETE);
+    "getUTCMonth" => method(date_method!(130); DONT_ENUM | DONT_DELETE);
+    "getUTCDate" => method(date_method!(131); DONT_ENUM | DONT_DELETE);
+    "getUTCDay" => method(date_method!(132); DONT_ENUM | DONT_DELETE);
+    "getUTCHours" => method(date_method!(133); DONT_ENUM | DONT_DELETE);
+    "getUTCMinutes" => method(date_method!(134); DONT_ENUM | DONT_DELETE);
+    "getUTCSeconds" => method(date_method!(135); DONT_ENUM | DONT_DELETE);
+    "getUTCMilliseconds" => method(date_method!(136); DONT_ENUM | DONT_DELETE);
+    "setUTCFullYear" => method(date_method!(137); DONT_ENUM | DONT_DELETE);
+    "setUTCMonth" => method(date_method!(138); DONT_ENUM | DONT_DELETE);
+    "setUTCDate" => method(date_method!(139); DONT_ENUM | DONT_DELETE);
+    "setUTCHours" => method(date_method!(140); DONT_ENUM | DONT_DELETE);
+    "setUTCMinutes" => method(date_method!(141); DONT_ENUM | DONT_DELETE);
+    "setUTCSeconds" => method(date_method!(142); DONT_ENUM | DONT_DELETE);
+    "setUTCMilliseconds" => method(date_method!(143); DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "UTC" => method(create_utc; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "UTC" => method(date_method!(257); DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
-fn days_from_sunday<T: Datelike>(date: &T) -> u32 {
-    date.weekday().num_days_from_sunday()
-}
-
-fn year_1900_based<T: Datelike>(date: &T) -> i32 {
-    date.year() - 1900
-}
-
-fn timestamp_millis_f64<T: TimeZone>(date: &DateTime<T>) -> f64 {
-    date.timestamp_millis() as f64
-}
-
-#[derive(Collect)]
-#[collect(require_static)]
-enum YearType {
-    Full,
-    Adjust(Box<dyn Fn(i64) -> i64>),
-}
-
-impl YearType {
-    fn adjust(&self, year: i64) -> i64 {
-        match self {
-            YearType::Full => year,
-            YearType::Adjust(function) => function(year),
-        }
-    }
-}
-
-#[derive(Collect)]
-#[collect(no_drop)]
-struct DateAdjustment<
-    'builder,
-    'activation_a: 'builder,
-    'gc: 'activation_a,
-    'gc_context: 'activation_a,
-    T: TimeZone + 'builder,
-> {
-    activation: &'builder mut Activation<'activation_a, 'gc, 'gc_context>,
-    year_type: YearType,
-    timezone: &'builder T,
-    year: Option<Option<f64>>,
-    month: Option<Option<f64>>,
-    day: Option<Option<f64>>,
-    hour: Option<Option<f64>>,
-    minute: Option<Option<f64>>,
-    second: Option<Option<f64>>,
-    millisecond: Option<Option<f64>>,
-    ignore_next: bool,
-}
-
-impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
-    DateAdjustment<'builder, 'activation_a, 'gc, 'gc_context, T>
-{
-    fn new(
-        activation: &'builder mut Activation<'activation_a, 'gc, 'gc_context>,
-        timezone: &'builder T,
-    ) -> Self {
-        Self {
-            activation,
-            timezone,
-            year_type: YearType::Full,
-            year: None,
-            month: None,
-            day: None,
-            hour: None,
-            minute: None,
-            second: None,
-            millisecond: None,
-            ignore_next: false,
-        }
-    }
-
-    fn adjust_year(&mut self, adjuster: impl Fn(i64) -> i64 + 'static) -> &mut Self {
-        self.year_type = YearType::Adjust(Box::new(adjuster));
-        self
-    }
-
-    #[allow(dead_code)]
-    fn year(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.year = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn year_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.year = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn year_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.year = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn month(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.month = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn month_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.month = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn month_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.month = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn day(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.day = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn day_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.day = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn day_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.day = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn hour(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.hour = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn hour_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.hour = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn hour_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.hour = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn minute(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.minute = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    fn minute_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.minute = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn minute_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.minute = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn second(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.second = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn second_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.second = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn second_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.second = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn millisecond(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.millisecond = Some(if let Some(value) = value {
-                Some(value.coerce_to_f64(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn millisecond_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.millisecond = Some(if let Some(value) = value {
-                let value = value.coerce_to_f64(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn millisecond_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error<'gc>> {
-        if !self.ignore_next {
-            self.millisecond = match value {
-                Some(&Value::Undefined) | None => {
-                    self.ignore_next = true;
-                    None
-                }
-                Some(value) => Some(Some(value.coerce_to_f64(self.activation)?)),
-            };
-        }
-        Ok(self)
-    }
-
-    fn check_value(
-        &self,
-        specified: Option<Option<f64>>,
-        current: impl ToPrimitive,
-    ) -> Option<i64> {
-        match specified {
-            Some(Some(value)) if value.is_finite() => Some(value as i64),
-            Some(_) => None,
-            None => current.to_i64(),
-        }
-    }
-
-    fn check_mapped_value(
-        &self,
-        specified: Option<Option<f64>>,
-        map: impl FnOnce(i64) -> i64,
-        current: impl ToPrimitive,
-    ) -> Option<i64> {
-        match specified {
-            Some(Some(value)) if value.is_finite() => Some(map(value as i64)),
-            Some(_) => None,
-            None => current.to_i64(),
-        }
-    }
-
-    fn calculate(&mut self, current: DateObject<'gc>) -> Option<DateTime<Utc>> {
-        if let Some(current) = current.date_time().map(|v| v.with_timezone(self.timezone)) {
-            let month_rem = self
-                .month
-                .flatten()
-                .map(|v| v as i64)
-                .unwrap_or_default()
-                .div_euclid(12);
-            let month =
-                self.check_mapped_value(self.month, |v| v.rem_euclid(12), current.month0())?;
-            let year = self
-                .check_mapped_value(self.year, |v| self.year_type.adjust(v), current.year())?
-                .wrapping_add(month_rem) as i32;
-            let day = self.check_value(self.day, current.day())?;
-            let hour = self.check_value(self.hour, current.hour())?;
-            let minute = self.check_value(self.minute, current.minute())?;
-            let second = self.check_value(self.second, current.second())?;
-            let millisecond =
-                self.check_value(self.millisecond, current.timestamp_subsec_millis())?;
-
-            let duration = Duration::days(day - 1)
-                + Duration::hours(hour)
-                + Duration::minutes(minute)
-                + Duration::seconds(second)
-                + Duration::milliseconds(millisecond);
-
-            if let LocalResult::Single(Some(result)) = current
-                .timezone()
-                .ymd_opt(year, (month + 1) as u32, 1)
-                .and_hms_opt(0, 0, 0)
-                .map(|date| date.checked_add_signed(duration))
-            {
-                return Some(result.with_timezone(&Utc));
-            }
-        }
-
-        None
-    }
-
-    fn apply(&mut self, object: DateObject<'gc>) -> f64 {
-        let date = self.calculate(object);
-        object.set_date_time(self.activation.context.gc_context, date);
-        if let Some(date) = date {
-            date.timestamp_millis() as f64
-        } else {
-            f64::NAN
-        }
-    }
-}
-
+/// ECMA-262 Date
 fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    args: &[Value<'gc>],
+    args: &[f64],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = if let Some(object) = this.as_date_object() {
-        object
-    } else {
-        return Ok(this.into());
-    };
-
-    let timestamp = args.get(0).unwrap_or(&Value::Undefined);
-    if timestamp != &Value::Undefined {
-        if args.len() > 1 {
-            let timezone = get_timezone();
-
-            // We need a starting value to adjust from.
-            this.set_date_time(
-                activation.context.gc_context,
-                Some(timezone.ymd(0, 1, 1).and_hms(0, 0, 0).into()),
-            );
-
-            DateAdjustment::new(activation, &timezone)
-                .year_opt(args.get(0))?
-                .month_opt(args.get(1))?
-                .day_opt(args.get(2))?
-                .hour_opt(args.get(3))?
-                .minute_opt(args.get(4))?
-                .second_opt(args.get(5))?
-                .millisecond_opt(args.get(6))?
-                .adjust_year(|year| if year < 100 { year + 1900 } else { year })
-                .apply(this);
-        } else {
-            let timestamp = timestamp.coerce_to_f64(activation)?;
-            if timestamp.is_finite() {
-                if let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64) {
-                    this.set_date_time(activation.context.gc_context, Some(time))
-                } else {
-                    this.set_date_time(activation.context.gc_context, None);
-                }
+    let date = match args[..] {
+        [] => {
+            let date = Date::now();
+            if activation.swf_version() > 7 {
+                Date(date.time().round())
             } else {
-                this.set_date_time(activation.context.gc_context, None);
+                date
             }
         }
-    } else {
-        this.set_date_time(activation.context.gc_context, Some(get_current_date_time()))
-    }
-
+        [timestamp] => Date(timestamp),
+        [year, month, ..] => {
+            let date = args.get(2).copied().unwrap_or(1.0);
+            let hour = args.get(3).copied().unwrap_or(0.0);
+            let minute = args.get(4).copied().unwrap_or(0.0);
+            let second = args.get(5).copied().unwrap_or(0.0);
+            let millisecond = args.get(6).copied().unwrap_or(0.0);
+            Date::new(year, month, date, hour, minute, second, millisecond).utc()
+        }
+    };
+    this.set_native(
+        activation.context.gc_context,
+        NativeObject::Date(GcCell::allocate(activation.context.gc_context, date)),
+    );
     Ok(this.into())
 }
 
-fn create_utc<'gc>(
+/// `Date()` invoked without `new` returns current date and time as a string, as defined in ECMA-262.
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
-    args: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 2 {
-        return Ok(Value::Undefined);
-    }
-
-    // We need a starting value to adjust from.
-    let date = DateObject::with_date_time(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        Some(activation.context.avm1.prototypes().date),
-        Some(Utc.ymd(0, 1, 1).and_hms(0, 0, 0)),
-    );
-
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .year(args.get(0))?
-        .month(args.get(1))?
-        .day_opt(args.get(2))?
-        .hour_opt(args.get(3))?
-        .minute_opt(args.get(4))?
-        .second_opt(args.get(5))?
-        .millisecond_opt(args.get(6))?
-        .adjust_year(|year| if year < 100 { year + 1900 } else { year })
-        .apply(date);
-
-    Ok(timestamp.into())
+        Date::now().local().to_string(),
+    )
+    .into())
 }
 
-fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let date = this.date_time();
-
-    if let Some(date) = date {
-        let local = date.with_timezone(&get_timezone());
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            local.format("%a %b %-d %T GMT%z %-Y").to_string(),
-        )
-        .into())
-    } else {
-        Ok("Invalid Date".into())
+/// ECMA-262 Date.UTC
+fn utc<'gc>(args: &[f64]) -> Result<Value<'gc>, Error<'gc>> {
+    match args[..] {
+        [] | [_] => Ok(Value::Undefined),
+        [year, month, ..] => {
+            let date = args.get(2).copied().unwrap_or(1.0);
+            let hour = args.get(3).copied().unwrap_or(0.0);
+            let minute = args.get(4).copied().unwrap_or(0.0);
+            let second = args.get(5).copied().unwrap_or(0.0);
+            let millisecond = args.get(6).copied().unwrap_or(0.0);
+            let date = Date::new(year, month, date, hour, minute, second, millisecond);
+            Ok(date.time().into())
+        }
     }
 }
 
-fn get_timezone_offset<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    _args: &[Value<'gc>],
+fn method<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+    mut index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let date = if let Some(date) = this.date_time() {
-        date.with_timezone(&get_timezone())
-    } else {
+    const GET_FULL_YEAR: u16 = 0;
+    const GET_YEAR: u16 = 1;
+    const GET_MONTH: u16 = 2;
+    const GET_DATE: u16 = 3;
+    const GET_DAY: u16 = 4;
+    const GET_HOURS: u16 = 5;
+    const GET_MINUTES: u16 = 6;
+    const GET_SECONDS: u16 = 7;
+    const GET_MILLISECONDS: u16 = 8;
+    const SET_FULL_YEAR: u16 = 9;
+    const SET_MONTH: u16 = 10;
+    const SET_DATE: u16 = 11;
+    const SET_HOURS: u16 = 12;
+    const SET_MINUTES: u16 = 13;
+    const SET_SECONDS: u16 = 14;
+    const SET_MILLISECONDS: u16 = 15;
+    const GET_TIME: u16 = 16;
+    const SET_TIME: u16 = 17;
+    const GET_TIMEZONE_OFFSET: u16 = 18;
+    const TO_STRING: u16 = 19;
+    const SET_YEAR: u16 = 20;
+    const CONSTRUCTOR: u16 = 256;
+    const UTC: u16 = 257;
+
+    let mut values = Vec::with_capacity(7);
+    for arg in args.iter().take(7) {
+        if arg == &Value::Undefined {
+            break;
+        }
+        values.push(arg.coerce_to_f64(activation)?);
+    }
+    let args = values;
+
+    match index {
+        CONSTRUCTOR => return constructor(activation, this, &args),
+        UTC => return utc(&args),
+        _ => {}
+    }
+
+    let date = match this.native() {
+        NativeObject::Date(date) => date,
+        _ => return Ok(Value::Undefined),
+    };
+    let mut date_ref = date.write(activation.context.gc_context);
+
+    match index {
+        GET_TIME => return Ok(date_ref.time().into()),
+        SET_TIME => {
+            let timestamp = args.first().copied().unwrap_or(f64::NAN);
+            *date_ref = Date(timestamp).clip();
+            return Ok(date_ref.time().into());
+        }
+        GET_TIMEZONE_OFFSET => return Ok(date_ref.timezone_offset().into()),
+        _ => {}
+    }
+
+    // Map method `index` to local counterpart.
+    let is_utc = index >= 128;
+    if is_utc {
+        index -= 128;
+    }
+
+    // Return `NaN` for invalid dates.
+    let is_get = matches!(
+        index,
+        GET_FULL_YEAR..=GET_MILLISECONDS | GET_TIME | GET_TIMEZONE_OFFSET
+    );
+    if is_get && date_ref.time().is_nan() {
         return Ok(f64::NAN.into());
+    }
+
+    // Handle `setYear()` using `setFullYear()`.
+    let is_set_year = index == SET_YEAR;
+    if is_set_year {
+        index = SET_FULL_YEAR;
+    }
+
+    let arg = |i: u16| {
+        i.checked_sub(index)
+            .and_then(|i| args.get(usize::from(i)))
+            .copied()
+            .or_else(|| (i == index).then_some(f64::NAN))
     };
 
-    let seconds = date.offset().utc_minus_local() as f32;
-    let minutes = seconds / 60.0;
-    Ok(minutes.into())
-}
-
-fn set_date<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
-        this.set_date_time(activation.context.gc_context, None);
-        Ok(f64::NAN.into())
+    let date = if is_utc {
+        date_ref.clone()
     } else {
-        let timestamp = DateAdjustment::new(activation, &get_timezone())
-            .day(args.get(0))?
-            .apply(this);
-        Ok(timestamp.into())
-    }
-}
+        date_ref.clone().local()
+    };
 
-fn set_utc_date<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
-        this.set_date_time(activation.context.gc_context, None);
-        Ok(f64::NAN.into())
-    } else {
-        let timestamp = DateAdjustment::new(activation, &Utc)
-            .day(args.get(0))?
-            .apply(this);
-        Ok(timestamp.into())
-    }
-}
+    let mut set_date = |day: f64, time: f64| {
+        let mut date = Date::make_date(day, time);
+        if !is_utc {
+            date = date.utc();
+        }
+        *date_ref = date.clip();
+        date_ref.time()
+    };
 
-fn set_year<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .year(args.get(0))?
-        .adjust_year(|year| {
-            if year >= 0 && year < 100 {
-                year + 1900
-            } else {
-                year
+    Ok(match index {
+        GET_FULL_YEAR => date.year().into(),
+        GET_YEAR => (date.year() - 1900).into(),
+        GET_MONTH => date.month().into(),
+        GET_DATE => date.date().into(),
+        GET_DAY => date.week_day().into(),
+        GET_HOURS => date.hours().into(),
+        GET_MINUTES => date.minutes().into(),
+        GET_SECONDS => date.seconds().into(),
+        GET_MILLISECONDS => date.milliseconds().into(),
+        SET_FULL_YEAR..=SET_DATE => {
+            let year = arg(SET_FULL_YEAR).map_or_else(
+                || date.year().into(),
+                |mut year| {
+                    if is_set_year && year >= 0.0 && year <= 99.0 {
+                        year += 1900.0;
+                    }
+                    year
+                },
+            );
+            let mut month = arg(SET_MONTH).unwrap_or_else(|| date.month().into());
+            if index == SET_MONTH && month.is_nan() {
+                // `setMonth()` special case.
+                month = 0.0;
             }
-        })
-        .apply(this);
-    Ok(timestamp.into())
+            let new_date = arg(SET_DATE).unwrap_or_else(|| {
+                let new_date = date.date().into();
+                if index == SET_MONTH && activation.swf_version() > 6 {
+                    // TODO: `setMonth()` special case.
+                }
+                new_date
+            });
+            set_date(
+                Date::make_day(year, month, new_date),
+                date.time_within_day(activation.swf_version()),
+            )
+            .into()
+        }
+        SET_HOURS..=SET_MILLISECONDS => {
+            let hours = arg(SET_HOURS).unwrap_or_else(|| date.hours().into());
+            let mut minutes = arg(SET_MINUTES).unwrap_or_else(|| date.minutes().into());
+            let mut seconds = arg(SET_SECONDS).unwrap_or_else(|| date.seconds().into());
+            let mut milliseconds =
+                arg(SET_MILLISECONDS).unwrap_or_else(|| date.milliseconds().into());
+            if index == SET_MINUTES {
+                // `setMinutes()` special case.
+                minutes = clamp_to_i32(minutes).into();
+                seconds = clamp_to_i32(seconds).into();
+                milliseconds = clamp_to_i32(milliseconds).into();
+            }
+            set_date(
+                date.day(),
+                Date::make_time(hours, minutes, seconds, milliseconds),
+            )
+            .into()
+        }
+        TO_STRING => AvmString::new_utf8(activation.context.gc_context, date.to_string()).into(),
+        GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
+    })
 }
 
-fn set_hours<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .hour(args.get(0))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_hours<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .hour(args.get(0))?
-        .minute_opt(args.get(1))?
-        .second_opt(args.get(2))?
-        .millisecond_opt(args.get(3))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_milliseconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .millisecond(args.get(0))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_milliseconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .millisecond(args.get(0))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_minutes<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .minute_or(args.get(0), -2147483648.0)?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_minutes<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .minute_or(args.get(0), -2147483648.0)?
-        .second_opt(args.get(1))?
-        .millisecond_opt(args.get(2))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_month<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .month_or(args.get(0), 0.0)?
-        .day_opt(args.get(1))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_month<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .month_or(args.get(0), 0.0)?
-        .day_opt(args.get(1))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_seconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .second(args.get(0))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_seconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .second(args.get(0))?
-        .millisecond_opt(args.get(1))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_time<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let new_time = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(activation)?;
-
-    if new_time.is_finite() {
-        let time = Utc.timestamp_millis(new_time as i64);
-        this.set_date_time(activation.context.gc_context, Some(time));
-        return Ok((time.timestamp_millis() as f64).into());
-    }
-
-    this.set_date_time(activation.context.gc_context, None);
-    Ok(f64::NAN.into())
-}
-
-fn set_full_year<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &get_timezone())
-        .year(args.get(0))?
-        .month_opt(args.get(1))?
-        .day_opt(args.get(2))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-fn set_utc_full_year<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DateObject<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let timestamp = DateAdjustment::new(activation, &Utc)
-        .year(args.get(0))?
-        .month_opt(args.get(1))?
-        .day_opt(args.get(2))?
-        .apply(this);
-    Ok(timestamp.into())
-}
-
-pub fn create_date_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
-    date_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let date = FunctionObject::function(
-        gc_context,
-        Executable::Native(constructor),
-        fn_proto,
-        date_proto,
-    );
-    let object = date.as_script_object().unwrap();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
-    date
-}
-
-pub fn create_proto<'gc>(
+pub fn create_constructor<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let date = DateObject::with_date_time(gc_context, Some(proto), None);
-    let object = date.as_script_object().unwrap();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
-    date.into()
+    let date_proto = ScriptObject::new(gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, gc_context, date_proto, fn_proto);
+
+    let date_constructor = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(date_method!(256)),
+        Executable::Native(function),
+        fn_proto,
+        date_proto.into(),
+    );
+    let object = date_constructor.as_script_object().unwrap();
+    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+
+    date_constructor
 }

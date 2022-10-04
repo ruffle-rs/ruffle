@@ -2,13 +2,13 @@
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
 use crate::avm1::globals::color_transform::ColorTransformObject;
+use crate::avm1::globals::date::Date;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
 use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
-use crate::avm1::object::date_object::DateObject;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
@@ -36,7 +36,6 @@ pub mod blur_filter;
 pub mod color_matrix_filter;
 pub mod convolution_filter;
 mod custom_object;
-pub mod date_object;
 pub mod displacement_map_filter;
 pub mod drop_shadow_filter;
 pub mod glow_filter;
@@ -56,6 +55,7 @@ pub mod xml_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
+    Date(GcCell<'gc, Date>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
 }
@@ -87,7 +87,6 @@ pub enum NativeObject<'gc> {
         ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
         GradientBevelFilterObject(GradientBevelFilterObject<'gc>),
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
-        DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
     }
 )]
@@ -550,11 +549,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `DateObject`, if it exists
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
         None
     }
 

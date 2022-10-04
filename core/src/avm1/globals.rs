@@ -25,7 +25,7 @@ pub(crate) mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 pub mod convolution_filter;
-mod date;
+pub(crate) mod date;
 pub mod displacement_map_filter;
 pub mod drop_shadow_filter;
 pub(crate) mod error;
@@ -516,7 +516,6 @@ pub struct SystemPrototypes<'gc> {
     pub gradient_bevel_filter_constructor: Object<'gc>,
     pub gradient_glow_filter: Object<'gc>,
     pub gradient_glow_filter_constructor: Object<'gc>,
-    pub date: Object<'gc>,
     pub date_constructor: Object<'gc>,
     pub bitmap_data: Object<'gc>,
     pub bitmap_data_constructor: Object<'gc>,
@@ -589,7 +588,6 @@ pub fn create_globals<'gc>(
         function_proto,
         movie_clip_loader_proto,
     );
-    let date_proto = date::create_proto(gc_context, object_proto, function_proto);
 
     let video_proto = video::create_proto(gc_context, object_proto, function_proto);
 
@@ -689,7 +687,7 @@ pub fn create_globals<'gc>(
     let string = string::create_string_object(gc_context, string_proto, function_proto);
     let number = number::create_number_object(gc_context, number_proto, function_proto);
     let boolean = boolean::create_boolean_object(gc_context, boolean_proto, function_proto);
-    let date = date::create_date_object(gc_context, date_proto, function_proto);
+    let date = date::create_constructor(gc_context, object_proto, function_proto);
 
     let flash = ScriptObject::new(gc_context, Some(object_proto));
 
@@ -1178,7 +1176,6 @@ pub fn create_globals<'gc>(
             gradient_bevel_filter_constructor: gradient_bevel_filter,
             gradient_glow_filter: gradient_glow_filter_proto,
             gradient_glow_filter_constructor: gradient_glow_filter,
-            date: date_proto,
             date_constructor: date,
             bitmap_data: bitmap_data_proto,
             bitmap_data_constructor: bitmap_data,
