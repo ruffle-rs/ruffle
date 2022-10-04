@@ -34,6 +34,7 @@ use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
+use crate::socket::XmlSockets;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
@@ -133,6 +134,9 @@ struct GcRootData<'gc> {
     /// Timed callbacks created with `setInterval`/`setTimeout`.
     timers: Timers<'gc>,
 
+    /// Handle `XMLSocket` connections lifecycle
+    xml_sockets: XmlSockets<'gc>,
+
     current_context_menu: Option<ContextMenuState<'gc>>,
 
     /// External interface for (for example) JavaScript <-> ActionScript interaction
@@ -163,6 +167,7 @@ impl<'gc> GcRootData<'gc> {
         &mut HashMap<String, Avm2Object<'gc>>,
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
+        &mut XmlSockets<'gc>,
         &mut Option<ContextMenuState<'gc>>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
@@ -179,6 +184,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.avm2_shared_objects,
             &mut self.unbound_text_fields,
             &mut self.timers,
+            &mut self.xml_sockets,
             &mut self.current_context_menu,
             &mut self.external_interface,
             &mut self.audio_manager,
@@ -501,6 +507,7 @@ impl Player {
                     * 1000.0
             });
 
+            self.update_xml_sockets();
             self.update_timers(dt);
             self.audio.tick();
         }
@@ -1630,6 +1637,7 @@ impl Player {
                 avm2_shared_objects,
                 unbound_text_fields,
                 timers,
+                xml_sockets,
                 current_context_menu,
                 external_interface,
                 audio_manager,
@@ -1663,6 +1671,7 @@ impl Player {
                 avm2_shared_objects,
                 unbound_text_fields,
                 timers,
+                xml_sockets,
                 current_context_menu,
                 needs_render: &mut self.needs_render,
                 avm1,
@@ -1785,6 +1794,11 @@ impl Player {
     pub fn update_timers(&mut self, dt: f64) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
+    }
+
+    /// Update connected XmlSockets.
+    pub fn update_xml_sockets(&mut self) {
+        self.mutate_with_update_context(|context| XmlSockets::update_sockets(context));
     }
 
     /// Returns whether this player consumes mouse wheel events.
@@ -2094,6 +2108,7 @@ impl PlayerBuilder {
                                 avm2_shared_objects: HashMap::new(),
                                 stage: Stage::empty(gc_context, self.fullscreen),
                                 timers: Timers::new(),
+                                xml_sockets: XmlSockets::empty(),
                                 unbound_text_fields: Vec::new(),
                             },
                         ),

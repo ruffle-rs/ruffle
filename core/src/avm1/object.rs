@@ -20,6 +20,7 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::object::xml_socket_object::XmlSocketObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -51,6 +52,7 @@ pub mod transform_object;
 pub mod value_object;
 pub mod xml_node_object;
 pub mod xml_object;
+pub mod xml_socket_object;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -74,6 +76,7 @@ pub enum NativeObject<'gc> {
         SuperObject(SuperObject<'gc>),
         XmlObject(XmlObject<'gc>),
         XmlNodeObject(XmlNodeObject<'gc>),
+        XmlSocketObject(XmlSocketObject<'gc>),
         ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
@@ -540,6 +543,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying XML node for this object, if it exists.
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
+        None
+    }
+
+    /// Get the underlying XMLSocket for this object, if it exists.
+    fn as_xml_socket(&self) -> Option<XmlSocketObject<'gc>> {
         None
     }
 

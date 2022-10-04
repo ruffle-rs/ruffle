@@ -2,6 +2,7 @@
 
 #[macro_use]
 mod display_object;
+
 pub use display_object::StageDisplayState;
 
 #[macro_use]
@@ -35,6 +36,7 @@ pub mod loader;
 mod locale;
 mod player;
 mod prelude;
+pub mod socket;
 pub mod string;
 pub mod tag_utils;
 pub mod timer;

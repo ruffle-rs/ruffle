@@ -1,6 +1,7 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
+use crate::socket::XmlSocketConnection;
 use crate::string::WStr;
 use indexmap::IndexMap;
 use std::future::Future;
@@ -158,6 +159,15 @@ pub trait NavigatorBackend {
     /// Changing http -> https for example. This function may alter any part of the
     /// URL (generally only if configured to do so by the user).
     fn pre_process_url(&self, url: Url) -> Url;
+
+    /// Handle any XMLSocket connection request
+    ///
+    /// Returning `None` makes `XMLSocket.connect()` returns `false`,
+    /// as if network access was disabled.
+    ///
+    /// See [XmlSocketConnection] for more details about implementation.
+    fn connect_xml_socket(&mut self, host: &str, port: u16)
+        -> Option<Box<dyn XmlSocketConnection>>;
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -303,5 +313,13 @@ impl NavigatorBackend for NullNavigatorBackend {
 
     fn pre_process_url(&self, url: Url) -> Url {
         url
+    }
+
+    fn connect_xml_socket(
+        &mut self,
+        _host: &str,
+        _port: u16,
+    ) -> Option<Box<dyn XmlSocketConnection>> {
+        None
     }
 }
