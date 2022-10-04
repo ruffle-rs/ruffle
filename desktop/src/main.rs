@@ -18,6 +18,7 @@ use crate::executor::GlutinAsyncExecutor;
 use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
+use navigator::XmlSocketBehavior;
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
@@ -26,6 +27,7 @@ use ruffle_core::{
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -86,6 +88,20 @@ struct Opt {
     /// Proxy to use when loading movies via URL.
     #[clap(long, value_parser)]
     proxy: Option<Url>,
+
+    /// Add an endpoint (`[host]:[port]`) to the XMLSocket whitelist.
+    #[clap(long = "xmlsocket-allow", number_of_values = 1, action = clap::ArgAction::Append)]
+    xml_socket_allow: Vec<String>,
+
+    /// Define how to deal with XMLSocket.
+    #[clap(
+        long = "xmlsocket",
+        short,
+        default_value = "disabled",
+        arg_enum,
+        value_parser
+    )]
+    xml_socket_behavior: XmlSocketBehavior,
 
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, action)]
@@ -239,6 +255,8 @@ impl App {
             event_loop.create_proxy(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
+            HashSet::from_iter(opt.xml_socket_allow.iter().cloned()),
+            opt.xml_socket_behavior,
         );
 
         let viewport_size = window.inner_size();
