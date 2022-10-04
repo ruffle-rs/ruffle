@@ -9,6 +9,6 @@ proc-macro2 = "1.0.46"
 quote = "1.0.21"
 swf = { path = "../../swf" }
 clap = {version = "3.2.20", features = ["derive"]}
-serde = {version = "1.0.143", features = ["derive"]}
+serde = {version = "1.0.145", features = ["derive"]}
 serde-xml-rs = "0.6.0"
 colored = "2.0.0"
