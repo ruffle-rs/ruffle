@@ -9,8 +9,8 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::Bitmap;
@@ -375,6 +375,330 @@ pub fn get_pixel32<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.setPixel`.
+pub fn set_pixel<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let y = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let color = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .set_pixel(x, y, color.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.setPixel32`.
+pub fn set_pixel32<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let y = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let color = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .set_pixel32(x, y, color.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.setPixels`.
+pub fn set_pixels<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let rectangle = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation)?;
+
+    let bytearray = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = rectangle
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_u32(activation)?;
+        let y = rectangle
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_u32(activation)?;
+        let width = rectangle
+            .get_property(&Multiname::public("width"), activation)?
+            .coerce_to_u32(activation)?;
+        let height = rectangle
+            .get_property(&Multiname::public("height"), activation)?
+            .coerce_to_u32(activation)?;
+
+        let ba_read = bytearray
+            .as_bytearray()
+            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let mut ind = 0;
+
+        for y in y..y + height {
+            for x in x..x + width {
+                // Copy data from bytearray until EOFError or finished
+                if let Ok(color) = ba_read.read_int_at(ind) {
+                    bitmap_data.set_pixel32(x as i32, y as i32, color.into());
+                    ind += 4;
+                } else {
+                    return Err(Error::AvmError(crate::avm2::error::eof_error(
+                        activation,
+                        "Error #2030: End of file was encountered.",
+                        2030,
+                    )?));
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.copyChannel`.
+pub fn copy_channel<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data.read().check_valid(activation)?;
+        let source_bitmap = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+
+        let source_rect = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+
+        let dest_point = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+
+        let dest_x = dest_point
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_u32(activation)?;
+        let dest_y = dest_point
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_u32(activation)?;
+
+        let source_channel = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+
+        let dest_channel = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+
+        let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
+        if !bitmap_data_write.disposed() {
+            if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
+                //TODO: what if source is disposed
+                let src_min_x = source_rect
+                    .get_property(&Multiname::public("x"), activation)?
+                    .coerce_to_u32(activation)?;
+                let src_min_y = source_rect
+                    .get_property(&Multiname::public("y"), activation)?
+                    .coerce_to_u32(activation)?;
+                let src_width = source_rect
+                    .get_property(&Multiname::public("width"), activation)?
+                    .coerce_to_u32(activation)?;
+                let src_height = source_rect
+                    .get_property(&Multiname::public("height"), activation)?
+                    .coerce_to_u32(activation)?;
+                let src_max_x = src_min_x + src_width;
+                let src_max_y = src_min_y + src_height;
+
+                if GcCell::ptr_eq(bitmap_data, source_bitmap) {
+                    let src_bitmap_data_clone = source_bitmap.read().clone();
+                    bitmap_data_write.copy_channel(
+                        (dest_x, dest_y),
+                        (src_min_x, src_min_y, src_max_x, src_max_y),
+                        &src_bitmap_data_clone,
+                        source_channel,
+                        dest_channel,
+                    );
+                } else {
+                    bitmap_data_write.copy_channel(
+                        (dest_x, dest_y),
+                        (src_min_x, src_min_y, src_max_x, src_max_y),
+                        &source_bitmap.read(),
+                        source_channel,
+                        dest_channel,
+                    );
+                }
+            }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn flood_fill<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        if !bitmap_data.disposed() {
+            if let (Some(x_val), Some(y_val), Some(color_val)) =
+                (args.get(0), args.get(1), args.get(2))
+            {
+                let x = x_val.coerce_to_u32(activation)?;
+                let y = y_val.coerce_to_u32(activation)?;
+                let color = color_val.coerce_to_i32(activation)?;
+
+                let color: Color = color.into();
+                let color: Color = color.to_premultiplied_alpha(bitmap_data.transparency());
+
+                bitmap_data.flood_fill(x, y, color);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn noise<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let low = args.get(1).unwrap_or(&0.into()).coerce_to_u32(activation)? as u8;
+
+    let high = args
+        .get(2)
+        .unwrap_or(&0xFF.into())
+        .coerce_to_u32(activation)? as u8;
+
+    let channel_options = if let Some(c) = args.get(3) {
+        ChannelOptions::from_bits_truncate(c.coerce_to_u32(activation)? as u8)
+    } else {
+        ChannelOptions::RGB
+    };
+
+    let gray_scale = args.get(4).unwrap_or(&false.into()).coerce_to_boolean();
+
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        if !bitmap_data.disposed() {
+            if let Some(random_seed_val) = args.get(0) {
+                let random_seed = random_seed_val.coerce_to_i32(activation)?;
+                bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale)
+            }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn color_transform<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        if !bitmap_data.disposed() {
+            if let [rectangle, color_transform, ..] = args {
+                // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
+                let rectangle = rectangle.coerce_to_object(activation)?;
+                let x = rectangle
+                    .get_property(&Multiname::public("x"), activation)?
+                    .coerce_to_i32(activation)?;
+                let y = rectangle
+                    .get_property(&Multiname::public("y"), activation)?
+                    .coerce_to_i32(activation)?;
+                let width = rectangle
+                    .get_property(&Multiname::public("width"), activation)?
+                    .coerce_to_i32(activation)?;
+                let height = rectangle
+                    .get_property(&Multiname::public("height"), activation)?
+                    .coerce_to_i32(activation)?;
+
+                let x_min = x.max(0) as u32;
+                let x_max = (x + width) as u32;
+                let y_min = y.max(0) as u32;
+                let y_max = (y + height) as u32;
+
+                let color_transform =
+                    crate::avm2::globals::flash::geom::transform::object_to_color_transform(
+                        color_transform.coerce_to_object(activation)?,
+                        activation,
+                    )?;
+
+                bitmap_data.color_transform(x_min, y_min, x_max, y_max, color_transform);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_color_bounds_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let bitmap_data = bitmap_data.read();
+        if !bitmap_data.disposed() {
+            let find_color = args.get(2).unwrap_or(&true.into()).coerce_to_boolean();
+
+            if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {
+                let mask = mask_val.coerce_to_i32(activation)?;
+                let color = color_val.coerce_to_i32(activation)?;
+
+                let (x, y, w, h) = bitmap_data.color_bounds_rect(find_color, mask, color);
+
+                let rect = activation
+                    .avm2()
+                    .classes()
+                    .rectangle
+                    .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?
+                    .into();
+                return Ok(rect);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn lock<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -577,6 +901,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("getPixel", get_pixel),
         ("getPixel32", get_pixel32),
+        ("setPixel", set_pixel),
+        ("setPixel32", set_pixel32),
+        ("setPixels", set_pixels),
+        ("copyChannel", copy_channel),
+        ("floodFill", flood_fill),
+        ("noise", noise),
+        ("colorTransform", color_transform),
+        ("getColorBoundsRect", get_color_bounds_rect),
         ("scroll", scroll),
         ("lock", lock),
         ("unlock", lock), // sic, it's a noop (TODO)

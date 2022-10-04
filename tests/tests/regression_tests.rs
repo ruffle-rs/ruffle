@@ -191,6 +191,7 @@ swf_tests! {
     (as3_astypelate, "avm2/astypelate", 1),
     (as3_bitand, "avm2/bitand", 1),
     (as3_bitmap_constr, "avm2/bitmap_constr", 1),
+    (as3_bitmap_data, "avm2/bitmap_data", 1),
     (as3_bitmapdata_copypixels, "avm2/bitmapdata_copypixels", 2, img = true),
     #[ignore] (as3_bitmap_properties, "avm2/bitmap_properties", 1),
     (as3_bitmap_subclass, "avm2/bitmap_subclass", 1),

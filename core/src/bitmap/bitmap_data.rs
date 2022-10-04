@@ -457,15 +457,11 @@ impl<'gc> BitmapData<'gc> {
 
         for x in src_min_x.max(0)..src_max_x.min(source_bitmap.width()) {
             for y in src_min_y.max(0)..src_max_y.min(source_bitmap.height()) {
-                if self.is_point_in_bounds((x + min_x) as i32, (y + min_y) as i32) {
+                if self.is_point_in_bounds(x as i32 + min_x as i32, y as i32 + min_y as i32) {
                     let original_color: u32 = self
-                        .get_pixel_raw((x + min_x) as u32, (y + min_y) as u32)
-                        .unwrap_or_else(|| 0.into())
+                        .get_pixel32(x as i32 + min_x as i32, y as i32 + min_y as i32)
                         .into();
-                    let source_color: u32 = source_bitmap
-                        .get_pixel_raw(x, y)
-                        .unwrap_or_else(|| 0.into())
-                        .into();
+                    let source_color: u32 = source_bitmap.get_pixel32(x as i32, y as i32).into();
 
                     let channel_shift: u32 = match source_channel {
                         // red
@@ -493,9 +489,9 @@ impl<'gc> BitmapData<'gc> {
                         _ => original_color,
                     };
 
-                    self.set_pixel32_raw(
-                        (x + min_x) as u32,
-                        (y + min_y) as u32,
+                    self.set_pixel32(
+                        x as i32 + min_x as i32,
+                        y as i32 + min_y as i32,
                         (result_color as i32).into(),
                     );
                 }
