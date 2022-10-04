@@ -229,6 +229,38 @@ pub fn current_scene<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        return Ok(mc.enabled().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|dobj| dobj.as_movie_clip())
+    {
+        let enabled = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+
+        mc.set_enabled(&mut activation.context, enabled);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `scenes`.
 pub fn scenes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -541,6 +573,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("currentLabel", Some(current_label), None),
         ("currentLabels", Some(current_labels), None),
         ("currentScene", Some(current_scene), None),
+        ("enabled", Some(enabled), Some(set_enabled)),
         ("scenes", Some(scenes), None),
         ("framesLoaded", Some(frames_loaded), None),
         ("isPlaying", Some(is_playing), None),
