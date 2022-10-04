@@ -156,6 +156,28 @@ fn set_context_menu<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub getter & setter for `tabEnabled`.
+pub fn tab_enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("InteractiveObject.tabEnabled is a stub");
+
+    Ok(false.into())
+}
+
+/// Stub getter & setter for `tabIndex`.
+pub fn tab_index<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("InteractiveObject.tabIndex is a stub");
+
+    Ok((-1).into())
+}
+
 /// Construct `InteractiveObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -193,6 +215,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_double_click_enabled),
         ),
         ("contextMenu", Some(context_menu), Some(set_context_menu)),
+        ("tabEnabled", Some(tab_enabled), Some(tab_enabled)),
+        ("tabIndex", Some(tab_index), Some(tab_index)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

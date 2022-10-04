@@ -597,6 +597,17 @@ pub fn set_mouse_children<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub getter & setter for `tabChildren`.
+pub fn tab_children<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("DisplayObjectContainer.tabChildren is a stub");
+
+    Ok(true.into())
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -636,6 +647,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(mouse_children),
             Some(set_mouse_children),
         ),
+        ("tabChildren", Some(tab_children), Some(tab_children)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
