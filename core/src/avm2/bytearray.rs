@@ -420,7 +420,7 @@ macro_rules! impl_write{
 }
 
 macro_rules! impl_read{
-    ($($method_name:ident $size:expr; $data_type:ty ), *)
+    ($($method_name:ident $at_method_name:ident $size:expr; $data_type:ty ), *)
     =>
     {
         impl ByteArrayStorage {
@@ -430,12 +430,19 @@ macro_rules! impl_read{
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())
                 })
              } )*
+
+             $( pub fn $at_method_name<'gc> (&self, offset: usize) -> Result<$data_type, Error<'gc>> {
+                Ok(match self.endian {
+                    Endian::Big => <$data_type>::from_be_bytes(self.read_at($size, offset)?.try_into().unwrap()),
+                    Endian::Little => <$data_type>::from_le_bytes(self.read_at($size, offset)?.try_into().unwrap())
+                })
+             } )*
         }
     }
 }
 
 impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
-impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned_int 4; u32, read_short 2; i16, read_unsigned_short 2; u16, read_byte 1; i8, read_unsigned_byte 1; u8);
+impl_read!(read_float read_float_at 4; f32, read_double read_double_at 8; f64, read_int read_int_at 4; i32, read_unsigned_int read_unsigned_int_at 4; u32, read_short read_short_at 2; i16, read_unsigned_short read_unsigned_short_at 2; u16, read_byte read_byte_at 1; i8, read_unsigned_byte read_unsigned_byte_at 1; u8);
 
 impl Default for ByteArrayStorage {
     fn default() -> Self {
