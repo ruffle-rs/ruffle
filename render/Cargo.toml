@@ -11,7 +11,7 @@ log = "0.4"
 gif = "0.11.4"
 png = { version = "0.17.6" }
 flate2 = "1.0.24"
-smallvec = { version = "1.9.0", features = ["union"] }
+smallvec = { version = "1.10.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.0", optional = true }
 thiserror = "1.0"

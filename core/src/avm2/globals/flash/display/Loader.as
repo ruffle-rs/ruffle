@@ -30,19 +30,19 @@ package flash.display {
 
 		public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
 
-		override public function addChild(child:DisplayObject):void {
+		override public function addChild(child:DisplayObject):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
-		override public function addChildAt(child:DisplayObject, index:int):void {
+		override public function addChildAt(child:DisplayObject, index:int):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
-		override public function removeChild(child:DisplayObject, index:int):void {
+		override public function removeChild(child:DisplayObject, index:int):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
-		override public function removeChildAt(index:int):void {
+		override public function removeChildAt(index:int):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
