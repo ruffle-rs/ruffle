@@ -66,16 +66,25 @@ pub fn get_definition<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-        let local_name = args
+        let name = args
             .get(0)
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let name = Multiname::public(local_name);
-
-        let (qname, mut defined_script) = appdomain
-            .get_defining_script(&name)?
-            .ok_or_else(|| format!("No definition called {} exists", local_name))?;
+        let name = QName::from_qualified_name(name, activation.context.gc_context);
+        let (qname, mut defined_script) = match appdomain.get_defining_script(&name.into())? {
+            Some(data) => data,
+            None => {
+                return Err(Error::AvmError(crate::avm2::error::reference_error(
+                    activation,
+                    &format!(
+                        "Error #1065: Variable {} is not defined.",
+                        name.local_name()
+                    ),
+                    1065,
+                )?))
+            }
+        };
         let globals = defined_script.globals(&mut activation.context)?;
         let definition = globals.get_property(&qname.into(), activation)?;
 
@@ -92,12 +101,13 @@ pub fn has_definition<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
-        let local_name = args
+        let name = args
             .get(0)
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let qname = QName::new(Namespace::public(), local_name);
+
+        let qname = QName::from_qualified_name(name, activation.context.gc_context);
 
         return Ok(appdomain.has_definition(qname).into());
     }
