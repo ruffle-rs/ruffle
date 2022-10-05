@@ -52,39 +52,39 @@ thread_local! {
 )]
 struct Opt {
     /// Path to a Flash movie (SWF) to play.
-    #[clap(name = "FILE", value_parser)]
+    #[clap(name = "FILE")]
     input_path: Option<PathBuf>,
 
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
-    #[clap(short = 'P', number_of_values = 1, action = clap::ArgAction::Append)]
+    #[clap(short = 'P', action = clap::ArgAction::Append)]
     parameters: Vec<String>,
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "default")]
     graphics: GraphicsBackend,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
     /// Width of window in pixels.
-    #[clap(long, display_order = 1, value_parser)]
+    #[clap(long, display_order = 1)]
     width: Option<f64>,
 
     /// Height of window in pixels.
-    #[clap(long, display_order = 2, value_parser)]
+    #[clap(long, display_order = 2)]
     height: Option<f64>,
 
     /// Location to store a wgpu trace output
-    #[clap(long, value_parser)]
+    #[clap(long)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
 
     /// Proxy to use when loading movies via URL.
-    #[clap(long, value_parser)]
+    #[clap(long)]
     proxy: Option<Url>,
 
     /// Replace all embedded HTTP URLs with HTTPS.

@@ -8,9 +8,6 @@ pub(crate) struct Cli {
 
 #[derive(Subcommand)]
 pub(crate) enum Commands {
-    Compile {
-        #[clap(value_parser)]
-        out_dir: String,
-    },
+    Compile { out_dir: String },
     Lint,
 }
