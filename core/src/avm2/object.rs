@@ -62,7 +62,7 @@ pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
-pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
 pub use crate::avm2::object::loaderinfo_object::{
     loaderinfo_allocator, LoaderInfoObject, LoaderStream,
 };

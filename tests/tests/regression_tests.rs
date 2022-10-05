@@ -328,6 +328,7 @@ swf_tests! {
     (as3_function_call, "avm2/function_call", 1),
     #[ignore] (as3_function_proto, "avm2/function_proto", 1),
     (as3_function_length, "avm2/function_length", 1),
+    (as3_function_object, "avm2/function_object", 1),
     (as3_function_to_locale_string, "avm2/function_to_locale_string", 1),
     (as3_function_to_string, "avm2/function_to_string", 1),
     (as3_function_type, "avm2/function_type", 1),
