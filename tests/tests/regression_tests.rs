@@ -155,6 +155,7 @@ swf_tests! {
     (as2_super_and_this_v8, "avm1/as2_super_and_this_v8", 1),
     (as2_super_via_manual_prototype, "avm1/as2_super_via_manual_prototype", 1),
     (as3_add, "avm2/add", 1),
+    (as3_application_domain, "avm2/application_domain", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_concat, "avm2/array_concat", 1),
     (as3_array_constr, "avm2/array_constr", 1),
