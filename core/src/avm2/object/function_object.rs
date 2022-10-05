@@ -2,14 +2,53 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates Function objects.
+/// This is only used when ActionScript manually calls 'new Function()',
+/// which produces a dummy object that just returns `Value::Undefined`
+/// when called.
+///
+/// Normal `FunctionObject` creation goes through `FunctionObject::from_method`
+/// or `FunctionObject::from_function`.
+pub fn function_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let base = ScriptObjectData::new(class);
+
+    let dummy = Gc::allocate(
+        activation.context.gc_context,
+        NativeMethod {
+            method: |_, _, _| Ok(Value::Undefined),
+            name: "<Empty Function>",
+            signature: vec![],
+            is_variadic: true,
+        },
+    );
+
+    Ok(FunctionObject(GcCell::allocate(
+        activation.context.gc_context,
+        FunctionObjectData {
+            base,
+            exec: Executable::from_method(
+                Method::Native(dummy),
+                activation.create_scopechain(),
+                None,
+                None,
+            ),
+            prototype: None,
+        },
+    ))
+    .into())
+}
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Debug, Clone, Copy)]

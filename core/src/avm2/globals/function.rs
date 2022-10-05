@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{FunctionObject, Object, TObject};
+use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -205,6 +205,8 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         ("length", Some(length), None),
     ];
     write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
+
+    write.set_instance_allocator(function_allocator);
 
     function_class
 }
