@@ -197,6 +197,7 @@ swf_tests! {
     (as3_bitmap_subclass, "avm2/bitmap_subclass", 1),
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmap_subclass_properties, "avm2/bitmap_subclass_properties", 1, img = true),
     (as3_bitmap_timeline, "avm2/bitmap_timeline", 1),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_clone, "avm2/bitmapdata_clone", 1, img = true),
     (as3_bitmapdata_constr, "avm2/bitmapdata_constr", 1),
     (as3_bitmapdata_dispose, "avm2/bitmapdata_dispose", 1),
     // We need a render backend in order to call `BitmapData.draw`
