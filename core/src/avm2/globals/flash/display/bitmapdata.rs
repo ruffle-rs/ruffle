@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{bitmapdata_allocator, Object, TObject};
+use crate::avm2::object::{bitmapdata_allocator, BitmapDataObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -866,6 +866,35 @@ pub fn apply_filter<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `BitmapData.clone`
+pub fn clone<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        if !bitmap_data.read().disposed() {
+            let new_bitmap_data =
+                GcCell::allocate(activation.context.gc_context, BitmapData::default());
+            new_bitmap_data
+                .write(activation.context.gc_context)
+                .set_pixels(
+                    bitmap_data.read().width(),
+                    bitmap_data.read().height(),
+                    bitmap_data.read().transparency(),
+                    bitmap_data.read().pixels().to_vec(),
+                );
+
+            let class = activation.avm2().classes().bitmapdata;
+            let new_bitmap_data_object =
+                BitmapDataObject::from_bitmap_data(activation, new_bitmap_data, class)?;
+
+            return Ok(new_bitmap_data_object.into());
+        }
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -917,6 +946,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("fillRect", fill_rect),
         ("dispose", dispose),
         ("applyFilter", apply_filter),
+        ("clone", clone),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
