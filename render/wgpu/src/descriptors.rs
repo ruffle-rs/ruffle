@@ -6,10 +6,9 @@ use fnv::FnvHashMap;
 use std::sync::{Arc, Mutex};
 
 pub struct Descriptors {
+    pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
-    pub info: wgpu::AdapterInfo,
     pub limits: wgpu::Limits,
-    pub surface_format: wgpu::TextureFormat,
     pub queue: wgpu::Queue,
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
@@ -20,12 +19,7 @@ pub struct Descriptors {
 }
 
 impl Descriptors {
-    pub fn new(
-        device: wgpu::Device,
-        queue: wgpu::Queue,
-        info: wgpu::AdapterInfo,
-        surface_format: wgpu::TextureFormat,
-    ) -> Self {
+    pub fn new(adapter: wgpu::Adapter, device: wgpu::Device, queue: wgpu::Queue) -> Self {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
         let bitmap_samplers = BitmapSamplers::new(&device);
@@ -33,10 +27,9 @@ impl Descriptors {
         let quad = Quad::new(&device);
 
         Self {
+            adapter,
             device,
-            info,
             limits,
-            surface_format,
             queue,
             bitmap_samplers,
             bind_layouts,

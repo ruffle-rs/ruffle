@@ -6,11 +6,11 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = "0.13.0"
+wgpu = "0.14.0"
 log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.1", features = ["derive"] }
-raw-window-handle = "0.4"
+raw-window-handle = "0.5"
 clap = { version = "4.0.12", features = ["derive"], optional = true }
 enum-map = "2.4.1"
 fnv = "1.0.7"
