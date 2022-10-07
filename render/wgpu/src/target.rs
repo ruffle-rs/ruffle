@@ -50,16 +50,35 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 impl SwapChainTarget {
     pub fn new(
         surface: wgpu::Surface,
-        format: wgpu::TextureFormat,
-        size: (u32, u32),
+        adapter: &wgpu::Adapter,
+        (width, height): (u32, u32),
         device: &wgpu::Device,
     ) -> Self {
+        // Ideally we want to use an RGBA non-sRGB surface format, because Flash colors and
+        // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
+        // Some platforms may only support an sRGB surface, in which case we will draw to an
+        // intermediate linear buffer and then copy to the sRGB surface.
+        let formats = surface.get_supported_formats(adapter);
+        let format = formats
+            .iter()
+            .find(|format| {
+                matches!(
+                    format,
+                    wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Bgra8Unorm
+                )
+            })
+            .or_else(|| formats.first())
+            .copied()
+            // No surface (rendering to texture), default to linear RBGA.
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
-            width: size.0,
-            height: size.1,
+            width,
+            height,
             present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: surface.get_supported_alpha_modes(adapter)[0],
         };
         surface.configure(device, &surface_config);
         Self {

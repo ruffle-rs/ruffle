@@ -8,6 +8,7 @@ use crate::{
     RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use fnv::FnvHashMap;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::commands::CommandList;
@@ -49,17 +50,13 @@ impl WgpuRenderBackend<SwapChainTarget> {
             None,
         )
         .await?;
-        let target = SwapChainTarget::new(
-            surface,
-            descriptors.surface_format,
-            (1, 1),
-            &descriptors.device,
-        );
+        let target =
+            SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
         Self::new(Arc::new(descriptors), target)
     }
 
     #[cfg(not(target_family = "wasm"))]
-    pub fn for_window<W: raw_window_handle::HasRawWindowHandle>(
+    pub fn for_window<W: HasRawWindowHandle + HasRawDisplayHandle>(
         window: &W,
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -81,12 +78,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             power_preference,
             trace_path,
         ))?;
-        let target = SwapChainTarget::new(
-            surface,
-            descriptors.surface_format,
-            size,
-            &descriptors.device,
-        );
+        let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Self::new(Arc::new(descriptors), target)
     }
 }
@@ -137,6 +129,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .into());
         }
 
+        // TODO: Allow the sample count to be set from command line/settings file.
         let surface = Surface::new(
             &descriptors,
             DEFAULT_SAMPLE_COUNT,
@@ -190,29 +183,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             })?;
 
         let (device, queue) = request_device(&adapter, trace_path).await?;
-        let info = adapter.get_info();
-        // Ideally we want to use an RGBA non-sRGB surface format, because Flash colors and
-        // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
-        // Some platforms may only support an sRGB surface, in which case we will draw to an
-        // intermediate linear buffer and then copy to the sRGB surface.
-        let surface_format = surface
-            .and_then(|surface| {
-                let formats = surface.get_supported_formats(&adapter);
-                formats
-                    .iter()
-                    .find(|format| {
-                        matches!(
-                            format,
-                            wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Bgra8Unorm
-                        )
-                    })
-                    .or_else(|| formats.first())
-                    .cloned()
-            })
-            // No surface (rendering to texture), default to linear RBGA.
-            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
-        // TODO: Allow the sample count to be set from command line/settings file.
-        Ok(Descriptors::new(device, queue, info, surface_format))
+
+        Ok(Descriptors::new(adapter, device, queue))
     }
 
     fn register_shape_internal(
@@ -619,7 +591,7 @@ async fn request_device(
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::empty(),
+                features: wgpu::Features::DEPTH24PLUS_STENCIL8,
                 limits,
             },
             trace_path,

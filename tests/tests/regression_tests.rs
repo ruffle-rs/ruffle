@@ -29,11 +29,6 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-#[cfg(feature = "imgtests")]
-fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
-    format!("{}-{:?}", std::env::consts::OS, info.backend)
-}
-
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
 fn set_logger() {
@@ -1500,7 +1495,8 @@ fn run_swf(
             .capture_frame(false)
             .expect("Failed to capture image");
 
-        let suffix = get_img_platform_suffix(&renderer.descriptors().info);
+        let info = renderer.descriptors().adapter.get_info();
+        let suffix = format!("{}-{:?}", std::env::consts::OS, info.backend);
 
         let expected_image_path = base_path.join(format!("expected-{}.png", &suffix));
         let expected_image = image::open(&expected_image_path);
