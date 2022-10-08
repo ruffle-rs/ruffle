@@ -2386,16 +2386,7 @@ fn count_sbits(n: i32) -> u32 {
 }
 
 fn count_sbits_twips(n: Twips) -> u32 {
-    let n = n.get();
-    if n == 0 {
-        0
-    } else if n == -1 {
-        1
-    } else if n < 0 {
-        count_ubits((!n) as u32) + 1
-    } else {
-        count_ubits(n as u32) + 1
-    }
+    count_sbits(n.get())
 }
 
 fn count_fbits(n: Fixed16) -> u32 {
