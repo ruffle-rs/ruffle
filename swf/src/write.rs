@@ -2369,13 +2369,8 @@ impl<W: Write> Writer<W> {
     }
 }
 
-fn count_ubits(mut n: u32) -> u32 {
-    let mut num_bits = 0;
-    while n > 0 {
-        n >>= 1;
-        num_bits += 1;
-    }
-    num_bits
+fn count_ubits(n: u32) -> u32 {
+    32 - n.leading_zeros()
 }
 
 fn count_sbits(n: i32) -> u32 {
