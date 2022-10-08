@@ -1039,7 +1039,7 @@ fn shared_object_avm1() -> Result<(), Error> {
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
     let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::new(MemoryStorageBackend::default());
+        Box::<MemoryStorageBackend>::default();
 
     // Initial run; no shared object data.
     test_swf_with_hooks(
@@ -1093,7 +1093,7 @@ fn shared_object_avm2() -> Result<(), Error> {
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
     let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::new(MemoryStorageBackend::default());
+        Box::<MemoryStorageBackend>::default();
 
     // Initial run; no shared object data.
     test_swf_with_hooks(

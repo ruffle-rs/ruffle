@@ -163,30 +163,39 @@ pub fn class_init<'gc>(
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.map(|t| t.to_string(activation))
-        .unwrap_or(Ok(Value::Undefined))
+    if let Some(this) = this {
+        this.to_string(activation)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.map(|t| t.to_locale_string(activation))
-        .unwrap_or(Ok(Value::Undefined))
+    if let Some(this) = this {
+        this.to_locale_string(activation)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.map(|t| t.value_of(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))
+    if let Some(this) = this {
+        this.value_of(activation.context.gc_context)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// `Object.prototype.hasOwnProperty`

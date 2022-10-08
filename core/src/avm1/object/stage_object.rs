@@ -560,9 +560,10 @@ impl<'gc> DisplayProperty<'gc> {
         this: DisplayObject<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.set
-            .map(|f| f(activation, this, value))
-            .unwrap_or(Ok(()))
+        if let Some(set) = self.set {
+            (set)(activation, this, value)?;
+        }
+        Ok(())
     }
 }
 
@@ -923,10 +924,7 @@ fn set_sound_buf_time<'gc>(
 ) -> Result<(), Error<'gc>> {
     avm_warn!(activation, "_soundbuftime is currently ignored by Ruffle");
     if let Some(val) = property_coerce_to_i32(activation, val)? {
-        activation
-            .context
-            .audio_manager
-            .set_stream_buffer_time(val as i32);
+        activation.context.audio_manager.set_stream_buffer_time(val);
     }
     Ok(())
 }
