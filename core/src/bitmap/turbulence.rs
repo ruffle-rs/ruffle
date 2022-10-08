@@ -89,7 +89,7 @@ impl Turbulence {
         for i in (1..B_SIZE).rev() {
             let k = lattice_selector[i];
             seed = random(seed);
-            let j = ((seed as i64) % B_SIZE as i64) as usize;
+            let j = (seed % B_SIZE as i64) as usize;
             lattice_selector[i] = lattice_selector[j];
             lattice_selector[j] = k;
         }
@@ -191,8 +191,8 @@ impl Turbulence {
             // When stitching tiled turbulence, the frequencies must be adjusted
             // so that the tile borders will be continuous.
             if base_freq.0 != 0.0 {
-                let lo_freq = ((tile_size.0 * base_freq.0).floor() as f64) / tile_size.0;
-                let hi_freq = ((tile_size.0 * base_freq.0).ceil() as f64) / tile_size.0;
+                let lo_freq = (tile_size.0 * base_freq.0).floor() / tile_size.0;
+                let hi_freq = (tile_size.0 * base_freq.0).ceil() / tile_size.0;
                 base_freq.0 = if base_freq.0 / lo_freq < hi_freq / base_freq.0 {
                     lo_freq
                 } else {

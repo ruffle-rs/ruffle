@@ -431,9 +431,7 @@ impl Player {
             let frame_time = 1000.0 / self.frame_rate;
             let average_run_frame_time = self.recent_run_frame_timings.iter().sum::<f64>()
                 / self.recent_run_frame_timings.len() as f64;
-            ((frame_time / average_run_frame_time) as u32)
-                .max(1)
-                .min(MAX_FRAMES_PER_TICK)
+            ((frame_time / average_run_frame_time) as u32).clamp(1, MAX_FRAMES_PER_TICK)
         }
     }
 

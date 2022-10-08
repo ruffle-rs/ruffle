@@ -2262,7 +2262,7 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(edit_text.id)?;
             writer.write_rectangle(&edit_text.bounds)?;
-            writer.write_u16(edit_text.flags.bits() as u16)?;
+            writer.write_u16(edit_text.flags.bits())?;
 
             if let Some(font_id) = edit_text.font_id() {
                 writer.write_character_id(font_id)?;
@@ -2404,7 +2404,7 @@ fn count_sbits_twips(n: Twips) -> u32 {
 }
 
 fn count_fbits(n: Fixed16) -> u32 {
-    count_sbits(n.get() as i32)
+    count_sbits(n.get())
 }
 
 #[cfg(test)]

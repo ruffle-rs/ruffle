@@ -130,19 +130,21 @@ pub fn resolve_array_hole<'gc>(
     i: usize,
     item: Option<Value<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    item.map(Ok).unwrap_or_else(|| {
-        this.proto()
-            .map(|p| {
-                p.get_property(
-                    &Multiname::public(AvmString::new_utf8(
-                        activation.context.gc_context,
-                        i.to_string(),
-                    )),
-                    activation,
-                )
-            })
-            .unwrap_or(Ok(Value::Undefined))
-    })
+    if let Some(item) = item {
+        return Ok(item);
+    }
+
+    if let Some(proto) = this.proto() {
+        proto.get_property(
+            &Multiname::public(AvmString::new_utf8(
+                activation.context.gc_context,
+                i.to_string(),
+            )),
+            activation,
+        )
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn join_inner<'gc, 'a, 'ctxt, C>(

@@ -117,7 +117,7 @@ fn take_screenshot(
             WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
         )
         .with_movie(movie)
-        .with_viewport_dimensions(width, height, size.scale as f64)
+        .with_viewport_dimensions(width, height, size.scale)
         .build();
 
     let mut result = Vec::new();

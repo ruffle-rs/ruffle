@@ -1012,7 +1012,7 @@ impl<'a> Reader<'a> {
 
                 // The glyph shapes must not overlap. Avoid exceeding to the next one.
                 // TODO: What happens on decreasing offsets?
-                let available_bytes = if i < num_glyphs as usize - 1 {
+                let available_bytes = if i < num_glyphs - 1 {
                     offsets[i + 1] - offsets[i]
                 } else {
                     code_table_offset - offsets[i]

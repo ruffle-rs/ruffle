@@ -828,8 +828,8 @@ impl<'gc> MovieClip<'gc> {
             let end = sfl_data
                 .scenes
                 .get(i + 1)
-                .map(|fld| fld.frame_num + 1)
-                .unwrap_or_else(|| static_data.total_frames as u32 + 1);
+                .map(|fld| fld.frame_num as u16 + 1)
+                .unwrap_or_else(|| static_data.total_frames + 1);
 
             let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
             static_data.scene_labels.insert(
@@ -837,7 +837,7 @@ impl<'gc> MovieClip<'gc> {
                 Scene {
                     name: label,
                     start,
-                    length: end as u16 - start as u16,
+                    length: end - start,
                 },
             );
         }

@@ -375,7 +375,7 @@ impl WebGlRenderBackend {
                 0,
             );
             self.gl
-                .enable_vertex_attrib_array(program.vertex_position_location as u32);
+                .enable_vertex_attrib_array(program.vertex_position_location);
         }
 
         if program.vertex_color_location != 0xffff_ffff {
@@ -388,7 +388,7 @@ impl WebGlRenderBackend {
                 8,
             );
             self.gl
-                .enable_vertex_attrib_array(program.vertex_color_location as u32);
+                .enable_vertex_attrib_array(program.vertex_color_location);
         }
         self.bind_vertex_array(None);
         for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
@@ -614,7 +614,7 @@ impl WebGlRenderBackend {
                     0,
                 );
                 self.gl
-                    .enable_vertex_attrib_array(program.vertex_position_location as u32);
+                    .enable_vertex_attrib_array(program.vertex_position_location);
             }
 
             if program.vertex_color_location != 0xffff_ffff {
@@ -627,7 +627,7 @@ impl WebGlRenderBackend {
                     8,
                 );
                 self.gl
-                    .enable_vertex_attrib_array(program.vertex_color_location as u32);
+                    .enable_vertex_attrib_array(program.vertex_color_location);
             }
 
             draws.push(match draw.draw_type {
@@ -937,12 +937,10 @@ impl RenderBackend for WebGlRenderBackend {
         // We don't use `.clamp()` here because `self.gl.drawing_buffer_width()` and
         // `self.gl.drawing_buffer_height()` return zero when the WebGL context is lost,
         // then an assertion error would be triggered.
-        self.renderbuffer_width = (dimensions.width as i32)
-            .max(1)
-            .min(self.gl.drawing_buffer_width());
-        self.renderbuffer_height = (dimensions.height as i32)
-            .max(1)
-            .min(self.gl.drawing_buffer_height());
+        self.renderbuffer_width =
+            (dimensions.width.max(1) as i32).min(self.gl.drawing_buffer_width());
+        self.renderbuffer_height =
+            (dimensions.height.max(1) as i32).min(self.gl.drawing_buffer_height());
 
         // Recreate framebuffers with the new size.
         let _ = self.build_msaa_buffers();
