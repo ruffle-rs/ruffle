@@ -895,6 +895,86 @@ pub fn clone<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `BitmapData.perlinNoise`
+pub fn perlin_noise<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        if !bitmap_data.read().disposed() {
+            let base_x = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_number(activation)?;
+            let base_y = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_number(activation)?;
+            let num_octaves = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)? as usize;
+            let seed = args
+                .get(3)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)? as i64;
+            let stitch = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
+            let fractal_noise = args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
+            let channel_options = if let Some(c) = args.get(6) {
+                ChannelOptions::from_bits_truncate(c.coerce_to_i32(activation)? as u8)
+            } else {
+                ChannelOptions::RGB
+            };
+            let grayscale = args.get(7).unwrap_or(&Value::Undefined).coerce_to_boolean();
+            let offsets = args
+                .get(8)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
+                .map(|i| {
+                    if let Ok(offsets) = offsets {
+                        if let Some(offsets) = offsets.as_array_storage() {
+                            if let Some(Value::Object(e)) = offsets.get(i) {
+                                let x = e
+                                    .get_property(&Multiname::public("x"), activation)?
+                                    .coerce_to_number(activation)?;
+                                let y = e
+                                    .get_property(&Multiname::public("y"), activation)?
+                                    .coerce_to_number(activation)?;
+                                Ok((x, y))
+                            } else {
+                                Ok((0.0, 0.0))
+                            }
+                        } else {
+                            Ok((0.0, 0.0))
+                        }
+                    } else {
+                        Ok((0.0, 0.0))
+                    }
+                })
+                .collect();
+            let octave_offsets = octave_offsets?;
+
+            bitmap_data
+                .write(activation.context.gc_context)
+                .perlin_noise(
+                    (base_x, base_y),
+                    num_octaves,
+                    seed,
+                    stitch,
+                    fractal_noise,
+                    channel_options,
+                    grayscale,
+                    octave_offsets,
+                );
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -947,6 +1027,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("dispose", dispose),
         ("applyFilter", apply_filter),
         ("clone", clone),
+        ("perlinNoise", perlin_noise),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

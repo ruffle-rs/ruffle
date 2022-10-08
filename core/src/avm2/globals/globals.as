@@ -127,6 +127,7 @@ include "flash/filters/BitmapFilterQuality.as"
 include "flash/filters/BitmapFilterType.as"
 include "flash/filters/BlurFilter.as"
 include "flash/filters/ColorMatrixFilter.as"
+include "flash/filters/DisplacementMapFilter.as"
 include "flash/filters/DisplacementMapFilterMode.as"
 include "flash/filters/GlowFilter.as"
 
