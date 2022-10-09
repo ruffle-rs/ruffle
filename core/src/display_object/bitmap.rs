@@ -297,7 +297,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         let bitmap_data = self.0.read();
         if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
             if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
-                let bd = inner_bitmap_data.read();
+                let bd = if let Ok(bd) = inner_bitmap_data.try_read() {
+                    bd
+                } else {
+                    return; // bail, this is caused by recursive render attempt. TODO: support this.
+                };
                 if bd.dirty() {
                     if let Err(e) = context.renderer.update_texture(
                         bitmap_handle,
