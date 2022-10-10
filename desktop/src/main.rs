@@ -37,7 +37,7 @@ use winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
@@ -203,7 +203,7 @@ impl App {
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
 
-        let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
+        let event_loop = EventLoopBuilder::with_user_event().build();
 
         let title = if let Some(movie_url) = &movie_url {
             let filename = movie_url
