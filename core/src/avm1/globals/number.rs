@@ -95,9 +95,9 @@ fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Boxed value must be a number. No coercion.
-    let this = if let Some(vbox) = this.as_value_object() {
-        if let Value::Number(n) = vbox.unbox() {
-            n
+    let number = if let Some(vbox) = this.as_value_object() {
+        if let Value::Number(number) = vbox.unbox() {
+            number
         } else {
             return Ok(Value::Undefined);
         }
@@ -105,32 +105,39 @@ fn to_string<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let radix = {
-        let radix = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_f64(activation)?;
-        if radix >= 2.0 && radix <= 36.0 {
-            radix as u32
-        } else {
-            10
+    let radix = match args {
+        [] => 10,
+        [radix, ..] => {
+            let radix = radix.coerce_to_f64(activation)? as i32;
+            if (2..=36).contains(&radix) {
+                radix
+            } else {
+                10
+            }
         }
     };
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            Value::from(this).coerce_to_string(activation)?.to_string(),
-        )
-        .into())
-    } else if this > -2_147_483_648.0 && this < 2_147_483_648.0 {
-        // Output truncated integer in specified base.
-        let n = this as i32;
+        Ok(Value::from(number).coerce_to_string(activation)?.into())
+    } else {
+        // Player version specific behavior:
+        // `NaN.toString(x)` returns completely garbage values in Flash Player 7+:
+        // For example, `NaN.toString(3)` gives "-/.//./..././/0.0./0.".
+        // Flash Player 6 returns a much more sane value of 0.
+        // TODO: Allow configuration of player version.
+
+        // Values outside of `i32` range get clamped to `i32::MIN`.
+        let n = if number.is_finite() && number >= i32::MIN.into() && number <= i32::MAX.into() {
+            number as i32
+        } else {
+            i32::MIN
+        };
+
         use std::cmp::Ordering;
         let (mut n, is_negative) = match n.cmp(&0) {
-            Ordering::Less => ((-n) as u32, true),
-            Ordering::Greater => (n as u32, false),
+            Ordering::Less => (n.wrapping_neg(), true),
+            Ordering::Greater => (n, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
                 return Ok("0".into());
@@ -138,28 +145,24 @@ fn to_string<'gc>(
         };
 
         // Max 32 digits in base 2 + negative sign.
-        let mut digits = ['\0'; 33];
-        let mut i = 0;
-        while n > 0 {
+        let mut digits = [0; 33];
+        let mut i = digits.len();
+        while n != 0 {
             let digit = n % radix;
             n /= radix;
-            digits[i] = char::from_digit(digit, radix).unwrap();
-            i += 1;
+
+            i -= 1;
+            digits[i] = if digit < 10 {
+                i32::from(b'0') + digit
+            } else {
+                i32::from(b'a') + digit - 10
+            } as u8;
         }
         if is_negative {
-            digits[i] = '-';
-            i += 1;
+            i -= 1;
+            digits[i] = b'-';
         }
-        let out: String = digits[..i].iter().rev().collect();
-        Ok(AvmString::new_utf8(activation.context.gc_context, out).into())
-    } else {
-        // NaN or large numbers.
-        // Player version specific behavior:
-        // NaN.toString(x) will print completely garbage values in Flash Player 7+:
-        // for example, NaN.toString(3) gives "-/.//./..././/0.0./0.".
-        // Flash Player 6 will print a much more sane value of 0, so let's go with that.
-        // TODO: Allow configuration of player version.
-        Ok("0".into())
+        Ok(AvmString::new_utf8_bytes(activation.context.gc_context, &digits[i..]).into())
     }
 }
 
@@ -176,47 +179,3 @@ fn value_of<'gc>(
 
     Ok(Value::Undefined)
 }
-
-// The values returned by `NaN.toString(radix)` in Flash Player v7+
-// for each radix from 2 to 36. Currently unused, but leaving it here
-// in case we want to emulate this behavior.
-// This table was generated in Flash.
-// Not sure where the heck these values actually come from...!?
-// const TO_STRING_NANS: &[&str] = &[
-//     "-/0000000000000000000000000000000",
-//     "-/.//./..././/0.0./0.",
-//     "-.000000000000000",
-//     "-/--,..-,-,0,-",
-//     "-++-0-.00++-.",
-//     "-/0,/-,.///*.",
-//     "-.0000000000",
-//     "-+,)())-*).",
-//     "NaN",
-//     "-&0...0.(.",
-//     "-,%%.-0(&(",
-//     "-.(.%&,&&%",
-//     "-/*+.$&'-.",
-//     "-$()\x22**%(",
-//     "-(0000000",
-//     "-+- )!+,'",
-//     "--'.( -\x1F.",
-//     "-.)$+)\x1F--",
-//     "-/#%/!'.(",
-//     "-/,0\x1F.#'.",
-//     "-\x1E\x1C!+%!.",
-//     "-\x22%\x22\x1B!'*",
-//     "-%+  \x22+(",
-//     "-(\x1D\x1A#\x19\x1C\x19",
-//     "-*\x18\x1D(\x1E\x18\x18",
-//     "-+\x22\x1F\x19$\x1C%",
-//     "-,$\x1B\x1A'( ",
-//     "--\x1F\x1C)'((",
-//     "-.\x14%*$\x14(",
-//     "-.#0'\x12$.",
-//     "-.000000",
-//     "-/\x1B\x14\x16\x13\x1B.",
-//     "-/#(\x0F\x16\x15\x16",
-//     "-/+\x11..\x12\x19",
-//     "-\x0D\x1E\x1C0\x0D\x1C",
-// ];
-//
