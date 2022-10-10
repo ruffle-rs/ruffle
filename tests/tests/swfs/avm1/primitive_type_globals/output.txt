@@ -13,134 +13,475 @@ number
 object
 -101
 
-// n.valueOf()
+// (5).valueOf()
 5
 
-// n.toString()
+// typeof (5).valueOf()
+number
+
+// (5).toString()
 5
 
-// n.toString(i)
-base 0: 4123
-base 1: 4123
-base 2: 1000000011011
-base 3: 12122201
-base 4: 1000123
-base 5: 112443
-base 6: 31031
-base 7: 15010
-base 8: 10033
-base 9: 5581
-base 10: 4123
-base 11: 3109
-base 12: 2477
-base 13: 1b52
-base 14: 1707
-base 15: 134d
-base 16: 101b
-base 17: e49
-base 18: cd1
-base 19: b80
-base 20: a63
-base 21: 977
-base 22: 8b9
-base 23: 7i6
-base 24: 73j
-base 25: 6en
-base 26: 62f
-base 27: 5hj
-base 28: 577
-base 29: 4q5
-base 30: 4hd
-base 31: 490
-base 32: 40r
-base 33: 3pv
-base 34: 3j9
-base 35: 3cs
-base 36: 36j
-base 37: 4123
+// typeof (5).toString()
+string
 
-// n.toString(i)
-base 0: -123.1
-base 1: -123.1
-base 2: -1111011
-base 3: -11120
-base 4: -1323
-base 5: -443
-base 6: -323
-base 7: -234
-base 8: -173
-base 9: -146
-base 10: -123.1
-base 11: -102
-base 12: -a3
-base 13: -96
-base 14: -8b
-base 15: -83
-base 16: -7b
-base 17: -74
-base 18: -6f
-base 19: -69
-base 20: -63
-base 21: -5i
-base 22: -5d
-base 23: -58
-base 24: -53
-base 25: -4n
-base 26: -4j
-base 27: -4f
-base 28: -4b
-base 29: -47
-base 30: -43
-base 31: -3u
-base 32: -3r
-base 33: -3o
-base 34: -3l
-base 35: -3i
-base 36: -3f
-base 37: -123.1
+// (4123).toString(0)
+4123
 
-// n.toString(i)
-base 0: -2147483647.9
-base 1: -2147483647.9
-base 2: -1111111111111111111111111111111
-base 3: -12112122212110202101
-base 4: -1333333333333333
-base 5: -13344223434042
-base 6: -553032005531
-base 7: -104134211161
-base 8: -17777777777
-base 9: -5478773671
-base 10: -2147483647.9
-base 11: -a02220281
-base 12: -4bb2308a7
-base 13: -282ba4aaa
-base 14: -1652ca931
-base 15: -c87e66b7
-base 16: -7fffffff
-base 17: -53g7f548
-base 18: -3928g3h1
-base 19: -27c57h32
-base 20: -1db1f927
-base 21: -140h2d91
-base 22: -ikf5bf1
-base 23: -ebelf95
-base 24: -b5gge57
-base 25: -8jmdnkm
-base 26: -6oj8ion
-base 27: -5ehncka
-base 28: -4clm98f
-base 29: -3hk7987
-base 30: -2sb6cs7
-base 31: -2d09uc1
-base 32: -1vvvvvv
-base 33: -1lsqtl1
-base 34: -1d8xqrp
-base 35: -15v22um
-base 36: -zik0zj
-base 37: -2147483647.9
+// (4123).toString(1)
+4123
 
-// 0.toString(2)
-0
+// (4123).toString(2)
+1000000011011
+
+// (4123).toString(3)
+12122201
+
+// (4123).toString(4)
+1000123
+
+// (4123).toString(5)
+112443
+
+// (4123).toString(6)
+31031
+
+// (4123).toString(7)
+15010
+
+// (4123).toString(8)
+10033
+
+// (4123).toString(9)
+5581
+
+// (4123).toString(10)
+4123
+
+// (4123).toString(11)
+3109
+
+// (4123).toString(12)
+2477
+
+// (4123).toString(13)
+1b52
+
+// (4123).toString(14)
+1707
+
+// (4123).toString(15)
+134d
+
+// (4123).toString(16)
+101b
+
+// (4123).toString(17)
+e49
+
+// (4123).toString(18)
+cd1
+
+// (4123).toString(19)
+b80
+
+// (4123).toString(20)
+a63
+
+// (4123).toString(21)
+977
+
+// (4123).toString(22)
+8b9
+
+// (4123).toString(23)
+7i6
+
+// (4123).toString(24)
+73j
+
+// (4123).toString(25)
+6en
+
+// (4123).toString(26)
+62f
+
+// (4123).toString(27)
+5hj
+
+// (4123).toString(28)
+577
+
+// (4123).toString(29)
+4q5
+
+// (4123).toString(30)
+4hd
+
+// (4123).toString(31)
+490
+
+// (4123).toString(32)
+40r
+
+// (4123).toString(33)
+3pv
+
+// (4123).toString(34)
+3j9
+
+// (4123).toString(35)
+3cs
+
+// (4123).toString(36)
+36j
+
+// (4123).toString(37)
+4123
+
+// (-123.1).toString(0)
+-123.1
+
+// (-123.1).toString(1)
+-123.1
+
+// (-123.1).toString(2)
+-1111011
+
+// (-123.1).toString(3)
+-11120
+
+// (-123.1).toString(4)
+-1323
+
+// (-123.1).toString(5)
+-443
+
+// (-123.1).toString(6)
+-323
+
+// (-123.1).toString(7)
+-234
+
+// (-123.1).toString(8)
+-173
+
+// (-123.1).toString(9)
+-146
+
+// (-123.1).toString(10)
+-123.1
+
+// (-123.1).toString(11)
+-102
+
+// (-123.1).toString(12)
+-a3
+
+// (-123.1).toString(13)
+-96
+
+// (-123.1).toString(14)
+-8b
+
+// (-123.1).toString(15)
+-83
+
+// (-123.1).toString(16)
+-7b
+
+// (-123.1).toString(17)
+-74
+
+// (-123.1).toString(18)
+-6f
+
+// (-123.1).toString(19)
+-69
+
+// (-123.1).toString(20)
+-63
+
+// (-123.1).toString(21)
+-5i
+
+// (-123.1).toString(22)
+-5d
+
+// (-123.1).toString(23)
+-58
+
+// (-123.1).toString(24)
+-53
+
+// (-123.1).toString(25)
+-4n
+
+// (-123.1).toString(26)
+-4j
+
+// (-123.1).toString(27)
+-4f
+
+// (-123.1).toString(28)
+-4b
+
+// (-123.1).toString(29)
+-47
+
+// (-123.1).toString(30)
+-43
+
+// (-123.1).toString(31)
+-3u
+
+// (-123.1).toString(32)
+-3r
+
+// (-123.1).toString(33)
+-3o
+
+// (-123.1).toString(34)
+-3l
+
+// (-123.1).toString(35)
+-3i
+
+// (-123.1).toString(36)
+-3f
+
+// (-123.1).toString(37)
+-123.1
+
+// (-2147483647.9).toString(0)
+-2147483647.9
+
+// (-2147483647.9).toString(1)
+-2147483647.9
+
+// (-2147483647.9).toString(2)
+-1111111111111111111111111111111
+
+// (-2147483647.9).toString(3)
+-12112122212110202101
+
+// (-2147483647.9).toString(4)
+-1333333333333333
+
+// (-2147483647.9).toString(5)
+-13344223434042
+
+// (-2147483647.9).toString(6)
+-553032005531
+
+// (-2147483647.9).toString(7)
+-104134211161
+
+// (-2147483647.9).toString(8)
+-17777777777
+
+// (-2147483647.9).toString(9)
+-5478773671
+
+// (-2147483647.9).toString(10)
+-2147483647.9
+
+// (-2147483647.9).toString(11)
+-a02220281
+
+// (-2147483647.9).toString(12)
+-4bb2308a7
+
+// (-2147483647.9).toString(13)
+-282ba4aaa
+
+// (-2147483647.9).toString(14)
+-1652ca931
+
+// (-2147483647.9).toString(15)
+-c87e66b7
+
+// (-2147483647.9).toString(16)
+-7fffffff
+
+// (-2147483647.9).toString(17)
+-53g7f548
+
+// (-2147483647.9).toString(18)
+-3928g3h1
+
+// (-2147483647.9).toString(19)
+-27c57h32
+
+// (-2147483647.9).toString(20)
+-1db1f927
+
+// (-2147483647.9).toString(21)
+-140h2d91
+
+// (-2147483647.9).toString(22)
+-ikf5bf1
+
+// (-2147483647.9).toString(23)
+-ebelf95
+
+// (-2147483647.9).toString(24)
+-b5gge57
+
+// (-2147483647.9).toString(25)
+-8jmdnkm
+
+// (-2147483647.9).toString(26)
+-6oj8ion
+
+// (-2147483647.9).toString(27)
+-5ehncka
+
+// (-2147483647.9).toString(28)
+-4clm98f
+
+// (-2147483647.9).toString(29)
+-3hk7987
+
+// (-2147483647.9).toString(30)
+-2sb6cs7
+
+// (-2147483647.9).toString(31)
+-2d09uc1
+
+// (-2147483647.9).toString(32)
+-1vvvvvv
+
+// (-2147483647.9).toString(33)
+-1lsqtl1
+
+// (-2147483647.9).toString(34)
+-1d8xqrp
+
+// (-2147483647.9).toString(35)
+-15v22um
+
+// (-2147483647.9).toString(36)
+-zik0zj
+
+// (-2147483647.9).toString(37)
+-2147483647.9
+
+// NaN.toString(0)
+NaN
+
+// NaN.toString(1)
+NaN
+
+// NaN.toString(2)
+-/0000000000000000000000000000000
+
+// NaN.toString(3)
+-/.//./..././/0.0./0.
+
+// NaN.toString(4)
+-.000000000000000
+
+// NaN.toString(5)
+-/--,,..-,-,0,-
+
+// NaN.toString(6)
+-++-0-.00++-.
+
+// NaN.toString(7)
+-/0,/-,.///*.
+
+// NaN.toString(8)
+-.0000000000
+
+// NaN.toString(9)
+-+,)())-*).
+
+// NaN.toString(10)
+NaN
+
+// NaN.toString(11)
+-&0...0.(.
+
+// NaN.toString(12)
+-,%%.-0(&(
+
+// NaN.toString(13)
+-.(.%&,&&%
+
+// NaN.toString(14)
+-/*+.$&'-.
+
+// NaN.toString(15)
+-$()"**%(
+
+// NaN.toString(16)
+-(0000000
+
+// NaN.toString(17)
+-+- )!+,'
+
+// NaN.toString(18)
+--'.( -.
+
+// NaN.toString(19)
+-.)$+)--
+
+// NaN.toString(20)
+-/#%/!'.(
+
+// NaN.toString(21)
+-/,0.#'.
+
+// NaN.toString(22)
+-!+%!.
+
+// NaN.toString(23)
+-"%"!'*
+
+// NaN.toString(24)
+-%+  "+(
+
+// NaN.toString(25)
+-(#
+
+// NaN.toString(26)
+-*(
+
+// NaN.toString(27)
+-+"$%
+
+// NaN.toString(28)
+-,$'( 
+
+// NaN.toString(29)
+--)'((
+
+// NaN.toString(30)
+-.%*$(
+
+// NaN.toString(31)
+-.#0'$.
+
+// NaN.toString(32)
+-.000000
+
+// NaN.toString(33)
+-/.
+
+// NaN.toString(34)
+-/#(
+
+// NaN.toString(35)
+-/+..
+
+// NaN.toString(36)
+-
+0
+
+
+// NaN.toString(37)
+NaN
 
 // Number.NaN
 NaN
@@ -150,6 +491,12 @@ Infinity
 
 // Number.NEGATIVE_INFINITY
 -Infinity
+
+// Number.MIN_VALUE
+4.94065645841247e-324
+
+// Number.MAX_VALUE
+1.79769313486231e+308
 
 // Boolean
 [type Function]
