@@ -9,14 +9,30 @@ use enum_map::Enum;
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
+mod bevel_filter;
+mod blur_filter;
 mod color;
+mod color_matrix_filter;
+mod convolution_filter;
+mod drop_shadow_filter;
 mod fixed;
+mod glow_filter;
+mod gradient_bevel_filter;
+mod gradient_glow_filter;
 mod matrix;
 mod rectangle;
 mod twips;
 
+pub use bevel_filter::BevelFilter;
+pub use blur_filter::BlurFilter;
 pub use color::Color;
+pub use color_matrix_filter::ColorMatrixFilter;
+pub use convolution_filter::ConvolutionFilter;
+pub use drop_shadow_filter::DropShadowFilter;
 pub use fixed::{Fixed16, Fixed8};
+pub use glow_filter::GlowFilter;
+pub use gradient_bevel_filter::GradientBevelFilter;
+pub use gradient_glow_filter::GradientGlowFilter;
 pub use matrix::Matrix;
 pub use rectangle::Rectangle;
 pub use twips::Twips;
@@ -353,97 +369,6 @@ pub enum Filter {
     ConvolutionFilter(Box<ConvolutionFilter>),
     ColorMatrixFilter(Box<ColorMatrixFilter>),
     GradientBevelFilter(Box<GradientBevelFilter>),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DropShadowFilter {
-    pub color: Color,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub angle: Fixed16,
-    pub distance: Fixed16,
-    pub strength: Fixed8,
-    pub is_inner: bool,
-    pub is_knockout: bool,
-    pub num_passes: u8,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BlurFilter {
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub num_passes: u8,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GlowFilter {
-    pub color: Color,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub strength: Fixed8,
-    pub is_inner: bool,
-    pub is_knockout: bool,
-    pub num_passes: u8,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BevelFilter {
-    pub shadow_color: Color,
-    pub highlight_color: Color,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub angle: Fixed16,
-    pub distance: Fixed16,
-    pub strength: Fixed8,
-    pub is_inner: bool,
-    pub is_knockout: bool,
-    pub is_on_top: bool,
-    pub num_passes: u8,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GradientGlowFilter {
-    pub colors: Vec<GradientRecord>,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub angle: Fixed16,
-    pub distance: Fixed16,
-    pub strength: Fixed8,
-    pub is_inner: bool,
-    pub is_knockout: bool,
-    pub is_on_top: bool,
-    pub num_passes: u8,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConvolutionFilter {
-    pub num_matrix_rows: u8,
-    pub num_matrix_cols: u8,
-    pub matrix: Vec<Fixed16>,
-    pub divisor: Fixed16,
-    pub bias: Fixed16,
-    pub default_color: Color,
-    pub is_clamped: bool,
-    pub is_preserve_alpha: bool,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ColorMatrixFilter {
-    pub matrix: [Fixed16; 20],
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GradientBevelFilter {
-    pub colors: Vec<GradientRecord>,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub angle: Fixed16,
-    pub distance: Fixed16,
-    pub strength: Fixed8,
-    pub is_inner: bool,
-    pub is_knockout: bool,
-    pub is_on_top: bool,
-    pub num_passes: u8,
 }
 
 #[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum)]
