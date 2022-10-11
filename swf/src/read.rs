@@ -2070,166 +2070,151 @@ impl<'a> Reader<'a> {
         ClipEventFlag::from_bits_truncate(bits)
     }
 
+    fn read_drop_shadow_filter(&mut self) -> Result<DropShadowFilter> {
+        let color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(DropShadowFilter {
+            color,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            num_passes: flags & 0b0001_1111,
+        })
+    }
+
+    fn read_blur_filter(&mut self) -> Result<BlurFilter> {
+        Ok(BlurFilter {
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
+        })
+    }
+
+    fn read_glow_filter(&mut self) -> Result<GlowFilter> {
+        let color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(GlowFilter {
+            color,
+            blur_x,
+            blur_y,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            num_passes: flags & 0b0001_1111,
+        })
+    }
+
+    fn read_bevel_filter(&mut self) -> Result<BevelFilter> {
+        let shadow_color = self.read_rgba()?;
+        let highlight_color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(BevelFilter {
+            shadow_color,
+            highlight_color,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            is_on_top: flags & 0b0001_0000 != 0,
+            num_passes: flags & 0b0000_1111,
+        })
+    }
+
+    fn read_gradient_filter(&mut self) -> Result<GradientFilter> {
+        let num_colors = self.read_u8()?;
+        let mut colors = Vec::with_capacity(num_colors as usize);
+        for _ in 0..num_colors {
+            colors.push(self.read_rgba()?);
+        }
+        let mut gradient_records = Vec::with_capacity(num_colors as usize);
+        for color in colors {
+            gradient_records.push(GradientRecord {
+                color,
+                ratio: self.read_u8()?,
+            });
+        }
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(GradientFilter {
+            colors: gradient_records,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            is_on_top: flags & 0b0001_0000 != 0,
+            num_passes: flags & 0b0000_1111,
+        })
+    }
+
+    fn read_convolution_filter(&mut self) -> Result<ConvolutionFilter> {
+        let num_matrix_cols = self.read_u8()?;
+        let num_matrix_rows = self.read_u8()?;
+        let divisor = self.read_fixed16()?;
+        let bias = self.read_fixed16()?;
+        let num_entries = num_matrix_cols * num_matrix_rows;
+        let mut matrix = Vec::with_capacity(num_entries as usize);
+        for _ in 0..num_entries {
+            matrix.push(self.read_fixed16()?);
+        }
+        let default_color = self.read_rgba()?;
+        let flags = self.read_u8()?;
+        Ok(ConvolutionFilter {
+            num_matrix_cols,
+            num_matrix_rows,
+            divisor,
+            bias,
+            matrix,
+            default_color,
+            is_clamped: (flags & 0b10) != 0,
+            is_preserve_alpha: (flags & 0b1) != 0,
+        })
+    }
+
+    fn read_color_matrix_filter(&mut self) -> Result<ColorMatrixFilter> {
+        let mut matrix = [Fixed16::ZERO; 20];
+        for m in &mut matrix {
+            *m = self.read_fixed16()?;
+        }
+        Ok(ColorMatrixFilter { matrix })
+    }
+
     pub fn read_filter(&mut self) -> Result<Filter> {
         let filter = match self.read_u8()? {
-            0 => {
-                let color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::DropShadowFilter(Box::new(DropShadowFilter {
-                    color,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    num_passes: flags & 0b0001_1111,
-                }))
-            }
-            1 => Filter::BlurFilter(Box::new(BlurFilter {
-                blur_x: self.read_fixed16()?,
-                blur_y: self.read_fixed16()?,
-                num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
-            })),
-            2 => {
-                let color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GlowFilter(Box::new(GlowFilter {
-                    color,
-                    blur_x,
-                    blur_y,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    num_passes: flags & 0b0001_1111,
-                }))
-            }
-            3 => {
-                let shadow_color = self.read_rgba()?;
-                let highlight_color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::BevelFilter(Box::new(BevelFilter {
-                    shadow_color,
-                    highlight_color,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
-            4 => {
-                let num_colors = self.read_u8()?;
-                let mut colors = Vec::with_capacity(num_colors as usize);
-                for _ in 0..num_colors {
-                    colors.push(self.read_rgba()?);
-                }
-                let mut gradient_records = Vec::with_capacity(num_colors as usize);
-                for color in colors {
-                    gradient_records.push(GradientRecord {
-                        color,
-                        ratio: self.read_u8()?,
-                    });
-                }
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
-                    colors: gradient_records,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
-            5 => {
-                let num_matrix_cols = self.read_u8()?;
-                let num_matrix_rows = self.read_u8()?;
-                let divisor = self.read_fixed16()?;
-                let bias = self.read_fixed16()?;
-                let num_entries = num_matrix_cols * num_matrix_rows;
-                let mut matrix = Vec::with_capacity(num_entries as usize);
-                for _ in 0..num_entries {
-                    matrix.push(self.read_fixed16()?);
-                }
-                let default_color = self.read_rgba()?;
-                let flags = self.read_u8()?;
-                Filter::ConvolutionFilter(Box::new(ConvolutionFilter {
-                    num_matrix_cols,
-                    num_matrix_rows,
-                    divisor,
-                    bias,
-                    matrix,
-                    default_color,
-                    is_clamped: (flags & 0b10) != 0,
-                    is_preserve_alpha: (flags & 0b1) != 0,
-                }))
-            }
-            6 => {
-                let mut matrix = [Fixed16::ZERO; 20];
-                for m in &mut matrix {
-                    *m = self.read_fixed16()?;
-                }
-                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix }))
-            }
-            7 => {
-                let num_colors = self.read_u8()?;
-                let mut colors = Vec::with_capacity(num_colors as usize);
-                for _ in 0..num_colors {
-                    colors.push(self.read_rgba()?);
-                }
-                let mut gradient_records = Vec::with_capacity(num_colors as usize);
-                for color in colors {
-                    gradient_records.push(GradientRecord {
-                        color,
-                        ratio: self.read_u8()?,
-                    });
-                }
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
-                    colors: gradient_records,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
+            0 => Filter::DropShadowFilter(Box::new(self.read_drop_shadow_filter()?)),
+            1 => Filter::BlurFilter(Box::new(self.read_blur_filter()?)),
+            2 => Filter::GlowFilter(Box::new(self.read_glow_filter()?)),
+            3 => Filter::BevelFilter(Box::new(self.read_bevel_filter()?)),
+            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_filter()?)),
+            5 => Filter::ConvolutionFilter(Box::new(self.read_convolution_filter()?)),
+            6 => Filter::ColorMatrixFilter(Box::new(self.read_color_matrix_filter()?)),
+            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_filter()?)),
             _ => return Err(Error::invalid_data("Invalid filter type")),
         };
         Ok(filter)
