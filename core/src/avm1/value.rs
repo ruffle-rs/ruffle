@@ -884,7 +884,7 @@ mod test {
             let valueof = FunctionObject::function(
                 activation.context.gc_context,
                 Executable::Native(value_of_impl),
-                Some(protos.function),
+                protos.function,
                 protos.function,
             );
 

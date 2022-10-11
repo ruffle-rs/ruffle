@@ -80,7 +80,7 @@ pub fn create_string_object<'gc>(
         gc_context,
         Executable::Native(string),
         Executable::Native(string_function),
-        Some(fn_proto),
+        fn_proto,
         string_proto,
     );
     let object = string.as_script_object().unwrap();

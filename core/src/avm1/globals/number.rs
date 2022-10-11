@@ -69,7 +69,7 @@ pub fn create_number_object<'gc>(
         gc_context,
         Executable::Native(number),
         Executable::Native(number_function),
-        Some(fn_proto),
+        fn_proto,
         number_proto,
     );
     let object = number.as_script_object().unwrap();

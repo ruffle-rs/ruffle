@@ -653,7 +653,7 @@ mod tests {
             let getter = FunctionObject::function(
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
-                None,
+                activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,
             );
 
@@ -679,7 +679,7 @@ mod tests {
             let getter = FunctionObject::function(
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok("Virtual!".into())),
-                None,
+                activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,
             );
 
@@ -735,7 +735,7 @@ mod tests {
             let getter = FunctionObject::function(
                 activation.context.gc_context,
                 Executable::Native(|_avm, _this, _args| Ok(Value::Null)),
-                None,
+                activation.context.avm1.prototypes().function,
                 activation.context.avm1.prototypes().function,
             );
 

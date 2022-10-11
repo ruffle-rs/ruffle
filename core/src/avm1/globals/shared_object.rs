@@ -433,7 +433,7 @@ pub fn create_shared_object_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        Some(fn_proto),
+        fn_proto,
         shared_object_proto,
     );
     let object = shared_obj.as_script_object().unwrap();

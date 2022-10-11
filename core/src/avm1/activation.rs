@@ -883,7 +883,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let func_obj = FunctionObject::function(
             self.context.gc_context,
             Gc::allocate(self.context.gc_context, func),
-            Some(self.context.avm1.prototypes().function),
+            self.context.avm1.prototypes().function,
             prototype,
         );
         if let Some(name) = name {
