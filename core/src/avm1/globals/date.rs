@@ -918,7 +918,7 @@ pub fn create_date_object<'gc>(
     let date = FunctionObject::function(
         gc_context,
         Executable::Native(constructor),
-        Some(fn_proto),
+        fn_proto,
         date_proto,
     );
     let object = date.as_script_object().unwrap();

@@ -71,33 +71,20 @@ impl Declaration {
         let attributes = Attribute::from_bits_truncate(self.attributes);
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
-                let getter = FunctionObject::function(
-                    mc,
-                    Executable::Native(getter),
-                    Some(fn_proto),
-                    fn_proto,
-                );
+                let getter =
+                    FunctionObject::function(mc, Executable::Native(getter), fn_proto, fn_proto);
                 let setter = setter.map(|setter| {
-                    FunctionObject::function(
-                        mc,
-                        Executable::Native(setter),
-                        Some(fn_proto),
-                        fn_proto,
-                    )
+                    FunctionObject::function(mc, Executable::Native(setter), fn_proto, fn_proto)
                 });
                 this.add_property(mc, self.name.into(), getter, setter, attributes);
                 return Value::Undefined;
             }
-            DeclKind::Method(func) => FunctionObject::bare_function(
-                mc,
-                Some(Executable::Native(func)),
-                None,
-                Some(fn_proto),
-            )
-            .into(),
-            DeclKind::Function(func) => {
-                FunctionObject::function(mc, Executable::Native(func), Some(fn_proto), fn_proto)
+            DeclKind::Method(func) => {
+                FunctionObject::bare_function(mc, Some(Executable::Native(func)), None, fn_proto)
                     .into()
+            }
+            DeclKind::Function(func) => {
+                FunctionObject::function(mc, Executable::Native(func), fn_proto, fn_proto).into()
             }
             DeclKind::String(s) => s.into(),
             DeclKind::Bool(b) => b.into(),

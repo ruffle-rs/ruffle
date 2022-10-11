@@ -292,7 +292,7 @@ pub fn create_point_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        Some(fn_proto),
+        fn_proto,
         point_proto,
     );
     let object = point.as_script_object().unwrap();

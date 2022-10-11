@@ -505,12 +505,10 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
     ) -> Self {
-        let base = ScriptObject::new(gc_context, fn_proto);
-
-        FunctionObject {
-            base,
+        Self {
+            base: ScriptObject::new(gc_context, Some(fn_proto)),
             data: GcCell::allocate(
                 gc_context,
                 FunctionObjectData {
@@ -533,7 +531,7 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         let function = Self::bare_function(gc_context, function, constructor, fn_proto).into();
@@ -558,7 +556,7 @@ impl<'gc> FunctionObject<'gc> {
     pub fn function(
         gc_context: MutationContext<'gc, '_>,
         function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(gc_context, Some(function.into()), None, fn_proto, prototype)
@@ -569,7 +567,7 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         constructor: impl Into<Executable<'gc>>,
         function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(

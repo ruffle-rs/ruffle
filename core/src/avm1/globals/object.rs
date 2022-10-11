@@ -325,7 +325,7 @@ pub fn create_object_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         Executable::Native(object_function),
-        Some(fn_proto),
+        fn_proto,
         proto,
     );
     let object = object_function.as_script_object().unwrap();

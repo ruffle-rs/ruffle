@@ -1251,7 +1251,7 @@ pub fn create_bitmap_data_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        Some(fn_proto),
+        fn_proto,
         bitmap_data_proto,
     );
     let object = bitmap_data.as_script_object().unwrap();

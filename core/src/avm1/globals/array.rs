@@ -68,7 +68,7 @@ pub fn create_array_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         Executable::Native(constructor),
-        Some(fn_proto),
+        fn_proto,
         array_proto,
     );
     let object = array.as_script_object().unwrap();
