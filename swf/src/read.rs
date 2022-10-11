@@ -2067,23 +2067,14 @@ impl<'a> Reader<'a> {
     }
 
     fn read_drop_shadow_filter(&mut self) -> Result<DropShadowFilter> {
-        let color = self.read_rgba()?;
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let angle = self.read_fixed16()?;
-        let distance = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(DropShadowFilter {
-            color,
-            blur_x,
-            blur_y,
-            angle,
-            distance,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            num_passes: flags & 0b0001_1111,
+            color: self.read_rgba()?,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: DropShadowFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
