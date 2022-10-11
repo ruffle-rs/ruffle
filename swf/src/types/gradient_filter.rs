@@ -1,7 +1,7 @@
 use crate::{Fixed16, Fixed8, GradientRecord};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GradientBevelFilter {
+pub struct GradientFilter {
     pub colors: Vec<GradientRecord>,
     pub blur_x: Fixed16,
     pub blur_y: Fixed16,

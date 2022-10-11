@@ -2098,7 +2098,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 clip_depth: None,
                 class_name: None,
                 filters: Some(vec![
-                    Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
+                    Filter::GradientBevelFilter(Box::new(GradientFilter {
                         colors: vec![
                             GradientRecord {
                                 ratio: 0,
@@ -2138,7 +2138,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         is_on_top: false,
                         num_passes: 3,
                     })),
-                    Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
+                    Filter::GradientGlowFilter(Box::new(GradientFilter {
                         colors: vec![
                             GradientRecord {
                                 ratio: 0,
