@@ -32,12 +32,12 @@ pub fn hide_mouse<'gc>(
 
 pub fn create_mouse_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let mouse = ScriptObject::new(gc_context, proto);
+    let mouse = ScriptObject::new(gc_context, Some(proto));
     broadcaster_functions.initialize(gc_context, mouse.into(), array_proto);
     define_properties_on(OBJECT_DECLS, gc_context, mouse, fn_proto);
     mouse.into()

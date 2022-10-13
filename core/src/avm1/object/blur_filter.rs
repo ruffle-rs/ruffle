@@ -39,11 +39,11 @@ impl<'gc> BlurFilterObject<'gc> {
         [set_quality, quality, quality, i32],
     );
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         BlurFilterObject(GcCell::allocate(
             gc_context,
             BlurFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 blur_x: 4.0,
                 blur_y: 4.0,
                 quality: 1,

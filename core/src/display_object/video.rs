@@ -376,7 +376,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
                 context.gc_context,
                 (*self).into(),
-                Some(context.avm1.prototypes().video),
+                context.avm1.prototypes().video,
             )
             .into();
             write.object = Some(object.into());

@@ -1942,7 +1942,7 @@ impl<'gc> MovieClip<'gc> {
                     let object: Avm1Object<'gc> = StageObject::for_display_object(
                         activation.context.gc_context,
                         self.into(),
-                        Some(prototype),
+                        prototype,
                     )
                     .into();
                     self.0.write(activation.context.gc_context).object = Some(object.into());
@@ -1969,7 +1969,7 @@ impl<'gc> MovieClip<'gc> {
             let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
                 self.into(),
-                Some(context.avm1.prototypes().movie_clip),
+                context.avm1.prototypes().movie_clip,
             )
             .into();
             self.0.write(context.gc_context).object = Some(object.into());

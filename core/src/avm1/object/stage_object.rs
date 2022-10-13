@@ -40,12 +40,12 @@ impl<'gc> StageObject<'gc> {
     pub fn for_display_object(
         gc_context: MutationContext<'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Option<Object<'gc>>,
+        proto: Object<'gc>,
     ) -> Self {
         Self(GcCell::allocate(
             gc_context,
             StageObjectData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 display_object,
                 text_field_bindings: Vec::new(),
             },

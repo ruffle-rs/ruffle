@@ -65,7 +65,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let boolean_proto = ValueObject::empty_box(gc_context, Some(proto));
+    let boolean_proto = ValueObject::empty_box(gc_context, proto);
     let object = boolean_proto.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     boolean_proto

@@ -408,7 +408,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = BevelFilterObject::empty_object(gc_context, Some(proto));
+    let object = BevelFilterObject::empty_object(gc_context, proto);
     let script_object = object.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, script_object, fn_proto);
     object.into()
