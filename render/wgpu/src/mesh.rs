@@ -208,7 +208,7 @@ impl DrawType {
             &descriptors.bind_layouts.bitmap,
             descriptors
                 .bitmap_samplers
-                .get_sampler(bitmap.is_smoothed, bitmap.is_repeating),
+                .get_sampler(bitmap.is_repeating, bitmap.is_smoothed),
             &texture_transforms,
             texture_view,
             bind_group_label,
