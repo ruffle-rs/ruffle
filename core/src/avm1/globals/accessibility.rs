@@ -41,10 +41,10 @@ pub fn update_properties<'gc>(
 
 pub fn create_accessibility_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let accessibility = ScriptObject::new(gc_context, proto);
+    let accessibility = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, gc_context, accessibility, fn_proto);
     accessibility.into()
 }

@@ -97,11 +97,11 @@ impl<'gc> BevelFilterObject<'gc> {
         [set_type, get_type, type_, BevelFilterType],
     );
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         BevelFilterObject(GcCell::allocate(
             gc_context,
             BevelFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 angle: 44.9999999772279,
                 blur_x: 4.0,
                 blur_y: 4.0,

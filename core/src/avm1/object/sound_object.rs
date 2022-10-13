@@ -58,12 +58,12 @@ impl fmt::Debug for SoundObject<'_> {
 impl<'gc> SoundObject<'gc> {
     pub fn empty_sound(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
+        proto: Object<'gc>,
     ) -> SoundObject<'gc> {
         SoundObject(GcCell::allocate(
             gc_context,
             SoundObjectData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 sound: None,
                 sound_instance: None,
                 owner: None,

@@ -571,7 +571,7 @@ pub fn create_globals<'gc>(
     let selection_proto = selection::create_proto(gc_context, object_proto);
 
     let (broadcaster_functions, as_broadcaster) =
-        as_broadcaster::create(gc_context, Some(object_proto), function_proto);
+        as_broadcaster::create(gc_context, object_proto, function_proto);
 
     let movie_clip_loader_proto = movie_clip_loader::create_proto(
         gc_context,
@@ -1047,12 +1047,11 @@ pub fn create_globals<'gc>(
         Attribute::DONT_ENUM,
     );
 
-    let system_security = system_security::create(gc_context, Some(object_proto), function_proto);
-    let system_capabilities =
-        system_capabilities::create(gc_context, Some(object_proto), function_proto);
+    let system_security = system_security::create(gc_context, object_proto, function_proto);
+    let system_capabilities = system_capabilities::create(gc_context, object_proto, function_proto);
     let system_ime = system_ime::create(
         gc_context,
-        Some(object_proto),
+        object_proto,
         function_proto,
         broadcaster_functions,
         array_proto,
@@ -1060,7 +1059,7 @@ pub fn create_globals<'gc>(
 
     let system = system::create(
         gc_context,
-        Some(object_proto),
+        object_proto,
         function_proto,
         system_security,
         system_capabilities,
@@ -1071,7 +1070,7 @@ pub fn create_globals<'gc>(
     globals.define_value(
         gc_context,
         "Math",
-        Value::Object(math::create(gc_context, Some(object_proto), function_proto)),
+        Value::Object(math::create(gc_context, object_proto, function_proto)),
         Attribute::DONT_ENUM,
     );
     globals.define_value(
@@ -1079,7 +1078,7 @@ pub fn create_globals<'gc>(
         "Mouse",
         Value::Object(mouse::create_mouse_object(
             gc_context,
-            Some(object_proto),
+            object_proto,
             function_proto,
             broadcaster_functions,
             array_proto,
@@ -1091,7 +1090,7 @@ pub fn create_globals<'gc>(
         "Key",
         Value::Object(key::create_key_object(
             gc_context,
-            Some(object_proto),
+            object_proto,
             function_proto,
             broadcaster_functions,
             array_proto,
@@ -1103,8 +1102,8 @@ pub fn create_globals<'gc>(
         "Stage",
         Value::Object(stage::create_stage_object(
             gc_context,
-            Some(object_proto),
-            Some(array_proto),
+            object_proto,
+            array_proto,
             function_proto,
             broadcaster_functions,
         )),
@@ -1115,7 +1114,7 @@ pub fn create_globals<'gc>(
         "Accessibility",
         Value::Object(accessibility::create_accessibility_object(
             gc_context,
-            Some(object_proto),
+            object_proto,
             function_proto,
         )),
         Attribute::DONT_ENUM,

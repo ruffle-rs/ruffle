@@ -380,7 +380,7 @@ pub fn clone<'gc>(
         if !bitmap_data.disposed() {
             let new_bitmap_data = BitmapDataObject::empty_object(
                 activation.context.gc_context,
-                Some(activation.context.avm1.prototypes().bitmap_data),
+                activation.context.avm1.prototypes().bitmap_data,
             );
 
             new_bitmap_data
@@ -1172,7 +1172,7 @@ pub fn compare<'gc>(
     match BitmapData::compare(&this_bitmap_data, &other_bitmap_data) {
         Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes().bitmap_data),
+            activation.context.avm1.prototypes().bitmap_data,
             bitmap_data,
         )
         .into()),
@@ -1185,7 +1185,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bitmap_data_object = BitmapDataObject::empty_object(gc_context, Some(proto));
+    let bitmap_data_object = BitmapDataObject::empty_object(gc_context, proto);
     let object = bitmap_data_object.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     bitmap_data_object.into()
@@ -1216,7 +1216,7 @@ pub fn load_bitmap<'gc>(
             if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_handle) {
                 let new_bitmap_data = BitmapDataObject::empty_object(
                     activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().bitmap_data),
+                    activation.context.avm1.prototypes().bitmap_data,
                 );
 
                 let width = bitmap.width();

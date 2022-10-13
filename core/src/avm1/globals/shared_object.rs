@@ -555,7 +555,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj = SharedObject::empty_shared_obj(gc_context, Some(proto));
+    let shared_obj = SharedObject::empty_shared_obj(gc_context, proto);
     let object = shared_obj.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     shared_obj.into()

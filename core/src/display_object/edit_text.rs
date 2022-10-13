@@ -1331,7 +1331,7 @@ impl<'gc> EditText<'gc> {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
                 context.gc_context,
                 (*self).into(),
-                Some(context.avm1.prototypes().text_field),
+                context.avm1.prototypes().text_field,
             )
             .into();
 

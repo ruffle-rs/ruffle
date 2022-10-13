@@ -63,11 +63,11 @@ impl<'gc> DropShadowFilterObject<'gc> {
         [set_strength, strength, strength, f64],
     );
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         DropShadowFilterObject(GcCell::allocate(
             gc_context,
             DropShadowFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 distance: 4.0,
                 hide_object: false,
                 angle: 44.9999999772279,

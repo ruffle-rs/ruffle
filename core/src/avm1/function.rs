@@ -740,9 +740,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let base = ScriptObject::new(activation.context.gc_context, Some(prototype));
-        let fn_object = FunctionObject {
-            base,
+        Ok(FunctionObject {
+            base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
             data: GcCell::allocate(
                 activation.context.gc_context,
                 FunctionObjectData {
@@ -750,9 +749,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                     constructor: None,
                 },
             ),
-        };
-
-        Ok(fn_object.into())
+        }
+        .into())
     }
 
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {

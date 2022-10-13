@@ -18,10 +18,10 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let object = ScriptObject::new(gc_context, proto);
+    let object = ScriptObject::new(gc_context, Some(proto));
 
     let define_as_object = |index: usize| -> Object<'gc> {
         match OBJECT_DECLS[index].define_on(gc_context, object, fn_proto) {

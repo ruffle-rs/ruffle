@@ -14,7 +14,7 @@ macro_rules! impl_custom_object {
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
             this: $crate::avm1::Object<'gc>,
         ) -> Result<$crate::avm1::Object<'gc>, $crate::avm1::Error<'gc>> {
-            Ok($obj_type::$new(activation.context.gc_context, Some(this)).into())
+            Ok($obj_type::$new(activation.context.gc_context, this).into())
         }
     };
 

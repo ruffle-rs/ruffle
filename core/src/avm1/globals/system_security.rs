@@ -97,10 +97,10 @@ fn policy_file_resolver<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let security = ScriptObject::new(gc_context, proto);
+    let security = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, gc_context, security, fn_proto);
     security.into()
 }

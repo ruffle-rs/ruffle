@@ -290,7 +290,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XmlObject::empty(gc_context, Some(proto));
+    let xml_proto = XmlObject::empty(gc_context, proto);
     let object = xml_proto.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     xml_proto.into()
