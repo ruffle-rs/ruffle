@@ -2,8 +2,7 @@
 name = "ruffle_desktop"
 version = "0.1.0"
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
-edition = "2021"
-default-run = "ruffle_desktop"
+edition.workspace = true
 license = "MIT OR Apache-2.0"
 
 [dependencies]
