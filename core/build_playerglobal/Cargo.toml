@@ -1,7 +1,7 @@
 [package]
 name = "build_playerglobal"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
 convert_case = "0.6.0"
