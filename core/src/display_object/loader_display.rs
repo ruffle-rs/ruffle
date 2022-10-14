@@ -105,6 +105,23 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
     }
+
+    fn mouse_pick(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        pos: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Option<InteractiveObject<'gc>> {
+        for child in self.iter_render_list().rev() {
+            if let Some(int) = child.as_interactive() {
+                if let Some(result) = int.mouse_pick(context, pos, require_button_mode) {
+                    return Some(result);
+                }
+            }
+        }
+
+        None
+    }
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for LoaderDisplay<'gc> {
