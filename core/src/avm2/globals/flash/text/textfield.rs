@@ -1068,6 +1068,60 @@ pub fn set_sharpness<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn num_lines<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.layout_lines().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_line_metrics<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let line_num = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let metrics = this.layout_metrics(line_num as usize);
+
+        if let Some(metrics) = metrics {
+            let metrics_class = activation.avm2().classes().textlinemetrics;
+            return Ok(metrics_class
+                .construct(
+                    activation,
+                    &[
+                        metrics.x.to_pixels().into(),
+                        metrics.width.to_pixels().into(),
+                        metrics.height.to_pixels().into(),
+                        metrics.ascent.to_pixels().into(),
+                        metrics.descent.to_pixels().into(),
+                        metrics.leading.to_pixels().into(),
+                    ],
+                )?
+                .into());
+        } else {
+            return Err("RangeError".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1128,6 +1182,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("gridFitType", Some(grid_fit_type), Some(set_grid_fit_type)),
         ("thickness", Some(thickness), Some(set_thickness)),
         ("sharpness", Some(sharpness), Some(set_sharpness)),
+        ("numLines", Some(num_lines), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
@@ -1138,6 +1193,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("replaceText", replace_text),
         ("setSelection", set_selection),
         ("setTextFormat", set_text_format),
+        ("getLineMetrics", get_line_metrics),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
