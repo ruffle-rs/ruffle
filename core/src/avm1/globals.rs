@@ -13,7 +13,7 @@ use std::str;
 mod accessibility;
 mod array;
 pub(crate) mod as_broadcaster;
-mod bevel_filter;
+pub(crate) mod bevel_filter;
 mod bitmap_data;
 mod bitmap_filter;
 pub(crate) mod blur_filter;
@@ -498,8 +498,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub bevel_filter: Object<'gc>,
-    pub bevel_filter_constructor: Object<'gc>,
     pub glow_filter: Object<'gc>,
     pub glow_filter_constructor: Object<'gc>,
     pub drop_shadow_filter: Object<'gc>,
@@ -754,15 +752,8 @@ pub fn create_globals<'gc>(
     let blur_filter =
         blur_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
-    let bevel_filter_proto =
-        bevel_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
-    let bevel_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(bevel_filter::constructor),
-        constructor_to_fn!(bevel_filter::constructor),
-        function_proto,
-        bevel_filter_proto,
-    );
+    let bevel_filter =
+        bevel_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
     let glow_filter_proto =
         glow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
@@ -1148,8 +1139,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            bevel_filter: bevel_filter_proto,
-            bevel_filter_constructor: bevel_filter,
             glow_filter: glow_filter_proto,
             glow_filter_constructor: glow_filter,
             drop_shadow_filter: drop_shadow_filter_proto,

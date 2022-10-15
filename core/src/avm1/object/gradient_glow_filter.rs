@@ -1,9 +1,8 @@
 use crate::add_field_accessors;
+use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-
-use crate::avm1::object::bevel_filter::BevelFilterType;
 use std::fmt;
 
 /// A GradientGlowFilter

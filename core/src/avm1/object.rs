@@ -1,11 +1,11 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
+use crate::avm1::globals::bevel_filter::BevelFilterObject;
 use crate::avm1::globals::blur_filter::BlurFilterObject;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::date::Date;
 use crate::avm1::object::array_object::ArrayObject;
-use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::color_matrix_filter::ColorMatrixFilterObject;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
@@ -30,7 +30,6 @@ use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
 pub mod array_object;
-pub mod bevel_filter;
 pub mod bitmap_data;
 pub mod color_matrix_filter;
 pub mod convolution_filter;
@@ -56,6 +55,7 @@ pub enum NativeObject<'gc> {
     None,
     Date(GcCell<'gc, Date>),
     BlurFilter(GcCell<'gc, BlurFilterObject>),
+    BevelFilter(GcCell<'gc, BevelFilterObject>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
 }
@@ -78,7 +78,6 @@ pub enum NativeObject<'gc> {
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
         TransformObject(TransformObject<'gc>),
-        BevelFilterObject(BevelFilterObject<'gc>),
         GlowFilterObject(GlowFilterObject<'gc>),
         DropShadowFilterObject(DropShadowFilterObject<'gc>),
         ColorMatrixFilterObject(ColorMatrixFilterObject<'gc>),
@@ -553,11 +552,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `TransformObject`, if it exists
     fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `BevelFilterObject`, if it exists
-    fn as_bevel_filter_object(&self) -> Option<BevelFilterObject<'gc>> {
         None
     }
 
