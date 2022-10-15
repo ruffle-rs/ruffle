@@ -1442,7 +1442,7 @@ impl<'gc> EditText<'gc> {
         let size = Twips::from_pixels(text_format?.size?);
         let ascent = font.get_baseline_for_height(size);
         let descent = font.get_descent_for_height(size);
-        let leading = font.get_leading_for_height(size);
+        let leading = Twips::from_pixels(text_format?.leading?);
 
         Some(LayoutMetrics {
             ascent,
