@@ -29,6 +29,10 @@ pub fn clone<'gc>(
             activation.context.gc_context,
             blur_filter.read().clone(),
         )),
+        NativeObject::BevelFilter(bevel_filter) => NativeObject::BevelFilter(GcCell::allocate(
+            activation.context.gc_context,
+            bevel_filter.read().clone(),
+        )),
         _ => NativeObject::None,
     };
     if !matches!(native, NativeObject::None) {
@@ -46,46 +50,6 @@ pub fn clone<'gc>(
         }
         cloned.set_native(activation.context.gc_context, native);
         return Ok(cloned.into());
-    }
-
-    if let Some(this) = this.as_bevel_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .bevel_filter_constructor;
-
-        let distance = this.get("distance", activation)?;
-        let angle = this.get("angle", activation)?;
-        let highlight_color = this.get("highlightColor", activation)?;
-        let highlight_alpha = this.get("highlightAlpha", activation)?;
-        let shadow_color = this.get("shadowColor", activation)?;
-        let shadow_alpha = this.get("shadowAlpha", activation)?;
-        let blur_x = this.get("blurX", activation)?;
-        let blur_y = this.get("blurY", activation)?;
-        let strength = this.get("strength", activation)?;
-        let quality = this.get("quality", activation)?;
-        let type_ = this.get("type", activation)?;
-        let knockout = this.get("knockout", activation)?;
-
-        let cloned = proto.construct(
-            activation,
-            &[
-                distance,
-                angle,
-                highlight_color,
-                highlight_alpha,
-                shadow_color,
-                shadow_alpha,
-                blur_x,
-                blur_y,
-                strength,
-                quality,
-                type_,
-                knockout,
-            ],
-        )?;
-        return Ok(cloned);
     }
 
     if let Some(this) = this.as_glow_filter_object() {

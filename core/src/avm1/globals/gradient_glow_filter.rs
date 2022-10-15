@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::bevel_filter::BevelFilterType;
+use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
