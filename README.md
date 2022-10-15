@@ -139,6 +139,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://movavi.com/">
     <img src="https://ruffle.rs/assets/sponsors/movavi.svg" alt="Movavi">
   </a>
+  <a href="https://www.kongregate.com/">
+    <img src="https://ruffle.rs/assets/sponsors/kongregate.svg" alt="Kongregate">
+  </a>
 </p>
 
 ## License
