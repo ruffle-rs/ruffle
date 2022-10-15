@@ -555,7 +555,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
-    /// The rectangle corresponding to the outer boundaries of the
+    /// The rectangle corresponding to the outer boundaries of the content box.
     bounds: BoxBounds<Twips>,
 
     /// What content is contained by the content box.
@@ -840,4 +840,15 @@ impl<'gc> LayoutBox<'gc> {
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
     }
+}
+
+pub struct LayoutMetrics {
+    pub ascent: Twips,
+    pub descent: Twips,
+    pub leading: Twips,
+
+    pub width: Twips,
+    pub height: Twips,
+
+    pub x: Twips,
 }

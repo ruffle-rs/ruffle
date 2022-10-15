@@ -19,7 +19,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
-use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
+use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -1382,6 +1382,78 @@ impl<'gc> EditText<'gc> {
                 e
             ),
         }
+    }
+
+    /// Count the number of lines in the text box's layout.
+    pub fn layout_lines(self) -> usize {
+        self.0.read().line_data.len()
+    }
+
+    /// Calculate the layout metrics for a given line.
+    ///
+    /// Returns None if the line does not exist or there is not enough data
+    /// about the line to calculate metrics with.
+    pub fn layout_metrics(self, line: usize) -> Option<LayoutMetrics> {
+        let line = self.0.read().line_data.get(line).copied()?;
+        let mut union_bounds = None;
+        let mut font = None;
+        let mut text_format = None;
+
+        let read = self.0.read();
+
+        for layout_box in read.layout.iter() {
+            if layout_box.bounds().offset_y() < line.offset
+                || layout_box.bounds().extent_y() > line.extent
+            {
+                continue;
+            }
+
+            log::error!("{:?}", layout_box);
+
+            if let Some(bounds) = &mut union_bounds {
+                *bounds += layout_box.bounds();
+            } else {
+                union_bounds = Some(layout_box.bounds());
+            }
+
+            if font.is_none() {
+                match layout_box.content() {
+                    LayoutContent::Text {
+                        font: box_font,
+                        text_format: box_text_format,
+                        ..
+                    } => {
+                        font = Some(box_font);
+                        text_format = Some(box_text_format);
+                    }
+                    LayoutContent::Bullet {
+                        font: box_font,
+                        text_format: box_text_format,
+                        ..
+                    } => {
+                        font = Some(box_font);
+                        text_format = Some(box_text_format);
+                    }
+                    LayoutContent::Drawing { .. } => {}
+                }
+            }
+        }
+
+        let union_bounds = union_bounds?;
+        let font = font?;
+        let size = Twips::from_pixels(text_format?.size?);
+        let ascent = font.get_baseline_for_height(size);
+        let descent = font.get_descent_for_height(size);
+        let leading = font.get_leading_for_height(size);
+
+        Some(LayoutMetrics {
+            ascent,
+            descent,
+            leading,
+            width: union_bounds.width(),
+            height: ascent + descent + leading,
+            x: union_bounds.offset_x() + Twips::from_pixels(EditText::INTERNAL_PADDING),
+        })
     }
 }
 
