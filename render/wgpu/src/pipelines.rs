@@ -232,7 +232,7 @@ fn create_shape_pipeline(
             shader,
             &pipeline_layout,
             Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                format: wgpu::TextureFormat::Depth32FloatStencil8,
                 depth_write_enabled: false,
                 depth_compare: wgpu::CompareFunction::Always,
                 stencil: wgpu::StencilState {
