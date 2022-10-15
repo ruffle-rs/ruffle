@@ -1,0 +1,52 @@
+/// new TextFormat("Noto Sans").getTextExtent("Ruffle");
+/// ...ascent: 
+11.9999997138977
+/// ...descent: 
+2.66666660308838
+/// ...width: 
+33.3333325386047
+/// ...height: 
+14.6666663169861
+/// ...textFieldHeight: 
+18.6666663169861
+/// ...textFieldWidth: 
+37.3333325386047
+/// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+/// ...ascent: 
+11.9999997138977
+/// ...descent: 
+2.66666660308838
+/// ...width: 
+301.333326148987
+/// ...height: 
+14.6666663169861
+/// ...textFieldHeight: 
+18.6666663169861
+/// ...textFieldWidth: 
+305.333326148987
+/// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
+/// ...ascent: 
+11.9999997138977
+/// ...descent: 
+2.66666660308838
+/// ...width: 
+81.3333313941956
+/// ...height: 
+58.6666652679443
+/// ...textFieldHeight: 
+62.6666652679443
+/// ...textFieldWidth: 
+100
+/// new TextFormat("Noto Sans", 18).getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
+/// ...ascent: 
+17.3333329200745
+/// ...descent: 
+3.99999990463257
+/// ...width: 
+101.333330917358
+/// ...height: 
+149.333329772949
+/// ...textFieldHeight: 
+153.333329772949
+/// ...textFieldWidth: 
+100

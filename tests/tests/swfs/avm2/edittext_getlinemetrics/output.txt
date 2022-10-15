@@ -1,0 +1,45 @@
+//1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+/// Text lines:  1
+/// ...ascent: 
+12.85
+/// ...descent: 
+3.45
+/// ...width: 
+190.9
+/// ...height: 
+18.3
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//Lorem ipsum dolor sit amet!!
+/// Text lines:  1
+/// ...ascent: 
+12.85
+/// ...descent: 
+3.45
+/// ...width: 
+164.45
+/// ...height: 
+18.3
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//(Empty string...)
+/// Text lines:  1
+/// ...ascent: 
+12.85
+/// ...descent: 
+3.45
+/// ...width: 
+0
+/// ...height: 
+18.3
+/// ...leading: 
+2
+/// ...x: 
+2
+
