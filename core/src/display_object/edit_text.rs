@@ -1408,8 +1408,6 @@ impl<'gc> EditText<'gc> {
                 continue;
             }
 
-            log::error!("{:?}", layout_box);
-
             if let Some(bounds) = &mut union_bounds {
                 *bounds += layout_box.bounds();
             } else {

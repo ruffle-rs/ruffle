@@ -764,7 +764,7 @@ impl<'gc> LayoutBox<'gc> {
 
                     let span_end = text.len();
 
-                    if last_breakpoint < span_end {
+                    if last_breakpoint <= span_end {
                         layout_context.append_text(
                             &text[last_breakpoint..span_end],
                             start + last_breakpoint,
