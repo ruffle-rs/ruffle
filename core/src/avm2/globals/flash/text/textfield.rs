@@ -1014,13 +1014,7 @@ pub fn set_thickness<'gc>(
             .coerce_to_number(activation)?;
 
         // NOTE: The thickness clamp is ONLY enforced on AS3.
-        new_thickness = if new_thickness > 200.0 {
-            200.0
-        } else if new_thickness < -200.0 {
-            -200.0
-        } else {
-            new_thickness
-        };
+        new_thickness = new_thickness.clamp(-200.0, 200.0);
 
         this.set_render_settings(
             activation.context.gc_context,
@@ -1063,13 +1057,7 @@ pub fn set_sharpness<'gc>(
             .coerce_to_number(activation)?;
 
         // NOTE: The sharpness clamp is only enforced on AS3.
-        new_sharpness = if new_sharpness > 400.0 {
-            400.0
-        } else if new_sharpness < -400.0 {
-            -400.0
-        } else {
-            new_sharpness
-        };
+        new_sharpness = new_sharpness.clamp(-400.0, 400.0);
 
         this.set_render_settings(
             activation.context.gc_context,
