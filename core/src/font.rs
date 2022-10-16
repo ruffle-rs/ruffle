@@ -496,13 +496,20 @@ impl FontDescriptor {
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
 /// Using "Anti-alias for readibility" switches to the "Advanced" text
 /// rendering engine.
-#[derive(Default, Debug, PartialEq, Clone, Collect)]
+#[derive(Debug, PartialEq, Clone, Collect)]
 #[collect(require_static)]
 pub enum TextRenderSettings {
     /// This text should render with the standard rendering engine.
     /// Set via "Anti-alias for animation" in the Flash IDE.
-    #[default]
-    Default,
+    ///
+    /// The `grid_fit`, `thickness`, and `sharpness` parameters are present
+    /// because they are retained when switching from `Advanced` to `Normal`
+    /// rendering and vice versa. They are not used in Normal rendering.
+    Normal {
+        grid_fit: TextGridFit,
+        thickness: f32,
+        sharpness: f32,
+    },
 
     /// This text should render with the advanced rendering engine.
     /// Set via "Anti-alias for readibility" in the Flash IDE.
@@ -531,7 +538,17 @@ impl From<swf::CsmTextSettings> for TextRenderSettings {
                 sharpness: settings.sharpness,
             }
         } else {
-            TextRenderSettings::Default
+            TextRenderSettings::default()
+        }
+    }
+}
+
+impl Default for TextRenderSettings {
+    fn default() -> Self {
+        Self::Normal {
+            grid_fit: TextGridFit::Pixel,
+            thickness: 0.0,
+            sharpness: 0.0,
         }
     }
 }
