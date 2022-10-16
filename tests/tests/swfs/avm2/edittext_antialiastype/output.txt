@@ -1,0 +1,269 @@
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+pixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.antiAliasType = AntiAliasType.NORMAL;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+pixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.gridFitType = GridFitType.SUBPIXEL;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.sharpness = -Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-400
+///this.text.sharpness = Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+400
+///this.text.sharpness = -539;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-400
+///this.text.sharpness = 300;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+300
+///this.text.sharpness = -100;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-100
+///this.text.thickness = -Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-200
+/// (sharpness)
+-100
+///this.text.thickness = Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+200
+/// (sharpness)
+-100
+///this.text.thickness = -539;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-200
+/// (sharpness)
+-100
+///this.text.thickness = 300;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+200
+/// (sharpness)
+-100
+///this.text.thickness = -100;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = AntiAliasType.ADVANCED;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.gridFitType = GridFitType.SUBPIXEL;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.sharpness = -Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-400
+///this.text.sharpness = Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+400
+///this.text.sharpness = -539;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-400
+///this.text.sharpness = 300;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+300
+///this.text.sharpness = -100;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.thickness = -Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-200
+/// (sharpness)
+-100
+///this.text.thickness = Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+200
+/// (sharpness)
+-100
+///this.text.thickness = -539;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-200
+/// (sharpness)
+-100
+///this.text.thickness = 300;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+200
+/// (sharpness)
+-100
+///this.text.thickness = -100;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.embedFonts = false
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = AntiAliasType.NORMAL;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.embedFonts = true
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = 'aaaaa';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.gridFitType = 'aaaaa';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+none
+/// (thickness)
+-100
+/// (sharpness)
+-100
