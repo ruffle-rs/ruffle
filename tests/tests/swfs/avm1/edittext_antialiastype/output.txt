@@ -267,3 +267,12 @@ subpixel
 -100
 /// (sharpness)
 -100
+/// (A text field created on the timeline with Normal antialiasing...)
+/// (antiAliasType)
+normal
+/// (gridFitType)
+pixel
+/// (thickness)
+0
+/// (sharpness)
+0
