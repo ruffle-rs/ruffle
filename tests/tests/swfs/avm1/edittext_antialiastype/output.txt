@@ -1,0 +1,269 @@
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+pixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.antiAliasType = 'normal';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+pixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.gridFitType = 'subpixel';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+0
+///this.text.sharpness = -Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-Infinity
+///this.text.sharpness = Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+Infinity
+///this.text.sharpness = -539;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-539
+///this.text.sharpness = 300;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+300
+///this.text.sharpness = -100;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+-100
+///this.text.thickness = -Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-Infinity
+/// (sharpness)
+-100
+///this.text.thickness = Infinity;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+Infinity
+/// (sharpness)
+-100
+///this.text.thickness = -539;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-539
+/// (sharpness)
+-100
+///this.text.thickness = 300;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+300
+/// (sharpness)
+-100
+///this.text.thickness = -100;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = 'advanced';
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.gridFitType = 'subpixel';
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.sharpness = -Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-Infinity
+///this.text.sharpness = Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+Infinity
+///this.text.sharpness = -539;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-539
+///this.text.sharpness = 300;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+300
+///this.text.sharpness = -100;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.thickness = -Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-Infinity
+/// (sharpness)
+-100
+///this.text.thickness = Infinity;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+Infinity
+/// (sharpness)
+-100
+///this.text.thickness = -539;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-539
+/// (sharpness)
+-100
+///this.text.thickness = 300;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+300
+/// (sharpness)
+-100
+///this.text.thickness = -100;
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.embedFonts = false
+/// (antiAliasType)
+advanced
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = 'normal';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.embedFonts = true
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.antiAliasType = 'aaaaa';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
+///this.text.gridFitType = 'aaaaa';
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+-100
+/// (sharpness)
+-100
