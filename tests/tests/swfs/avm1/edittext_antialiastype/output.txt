@@ -69,6 +69,15 @@ subpixel
 0
 /// (sharpness)
 -100
+///this.text.sharpness = NaN;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+0
+/// (sharpness)
+NaN
 ///this.text.thickness = -Infinity;
 /// (antiAliasType)
 normal
@@ -77,7 +86,7 @@ subpixel
 /// (thickness)
 -Infinity
 /// (sharpness)
--100
+NaN
 ///this.text.thickness = Infinity;
 /// (antiAliasType)
 normal
@@ -86,7 +95,7 @@ subpixel
 /// (thickness)
 Infinity
 /// (sharpness)
--100
+NaN
 ///this.text.thickness = -539;
 /// (antiAliasType)
 normal
@@ -95,7 +104,7 @@ subpixel
 /// (thickness)
 -539
 /// (sharpness)
--100
+NaN
 ///this.text.thickness = 300;
 /// (antiAliasType)
 normal
@@ -104,7 +113,7 @@ subpixel
 /// (thickness)
 300
 /// (sharpness)
--100
+NaN
 ///this.text.thickness = -100;
 /// (antiAliasType)
 normal
@@ -113,32 +122,41 @@ subpixel
 /// (thickness)
 -100
 /// (sharpness)
--100
+NaN
+///this.text.thickness = NaN;
+/// (antiAliasType)
+normal
+/// (gridFitType)
+subpixel
+/// (thickness)
+NaN
+/// (sharpness)
+NaN
 ///this.text.antiAliasType = 'advanced';
 /// (antiAliasType)
 advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
--100
+NaN
 ///this.text.gridFitType = 'subpixel';
 /// (antiAliasType)
 advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
--100
+NaN
 ///this.text.sharpness = -Infinity;
 /// (antiAliasType)
 advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
 -Infinity
 ///this.text.sharpness = Infinity;
@@ -147,7 +165,7 @@ advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
 Infinity
 ///this.text.sharpness = -539;
@@ -156,7 +174,7 @@ advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
 -539
 ///this.text.sharpness = 300;
@@ -165,7 +183,7 @@ advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
 300
 ///this.text.sharpness = -100;
@@ -174,7 +192,7 @@ advanced
 /// (gridFitType)
 subpixel
 /// (thickness)
--100
+NaN
 /// (sharpness)
 -100
 ///this.text.thickness = -Infinity;
