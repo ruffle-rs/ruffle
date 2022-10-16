@@ -878,19 +878,186 @@ pub fn set_text_format<'gc>(
 
 pub fn anti_alias_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("TextField.antiAliasType getter: not yet implemented");
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return if this.render_settings().is_advanced() {
+            Ok("advanced".into())
+        } else {
+            Ok("normal".into())
+        };
+    }
+
     Ok(Value::Undefined)
 }
 
 pub fn set_anti_alias_type<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let old_settings = this.render_settings();
+        let new_type = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if &new_type == b"advanced" {
+            this.set_render_settings(
+                activation.context.gc_context,
+                old_settings.with_advanced_rendering(),
+            );
+        } else if &new_type == b"normal" {
+            this.set_render_settings(
+                activation.context.gc_context,
+                old_settings.with_normal_rendering(),
+            );
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn grid_fit_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("TextField.antiAliasType setter: not yet implemented");
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return match this.render_settings().grid_fit() {
+            swf::TextGridFit::None => Ok("none".into()),
+            swf::TextGridFit::Pixel => Ok("pixel".into()),
+            swf::TextGridFit::SubPixel => Ok("subpixel".into()),
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_grid_fit_type<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let old_settings = this.render_settings();
+        let new_type = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if &new_type == b"pixel" {
+            this.set_render_settings(
+                activation.context.gc_context,
+                old_settings.with_grid_fit(swf::TextGridFit::Pixel),
+            );
+        } else if &new_type == b"subpixel" {
+            this.set_render_settings(
+                activation.context.gc_context,
+                old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
+            );
+        } else {
+            this.set_render_settings(
+                activation.context.gc_context,
+                old_settings.with_grid_fit(swf::TextGridFit::None),
+            );
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn thickness<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.render_settings().thickness().into());
+    }
+
+    Ok(0.into())
+}
+
+pub fn set_thickness<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let old_settings = this.render_settings();
+        let new_thickness = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_thickness(new_thickness as f32),
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn sharpness<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.render_settings().sharpness().into());
+    }
+
+    Ok(0.into())
+}
+
+pub fn set_sharpness<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let old_settings = this.render_settings();
+        let new_sharpness = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_sharpness(new_sharpness as f32),
+        );
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -951,6 +1118,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(anti_alias_type),
             Some(set_anti_alias_type),
         ),
+        ("gridFitType", Some(grid_fit_type), Some(set_grid_fit_type)),
+        ("thickness", Some(thickness), Some(set_thickness)),
+        ("sharpness", Some(sharpness), Some(set_sharpness)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

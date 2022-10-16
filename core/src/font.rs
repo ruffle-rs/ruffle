@@ -527,6 +527,142 @@ impl TextRenderSettings {
     pub fn is_advanced(&self) -> bool {
         matches!(self, TextRenderSettings::Advanced { .. })
     }
+
+    pub fn with_advanced_rendering(self) -> Self {
+        match self {
+            TextRenderSettings::Advanced { .. } => self,
+            TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness,
+            } => TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+        }
+    }
+
+    pub fn with_normal_rendering(self) -> Self {
+        match self {
+            TextRenderSettings::Normal { .. } => self,
+            TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness,
+            } => TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+        }
+    }
+
+    pub fn sharpness(&self) -> f32 {
+        match self {
+            TextRenderSettings::Normal { sharpness, .. } => *sharpness,
+            TextRenderSettings::Advanced { sharpness, .. } => *sharpness,
+        }
+    }
+
+    pub fn with_sharpness(self, mut sharpness: f32) -> Self {
+        sharpness = if sharpness > 400.0 {
+            400.0
+        } else if sharpness < -400.0 {
+            -400.0
+        } else {
+            sharpness
+        };
+
+        match self {
+            TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness: _,
+            } => TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+            TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness: _,
+            } => TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+        }
+    }
+
+    pub fn thickness(&self) -> f32 {
+        match self {
+            TextRenderSettings::Normal { thickness, .. } => *thickness,
+            TextRenderSettings::Advanced { thickness, .. } => *thickness,
+        }
+    }
+
+    pub fn with_thickness(self, mut thickness: f32) -> Self {
+        thickness = if thickness > 200.0 {
+            200.0
+        } else if thickness < -200.0 {
+            -200.0
+        } else {
+            thickness
+        };
+
+        match self {
+            TextRenderSettings::Normal {
+                grid_fit,
+                thickness: _,
+                sharpness,
+            } => TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+            TextRenderSettings::Advanced {
+                grid_fit,
+                thickness: _,
+                sharpness,
+            } => TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+        }
+    }
+
+    pub fn grid_fit(&self) -> swf::TextGridFit {
+        match self {
+            TextRenderSettings::Normal { grid_fit, .. } => *grid_fit,
+            TextRenderSettings::Advanced { grid_fit, .. } => *grid_fit,
+        }
+    }
+
+    pub fn with_grid_fit(self, grid_fit: TextGridFit) -> Self {
+        match self {
+            TextRenderSettings::Normal {
+                grid_fit: _,
+                thickness,
+                sharpness,
+            } => TextRenderSettings::Normal {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+            TextRenderSettings::Advanced {
+                grid_fit: _,
+                thickness,
+                sharpness,
+            } => TextRenderSettings::Advanced {
+                grid_fit,
+                thickness,
+                sharpness,
+            },
+        }
+    }
 }
 
 impl From<swf::CsmTextSettings> for TextRenderSettings {
