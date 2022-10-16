@@ -1084,6 +1084,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn render_settings(self) -> TextRenderSettings {
+        self.0.read().render_settings.clone()
+    }
+
     pub fn set_render_settings(
         self,
         gc_context: MutationContext<'gc, '_>,
