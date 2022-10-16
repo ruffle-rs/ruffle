@@ -565,15 +565,7 @@ impl TextRenderSettings {
         }
     }
 
-    pub fn with_sharpness(self, mut sharpness: f32) -> Self {
-        sharpness = if sharpness > 400.0 {
-            400.0
-        } else if sharpness < -400.0 {
-            -400.0
-        } else {
-            sharpness
-        };
-
+    pub fn with_sharpness(self, sharpness: f32) -> Self {
         match self {
             TextRenderSettings::Normal {
                 grid_fit,
@@ -603,15 +595,7 @@ impl TextRenderSettings {
         }
     }
 
-    pub fn with_thickness(self, mut thickness: f32) -> Self {
-        thickness = if thickness > 200.0 {
-            200.0
-        } else if thickness < -200.0 {
-            -200.0
-        } else {
-            thickness
-        };
-
+    pub fn with_thickness(self, thickness: f32) -> Self {
         match self {
             TextRenderSettings::Normal {
                 grid_fit,

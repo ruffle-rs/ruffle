@@ -972,6 +972,7 @@ pub fn set_grid_fit_type<'gc>(
                 old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
             );
         } else {
+            //NOTE: In AS3 invalid values are treated as None.
             this.set_render_settings(
                 activation.context.gc_context,
                 old_settings.with_grid_fit(swf::TextGridFit::None),
@@ -1006,11 +1007,20 @@ pub fn set_thickness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_thickness = args
+        let mut new_thickness = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
+
+        // NOTE: The thickness clamp is ONLY enforced on AS3.
+        new_thickness = if new_thickness > 200.0 {
+            200.0
+        } else if new_thickness < -200.0 {
+            -200.0
+        } else {
+            new_thickness
+        };
 
         this.set_render_settings(
             activation.context.gc_context,
@@ -1046,11 +1056,20 @@ pub fn set_sharpness<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_sharpness = args
+        let mut new_sharpness = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
+
+        // NOTE: The sharpness clamp is only enforced on AS3.
+        new_sharpness = if new_sharpness > 400.0 {
+            400.0
+        } else if new_sharpness < -400.0 {
+            -400.0
+        } else {
+            new_sharpness
+        };
 
         this.set_render_settings(
             activation.context.gc_context,
