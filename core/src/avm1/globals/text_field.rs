@@ -83,6 +83,10 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "type" => property(tf_getter!(get_type), tf_setter!(set_type));
     "variable" => property(tf_getter!(variable), tf_setter!(set_variable));
     "wordWrap" => property(tf_getter!(word_wrap), tf_setter!(set_word_wrap));
+    "antiAliasType" => property(tf_getter!(anti_alias_type), tf_setter!(set_anti_alias_type));
+    "gridFitType" => property(tf_getter!(grid_fit_type), tf_setter!(set_grid_fit_type));
+    "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness));
+    "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness));
 };
 
 /// Implements `TextField`
@@ -675,4 +679,123 @@ pub fn bottom_scroll<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.bottom_scroll().into())
+}
+
+pub fn anti_alias_type<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if this.render_settings().is_advanced() {
+        Ok("advanced".into())
+    } else {
+        Ok("normal".into())
+    }
+}
+
+pub fn set_anti_alias_type<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let old_settings = this.render_settings();
+    let new_type = value.coerce_to_string(activation)?;
+
+    if &new_type == b"advanced" {
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_advanced_rendering(),
+        );
+    } else if &new_type == b"normal" {
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_normal_rendering(),
+        );
+    }
+
+    Ok(())
+}
+
+pub fn grid_fit_type<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    match this.render_settings().grid_fit() {
+        swf::TextGridFit::None => Ok("none".into()),
+        swf::TextGridFit::Pixel => Ok("pixel".into()),
+        swf::TextGridFit::SubPixel => Ok("subpixel".into()),
+    }
+}
+
+pub fn set_grid_fit_type<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let old_settings = this.render_settings();
+    let new_type = value.coerce_to_string(activation)?;
+
+    if &new_type == b"pixel" {
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_grid_fit(swf::TextGridFit::Pixel),
+        );
+    } else if &new_type == b"subpixel" {
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_grid_fit(swf::TextGridFit::SubPixel),
+        );
+    } else if &new_type == b"none" {
+        this.set_render_settings(
+            activation.context.gc_context,
+            old_settings.with_grid_fit(swf::TextGridFit::None),
+        );
+    } // NOTE: In AS2 invalid values do nothing.
+
+    Ok(())
+}
+
+pub fn thickness<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.render_settings().thickness().into())
+}
+
+pub fn set_thickness<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let old_settings = this.render_settings();
+    let new_thickness = value.coerce_to_f64(activation)?;
+
+    this.set_render_settings(
+        activation.context.gc_context,
+        old_settings.with_thickness(new_thickness as f32),
+    );
+
+    Ok(())
+}
+
+pub fn sharpness<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.render_settings().sharpness().into())
+}
+
+pub fn set_sharpness<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let old_settings = this.render_settings();
+    let new_sharpness = value.coerce_to_f64(activation)?;
+
+    this.set_render_settings(
+        activation.context.gc_context,
+        old_settings.with_sharpness(new_sharpness as f32),
+    );
+
+    Ok(())
 }
