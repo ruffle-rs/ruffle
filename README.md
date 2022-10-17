@@ -48,8 +48,8 @@ If you are building for a Linux platform, the following are typical dependencies
 * Libgtk-3-dev
 * Libssl-dev
 * Libasound2-dev
-* *gobject*
-* libxcb*
+* \*gobject\*
+* libxcb\*
 * cmake
 * g++
 
@@ -58,7 +58,7 @@ Fedora Equivalents:
 * gtk3-devel
 * openssl1.1-devel
 * alsa-lib-devel
-* *gobject*
+* \*gobject\*
 * libxcb-devel
 * cmake
 * g++
