@@ -120,11 +120,22 @@ impl<'gc> Bitmap<'gc> {
     pub fn new(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
-        bitmap_handle: BitmapHandle,
-        width: u16,
-        height: u16,
-    ) -> Self {
-        Self::new_with_bitmap_data(context, id, Some(bitmap_handle), width, height, None, true)
+        bitmap: ruffle_render::bitmap::Bitmap,
+    ) -> Result<Self, ruffle_render::error::Error> {
+        let width = bitmap.width() as u16;
+        let height = bitmap.height() as u16;
+        let bitmap_handle = context.renderer.register_bitmap(bitmap)?;
+        let bitmap_data = None;
+        let smoothing = true;
+        Ok(Self::new_with_bitmap_data(
+            context,
+            id,
+            Some(bitmap_handle),
+            width,
+            height,
+            bitmap_data,
+            smoothing,
+        ))
     }
 
     #[allow(dead_code)]

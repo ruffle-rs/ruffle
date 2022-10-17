@@ -1367,8 +1367,8 @@ impl<'gc> Loader<'gc> {
                         Loader::movie_loader_progress(handle, uc, 0, length)?;
                     }
 
-                    let bitmap = uc.renderer.register_bitmap_jpeg_2(&data)?;
-                    let bitmap_obj = Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
+                    let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
+                    let bitmap_obj = Bitmap::new(uc, 0, bitmap)?;
 
                     if let Some(mc) = clip.as_movie_clip() {
                         mc.replace_at_depth(uc, bitmap_obj.into(), 1);
