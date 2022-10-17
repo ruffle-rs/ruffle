@@ -44,18 +44,18 @@ You must also have Java installed, and available on your PATH as `java`.
 ### Desktop
 
 If you are building for a Linux platform, the following are typical dependencies:
-<h3>Ubuntu</h3>
+#### Ubuntu
 
-* Java (OpenJDK 11 will suffice)
-* Libgtk-3-dev
-* Libssl-dev
-* Libasound2-dev
+* Java (openJDK 11 will suffice)
+* libgtk-3-dev
+* libssl-dev
+* libasound2-dev
 * \*gobject\*
 * libxcb\*
 * cmake
 * g++
 
-<h3>Fedora</h3>
+#### Fedora
 
 * java-latest-openjdk
 * gtk3-devel
