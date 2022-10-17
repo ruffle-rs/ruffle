@@ -50,3 +50,7 @@
 153.333329772949
 /// ...textFieldWidth: 
 100
+/// (Return value from getTextExtent...)
+[type Object]
+/// (Prototype of return value from getTextExtent...)
+undefined
