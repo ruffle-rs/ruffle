@@ -1,10 +1,9 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
-use crate::utils;
 use downcast_rs::{impl_downcast, Downcast};
 use swf;
 use swf::Color;
@@ -27,15 +26,6 @@ pub trait RenderBackend: Downcast {
     );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
-    fn register_bitmap_jpeg(
-        &mut self,
-        data: &[u8],
-        jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error> {
-        let data = utils::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(&data)
-    }
-
     /// Creates a new `RenderBackend` which renders directly
     /// to the texture specified by `BitmapHandle` with the given
     /// `width` and `height`. This backend is passed to the callback
@@ -53,49 +43,6 @@ pub trait RenderBackend: Downcast {
         commands: CommandList,
         clear_color: Color,
     ) -> Result<Bitmap, Error>;
-
-    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
-        let bitmap = utils::decode_define_bits_jpeg(data, None)?;
-        let width = bitmap.width() as u16;
-        let height = bitmap.height() as u16;
-        let handle = self.register_bitmap(bitmap)?;
-        Ok(BitmapInfo {
-            handle,
-            width,
-            height,
-        })
-    }
-
-    fn register_bitmap_jpeg_3_or_4(
-        &mut self,
-        jpeg_data: &[u8],
-        alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap = utils::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        let width = bitmap.width() as u16;
-        let height = bitmap.height() as u16;
-        let handle = self.register_bitmap(bitmap)?;
-        Ok(BitmapInfo {
-            handle,
-            width,
-            height,
-        })
-    }
-
-    fn register_bitmap_png(
-        &mut self,
-        swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap = utils::decode_define_bits_lossless(swf_tag)?;
-        let width = bitmap.width() as u16;
-        let height = bitmap.height() as u16;
-        let handle = self.register_bitmap(bitmap)?;
-        Ok(BitmapInfo {
-            handle,
-            width,
-            height,
-        })
-    }
 
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 

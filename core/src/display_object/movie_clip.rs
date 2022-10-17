@@ -3004,16 +3004,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> Result<(), Error> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_png(&define_bits_lossless)?;
-        let bitmap = Bitmap::new(
-            context,
-            define_bits_lossless.id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_lossless(&define_bits_lossless)?;
+        let bitmap = Bitmap::new(context, define_bits_lossless.id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3124,20 +3116,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
-        let bitmap_info = context.renderer.register_bitmap_jpeg(
-            jpeg_data,
-            context
-                .library
-                .library_for_movie_mut(self.movie())
-                .jpeg_tables(),
-        )?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let jpeg_tables = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .jpeg_tables();
+        let jpeg_data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(&jpeg_data, None)?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3153,14 +3138,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
-        let bitmap_info = context.renderer.register_bitmap_jpeg_2(jpeg_data)?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, None)?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3182,16 +3161,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }
         let jpeg_data = reader.read_slice(jpeg_len)?;
         let alpha_data = reader.read_slice_to_end();
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_jpeg_3_or_4(jpeg_data, alpha_data)?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
