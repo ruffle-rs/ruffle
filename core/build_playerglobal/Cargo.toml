@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 convert_case = "0.6.0"
-proc-macro2 = "1.0.46"
+proc-macro2 = "1.0.47"
 quote = "1.0.21"
 swf = { path = "../../swf" }
 clap = {version = "4.0.12", features = ["derive"]}
