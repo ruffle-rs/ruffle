@@ -1022,15 +1022,17 @@ impl<'gc> BitmapData<'gc> {
         render_context.commands.push_blend_mode(blend_mode);
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
-                let mut bitmap_data = data.write(context.gc_context);
-
-                bitmap_data.update_dirty_texture(&mut render_context);
-                let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
-                render_context.commands.render_bitmap(
-                    bitmap_handle,
-                    render_context.transform_stack.transform(),
-                    smoothing,
-                );
+                // if try_write fails,
+                // this is caused by recursive render attempt. TODO: support this.
+                if let Ok(mut bitmap_data) = data.try_write(context.gc_context) {
+                    bitmap_data.update_dirty_texture(&mut render_context);
+                    let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
+                    render_context.commands.render_bitmap(
+                        bitmap_handle,
+                        render_context.transform_stack.transform(),
+                        smoothing,
+                    );
+                }
             }
             IBitmapDrawable::DisplayObject(object) => {
                 // Note that we do *not* use `render_base`,
