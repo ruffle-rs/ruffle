@@ -4,6 +4,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
@@ -36,6 +37,17 @@ macro_rules! setter {
     };
 }
 
+macro_rules! method {
+    ($name:ident) => {
+        |activation, this, args| {
+            if let NativeObject::TextFormat(text_format) = this.native() {
+                return $name(activation, &text_format.read(), args);
+            }
+            Ok(Value::Undefined)
+        }
+    };
+}
+
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
@@ -56,6 +68,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "display" => property(getter!(display), setter!(set_display));
     "kerning" => property(getter!(kerning), setter!(set_kerning));
     "letterSpacing" => property(getter!(letter_spacing), setter!(set_letter_spacing));
+    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
 };
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
@@ -462,6 +475,72 @@ fn set_letter_spacing<'gc>(
         value => Some(value.coerce_to_f64(activation)?),
     };
     Ok(())
+}
+
+fn get_text_extent<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    text_format: &TextFormat,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let movie = activation.base_clip().movie().unwrap();
+    let text = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_string(activation)?;
+    let width = args
+        .get(1)
+        .cloned()
+        .map(|v| v.coerce_to_f64(activation))
+        .transpose()?;
+
+    let temp_edittext = EditText::new(
+        &mut activation.context,
+        movie,
+        0.0,
+        0.0,
+        width.unwrap_or(0.0),
+        0.0,
+    );
+
+    temp_edittext.set_autosize(AutoSizeMode::Left, &mut activation.context);
+    temp_edittext.set_word_wrap(width.is_some(), &mut activation.context);
+    temp_edittext.set_new_text_format(text_format.clone(), &mut activation.context);
+    temp_edittext.set_text(&text, &mut activation.context);
+
+    let result = ScriptObject::new(activation.context.gc_context, None);
+    let metrics = temp_edittext
+        .layout_metrics(0)
+        .expect("All text boxes should have at least one line at all times");
+
+    result.set_data(
+        "ascent".into(),
+        metrics.ascent.to_pixels().into(),
+        activation,
+    )?;
+    result.set_data(
+        "descent".into(),
+        metrics.descent.to_pixels().into(),
+        activation,
+    )?;
+    result.set_data("width".into(), metrics.width.to_pixels().into(), activation)?;
+    result.set_data(
+        "height".into(),
+        metrics.height.to_pixels().into(),
+        activation,
+    )?;
+    result.set_data(
+        "textFieldHeight".into(),
+        temp_edittext.height().into(),
+        activation,
+    )?;
+    result.set_data(
+        "textFieldWidth".into(),
+        temp_edittext.width().into(),
+        activation,
+    )?;
+
+    Ok(result.into())
 }
 
 /// `TextFormat` constructor
