@@ -217,11 +217,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The `final_line_of_para` parameter should be flagged if this the final
     /// line in the paragraph or layout operation (e.g. it wasn't caused by an
     /// automatic newline and no more text is to be expected).
+    ///
+    /// The `text` parameter, if provided, consists of the master text slice,
+    /// the current read index into that slice, and the current text span we
+    /// are formatting. This is for empty line insertion; omitting this
+    /// parameter will result in no empty lines being added.
     fn fixup_line(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         only_line: bool,
         final_line_of_para: bool,
+        text: Option<(&'a WStr, usize, &TextSpan)>,
     ) {
         if self.boxes.get_mut(self.current_line..).is_none() {
             return;
@@ -302,6 +308,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
+        if let Some((text, end, span)) = text {
+            if box_count == 0 {
+                self.append_text(&text[end..end], end, end, span);
+            }
+        }
+
         self.append_underlines();
 
         line_bounds +=
@@ -322,8 +334,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn explicit_newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.fixup_line(context, false, true);
+    ///
+    /// The `text`, `end`, and `span` parameters are for empty line insertion.
+    /// `text` should be the text we are laying out, while `end` and `span` are
+    /// the current positions into the text and format spans we are laying out.
+    fn explicit_newline(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        text: &'a WStr,
+        end: usize,
+        span: &TextSpan,
+    ) {
+        self.fixup_line(context, false, true, Some((text, end, span)));
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -340,8 +362,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.fixup_line(context, false, false);
+    ///
+    /// The `text`, `end`, and `span` parameters are for empty line insertion.
+    /// `text` should be the text we are laying out, while `end` and `span` are
+    /// the current positions into the text and format spans we are laying out.
+    fn newline(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        text: &'a WStr,
+        end: usize,
+        span: &TextSpan,
+    ) {
+        self.fixup_line(context, false, false, Some((text, end, span)));
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -537,8 +569,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn end_layout(
         mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        fs: &'a FormatSpans,
     ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        self.fixup_line(context, !self.has_line_break, true);
+        self.fixup_line(
+            context,
+            !self.has_line_break,
+            true,
+            fs.last_span()
+                .map(|ls| (fs.displayed_text(), fs.displayed_text().len(), ls)),
+        );
 
         (self.boxes, self.exterior_bounds.unwrap_or_default())
     }
@@ -694,7 +733,9 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some(b'\n' | b'\r') => layout_context.explicit_newline(context),
+                        Some(b'\n' | b'\r') => {
+                            layout_context.explicit_newline(context, text, 0, span)
+                        }
                         Some(b'\t') => layout_context.tab(),
                         _ => {}
                     }
@@ -713,6 +754,13 @@ impl<'gc> LayoutBox<'gc> {
                             offset,
                             layout_context.is_start_of_line(),
                         ) {
+                            // This ensures that the space causing the line break
+                            // is included in the line it broke.
+                            let next_breakpoint = string_utils::next_char_boundary(
+                                text,
+                                last_breakpoint + breakpoint,
+                            );
+
                             // If text doesn't fit at the start of a line, it
                             // won't fit on the next either, abort and put the
                             // whole text on the line (will be cut-off). This
@@ -721,7 +769,7 @@ impl<'gc> LayoutBox<'gc> {
                             if breakpoint == 0 && layout_context.is_start_of_line() {
                                 break;
                             } else if breakpoint == 0 {
-                                layout_context.newline(context);
+                                layout_context.newline(context, text, next_breakpoint, span);
 
                                 let next_dim = layout_context.wrap_dimensions(span);
 
@@ -735,13 +783,6 @@ impl<'gc> LayoutBox<'gc> {
                                 }
                             }
 
-                            // This ensures that the space causing the line break
-                            // is included in the line it broke.
-                            let next_breakpoint = string_utils::next_char_boundary(
-                                text,
-                                last_breakpoint + breakpoint,
-                            );
-
                             layout_context.append_text(
                                 &text[last_breakpoint..next_breakpoint],
                                 start + last_breakpoint,
@@ -754,7 +795,7 @@ impl<'gc> LayoutBox<'gc> {
                                 break;
                             }
 
-                            layout_context.newline(context);
+                            layout_context.newline(context, text, next_breakpoint, span);
                             let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;
@@ -764,7 +805,7 @@ impl<'gc> LayoutBox<'gc> {
 
                     let span_end = text.len();
 
-                    if last_breakpoint <= span_end {
+                    if last_breakpoint < span_end {
                         layout_context.append_text(
                             &text[last_breakpoint..span_end],
                             start + last_breakpoint,
@@ -776,7 +817,7 @@ impl<'gc> LayoutBox<'gc> {
             }
         }
 
-        layout_context.end_layout(context)
+        layout_context.end_layout(context, fs)
     }
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
