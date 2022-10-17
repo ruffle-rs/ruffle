@@ -45,6 +45,7 @@ You must also have Java installed, and available on your PATH as `java`.
 
 If you are building for a Linux platform, the following are typical dependencies:
 <h3>Ubuntu</h3>
+
 * Java (OpenJDK 11 will suffice)
 * Libgtk-3-dev
 * Libssl-dev
@@ -55,6 +56,7 @@ If you are building for a Linux platform, the following are typical dependencies
 * g++
 
 <h3>Fedora</h3>
+
 * java-latest-openjdk
 * gtk3-devel
 * openssl1.1-devel
