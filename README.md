@@ -43,8 +43,29 @@ You must also have Java installed, and available on your PATH as `java`.
 
 ### Desktop
 
-If you are building for a Linux platform, make sure that the GTK 3 development packages are
-installed on your system. (Ubuntu: `libgtk-3-dev`, Fedora: `gtk3-devel`)
+If you are building for a Linux platform, the following are typical dependencies:
+#### Ubuntu
+
+* Java (openJDK 11 will suffice)
+* libgtk-3-dev
+* libssl-dev
+* libasound2-dev
+* \*gobject\*
+* libxcb\*
+* cmake
+* g++
+
+#### Fedora
+
+* java-latest-openjdk
+* gtk3-devel
+* openssl1.1-devel
+* alsa-lib-devel
+* \*gobject\*
+* libxcb-devel
+* cmake
+* g++
+
 
 Use the following command to build and run the desktop app:
 
