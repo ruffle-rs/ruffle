@@ -253,10 +253,6 @@ fn attach_bitmap<'gc>(
                     .coerce_to_i32(activation)?
                     .wrapping_add(AVM_DEPTH_BIAS);
 
-                let bitmap_handle = bitmap_data
-                    .write(activation.context.gc_context)
-                    .bitmap_handle(activation.context.renderer);
-
                 // TODO: Implement pixel snapping
                 let _pixel_snapping = args
                     .get(2)
@@ -268,29 +264,20 @@ fn attach_bitmap<'gc>(
                     .unwrap_or(&Value::Undefined)
                     .as_bool(activation.swf_version());
 
-                if let Some(bitmap_handle) = bitmap_handle {
-                    //TODO: do attached BitmapDatas have character ids?
-                    let display_object = Bitmap::new_with_bitmap_data(
-                        &mut activation.context,
-                        0,
-                        Some(bitmap_handle),
-                        bitmap_data.read().width() as u16,
-                        bitmap_data.read().height() as u16,
-                        Some(bitmap_data),
-                        smoothing,
-                    );
-                    movie_clip.replace_at_depth(
-                        &mut activation.context,
-                        display_object.into(),
-                        depth,
-                    );
-                    display_object.post_instantiation(
-                        &mut activation.context,
-                        None,
-                        Instantiator::Avm1,
-                        true,
-                    );
-                }
+                //TODO: do attached BitmapDatas have character ids?
+                let display_object = Bitmap::new_with_bitmap_data(
+                    &mut activation.context,
+                    0,
+                    bitmap_data,
+                    smoothing,
+                );
+                movie_clip.replace_at_depth(&mut activation.context, display_object.into(), depth);
+                display_object.post_instantiation(
+                    &mut activation.context,
+                    None,
+                    Instantiator::Avm1,
+                    true,
+                );
             }
         }
     }
