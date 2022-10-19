@@ -1,11 +1,11 @@
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
-use crate::library::Library;
+use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
@@ -102,7 +102,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         let this = self.0.read();
         let ratio = this.ratio;
         let static_data = this.static_data;
-        let shape_handle = static_data.get_shape(context.renderer, context.library, ratio);
+        let shape_handle = static_data.get_shape(context, context.library, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
@@ -183,10 +183,10 @@ impl MorphShapeStatic {
 
     /// Retrieves the `ShapeHandle` for the given ratio.
     /// Lazily intializes and tessellates the shape if it does not yet exist.
-    fn get_shape(
+    fn get_shape<'gc>(
         &self,
-        renderer: &'_ mut dyn RenderBackend,
-        library: &Library<'_>,
+        context: &mut RenderContext<'_, 'gc, '_>,
+        library: &Library<'gc>,
         ratio: u16,
     ) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
@@ -194,7 +194,13 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = renderer.register_shape((&frame.shape).into(), library);
+            let handle = context.renderer.register_shape(
+                (&frame.shape).into(),
+                &MovieLibrarySource {
+                    library,
+                    gc_context: context.gc_context,
+                },
+            );
             frame.shape_handle = Some(handle);
             handle
         }

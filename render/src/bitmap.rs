@@ -102,33 +102,19 @@ impl Bitmap {
     pub fn data_mut(&mut self) -> &mut [u8] {
         &mut self.data
     }
-}
 
-impl From<Bitmap> for Vec<i32> {
-    fn from(bitmap: Bitmap) -> Self {
-        match bitmap.format {
-            BitmapFormat::Rgb => bitmap
-                .data
-                .chunks_exact(3)
-                .map(|chunk| {
-                    let red = chunk[0];
-                    let green = chunk[1];
-                    let blue = chunk[2];
-                    i32::from_le_bytes([blue, green, red, 0xFF])
-                })
-                .collect(),
-            BitmapFormat::Rgba => bitmap
-                .data
-                .chunks_exact(4)
-                .map(|chunk| {
-                    let red = chunk[0];
-                    let green = chunk[1];
-                    let blue = chunk[2];
-                    let alpha = chunk[3];
-                    i32::from_le_bytes([blue, green, red, alpha])
-                })
-                .collect(),
-        }
+    pub fn as_colors(&self) -> impl Iterator<Item = i32> + '_ {
+        let chunks = match self.format {
+            BitmapFormat::Rgb => self.data.chunks_exact(3),
+            BitmapFormat::Rgba => self.data.chunks_exact(4),
+        };
+        chunks.map(|chunk| {
+            let red = chunk[0];
+            let green = chunk[1];
+            let blue = chunk[2];
+            let alpha = chunk.get(3).copied().unwrap_or(0xFF);
+            i32::from_le_bytes([blue, green, red, alpha])
+        })
     }
 }
 

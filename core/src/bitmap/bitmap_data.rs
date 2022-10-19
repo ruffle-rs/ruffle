@@ -200,6 +200,23 @@ impl fmt::Debug for BitmapData<'_> {
 }
 
 impl<'gc> BitmapData<'gc> {
+    // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
+    // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
+    // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
+    // be inaccessible to AS3 code.
+    pub fn dummy() -> Self {
+        BitmapData {
+            pixels: Vec::new(),
+            dirty: false,
+            width: 0,
+            height: 0,
+            transparency: false,
+            disposed: true,
+            bitmap_handle: None,
+            avm2_object: None,
+        }
+    }
+
     pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
         self.width = width;
         self.height = height;

@@ -2,6 +2,7 @@ use crate::avm1::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
+
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
@@ -11,6 +12,7 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
+
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::CharacterId;
@@ -319,17 +321,30 @@ impl<'gc> MovieLibrary<'gc> {
     }
 }
 
-impl<'gc> ruffle_render::bitmap::BitmapSource for MovieLibrary<'gc> {
+pub struct MovieLibrarySource<'a, 'gc, 'gc_context> {
+    pub library: &'a MovieLibrary<'gc>,
+    pub gc_context: MutationContext<'gc, 'gc_context>,
+}
+
+impl<'a, 'gc, 'gc_context> ruffle_render::bitmap::BitmapSource
+    for MovieLibrarySource<'a, 'gc, 'gc_context>
+{
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        self.get_bitmap(id)
+        self.library
+            .get_bitmap(id)
             .map(|bitmap| ruffle_render::bitmap::BitmapSize {
                 width: bitmap.width(),
                 height: bitmap.height(),
             })
     }
-    fn bitmap_handle(&self, id: u16, _backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.get_bitmap(id)
-            .and_then(|bitmap| bitmap.bitmap_handle())
+
+    fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
+        self.library.get_bitmap(id).and_then(|bitmap| {
+            bitmap
+                .bitmap_data()
+                .write(self.gc_context)
+                .bitmap_handle(backend)
+        })
     }
 }
 

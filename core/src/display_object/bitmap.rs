@@ -10,8 +10,8 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::prelude::*;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use ruffle_render::bitmap::BitmapHandle;
+use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 
@@ -64,19 +64,10 @@ impl fmt::Debug for Bitmap<'_> {
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
-    static_data: Gc<'gc, BitmapStatic>,
+    id: CharacterId,
 
     /// The current bitmap data object.
-    bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
-
-    /// The current bitmap handle.
-    ///
-    /// This needs to be cached separately from the associated bitmap data so
-    /// that it can be accessed without a mutation context.
-    ///
-    /// If this is `None`, then the bitmap does not render anything.
-    #[collect(require_static)]
-    bitmap_handle: Option<BitmapHandle>,
+    bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
 
     /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
@@ -102,10 +93,7 @@ impl<'gc> Bitmap<'gc> {
     pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
-        bitmap_handle: Option<BitmapHandle>,
-        width: u16,
-        height: u16,
-        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
+        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
         smoothing: bool,
     ) -> Self {
         //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
@@ -115,9 +103,8 @@ impl<'gc> Bitmap<'gc> {
             context.gc_context,
             BitmapData {
                 base: Default::default(),
-                static_data: Gc::allocate(context.gc_context, BitmapStatic { id, width, height }),
+                id,
                 bitmap_data,
-                bitmap_handle,
                 smoothing,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
@@ -131,45 +118,43 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
     ) -> Result<Self, ruffle_render::error::Error> {
-        let width = bitmap.width() as u16;
-        let height = bitmap.height() as u16;
-        let bitmap_handle = context.renderer.register_bitmap(bitmap)?;
-        let bitmap_data = None;
+        let width = bitmap.width();
+        let height = bitmap.height();
+        let pixels: Vec<_> = bitmap
+            .as_colors()
+            .map(crate::bitmap::bitmap_data::Color::from)
+            .collect();
+        let mut bitmap_data = crate::bitmap::bitmap_data::BitmapData::default();
+        bitmap_data.set_pixels(
+            width,
+            height,
+            match bitmap.format() {
+                BitmapFormat::Rgba => true,
+                BitmapFormat::Rgb => false,
+            },
+            pixels,
+        );
+        let bitmap_data = GcCell::allocate(context.gc_context, bitmap_data);
+
         let smoothing = true;
         Ok(Self::new_with_bitmap_data(
             context,
             id,
-            Some(bitmap_handle),
-            width,
-            height,
             bitmap_data,
             smoothing,
         ))
     }
 
-    #[allow(dead_code)]
-    pub fn bitmap_handle(self) -> Option<BitmapHandle> {
-        self.0.read().bitmap_handle.clone()
-    }
-
     pub fn width(self) -> u16 {
-        let read = self.0.read();
-
-        read.bitmap_data
-            .map(|bd| bd.read().width() as u16)
-            .unwrap_or_else(|| read.static_data.width)
+        self.0.read().bitmap_data.read().width() as u16
     }
 
     pub fn height(self) -> u16 {
-        let read = self.0.read();
-
-        read.bitmap_data
-            .map(|bd| bd.read().height() as u16)
-            .unwrap_or_else(|| read.static_data.height)
+        self.0.read().bitmap_data.read().height() as u16
     }
 
     /// Retrieve the bitmap data associated with this `Bitmap`.
-    pub fn bitmap_data(self) -> Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>> {
+    pub fn bitmap_data(self) -> GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>> {
         self.0.read().bitmap_data
     }
 
@@ -184,25 +169,9 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_bitmap_data(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
+        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
     ) {
-        if let Some(bitmap_data) = bitmap_data {
-            let bitmap_handle = bitmap_data
-                .write(context.gc_context)
-                .bitmap_handle(context.renderer);
-
-            let mut write = self.0.write(context.gc_context);
-
-            write.bitmap_data = Some(bitmap_data);
-            if let Some(bitmap_handle) = bitmap_handle {
-                write.bitmap_handle = Some(bitmap_handle);
-            }
-        } else {
-            let mut write = self.0.write(context.gc_context);
-
-            write.bitmap_data = None;
-            write.bitmap_handle = None;
-        }
+        self.0.write(context.gc_context).bitmap_data = bitmap_data;
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
@@ -262,7 +231,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn id(&self) -> CharacterId {
-        self.0.read().static_data.id
+        self.0.read().id
     }
 
     fn self_bounds(&self) -> BoundingBox {
@@ -317,20 +286,24 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
 
         let bitmap_data = self.0.read();
-        if let Some(bitmap_handle) = &bitmap_data.bitmap_handle {
-            if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
-                if let Ok(mut bd) = inner_bitmap_data.try_write(context.gc_context) {
-                    bd.update_dirty_texture(context);
-                } else {
-                    return; // bail, this is caused by recursive render attempt. TODO: support this.
-                };
+        let inner_bitmap_data = bitmap_data.bitmap_data.try_write(context.gc_context);
+        if let Ok(mut inner_bitmap_data) = inner_bitmap_data {
+            if inner_bitmap_data.disposed() {
+                return;
             }
 
+            inner_bitmap_data.update_dirty_texture(context);
+            let handle = inner_bitmap_data
+                .bitmap_handle(context.renderer)
+                .expect("Missing bitmap handle");
+
             context.commands.render_bitmap(
-                &bitmap_handle,
+                &handle,
                 context.transform_stack.transform(),
                 bitmap_data.smoothing,
             );
+        } else {
+            //this is caused by recursive render attempt. TODO: support this.
         }
     }
 
@@ -349,13 +322,4 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {
         Some(self)
     }
-}
-
-/// Static data shared between all instances of a bitmap.
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-struct BitmapStatic {
-    id: CharacterId,
-    width: u16,
-    height: u16,
 }

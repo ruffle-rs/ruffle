@@ -5,6 +5,7 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
+use crate::library::MovieLibrarySource;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -47,11 +48,13 @@ impl<'gc> Graphic<'gc> {
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: (&swf_shape.shape_bounds).into(),
-            render_handle: Some(
-                context
-                    .renderer
-                    .register_shape((&swf_shape).into(), library),
-            ),
+            render_handle: Some(context.renderer.register_shape(
+                (&swf_shape).into(),
+                &MovieLibrarySource {
+                    library,
+                    gc_context: context.gc_context,
+                },
+            )),
             shape: swf_shape,
             movie: Some(movie),
         };
