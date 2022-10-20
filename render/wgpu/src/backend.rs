@@ -200,13 +200,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
             let draw_id = draws.len();
-            draws.push(Draw::new(
-                &self.descriptors,
-                draw,
-                shape_id,
-                draw_id,
-                &self.bitmap_registry,
-            ));
+            draws.push(Draw::new(self, bitmap_source, draw, shape_id, draw_id));
         }
 
         Mesh { draws }
@@ -222,6 +216,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
+    }
+
+    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, RegistryData> {
+        &self.bitmap_registry
     }
 }
 

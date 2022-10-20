@@ -1,5 +1,5 @@
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSize, BitmapSource};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
@@ -8,7 +8,10 @@ use swf::Color;
 pub struct NullBitmapSource;
 
 impl BitmapSource for NullBitmapSource {
-    fn bitmap(&self, _id: u16) -> Option<BitmapInfo> {
+    fn bitmap_size(&self, _id: u16) -> Option<BitmapSize> {
+        None
+    }
+    fn bitmap_handle(&self, _id: u16, _renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
         None
     }
 }

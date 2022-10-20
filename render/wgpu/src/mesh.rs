@@ -1,9 +1,11 @@
+use crate::backend::WgpuRenderBackend;
+use crate::target::RenderTarget;
 use crate::{
-    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, RegistryData,
-    TextureTransforms, Vertex,
+    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, TextureTransforms,
+    Vertex,
 };
-use fnv::FnvHashMap;
-use ruffle_render::bitmap::BitmapHandle;
+
+use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::CharacterId;
 
@@ -22,14 +24,15 @@ pub struct Draw {
 }
 
 impl Draw {
-    pub fn new(
-        descriptors: &Descriptors,
+    pub fn new<T: RenderTarget>(
+        backend: &mut WgpuRenderBackend<T>,
+        source: &dyn BitmapSource,
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
-        bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
     ) -> Self {
         let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
+        let descriptors = backend.descriptors();
         let vertex_buffer = create_buffer_with_data(
             &descriptors.device,
             bytemuck::cast_slice(&vertices),
@@ -61,13 +64,7 @@ impl Draw {
                 num_mask_indices: draw.mask_index_count,
             },
             TessDrawType::Bitmap(bitmap) => Draw {
-                draw_type: DrawType::bitmap(
-                    &descriptors,
-                    &bitmap_registry,
-                    bitmap,
-                    shape_id,
-                    draw_id,
-                ),
+                draw_type: DrawType::bitmap(backend, source, bitmap, shape_id, draw_id),
                 vertex_buffer,
                 index_buffer,
                 num_indices: index_count,
@@ -179,20 +176,23 @@ impl DrawType {
         }
     }
 
-    pub fn bitmap(
-        descriptors: &Descriptors,
-        bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
+    pub fn bitmap<T: RenderTarget>(
+        backend: &mut WgpuRenderBackend<T>,
+        source: &dyn BitmapSource,
         bitmap: Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Self {
-        let entry = bitmap_registry.get(&bitmap.bitmap).unwrap();
+        let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
+        let entry = backend.bitmap_registry().get(&bitmap_handle).unwrap();
+        let descriptors = backend.descriptors();
+
         let texture_view = entry
             .texture_wrapper
             .texture
             .create_view(&Default::default());
         let texture_transforms = create_texture_transforms(
-            &descriptors.device,
+            &backend.descriptors().device,
             &bitmap.matrix,
             create_debug_label!(
                 "Shape {} draw {} textransforms ubo transfer buffer",

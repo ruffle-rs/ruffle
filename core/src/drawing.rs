@@ -1,7 +1,7 @@
 use crate::context::RenderContext;
 use gc_arena::Collect;
-use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::{BitmapInfo, BitmapSource};
+use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::bounding_box::BoundingBox;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
@@ -402,8 +402,14 @@ impl Drawing {
 }
 
 impl BitmapSource for Drawing {
-    fn bitmap(&self, id: u16) -> Option<BitmapInfo> {
-        self.bitmaps.get(id as usize).cloned()
+    fn bitmap_size(&self, id: u16) -> Option<BitmapSize> {
+        self.bitmaps.get(id as usize).map(|bm| BitmapSize {
+            width: bm.width,
+            height: bm.height,
+        })
+    }
+    fn bitmap_handle(&self, id: u16, _backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
+        self.bitmaps.get(id as usize).map(|bm| bm.handle)
     }
 }
 
