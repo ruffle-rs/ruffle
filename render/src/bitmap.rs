@@ -1,3 +1,5 @@
+use crate::backend::RenderBackend;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BitmapHandle(pub usize);
 
@@ -9,12 +11,19 @@ pub struct BitmapInfo {
     pub height: u16,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct BitmapSize {
+    pub width: u16,
+    pub height: u16,
+}
+
 /// An object that returns a bitmap given an ID.
 ///
 /// This is used by render backends to get the bitmap used in a bitmap fill.
 /// For movie libraries, this will return the bitmap with the given character ID.
 pub trait BitmapSource {
-    fn bitmap(&self, id: u16) -> Option<BitmapInfo>;
+    fn bitmap_size(&self, id: u16) -> Option<BitmapSize>;
+    fn bitmap_handle(&self, id: u16, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle>;
 }
 
 /// Decoded bitmap data from an SWF tag.

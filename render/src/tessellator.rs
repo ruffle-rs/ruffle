@@ -1,4 +1,4 @@
-use crate::bitmap::{BitmapHandle, BitmapSource};
+use crate::bitmap::BitmapSource;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -90,7 +90,7 @@ impl ShapeTessellator {
                     is_smoothed,
                     is_repeating,
                 } => {
-                    if let Some(bitmap) = bitmap_source.bitmap(*id) {
+                    if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
                         (
                             DrawType::Bitmap(Bitmap {
                                 matrix: swf_bitmap_to_gl_matrix(
@@ -98,7 +98,7 @@ impl ShapeTessellator {
                                     bitmap.width.into(),
                                     bitmap.height.into(),
                                 ),
-                                bitmap: bitmap.handle,
+                                bitmap_id: *id,
                                 is_smoothed: *is_smoothed,
                                 is_repeating: *is_repeating,
                             }),
@@ -264,7 +264,7 @@ pub struct Vertex {
 #[derive(Clone, Debug)]
 pub struct Bitmap {
     pub matrix: [[f32; 3]; 3],
-    pub bitmap: BitmapHandle,
+    pub bitmap_id: u16,
     pub is_smoothed: bool,
     pub is_repeating: bool,
 }
