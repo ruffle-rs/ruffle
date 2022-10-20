@@ -951,6 +951,29 @@ fn set_mask<'gc>(
     Ok(Value::Undefined)
 }
 
+fn cache_as_bitmap<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.and_then(|this| this.as_display_object()) {
+        return Ok(this.is_bitmap_cached().into());
+    }
+    Ok(Value::Undefined)
+}
+
+fn set_cache_as_bitmap<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this.and_then(|this| this.as_display_object()) {
+        let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        this.set_is_bitmap_cached(activation.context.gc_context, cache);
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1009,6 +1032,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("transform", Some(transform), Some(set_transform)),
         ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
         ("mask", Some(mask), Some(set_mask)),
+        (
+            "cacheAsBitmap",
+            Some(cache_as_bitmap),
+            Some(set_cache_as_bitmap),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
