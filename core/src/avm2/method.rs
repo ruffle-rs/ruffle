@@ -356,6 +356,20 @@ impl<'gc> Method<'gc> {
         }
     }
 
+    pub fn signature(&self) -> &[ParamConfig<'gc>] {
+        match self {
+            Method::Native(nm) => &nm.signature,
+            Method::Bytecode(bm) => bm.signature(),
+        }
+    }
+
+    pub fn is_variadic(&self) -> bool {
+        match self {
+            Method::Native(nm) => nm.is_variadic,
+            Method::Bytecode(bm) => bm.is_variadic(),
+        }
+    }
+
     /// Check if this method needs `arguments`.
     pub fn needs_arguments_object(&self) -> bool {
         match self {

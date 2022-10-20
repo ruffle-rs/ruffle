@@ -86,6 +86,9 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
 
+    #[collect(require_static)]
+    native_instance_init_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+
     /// A list of objects which are capable of recieving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
@@ -112,6 +115,7 @@ impl<'gc> Avm2<'gc> {
             system_classes: None,
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
+            native_instance_init_table: Default::default(),
             broadcast_list: Default::default(),
 
             #[cfg(feature = "avm_debug")]
