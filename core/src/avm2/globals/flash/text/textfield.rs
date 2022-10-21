@@ -1097,7 +1097,7 @@ pub fn get_line_metrics<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let metrics = this.layout_metrics(line_num as usize);
+        let metrics = this.layout_metrics(Some(line_num as usize));
 
         if let Some(metrics) = metrics {
             let metrics_class = activation.avm2().classes().textlinemetrics;

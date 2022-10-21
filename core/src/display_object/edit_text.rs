@@ -1393,8 +1393,8 @@ impl<'gc> EditText<'gc> {
     ///
     /// Returns None if the line does not exist or there is not enough data
     /// about the line to calculate metrics with.
-    pub fn layout_metrics(self, line: usize) -> Option<LayoutMetrics> {
-        let line = self.0.read().line_data.get(line).copied()?;
+    pub fn layout_metrics(self, line: Option<usize>) -> Option<LayoutMetrics> {
+        let line = line.and_then(|line| self.0.read().line_data.get(line).copied());
         let mut union_bounds = None;
         let mut font = None;
         let mut text_format = None;
@@ -1402,10 +1402,12 @@ impl<'gc> EditText<'gc> {
         let read = self.0.read();
 
         for layout_box in read.layout.iter() {
-            if layout_box.bounds().offset_y() < line.offset
-                || layout_box.bounds().extent_y() > line.extent
-            {
-                continue;
+            if let Some(line) = line {
+                if layout_box.bounds().offset_y() < line.offset
+                    || layout_box.bounds().extent_y() > line.extent
+                {
+                    continue;
+                }
             }
 
             if let Some(bounds) = &mut union_bounds {
@@ -1449,7 +1451,7 @@ impl<'gc> EditText<'gc> {
             descent,
             leading,
             width: union_bounds.width(),
-            height: ascent + descent + leading,
+            height: union_bounds.height() + descent + leading,
             x: union_bounds.offset_x() + Twips::from_pixels(EditText::INTERNAL_PADDING),
         })
     }
