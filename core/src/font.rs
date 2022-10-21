@@ -5,6 +5,7 @@ use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefCell};
+use std::cmp::max;
 
 pub use swf::TextGridFit;
 
@@ -313,6 +314,10 @@ impl<'gc> Font<'gc> {
                 }
             },
         );
+
+        if text.is_empty() {
+            height = max(height, params.height);
+        }
 
         (width, height)
     }
