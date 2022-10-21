@@ -1,53 +1,53 @@
 /// new TextFormat("Noto Sans").getTextExtent("Ruffle");
 /// ...ascent: 
-11.9999997138977
+13
 /// ...descent: 
-2.66666660308838
+4
 /// ...width: 
-33.3333325386047
+32
 /// ...height: 
-14.6666663169861
+17
 /// ...textFieldHeight: 
-18.6666663169861
+21
 /// ...textFieldWidth: 
-37.3333325386047
+36
 /// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 /// ...ascent: 
-11.9999997138977
+13
 /// ...descent: 
-2.66666660308838
+4
 /// ...width: 
-301.333326148987
+307
 /// ...height: 
-14.6666663169861
+17
 /// ...textFieldHeight: 
-18.6666663169861
+21
 /// ...textFieldWidth: 
-305.333326148987
+311
 /// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
 /// ...ascent: 
-11.9999997138977
+13
 /// ...descent: 
-2.66666660308838
+4
 /// ...width: 
-81.3333313941956
+83
 /// ...height: 
-58.6666652679443
+68
 /// ...textFieldHeight: 
-62.6666652679443
+72
 /// ...textFieldWidth: 
 100
 /// new TextFormat("Noto Sans", 18).getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
 /// ...ascent: 
-17.3333329200745
+19
 /// ...descent: 
-3.99999990463257
+5
 /// ...width: 
-101.333330917358
+92
 /// ...height: 
-149.333329772949
+192
 /// ...textFieldHeight: 
-153.333329772949
+196
 /// ...textFieldWidth: 
 100
 /// (Return value from getTextExtent...)
