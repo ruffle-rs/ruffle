@@ -78,6 +78,24 @@ extern "C" {
     fn new(message: &str) -> JsError;
 }
 
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen]
+    type JsSocket;
+
+    #[wasm_bindgen(method, js_name = "isOnline")]
+    fn is_connected(this: &JsSocket) -> bool;
+
+    #[wasm_bindgen(method)]
+    fn send(this: &JsSocket, buf: Vec<u8>);
+
+    #[wasm_bindgen(method)]
+    fn poll(this: &JsSocket) -> Option<Vec<u8>>;
+
+    #[wasm_bindgen(method)]
+    fn close(this: &JsSocket);
+}
+
 #[wasm_bindgen(module = "/packages/core/src/ruffle-player.ts")]
 extern "C" {
     #[wasm_bindgen(extends = EventTarget)]
@@ -107,6 +125,9 @@ extern "C" {
 
     #[wasm_bindgen(catch, method, js_name = "setFullscreen")]
     fn set_fullscreen(this: &JavascriptPlayer, is_full: bool) -> Result<(), JsValue>;
+
+    #[wasm_bindgen(method, js_name = "connectXmlSocket")]
+    fn connect_xml_socket(this: &JavascriptPlayer, host: &str, port: u16) -> Option<Promise>;
 
     #[wasm_bindgen(method, js_name = "setMetadata")]
     fn set_metadata(this: &JavascriptPlayer, metadata: JsValue);
@@ -475,6 +496,7 @@ impl Ruffle {
             log::error!("Unable to create audio backend. No audio will be played.");
         }
         builder = builder.with_navigator(navigator::WebNavigatorBackend::new(
+            js_player.clone(),
             allow_script_access,
             config.upgrade_to_https,
             config.base_url,

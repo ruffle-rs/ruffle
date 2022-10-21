@@ -58,6 +58,18 @@ declare global {
     }
 }
 
+interface JsSocket {
+    isOnline(): boolean;
+    send(buf: Uint8Array): void;
+    poll(): Uint8Array | null;
+    close(): void;
+}
+
+class JsSocket {}
+
+const wrapJsSocket = (socket: JsSocket) =>
+    Object.assign(new JsSocket(), socket);
+
 /**
  * An item to show in Ruffle's custom context menu
  */
@@ -1106,6 +1118,64 @@ export class RufflePlayer extends HTMLElement {
                 }
                 return out;
             }
+        }
+        return null;
+    }
+
+    onXmlSocketConnect?: (
+        host: string,
+        port: number,
+        handle: {
+            receive: (data: Uint8Array) => void;
+            close: () => void;
+        }
+    ) =>
+        | undefined
+        | Promise<
+              | undefined
+              | {
+                    send: (data: Uint8Array) => void;
+                    close: () => void;
+                }
+          >;
+
+    /**
+     * When a movie tries to use the XMLSocket API to connect to some TCP server.
+     *
+     * This should only be called by Ruffle itself and not by users.
+     *
+     * @param host The host to connect to
+     * @param port The TCP port to connect to
+     *
+     * @internal
+     * @ignore
+     */
+    connectXmlSocket(
+        host: string,
+        port: number
+    ): Promise<JsSocket | null> | null {
+        let online = true;
+        const pendingReceive: Uint8Array[] = [];
+        try {
+            const handler =
+            this.onXmlSocketConnect &&
+            this.onXmlSocketConnect(host, port, {
+                receive: (data) => pendingReceive.push(data),
+                close: () => (online = false),
+            });
+            if (handler)
+                return (async () => {
+                    const socket = await handler;
+                    if (!socket) return null;
+                    return wrapJsSocket({
+                        isOnline: () => online,
+                        send: (data) => socket.send(data),
+                        poll: () => pendingReceive.pop() || null,
+                        close: () => socket.close(),
+                    });
+                })();
+        } catch (err) {
+            console.warn('XMLSocket Connection refused because of an unhandled error', err);
         }
         return null;
     }
