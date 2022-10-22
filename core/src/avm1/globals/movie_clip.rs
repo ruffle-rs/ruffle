@@ -849,66 +849,53 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let id = movie_clip.id();
     let movie = parent
         .movie()
         .or_else(|| activation.base_clip().movie())
         .unwrap_or_else(|| activation.context.swf.clone());
     let new_clip = if movie_clip.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        activation
-            .context
-            .library
-            .library_for_movie(movie)
-            .ok_or("Movie is missing!")
-            .and_then(|l| l.instantiate_by_id(id, activation.context.gc_context))
-    } else {
-        // Dynamically created clip; create a new empty movie clip.
-        Ok(MovieClip::new(movie, activation.context.gc_context).into())
-    };
-
-    if let Ok(new_clip) = new_clip {
-        // Set name and attach to parent.
-        new_clip.set_name(activation.context.gc_context, new_instance_name);
-        parent.replace_at_depth(&mut activation.context, new_clip, depth);
-
-        // Copy display properties from previous clip to new clip.
-        let matrix = *movie_clip.base().matrix();
-        new_clip.set_matrix(activation.context.gc_context, matrix);
-
-        let color_transform = *movie_clip.base().color_transform();
-        new_clip.set_color_transform(activation.context.gc_context, color_transform);
-
-        let clip_actions = movie_clip.clip_actions().to_vec();
-        new_clip
+        let library = activation.context.library.library_for_movie(movie).unwrap();
+        library
+            .instantiate_by_id(movie_clip.id(), activation.context.gc_context)
+            .unwrap()
             .as_movie_clip()
             .unwrap()
-            .set_clip_event_handlers(activation.context.gc_context, clip_actions);
-
-        *new_clip.as_drawing(activation.context.gc_context).unwrap() = movie_clip
-            .as_drawing(activation.context.gc_context)
-            .unwrap()
-            .clone();
-        // TODO: Any other properties we should copy...?
-        // Definitely not ScriptObject properties.
-
-        let init_object = init_object.map(|v| v.coerce_to_object(activation));
-        new_clip.post_instantiation(
-            &mut activation.context,
-            init_object,
-            Instantiator::Avm1,
-            true,
-        );
-
-        Ok(new_clip.object().coerce_to_object(activation).into())
     } else {
-        avm_warn!(
-            activation,
-            "Unable to duplicate clip '{}'",
-            movie_clip.name()
-        );
-        Ok(Value::Undefined)
-    }
+        // Dynamically created clip; create a new empty movie clip.
+        MovieClip::new(movie, activation.context.gc_context)
+    };
+
+    // Set name and attach to parent.
+    new_clip.set_name(activation.context.gc_context, new_instance_name);
+    parent.replace_at_depth(&mut activation.context, new_clip.into(), depth);
+
+    // Copy display properties from previous clip to new clip.
+    let matrix = *movie_clip.base().matrix();
+    new_clip.set_matrix(activation.context.gc_context, matrix);
+
+    let color_transform = *movie_clip.base().color_transform();
+    new_clip.set_color_transform(activation.context.gc_context, color_transform);
+
+    let clip_actions = movie_clip.clip_actions().to_vec();
+    new_clip.set_clip_event_handlers(activation.context.gc_context, clip_actions);
+
+    *new_clip.as_drawing(activation.context.gc_context).unwrap() = movie_clip
+        .as_drawing(activation.context.gc_context)
+        .unwrap()
+        .clone();
+    // TODO: Any other properties we should copy...?
+    // Definitely not ScriptObject properties.
+
+    let init_object = init_object.map(|v| v.coerce_to_object(activation));
+    new_clip.post_instantiation(
+        &mut activation.context,
+        init_object,
+        Instantiator::Avm1,
+        true,
+    );
+
+    Ok(new_clip.object())
 }
 
 fn get_bytes_loaded<'gc>(
