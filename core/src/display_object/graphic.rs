@@ -93,6 +93,12 @@ impl<'gc> Graphic<'gc> {
             },
         ))
     }
+
+    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+        RefMut::map(self.0.write(gc_context), |w| {
+            w.drawing.get_or_insert_with(Drawing::new)
+        })
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
@@ -235,12 +241,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
-        let mut write = self.0.write(gc_context);
-        if write.drawing.is_none() {
-            write.drawing = Some(Drawing::new());
-        }
-
-        Some(RefMut::map(write, |m| m.drawing.as_mut().unwrap()))
+        Some(self.drawing(gc_context))
     }
 }
 
