@@ -858,9 +858,7 @@ impl Player {
                             context.avm1.set_show_debug_output(false);
                             context.avm2.set_show_debug_output(false);
                         } else {
-                            log::info!(
-                                "AVM Debugging turned on! Press CTRL+ALT+D to turn off."
-                            );
+                            log::info!("AVM Debugging turned on! Press CTRL+ALT+D to turn off.");
                             context.avm1.set_show_debug_output(true);
                             context.avm2.set_show_debug_output(true);
                         }
