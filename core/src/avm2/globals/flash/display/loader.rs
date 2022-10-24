@@ -25,7 +25,7 @@ pub fn init<'gc>(
                 this,
                 activation.context.swf.clone(),
             );
-            this.init_display_object(activation.context.gc_context, new_do.into());
+            this.init_display_object(&mut activation.context, new_do.into());
         }
 
         // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always

@@ -482,8 +482,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.pop();
     }
 
-    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
-        self.0.write(mc).object = Some(to.into());
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).object = Some(to.into());
     }
 
     fn movie(&self) -> Arc<SwfMovie> {

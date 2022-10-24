@@ -25,7 +25,7 @@ pub fn init<'gc>(
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
             let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
 
-            this.init_display_object(activation.context.gc_context, new_do.into());
+            this.init_display_object(&mut activation.context, new_do.into());
         }
     }
 

@@ -47,7 +47,7 @@ pub use graphic::Graphic;
 pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
-pub use movie_clip::{MovieClip, Scene};
+pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
@@ -342,7 +342,9 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.parent
     }
 
-    fn set_parent(&mut self, parent: Option<DisplayObject<'gc>>) {
+    /// You should almost always use `DisplayObject.set_parent` instead, which
+    /// properly handles 'orphan' movie clips
+    fn set_parent_ignoring_orphan_list(&mut self, parent: Option<DisplayObject<'gc>>) {
         self.parent = parent;
     }
 
@@ -1013,8 +1015,9 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Set the parent of this display object.
-    fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>) {
-        self.base_mut(gc_context).set_parent(parent)
+    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
+        self.base_mut(context.gc_context)
+            .set_parent_ignoring_orphan_list(parent);
     }
 
     /// Retrieve the parent of this display object.
@@ -1574,7 +1577,7 @@ pub trait TDisplayObject<'gc>:
         Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
     }
 
-    fn set_object2(&mut self, _mc: MutationContext<'gc, '_>, _to: Avm2Object<'gc>) {}
+    fn set_object2(&self, _context: &mut UpdateContext<'_, 'gc>, _to: Avm2Object<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     fn hit_test_bounds(&self, pos: (Twips, Twips)) -> bool {

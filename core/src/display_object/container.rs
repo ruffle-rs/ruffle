@@ -206,13 +206,13 @@ pub trait TDisplayObjectContainer<'gc>:
             .raw_container_mut(context.gc_context)
             .replace_at_depth(child, depth);
 
-        child.set_parent(context.gc_context, Some(self.into()));
+        child.set_parent(context, Some(self.into()));
         child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
 
         if let Some(removed_child) = removed_child {
             removed_child.unload(context);
-            removed_child.set_parent(context.gc_context, None);
+            removed_child.set_parent(context, None);
         }
 
         removed_child
@@ -237,12 +237,8 @@ pub trait TDisplayObjectContainer<'gc>:
         // are allowed to be used in ways that would trip this assert).
         debug_assert!(DisplayObject::ptr_eq(child.parent().unwrap(), this));
 
-        self.raw_container_mut(context.gc_context).swap_at_depth(
-            context.gc_context,
-            this,
-            child,
-            depth,
-        );
+        self.raw_container_mut(context.gc_context)
+            .swap_at_depth(context, this, child, depth);
     }
 
     /// Insert a child display object into the container at a specific position
@@ -275,7 +271,7 @@ pub trait TDisplayObjectContainer<'gc>:
         let child_was_on_stage = child.is_on_stage(context);
 
         child.set_place_frame(context.gc_context, 0);
-        child.set_parent(context.gc_context, Some(this));
+        child.set_parent(context, Some(this));
         child.set_removed(context.gc_context, false);
 
         self.raw_container_mut(context.gc_context)
@@ -362,7 +358,7 @@ pub trait TDisplayObjectContainer<'gc>:
             //that unloaded AVM1 clips see their parents, while AVM2 clips
             //don't.
             if !matches!(child.object2(), Avm2Value::Null) {
-                child.set_parent(context.gc_context, None);
+                child.set_parent(context, None);
             }
         }
     }
@@ -411,7 +407,7 @@ pub trait TDisplayObjectContainer<'gc>:
             removed.unload(context);
 
             if !matches!(removed.object2(), Avm2Value::Null) {
-                removed.set_parent(context.gc_context, None);
+                removed.set_parent(context, None);
             }
 
             write = self.raw_container_mut(context.gc_context);
@@ -818,20 +814,20 @@ impl<'gc> ChildContainer<'gc> {
     /// `parent` should be the display object that owns this container.
     fn swap_at_depth(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
         let prev_depth = child.depth();
-        child.set_depth(gc_context, depth);
-        child.set_clip_depth(gc_context, 0);
-        child.set_parent(gc_context, Some(parent));
+        child.set_depth(context.gc_context, depth);
+        child.set_clip_depth(context.gc_context, 0);
+        child.set_parent(context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
-            prev_child.set_depth(gc_context, prev_depth);
-            prev_child.set_clip_depth(gc_context, 0);
-            prev_child.set_transformed_by_script(gc_context, true);
+            prev_child.set_depth(context.gc_context, prev_depth);
+            prev_child.set_clip_depth(context.gc_context, 0);
+            prev_child.set_transformed_by_script(context.gc_context, true);
             self.depth_list.insert(prev_depth, prev_child);
 
             let prev_position = self

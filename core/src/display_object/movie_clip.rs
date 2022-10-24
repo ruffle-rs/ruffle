@@ -35,7 +35,7 @@ use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::filters::Filter;
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
@@ -75,6 +75,20 @@ impl fmt::Debug for MovieClip<'_> {
         f.debug_struct("MovieClip")
             .field("ptr", &self.0.as_ptr())
             .finish()
+    }
+}
+
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct MovieClipWeak<'gc>(GcWeakCell<'gc, MovieClipData<'gc>>);
+
+impl<'gc> MovieClipWeak<'gc> {
+    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<MovieClip<'gc>> {
+        self.0.upgrade(mc).map(MovieClip)
+    }
+
+    pub fn as_ptr(self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
     }
 }
 
@@ -240,6 +254,10 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
             },
         ))
+    }
+
+    pub fn downgrade(self) -> MovieClipWeak<'gc> {
+        MovieClipWeak(GcCell::downgrade(self.0))
     }
 
     /// Construct a movie clip that represents the root movie
@@ -929,6 +947,10 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    pub fn initialized(self) -> bool {
+        self.0.read().initialized()
+    }
+
     pub fn stop(self, context: &mut UpdateContext<'_, 'gc>) {
         self.0.write(context.gc_context).stop(context)
     }
@@ -1510,7 +1532,7 @@ impl<'gc> MovieClip<'gc> {
                     // Set initial properties for child.
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
-                    child.set_parent(context.gc_context, Some(self.into()));
+                    child.set_parent(context, Some(self.into()));
                     child.set_place_frame(context.gc_context, self.current_frame());
 
                     // Apply PlaceObject parameters.
@@ -2059,7 +2081,7 @@ impl<'gc> MovieClip<'gc> {
         let result: Result<Avm2Object<'gc>, Avm2Error> = constr_thing();
 
         if let Ok(object) = result {
-            self.0.write(context.gc_context).object = Some(object.into());
+            self.set_object2(context, object);
         } else if let Err(e) = result {
             tracing::error!("Got {} when allocating AVM2 side of display object", e);
         }
@@ -2213,6 +2235,26 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
+    }
+
+    /// If `true`, this clip was instantiated by Avm2Button
+    /// from an SWF tag. Currently, this flag
+    /// is used to opt out of orphan handling in `avm2::valid_orphan`
+    pub fn is_button_state(&self) -> bool {
+        self.0
+            .read()
+            .flags
+            .intersects(MovieClipFlags::IS_BUTTON_STATE)
+    }
+
+    /// Permanently marks this clip as being used as one of the four
+    /// `ButtonState`s for an `Avm2Button`. This should only be called
+    /// within `avm2_button`
+    pub fn set_is_button_state(&self, gc_context: MutationContext<'gc, '_>) {
+        self.0
+            .write(gc_context)
+            .flags
+            .set(MovieClipFlags::IS_BUTTON_STATE, true)
     }
 
     pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
@@ -2593,8 +2635,22 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
-        self.0.write(mc).object = Some(to.into());
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).object = Some(to.into());
+        if self.parent().is_none() {
+            context.avm2.add_orphan_movie(*self);
+        }
+    }
+
+    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
+        let had_parent = self.parent().is_some();
+        self.base_mut(context.gc_context)
+            .set_parent_ignoring_orphan_list(parent);
+        let has_parent = self.parent().is_some();
+
+        if context.is_action_script_3() && had_parent && !has_parent {
+            context.avm2.add_orphan_movie(*self)
+        }
     }
 
     fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
@@ -4355,6 +4411,8 @@ bitflags! {
         /// Because AVM2 queues PlaceObject tags to run later, explicit gotos
         /// that happen while those tags run should cancel the loop.
         const LOOP_QUEUED = 1 << 4;
+
+        const IS_BUTTON_STATE = 1 << 5;
     }
 }
 

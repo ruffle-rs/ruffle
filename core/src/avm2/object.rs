@@ -18,6 +18,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -1143,7 +1144,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// association.
     ///
     /// If not, then this function does nothing.
-    fn init_display_object(&self, _mc: MutationContext<'gc, '_>, _obj: DisplayObject<'gc>) {}
+    fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
+    }
 
     /// Unwrap this object as an ApplicationDomain.
     fn as_application_domain(&self) -> Option<Domain<'gc>> {

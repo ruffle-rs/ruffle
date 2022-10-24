@@ -306,8 +306,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
-        self.0.write(mc).avm2_object = Some(to);
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).avm2_object = Some(to);
     }
 
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {

@@ -1,0 +1,87 @@
+Orphan 1 in framescript=0 currentFrame=1
+enterFrame: Movie counter=0 currentFrame=3
+enterFrame: Orphan 1 in frame: 1
+enterFrame: Orphan 2 in frame: 1
+enterFrame: Orphan 3 in frame: 1
+enterFrame: Orphan 4 in frame: 1
+enterFrame: Orphan 5 in frame: 1
+enterFrame: Movie counter=1 currentFrame=4
+enterFrame: Orphan 1 in frame: 2
+enterFrame: Orphan 2 in frame: 2
+enterFrame: Orphan 3 in frame: 2
+enterFrame: Orphan 4 in frame: 2
+enterFrame: Orphan 5 in frame: 2
+Orphan 1 in framescript=1 currentFrame=2
+enterFrame: Movie counter=2 currentFrame=5
+Adding and removing orphan2 as child
+enterFrame: Orphan 1 in frame: 3
+enterFrame: Orphan 2 in frame: 3
+enterFrame: Orphan 3 in frame: 3
+enterFrame: Orphan 4 in frame: 3
+enterFrame: Orphan 5 in frame: 3
+Orphan 1 in framescript=2 currentFrame=3
+enterFrame: Movie counter=3 currentFrame=6
+enterFrame: Orphan 1 in frame: 4
+enterFrame: Orphan 2 in frame: 4
+enterFrame: Orphan 3 in frame: 4
+enterFrame: Orphan 4 in frame: 4
+enterFrame: Orphan 5 in frame: 4
+Orphan 1 in framescript=3 currentFrame=4
+enterFrame: Movie counter=4 currentFrame=7
+enterFrame: Orphan 1 in frame: 5
+enterFrame: Orphan 2 in frame: 5
+enterFrame: Orphan 3 in frame: 5
+enterFrame: Orphan 4 in frame: 5
+enterFrame: Orphan 5 in frame: 5
+Orphan 1 in framescript=4 currentFrame=5
+enterFrame: Movie counter=5 currentFrame=8
+Adding orphan 3 as child
+enterFrame: Orphan 1 in frame: 6
+enterFrame: Orphan 2 in frame: 6
+enterFrame: Orphan 3 in frame: 6
+enterFrame: Orphan 4 in frame: 6
+enterFrame: Orphan 5 in frame: 6
+Orphan 1 in framescript=5 currentFrame=6
+enterFrame: Movie counter=6 currentFrame=9
+enterFrame: Orphan 1 in frame: 7
+enterFrame: Orphan 2 in frame: 7
+enterFrame: Orphan 3 in frame: 7
+enterFrame: Orphan 4 in frame: 7
+enterFrame: Orphan 5 in frame: 7
+Orphan 1 in framescript=6 currentFrame=7
+enterFrame: Movie counter=7 currentFrame=10
+enterFrame: Orphan 1 in frame: 8
+enterFrame: Orphan 2 in frame: 8
+enterFrame: Orphan 3 in frame: 8
+enterFrame: Orphan 4 in frame: 8
+enterFrame: Orphan 5 in frame: 8
+Orphan 1 in framescript=7 currentFrame=8
+enterFrame: Movie counter=8 currentFrame=1
+Removing orphan 3 as child
+enterFrame: Orphan 1 in frame: 9
+enterFrame: Orphan 2 in frame: 9
+enterFrame: Orphan 3 in frame: 9
+enterFrame: Orphan 4 in frame: 9
+enterFrame: Orphan 5 in frame: 9
+Orphan 1 in framescript=8 currentFrame=9
+enterFrame: Movie counter=9 currentFrame=2
+enterFrame: Orphan 1 in frame: 10
+enterFrame: Orphan 2 in frame: 10
+enterFrame: Orphan 3 in frame: 10
+enterFrame: Orphan 4 in frame: 10
+enterFrame: Orphan 5 in frame: 10
+Orphan 1 in framescript=9 currentFrame=10
+Orphan 1 in framescript=0 currentFrame=1
+enterFrame: Movie counter=10 currentFrame=3
+enterFrame: Movie counter=0 currentFrame=3
+enterFrame: Orphan 1 in frame: 11
+enterFrame: Orphan 2 in frame: 11
+enterFrame: Orphan 3 in frame: 11
+enterFrame: Orphan 4 in frame: 11
+enterFrame: Orphan 5 in frame: 11
+enterFrame: Orphan 1 in frame: 1
+enterFrame: Orphan 2 in frame: 1
+enterFrame: Orphan 3 in frame: 1
+enterFrame: Orphan 4 in frame: 1
+enterFrame: Orphan 5 in frame: 1
+Orphan 1 in framescript=10 currentFrame=11

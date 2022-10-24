@@ -1,0 +1,80 @@
+Orphan1 frame: 1 isPlaying: true observing orphan2: 1
+Child isPlaying: false observing orphan2: 1
+Orphan2 frame: 1 isPlaying: false
+Orphan1 frame: 2 isPlaying: true observing orphan2: 2
+Adding additional orphan3
+Child isPlaying: false observing orphan2: 2
+Adding additional orphan4
+Orphan2 frame: 2 isPlaying: false
+Adding additional orphan5
+Orphan1 frame: 3 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Stopping orphan2 at frame 3
+Orphan3 frame: 1
+Orphan4 frame: 1
+Orphan5 frame: 1
+Orphan1 frame: 4 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Adding orphan1 as child
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 2
+Orphan4 frame: 2
+Orphan5 frame: 2
+Orphan1 frame: 5 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 3
+Adding and removing orphan3 as a child
+Orphan4 frame: 3
+Orphan5 frame: 3
+Orphan1 frame: 1 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 4
+Orphan4 frame: 4
+Orphan5 frame: 4
+Orphan1 frame: 2 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 5
+Orphan4 frame: 5
+Orphan5 frame: 5
+Orphan1 frame: 3 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 1
+Orphan4 frame: 1
+Orphan5 frame: 1
+Orphan1 frame: 4 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Adding orphan1 as child
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 2
+Orphan4 frame: 2
+Orphan5 frame: 2
+Orphan1 frame: 5 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 3
+Adding and removing orphan3 as a child
+Orphan4 frame: 3
+Orphan5 frame: 3
+Orphan1 frame: 1 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 4
+Orphan4 frame: 4
+Orphan5 frame: 4
+Orphan1 frame: 2 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 5
+Orphan4 frame: 5
+Orphan5 frame: 5
+Orphan1 frame: 3 isPlaying: true observing orphan2: 3
+Child isPlaying: false observing orphan2: 3
+Orphan2 frame: 3 isPlaying: false
+Orphan3 frame: 1
+Orphan4 frame: 1
+Orphan5 frame: 1

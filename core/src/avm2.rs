@@ -6,6 +6,7 @@ use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
+use crate::display_object::{MovieClip, MovieClipWeak, TDisplayObject};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -119,6 +120,17 @@ pub struct Avm2<'gc> {
     /// collector does not support weak references.
     broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
 
+    /// The list of 'orphan' movies - these movies have no parent,
+    /// so we need to manually run their frames in `run_all_phases_avm2` to match
+    /// Flash's behavior. Clips are added to this list with `add_orphan_movie`.
+    /// and are removed automatically by `cleanup_dead_orphans`.
+    ///
+    /// We store `MovieClipWeak`, since we don't want to keep these movies
+    /// alive if they would otherwise be garbage-collected. The movie will
+    /// stop ticking whenever garbage collection runs if there are no more
+    /// strong references around (this matches Flash's behavior).
+    orphan_movies: Vec<MovieClipWeak<'gc>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -153,6 +165,8 @@ impl<'gc> Avm2<'gc> {
             native_instance_allocator_table: Default::default(),
             native_instance_init_table: Default::default(),
             broadcast_list: Default::default(),
+
+            orphan_movies: Vec::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -211,6 +225,48 @@ impl<'gc> Avm2<'gc> {
         };
 
         Ok(())
+    }
+
+    /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
+    /// frames even when they are not on a display list. Unfortunately,
+    /// mutliple SWFS rely on this behavior, so we need to match Flash's
+    /// behavior. This should not be called manually - `movie_clip` will
+    /// call it when necessary.
+    pub fn add_orphan_movie(&mut self, movie: MovieClip<'gc>) {
+        if self
+            .orphan_movies
+            .iter()
+            .all(|m| m.as_ptr() != movie.as_ptr())
+        {
+            self.orphan_movies.push(movie.downgrade());
+        }
+    }
+
+    pub fn each_orphan_movie(
+        context: &mut UpdateContext<'_, 'gc>,
+        mut f: impl FnMut(MovieClip<'gc>, &mut UpdateContext<'_, 'gc>),
+    ) {
+        let mut i = 0;
+        // FIXME - should we handle movies added while we're looping?
+        let total = context.avm2.orphan_movies.len();
+
+        // We cannot use an iterator, as it would conflict with the mutable borrow of `context`.
+        while i < total {
+            if let Some(movie) = valid_orphan(context.avm2.orphan_movies[i], context.gc_context) {
+                f(movie.as_movie_clip().unwrap(), context);
+            }
+            i += 1;
+        }
+    }
+
+    /// Called at the end of `run_all_phases_avm2` - removes any movies
+    /// that have been garbage collected, or are no longer orphans
+    /// (they've since acquired a parent).
+    pub fn cleanup_dead_orphans(context: &mut UpdateContext<'_, 'gc>) {
+        context
+            .avm2
+            .orphan_movies
+            .retain(|m| valid_orphan(*m, context.gc_context).is_some());
     }
 
     /// Dispatch an event on an object.
@@ -472,4 +528,24 @@ impl<'gc> Avm2<'gc> {
 
     #[cfg(not(feature = "avm_debug"))]
     pub const fn set_show_debug_output(&self, _visible: bool) {}
+}
+
+/// If the provided `MovieClipWeak` should have frames run, returns
+/// Some(clip) with an upgraded `MovieClip`.
+/// If this returns `None`, the entry should be removed from the orphan list.
+fn valid_orphan<'gc>(
+    clip: MovieClipWeak<'gc>,
+    mc: MutationContext<'gc, '_>,
+) -> Option<MovieClip<'gc>> {
+    if let Some(clip) = clip.upgrade(mc) {
+        // Note - SimpleButton is extremely weird, and treating button
+        // state clips as normal orphans results in
+        // the 'avm2/simplebutton_childevents' and 'avm2/simplebutton_structure'
+        // tests having incorrect output. As a result, button states are never
+        // considered valid orphans.
+        if clip.parent().is_none() && !clip.is_button_state() {
+            return Some(clip);
+        }
+    }
+    None
 }

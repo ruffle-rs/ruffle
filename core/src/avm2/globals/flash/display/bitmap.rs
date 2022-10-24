@@ -103,7 +103,7 @@ pub fn init<'gc>(
             let bitmap =
                 Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, smoothing);
 
-            this.init_display_object(activation.context.gc_context, bitmap.into());
+            this.init_display_object(&mut activation.context, bitmap.into());
         }
     }
 

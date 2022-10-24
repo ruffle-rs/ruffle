@@ -208,6 +208,9 @@ impl<'gc> Avm2Button<'gc> {
                     Ok(child) => {
                         child.set_matrix(context.gc_context, record.matrix.into());
                         child.set_depth(context.gc_context, record.depth.into());
+                        if let Some(clip) = child.as_movie_clip() {
+                            clip.set_is_button_state(context.gc_context);
+                        }
 
                         if swf_state != swf::ButtonState::HIT_TEST {
                             child.set_color_transform(
@@ -233,7 +236,7 @@ impl<'gc> Avm2Button<'gc> {
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
-            child.set_parent(context.gc_context, Some(self.into()));
+            child.set_parent(context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
             catchup_display_object_to_frame(context, child);
 
@@ -242,7 +245,7 @@ impl<'gc> Avm2Button<'gc> {
             let state_sprite = MovieClip::new(movie, context.gc_context);
 
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
-            state_sprite.set_parent(context.gc_context, Some(self.into()));
+            state_sprite.set_parent(context, Some(self.into()));
             catchup_display_object_to_frame(context, state_sprite.into());
 
             for (child, depth) in children {
@@ -251,10 +254,10 @@ impl<'gc> Avm2Button<'gc> {
                 // that `parent` is `null` (`DisplayObject::avm2_parent` checks that the parent is a container),
                 // and then properly set the parent to the state Sprite afterwards.
                 state_sprite.replace_at_depth(context, child, depth.into());
-                child.set_parent(context.gc_context, Some(self.into()));
+                child.set_parent(context, Some(self.into()));
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(context, child);
-                child.set_parent(context.gc_context, Some(state_sprite.into()));
+                child.set_parent(context, Some(state_sprite.into()));
             }
 
             (state_sprite.into(), true)
@@ -271,19 +274,19 @@ impl<'gc> Avm2Button<'gc> {
         self.0.write(context.gc_context).state = state;
         let button = self.0.read();
         if let Some(state) = button.up_state {
-            state.set_parent(context.gc_context, None);
+            state.set_parent(context, None);
         }
         if let Some(state) = button.over_state {
-            state.set_parent(context.gc_context, None);
+            state.set_parent(context, None);
         }
         if let Some(state) = button.down_state {
-            state.set_parent(context.gc_context, None);
+            state.set_parent(context, None);
         }
         if let Some(state) = button.hit_area {
-            state.set_parent(context.gc_context, None);
+            state.set_parent(context, None);
         }
         if let Some(state) = self.get_state_child(state.into()) {
-            state.set_parent(context.gc_context, Some(self.into()));
+            state.set_parent(context, Some(self.into()));
         }
     }
 
@@ -323,13 +326,13 @@ impl<'gc> Avm2Button<'gc> {
             }
 
             if is_cur_state {
-                child.set_parent(context.gc_context, Some(self.into()));
+                child.set_parent(context, Some(self.into()));
             }
         }
 
         if let Some(old_state_child) = old_state_child {
             old_state_child.unload(context);
-            old_state_child.set_parent(context.gc_context, None);
+            old_state_child.set_parent(context, None);
         }
 
         if is_cur_state {
@@ -697,8 +700,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
-        self.0.write(mc).object = Some(to);
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).object = Some(to);
     }
 
     fn as_avm2_button(&self) -> Option<Self> {
