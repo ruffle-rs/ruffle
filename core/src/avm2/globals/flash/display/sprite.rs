@@ -37,7 +37,7 @@ pub fn init_empty_sprite<'gc>(
     let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
     let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
 
-    this.init_display_object(activation.context.gc_context, new_do.into());
+    this.init_display_object(&mut activation.context, new_do.into());
 
     Ok(())
 }

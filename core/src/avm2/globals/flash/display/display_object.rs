@@ -43,14 +43,13 @@ pub fn native_instance_init<'gc>(
                     .avm2_class_registry()
                     .class_symbol(class)
                 {
-                    let mut child = activation
+                    let child = activation
                         .context
                         .library
                         .library_for_movie_mut(movie)
                         .instantiate_by_id(symbol, activation.context.gc_context)?;
 
-                    this.init_display_object(activation.context.gc_context, child);
-                    child.set_object2(activation.context.gc_context, this);
+                    this.init_display_object(&mut activation.context, child);
 
                     child.post_instantiation(
                         &mut activation.context,

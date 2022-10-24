@@ -19,7 +19,7 @@ pub fn init<'gc>(
         if this.as_display_object().is_none() {
             let new_do = Graphic::new_with_avm2(&mut activation.context, this);
 
-            this.init_display_object(activation.context.gc_context, new_do.into());
+            this.init_display_object(&mut activation.context, new_do.into());
         }
     }
 

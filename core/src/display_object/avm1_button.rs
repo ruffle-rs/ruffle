@@ -168,7 +168,7 @@ impl<'gc> Avm1Button<'gc> {
                             .instantiate_by_id(record.id, context.gc_context)
                         {
                             // New child that did not previously exist, create it.
-                            child.set_parent(context.gc_context, Some(self.into()));
+                            child.set_parent(context, Some(self.into()));
                             child.set_depth(context.gc_context, record.depth.into());
 
                             children.push((child, record.depth));
@@ -304,7 +304,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                     {
                         Ok(child) => {
                             child.set_matrix(context.gc_context, record.matrix.into());
-                            child.set_parent(context.gc_context, Some(self_display_object));
+                            child.set_parent(context, Some(self_display_object));
                             child.set_depth(context.gc_context, record.depth.into());
                             new_children.push((child, record.depth.into()));
                         }
