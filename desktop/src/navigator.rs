@@ -24,7 +24,7 @@ pub struct ExternalNavigatorBackend {
     event_loop: EventLoopProxy<RuffleEvent>,
 
     /// The url to use for all relative fetches.
-    movie_url: Url,
+    base_url: Url,
 
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
@@ -47,12 +47,22 @@ impl ExternalNavigatorBackend {
             .redirect_policy(RedirectPolicy::Follow);
 
         let client = builder.build().ok().map(Rc::new);
+        let mut base_url = movie_url;
+
+        // Force replace the last segment with empty. //
+
+        base_url
+            .path_segments_mut()
+            .unwrap()
+            .pop_if_empty()
+            .pop()
+            .push("");
 
         Self {
             channel,
             event_loop,
             client,
-            movie_url,
+            base_url,
             upgrade_to_https,
         }
     }
@@ -107,7 +117,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
     fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let full_url = match self.movie_url.join(request.url()) {
+        let full_url = match self.base_url.join(request.url()) {
             Ok(url) => url,
             Err(e) => {
                 let msg = format!("Invalid URL {}: {}", request.url(), e);
