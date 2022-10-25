@@ -31,7 +31,7 @@ use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
-use crate::loader::LoadManager;
+use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -278,6 +278,13 @@ pub struct Player {
     /// The current frame of the main timeline, if available.
     /// The first frame is frame 1.
     current_frame: Option<u16>,
+
+    /// How Ruffle should load movies.
+    load_behavior: LoadBehavior,
+
+    /// The root SWF URL provided to ActionScript. If None,
+    /// the actual loaded url will be used
+    spoofed_url: Option<String>,
 }
 
 impl Player {
@@ -846,14 +853,12 @@ impl Player {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
-                                "AVM Debugging turned off! Press CTRL+ALT+D to turn off again."
+                                "AVM Debugging turned off! Press CTRL+ALT+D to turn on again."
                             );
                             context.avm1.set_show_debug_output(false);
                             context.avm2.set_show_debug_output(false);
                         } else {
-                            log::info!(
-                                "AVM Debugging turned on! Press CTRL+ALT+D to turn on again."
-                            );
+                            log::info!("AVM Debugging turned on! Press CTRL+ALT+D to turn off.");
                             context.avm1.set_show_debug_output(true);
                             context.avm2.set_show_debug_output(true);
                         }
@@ -1389,10 +1394,22 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
+        let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
+            LoadBehavior::Streaming => (
+                ExecutionLimit::with_max_ops_and_time(10000, frame_time),
+                true,
+            ),
+            LoadBehavior::Delayed => (
+                ExecutionLimit::with_max_ops_and_time(10000, frame_time),
+                false,
+            ),
+            LoadBehavior::Blocking => (ExecutionLimit::none(), false),
+        };
+        let preload_finished = self.preload(&mut execution_limit);
 
-        self.preload(&mut ExecutionLimit::with_max_ops_and_time(
-            10000, frame_time,
-        ));
+        if !preload_finished && !may_execute_while_streaming {
+            return;
+        }
 
         self.update(|context| {
             if context.is_action_script_3() {
@@ -1811,6 +1828,10 @@ impl Player {
         })
     }
 
+    pub fn spoofed_url(&self) -> Option<&str> {
+        self.spoofed_url.as_deref()
+    }
+
     pub fn log_backend(&self) -> &Log {
         &self.log
     }
@@ -1852,6 +1873,8 @@ pub struct PlayerBuilder {
     viewport_height: u32,
     viewport_scale_factor: f64,
     warn_on_unsupported_content: bool,
+    load_behavior: LoadBehavior,
+    spoofed_url: Option<String>,
 }
 
 impl PlayerBuilder {
@@ -1885,6 +1908,8 @@ impl PlayerBuilder {
             viewport_height: 400,
             viewport_scale_factor: 1.0,
             warn_on_unsupported_content: true,
+            load_behavior: LoadBehavior::Streaming,
+            spoofed_url: None,
         }
     }
 
@@ -1992,6 +2017,18 @@ impl PlayerBuilder {
         self
     }
 
+    /// Configures how the root movie should be loaded.
+    pub fn with_load_behavior(mut self, load_behavior: LoadBehavior) -> Self {
+        self.load_behavior = load_behavior;
+        self
+    }
+
+    /// Sets the root SWF URL provided to ActionScript.
+    pub fn with_spoofed_url(mut self, url: Option<String>) -> Self {
+        self.spoofed_url = url;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2067,6 +2104,8 @@ impl PlayerBuilder {
                 needs_render: true,
                 warn_on_unsupported_content: self.warn_on_unsupported_content,
                 self_reference: self_ref.clone(),
+                load_behavior: self.load_behavior,
+                spoofed_url: self.spoofed_url.clone(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
@@ -2123,7 +2162,10 @@ impl PlayerBuilder {
             height: self.viewport_height,
             scale_factor: self.viewport_scale_factor,
         });
-        if let Some(movie) = self.movie {
+        if let Some(mut movie) = self.movie {
+            if let Some(url) = self.spoofed_url.clone() {
+                movie.set_url(Some(url));
+            }
             player_lock.set_root_movie(movie);
         }
         drop(player_lock);

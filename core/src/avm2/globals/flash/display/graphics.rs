@@ -90,6 +90,16 @@ fn begin_bitmap_fill<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.beginGradientFill`.
+fn begin_gradient_fill<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("Graphics.beginGradientFill: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Implements `Graphics.clear`
 fn clear<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -799,6 +809,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("beginFill", begin_fill),
         ("beginBitmapFill", begin_bitmap_fill),
+        ("beginGradientFill", begin_gradient_fill),
         ("clear", clear),
         ("curveTo", curve_to),
         ("endFill", end_fill),

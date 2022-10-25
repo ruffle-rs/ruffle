@@ -18,7 +18,7 @@ thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.83", optional = true }
 
 [dependencies.jpeg-decoder]
-version = "0.2.6"
+version = "0.3.0"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]

@@ -945,6 +945,7 @@ impl RenderBackend for WebGlRenderBackend {
         let _ = self.build_msaa_buffers();
         self.gl
             .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
+        self.viewport_scale_factor = dimensions.scale_factor
     }
 
     fn register_shape(
