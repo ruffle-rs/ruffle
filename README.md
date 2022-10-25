@@ -49,7 +49,8 @@ If you are building for a Linux platform, the following are typical dependencies
 * libasound2-dev
 * libxcb-shape0-dev
 * libxcb-xfixes0-dev
-* libgtk-3-dev *libssl-dev
+* libgtk-3-dev
+* libssl-dev
 * libxcb-xinput-dev
 * libxcb-xkb-dev
 * libxcb-cursor-dev
