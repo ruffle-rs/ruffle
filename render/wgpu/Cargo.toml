@@ -22,7 +22,7 @@ once_cell = "1.15.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.24"
+version = "0.3.25"
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
