@@ -67,7 +67,7 @@ impl CanvasColor {
         let g = (*g as f32 * cxform.g_mult.to_f32() + (cxform.g_add as f32)) as u8;
         let b = (*b as f32 * cxform.b_mult.to_f32() + (cxform.b_add as f32)) as u8;
         let a = (*a as f32 * cxform.a_mult.to_f32() + (cxform.a_add as f32)) as u8;
-        let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
+        let colstring = format!("rgba({r},{g},{b},{})", f32::from(a) / 255.0);
         Self(colstring, r, g, b, a)
     }
 }

@@ -1510,15 +1510,15 @@ fn run_swf(
             }
             Err(e) => {
                 eprintln!(
-                    "Failed to open expected image {:?}: {:?}",
-                    &expected_image_path, e
+                    "Failed to open expected image {:?}: {e:?}",
+                    &expected_image_path
                 );
                 false
             }
         };
 
         if !matches {
-            let actual_image_path = base_path.join(format!("actual-{}.png", suffix));
+            let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
             panic!(
                 "Test output does not match expected image - saved actual image to {:?}",
@@ -1561,7 +1561,7 @@ impl ExternalInterfaceTestProvider {
 }
 
 fn do_trace(context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
-    context.avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
+    context.avm_trace(&format!("[ExternalInterface] trace: {args:?}"));
     "Traced!".into()
 }
 

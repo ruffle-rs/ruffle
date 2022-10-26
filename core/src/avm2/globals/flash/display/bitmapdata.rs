@@ -764,7 +764,7 @@ pub fn draw<'gc>(
         } else if let Some(source_bitmap) = source.as_bitmap_data() {
             IBitmapDrawable::BitmapData(source_bitmap)
         } else {
-            return Err(format!("BitmapData.draw: unexpected source {:?}", source).into());
+            return Err(format!("BitmapData.draw: unexpected source {source:?}").into());
         };
 
         bitmap_data.draw(

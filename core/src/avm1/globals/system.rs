@@ -108,9 +108,9 @@ impl Manufacturer {
         };
 
         if version <= 8 {
-            format!("Macromedia {}", os_part)
+            format!("Macromedia {os_part}")
         } else {
-            format!("Adobe {}", os_part)
+            format!("Adobe {os_part}")
         }
     }
 

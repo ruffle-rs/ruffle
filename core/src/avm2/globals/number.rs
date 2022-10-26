@@ -164,7 +164,7 @@ fn to_exponential<'gc>(
 
                 return Ok(AvmString::new_utf8(
                     activation.context.gc_context,
-                    format!("{0:.1$e}", number, digits)
+                    format!("{number:.digits$e}")
                         .replace('e', "e+")
                         .replace("e+-", "e-")
                         .replace("e+0", ""),
@@ -198,7 +198,7 @@ fn to_fixed<'gc>(
 
                 return Ok(AvmString::new_utf8(
                     activation.context.gc_context,
-                    format!("{0:.1$}", number, digits),
+                    format!("{number:.digits$}"),
                 )
                 .into());
             }
@@ -234,7 +234,7 @@ pub fn print_with_precision<'gc>(
     } else {
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
-            format!("{}", precision),
+            format!("{precision}"),
         ))
     }
 }

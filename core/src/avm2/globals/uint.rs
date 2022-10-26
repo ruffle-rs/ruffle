@@ -150,7 +150,7 @@ fn to_exponential<'gc>(
 
                 return Ok(AvmString::new_utf8(
                     activation.context.gc_context,
-                    format!("{0:.1$e}", number, digits)
+                    format!("{number:.digits$e}")
                         .replace('e', "e+")
                         .replace("e+-", "e-")
                         .replace("e+0", ""),

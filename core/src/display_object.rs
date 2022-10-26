@@ -938,7 +938,7 @@ pub trait TDisplayObject<'gc>:
                     WString::new()
                 } else {
                     // Other levels do append their name.
-                    WString::from_utf8_owned(format!("_level{}", level))
+                    WString::from_utf8_owned(format!("_level{level}"))
                 }
             }
         }

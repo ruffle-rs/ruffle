@@ -53,6 +53,6 @@ impl<'gc> std::fmt::Display for CallStack<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = WString::new();
         self.display(&mut output);
-        write!(f, "{}", output)
+        write!(f, "{output}")
     }
 }

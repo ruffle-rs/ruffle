@@ -95,9 +95,9 @@ impl TagCode {
 
     pub fn format(tag_code: u16) -> String {
         if let Some(tag_code) = TagCode::from_u16(tag_code) {
-            format!("{:?}", tag_code)
+            format!("{tag_code:?}")
         } else {
-            format!("Unknown({})", tag_code)
+            format!("Unknown({tag_code})")
         }
     }
 }

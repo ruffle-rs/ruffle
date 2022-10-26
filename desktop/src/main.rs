@@ -168,7 +168,7 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
         let client = builder.build().context("Couldn't create HTTP client")?;
         let response = client
             .get(url.to_string())
-            .with_context(|| format!("Couldn't load URL {}", url))?;
+            .with_context(|| format!("Couldn't load URL {url}"))?;
         let mut buffer: Vec<u8> = Vec::new();
         response
             .into_body()
@@ -218,7 +218,7 @@ impl App {
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| movie_url.as_str());
 
-            format!("Ruffle - {}", filename)
+            format!("Ruffle - {filename}")
         } else {
             "Ruffle".into()
         };
@@ -824,7 +824,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
     let end = Instant::now();
     let duration = end.duration_since(start);
 
-    println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
+    println!("Ran {num_frames} frames in {}s.", duration.as_secs_f32());
 
     Ok(())
 }
@@ -851,7 +851,7 @@ fn init() {
 fn panic_hook() {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
-            callstack.avm2(|callstack| println!("AVM2 stack trace: {}", callstack))
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
         }
     });
 }

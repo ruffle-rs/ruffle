@@ -105,7 +105,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     block: parse_quote!(#method_block),
                 })
             }
-            _ => panic!("Unsupported trait item: {:?}", item),
+            _ => panic!("Unsupported trait item: {item:?}"),
         })
         .collect();
 

@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
 
                 Ok(AvmString::new_utf8(
                     activation.context.gc_context,
-                    format!("[object {}]", class_name),
+                    format!("[object {class_name}]"),
                 )
                 .into())
             }

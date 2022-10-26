@@ -123,9 +123,9 @@ impl OpCode {
 
     pub fn format(opcode: u8) -> String {
         if let Some(op) = Self::from_u8(opcode) {
-            format!("{:?}", op)
+            format!("{op:?}")
         } else {
-            format!("Unknown({})", opcode)
+            format!("Unknown({opcode})")
         }
     }
 }

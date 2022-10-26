@@ -108,7 +108,7 @@ pub struct ActivationIdentifier<'a> {
 impl fmt::Display for ActivationIdentifier<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(parent) = self.parent {
-            write!(f, "{} / ", parent)?;
+            write!(f, "{parent} / ")?;
         }
 
         f.write_str(&self.name)?;
@@ -2324,9 +2324,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
                 match method {
                     NavigationMethod::Get if !url.contains(b'?') => {
-                        Request::get(format!("{}?{}", url, qstring))
+                        Request::get(format!("{url}?{qstring}"))
                     }
-                    NavigationMethod::Get => Request::get(format!("{}&{}", url, qstring)),
+                    NavigationMethod::Get => Request::get(format!("{url}&{qstring}")),
                     NavigationMethod::Post => Request::post(
                         url.to_utf8_lossy().into_owned(),
                         Some((

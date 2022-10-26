@@ -326,7 +326,7 @@ pub fn get_local<'gc>(
     // Final SO path: foo.com/folder/game.swf/SOName
     // SOName may be a path containing slashes. In this case, prefix with # to mimic Flash Player behavior.
     let prefix = if name.contains('/') { "#" } else { "" };
-    let full_name = format!("{}/{}/{}{}", movie_host, local_path, prefix, name);
+    let full_name = format!("{movie_host}/{local_path}/{prefix}{name}");
 
     // Avoid any paths with `..` to prevent SWFs from crawling the file system on desktop.
     // Flash will generally fail to save shared objects with a path component starting with `.`,

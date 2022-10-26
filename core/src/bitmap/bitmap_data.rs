@@ -1056,7 +1056,7 @@ impl<'gc> BitmapData<'gc> {
             Err(ruffle_render::error::Error::Unimplemented) => {
                 log::warn!("BitmapData.draw: Not yet implemented")
             }
-            Err(e) => panic!("BitmapData.draw failed: {:?}", e),
+            Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }
     }
 }
