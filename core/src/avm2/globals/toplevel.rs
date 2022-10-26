@@ -111,9 +111,9 @@ pub fn escape<'gc>(
             output.push(x);
         } else {
             let encode = if x <= u8::MAX.into() {
-                format!("%{:02X}", x)
+                format!("%{x:02X}")
             } else {
-                format!("%u{:04X}", x)
+                format!("%u{x:04X}")
             };
             output.push_str(WStr::from_units(encode.as_bytes()));
         }

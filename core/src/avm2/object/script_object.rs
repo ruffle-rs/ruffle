@@ -293,7 +293,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.slots
             .get(id as usize)
             .cloned()
-            .ok_or_else(|| format!("Slot index {} out of bounds!", id).into())
+            .ok_or_else(|| format!("Slot index {id} out of bounds!").into())
     }
 
     /// Set a slot by its index.
@@ -307,7 +307,7 @@ impl<'gc> ScriptObjectData<'gc> {
             *slot = value;
             Ok(())
         } else {
-            Err(format!("Slot index {} out of bounds!", id).into())
+            Err(format!("Slot index {id} out of bounds!").into())
         }
     }
 
@@ -322,7 +322,7 @@ impl<'gc> ScriptObjectData<'gc> {
             *slot = value;
             Ok(())
         } else {
-            Err(format!("Slot index {} out of bounds!", id).into())
+            Err(format!("Slot index {id} out of bounds!").into())
         }
     }
 

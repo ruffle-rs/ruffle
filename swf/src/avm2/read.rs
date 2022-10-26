@@ -888,7 +888,7 @@ pub mod tests {
                 return do_abc.data.to_vec();
             }
         }
-        panic!("ABC tag not found in {}", path);
+        panic!("ABC tag not found in {path}");
     }
 
     #[test]

@@ -3016,7 +3016,7 @@ pub mod tests {
             let mut reader = Reader::new(&tag_bytes[..], swf_version);
             let parsed_tag = match reader.read_tag() {
                 Ok(tag) => tag,
-                Err(e) => panic!("Error parsing tag: {}", e),
+                Err(e) => panic!("Error parsing tag: {e}"),
             };
             assert_eq!(
                 parsed_tag, expected_tag,
@@ -3049,7 +3049,7 @@ pub mod tests {
         match reader.read_tag() {
             Err(crate::error::Error::SwfParseError { .. }) => (),
             result => {
-                panic!("Expected SwfParseError, got {:?}", result);
+                panic!("Expected SwfParseError, got {result:?}");
             }
         }
     }

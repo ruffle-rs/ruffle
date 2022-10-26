@@ -34,7 +34,7 @@ impl DiskStorageBackend {
     }
 
     fn get_shared_object_path(&self, name: &str) -> PathBuf {
-        self.shared_objects_path.join(format!("{}.sol", name))
+        self.shared_objects_path.join(format!("{name}.sol"))
     }
 
     fn get_back_compat_shared_object_path(&self, name: &str) -> PathBuf {

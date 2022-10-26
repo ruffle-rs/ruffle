@@ -399,7 +399,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             )
             .is_some()
         {
-            panic!("Overwrote existing bitmap {:?}", handle);
+            panic!("Overwrote existing bitmap {handle:?}");
         }
 
         Ok(handle)

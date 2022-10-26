@@ -425,7 +425,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return method_object.call(Some(self.into()), arguments, activation);
         }
 
-        Err(format!("Cannot call unknown method id {}", id).into())
+        Err(format!("Cannot call unknown method id {id}").into())
     }
 
     /// Implements the `in` opcode and AS3 operator.
@@ -735,7 +735,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
-            format!("[object {}]", class_name),
+            format!("[object {class_name}]"),
         )
         .into())
     }
@@ -759,7 +759,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
-            format!("[object {}]", class_name),
+            format!("[object {class_name}]"),
         )
         .into())
     }

@@ -314,7 +314,7 @@ impl fmt::Debug for Executable<'_> {
         match self {
             Executable::Native(nf) => f
                 .debug_tuple("Executable::Native")
-                .field(&format!("{:p}", nf))
+                .field(&format!("{nf:p}"))
                 .finish(),
             Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
         }

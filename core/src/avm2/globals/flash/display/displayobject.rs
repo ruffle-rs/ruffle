@@ -941,7 +941,7 @@ fn set_mask<'gc>(
                 .coerce_to_object(activation)?
                 .as_display_object()
                 .ok_or_else(|| -> Error {
-                    format!("Mask is not a DisplayObject: {:?}", mask).into()
+                    format!("Mask is not a DisplayObject: {mask:?}").into()
                 })?;
 
             this.set_masker(activation.context.gc_context, Some(mask), true);

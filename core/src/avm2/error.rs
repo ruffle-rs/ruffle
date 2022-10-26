@@ -122,7 +122,7 @@ fn error_constructor<'gc>(
 
 impl<'gc> std::fmt::Display for Error<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

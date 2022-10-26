@@ -835,8 +835,8 @@ impl Player {
                             let level = display_object.depth();
                             let object = display_object.object().coerce_to_object(&mut activation);
                             dumper.print_variables(
-                                &format!("Level #{}:", level),
-                                &format!("_level{}", level),
+                                &format!("Level #{level}:"),
+                                &format!("_level{level}"),
                                 &object,
                                 &mut activation,
                             );

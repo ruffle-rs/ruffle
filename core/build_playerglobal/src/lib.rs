@@ -55,7 +55,7 @@ pub fn build_playerglobal(
     match status {
         Ok(code) => {
             if !code.success() {
-                return Err(format!("Compiling failed with code {:?}", code).into());
+                return Err(format!("Compiling failed with code {code:?}").into());
             }
         }
         Err(err) => {
@@ -95,7 +95,7 @@ fn resolve_multiname_name<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a st
     if let Multiname::QName { name, .. } | Multiname::Multiname { name, .. } = multiname {
         &abc.constant_pool.strings[name.0 as usize - 1]
     } else {
-        panic!("Unexpected Multiname {:?}", multiname);
+        panic!("Unexpected Multiname {multiname:?}");
     }
 }
 
@@ -106,10 +106,10 @@ fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a str 
         if let Namespace::Package(p) = ns {
             &abc.constant_pool.strings[p.0 as usize - 1]
         } else {
-            panic!("Unexpected Namespace {:?}", ns);
+            panic!("Unexpected Namespace {ns:?}");
         }
     } else {
-        panic!("Unexpected Multiname {:?}", multiname);
+        panic!("Unexpected Multiname {multiname:?}");
     }
 }
 
@@ -265,7 +265,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                 method
             }
             TraitKind::Function { .. } => {
-                panic!("TraitKind::Function is not supported: {:?}", trait_)
+                panic!("TraitKind::Function is not supported: {trait_:?}")
             }
             _ => return,
         };
@@ -308,7 +308,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             let name = &abc.constant_pool.strings[metadata.name.0 as usize - 1];
             match name.as_str() {
                 RUFFLE_METADATA_NAME => {}
-                _ => panic!("Unexpected class metadata {:?}", name),
+                _ => panic!("Unexpected class metadata {name:?}"),
             }
 
             for item in &metadata.items {
@@ -326,7 +326,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                         rust_instance_allocators[class_id as usize] =
                             rust_method_name_and_path(&abc, trait_, None, "", &method_name);
                     }
-                    _ => panic!("Unexpected metadata pair ({:?}, {})", key, value),
+                    _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }
             }
         }

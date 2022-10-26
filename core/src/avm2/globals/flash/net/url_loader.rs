@@ -32,7 +32,7 @@ pub fn load<'gc>(
         } else if &data_format == b"variables" {
             DataFormat::Variables
         } else {
-            return Err(format!("Unknown data format: {}", data_format).into());
+            return Err(format!("Unknown data format: {data_format}").into());
         };
 
         return spawn_fetch(activation, this, request, data_format);

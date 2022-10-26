@@ -28,7 +28,7 @@ pub fn analyze(results: impl Iterator<Item = FileResults>) {
         }
     }
 
-    println!("Scanned {} swf files.", total);
+    println!("Scanned {total} swf files.");
 
     let digits = max(
         (start as f64).log10().ceil() as usize,
@@ -67,7 +67,7 @@ pub fn analyze(results: impl Iterator<Item = FileResults>) {
         decompress,
         digits = digits
     );
-    println!("{:>digits$} movies failed to parse", parse, digits = digits);
+    println!("{parse:>digits$} movies failed to parse");
     println!(
         "{:>digits$} movies failed to execute",
         execute,
@@ -91,7 +91,7 @@ pub fn analyze_main(opt: AnalyzeOpt) -> Result<(), std::io::Error> {
             Err(e) => {
                 // Treat unparseable CSV rows as a scanner panic
                 FileResults {
-                    error: Some(format!("{}", e)),
+                    error: Some(format!("{e}")),
                     ..FileResults::default()
                 }
             }

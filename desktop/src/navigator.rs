@@ -120,7 +120,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         let full_url = match self.base_url.join(request.url()) {
             Ok(url) => url,
             Err(e) => {
-                let msg = format!("Invalid URL {}: {}", request.url(), e);
+                let msg = format!("Invalid URL {}: {e}", request.url());
                 return Box::pin(async move { Err(Error::FetchError(msg)) });
             }
         };

@@ -23,7 +23,7 @@ where
         let this = root.object().coerce_to_object(&mut activation);
         let result = test(&mut activation, this);
         if let Err(e) = result {
-            panic!("Encountered exception during test: {}", e);
+            panic!("Encountered exception during test: {e}");
         }
     })
 }

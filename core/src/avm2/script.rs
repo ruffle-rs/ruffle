@@ -250,7 +250,7 @@ impl<'gc> TranslationUnit<'gc> {
                 .constant_pool
                 .strings
                 .get(string_index as usize - 1)
-                .ok_or_else(|| format!("Unknown string constant {}", string_index))?,
+                .ok_or_else(|| format!("Unknown string constant {string_index}"))?,
         );
         write.strings[string_index as usize] = Some(avm_string);
 

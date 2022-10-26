@@ -430,7 +430,7 @@ pub mod tests {
         match reader.read_action() {
             Err(crate::error::Error::Avm1ParseError { .. }) => (),
             result => {
-                panic!("Expected Avm1ParseError, got {:?}", result);
+                panic!("Expected Avm1ParseError, got {result:?}");
             }
         }
     }
