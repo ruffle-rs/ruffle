@@ -10,9 +10,10 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::display_object::{HitTestOptions, TDisplayObject};
+use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::prelude::*;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
@@ -771,7 +772,7 @@ pub fn set_blend_mode<'gc>(
 
 fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    rectangle: Rectangle<Twips>,
+    rectangle: BoundingBox,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
     let y = rectangle.y_min.to_pixels();
@@ -792,7 +793,7 @@ fn scroll_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         if dobj.has_scroll_rect() {
-            return Ok(new_rectangle(activation, dobj.next_scroll_rect())?.into());
+            return Ok(new_rectangle(activation, dobj.next_scroll_rect().into())?.into());
         } else {
             return Ok(Value::Null);
         }
@@ -913,6 +914,50 @@ fn global_to_local<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+fn get_bounds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        // TODO: add typing `(target: DisplayObject)` for proper type errors
+        if let Some(target) = args.get(0).cloned().and_then(|value| match value {
+            Value::Undefined | Value::Null => Some(dobj),
+            _ => value.as_object().and_then(|o| o.as_display_object()),
+        }) {
+            let bounds = dobj.bounds();
+            let out_bounds = if DisplayObject::ptr_eq(dobj, target) {
+                // Getting the clips bounds in its own coordinate space; no AABB transform needed.
+                bounds
+            } else {
+                // Transform AABB to target space.
+                // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
+                // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
+                // the final matrix, but this matches Flash's behavior.
+                let to_global_matrix = dobj.local_to_global_matrix();
+                let to_target_matrix = target.global_to_local_matrix();
+                let bounds_transform = to_target_matrix * to_global_matrix;
+                bounds.transform(&bounds_transform)
+            };
+
+            return Ok(new_rectangle(activation, out_bounds)?.into());
+        } else {
+            return Ok(Value::Undefined);
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+fn get_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
+    // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
+    get_bounds(activation, this, args)
 }
 
 fn mask<'gc>(
@@ -1045,6 +1090,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("hitTestObject", hit_test_object),
         ("localToGlobal", local_to_global),
         ("globalToLocal", global_to_local),
+        ("getBounds", get_bounds),
+        ("getRect", get_rect),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
