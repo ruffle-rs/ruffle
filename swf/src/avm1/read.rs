@@ -472,11 +472,19 @@ pub mod tests {
     }
 
     #[test]
-    fn read_push_to_end_of_action() {
+    fn read_push() {
         // ActionPush doesn't provide an explicit # of values, but instead reads values
         // until the end of the action. Ensure we don't read extra values.
-        let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let action_bytes = [
+            OpCode::Push as u8,
+            3,
+            0,
+            2,  // null
+            10, // Invalid value type.
+            3,  // undefined
+            3,  // Extra byte at the end shouldn't be read.
+        ];
+        let mut reader = Reader::new(&action_bytes, 5);
         let action = reader.read_action().unwrap();
         assert_eq!(
             action,
