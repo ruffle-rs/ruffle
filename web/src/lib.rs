@@ -996,15 +996,13 @@ impl Ruffle {
 
     fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
-            let width = swf_header.stage_size().x_max - swf_header.stage_size().x_min;
-            let height = swf_header.stage_size().y_max - swf_header.stage_size().y_min;
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
                 .background_color()
                 .map(|color| format!("#{:06X}", color.to_rgb()));
             let metadata = MovieMetadata {
-                width: width.to_pixels(),
-                height: height.to_pixels(),
+                width: swf_header.stage_size().width().to_pixels(),
+                height: swf_header.stage_size().height().to_pixels(),
                 frame_rate: swf_header.frame_rate().to_f32(),
                 num_frames: swf_header.num_frames(),
                 uncompressed_len: swf_header.uncompressed_len(),

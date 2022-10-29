@@ -775,8 +775,8 @@ fn new_rectangle<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
     let y = rectangle.y_min.to_pixels();
-    let width = (rectangle.x_max - rectangle.x_min).to_pixels();
-    let height = (rectangle.y_max - rectangle.y_min).to_pixels();
+    let width = rectangle.width().to_pixels();
+    let height = rectangle.height().to_pixels();
     let args = &[x.into(), y.into(), width.into(), height.into()];
     activation
         .avm2()
