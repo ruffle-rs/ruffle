@@ -500,13 +500,8 @@ impl App {
                         .expect("active executor reference")
                         .poll_all(),
                     winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                        // TODO: Re-use `SwfMovie::width` and `SwfMovie::height`.
-                        let movie_width = (swf_header.stage_size().x_max
-                            - swf_header.stage_size().x_min)
-                            .to_pixels();
-                        let movie_height = (swf_header.stage_size().y_max
-                            - swf_header.stage_size().y_min)
-                            .to_pixels();
+                        let movie_width = swf_header.stage_size().width().to_pixels();
+                        let movie_height = swf_header.stage_size().height().to_pixels();
 
                         let window_size: Size = match (self.opt.width, self.opt.height) {
                             (None, None) => LogicalSize::new(movie_width, movie_height).into(),
