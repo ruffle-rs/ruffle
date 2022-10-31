@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 swf = { path = "../swf"}
 log = "0.4"
 gif = "0.11.4"
-png = { version = "0.17.6" }
+png = { version = "0.17.7" }
 flate2 = "1.0.24"
 smallvec = { version = "1.10.0", features = ["union"] }
 downcast-rs = "1.2.0"
