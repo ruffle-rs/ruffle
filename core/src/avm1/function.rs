@@ -67,7 +67,7 @@ pub struct Avm1Function<'gc> {
     params: Vec<Param<'gc>>,
 
     /// The scope the function was born into.
-    scope: GcCell<'gc, Scope<'gc>>,
+    scope: Gc<'gc, Scope<'gc>>,
 
     /// The constant pool the function executes with.
     constant_pool: Gc<'gc, Vec<Value<'gc>>>,
@@ -88,7 +88,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_version: u8,
         actions: SwfSlice,
         swf_function: swf::avm1::types::DefineFunction2,
-        scope: GcCell<'gc, Scope<'gc>>,
+        scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
@@ -137,7 +137,7 @@ impl<'gc> Avm1Function<'gc> {
         self.name
     }
 
-    pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
+    pub fn scope(&self) -> Gc<'gc, Scope<'gc>> {
         self.scope
     }
 
@@ -387,10 +387,10 @@ impl<'gc> Executable<'gc> {
                 _ => unreachable!(),
             };
             // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = GcCell::allocate(
+            let scope = Gc::allocate(
                 activation.context.gc_context,
                 Scope::new(
-                    GcCell::allocate(
+                    Gc::allocate(
                         activation.context.gc_context,
                         Scope::from_global_object(activation.context.avm1.global_object_cell()),
                     ),
@@ -401,7 +401,7 @@ impl<'gc> Executable<'gc> {
             (swf_version, scope)
         };
 
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             activation.context.gc_context,
             Scope::new_local_scope(parent_scope, activation.context.gc_context),
         );

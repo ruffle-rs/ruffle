@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, GcCell, MutationContext, Gc};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 
@@ -126,10 +126,10 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             parent_activation.context.gc_context,
             Scope::new(
-                parent_activation.scope_cell(),
+                parent_activation.scope(),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -166,11 +166,11 @@ impl<'gc> Avm1<'gc> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let global_scope = GcCell::allocate(
+        let global_scope = Gc::allocate(
             action_context.gc_context,
             Scope::from_global_object(action_context.avm1.global_object_cell()),
         );
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             action_context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
@@ -212,10 +212,10 @@ impl<'gc> Avm1<'gc> {
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             parent_activation.context.gc_context,
             Scope::new(
-                parent_activation.scope_cell(),
+                parent_activation.scope(),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
