@@ -819,16 +819,6 @@ fn swf_shape_to_canvas_commands(
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
     // rendering altogether.
-    let (_width, _height) = (
-        f32::max(
-            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32,
-            1.0,
-        ),
-        f32::max(
-            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32,
-            1.0,
-        ),
-    );
 
     let mut canvas_data = ShapeData(vec![]);
 

@@ -112,9 +112,8 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
-                let stage_size = swf.header.stage_size();
-                let stage_width = (stage_size.x_max - stage_size.x_min).to_pixels();
-                let stage_height = (stage_size.y_max - stage_size.y_min).to_pixels();
+                let stage_width = swf.header.stage_size().width().to_pixels();
+                let stage_height = swf.header.stage_size().height().to_pixels();
 
                 file_result.uncompressed_len = Some(swf.header.uncompressed_len());
                 file_result.compression = Some(swf.header.compression().into());
