@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext, Gc};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 
@@ -24,7 +24,7 @@ pub struct Avm1<'gc> {
 
     /// The constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+    constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
     /// The global object.
     globals: Object<'gc>,
@@ -77,7 +77,7 @@ impl<'gc> Avm1<'gc> {
 
         Self {
             player_version,
-            constant_pool: GcCell::allocate(gc_context, vec![]),
+            constant_pool: Gc::allocate(gc_context, vec![]),
             globals,
             prototypes,
             broadcaster_functions,
@@ -353,13 +353,13 @@ impl<'gc> Avm1<'gc> {
 
     /// Obtains the constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    pub fn constant_pool(&self) -> GcCell<'gc, Vec<Value<'gc>>> {
+    pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {
         self.constant_pool
     }
 
     /// Sets the constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<Value<'gc>>>) {
+    pub fn set_constant_pool(&mut self, constant_pool: Gc<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
     }
 
