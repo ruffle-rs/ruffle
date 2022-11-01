@@ -193,7 +193,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     scope: GcCell<'gc, Scope<'gc>>,
 
     /// The currently in use constant pool.
-    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+    constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
     /// The immutable value of `this`.
     ///
@@ -255,7 +255,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+        constant_pool: Gc<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
         this: Value<'gc>,
         callee: Option<Object<'gc>>,
@@ -315,7 +315,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             context.gc_context,
             Scope::new_local_scope(global_scope, context.gc_context),
         );
-        let empty_constant_pool = GcCell::allocate(context.gc_context, Vec::new());
+        let empty_constant_pool = Gc::allocate(context.gc_context, Vec::new());
         avm_debug!(context.avm1, "START {}", id);
 
         Self {
@@ -834,7 +834,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         action: ConstantPool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.avm1.set_constant_pool(GcCell::allocate(
+        self.context.avm1.set_constant_pool(Gc::allocate(
             self.context.gc_context,
             action
                 .strings
@@ -1744,14 +1744,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
                 SwfValue::Register(v) => self.current_register(v),
                 SwfValue::ConstantPool(i) => {
-                    if let Some(value) = self.constant_pool().read().get(i as usize) {
+                    if let Some(value) = self.constant_pool().get(i as usize) {
                         *value
                     } else {
                         avm_warn!(
                             self,
                             "ActionPush: Constant pool index {} out of range (len = {})",
                             i,
-                            self.constant_pool().read().len()
+                            self.constant_pool().len()
                         );
                         Value::Undefined
                     }
@@ -2886,11 +2886,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
-    pub fn constant_pool(&self) -> GcCell<'gc, Vec<Value<'gc>>> {
+    pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {
         self.constant_pool
     }
 
-    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<Value<'gc>>>) {
+    pub fn set_constant_pool(&mut self, constant_pool: Gc<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
     }
 
