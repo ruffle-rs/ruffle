@@ -43,7 +43,7 @@
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
     },
     "dependencies": {
-        "wasm-feature-detect": "^1.2.11"
+        "wasm-feature-detect": "^1.3.0"
     },
     "devDependencies": {
         "@types/mocha": "^10.0.0",
