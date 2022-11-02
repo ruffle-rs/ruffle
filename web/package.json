@@ -16,7 +16,7 @@
         "@wdio/cli": "^7.25.1",
         "@wdio/local-runner": "^7.24.0",
         "@wdio/mocha-framework": "^7.20.7",
-        "@wdio/spec-reporter": "^7.20.8",
+        "@wdio/spec-reporter": "^7.25.4",
         "@wdio/static-server-service": "^7.25.4",
         "chai": "^4.3.6",
         "chai-html": "^2.1.0",
