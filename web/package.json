@@ -28,7 +28,7 @@
         "eslint-plugin-prettier": "^4.0.0",
         "mocha": "^10.0.0",
         "prettier": "^2.7.1",
-        "stylelint": "^14.8.5",
+        "stylelint": "^14.14.0",
         "stylelint-config-prettier": "^9.0.3",
         "stylelint-config-standard": "^28.0.0",
         "stylelint-prettier": "^2.0.0",
