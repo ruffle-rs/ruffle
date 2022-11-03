@@ -115,11 +115,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Actions Parent]"),
-            globals,
             active_clip,
         );
 
@@ -201,11 +199,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Init Parent]"),
-            globals,
             active_clip,
         );
 
@@ -254,11 +250,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root(name.to_string()),
-            globals,
             active_clip,
         );
 
@@ -272,16 +266,16 @@ impl<'gc> Avm1<'gc> {
         method: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
-        let global = context.avm1.global_object_cell();
-
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[System Listeners]"),
-            global,
             active_clip,
         );
 
-        let broadcaster = global
+        let broadcaster = activation
+            .context
+            .avm1
+            .global_object_cell()
             .get(broadcaster_name, &mut activation)
             .unwrap()
             .coerce_to_object(&mut activation);

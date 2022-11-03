@@ -305,9 +305,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn from_nothing(
         context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
-        globals: Object<'gc>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
+        let globals = context.avm1.global_object_cell();
         let global_scope = Gc::allocate(context.gc_context, Scope::from_global_object(globals));
         let swf_version = base_clip.swf_version();
         let child_scope = Gc::allocate(
@@ -338,10 +338,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
     ) -> Self {
-        let globals = context.avm1.global_object_cell();
         let level0 = context.stage.root_clip();
-
-        Self::from_nothing(context, id, globals, level0)
+        Self::from_nothing(context, id, level0)
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -351,11 +349,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let globals = self.context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             self.context.reborrow(),
             self.id.child("[Actions Parent]"),
-            globals,
             active_clip,
         );
         let clip_obj = active_clip

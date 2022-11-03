@@ -257,11 +257,9 @@ impl<'gc> Callback<'gc> {
         match self {
             Callback::Avm1 { this, method } => {
                 let base_clip = context.stage.root_clip();
-                let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     Avm1ActivationIdentifier::root("[ExternalInterface]"),
-                    globals,
                     base_clip,
                 );
                 let this = this.coerce_to_object(&mut activation);
