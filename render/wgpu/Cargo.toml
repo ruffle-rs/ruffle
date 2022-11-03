@@ -7,6 +7,10 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 wgpu = "0.14.0"
+# Pin `wgpu-hal` and `wgpu-types` to include https://github.com/gfx-rs/wgpu/pull/3165.
+# TODO: Remove when upgrading `wgpu`.
+wgpu-hal = "0.14.1"
+wgpu-types = "0.14.1"
 log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.2", features = ["derive"] }
