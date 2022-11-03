@@ -586,7 +586,7 @@ async fn request_device(
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::DEPTH32FLOAT_STENCIL8,
+                features: wgpu::Features::DEPTH24PLUS_STENCIL8,
                 limits,
             },
             trace_path,
