@@ -640,13 +640,10 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let globals = context.avm1.global_object_cell();
         let root_clip = context.stage.root_clip();
-
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Context Menu Callback]"),
-            globals,
             root_clip,
         );
 
@@ -1547,12 +1544,9 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let globals = context.avm1.global_object_cell();
-
                     let mut activation = Activation::from_nothing(
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
-                        globals,
                         action.clip,
                     );
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {

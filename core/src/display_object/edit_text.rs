@@ -1228,11 +1228,9 @@ impl<'gc> EditText<'gc> {
             }
 
             if changed {
-                let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Propagate Text Binding]"),
-                    globals,
                     self.into(),
                 );
                 self.propagate_text_binding(&mut activation);
