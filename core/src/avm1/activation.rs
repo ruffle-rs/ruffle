@@ -302,33 +302,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// This is used by tests and by callback methods (`onEnterFrame`) to create a base
     /// activation frame with access to the global context.
+    ///
+    /// Note: using the returned `Activation` directly to execute arbitrary bytecode and/or
+    /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
         context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        let globals = context.avm1.global_object_cell();
-        let global_scope = Gc::allocate(context.gc_context, Scope::from_global_object(globals));
-        let swf_version = base_clip.swf_version();
-        let child_scope = Gc::allocate(
-            context.gc_context,
-            Scope::new_local_scope(global_scope, context.gc_context),
-        );
-        let empty_constant_pool = Gc::allocate(context.gc_context, Vec::new());
         avm_debug!(context.avm1, "START {}", id);
 
         Self {
-            context,
             id,
-            swf_version,
-            scope: child_scope,
-            constant_pool: empty_constant_pool,
+            swf_version: base_clip.swf_version(),
+            scope: context.avm1.global_scope(),
+            constant_pool: context.avm1.constant_pool(),
             base_clip,
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
-            this: globals.into(),
+            this: context.avm1.global_object().into(),
             callee: None,
             local_registers: None,
+            context,
         }
     }
 
@@ -395,13 +390,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let global_scope = Gc::allocate(
-            self.context.gc_context,
-            Scope::from_global_object(self.context.avm1.global_object_cell()),
-        );
         let child_scope = Gc::allocate(
             self.context.gc_context,
-            Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
+            Scope::new(
+                self.context.avm1.global_scope(),
+                scope::ScopeClass::Target,
+                clip_obj,
+            ),
         );
         let constant_pool = self.context.avm1.constant_pool();
         let mut activation = Activation::from_action(
