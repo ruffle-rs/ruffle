@@ -266,7 +266,7 @@ impl<'gc> Avm1Function<'gc> {
     fn load_global(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
             let global = frame.context.avm1.global_object();
-            frame.set_local_register(*preload_r, global);
+            frame.set_local_register(*preload_r, global.into());
             *preload_r += 1;
         }
     }
@@ -390,10 +390,7 @@ impl<'gc> Executable<'gc> {
             let scope = Gc::allocate(
                 activation.context.gc_context,
                 Scope::new(
-                    Gc::allocate(
-                        activation.context.gc_context,
-                        Scope::from_global_object(activation.context.avm1.global_object_cell()),
-                    ),
+                    activation.context.avm1.global_scope(),
                     super::scope::ScopeClass::Target,
                     base_clip_obj,
                 ),
