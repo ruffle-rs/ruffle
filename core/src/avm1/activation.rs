@@ -2220,8 +2220,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             value => {
                 // Note that primitives get boxed at this point.
                 let object = value.coerce_to_object(self);
-                let with_scope =
-                    Scope::new_with_scope(self.scope(), object, self.context.gc_context);
+                let with_scope = Gc::allocate(
+                    self.context.gc_context,
+                    Scope::new_with_scope(self.scope(), object),
+                );
                 let mut new_activation = self.with_new_scope("[With]", with_scope);
                 if let ReturnType::Explicit(value) = new_activation.run_actions(code)? {
                     Ok(FrameControl::Return(ReturnType::Explicit(value)))
