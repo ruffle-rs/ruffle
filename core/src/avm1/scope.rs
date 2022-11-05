@@ -29,7 +29,7 @@ pub enum ScopeClass {
 }
 
 /// Represents a scope chain for an AVM1 activation.
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct Scope<'gc> {
     parent: Option<Gc<'gc, Scope<'gc>>>,
@@ -39,7 +39,7 @@ pub struct Scope<'gc> {
 
 impl<'gc> Scope<'gc> {
     /// Construct a global scope (one without a parent).
-    pub fn from_global_object(globals: Object<'gc>) -> Scope<'gc> {
+    pub fn from_global_object(globals: Object<'gc>) -> Self {
         Scope {
             parent: None,
             class: ScopeClass::Global,
@@ -48,7 +48,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Construct a child scope of another scope.
-    pub fn new_local_scope(parent: Gc<'gc, Self>, mc: MutationContext<'gc, '_>) -> Scope<'gc> {
+    pub fn new_local_scope(parent: Gc<'gc, Self>, mc: MutationContext<'gc, '_>) -> Self {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
@@ -63,7 +63,7 @@ impl<'gc> Scope<'gc> {
         clip: Object<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Gc<'gc, Self> {
-        let mut scope = *parent;
+        let mut scope = (*parent).clone();
 
         if scope.class == ScopeClass::Target {
             scope.values = clip;
@@ -78,23 +78,16 @@ impl<'gc> Scope<'gc> {
     ///
     /// A with block adds an object to the top of the scope chain, so unqualified
     /// references will try to resolve on that object first.
-    pub fn new_with_scope(
-        parent_scope: Gc<'gc, Self>,
-        with_object: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Gc<'gc, Self> {
-        Gc::allocate(
-            mc,
-            Scope {
-                parent: Some(parent_scope),
-                class: ScopeClass::With,
-                values: with_object,
-            },
-        )
+    pub fn new_with_scope(parent_scope: Gc<'gc, Self>, with_object: Object<'gc>) -> Self {
+        Scope {
+            parent: Some(parent_scope),
+            class: ScopeClass::With,
+            values: with_object,
+        }
     }
 
     /// Construct an arbitrary scope.
-    pub fn new(parent: Gc<'gc, Self>, class: ScopeClass, with_object: Object<'gc>) -> Scope<'gc> {
+    pub fn new(parent: Gc<'gc, Self>, class: ScopeClass, with_object: Object<'gc>) -> Self {
         Scope {
             parent: Some(parent),
             class,
