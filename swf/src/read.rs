@@ -591,9 +591,7 @@ impl<'a> Reader<'a> {
 
             TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
 
-            TagCode::PlaceObject => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
-            }
+            TagCode::PlaceObject => Tag::PlaceObject(Box::new(tag_reader.read_place_object()?)),
             TagCode::PlaceObject2 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
             }
@@ -1834,20 +1832,14 @@ impl<'a> Reader<'a> {
         Ok(exports)
     }
 
-    pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject<'a>> {
-        // TODO: What's a best way to know if the tag has a color transform?
-        // You only know if there is still data remaining after the matrix.
-        // This sucks.
-        let mut vector = [0; 128];
-        self.get_mut().read_exact(&mut vector[..tag_length])?;
-        let mut reader = Reader::new(&vector[..], self.version);
+    pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
         Ok(PlaceObject {
             version: 1,
-            action: PlaceObjectAction::Place(reader.read_u16()?),
-            depth: reader.read_u16()?,
-            matrix: Some(reader.read_matrix()?),
-            color_transform: if !reader.get_ref().is_empty() {
-                Some(reader.read_color_transform(false)?)
+            action: PlaceObjectAction::Place(self.read_u16()?),
+            depth: self.read_u16()?,
+            matrix: Some(self.read_matrix()?),
+            color_transform: if !self.get_ref().is_empty() {
+                Some(self.read_color_transform(false)?)
             } else {
                 None
             },
