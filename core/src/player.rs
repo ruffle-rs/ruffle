@@ -1019,7 +1019,7 @@ impl Player {
 
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
-                context.action_queue.queue_actions(
+                context.action_queue.queue_action(
                     context.stage.root_clip(),
                     ActionType::NotifyListeners {
                         listener: listener_type,
@@ -1514,16 +1514,16 @@ impl Player {
 
     pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
-        while let Some(actions) = context.action_queue.pop_action() {
+        while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
-            if !actions.is_unload && actions.clip.removed() {
+            if !action.is_unload && action.clip.removed() {
                 continue;
             }
 
-            match actions.action_type {
+            match action.action_type {
                 // DoAction/clip event code.
                 ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(actions.clip, "[Frame]", bytecode, context);
+                    Avm1::run_stack_frame_for_action(action.clip, "[Frame]", bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
@@ -1536,10 +1536,10 @@ impl Player {
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
                         globals,
-                        actions.clip,
+                        action.clip,
                     );
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {
-                        if let Value::Object(object) = actions.clip.object() {
+                        if let Value::Object(object) = action.clip.object() {
                             object.define_value(
                                 activation.context.gc_context,
                                 "__proto__",
@@ -1549,7 +1549,7 @@ impl Player {
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",
-                                    actions.clip,
+                                    action.clip,
                                     event,
                                 );
                             }
@@ -1565,7 +1565,7 @@ impl Player {
                 } => {
                     for event in events {
                         Avm1::run_stack_frame_for_action(
-                            actions.clip,
+                            action.clip,
                             "[Construct]",
                             event,
                             context,
@@ -1575,7 +1575,7 @@ impl Player {
                 // Event handler method call (e.g. onEnterFrame).
                 ActionType::Method { object, name, args } => {
                     Avm1::run_stack_frame_for_method(
-                        actions.clip,
+                        action.clip,
                         object,
                         context,
                         name.into(),
@@ -1592,7 +1592,7 @@ impl Player {
                     // A native function ends up resolving immediately,
                     // so this doesn't require any further execution.
                     Avm1::notify_system_listeners(
-                        actions.clip,
+                        action.clip,
                         context,
                         listener.into(),
                         method.into(),

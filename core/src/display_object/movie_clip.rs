@@ -2002,7 +2002,7 @@ impl<'gc> MovieClip<'gc> {
                 .iter()
             {
                 if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
-                    context.action_queue.queue_actions(
+                    context.action_queue.queue_action(
                         self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
@@ -2015,7 +2015,7 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
 
-            context.action_queue.queue_actions(
+            context.action_queue.queue_action(
                 self.into(),
                 ActionType::Construct {
                     constructor: avm1_constructor,
@@ -2719,7 +2719,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             }
                         }
 
-                        context.action_queue.queue_actions(
+                        context.action_queue.queue_action(
                             self.into(),
                             ActionType::Normal {
                                 bytecode: event_handler.action_data.clone(),
@@ -2735,7 +2735,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     if let Some(name) = event.method_name() {
                         // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
                         if !event.is_key_event() || read.has_focus {
-                            context.action_queue.queue_actions(
+                            context.action_queue.queue_action(
                                 self.into(),
                                 ActionType::Method {
                                     object,
@@ -3650,7 +3650,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             .swf
             .resize_to_reader(reader, tag_len);
         if !slice.is_empty() {
-            context.action_queue.queue_actions(
+            context.action_queue.queue_action(
                 self.into(),
                 ActionType::Normal { bytecode: slice },
                 false,

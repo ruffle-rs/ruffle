@@ -876,7 +876,7 @@ impl<'gc> Loader<'gc> {
                 // Fire the onData method and event.
                 if let Some(display_object) = that.as_display_object() {
                     if let Some(movie_clip) = display_object.as_movie_clip() {
-                        activation.context.action_queue.queue_actions(
+                        activation.context.action_queue.queue_action(
                             movie_clip.into(),
                             ActionType::Method {
                                 object: that,
@@ -1646,7 +1646,7 @@ impl<'gc> Loader<'gc> {
             LoaderStatus::Succeeded => {
                 // AVM2 is handled separately
                 if let Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) = event_handler {
-                    queue.queue_actions(
+                    queue.queue_action(
                         clip,
                         ActionType::Method {
                             object: broadcaster,

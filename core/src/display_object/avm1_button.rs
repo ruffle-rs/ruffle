@@ -493,7 +493,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         // (e.g., clip.onRelease = foo).
         if context.swf.version() >= 6 {
             if let Some(name) = event.method_name() {
-                context.action_queue.queue_actions(
+                context.action_queue.queue_action(
                     self_display_object,
                     ActionType::Method {
                         object: write.object.unwrap(),
@@ -579,7 +579,7 @@ impl<'gc> Avm1ButtonData<'gc> {
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     handled = ClipEventResult::Handled;
-                    context.action_queue.queue_actions(
+                    context.action_queue.queue_action(
                         parent,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),
