@@ -324,7 +324,7 @@ impl<'gc> AudioManager<'gc> {
                     object.set_position(gc_context, duration.round() as u32);
 
                     // Fire soundComplete event.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Method {
                             object: object.into(),
@@ -340,7 +340,7 @@ impl<'gc> AudioManager<'gc> {
 
                     //TODO: AVM2 events are usually not queued, but we can't
                     //hold the update context in the audio manager yet.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Event2 {
                             event_type: "soundComplete",
