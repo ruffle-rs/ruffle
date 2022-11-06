@@ -83,7 +83,7 @@ pub fn create_string_object<'gc>(
         fn_proto,
         string_proto,
     );
-    let object = string.as_script_object().unwrap();
+    let object = string.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     string
 }
@@ -95,7 +95,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let string_proto = ValueObject::empty_box(gc_context, proto);
-    let object = string_proto.as_script_object().unwrap();
+    let object = string_proto.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     string_proto
 }

@@ -252,8 +252,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().set_interfaces(gc_context, iface_list)
     }
 
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        Some(*self.0.read())
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        *self.0.read()
     }
 
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {

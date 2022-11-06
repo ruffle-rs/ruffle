@@ -498,8 +498,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(gc_context).native = native;
     }
 
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        Some(*self)
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        *self
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -581,7 +581,7 @@ mod tests {
     #[test]
     fn test_set_get() {
         with_object(0, |activation, object| {
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "forced",
                 "forced".into(),
@@ -597,13 +597,13 @@ mod tests {
     #[test]
     fn test_set_readonly() {
         with_object(0, |activation, object| {
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "normal",
                 "initial".into(),
                 Attribute::empty(),
             );
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "readonly",
                 "initial".into(),
@@ -626,7 +626,7 @@ mod tests {
     #[test]
     fn test_deletable_not_readonly() {
         with_object(0, |activation, object| {
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "test",
                 "initial".into(),
@@ -637,8 +637,7 @@ mod tests {
             assert_eq!(object.get("test", activation).unwrap(), "initial".into());
 
             object
-                .as_script_object()
-                .unwrap()
+                .raw_script_object()
                 .set("test", "replaced".into(), activation)
                 .unwrap();
 
@@ -657,7 +656,7 @@ mod tests {
                 activation.context.avm1.prototypes().function,
             );
 
-            object.as_script_object().unwrap().add_property(
+            object.raw_script_object().add_property(
                 activation.context.gc_context,
                 "test".into(),
                 getter,
@@ -683,27 +682,27 @@ mod tests {
                 activation.context.avm1.prototypes().function,
             );
 
-            object.as_script_object().unwrap().add_property(
+            object.raw_script_object().add_property(
                 activation.context.gc_context,
                 "virtual".into(),
                 getter,
                 None,
                 Attribute::empty(),
             );
-            object.as_script_object().unwrap().add_property(
+            object.raw_script_object().add_property(
                 activation.context.gc_context,
                 "virtual_un".into(),
                 getter,
                 None,
                 Attribute::DONT_DELETE,
             );
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "stored",
                 "Stored!".into(),
                 Attribute::empty(),
             );
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "stored_un",
                 "Stored!".into(),
@@ -739,26 +738,26 @@ mod tests {
                 activation.context.avm1.prototypes().function,
             );
 
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "stored",
                 Value::Null,
                 Attribute::empty(),
             );
-            object.as_script_object().unwrap().define_value(
+            object.raw_script_object().define_value(
                 activation.context.gc_context,
                 "stored_hidden",
                 Value::Null,
                 Attribute::DONT_ENUM,
             );
-            object.as_script_object().unwrap().add_property(
+            object.raw_script_object().add_property(
                 activation.context.gc_context,
                 "virtual".into(),
                 getter,
                 None,
                 Attribute::empty(),
             );
-            object.as_script_object().unwrap().add_property(
+            object.raw_script_object().add_property(
                 activation.context.gc_context,
                 "virtual_hidden".into(),
                 getter,

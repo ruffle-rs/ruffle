@@ -457,7 +457,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let color_matrix_filter = GradientGlowFilterObject::empty_object(gc_context, proto);
-    let object = color_matrix_filter.as_script_object().unwrap();
+    let object = color_matrix_filter.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     color_matrix_filter.into()
 }

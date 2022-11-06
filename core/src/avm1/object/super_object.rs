@@ -309,8 +309,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` probably cannot have interfaces set on it
     }
 
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        None
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        self.0.read().this.raw_script_object()
     }
 
     fn as_super_object(&self) -> Option<SuperObject<'gc>> {
