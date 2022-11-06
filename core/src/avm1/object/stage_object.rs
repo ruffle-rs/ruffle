@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
@@ -179,6 +178,10 @@ impl fmt::Debug for StageObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        self.0.read().base
+    }
+
     fn get_local_stored(
         &self,
         name: impl Into<AvmString<'gc>>,
@@ -263,32 +266,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
     }
 
-    fn call(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Value<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().base.call(name, activation, this, args)
-    }
-
-    fn getter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().base.getter(name, activation)
-    }
-
-    fn setter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().base.setter(name, activation)
-    }
-
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -298,100 +275,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.create_bare_object(activation, this)
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().base.delete(activation, name)
-    }
-
-    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        self.0.read().base.proto(activation)
-    }
-
-    fn define_value(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: impl Into<AvmString<'gc>>,
-        value: Value<'gc>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .base
-            .define_value(gc_context, name, value, attributes)
-    }
-
-    fn set_attributes(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: Option<AvmString<'gc>>,
-        set_attributes: Attribute,
-        clear_attributes: Attribute,
-    ) {
-        self.0.write(gc_context).base.set_attributes(
-            gc_context,
-            name,
-            set_attributes,
-            clear_attributes,
-        )
-    }
-
-    fn add_property(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: AvmString<'gc>,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .base
-            .add_property(gc_context, name, get, set, attributes)
-    }
-
-    fn add_property_with_case(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .base
-            .add_property_with_case(activation, name, get, set, attributes)
-    }
-
-    fn call_watcher(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        value: &mut Value<'gc>,
-        this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.0
-            .read()
-            .base
-            .call_watcher(activation, name, value, this)
-    }
-
-    fn watch(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        callback: Object<'gc>,
-        user_data: Value<'gc>,
-    ) {
-        self.0
-            .read()
-            .base
-            .watch(activation, name, callback, user_data);
-    }
-
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().base.unwatch(activation, name)
-    }
-
+    // Note that `hasOwnProperty` does NOT return true for child display objects.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         let obj = self.0.read();
         if obj.base.has_property(activation, name) {
@@ -428,31 +312,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         false
     }
 
-    fn has_own_property(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        // Note that `hasOwnProperty` does NOT return true for child display objects.
-        self.0.read().base.has_own_property(activation, name)
-    }
-
-    fn has_own_virtual(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().base.has_own_virtual(activation, name)
-    }
-
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().base.is_property_enumerable(activation, name)
-    }
-
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         // Keys from the underlying object are listed first, followed by
         // child display objects in order from highest depth to lowest depth.
@@ -464,54 +323,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
 
         keys
-    }
-
-    fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
-        self.0.read().base.length(activation)
-    }
-
-    fn set_length(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        length: i32,
-    ) -> Result<(), Error<'gc>> {
-        self.0.read().base.set_length(activation, length)
-    }
-
-    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        self.0.read().base.has_element(activation, index)
-    }
-
-    fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        self.0.read().base.get_element(activation, index)
-    }
-
-    fn set_element(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        index: i32,
-        value: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.0.read().base.set_element(activation, index, value)
-    }
-
-    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        self.0.read().base.delete_element(activation, index)
-    }
-
-    fn interfaces(&self) -> Vec<Object<'gc>> {
-        self.0.read().base.interfaces()
-    }
-
-    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0
-            .write(gc_context)
-            .base
-            .set_interfaces(gc_context, iface_list)
-    }
-
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.read().base
     }
 
     /// Get the underlying stage object, if it exists.

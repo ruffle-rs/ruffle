@@ -68,12 +68,8 @@ impl<'gc> ArrayObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
-    fn get_local_stored(
-        &self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Value<'gc>> {
-        self.0.read().get_local_stored(name, activation)
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        *self.0.read()
     }
 
     fn set_local(
@@ -96,32 +92,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().set_local(name, value, activation, this)
     }
 
-    fn call(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Value<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().call(name, activation, this, args)
-    }
-
-    fn getter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().getter(name, activation)
-    }
-
-    fn setter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().setter(name, activation)
-    }
-
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -130,142 +100,12 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ok(Self::empty_with_proto(activation.context.gc_context, this).into())
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().delete(activation, name)
-    }
-
-    fn add_property(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: AvmString<'gc>,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .add_property(gc_context, name, get, set, attributes)
-    }
-
-    fn add_property_with_case(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .add_property_with_case(activation, name, get, set, attributes)
-    }
-
-    fn call_watcher(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        value: &mut Value<'gc>,
-        this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.0.read().call_watcher(activation, name, value, this)
-    }
-
-    fn watch(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        callback: Object<'gc>,
-        user_data: Value<'gc>,
-    ) {
-        self.0.read().watch(activation, name, callback, user_data);
-    }
-
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().unwatch(activation, name)
-    }
-
-    fn define_value(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: impl Into<AvmString<'gc>>,
-        value: Value<'gc>,
-        attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .define_value(gc_context, name, value, attributes)
-    }
-
-    fn set_attributes(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: Option<AvmString<'gc>>,
-        set_attributes: Attribute,
-        clear_attributes: Attribute,
-    ) {
-        self.0
-            .read()
-            .set_attributes(gc_context, name, set_attributes, clear_attributes)
-    }
-
-    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        self.0.read().proto(activation)
-    }
-
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().has_property(activation, name)
-    }
-
-    fn has_own_property(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().has_own_property(activation, name)
-    }
-
-    fn has_own_virtual(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().has_own_virtual(activation, name)
-    }
-
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().is_property_enumerable(activation, name)
-    }
-
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
-        self.0.read().get_keys(activation)
-    }
-
-    fn interfaces(&self) -> Vec<Object<'gc>> {
-        self.0.read().interfaces()
-    }
-
-    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0.read().set_interfaces(gc_context, iface_list)
-    }
-
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        *self.0.read()
-    }
-
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
         Some(*self)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.read().as_ptr() as *const ObjectPtr
-    }
-
-    fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
-        self.0.read().length(activation)
     }
 
     fn set_length(
@@ -281,14 +121,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().set_length(activation, new_length)
     }
 
-    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        self.0.read().has_element(activation, index)
-    }
-
-    fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        self.0.read().get_element(activation, index)
-    }
-
     fn set_element(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -300,9 +132,5 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             self.set_length(activation, index.wrapping_add(1))?;
         }
         self.0.read().set_element(activation, index, value)
-    }
-
-    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        self.0.read().delete_element(activation, index)
     }
 }
