@@ -453,6 +453,13 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(array, activation, array::create_class(mc), script);
 
     function(activation, "", "trace", toplevel::trace, script)?;
+    function(
+        activation,
+        "__ruffle__",
+        "log_warn",
+        toplevel::log_warn,
+        script,
+    )?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
