@@ -2,12 +2,12 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct ArrayObject<'gc>(GcCell<'gc, ScriptObject<'gc>>);
+pub struct ArrayObject<'gc>(ScriptObject<'gc>);
 
 impl fmt::Debug for ArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -54,7 +54,7 @@ impl<'gc> ArrayObject<'gc> {
             length.into(),
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
-        Self(GcCell::allocate(gc_context, base))
+        Self(base)
     }
 
     fn parse_index(name: AvmString<'gc>) -> Option<i32> {
@@ -69,7 +69,11 @@ impl<'gc> ArrayObject<'gc> {
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn raw_script_object(&self) -> ScriptObject<'gc> {
-        *self.0.read()
+        self.0
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.0.as_ptr() as *const ObjectPtr
     }
 
     fn set_local(
@@ -89,7 +93,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0.read().set_local(name, value, activation, this)
+        self.0.set_local(name, value, activation, this)
     }
 
     fn create_bare_object(
@@ -104,21 +108,17 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(*self)
     }
 
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.read().as_ptr() as *const ObjectPtr
-    }
-
     fn set_length(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        if let Value::Number(old_length) = self.0.read().get_data("length".into(), activation) {
+        if let Value::Number(old_length) = self.0.get_data("length".into(), activation) {
             for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                 self.delete_element(activation, i);
             }
         }
-        self.0.read().set_length(activation, new_length)
+        self.0.set_length(activation, new_length)
     }
 
     fn set_element(
@@ -131,6 +131,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if index >= length {
             self.set_length(activation, index.wrapping_add(1))?;
         }
-        self.0.read().set_element(activation, index, value)
+        self.0.set_element(activation, index, value)
     }
 }
