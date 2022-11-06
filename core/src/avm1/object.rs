@@ -89,6 +89,9 @@ pub enum NativeObject<'gc> {
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+    /// Get the underlying raw script object.
+    fn raw_script_object(&self) -> ScriptObject<'gc>;
+
     /// Retrieve a named, non-virtual property from this object exclusively.
     ///
     /// This function should not inspect prototype chains. Instead, use
@@ -496,9 +499,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn set_native(&self, _gc_context: MutationContext<'gc, '_>, _native: NativeObject<'gc>) {}
-
-    /// Get the underlying script object, if it exists.
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
     /// Get the underlying array object, if it exists.
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {

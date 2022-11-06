@@ -295,7 +295,7 @@ pub fn create_point_object<'gc>(
         fn_proto,
         point_proto,
     );
-    let object = point.as_script_object().unwrap();
+    let object = point.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     point
 }

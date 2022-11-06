@@ -199,8 +199,8 @@ macro_rules! impl_custom_object {
                 .set_interfaces(gc_context, iface_list)
         }
 
-        fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-            Some(self.0.read().$field)
+        fn raw_script_object(&self) -> ScriptObject<'gc> {
+            self.0.read().$field
         }
 
         fn as_ptr(&self) -> *const $crate::avm1::ObjectPtr {

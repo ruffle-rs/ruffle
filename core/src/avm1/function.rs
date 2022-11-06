@@ -868,8 +868,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.set_interfaces(gc_context, iface_list)
     }
 
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        Some(self.base)
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        self.base
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {

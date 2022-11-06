@@ -510,8 +510,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .set_interfaces(gc_context, iface_list)
     }
 
-    fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
-        Some(self.0.read().base)
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        self.0.read().base
     }
 
     /// Get the underlying stage object, if it exists.

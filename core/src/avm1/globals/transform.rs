@@ -68,7 +68,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let transform_object = TransformObject::empty(gc_context, proto);
-    let object = transform_object.as_script_object().unwrap();
+    let object = transform_object.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     transform_object.into()
 }

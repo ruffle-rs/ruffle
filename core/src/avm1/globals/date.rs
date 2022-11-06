@@ -594,7 +594,7 @@ pub fn create_constructor<'gc>(
         fn_proto,
         date_proto.into(),
     );
-    let object = date_constructor.as_script_object().unwrap();
+    let object = date_constructor.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
 
     date_constructor
