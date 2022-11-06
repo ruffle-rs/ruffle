@@ -147,6 +147,10 @@ impl<'gc> ScriptObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        *self
+    }
+
     /// Get the value of a particular non-virtual property on this object.
     fn get_local_stored(
         &self,
@@ -496,10 +500,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         debug_assert!(!matches!(native, NativeObject::None));
 
         self.0.write(gc_context).native = native;
-    }
-
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        *self
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

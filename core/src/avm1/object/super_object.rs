@@ -54,6 +54,10 @@ impl<'gc> SuperObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SuperObject<'gc> {
+    fn raw_script_object(&self) -> ScriptObject<'gc> {
+        self.0.read().this.raw_script_object()
+    }
+
     fn get_local_stored(
         &self,
         _name: impl Into<AvmString<'gc>>,
@@ -126,22 +130,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
     }
 
-    fn getter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().this.getter(name, activation)
-    }
-
-    fn setter(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().this.setter(name, activation)
-    }
-
     fn create_bare_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -207,19 +195,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn call_watcher(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-        value: &mut Value<'gc>,
-        this: Object<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.0
-            .read()
-            .this
-            .call_watcher(activation, name, value, this)
-    }
-
     fn watch(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
@@ -233,34 +208,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn unwatch(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: AvmString<'gc>) -> bool {
         //`super` cannot have properties defined on it
         false
-    }
-
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
-        self.0.read().this.has_property(activation, name)
-    }
-
-    fn has_own_property(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().this.has_own_property(activation, name)
-    }
-
-    fn has_own_virtual(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().this.has_own_virtual(activation, name)
-    }
-
-    fn is_property_enumerable(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        self.0.read().this.is_property_enumerable(activation, name)
     }
 
     fn get_keys(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
@@ -307,10 +254,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn set_interfaces(&self, _gc_context: MutationContext<'gc, '_>, _iface_list: Vec<Object<'gc>>) {
         //`super` probably cannot have interfaces set on it
-    }
-
-    fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.0.read().this.raw_script_object()
     }
 
     fn as_super_object(&self) -> Option<SuperObject<'gc>> {
