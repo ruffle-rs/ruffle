@@ -741,7 +741,16 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
-    impl_display_object_container!(child);
+    fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
+        Ref::map(self.0.read(), |this| &this.child)
+    }
+
+    fn raw_container_mut(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> RefMut<'_, ChildContainer<'gc>> {
+        RefMut::map(self.0.write(gc_context), |this| &mut this.child)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
