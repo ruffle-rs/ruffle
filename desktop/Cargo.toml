@@ -6,7 +6,7 @@ edition.workspace = true
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = { version = "4.0.18", features = ["derive"] }
+clap = { version = "4.0.22", features = ["derive"] }
 cpal = "0.14.1"
 ruffle_core = { path = "../core", features = ["audio", "symphonia", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
