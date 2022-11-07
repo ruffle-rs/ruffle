@@ -13,7 +13,7 @@ wgpu-hal = "0.14.1"
 wgpu-types = "0.14.1"
 log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
-bytemuck = { version = "1.12.2", features = ["derive"] }
+bytemuck = { version = "1.12.3", features = ["derive"] }
 raw-window-handle = "0.5"
 clap = { version = "4.0.18", features = ["derive"], optional = true }
 enum-map = "2.4.1"
