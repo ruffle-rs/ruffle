@@ -718,11 +718,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
