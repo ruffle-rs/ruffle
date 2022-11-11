@@ -49,7 +49,15 @@ impl CpalAudioBackend {
                 ),
                 cpal::SampleFormat::U16 => device.build_output_stream(
                     &config,
-                    move |buffer, _| mixer.mix::<u16>(buffer),
+                    move |buffer: &mut [u16], _| {
+                        // Since I couldn't easily make `mixer` work with `u16` samples,
+                        // we fill the buffer as if it was `&[i16]`, and then rotate
+                        // the sample values to make 32768 the equilibrium.
+                        mixer.mix::<i16>(bytemuck::cast_slice_mut(buffer));
+                        for s in buffer.iter_mut() {
+                            *s = (*s).wrapping_add(32768);
+                        }
+                    },
                     error_handler,
                 ),
             }?
