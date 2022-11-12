@@ -8,7 +8,7 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext}; 
+use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::read::Reader;
 use swf::{DoAbc, DoAbcFlag};
 
