@@ -938,13 +938,19 @@ impl<'gc> Loader<'gc> {
                         );
 
                         // Fire the onData method with the loaded string.
-                        let string_data = AvmString::new_utf8(
-                            activation.context.gc_context,
-                            UTF_8.decode(&response.body).0,
-                        );
+                        // If the loaded data is an empty string, the load is considered unsuccessful.
+                        let value_data = if response.body.is_empty() {
+                            Value::Undefined
+                        } else {
+                            AvmString::new_utf8(
+                                activation.context.gc_context,
+                                UTF_8.decode(&response.body).0,
+                            )
+                            .into()
+                        };
                         let _ = that.call_method(
                             "onData".into(),
-                            &[string_data.into()],
+                            &[value_data],
                             &mut activation,
                             ExecutionReason::Special,
                         );
