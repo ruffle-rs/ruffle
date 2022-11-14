@@ -9,7 +9,7 @@ futures = "0.3.25"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug"] }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_input_format = { path = "input-format" }
-image = "0.24.4"
+image = "0.24.5"
 regex = "1.7.0"
 
 [features]
