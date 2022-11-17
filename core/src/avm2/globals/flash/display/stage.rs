@@ -11,7 +11,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::display_object::{StageDisplayState, TDisplayObject};
+use crate::display_object::{StageDisplayState, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
 use swf::Color;
@@ -723,6 +723,44 @@ pub fn stage3ds<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Stage.invalidate`
+pub fn invalidate<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let o_dobj = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+        .and_then(|this| this.as_container());
+
+    if o_dobj.is_none() {
+        return Ok(false.into());
+    }
+
+    for item in o_dobj
+        .unwrap()
+        .raw_container_mut(activation.context.gc_context)
+        .iter_render_list()
+    {
+        match item {
+            crate::display_object::DisplayObject::Stage(_) => (),
+            crate::display_object::DisplayObject::Bitmap(opt) => unsafe {
+                opt.bitmap_data().borrow_mut().set_cpu_dirty(true);
+            },
+            opt => {
+                opt.as_drawing(activation.context.gc_context)
+                    .map(|mut ref_draw| {
+                        ref_draw.set_dirty(true);
+                        true
+                    });
+            }
+        }
+    }
+
+    Ok(true.into())
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -834,6 +872,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("stage3Ds", Some(stage3ds), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("invalidate", invalidate)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

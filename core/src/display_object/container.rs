@@ -774,7 +774,7 @@ impl<'gc> ChildContainer<'gc> {
     }
 
     /// Yield children in the order they are rendered.
-    fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
+    pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
         self.render_list.iter().copied()
     }
 }
