@@ -930,6 +930,14 @@ impl<'gc> Loader<'gc> {
 
                 match data {
                     Ok(response) => {
+                        let length = response.body.len();
+
+                        // Set the properties used by the getBytesTotal and getBytesLoaded methods.
+                        that.set("_bytesTotal", length.into(), &mut activation)?;
+                        if length > 0 {
+                            that.set("_bytesLoaded", length.into(), &mut activation)?;
+                        }
+
                         let _ = that.call_method(
                             "onHTTPStatus".into(),
                             &[200.into()],
@@ -939,7 +947,7 @@ impl<'gc> Loader<'gc> {
 
                         // Fire the onData method with the loaded string.
                         // If the loaded data is an empty string, the load is considered unsuccessful.
-                        let value_data = if response.body.is_empty() {
+                        let value_data = if length == 0 {
                             Value::Undefined
                         } else {
                             AvmString::new_utf8(
