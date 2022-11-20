@@ -46,23 +46,15 @@ You must also have Java installed, and available on your PATH as `java`.
 If you are building for a Linux platform, the following are typical dependencies:
 #### Ubuntu
 
-* Java (openJDK 11 will suffice)
+* libasound2-dev
+* libxcb-shape0-dev
+* libxcb-xfixes0-dev
 * libgtk-3-dev
 * libssl-dev
-* libasound2-dev
-* \*gobject\*
-* libxcb\*
-* cmake
-* g++
-
-#### Fedora
-
-* java-latest-openjdk
-* gtk3-devel
-* openssl1.1-devel
-* alsa-lib-devel
-* \*gobject\*
-* libxcb-devel
+* libxcb-xinput-dev
+* libxcb-xkb-dev
+* libxcb-cursor-dev
+* default-jre-headless
 * cmake
 * g++
 

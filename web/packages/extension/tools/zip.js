@@ -1,11 +1,12 @@
-const fs = require("fs");
-const path = require("path");
-const archiver = require("archiver");
+import fs from "fs/promises";
+import path from "path";
+import url from "url";
+import archiver from "archiver";
 
 async function zip(source, destination) {
-    fs.mkdirSync(path.dirname(destination), { recursive: true });
-    const output = fs.createWriteStream(destination);
-    const archive = archiver("zip", {});
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    const output = (await fs.open(destination, "w")).createWriteStream();
+    const archive = archiver("zip");
 
     output.on("close", () => {
         console.log(
@@ -13,15 +14,15 @@ async function zip(source, destination) {
         );
     });
 
-    archive.on("error", (err) => {
-        throw err;
+    archive.on("error", (error) => {
+        throw error;
     });
 
-    archive.on("warning", (err) => {
-        if (err.code === "ENOENT") {
-            console.warn(`Warning whilst zipping extension: ${err}`);
+    archive.on("warning", (error) => {
+        if (error.code === "ENOENT") {
+            console.warn(`Warning whilst zipping extension: ${error}`);
         } else {
-            throw err;
+            throw error;
         }
     });
 
@@ -32,6 +33,5 @@ async function zip(source, destination) {
     await archive.finalize();
 }
 
-(async () => {
-    await zip(path.resolve(__dirname, "../assets/"), process.argv[2]);
-})();
+const assets = url.fileURLToPath(new URL("../assets/", import.meta.url));
+await zip(assets, process.argv[2]);

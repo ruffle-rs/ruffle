@@ -178,7 +178,7 @@ impl<'a> VariableDumper<'a> {
         for key in keys.into_iter() {
             self.output.push_str(name);
             self.output.push('.');
-            let _ = write!(self.output, "{}", key);
+            let _ = write!(self.output, "{key}");
             self.output.push_str(" = ");
             self.print_property(object, key, activation);
             self.output.push('\n');

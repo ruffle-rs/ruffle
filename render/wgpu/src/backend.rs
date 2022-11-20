@@ -399,7 +399,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             )
             .is_some()
         {
-            panic!("Overwrote existing bitmap {:?}", handle);
+            panic!("Overwrote existing bitmap {handle:?}");
         }
 
         Ok(handle)
@@ -586,7 +586,7 @@ async fn request_device(
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::DEPTH32FLOAT_STENCIL8,
+                features: wgpu::Features::DEPTH24PLUS_STENCIL8,
                 limits,
             },
             trace_path,

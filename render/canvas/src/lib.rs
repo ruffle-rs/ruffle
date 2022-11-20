@@ -67,7 +67,7 @@ impl CanvasColor {
         let g = (*g as f32 * cxform.g_mult.to_f32() + (cxform.g_add as f32)) as u8;
         let b = (*b as f32 * cxform.b_mult.to_f32() + (cxform.b_add as f32)) as u8;
         let a = (*a as f32 * cxform.a_mult.to_f32() + (cxform.a_add as f32)) as u8;
-        let colstring = format!("rgba({},{},{},{})", r, g, b, f32::from(a) / 255.0);
+        let colstring = format!("rgba({r},{g},{b},{})", f32::from(a) / 255.0);
         Self(colstring, r, g, b, a)
     }
 }
@@ -819,16 +819,6 @@ fn swf_shape_to_canvas_commands(
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
     // rendering altogether.
-    let (_width, _height) = (
-        f32::max(
-            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32,
-            1.0,
-        ),
-        f32::max(
-            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32,
-            1.0,
-        ),
-    );
 
     let mut canvas_data = ShapeData(vec![]);
 

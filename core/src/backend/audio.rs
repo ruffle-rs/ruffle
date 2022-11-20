@@ -125,6 +125,9 @@ pub trait AudioBackend: Downcast {
 
     /// Sets the master volume of the audio backend.
     fn set_volume(&mut self, volume: f32);
+
+    /// Returns the last whole window of output samples.
+    fn get_sample_history(&self) -> [[f32; 2]; 1024];
 }
 
 impl_downcast!(AudioBackend);
@@ -244,6 +247,10 @@ impl AudioBackend for NullAudioBackend {
     fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
     }
+
+    fn get_sample_history(&self) -> [[f32; 2]; 1024] {
+        [[0.0f32; 2]; 1024]
+    }
 }
 
 impl Default for NullAudioBackend {
@@ -324,7 +331,7 @@ impl<'gc> AudioManager<'gc> {
                     object.set_position(gc_context, duration.round() as u32);
 
                     // Fire soundComplete event.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Method {
                             object: object.into(),
@@ -340,7 +347,7 @@ impl<'gc> AudioManager<'gc> {
 
                     //TODO: AVM2 events are usually not queued, but we can't
                     //hold the update context in the audio manager yet.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Event2 {
                             event_type: "soundComplete",

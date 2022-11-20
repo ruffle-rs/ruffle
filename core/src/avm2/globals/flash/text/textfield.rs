@@ -624,7 +624,7 @@ pub fn set_type<'gc>(
         } else if &is_editable == b"dynamic" {
             this.set_editable(false, &mut activation.context);
         } else {
-            return Err(format!("Invalid TextField.type: {}", is_editable).into());
+            return Err(format!("Invalid TextField.type: {is_editable}").into());
         }
     }
 

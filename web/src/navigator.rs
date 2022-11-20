@@ -186,7 +186,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let request = WebRequest::new_with_str_and_init(&url, &init)
-                .map_err(|_| Error::FetchError(format!("Unable to create request for {}", url)))?;
+                .map_err(|_| Error::FetchError(format!("Unable to create request for {url}")))?;
 
             let window = web_sys::window().expect("window()");
             let fetchval = JsFuture::from(window.fetch_with_request(&request))

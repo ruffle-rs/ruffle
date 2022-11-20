@@ -53,6 +53,7 @@ pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
 pub use crate::avm2::domain::Domain;
 pub use crate::avm2::error::Error;
+pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{

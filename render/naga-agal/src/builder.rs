@@ -380,7 +380,7 @@ impl<'a> NagaBuilder<'a> {
                     // and return them at the end of the function.
                     let local = self.func.local_variables.append(
                         LocalVariable {
-                            name: Some(format!("varying_{}", index)),
+                            name: Some(format!("varying_{index}")),
                             ty: self.vec4f,
                             init: None,
                         },
@@ -398,7 +398,7 @@ impl<'a> NagaBuilder<'a> {
 
                     if let TypeInner::Struct { members, .. } = &mut self.return_type.inner {
                         members.push(StructMember {
-                            name: Some(format!("varying_{}", index)),
+                            name: Some(format!("varying_{index}")),
                             ty: self.vec4f,
                             binding: Some(Binding::Location {
                                 location: index as u32,

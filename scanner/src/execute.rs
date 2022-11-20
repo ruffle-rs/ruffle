@@ -79,7 +79,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     let data = match std::fs::read(&file_path) {
         Ok(data) => data,
         Err(e) => {
-            file_result.error = Some(format!("File error: {}", e));
+            file_result.error = Some(format!("File error: {e}"));
             checkpoint(&mut file_result, &start, &mut writer)?;
 
             return Ok(());
@@ -112,14 +112,13 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
-                let stage_size = swf.header.stage_size();
-                let stage_width = (stage_size.x_max - stage_size.x_min).to_pixels();
-                let stage_height = (stage_size.y_max - stage_size.y_min).to_pixels();
+                let stage_width = swf.header.stage_size().width().to_pixels();
+                let stage_height = swf.header.stage_size().height().to_pixels();
 
                 file_result.uncompressed_len = Some(swf.header.uncompressed_len());
                 file_result.compression = Some(swf.header.compression().into());
                 file_result.version = Some(swf.header.version());
-                file_result.stage_size = Some(format!("{}x{}", stage_width, stage_height));
+                file_result.stage_size = Some(format!("{stage_width}x{stage_height}"));
                 file_result.frame_rate = Some(swf.header.frame_rate().into());
                 file_result.num_frames = Some(swf.header.num_frames());
                 file_result.use_direct_blit = Some(swf.header.use_direct_blit());
@@ -131,13 +130,13 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
                 });
             }
             Err(e) => {
-                file_result.error = Some(format!("Parse error: {}", e));
+                file_result.error = Some(format!("Parse error: {e}"));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
         },
         Err(e) => match e.downcast::<String>() {
             Ok(e) => {
-                file_result.error = Some(format!("PANIC: {}", e));
+                file_result.error = Some(format!("PANIC: {e}"));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
             Err(_) => {
@@ -154,7 +153,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     if let Err(e) = catch_unwind(|| execute_swf(&file_path)) {
         match e.downcast::<String>() {
             Ok(e) => {
-                file_result.error = Some(format!("PANIC: {}", e));
+                file_result.error = Some(format!("PANIC: {e}"));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
             Err(_) => {

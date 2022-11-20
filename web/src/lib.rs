@@ -186,7 +186,7 @@ impl Ruffle {
     pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
         wasm_bindgen_futures::future_to_promise(async move {
             let config: Config = serde_wasm_bindgen::from_value(config)
-                .map_err(|e| format!("Error parsing config: {}", e))?;
+                .map_err(|e| format!("Error parsing config: {e}"))?;
 
             if RUFFLE_GLOBAL_PANIC.is_completed() {
                 // If an actual panic happened, then we can't trust the state it left us in.
@@ -224,7 +224,7 @@ impl Ruffle {
     /// This method should only be called once per player.
     pub fn load_data(&mut self, swf_data: Uint8Array, parameters: JsValue) -> Result<(), JsValue> {
         let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
-            .map_err(|e| format!("Error loading movie: {}", e))?;
+            .map_err(|e| format!("Error loading movie: {e}"))?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
@@ -996,15 +996,13 @@ impl Ruffle {
 
     fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
-            let width = swf_header.stage_size().x_max - swf_header.stage_size().x_min;
-            let height = swf_header.stage_size().y_max - swf_header.stage_size().y_min;
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
                 .background_color()
                 .map(|color| format!("#{:06X}", color.to_rgb()));
             let metadata = MovieMetadata {
-                width: width.to_pixels(),
-                height: height.to_pixels(),
+                width: swf_header.stage_size().width().to_pixels(),
+                height: swf_header.stage_size().height().to_pixels(),
                 frame_rate: swf_header.frame_rate().to_f32(),
                 num_frames: swf_header.num_frames(),
                 uncompressed_len: swf_header.uncompressed_len(),

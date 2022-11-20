@@ -246,7 +246,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.resolve_definition(name)?
             .and_then(|maybe| maybe.as_object())
             .and_then(|o| o.as_class_object())
-            .ok_or_else(|| format!("Attempted to resolve nonexistent type {:?}", name).into())
+            .ok_or_else(|| format!("Attempted to resolve nonexistent type {name:?}").into())
     }
 
     /// Resolve a type name to a class.
@@ -312,8 +312,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(Value::Undefined);
         } else {
             return Err(format!(
-                "Param {} (index {}) was missing when calling {}",
-                param_config.param_name, index, method_name
+                "Param {} (index {index}) was missing when calling {method_name}",
+                param_config.param_name
             )
             .into());
         };
@@ -564,7 +564,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.local_registers
             .get(id)
             .cloned()
-            .ok_or_else(|| format!("Out of bounds register read: {}", id).into())
+            .ok_or_else(|| format!("Out of bounds register read: {id}").into())
     }
 
     /// Set a local register.
@@ -580,7 +580,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             Ok(())
         } else {
-            Err(format!("Out of bounds register write: {}", id).into())
+            Err(format!("Out of bounds register write: {id}").into())
         }
     }
 

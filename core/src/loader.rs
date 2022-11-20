@@ -697,7 +697,15 @@ impl<'gc> Loader<'gc> {
                 error
             })?;
 
-            let mut movie = SwfMovie::from_data(&response.body, Some(response.url), None)?;
+            // The spoofed root movie URL takes precedence over the actual URL.
+            let url = player
+                .lock()
+                .unwrap()
+                .spoofed_url()
+                .map(|u| u.to_string())
+                .unwrap_or(response.url);
+
+            let mut movie = SwfMovie::from_data(&response.body, Some(url), None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().set_root_movie(movie);
@@ -868,7 +876,7 @@ impl<'gc> Loader<'gc> {
                 // Fire the onData method and event.
                 if let Some(display_object) = that.as_display_object() {
                     if let Some(movie_clip) = display_object.as_movie_clip() {
-                        activation.context.action_queue.queue_actions(
+                        activation.context.action_queue.queue_action(
                             movie_clip.into(),
                             ActionType::Method {
                                 object: that,
@@ -930,13 +938,19 @@ impl<'gc> Loader<'gc> {
                         );
 
                         // Fire the onData method with the loaded string.
-                        let string_data = AvmString::new_utf8(
-                            activation.context.gc_context,
-                            UTF_8.decode(&response.body).0,
-                        );
+                        // If the loaded data is an empty string, the load is considered unsuccessful.
+                        let value_data = if response.body.is_empty() {
+                            Value::Undefined
+                        } else {
+                            AvmString::new_utf8(
+                                activation.context.gc_context,
+                                UTF_8.decode(&response.body).0,
+                            )
+                            .into()
+                        };
                         let _ = that.call_method(
                             "onData".into(),
-                            &[string_data.into()],
+                            &[value_data],
                             &mut activation,
                             ExecutionReason::Special,
                         );
@@ -1638,7 +1652,7 @@ impl<'gc> Loader<'gc> {
             LoaderStatus::Succeeded => {
                 // AVM2 is handled separately
                 if let Some(MovieLoaderEventHandler::Avm1Broadcast(broadcaster)) = event_handler {
-                    queue.queue_actions(
+                    queue.queue_action(
                         clip,
                         ActionType::Method {
                             object: broadcaster,

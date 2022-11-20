@@ -243,7 +243,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     } else {
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
-            path.push(format!("{}.png", frame));
+            path.push(format!("{frame}.png"));
             image.save(&path)?;
         }
     }
@@ -266,7 +266,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     if let Some(progress) = progress {
         progress.finish_with_message(message);
     } else {
-        println!("{}", message);
+        println!("{message}");
     }
 
     Ok(())
@@ -331,7 +331,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 let _ = create_dir_all(&parent);
                 for (frame, image) in frames.iter().enumerate() {
                     let mut destination = parent.clone();
-                    destination.push(format!("{}.png", frame));
+                    destination.push(format!("{frame}.png"));
                     image.save(&destination)?;
                 }
             }
@@ -358,7 +358,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     if let Some(progress) = progress {
         progress.finish_with_message(message);
     } else {
-        println!("{}", message);
+        println!("{message}");
     }
 
     Ok(())

@@ -103,6 +103,10 @@ struct Opt {
 
     #[clap(long, default_value = "streaming")]
     load_behavior: LoadBehavior,
+
+    /// Spoofs the root SWF URL provided to ActionScript.
+    #[clap(long, value_parser)]
+    spoof_url: Option<Url>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -164,7 +168,7 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
         let client = builder.build().context("Couldn't create HTTP client")?;
         let response = client
             .get(url.to_string())
-            .with_context(|| format!("Couldn't load URL {}", url))?;
+            .with_context(|| format!("Couldn't load URL {url}"))?;
         let mut buffer: Vec<u8> = Vec::new();
         response
             .into_body()
@@ -214,7 +218,7 @@ impl App {
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| movie_url.as_str());
 
-            format!("Ruffle - {}", filename)
+            format!("Ruffle - {filename}")
         } else {
             "Ruffle".into()
         };
@@ -271,7 +275,8 @@ impl App {
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_fullscreen(opt.fullscreen)
-            .with_load_behavior(opt.load_behavior);
+            .with_load_behavior(opt.load_behavior)
+            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()));
 
         let player = builder.build();
 
@@ -495,13 +500,8 @@ impl App {
                         .expect("active executor reference")
                         .poll_all(),
                     winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                        // TODO: Re-use `SwfMovie::width` and `SwfMovie::height`.
-                        let movie_width = (swf_header.stage_size().x_max
-                            - swf_header.stage_size().x_min)
-                            .to_pixels();
-                        let movie_height = (swf_header.stage_size().y_max
-                            - swf_header.stage_size().y_min)
-                            .to_pixels();
+                        let movie_width = swf_header.stage_size().width().to_pixels();
+                        let movie_height = swf_header.stage_size().height().to_pixels();
 
                         let window_size: Size = match (self.opt.width, self.opt.height) {
                             (None, None) => LogicalSize::new(movie_width, movie_height).into(),
@@ -819,7 +819,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
     let end = Instant::now();
     let duration = end.duration_since(start);
 
-    println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
+    println!("Ran {num_frames} frames in {}s.", duration.as_secs_f32());
 
     Ok(())
 }
@@ -846,7 +846,7 @@ fn init() {
 fn panic_hook() {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
-            callstack.avm2(|callstack| println!("AVM2 stack trace: {}", callstack))
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
         }
     });
 }

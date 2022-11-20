@@ -176,11 +176,11 @@ fn resolve_class_private<'gc>(
             txunit
                 .get_loaded_private_trait_script(name)
                 .ok_or_else(|| {
-                    Error::from(format!("Could not find script for class trait {:?}", name))
+                    Error::from(format!("Could not find script for class trait {name:?}"))
                 })?
                 .globals(&mut activation.context)?
         } else {
-            return Err(format!("Missing script and translation unit for class {:?}", name).into());
+            return Err(format!("Missing script and translation unit for class {name:?}").into());
         };
 
         Ok(globals

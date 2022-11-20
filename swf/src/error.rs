@@ -78,7 +78,7 @@ impl fmt::Display for Error {
             Self::Avm1ParseError { opcode, source } => {
                 write!(f, "Error parsing AVM1 action {}", OpCode::format(*opcode))?;
                 if let Some(source) = source {
-                    write!(f, ": {}", source)?;
+                    write!(f, ": {source}")?;
                 }
                 Ok(())
             }
@@ -91,8 +91,8 @@ impl fmt::Display for Error {
                 )
             }
             Self::IoError(e) => e.fmt(f),
-            Self::InvalidData(message) => write!(f, "Invalid data: {}", message),
-            Self::Unsupported(message) => write!(f, "Unsupported data: {}", message),
+            Self::InvalidData(message) => write!(f, "Invalid data: {message}"),
+            Self::Unsupported(message) => write!(f, "Unsupported data: {message}"),
         }
     }
 }

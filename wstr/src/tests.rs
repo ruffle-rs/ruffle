@@ -28,7 +28,7 @@ fn roundtrip() {
             _ => false,
         };
 
-        assert!(eq, "expected {:?}, got {:?}", units, conv);
+        assert!(eq, "expected {units:?}, got {conv:?}");
     }
 
     test(b"");
@@ -76,15 +76,15 @@ fn fmt() {
     let c = bstr!(b"\t\n\x03");
     let d = wstr!(0x202d 0x202e);
 
-    assert_eq!(format!("{}", a), "Hello world!");
-    assert_eq!(format!("{}", b), "Hello world!");
-    assert_eq!(format!("{}", c), "\t\n\x03");
-    assert_eq!(format!("{}", d), "\u{202d}\u{202e}");
+    assert_eq!(format!("{a}"), "Hello world!");
+    assert_eq!(format!("{b}"), "Hello world!");
+    assert_eq!(format!("{c}"), "\t\n\x03");
+    assert_eq!(format!("{d}"), "\u{202d}\u{202e}");
 
-    assert_eq!(format!("{:?}", a), "\"Hello world!\"");
-    assert_eq!(format!("{:?}", b), "\"Hello world!\"");
-    assert_eq!(format!("{:?}", c), "\"\\t\\n\\u{3}\"");
-    assert_eq!(format!("{:?}", d), "\"\\u{202d}\\u{202e}\"");
+    assert_eq!(format!("{a:?}"), "\"Hello world!\"");
+    assert_eq!(format!("{b:?}"), "\"Hello world!\"");
+    assert_eq!(format!("{c:?}"), "\"\\t\\n\\u{3}\"");
+    assert_eq!(format!("{d:?}"), "\"\\u{202d}\\u{202e}\"");
 }
 
 #[test]

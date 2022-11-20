@@ -18,7 +18,9 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
+use crate::context_menu::{
+    BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
+};
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
     StageScaleMode, TInteractiveObject, WindowMode,
@@ -281,6 +283,10 @@ pub struct Player {
 
     /// How Ruffle should load movies.
     load_behavior: LoadBehavior,
+
+    /// The root SWF URL provided to ActionScript. If None,
+    /// the actual loaded url will be used
+    spoofed_url: Option<String>,
 }
 
 impl Player {
@@ -552,38 +558,50 @@ impl Player {
                 return vec![];
             }
 
-            let mut activation = Activation::from_stub(
-                context.reborrow(),
-                ActivationIdentifier::root("[ContextMenu]"),
-            );
-
             // TODO: This should use a pointed display object with `.menu`
-            let menu_object = {
-                let dobj = activation.context.stage.root_clip();
-                if let Value::Object(obj) = dobj.object() {
-                    if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
-                        Some(menu)
-                    } else {
-                        None
+            let root_dobj = context.stage.root_clip();
+
+            let menu = if let Value::Object(obj) = root_dobj.object() {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[ContextMenu]"),
+                );
+                let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
+                {
+                    if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
+                        Self::run_context_menu_custom_callback(
+                            menu,
+                            on_select,
+                            &mut activation.context,
+                        );
                     }
+                    Some(menu)
                 } else {
                     None
-                }
+                };
+                crate::avm1::make_context_menu_state(menu_object, &mut activation)
+            } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
+                // TODO: send "menuSelect" event
+                log::warn!("AVM2 Context menu callbacks are not implemented");
+
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                let menu_object = root_dobj
+                    .as_interactive()
+                    .map(|iobj| iobj.context_menu())
+                    .and_then(|v| v.as_object());
+
+                crate::avm2::make_context_menu_state(menu_object, &mut activation)
+            } else {
+                // no AVM1 or AVM2 object - so just prepare the builtin items
+                let mut menu = ContextMenuState::new();
+                let builtin_items = BuiltInItemFlags::for_stage(context.stage);
+                menu.build_builtin_items(builtin_items, context.stage);
+                menu
             };
 
-            if let Some(menu) = menu_object {
-                if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
-                    Self::run_context_menu_custom_callback(
-                        menu,
-                        on_select,
-                        &mut activation.context,
-                    );
-                }
-            }
-
-            let menu = crate::avm1::make_context_menu_state(menu_object, &mut activation);
             let ret = menu.info().clone();
-            *activation.context.current_context_menu = Some(menu);
+            *context.current_context_menu = Some(menu);
             ret
         })
     }
@@ -607,6 +625,9 @@ impl Player {
                     ContextMenuCallback::Forward => Self::forward_root_movie(context),
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
+                    ContextMenuCallback::Avm2 { .. } => {
+                        // TODO: Send menuItemSelect event
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
@@ -831,8 +852,8 @@ impl Player {
                             let level = display_object.depth();
                             let object = display_object.object().coerce_to_object(&mut activation);
                             dumper.print_variables(
-                                &format!("Level #{}:", level),
-                                &format!("_level{}", level),
+                                &format!("Level #{level}:"),
+                                &format!("_level{level}"),
                                 &object,
                                 &mut activation,
                             );
@@ -849,14 +870,12 @@ impl Player {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
-                                "AVM Debugging turned off! Press CTRL+ALT+D to turn off again."
+                                "AVM Debugging turned off! Press CTRL+ALT+D to turn on again."
                             );
                             context.avm1.set_show_debug_output(false);
                             context.avm2.set_show_debug_output(false);
                         } else {
-                            log::info!(
-                                "AVM Debugging turned on! Press CTRL+ALT+D to turn on again."
-                            );
+                            log::info!("AVM Debugging turned on! Press CTRL+ALT+D to turn off.");
                             context.avm1.set_show_debug_output(true);
                             context.avm2.set_show_debug_output(true);
                         }
@@ -1017,7 +1036,7 @@ impl Player {
 
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
-                context.action_queue.queue_actions(
+                context.action_queue.queue_action(
                     context.stage.root_clip(),
                     ActionType::NotifyListeners {
                         listener: listener_type,
@@ -1512,16 +1531,16 @@ impl Player {
 
     pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
-        while let Some(actions) = context.action_queue.pop_action() {
+        while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
-            if !actions.is_unload && actions.clip.removed() {
+            if !action.is_unload && action.clip.removed() {
                 continue;
             }
 
-            match actions.action_type {
+            match action.action_type {
                 // DoAction/clip event code.
                 ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(actions.clip, "[Frame]", bytecode, context);
+                    Avm1::run_stack_frame_for_action(action.clip, "[Frame]", bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
@@ -1534,10 +1553,10 @@ impl Player {
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
                         globals,
-                        actions.clip,
+                        action.clip,
                     );
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {
-                        if let Value::Object(object) = actions.clip.object() {
+                        if let Value::Object(object) = action.clip.object() {
                             object.define_value(
                                 activation.context.gc_context,
                                 "__proto__",
@@ -1547,7 +1566,7 @@ impl Player {
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",
-                                    actions.clip,
+                                    action.clip,
                                     event,
                                 );
                             }
@@ -1563,7 +1582,7 @@ impl Player {
                 } => {
                     for event in events {
                         Avm1::run_stack_frame_for_action(
-                            actions.clip,
+                            action.clip,
                             "[Construct]",
                             event,
                             context,
@@ -1573,7 +1592,7 @@ impl Player {
                 // Event handler method call (e.g. onEnterFrame).
                 ActionType::Method { object, name, args } => {
                     Avm1::run_stack_frame_for_method(
-                        actions.clip,
+                        action.clip,
                         object,
                         context,
                         name.into(),
@@ -1590,7 +1609,7 @@ impl Player {
                     // A native function ends up resolving immediately,
                     // so this doesn't require any further execution.
                     Avm1::notify_system_listeners(
-                        actions.clip,
+                        action.clip,
                         context,
                         listener.into(),
                         method.into(),
@@ -1826,6 +1845,10 @@ impl Player {
         })
     }
 
+    pub fn spoofed_url(&self) -> Option<&str> {
+        self.spoofed_url.as_deref()
+    }
+
     pub fn log_backend(&self) -> &Log {
         &self.log
     }
@@ -1868,6 +1891,7 @@ pub struct PlayerBuilder {
     viewport_scale_factor: f64,
     warn_on_unsupported_content: bool,
     load_behavior: LoadBehavior,
+    spoofed_url: Option<String>,
 }
 
 impl PlayerBuilder {
@@ -1902,6 +1926,7 @@ impl PlayerBuilder {
             viewport_scale_factor: 1.0,
             warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
+            spoofed_url: None,
         }
     }
 
@@ -2015,6 +2040,12 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets the root SWF URL provided to ActionScript.
+    pub fn with_spoofed_url(mut self, url: Option<String>) -> Self {
+        self.spoofed_url = url;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2091,6 +2122,7 @@ impl PlayerBuilder {
                 warn_on_unsupported_content: self.warn_on_unsupported_content,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
+                spoofed_url: self.spoofed_url.clone(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
@@ -2147,7 +2179,10 @@ impl PlayerBuilder {
             height: self.viewport_height,
             scale_factor: self.viewport_scale_factor,
         });
-        if let Some(movie) = self.movie {
+        if let Some(mut movie) = self.movie {
+            if let Some(url) = self.spoofed_url.clone() {
+                movie.set_url(Some(url));
+            }
             player_lock.set_root_movie(movie);
         }
         drop(player_lock);

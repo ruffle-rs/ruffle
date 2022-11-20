@@ -543,7 +543,7 @@ impl<'gc> Value<'gc> {
             Value::Object(ns) => ns
                 .as_namespace()
                 .ok_or_else(|| "Expected Namespace, found Object".into()),
-            _ => Err(format!("Expected Namespace, found {:?}", self).into()),
+            _ => Err(format!("Expected Namespace, found {self:?}").into()),
         }
     }
 
@@ -562,11 +562,11 @@ impl<'gc> Value<'gc> {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num),
                 Value::Integer(num) => Ok(num as f64),
-                _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+                _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
             },
             Value::Number(num) => Ok(*num),
             Value::Integer(num) => Ok(*num as f64),
-            _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+            _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
         }
     }
 
@@ -817,7 +817,7 @@ impl<'gc> Value<'gc> {
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::String(s) => {
-                AvmString::new_utf8(activation.context.gc_context, format!("\"{}\"", s))
+                AvmString::new_utf8(activation.context.gc_context, format!("\"{s}\""))
             }
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
@@ -986,7 +986,7 @@ impl<'gc> Value<'gc> {
 
         let name = class.inner_class_definition().read().name();
 
-        Err(format!("Cannot coerce {:?} to an {:?}", self, name).into())
+        Err(format!("Cannot coerce {self:?} to an {name:?}").into())
     }
 
     /// Determine if this value is any kind of number.

@@ -14,7 +14,14 @@ bitflags! {
         const DONT_ENUM     = 1 << 0;
         const DONT_DELETE   = 1 << 1;
         const READ_ONLY     = 1 << 2;
+
         const VERSION_MASK  = 0x1FFF << 3;
+        const VERSION_5     = 0b0000_0000_0000_0000;
+        const VERSION_6     = 0b0000_0000_1000_0000;
+        const VERSION_7     = 0b0000_0101_0000_0000;
+        const VERSION_8     = 0b0001_0000_0000_0000;
+        const VERSION_9     = 0b0010_0000_0000_0000;
+        const VERSION_10    = 0b0100_0000_0000_0000;
     }
 }
 

@@ -655,7 +655,7 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
                     buf.truncate(1);
                 }
             }
-            let _ = write!(&mut buf, "e{:+}", exp);
+            let _ = write!(&mut buf, "e{exp:+}");
         }
 
         // One final band-aid to eliminate any leading zeros.

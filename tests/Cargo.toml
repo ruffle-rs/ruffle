@@ -5,12 +5,12 @@ authors = ["Aaron Hill <aa1ronham@gmail.com>"]
 edition.workspace = true
 
 [dependencies]
-futures = "0.3.24"
+futures = "0.3.25"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug"] }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_input_format = { path = "input-format" }
-image = "0.24.4"
-regex = "1.6.0"
+image = "0.24.5"
+regex = "1.7.0"
 
 [features]
 # Enable running image comparison tests. This is off by default,
@@ -21,4 +21,4 @@ imgtests = ["ruffle_render_wgpu"]
 [dev-dependencies]
 approx = "0.5.0"
 pretty_assertions = "1.3.0"
-env_logger = "0.9.1"
+env_logger = "0.9.3"

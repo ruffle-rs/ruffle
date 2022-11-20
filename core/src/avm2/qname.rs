@@ -180,8 +180,8 @@ impl<'gc> QName<'gc> {
 impl<'gc> Debug for QName<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.to_qualified_name_no_mc() {
-            Either::Left(name) => write!(f, "{}", name),
-            Either::Right(name) => write!(f, "{}", name),
+            Either::Left(name) => write!(f, "{name}"),
+            Either::Right(name) => write!(f, "{name}"),
         }
     }
 }

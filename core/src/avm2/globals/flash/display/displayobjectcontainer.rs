@@ -407,7 +407,7 @@ pub fn remove_children<'gc>(
             }
 
             if from > to {
-                return Err(format!("RangeError: Range {} to {} is invalid", from, to).into());
+                return Err(format!("RangeError: Range {from} to {to} is invalid").into());
             }
 
             ctr.remove_range(
@@ -475,11 +475,11 @@ pub fn swap_children_at<'gc>(
             let bounds = ctr.num_children();
 
             if index0 < 0 || index0 as usize >= bounds {
-                return Err(format!("RangeError: Index {} is out of bounds", index0).into());
+                return Err(format!("RangeError: Index {index0} is out of bounds").into());
             }
 
             if index1 < 0 || index1 as usize >= bounds {
-                return Err(format!("RangeError: Index {} is out of bounds", index1).into());
+                return Err(format!("RangeError: Index {index1} is out of bounds").into());
             }
 
             let child0 = ctr.child_by_index(index0 as usize).unwrap();

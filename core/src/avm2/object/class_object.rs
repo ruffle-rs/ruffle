@@ -317,7 +317,7 @@ impl<'gc> ClassObject<'gc> {
             let interface = scope.resolve(&interface_name, activation)?;
 
             if interface.is_none() {
-                return Err(format!("Could not resolve interface {:?}", interface_name).into());
+                return Err(format!("Could not resolve interface {interface_name:?}").into());
             }
 
             let iface_class = interface
