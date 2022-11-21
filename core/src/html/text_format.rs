@@ -856,6 +856,15 @@ impl FormatSpans {
         self.spans.get(index)
     }
 
+    /// Retrieve the last text span.
+    ///
+    /// Text span indices are ephemeral and can change arbitrarily any time the
+    /// `FormatSpans` are mutated. You should not use this method directly; the
+    /// `iter_spans` method will yield the string and span data directly.
+    pub fn last_span(&self) -> Option<&TextSpan> {
+        self.spans.last()
+    }
+
     /// Find the index of the span that covers a given search position.
     ///
     /// This function returns both the index of the span which covers the
