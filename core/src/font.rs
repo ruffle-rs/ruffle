@@ -5,6 +5,7 @@ use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefCell};
+use std::cmp::max;
 
 pub use swf::TextGridFit;
 
@@ -88,7 +89,6 @@ struct FontData {
 
     /// The distance from the baseline of the font to the bottom of each glyph,
     /// in EM-square coordinates.
-    #[allow(dead_code)]
     descent: u16,
 
     /// The distance between the bottom of any one glyph and the top of
@@ -227,6 +227,13 @@ impl<'gc> Font<'gc> {
         Twips::new((self.0.ascent as f32 * scale) as i32)
     }
 
+    /// Get the descent from the baseline to the bottom of the glyph at a given height.
+    pub fn get_descent_for_height(&self, height: Twips) -> Twips {
+        let scale = height.get() as f32 / self.scale();
+
+        Twips::new((self.0.descent as f32 * scale) as i32)
+    }
+
     /// Returns whether this font contains kerning information.
     pub fn has_kerning_info(&self) -> bool {
         !self.0.kerning_pairs.is_empty()
@@ -307,6 +314,10 @@ impl<'gc> Font<'gc> {
                 }
             },
         );
+
+        if text.is_empty() {
+            height = max(height, params.height);
+        }
 
         (width, height)
     }

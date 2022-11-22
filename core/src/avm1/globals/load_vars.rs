@@ -282,6 +282,17 @@ fn spawn_load_var_fetch<'gc>(
         loader_object.set("_bytesLoaded", 0.into(), activation)?;
     }
 
+    if !loader_object.has_property(activation, "_bytesTotal".into()) {
+        loader_object.define_value(
+            activation.context.gc_context,
+            "_bytesTotal",
+            Value::Undefined,
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
+        );
+    } else {
+        loader_object.set("_bytesTotal", Value::Undefined, activation)?;
+    }
+
     if !loader_object.has_property(activation, "loaded".into()) {
         loader_object.define_value(
             activation.context.gc_context,

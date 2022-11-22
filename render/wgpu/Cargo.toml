@@ -15,11 +15,11 @@ log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.3", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.0.22", features = ["derive"], optional = true }
+clap = { version = "4.0.26", features = ["derive"], optional = true }
 enum-map = "2.4.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.24.4", default-features = false }
+image = { version = "0.24.5", default-features = false }
 ouroboros = "0.15.5"
 typed-arena = "2.0.1"
 once_cell = "1.16.0"
