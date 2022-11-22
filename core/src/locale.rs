@@ -7,7 +7,11 @@ const MOCK_TIME: bool = cfg!(any(test, feature = "deterministic"));
 
 pub fn get_current_date_time() -> DateTime<Utc> {
     if MOCK_TIME {
-        get_timezone().ymd(2001, 2, 3).and_hms(4, 5, 6).into()
+        get_timezone()
+            .with_ymd_and_hms(2001, 2, 3, 4, 5, 6)
+            .single()
+            .expect("Unambiguous mock time")
+            .into()
     } else {
         Utc::now()
     }
@@ -15,7 +19,7 @@ pub fn get_current_date_time() -> DateTime<Utc> {
 
 pub fn get_timezone() -> FixedOffset {
     if MOCK_TIME {
-        FixedOffset::east(20700)
+        FixedOffset::east_opt(20700).expect("Unambiguous mock timezone")
     } else {
         Local::now().offset().fix()
     }
