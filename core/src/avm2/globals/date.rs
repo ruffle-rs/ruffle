@@ -212,8 +212,7 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
 
         if let LocalResult::Single(Some(result)) = current
             .timezone()
-            .ymd_opt(year, (month + 1) as u32, 1)
-            .and_hms_opt(0, 0, 0)
+            .with_ymd_and_hms(year, (month + 1) as u32, 1, 0, 0, 0)
             .map(|date| date.checked_add_signed(duration))
         {
             Some(result.with_timezone(&Utc))
@@ -255,7 +254,13 @@ pub fn instance_init<'gc>(
                     // We need a starting value to adjust from.
                     date.set_date_time(
                         activation.context.gc_context,
-                        Some(timezone.ymd(0, 1, 1).and_hms(0, 0, 0).into()),
+                        Some(
+                            timezone
+                                .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                                .single()
+                                .expect("Unambiguous epoch time when constructing Date")
+                                .into(),
+                        ),
                     );
 
                     DateAdjustment::new(activation, &timezone)
@@ -347,7 +352,10 @@ pub fn set_time<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_number(activation)?;
         if new_time.is_finite() {
-            let time = Utc.timestamp_millis(new_time as i64);
+            let time = Utc
+                .timestamp_millis_opt(new_time as i64)
+                .single()
+                .expect("Unambiguous timestamp for current time zone");
             this.set_date_time(activation.context.gc_context, Some(time));
             return Ok((time.timestamp_millis() as f64).into());
         } else {
@@ -919,7 +927,11 @@ pub fn utc<'gc>(
         .second(args.get(5))?
         .millisecond(args.get(6))?
         .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
-        .calculate(Utc.ymd(0, 1, 1).and_hms(0, 0, 0));
+        .calculate(
+            Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                .single()
+                .expect("Unambiguous UTC time conversions"),
+        );
     let millis = if let Some(date) = date {
         date.timestamp_millis() as f64
     } else {
@@ -1286,8 +1298,9 @@ pub fn parse<'gc>(
     if let Some(timestamp) = final_time.calculate(
         new_timezone
             .unwrap_or(timezone)
-            .ymd(0, 1, 1)
-            .and_hms(0, 0, 0),
+            .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+            .single()
+            .expect("Unambiguous starting time when converting parsed dates into local timezone"),
     ) {
         Ok((timestamp.timestamp_millis() as f64).into())
     } else {
