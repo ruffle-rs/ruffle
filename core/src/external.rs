@@ -156,6 +156,11 @@ impl Value {
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
+                let value = if activation.swf_version() < 9 && value.trim().is_empty() {
+                    "null"
+                } else {
+                    &value
+                };
                 Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(values) => {
