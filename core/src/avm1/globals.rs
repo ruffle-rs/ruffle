@@ -1204,7 +1204,7 @@ pub fn remove_display_object<'gc>(
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
-            parent.remove_child(&mut activation.context, this, Lists::all());
+            parent.remove_child(&mut activation.context, this, Lists::Render);
         }
     }
 }
