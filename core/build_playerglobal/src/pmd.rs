@@ -1,7 +1,7 @@
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::io::{BufRead, BufReader, Error, ErrorKind, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Error, ErrorKind, Seek};
 use std::path::{Path, PathBuf};
 
 pub struct Pmd {
@@ -76,7 +76,7 @@ impl File {
                 "-->".blue().bold(),
                 name.to_string_lossy().bold()
             )?;
-            file.seek(SeekFrom::Start(0)).map_err(|_| fmt::Error)?;
+            file.rewind().map_err(|_| fmt::Error)?;
             let reader = BufReader::new(&file);
             for (num, text) in reader
                 .lines()

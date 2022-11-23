@@ -135,10 +135,10 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag<'gc>(
+    pub fn from_swf_tag(
         et: swf::EditText<'_>,
         swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, '_, '_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
