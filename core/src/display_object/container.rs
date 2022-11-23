@@ -8,7 +8,6 @@ use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
 use crate::string::WStr;
-use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use ruffle_render::commands::CommandHandler;
@@ -121,21 +120,22 @@ pub fn dispatch_added_event<'gc>(
     }
 }
 
-bitflags! {
-    /// The three lists that a display object container is supposed to maintain.
-    pub struct Lists: u8 {
-        /// The list that determines the order in which children are rendered.
-        ///
-        /// This is directly manipulated by AVM2 code.
-        const RENDER    = 1 << 0;
+#[derive(Copy, Clone)]
+pub enum Lists {
+    /// The list that determines the identity of children according to the
+    /// timeline and AVM1 code.
+    ///
+    /// Manipulations of the depth list are generally propagated to the render
+    /// list, except in cases where children have been reordered by AVM2.
+    Depth,
 
-        /// The list that determines the identity of children according to the
-        /// timeline and AVM1 code.
-        ///
-        /// Manipulations of the depth list are generally propagated to the render
-        /// list, except in cases where children have been reordered by AVM2.
-        const DEPTH     = 1 << 1;
-    }
+    /// The render list determines the order in which children are rendered.
+    ///
+    /// Removing a child from the render list automatically removes it from the depth
+    /// list.
+    ///
+    /// It is directly manipulated by AVM2 code.
+    Render,
 }
 
 #[enum_trait_object(
@@ -278,7 +278,7 @@ pub trait TDisplayObjectContainer<'gc>:
         let parent_changed = if let Some(old_parent) = child.parent() {
             if !DisplayObject::ptr_eq(old_parent, this) {
                 if let Some(mut old_parent) = old_parent.as_container() {
-                    old_parent.remove_child(context, child, Lists::all());
+                    old_parent.remove_child(context, child, Lists::Render);
                 }
 
                 true
@@ -340,10 +340,11 @@ pub trait TDisplayObjectContainer<'gc>:
 
         let mut write = self.raw_container_mut(context.gc_context);
 
-        let removed_from_depth_list =
-            from_lists.contains(Lists::DEPTH) && write.remove_child_from_depth_list(child);
-        let removed_from_render_list =
-            from_lists.contains(Lists::RENDER) && write.remove_child_from_render_list(child);
+        let removed_from_depth_list = write.remove_child_from_depth_list(child);
+        let removed_from_render_list = match from_lists {
+            Lists::Render => write.remove_child_from_render_list(child),
+            Lists::Depth => false,
+        };
 
         drop(write);
 

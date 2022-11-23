@@ -1621,7 +1621,7 @@ bitflags! {
         const PLACED_BY_SCRIPT         = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
-        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        /// When this flag is set, attempts to change the object's name from AVM2 throw an exception.
         const INSTANTIATED_BY_TIMELINE = 1 << 5;
 
         /// Whether this object is a "root", the top-most display object of a loaded SWF or Bitmap.

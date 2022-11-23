@@ -109,7 +109,7 @@ fn remove_child_from_displaylist<'gc>(
 ) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
-            ctr.remove_child(context, child, Lists::all());
+            ctr.remove_child(context, child, Lists::Render);
         }
     }
 }
@@ -360,7 +360,7 @@ pub fn remove_child_at<'gc>(
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
 
-            ctr.remove_child(&mut activation.context, child, Lists::all());
+            ctr.remove_child(&mut activation.context, child, Lists::Render);
 
             return Ok(child.object2());
         }

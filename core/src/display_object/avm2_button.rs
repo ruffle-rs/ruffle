@@ -309,7 +309,7 @@ impl<'gc> Avm2Button<'gc> {
 
         if let Some(child) = child {
             if let Some(mut parent) = child.parent().and_then(|parent| parent.as_container()) {
-                parent.remove_child(context, child, Lists::all());
+                parent.remove_child(context, child, Lists::Render);
             }
 
             if is_cur_state {
