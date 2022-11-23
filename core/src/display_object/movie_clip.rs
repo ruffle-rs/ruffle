@@ -1742,9 +1742,9 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
             for child in children {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::Render);
+                    self.remove_child(context, child);
                 } else {
-                    self.remove_child(context, child, Lists::Depth);
+                    self.remove_child_from_depth_list(context, child);
                 }
             }
         }
@@ -2107,9 +2107,9 @@ impl<'gc> MovieClip<'gc> {
             let child = self.child_by_depth(depth);
             if let Some(child) = child {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::Render);
+                    self.remove_child(context, child);
                 } else {
-                    self.remove_child(context, child, Lists::Depth);
+                    self.remove_child_from_depth_list(context, child);
                 }
 
                 removed_frame_scripts.push(child);
@@ -3700,9 +3700,9 @@ impl<'gc, 'a> MovieClip<'gc> {
 
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
-                self.remove_child(context, child, Lists::Render);
+                self.remove_child(context, child);
             } else {
-                self.remove_child(context, child, Lists::Depth);
+                self.remove_child_from_depth_list(context, child);
             }
         }
 

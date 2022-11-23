@@ -35,9 +35,7 @@ mod text;
 mod video;
 
 use crate::avm1::Activation;
-pub use crate::display_object::container::{
-    DisplayObjectContainer, Lists, TDisplayObjectContainer,
-};
+pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
