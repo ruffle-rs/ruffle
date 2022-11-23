@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
 use gc_arena::MutationContext;
@@ -1204,7 +1204,7 @@ pub fn remove_display_object<'gc>(
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
-            parent.remove_child(&mut activation.context, this, Lists::Render);
+            parent.remove_child(&mut activation.context, this);
         }
     }
 }

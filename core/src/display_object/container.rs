@@ -120,24 +120,6 @@ pub fn dispatch_added_event<'gc>(
     }
 }
 
-#[derive(Copy, Clone)]
-pub enum Lists {
-    /// The list that determines the identity of children according to the
-    /// timeline and AVM1 code.
-    ///
-    /// Manipulations of the depth list are generally propagated to the render
-    /// list, except in cases where children have been reordered by AVM2.
-    Depth,
-
-    /// The render list determines the order in which children are rendered.
-    ///
-    /// Removing a child from the render list automatically removes it from the depth
-    /// list.
-    ///
-    /// It is directly manipulated by AVM2 code.
-    Render,
-}
-
 #[enum_trait_object(
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -278,7 +260,7 @@ pub trait TDisplayObjectContainer<'gc>:
         let parent_changed = if let Some(old_parent) = child.parent() {
             if !DisplayObject::ptr_eq(old_parent, this) {
                 if let Some(mut old_parent) = old_parent.as_container() {
-                    old_parent.remove_child(context, child, Lists::Render);
+                    old_parent.remove_child(context, child);
                 }
 
                 true
@@ -316,21 +298,12 @@ pub trait TDisplayObjectContainer<'gc>:
             .swap_at_id(index1, index2);
     }
 
-    /// Remove a child display object from this container's render and depth lists.
-    ///
-    /// If the child was found on any of the container's lists, this function
-    /// will return `true`.
-    ///
-    /// You can control which lists a child should be removed from with the
-    /// `from_lists` parameter. If a list is omitted from `from_lists`, then
-    /// not only will the child remain, but the return code will also not take
-    /// it's presence in the list into account.
+    /// Remove (and unloads) a child display object from this container's render and depth lists.
     fn remove_child(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         child: DisplayObject<'gc>,
-        from_lists: Lists,
-    ) -> bool {
+    ) {
         debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
             (*self).into()
@@ -339,16 +312,11 @@ pub trait TDisplayObjectContainer<'gc>:
         dispatch_removed_event(child, context);
 
         let mut write = self.raw_container_mut(context.gc_context);
-
-        let removed_from_depth_list = write.remove_child_from_depth_list(child);
-        let removed_from_render_list = match from_lists {
-            Lists::Render => write.remove_child_from_render_list(child),
-            Lists::Depth => false,
-        };
-
+        write.remove_child_from_depth_list(child);
+        let removed_from_render_list = write.remove_child_from_render_list(child);
         drop(write);
 
-        if removed_from_depth_list || removed_from_render_list {
+        if removed_from_render_list {
             child.unload(context);
 
             //TODO: This is an awful, *awful* hack to deal with the fact
@@ -358,8 +326,21 @@ pub trait TDisplayObjectContainer<'gc>:
                 child.set_parent(context.gc_context, None);
             }
         }
+    }
 
-        removed_from_render_list || removed_from_depth_list
+    /// Removes (without unloading) a child display object from this container's depth list.
+    fn remove_child_from_depth_list(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        child: DisplayObject<'gc>,
+    ) {
+        debug_assert!(DisplayObject::ptr_eq(
+            child.parent().unwrap(),
+            (*self).into()
+        ));
+
+        self.raw_container_mut(context.gc_context)
+            .remove_child_from_depth_list(child);
     }
 
     /// Remove a set of children identified by their render list indicies from
