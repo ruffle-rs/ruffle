@@ -1735,26 +1735,16 @@ impl<'gc> MovieClip<'gc> {
             //
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
-            // TODO: AS3 children don't live on the depth list. Do they respect
-            // or ignore GOTOs?
+            // TODO: Should AS3 children ignore GOTOs?
             let children: SmallVec<[_; 16]> = self
-                .0
-                .read()
-                .container
-                .iter_children_by_depth()
-                .filter_map(|(depth, clip)| {
-                    if clip.place_frame() > frame {
-                        Some((depth, clip))
-                    } else {
-                        None
-                    }
-                })
+                .iter_render_list()
+                .filter(|clip| clip.place_frame() > frame)
                 .collect();
-            for (_depth, child) in children {
+            for child in children {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::all());
+                    self.remove_child(context, child);
                 } else {
-                    self.remove_child(context, child, Lists::DEPTH);
+                    self.remove_child_from_depth_list(context, child);
                 }
             }
         }
@@ -1889,7 +1879,6 @@ impl<'gc> MovieClip<'gc> {
     ) {
         //TODO: This will break horribly when AVM2 starts touching the display list
         if self.0.read().object.is_none() {
-            let globals = context.avm1.global_object_cell();
             let avm1_constructor = self.0.read().get_registered_avm1_constructor(context);
 
             // If we are running within the AVM, this must be an immediate action.
@@ -1898,7 +1887,6 @@ impl<'gc> MovieClip<'gc> {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
-                    globals,
                     self.into(),
                 );
 
@@ -1949,7 +1937,6 @@ impl<'gc> MovieClip<'gc> {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Init]"),
-                    globals,
                     self.into(),
                 );
 
@@ -2117,12 +2104,12 @@ impl<'gc> MovieClip<'gc> {
             let to_frame = self.current_frame();
             self.0.write(context.gc_context).current_frame = from_frame;
 
-            let child = self.0.read().container.get_depth(depth);
+            let child = self.child_by_depth(depth);
             if let Some(child) = child {
                 if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::all());
+                    self.remove_child(context, child);
                 } else {
-                    self.remove_child(context, child, Lists::DEPTH);
+                    self.remove_child_from_depth_list(context, child);
                 }
 
                 removed_frame_scripts.push(child);
@@ -3713,9 +3700,9 @@ impl<'gc, 'a> MovieClip<'gc> {
 
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
             if !child.placed_by_script() {
-                self.remove_child(context, child, Lists::all());
+                self.remove_child(context, child);
             } else {
-                self.remove_child(context, child, Lists::DEPTH);
+                self.remove_child_from_depth_list(context, child);
             }
         }
 

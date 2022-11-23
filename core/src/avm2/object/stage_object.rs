@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -124,8 +125,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().display_object
     }
 
-    fn init_display_object(&self, mc: MutationContext<'gc, '_>, obj: DisplayObject<'gc>) {
+    fn init_display_object(&self, mc: MutationContext<'gc, '_>, mut obj: DisplayObject<'gc>) {
         self.0.write(mc).display_object = Some(obj);
+        obj.set_object2(mc, (*self).into());
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {

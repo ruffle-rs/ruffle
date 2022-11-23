@@ -18,7 +18,9 @@ use crate::backend::{
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
-use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
+use crate::context_menu::{
+    BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
+};
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
     StageScaleMode, TInteractiveObject, WindowMode,
@@ -556,38 +558,50 @@ impl Player {
                 return vec![];
             }
 
-            let mut activation = Activation::from_stub(
-                context.reborrow(),
-                ActivationIdentifier::root("[ContextMenu]"),
-            );
-
             // TODO: This should use a pointed display object with `.menu`
-            let menu_object = {
-                let dobj = activation.context.stage.root_clip();
-                if let Value::Object(obj) = dobj.object() {
-                    if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation) {
-                        Some(menu)
-                    } else {
-                        None
+            let root_dobj = context.stage.root_clip();
+
+            let menu = if let Value::Object(obj) = root_dobj.object() {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[ContextMenu]"),
+                );
+                let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
+                {
+                    if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
+                        Self::run_context_menu_custom_callback(
+                            menu,
+                            on_select,
+                            &mut activation.context,
+                        );
                     }
+                    Some(menu)
                 } else {
                     None
-                }
+                };
+                crate::avm1::make_context_menu_state(menu_object, &mut activation)
+            } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
+                // TODO: send "menuSelect" event
+                log::warn!("AVM2 Context menu callbacks are not implemented");
+
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                let menu_object = root_dobj
+                    .as_interactive()
+                    .map(|iobj| iobj.context_menu())
+                    .and_then(|v| v.as_object());
+
+                crate::avm2::make_context_menu_state(menu_object, &mut activation)
+            } else {
+                // no AVM1 or AVM2 object - so just prepare the builtin items
+                let mut menu = ContextMenuState::new();
+                let builtin_items = BuiltInItemFlags::for_stage(context.stage);
+                menu.build_builtin_items(builtin_items, context.stage);
+                menu
             };
 
-            if let Some(menu) = menu_object {
-                if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
-                    Self::run_context_menu_custom_callback(
-                        menu,
-                        on_select,
-                        &mut activation.context,
-                    );
-                }
-            }
-
-            let menu = crate::avm1::make_context_menu_state(menu_object, &mut activation);
             let ret = menu.info().clone();
-            *activation.context.current_context_menu = Some(menu);
+            *context.current_context_menu = Some(menu);
             ret
         })
     }
@@ -611,6 +625,9 @@ impl Player {
                     ContextMenuCallback::Forward => Self::forward_root_movie(context),
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
+                    ContextMenuCallback::Avm2 { .. } => {
+                        // TODO: Send menuItemSelect event
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
@@ -623,13 +640,10 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let globals = context.avm1.global_object_cell();
         let root_clip = context.stage.root_clip();
-
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Context Menu Callback]"),
-            globals,
             root_clip,
         );
 
@@ -656,7 +670,7 @@ impl Player {
         });
     }
 
-    fn toggle_play_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             if mc.playing() {
                 mc.stop(context);
@@ -665,17 +679,17 @@ impl Player {
             }
         }
     }
-    fn rewind_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn rewind_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.goto_frame(context, 1, true)
         }
     }
-    fn forward_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn forward_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.next_frame(context);
         }
     }
-    fn back_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn back_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.prev_frame(context);
         }
@@ -827,7 +841,7 @@ impl Player {
                         dumper.print_variables(
                             "Global Variables:",
                             "_global",
-                            &activation.context.avm1.global_object_cell(),
+                            &activation.context.avm1.global_object(),
                             &mut activation,
                         );
 
@@ -1080,7 +1094,7 @@ impl Player {
     }
 
     /// Update dragged object, if any.
-    pub fn update_drag<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn update_drag(context: &mut UpdateContext<'_, '_, '_>) {
         let (mouse_x, mouse_y) = *context.mouse_position;
         if let Some(drag_object) = &mut context.drag_object {
             let display_object = drag_object.display_object;
@@ -1512,7 +1526,7 @@ impl Player {
         &mut self.ui
     }
 
-    pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn run_actions(context: &mut UpdateContext<'_, '_, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
@@ -1530,12 +1544,9 @@ impl Player {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let globals = context.avm1.global_object_cell();
-
                     let mut activation = Activation::from_nothing(
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
-                        globals,
                         action.clip,
                     );
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {

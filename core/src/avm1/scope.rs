@@ -6,8 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
-use std::cell::Ref;
+use gc_arena::{Collect, Gc, MutationContext};
 
 /// Indicates what kind of scope a scope is.
 #[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
@@ -30,17 +29,17 @@ pub enum ScopeClass {
 }
 
 /// Represents a scope chain for an AVM1 activation.
-#[derive(Debug, Collect)]
+#[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct Scope<'gc> {
-    parent: Option<GcCell<'gc, Scope<'gc>>>,
+    parent: Option<Gc<'gc, Scope<'gc>>>,
     class: ScopeClass,
     values: Object<'gc>,
 }
 
 impl<'gc> Scope<'gc> {
     /// Construct a global scope (one without a parent).
-    pub fn from_global_object(globals: Object<'gc>) -> Scope<'gc> {
+    pub fn from_global_object(globals: Object<'gc>) -> Self {
         Scope {
             parent: None,
             class: ScopeClass::Global,
@@ -49,7 +48,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Construct a child scope of another scope.
-    pub fn new_local_scope(parent: GcCell<'gc, Self>, mc: MutationContext<'gc, '_>) -> Scope<'gc> {
+    pub fn new_local_scope(parent: Gc<'gc, Self>, mc: MutationContext<'gc, '_>) -> Self {
         Scope {
             parent: Some(parent),
             class: ScopeClass::Local,
@@ -60,82 +59,35 @@ impl<'gc> Scope<'gc> {
     /// Construct a scope for use with `tellTarget` code where the timeline
     /// scope has been replaced with another given object.
     pub fn new_target_scope(
-        mut parent: GcCell<'gc, Self>,
+        parent: Gc<'gc, Self>,
         clip: Object<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> GcCell<'gc, Self> {
-        let mut bottom_scope = None;
-        let mut top_scope: Option<GcCell<'gc, Self>> = None;
+    ) -> Gc<'gc, Self> {
+        let mut scope = (*parent).clone();
 
-        loop {
-            let next_scope = GcCell::allocate(
-                mc,
-                Self {
-                    parent: None,
-                    class: parent.read().class,
-                    values: parent.read().values,
-                },
-            );
-
-            if parent.read().class == ScopeClass::Target {
-                next_scope.write(mc).values = clip;
-            }
-
-            if bottom_scope.is_none() {
-                bottom_scope = Some(next_scope);
-            }
-
-            if let Some(ref scope) = top_scope {
-                scope.write(mc).parent = Some(next_scope);
-            }
-
-            top_scope = Some(next_scope);
-
-            let grandparent = parent.read().parent;
-            if let Some(grandparent) = grandparent {
-                parent = grandparent;
-            } else {
-                break;
-            }
+        if scope.class == ScopeClass::Target {
+            scope.values = clip;
+        } else {
+            scope.parent = scope.parent.map(|p| Self::new_target_scope(p, clip, mc));
         }
 
-        bottom_scope.unwrap_or_else(|| {
-            GcCell::allocate(
-                mc,
-                Self {
-                    parent: None,
-                    class: ScopeClass::Global,
-                    values: ScriptObject::new(mc, None).into(),
-                },
-            )
-        })
+        Gc::allocate(mc, scope)
     }
 
     /// Construct a with scope to be used as the scope during a with block.
     ///
     /// A with block adds an object to the top of the scope chain, so unqualified
     /// references will try to resolve on that object first.
-    pub fn new_with_scope(
-        parent_scope: GcCell<'gc, Self>,
-        with_object: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> GcCell<'gc, Self> {
-        GcCell::allocate(
-            mc,
-            Scope {
-                parent: Some(parent_scope),
-                class: ScopeClass::With,
-                values: with_object,
-            },
-        )
+    pub fn new_with_scope(parent_scope: Gc<'gc, Self>, with_object: Object<'gc>) -> Self {
+        Scope {
+            parent: Some(parent_scope),
+            class: ScopeClass::With,
+            values: with_object,
+        }
     }
 
     /// Construct an arbitrary scope.
-    pub fn new(
-        parent: GcCell<'gc, Self>,
-        class: ScopeClass,
-        with_object: Object<'gc>,
-    ) -> Scope<'gc> {
+    pub fn new(parent: Gc<'gc, Self>, class: ScopeClass, with_object: Object<'gc>) -> Self {
         Scope {
             parent: Some(parent),
             class,
@@ -153,22 +105,8 @@ impl<'gc> Scope<'gc> {
         self.values
     }
 
-    /// Returns a reference to the current local scope object for mutation.
-    #[allow(dead_code)]
-    pub fn locals_mut(&mut self) -> &mut Object<'gc> {
-        &mut self.values
-    }
-
     /// Returns a reference to the parent scope object.
-    pub fn parent(&self) -> Option<Ref<Scope<'gc>>> {
-        match self.parent {
-            Some(ref p) => Some(p.read()),
-            None => None,
-        }
-    }
-
-    /// Returns a reference to the parent scope object.
-    pub fn parent_cell(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
+    pub fn parent(&self) -> Option<Gc<'gc, Scope<'gc>>> {
         self.parent
     }
 

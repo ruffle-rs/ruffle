@@ -112,6 +112,8 @@ pub struct SystemClasses<'gc> {
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
+    pub statictext: ClassObject<'gc>,
+    pub textlinemetrics: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -191,6 +193,8 @@ impl<'gc> SystemClasses<'gc> {
             ioerror: object,
             eoferror: object,
             uncaughterrorevents: object,
+            statictext: object,
+            textlinemetrics: object,
         }
     }
 }
@@ -656,6 +660,7 @@ fn load_playerglobal<'gc>(
 ) -> Result<(), Error<'gc>> {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
 
     let movie =
         SwfMovie::from_data(PLAYERGLOBAL, None, None).expect("playerglobal.swf should be valid");
@@ -730,6 +735,8 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.utils", "ByteArray", bytearray),
+            ("flash.text", "StaticText", statictext),
+            ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
     );
 

@@ -506,6 +506,7 @@ swf_tests! {
     (as3_stage_loaderinfo_properties, "avm2/stage_loaderinfo_properties", 2),
     (as3_stage_mouseenabled, "avm2/stage_mouseenabled", 1),
     (as3_stage_properties, "avm2/stage_properties", 1),
+    (as3_static_text, "avm2/static_text", 1),
     (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
     (as3_string_case, "avm2/string_case", 1),
@@ -881,6 +882,7 @@ swf_tests_approx! {
     (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 0.1),
     (as3_edittext_bullet, "avm2/edittext_bullet", 1, epsilon = 3.0),
     (as3_edittext_font_size, "avm2/edittext_font_size", 1, epsilon = 0.1),
+    (as3_edittext_getlinemetrics, "avm2/edittext_getlinemetrics", 1, epsilon = 0.85),
     (as3_edittext_leading, "avm2/edittext_leading", 1, epsilon = 0.3),
     (as3_edittext_letter_spacing, "avm2/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
     (as3_edittext_margins, "avm2/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
@@ -903,6 +905,7 @@ swf_tests_approx! {
     (edittext_margins, "avm1/edittext_margins", 1, epsilon = 5.0), // TODO: Discrepancy in wrapping.
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, epsilon = 5.0),
     (edittext_underline, "avm1/edittext_underline", 1, epsilon = 4.0),
+    (gettextextent, "avm1/gettextextent", 1, epsilon = 30.0), // TODO: Flash Player breaks single words that are longer than the line, but we don't.
     (local_to_global, "avm1/local_to_global", 1, epsilon = 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, epsilon = 0.051),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, epsilon = 0.051),

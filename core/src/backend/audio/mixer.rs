@@ -180,6 +180,52 @@ struct SoundInstance {
 
     /// The transform for the right channel of this sound instance.
     right_transform: [f32; 2],
+
+    /// Stores the per-channel "peak amplitude" (volume) of this sound
+    /// over the last completely mixed 1024-frame long window.
+    /// Updated whenever a new buffer is filled completely.
+    peak: [f32; 2],
+
+    /// Accumulates the per-channel minimum and maximum sample values
+    /// (respectively) of this sound over the buffer currently being
+    /// mixed. Used to compute `peak`, and is reset after every time.
+    range: ([f32; 2], [f32; 2]),
+}
+
+impl SoundInstance {
+    /// Creates a new `SoundInstance` from a `Stream`, with a SoundHandle.
+    fn new_sound(handle: SoundHandle, stream: Box<dyn Stream>) -> Self {
+        SoundInstance {
+            handle: Some(handle),
+            stream,
+            active: true,
+            left_transform: [1.0, 0.0],
+            right_transform: [0.0, 1.0],
+            peak: [0.0, 0.0],
+            range: ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]),
+        }
+    }
+
+    /// Creates a new `SoundInstance` from a `Stream`, for stream sounds.
+    fn new_stream(stream: Box<dyn Stream>) -> Self {
+        SoundInstance {
+            handle: None,
+            stream,
+            active: true,
+            left_transform: [1.0, 0.0],
+            right_transform: [0.0, 1.0],
+            peak: [0.0, 0.0],
+            range: ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]),
+        }
+    }
+
+    /// Updates `peak` from `range`, and resets the latter to default.
+    fn update_peak(&mut self) {
+        self.peak[0] = (self.range.1[0] - self.range.0[0]) / 2.0;
+        self.peak[1] = (self.range.1[1] - self.range.0[1]) / 2.0;
+
+        self.range = ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]);
+    }
 }
 
 impl AudioMixer {
@@ -393,6 +439,13 @@ impl AudioMixer {
                         Sample::add_amp(right_0, right_1).to_sample(),
                     ];
                     sound_frame = sound_frame.scale_amp(volume);
+
+                    sound.range.0[0] = sound.range.0[0].min(sound_frame[0].to_sample());
+                    sound.range.0[1] = sound.range.0[1].min(sound_frame[1].to_sample());
+
+                    sound.range.1[0] = sound.range.1[0].max(sound_frame[0].to_sample());
+                    sound.range.1[1] = sound.range.1[1].max(sound_frame[1].to_sample());
+
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
                     sound.active = false;
@@ -400,6 +453,12 @@ impl AudioMixer {
             }
 
             output_memory.push([output_frame[0].to_sample(), output_frame[1].to_sample()]);
+
+            if output_memory.pos == 0 || output_memory.pos == 1024 {
+                for (_, sound) in sound_instances.iter_mut() {
+                    sound.update_peak();
+                }
+            }
 
             for (buf_sample, output_sample) in buf_frame.iter_mut().zip(output_frame.iter()) {
                 *buf_sample = *output_sample;
@@ -477,13 +536,7 @@ impl AudioMixer {
         let stream = self.make_stream_from_swf_slice(stream_info, clip_data)?;
 
         let mut sound_instances = self.sound_instances.lock().unwrap();
-        let handle = sound_instances.insert(SoundInstance {
-            handle: None,
-            stream,
-            active: true,
-            left_transform: [1.0, 0.0],
-            right_transform: [0.0, 1.0],
-        });
+        let handle = sound_instances.insert(SoundInstance::new_stream(stream));
         Ok(handle)
     }
 
@@ -513,13 +566,7 @@ impl AudioMixer {
 
         // Add sound instance to active list.
         let mut sound_instances = self.sound_instances.lock().unwrap();
-        let handle = sound_instances.insert(SoundInstance {
-            handle: Some(sound_handle),
-            stream,
-            active: true,
-            left_transform: [1.0, 0.0],
-            right_transform: [0.0, 1.0],
-        });
+        let handle = sound_instances.insert(SoundInstance::new_sound(sound_handle, stream));
         Ok(handle)
     }
 
@@ -552,6 +599,11 @@ impl AudioMixer {
             let sample_rate: f64 = instance.stream.source_sample_rate().into();
             num_sample_frames * 1000.0 / sample_rate
         })
+    }
+
+    pub fn get_sound_peak(&self, instance: SoundInstanceHandle) -> Option<[f32; 2]> {
+        let sound_instances = self.sound_instances.lock().unwrap();
+        sound_instances.get(instance).map(|instance| instance.peak)
     }
 
     /// Returns the duration of a registered sound in milliseconds.
@@ -1018,6 +1070,11 @@ macro_rules! impl_audio_mixer_backend {
             transform: SoundTransform,
         ) {
             self.$mixer.set_sound_transform(instance, transform)
+        }
+
+        #[inline]
+        fn get_sound_peak(&mut self, instance: SoundInstanceHandle) -> Option<[f32; 2]> {
+            self.$mixer.get_sound_peak(instance)
         }
 
         #[inline]

@@ -135,10 +135,10 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag<'gc>(
+    pub fn from_swf_tag(
         et: swf::EditText<'_>,
         swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, '_, '_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
@@ -854,6 +854,15 @@ impl FormatSpans {
     /// `iter_spans` method will yield the string and span data directly.
     pub fn span(&self, index: usize) -> Option<&TextSpan> {
         self.spans.get(index)
+    }
+
+    /// Retrieve the last text span.
+    ///
+    /// Text span indices are ephemeral and can change arbitrarily any time the
+    /// `FormatSpans` are mutated. You should not use this method directly; the
+    /// `iter_spans` method will yield the string and span data directly.
+    pub fn last_span(&self) -> Option<&TextSpan> {
+        self.spans.last()
     }
 
     /// Find the index of the span that covers a given search position.
