@@ -6,16 +6,16 @@ edition.workspace = true
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = { version = "4.0.18", features = ["derive"] }
+clap = { version = "4.0.26", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = "0.24.4"
+image = "0.24.5"
 log = "0.4"
 walkdir = "2.3.2"
 indicatif = "0.17"
 anyhow = "1.0"
-rayon = "1.5.3"
+rayon = "1.6.0"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]

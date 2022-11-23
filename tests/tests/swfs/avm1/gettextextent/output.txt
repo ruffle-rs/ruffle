@@ -1,0 +1,56 @@
+/// new TextFormat("Noto Sans").getTextExtent("Ruffle");
+/// ...ascent: 
+13
+/// ...descent: 
+4
+/// ...width: 
+32
+/// ...height: 
+17
+/// ...textFieldHeight: 
+21
+/// ...textFieldWidth: 
+36
+/// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+/// ...ascent: 
+13
+/// ...descent: 
+4
+/// ...width: 
+307
+/// ...height: 
+17
+/// ...textFieldHeight: 
+21
+/// ...textFieldWidth: 
+311
+/// new TextFormat("Noto Sans").getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
+/// ...ascent: 
+13
+/// ...descent: 
+4
+/// ...width: 
+83
+/// ...height: 
+68
+/// ...textFieldHeight: 
+72
+/// ...textFieldWidth: 
+100
+/// new TextFormat("Noto Sans", 18).getTextExtent("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 100);
+/// ...ascent: 
+19
+/// ...descent: 
+5
+/// ...width: 
+92
+/// ...height: 
+192
+/// ...textFieldHeight: 
+196
+/// ...textFieldWidth: 
+100
+/// (Return value from getTextExtent...)
+[type Object]
+/// (Prototype of return value from getTextExtent...)
+undefined

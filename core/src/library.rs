@@ -8,6 +8,8 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, MutationContext};
+use ruffle_render::backend::RenderBackend;
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -315,14 +317,16 @@ impl<'gc> MovieLibrary<'gc> {
 }
 
 impl<'gc> ruffle_render::bitmap::BitmapSource for MovieLibrary<'gc> {
-    fn bitmap(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapInfo> {
-        self.get_bitmap(id).and_then(|bitmap| {
-            Some(ruffle_render::bitmap::BitmapInfo {
-                handle: bitmap.bitmap_handle()?,
+    fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
+        self.get_bitmap(id)
+            .map(|bitmap| ruffle_render::bitmap::BitmapSize {
                 width: bitmap.width(),
                 height: bitmap.height(),
             })
-        })
+    }
+    fn bitmap_handle(&self, id: u16, _backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
+        self.get_bitmap(id)
+            .and_then(|bitmap| bitmap.bitmap_handle())
     }
 }
 

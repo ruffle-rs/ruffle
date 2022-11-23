@@ -116,46 +116,49 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<InteractiveObject<'gc>>
 {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>>;
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>>;
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
     /// Check if the interactive object accepts user input.
     fn mouse_enabled(self) -> bool {
-        self.ibase()
+        self.raw_interactive()
             .flags
             .contains(InteractiveObjectFlags::MOUSE_ENABLED)
     }
 
     /// Set if the interactive object accepts user input.
     fn set_mouse_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
-        self.ibase_mut(mc)
+        self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
     }
 
     /// Check if the interactive object accepts double-click events.
     fn double_click_enabled(self) -> bool {
-        self.ibase()
+        self.raw_interactive()
             .flags
             .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
     }
 
     // Set if the interactive object accepts double-click events.
     fn set_double_click_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
-        self.ibase_mut(mc)
+        self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {
-        self.ibase().context_menu
+        self.raw_interactive().context_menu
     }
 
     fn set_context_menu(self, mc: MutationContext<'gc, '_>, value: Avm2Value<'gc>) {
-        self.ibase_mut(mc).context_menu = value;
+        self.raw_interactive_mut(mc).context_menu = value;
     }
 
     /// Filter the incoming clip event.
@@ -254,7 +257,7 @@ pub trait TInteractiveObject<'gc>:
                 ClipEventResult::Handled
             }
             ClipEvent::Release => {
-                let read = self.ibase();
+                let read = self.raw_interactive();
                 let last_click = read.last_click;
                 let this_click = Instant::now();
 
@@ -282,7 +285,7 @@ pub trait TInteractiveObject<'gc>:
                         log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                     }
 
-                    self.ibase_mut(context.gc_context).last_click = None;
+                    self.raw_interactive_mut(context.gc_context).last_click = None;
                 } else {
                     let avm2_event = Avm2EventObject::mouse_event(
                         &mut activation,
@@ -298,7 +301,7 @@ pub trait TInteractiveObject<'gc>:
                         log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                     }
 
-                    self.ibase_mut(context.gc_context).last_click = Some(this_click);
+                    self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
                 }
 
                 ClipEventResult::Handled
@@ -316,7 +319,7 @@ pub trait TInteractiveObject<'gc>:
                     log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                 }
 
-                self.ibase_mut(context.gc_context).last_click = None;
+                self.raw_interactive_mut(context.gc_context).last_click = None;
 
                 ClipEventResult::Handled
             }
@@ -359,7 +362,7 @@ pub trait TInteractiveObject<'gc>:
                     rollover_target = tgt.parent();
                 }
 
-                self.ibase_mut(context.gc_context).last_click = None;
+                self.raw_interactive_mut(context.gc_context).last_click = None;
 
                 ClipEventResult::Handled
             }

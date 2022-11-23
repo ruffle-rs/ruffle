@@ -7,18 +7,22 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 wgpu = "0.14.0"
+# Pin `wgpu-hal` and `wgpu-types` to include https://github.com/gfx-rs/wgpu/pull/3165.
+# TODO: Remove when upgrading `wgpu`.
+wgpu-hal = "0.14.1"
+wgpu-types = "0.14.1"
 log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
-bytemuck = { version = "1.12.1", features = ["derive"] }
+bytemuck = { version = "1.12.3", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.0.18", features = ["derive"], optional = true }
+clap = { version = "4.0.26", features = ["derive"], optional = true }
 enum-map = "2.4.1"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.24.4", default-features = false }
+image = { version = "0.24.5", default-features = false }
 ouroboros = "0.15.5"
 typed-arena = "2.0.1"
-once_cell = "1.15.0"
+once_cell = "1.16.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]

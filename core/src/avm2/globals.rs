@@ -113,6 +113,7 @@ pub struct SystemClasses<'gc> {
     pub eoferror: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
     pub statictext: ClassObject<'gc>,
+    pub textlinemetrics: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -193,6 +194,7 @@ impl<'gc> SystemClasses<'gc> {
             eoferror: object,
             uncaughterrorevents: object,
             statictext: object,
+            textlinemetrics: object,
         }
     }
 }
@@ -734,6 +736,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
+            ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
     );
 

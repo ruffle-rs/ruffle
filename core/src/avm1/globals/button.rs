@@ -39,7 +39,7 @@ macro_rules! button_setter {
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => property(button_getter!(enabled), button_setter!(set_enabled));
-    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
+    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
     "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
 };

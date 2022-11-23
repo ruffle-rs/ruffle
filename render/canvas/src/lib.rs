@@ -423,8 +423,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data =
-            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
+        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
         self.shapes.push(data);
         handle
     }
@@ -435,8 +434,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let data =
-            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
+        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
         self.shapes[handle.0] = data;
     }
 
@@ -810,8 +808,7 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
     bitmap_source: &dyn BitmapSource,
-    bitmaps: &FnvHashMap<BitmapHandle, BitmapData>,
-    context: &CanvasRenderingContext2d,
+    backend: &mut WebCanvasRenderBackend,
 ) -> ShapeData {
     use ruffle_render::shape_utils::DrawPath;
     use swf::{FillStyle, LineCapStyle, LineJoinStyle};
@@ -819,16 +816,6 @@ fn swf_shape_to_canvas_commands(
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
     // rendering altogether.
-    let (_width, _height) = (
-        f32::max(
-            (shape.shape_bounds.x_max - shape.shape_bounds.x_min).get() as f32,
-            1.0,
-        ),
-        f32::max(
-            (shape.shape_bounds.y_max - shape.shape_bounds.y_min).get() as f32,
-            1.0,
-        ),
-    );
 
     let mut canvas_data = ShapeData(vec![]);
 
@@ -850,17 +837,22 @@ fn swf_shape_to_canvas_commands(
                 let fill_style = match style {
                     FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
                     FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_linear_gradient(context, gradient, true).unwrap(),
+                        create_linear_gradient(&backend.context, gradient, true).unwrap(),
                     ),
                     FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_radial_gradient(context, gradient, 0.0, true).unwrap(),
+                        create_radial_gradient(&backend.context, gradient, 0.0, true).unwrap(),
                     ),
                     FillStyle::FocalGradient {
                         gradient,
                         focal_point,
                     } => CanvasFillStyle::Gradient(
-                        create_radial_gradient(context, gradient, focal_point.to_f64(), true)
-                            .unwrap(),
+                        create_radial_gradient(
+                            &backend.context,
+                            gradient,
+                            focal_point.to_f64(),
+                            true,
+                        )
+                        .unwrap(),
                     ),
                     FillStyle::Bitmap {
                         id,
@@ -874,8 +866,7 @@ fn swf_shape_to_canvas_commands(
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
-                            bitmaps,
-                            context,
+                            backend,
                         ) {
                             bitmap
                         } else {
@@ -925,8 +916,7 @@ fn swf_shape_to_canvas_commands(
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
-                            bitmaps,
-                            context,
+                            backend,
                         ) {
                             bitmap
                         } else {
@@ -1169,12 +1159,11 @@ fn create_bitmap_pattern(
     is_smoothed: bool,
     is_repeating: bool,
     bitmap_source: &dyn BitmapSource,
-    bitmaps: &FnvHashMap<BitmapHandle, BitmapData>,
-    context: &CanvasRenderingContext2d,
+    backend: &mut WebCanvasRenderBackend,
 ) -> Option<CanvasBitmap> {
     if let Some(bitmap) = bitmap_source
-        .bitmap(id)
-        .and_then(|bitmap| bitmaps.get(&bitmap.handle))
+        .bitmap_handle(id, backend)
+        .and_then(|handle| backend.bitmaps.get(&handle))
     {
         let repeat = if !is_repeating {
             // NOTE: The WebGL backend does clamping in this case, just like
@@ -1184,7 +1173,9 @@ fn create_bitmap_pattern(
             "repeat"
         };
 
-        let pattern = match context.create_pattern_with_html_canvas_element(&bitmap.canvas, repeat)
+        let pattern = match backend
+            .context
+            .create_pattern_with_html_canvas_element(&bitmap.canvas, repeat)
         {
             Ok(Some(pattern)) => pattern,
             _ => {

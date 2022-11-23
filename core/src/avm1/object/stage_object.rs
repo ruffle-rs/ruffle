@@ -116,7 +116,7 @@ impl<'gc> StageObject<'gc> {
                     .unwrap_or(Value::Undefined),
             );
         } else if name.eq_with_case(b"_global", case_sensitive) {
-            return Some(activation.context.avm1.global_object());
+            return Some(activation.context.avm1.global_object().into());
         }
 
         // Resolve level names `_levelN`.

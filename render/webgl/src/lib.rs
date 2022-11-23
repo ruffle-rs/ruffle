@@ -630,6 +630,8 @@ impl WebGlRenderBackend {
                     .enable_vertex_attrib_array(program.vertex_color_location);
             }
 
+            let num_vertex_attributes = program.num_vertex_attributes;
+
             draws.push(match draw.draw_type {
                 TessDrawType::Color => Draw {
                     draw_type: DrawType::Color,
@@ -662,7 +664,7 @@ impl WebGlRenderBackend {
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
-                        handle: bitmap.bitmap,
+                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self).unwrap(),
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
                     }),
@@ -682,7 +684,8 @@ impl WebGlRenderBackend {
 
             self.bind_vertex_array(None);
 
-            for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
+            // Don't use 'program' here in order to satisfy the borrow checker
+            for i in num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
                 self.gl.disable_vertex_attrib_array(i);
             }
         }

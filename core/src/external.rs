@@ -156,6 +156,11 @@ impl Value {
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
+                let value = if activation.swf_version() < 9 && value.trim().is_empty() {
+                    "null"
+                } else {
+                    &value
+                };
                 Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(values) => {
@@ -252,11 +257,9 @@ impl<'gc> Callback<'gc> {
         match self {
             Callback::Avm1 { this, method } => {
                 let base_clip = context.stage.root_clip();
-                let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     Avm1ActivationIdentifier::root("[ExternalInterface]"),
-                    globals,
                     base_clip,
                 );
                 let this = this.coerce_to_object(&mut activation);

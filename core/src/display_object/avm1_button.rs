@@ -401,15 +401,27 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
-    impl_display_object_container!(container);
+    fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
+        Ref::map(self.0.read(), |this| &this.container)
+    }
+
+    fn raw_container_mut(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> RefMut<'_, ChildContainer<'gc>> {
+        RefMut::map(self.0.write(gc_context), |this| &mut this.container)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -493,7 +505,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         // (e.g., clip.onRelease = foo).
         if context.swf.version() >= 6 {
             if let Some(name) = event.method_name() {
-                context.action_queue.queue_actions(
+                context.action_queue.queue_action(
                     self_display_object,
                     ActionType::Method {
                         object: write.object.unwrap(),
@@ -579,7 +591,7 @@ impl<'gc> Avm1ButtonData<'gc> {
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     handled = ClipEventResult::Handled;
-                    context.action_queue.queue_actions(
+                    context.action_queue.queue_action(
                         parent,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),

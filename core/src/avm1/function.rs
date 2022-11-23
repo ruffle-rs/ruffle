@@ -67,10 +67,10 @@ pub struct Avm1Function<'gc> {
     params: Vec<Param<'gc>>,
 
     /// The scope the function was born into.
-    scope: GcCell<'gc, Scope<'gc>>,
+    scope: Gc<'gc, Scope<'gc>>,
 
     /// The constant pool the function executes with.
-    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+    constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
     /// The base movie clip that the function was defined on.
     /// This is the movie clip that contains the bytecode.
@@ -88,8 +88,8 @@ impl<'gc> Avm1Function<'gc> {
         swf_version: u8,
         actions: SwfSlice,
         swf_function: swf::avm1::types::DefineFunction2,
-        scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+        scope: Gc<'gc, Scope<'gc>>,
+        constant_pool: Gc<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         let encoding = SwfStr::encoding_for_version(swf_version);
@@ -137,7 +137,7 @@ impl<'gc> Avm1Function<'gc> {
         self.name
     }
 
-    pub fn scope(&self) -> GcCell<'gc, Scope<'gc>> {
+    pub fn scope(&self) -> Gc<'gc, Scope<'gc>> {
         self.scope
     }
 
@@ -266,7 +266,7 @@ impl<'gc> Avm1Function<'gc> {
     fn load_global(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
             let global = frame.context.avm1.global_object();
-            frame.set_local_register(*preload_r, global);
+            frame.set_local_register(*preload_r, global.into());
             *preload_r += 1;
         }
     }
@@ -387,13 +387,10 @@ impl<'gc> Executable<'gc> {
                 _ => unreachable!(),
             };
             // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = GcCell::allocate(
+            let scope = Gc::allocate(
                 activation.context.gc_context,
                 Scope::new(
-                    GcCell::allocate(
-                        activation.context.gc_context,
-                        Scope::from_global_object(activation.context.avm1.global_object_cell()),
-                    ),
+                    activation.context.avm1.global_scope(),
                     super::scope::ScopeClass::Target,
                     base_clip_obj,
                 ),
@@ -401,7 +398,7 @@ impl<'gc> Executable<'gc> {
             (swf_version, scope)
         };
 
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             activation.context.gc_context,
             Scope::new_local_scope(parent_scope, activation.context.gc_context),
         );

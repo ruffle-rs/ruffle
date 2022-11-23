@@ -493,14 +493,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         // Note that we do *not* apply the translation yet
         Some(
             cur_transform.matrix
-                * Matrix {
-                    a: (rect.x_max - rect.x_min).to_pixels() as f32,
-                    b: 0.0,
-                    c: 0.0,
-                    d: (rect.y_max - rect.y_min).to_pixels() as f32,
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
-                },
+                * Matrix::scale(
+                    rect.width().to_pixels() as f32,
+                    rect.height().to_pixels() as f32,
+                ),
         )
     } else {
         None
@@ -644,8 +640,8 @@ pub trait TDisplayObject<'gc>:
             return BoundingBox {
                 x_min: Twips::from_pixels(0.0),
                 y_min: Twips::from_pixels(0.0),
-                x_max: scroll_rect.x_max - scroll_rect.x_min,
-                y_max: scroll_rect.y_max - scroll_rect.y_min,
+                x_max: scroll_rect.width(),
+                y_max: scroll_rect.height(),
                 valid: true,
             }
             .transform(matrix);
@@ -795,8 +791,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
     fn width(&self) -> f64 {
-        let bounds = self.local_bounds();
-        (bounds.x_max - bounds.x_min).to_pixels()
+        self.local_bounds().width().to_pixels()
     }
 
     /// Sets the pixel width of this display object in local space.
@@ -805,8 +800,8 @@ pub trait TDisplayObject<'gc>:
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
-        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
-        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let object_width = object_bounds.width().to_pixels();
+        let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_height / object_width;
 
         let (target_scale_x, target_scale_y) = if object_width != 0.0 {
@@ -844,8 +839,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(&self) -> f64 {
-        let bounds = self.local_bounds();
-        (bounds.y_max - bounds.y_min).to_pixels()
+        self.local_bounds().height().to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
@@ -853,8 +847,8 @@ pub trait TDisplayObject<'gc>:
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
-        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
-        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let object_width = object_bounds.width().to_pixels();
+        let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_width / object_height;
 
         let (target_scale_x, target_scale_y) = if object_height != 0.0 {

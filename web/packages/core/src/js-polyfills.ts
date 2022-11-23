@@ -85,11 +85,10 @@ function polyfillWindow(): void {
 /**
  * Polyfills the `Reflect` object and members.
  *
- * Currently it's a minimal implementation with only `get` and `set`
- * just enough for wasm-bindgen's stdlib to not crash on pages I've found.
+ * This is a partial implementation, just enough to match our needs.
  */
 function tryPolyfillReflect(): void {
-    if (window.Reflect === undefined) {
+    if (window.Reflect === undefined || window.Reflect === null) {
         // @ts-expect-error: {} indeed doesn't implement Reflect's interface.
         window.Reflect = {};
     }
@@ -104,6 +103,23 @@ function tryPolyfillReflect(): void {
         Object.defineProperty(Reflect, "set", {
             value<T>(target: T, key: keyof T, value: T[keyof T]) {
                 target[key] = value;
+            },
+        });
+    }
+    if (typeof Reflect.has !== "function") {
+        Object.defineProperty(Reflect, "has", {
+            value<T>(target: T, key: keyof T) {
+                return key in target;
+            },
+        });
+    }
+    if (typeof Reflect.ownKeys !== "function") {
+        Object.defineProperty(Reflect, "ownKeys", {
+            value<T>(target: T) {
+                return [
+                    ...Object.getOwnPropertyNames(target),
+                    ...Object.getOwnPropertySymbols(target),
+                ];
             },
         });
     }
@@ -146,7 +162,8 @@ export function setPolyfillsOnLoad(): void {
         // code like `window instanceof Window` will no longer work.
         polyfillWindow();
     }
-    // Some pages override native `Reflect` with a new object without some properties,
-    // which causes issues for wasm-bindgen's stdlib implementation.
+    // Some pages override the native `Reflect` object, which causes various issues:
+    // 1- wasm-bindgen's stdlib may crash (#3173).
+    // 2- FlashVars may be ignored (#8537).
     tryPolyfillReflect();
 }

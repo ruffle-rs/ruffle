@@ -24,10 +24,7 @@ pub fn define_properties_on<'gc>(
 pub struct Declaration {
     pub name: &'static str,
     pub kind: DeclKind,
-    // This should be an `Attribute`, but because of `const` shenanigans
-    // we need to store the raw flags.
-    // See the comment in the `declare_properties!` macro.
-    pub attributes: u16,
+    pub attributes: Attribute,
 }
 
 /// All the possible types of a [`Declaration`].
@@ -68,7 +65,6 @@ impl Declaration {
         this: ScriptObject<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
-        let attributes = Attribute::from_bits_truncate(self.attributes);
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
                 let getter =
@@ -76,7 +72,7 @@ impl Declaration {
                 let setter = setter.map(|setter| {
                     FunctionObject::function(mc, Executable::Native(setter), fn_proto, fn_proto)
                 });
-                this.add_property(mc, self.name.into(), getter, setter, attributes);
+                this.add_property(mc, self.name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
             DeclKind::Method(func) => {
@@ -92,7 +88,7 @@ impl Declaration {
             DeclKind::Float(f) => f.into(),
         };
 
-        this.define_value(mc, self.name, value, attributes);
+        this.define_value(mc, self.name, value, self.attributes);
         value
     }
 }
@@ -126,65 +122,17 @@ macro_rules! declare_properties {
         crate::avm1::property_decl::Declaration {
             name: $name,
             kind: declare_properties!(@__kind $kind ($($args),*)),
-            attributes: 0,
+            attributes: crate::avm1::property::Attribute::empty(),
         }
     };
-    (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*$(; version($version:tt))?) ) => {
+    (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*) ) => {
         crate::avm1::property_decl::Declaration {
             name: $name,
             kind: declare_properties!(@__kind $kind ($($args),*)),
-            /*
-                WARNING: HORRIBLE HACK AHEAD!
-
-                To declare property attributes in a way that is valid in `const` context,
-                we store them as raw `u8`s and do the bitflag management ourselves.
-
-                Here are two better ways that unfortunately don't work.
-
-                A) `Attribute::FOO | Attribute::BAR`
-
-                This can't be used, because operator overloading doesn't work in `const` context.
-
-                B) `Attributes::from_bits_truncate(Attribute::FOO.bits() | Attribute::BAR.bits())`
-
-                Here, everything is a proper `const fn` and so this should work correctly,
-                but NO!, we hit an ICE in the compiler :(
-                See:
-                    https://github.com/rust-lang/rust/issues/81899
-                    https://github.com/rust-lang/rust/issues/84957
-
-                TODO: use the `B)` desugaring once the above ICE is fixed.
-            */
-            attributes: 0 $(| declare_properties!(@__attr $attributes))* $(| declare_properties!(@__version $version))*,
+            attributes: crate::avm1::property::Attribute::from_bits_truncate(
+                0 $(| crate::avm1::property::Attribute::$attributes.bits())*
+            ),
         }
-    };
-    // MAKE SURE THESE VALUES ARE IN SYNC WITH THE `Attribute` DEFINITION!
-    (@__attr DONT_ENUM) => {
-        (1 << 0)
-    };
-    (@__attr DONT_DELETE) => {
-        (1 << 1)
-    };
-    (@__attr READ_ONLY) => {
-        (1 << 2)
-    };
-    (@__version 5) => {
-        0b0000_0000_0000_0000
-    };
-    (@__version 6) => {
-        0b0000_0000_1000_0000
-    };
-    (@__version 7) => {
-        0b0000_0101_0000_0000
-    };
-    (@__version 8) => {
-        0b0001_0000_0000_0000
-    };
-    (@__version 9) => {
-        0b0010_0000_0000_0000
-    };
-    (@__version 10) => {
-        0b0100_0000_0000_0000
     };
     (@__kind property($getter:expr)) => {
         crate::avm1::property_decl::DeclKind::Property {

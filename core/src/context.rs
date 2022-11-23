@@ -355,7 +355,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 /// A queued ActionScript call.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct QueuedActions<'gc> {
+pub struct QueuedAction<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
 
@@ -371,7 +371,7 @@ pub struct QueuedActions<'gc> {
 #[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
-    action_queue: Vec<VecDeque<QueuedActions<'gc>>>,
+    action_queue: [VecDeque<QueuedAction<'gc>>; ActionQueue::NUM_PRIORITIES],
 }
 
 impl<'gc> ActionQueue<'gc> {
@@ -380,24 +380,20 @@ impl<'gc> ActionQueue<'gc> {
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
-        let mut action_queue = Vec::with_capacity(Self::NUM_PRIORITIES);
-        for _ in 0..Self::NUM_PRIORITIES {
-            action_queue.push(VecDeque::with_capacity(Self::DEFAULT_CAPACITY))
-        }
+        let action_queue = std::array::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY));
         Self { action_queue }
     }
 
-    /// Queues ActionScript to run for the given movie clip.
-    /// `actions` is the slice of ActionScript bytecode to run.
-    /// The actions will be skipped if the clip is removed before the actions run.
-    pub fn queue_actions(
+    /// Queues an action to run for the given movie clip.
+    /// The action will be skipped if the clip is removed before the action runs.
+    pub fn queue_action(
         &mut self,
         clip: DisplayObject<'gc>,
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
         let priority = action_type.priority();
-        let action = QueuedActions {
+        let action = QueuedAction {
             clip,
             action_type,
             is_unload,
@@ -409,14 +405,11 @@ impl<'gc> ActionQueue<'gc> {
     }
 
     /// Sorts and drains the actions from the queue.
-    pub fn pop_action(&mut self) -> Option<QueuedActions<'gc>> {
-        for queue in self.action_queue.iter_mut().rev() {
-            let action = queue.pop_front();
-            if action.is_some() {
-                return action;
-            }
-        }
-        None
+    pub fn pop_action(&mut self) -> Option<QueuedAction<'gc>> {
+        self.action_queue
+            .iter_mut()
+            .rev()
+            .find_map(VecDeque::pop_front)
     }
 }
 
