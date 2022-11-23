@@ -219,44 +219,9 @@ pub trait TDisplayObjectContainer<'gc>:
         child: DisplayObject<'gc>,
         depth: Depth,
     ) -> Option<DisplayObject<'gc>> {
-        let mut write = self.raw_container_mut(context.gc_context);
-
-        let prev_child = write.insert_child_into_depth_list(depth, child);
-        let removed_child = if let Some(prev_child) = prev_child {
-            let position = write
-                .iter_render_list()
-                .position(|x| DisplayObject::ptr_eq(x, prev_child))
-                .unwrap();
-
-            if !prev_child.placed_by_script() {
-                write.replace_id(position, child);
-
-                Some(prev_child)
-            } else {
-                write.insert_id(position + 1, child);
-
-                None
-            }
-        } else {
-            let above = write
-                .iter_depth_range((Bound::Excluded(depth), Bound::Unbounded))
-                .next();
-
-            if let Some((_, above_child)) = above {
-                let position = write
-                    .iter_render_list()
-                    .position(|x| DisplayObject::ptr_eq(x, above_child))
-                    .unwrap();
-                write.insert_id(position, child);
-
-                None
-            } else {
-                write.push_id(child);
-
-                None
-            }
-        };
-        drop(write);
+        let removed_child = self
+            .raw_container_mut(context.gc_context)
+            .replace_at_depth(child, depth);
 
         child.set_parent(context.gc_context, Some(self.into()));
         child.set_place_frame(context.gc_context, 0);
@@ -432,17 +397,6 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
-    /// Clear all lists in the container.
-    fn clear(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let removed_children: Vec<DisplayObject<'gc>> =
-            self.raw_container().iter_render_list().collect();
-        for removed in removed_children {
-            dispatch_removed_event(removed, context);
-        }
-
-        self.raw_container_mut(context.gc_context).clear()
-    }
-
     /// Determine if the container is empty.
     fn is_empty(self) -> bool {
         self.raw_container().is_empty()
@@ -573,7 +527,7 @@ impl<'gc> ChildContainer<'gc> {
     /// This returns the child that was previously at that particular depth, if
     /// such a child exists. If so, that constitutes removing the child from
     /// the depth list.
-    pub fn insert_child_into_depth_list(
+    fn insert_child_into_depth_list(
         &mut self,
         depth: Depth,
         child: DisplayObject<'gc>,
@@ -585,7 +539,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// This returns `true` if the child was successfully removed, and `false`
     /// if no list alterations were made.
-    pub fn remove_child_from_depth_list(&mut self, child: DisplayObject<'gc>) -> bool {
+    fn remove_child_from_depth_list(&mut self, child: DisplayObject<'gc>) -> bool {
         if let Some(other_child) = self.depth_list.get(&child.depth()) {
             DisplayObject::ptr_eq(*other_child, child)
                 && self.depth_list.remove(&child.depth()).is_some()
@@ -598,7 +552,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// This returns `true` if the child was successfully removed, and `false`
     /// if no list alterations were made.
-    pub fn remove_child_from_render_list(&mut self, child: DisplayObject<'gc>) -> bool {
+    fn remove_child_from_render_list(&mut self, child: DisplayObject<'gc>) -> bool {
         let render_list_position = self
             .render_list
             .iter()
@@ -611,18 +565,72 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
+    /// Insert a child display object into the container at a specific position
+    /// in the depth list, removing any child already at that position.
+    ///
+    /// After inserting the child into the depth list, we will attempt to
+    /// assign it a render list position one after the previous item in the
+    /// depth list. The position that children are placed into the render list
+    /// matches Flash Player behavior.
+    ///
+    /// Any child removed from the depth list will also be removed from the
+    /// render list if and only if the child was not flagged as
+    /// being placed by script. If such a child was removed from said lists, it
+    /// will be returned here. Otherwise, this method returns `None`.
+    fn replace_at_depth(
+        &mut self,
+        child: DisplayObject<'gc>,
+        depth: Depth,
+    ) -> Option<DisplayObject<'gc>> {
+        let prev_child = self.insert_child_into_depth_list(depth, child);
+        if let Some(prev_child) = prev_child {
+            let position = self
+                .render_list
+                .iter()
+                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
+                .unwrap();
+
+            if !prev_child.placed_by_script() {
+                self.replace_id(position, child);
+                Some(prev_child)
+            } else {
+                self.insert_id(position + 1, child);
+                None
+            }
+        } else {
+            let above = self
+                .depth_list
+                .range((Bound::Excluded(depth), Bound::Unbounded))
+                .map(|(_, v)| *v)
+                .next();
+
+            if let Some(above_child) = above {
+                let position = self
+                    .render_list
+                    .iter()
+                    .position(|x| DisplayObject::ptr_eq(*x, above_child))
+                    .unwrap();
+                self.insert_id(position, child);
+                None
+            } else {
+                self.push_id(child);
+                None
+            }
+        }
+    }
+
     /// Returns the highest depth among children.
-    pub fn highest_depth(&self) -> Depth {
+    fn highest_depth(&self) -> Depth {
         self.depth_list.keys().next_back().copied().unwrap_or(0)
     }
 
     /// Determine if the render list is empty.
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.render_list.is_empty()
     }
 
     /// Get a child at a given depth.
-    pub fn get_depth(&self, depth: Depth) -> Option<DisplayObject<'gc>> {
+    fn get_depth(&self, depth: Depth) -> Option<DisplayObject<'gc>> {
         self.depth_list.get(&depth).copied()
     }
 
@@ -633,7 +641,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// If multiple children with the same name exist, the one that occurs
     /// first in the render list wins.
-    pub fn get_name(&self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+    fn get_name(&self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
         // But need to handle conflicting names (lowest in depth order takes priority).
         if case_sensitive {
@@ -650,28 +658,28 @@ impl<'gc> ChildContainer<'gc> {
     }
 
     /// Get a child by it's render list position (ID).
-    pub fn get_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
+    fn get_id(&self, id: usize) -> Option<DisplayObject<'gc>> {
         self.render_list.get(id).copied()
     }
 
     /// Replace a child in the render list with another child in the same
     /// position.
-    pub fn replace_id(&mut self, id: usize, child: DisplayObject<'gc>) {
+    fn replace_id(&mut self, id: usize, child: DisplayObject<'gc>) {
         self.render_list[id] = child;
     }
 
     /// Insert a child into the render list at a particular position.
-    pub fn insert_id(&mut self, id: usize, child: DisplayObject<'gc>) {
+    fn insert_id(&mut self, id: usize, child: DisplayObject<'gc>) {
         self.render_list.insert(id, child);
     }
 
     /// Push a child onto the end of the render list.
-    pub fn push_id(&mut self, child: DisplayObject<'gc>) {
+    fn push_id(&mut self, child: DisplayObject<'gc>) {
         self.render_list.push(child);
     }
 
     /// Get the number of children on the render list.
-    pub fn num_children(&self) -> usize {
+    fn num_children(&self) -> usize {
         self.render_list.len()
     }
 
@@ -688,7 +696,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// All children at or after the given ID will be shifted down in the
     /// render list. The child will *not* be put onto the depth list.
-    pub fn insert_at_id(&mut self, child: DisplayObject<'gc>, id: usize) {
+    fn insert_at_id(&mut self, child: DisplayObject<'gc>, id: usize) {
         if let Some(old_id) = self
             .render_list
             .iter()
@@ -713,7 +721,7 @@ impl<'gc> ChildContainer<'gc> {
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
-    pub fn swap_at_id(&mut self, id1: usize, id2: usize) {
+    fn swap_at_id(&mut self, id1: usize, id2: usize) {
         self.render_list.swap(id1, id2);
     }
 
@@ -727,7 +735,7 @@ impl<'gc> ChildContainer<'gc> {
     /// in the depth list.
     ///
     /// `parent` should be the display object that owns this container.
-    pub fn swap_at_depth(
+    fn swap_at_depth(
         &mut self,
         gc_context: MutationContext<'gc, '_>,
         parent: DisplayObject<'gc>,
@@ -777,33 +785,8 @@ impl<'gc> ChildContainer<'gc> {
         }
     }
 
-    /// Remove all children from the container's render and depth lists.
-    pub fn clear(&mut self) {
-        self.render_list.clear();
-        self.depth_list.clear();
-    }
-
-    /// Yield children in the order expected of them by the timeline, alongside
-    /// their corresponding depths.
-    pub fn iter_children_by_depth<'a>(
-        &'a self,
-    ) -> impl 'a + Iterator<Item = (Depth, DisplayObject<'gc>)> {
-        self.depth_list.iter().map(|(k, v)| (*k, *v))
-    }
-
-    /// Iter a particular range of depths.
-    pub fn iter_depth_range<'a, R>(
-        &'a self,
-        range: R,
-    ) -> impl 'a + Iterator<Item = (Depth, DisplayObject<'gc>)>
-    where
-        R: RangeBounds<Depth>,
-    {
-        self.depth_list.range(range).map(|(k, v)| (*k, *v))
-    }
-
     /// Yield children in the order they are rendered.
-    pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
+    fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
         self.render_list.iter().copied()
     }
 }
