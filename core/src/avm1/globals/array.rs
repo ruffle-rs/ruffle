@@ -340,25 +340,30 @@ pub fn splice<'gc>(
         .collect();
 
     let items = if args.len() > 2 { &args[2..] } else { &[] };
-    // TODO: Avoid code duplication.
     if items.len() as i32 > delete_count {
         for i in (start + delete_count..length).rev() {
-            if this.has_element(activation, i) {
-                let element = this.get_element(activation, i);
-                this.set_element(activation, i - delete_count + items.len() as i32, element)?;
-            } else {
-                this.delete_element(activation, i - delete_count + items.len() as i32);
-            }
+            splice_internal(activation, this, delete_count, items, i)?;
         }
     } else {
         for i in start + delete_count..length {
-            if this.has_element(activation, i) {
-                let element = this.get_element(activation, i);
-                this.set_element(activation, i - delete_count + items.len() as i32, element)?;
-            } else {
-                this.delete_element(activation, i - delete_count + items.len() as i32);
-            }
+            splice_internal(activation, this, delete_count, items, i)?;
         }
+    }
+
+    fn splice_internal<'gc>(
+        activation: &mut Activation<'_, 'gc, '_>,
+        this: Object<'gc>,
+        delete_count: i32,
+        items: &[Value<'gc>],
+        i: i32,
+    ) -> Result<Value<'gc>, Error<'gc>>{
+        if this.has_element(activation, i) {
+            let element = this.get_element(activation, i);
+            this.set_element(activation, i - delete_count + items.len() as i32, element)?;
+        } else {
+            this.delete_element(activation, i - delete_count + items.len() as i32);
+        }
+        Ok(Value::Undefined)
     }
 
     for (i, &item) in items.iter().enumerate() {
