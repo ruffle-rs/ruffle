@@ -673,7 +673,7 @@ impl Player {
         });
     }
 
-    fn toggle_play_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             if mc.playing() {
                 mc.stop(context);
@@ -682,17 +682,17 @@ impl Player {
             }
         }
     }
-    fn rewind_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn rewind_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.goto_frame(context, 1, true)
         }
     }
-    fn forward_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn forward_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.next_frame(context);
         }
     }
-    fn back_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn back_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
             mc.prev_frame(context);
         }
@@ -1097,7 +1097,7 @@ impl Player {
     }
 
     /// Update dragged object, if any.
-    pub fn update_drag<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn update_drag(context: &mut UpdateContext<'_, '_, '_>) {
         let (mouse_x, mouse_y) = *context.mouse_position;
         if let Some(drag_object) = &mut context.drag_object {
             let display_object = drag_object.display_object;
@@ -1529,7 +1529,7 @@ impl Player {
         &mut self.ui
     }
 
-    pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn run_actions(context: &mut UpdateContext<'_, '_, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed after it queued the action.
