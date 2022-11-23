@@ -134,8 +134,7 @@ impl<'gc> Avm1Button<'gc> {
             self.iter_render_list().map(|o| o.depth()).collect();
 
         let movie = self.movie().unwrap();
-        let mut write = self.0.write(context.gc_context);
-        write.state = state;
+        self.0.write(context.gc_context).state = state;
 
         // Create any new children that exist in this state, and remove children
         // that only exist in the previous state.
@@ -143,12 +142,12 @@ impl<'gc> Avm1Button<'gc> {
         // TODO: This behavior probably differs in AVM2 (I suspect they always get recreated).
         let mut children = Vec::new();
 
-        for record in &write.static_data.read().records {
+        for record in &self.0.read().static_data.read().records {
             if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
 
-                let child = match write.container.get_depth(record.depth.into()) {
+                let child = match self.child_by_depth(record.depth.into()) {
                     // Re-use existing child.
                     Some(child) if child.id() == record.id => child,
 
@@ -177,7 +176,6 @@ impl<'gc> Avm1Button<'gc> {
                     .set_color_transform(context.gc_context, record.color_transform.clone().into());
             }
         }
-        drop(write);
 
         // Kill children that no longer exist in this state.
         for depth in removed_depths {
