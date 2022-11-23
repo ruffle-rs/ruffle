@@ -1096,42 +1096,42 @@ impl<W: Write> Writer<W> {
 
     fn write_morph_fill_style(&mut self, start: &FillStyle, end: &FillStyle) -> Result<()> {
         match (start, end) {
-            (&FillStyle::Color(ref start_color), &FillStyle::Color(ref end_color)) => {
+            (FillStyle::Color(start_color), FillStyle::Color(end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
                 self.write_rgba(start_color)?;
                 self.write_rgba(end_color)?;
             }
 
             (
-                &FillStyle::LinearGradient(ref start_gradient),
-                &FillStyle::LinearGradient(ref end_gradient),
+                FillStyle::LinearGradient(start_gradient),
+                FillStyle::LinearGradient(end_gradient),
             ) => {
                 self.write_u8(0x10)?; // Linear gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
             }
 
             (
-                &FillStyle::RadialGradient(ref start_gradient),
-                &FillStyle::RadialGradient(ref end_gradient),
+                FillStyle::RadialGradient(start_gradient),
+                FillStyle::RadialGradient(end_gradient),
             ) => {
                 self.write_u8(0x12)?; // Linear gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
             }
 
             (
-                &FillStyle::FocalGradient {
-                    gradient: ref start_gradient,
+                FillStyle::FocalGradient {
+                    gradient: start_gradient,
                     focal_point: start_focal_point,
                 },
-                &FillStyle::FocalGradient {
-                    gradient: ref end_gradient,
+                FillStyle::FocalGradient {
+                    gradient: end_gradient,
                     focal_point: end_focal_point,
                 },
             ) => {
                 self.write_u8(0x13)?; // Focal gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
-                self.write_fixed8(start_focal_point)?;
-                self.write_fixed8(end_focal_point)?;
+                self.write_fixed8(*start_focal_point)?;
+                self.write_fixed8(*end_focal_point)?;
             }
 
             (
