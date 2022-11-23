@@ -356,7 +356,7 @@ pub fn splice<'gc>(
         delete_count: i32,
         items: &[Value<'gc>],
         i: i32,
-    ) -> Result<Value<'gc>, Error<'gc>>{
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if this.has_element(activation, i) {
             let element = this.get_element(activation, i);
             this.set_element(activation, i - delete_count + items.len() as i32, element)?;
