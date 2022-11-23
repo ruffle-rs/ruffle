@@ -34,22 +34,40 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stub `SoundChannel.leftPeak`
+/// Implements `SoundChannel.leftPeak`
 pub fn left_peak<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Sound.leftPeak is a stub.".into())
+    if let Some(instance) = this
+        .and_then(|this| this.as_sound_channel())
+        .and_then(|channel| channel.instance())
+    {
+        if let Some(peak) = activation.context.audio.get_sound_peak(instance) {
+            return Ok(Value::Number(peak[0].into()));
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
-/// Stub `SoundChannel.rightPeak`
+/// Implements `SoundChannel.rightPeak`
 pub fn right_peak<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Sound.rightPeak is a stub.".into())
+    if let Some(instance) = this
+        .and_then(|this| this.as_sound_channel())
+        .and_then(|channel| channel.instance())
+    {
+        if let Some(peak) = activation.context.audio.get_sound_peak(instance) {
+            return Ok(Value::Number(peak[1].into()));
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Impl `SoundChannel.position`
