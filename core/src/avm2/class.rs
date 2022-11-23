@@ -349,7 +349,7 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let native_instance_init = instance_init.clone();
+        let mut native_instance_init = instance_init.clone();
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
 
         let mut attributes = ClassAttributes::empty();
@@ -365,6 +365,19 @@ impl<'gc> Class<'gc> {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
+
+            if let Some((name, table_native_init)) =
+                activation.avm2().native_instance_init_table[class_index as usize]
+            {
+                let method = Method::from_builtin_and_params(
+                    table_native_init,
+                    name,
+                    instance_init.signature().to_vec(),
+                    instance_init.is_variadic(),
+                    activation.context.gc_context,
+                );
+                native_instance_init = method;
+            }
         }
 
         Ok(GcCell::allocate(
