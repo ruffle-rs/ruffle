@@ -506,6 +506,7 @@ swf_tests! {
     (as3_stage_loaderinfo_properties, "avm2/stage_loaderinfo_properties", 2),
     (as3_stage_mouseenabled, "avm2/stage_mouseenabled", 1),
     (as3_stage_properties, "avm2/stage_properties", 1),
+    (as3_static_text, "avm2/static_text", 1),
     (as3_stored_properties, "avm2/stored_properties", 1),
     (as3_strict_equality, "avm2/strict_equality", 1),
     (as3_string_case, "avm2/string_case", 1),
