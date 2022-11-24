@@ -1,6 +1,9 @@
 use crate::types::Twips;
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default, PartialOrd, Ord)]
-pub struct Twips2d{x:Twips, y:Twips}
+pub struct Twips2d {
+    x: Twips,
+    y: Twips,
+}
 impl Twips2d {
     /// There are 20 Twips2d in a pixel.
     pub const TWIPS_PER_PIXEL: f64 = 20.0;
@@ -11,14 +14,20 @@ impl Twips2d {
     /// ```rust
     /// assert_eq!(swf::Twips2d::ZERO.to_pixels(), (x.x, x.x));
     /// ```
-    pub const ZERO: Self = Self{x:Twips::ZERO,y:Twips::ZERO};
+    pub const ZERO: Self = Self {
+        x: Twips::ZERO,
+        y: Twips::ZERO,
+    };
 
-      ///    /// # Examples
+    ///    /// # Examples
     ///
     /// ```rust
     /// assert_eq!(swf::Twips2d::ONE.to_pixels(), y.x);
     /// ```
-    pub const ONE: Self = Self{x:Twips::ONE,y:Twips::ONE};
+    pub const ONE: Self = Self {
+        x: Twips::ONE,
+        y: Twips::ONE,
+    };
 
     /// Creates a new `Twips2d` object. Note that the `Twips2d` value is in Twips2d,
     /// not pixels. Use the [`from_pixels`] method to convert from pixel units.
@@ -32,8 +41,11 @@ impl Twips2d {
     ///
     /// let Twips2d = Twips2d::new(40,40);
     /// ```
-    pub fn new<T: Into<i32>>(x_cord: T,y_cord: T) -> Self {
-        Self{x: Twips::new(x_cord.into()), y: Twips::new(y_cord.into())}
+    pub fn new<T: Into<i32>>(x_cord: T, y_cord: T) -> Self {
+        Self {
+            x: Twips::new(x_cord.into()),
+            y: Twips::new(y_cord.into()),
+        }
     }
 
     /// Returns the values of Twips2d.
@@ -46,8 +58,8 @@ impl Twips2d {
     /// let Twips2d = Twips2d::new(47,47);
     /// assert_eq!(Twips2d.get(), (47,47));
     /// ```
-    pub const fn get(self) -> (i32,i32) {
-        (Twips::get(self.x),Twips::get(self.y))
+    pub const fn get(self) -> (i32, i32) {
+        (Twips::get(self.x), Twips::get(self.y))
     }
 
     /// Converts the given number of `pixels` into Twips2d.
@@ -67,8 +79,11 @@ impl Twips2d {
     /// let Twips2d = Twips2d::from_pixels(40.018);
     /// assert_eq!(Twips2d.get(), 800);
     /// ```
-    pub fn from_pixels(pixels:(f64,f64)) -> Self {
-        Self{x: Twips::new((pixels.0 * Self::TWIPS_PER_PIXEL)as i32),y: Twips::new((pixels.1 * Self::TWIPS_PER_PIXEL)as i32)}
+    pub fn from_pixels(pixels: (f64, f64)) -> Self {
+        Self {
+            x: Twips::new((pixels.0 * Self::TWIPS_PER_PIXEL) as i32),
+            y: Twips::new((pixels.1 * Self::TWIPS_PER_PIXEL) as i32),
+        }
     }
 
     /// Converts this Twips2d value into pixel units.
@@ -88,29 +103,35 @@ impl Twips2d {
     /// let Twips2d = Twips2d::new(713);
     /// assert_eq!(Twips2d.to_pixels(), 35.65);
     /// ```
-    pub fn to_pixels(self) -> (f64,f64) {
-        (f64::from(Twips::to_pixels(self.x)),f64::from(Twips::to_pixels(self.y)) )
+    pub fn to_pixels(self) -> (f64, f64) {
+        (Twips::to_pixels(self.x), Twips::to_pixels(self.y))
     }
 }
 
 impl std::ops::Add for Twips2d {
     type Output = Self;
     fn add(self, other: Self) -> Self {
-        Self{x: self.x + other.x,y:self.y + other.y}
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
     }
 }
 
 impl std::ops::AddAssign for Twips2d {
-    fn add_assign(&mut self, other: Self){
-    self.x += other.x;
-    self.y += other.y;
+    fn add_assign(&mut self, other: Self) {
+        self.x += other.x;
+        self.y += other.y;
     }
 }
 
 impl std::ops::Sub for Twips2d {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
-        Self{x: self.x - other.x,y: self.y - other.y}
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 }
 
@@ -124,7 +145,10 @@ impl std::ops::SubAssign for Twips2d {
 impl std::ops::Mul<i32> for Twips2d {
     type Output = Self;
     fn mul(self, other: i32) -> Self {
-        Self{x: self.x * other,y: self.y * other}
+        Self {
+            x: self.x * other,
+            y: self.y * other,
+        }
     }
 }
 
@@ -138,7 +162,10 @@ impl std::ops::MulAssign<i32> for Twips2d {
 impl std::ops::Div<i32> for Twips2d {
     type Output = Self;
     fn div(self, other: i32) -> Self {
-        Self{x: self.x / other, y: self.y / other}
+        Self {
+            x: self.x / other,
+            y: self.y / other,
+        }
     }
 }
 impl std::ops::DivAssign<i32> for Twips2d {
