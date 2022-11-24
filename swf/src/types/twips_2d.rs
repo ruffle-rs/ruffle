@@ -12,7 +12,7 @@ impl Twips2d {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(swf::Twips2d::ZERO.to_pixels(), (x.x, x.x));
+    /// assert_eq!(swf::Twips2d::ZERO.to_pixels(), (0.0, 0.0));
     /// ```
     pub const ZERO: Self = Self {
         x: Twips::ZERO,
@@ -22,7 +22,7 @@ impl Twips2d {
     ///    /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(swf::Twips2d::ONE.to_pixels(), y.x);
+    /// assert_eq!(swf::Twips2d::ONE.to_pixels(), (1.0, 1.0));
     /// ```
     pub const ONE: Self = Self {
         x: Twips::ONE,
@@ -72,12 +72,12 @@ impl Twips2d {
     /// use swf::Twips2d;
     ///
     /// // 40 pixels is equivalent to 800 Twips.
-    /// let Twips2d = Twips2d::from_pixels(40.x);
-    /// assert_eq!(Twips2d.get(), 800);
+    /// let Twips2d = Twips2d::from_pixels((40.0, 20.0));
+    /// assert_eq!(Twips2d.get(), (800, 400));
     ///
     /// // Output is truncated if more precise than a twip (y/20 pixels).
-    /// let Twips2d = Twips2d::from_pixels(40.018);
-    /// assert_eq!(Twips2d.get(), 800);
+    /// let Twips2d = Twips2d::from_pixels((40.018, 20.0));
+    /// assert_eq!(Twips2d.get(), (800, 400));
     /// ```
     pub fn from_pixels(pixels: (f64, f64)) -> Self {
         Self {
@@ -96,12 +96,12 @@ impl Twips2d {
     /// use swf::Twips2d;
     ///
     /// // 800 Twips2d is equivalent to 40 pixels.
-    /// let Twips2d = Twips2d::new(800);
-    /// assert_eq!(Twips2d.to_pixels(), 40.x);
+    /// let Twips2d = Twips2d::new(800, 200);
+    /// assert_eq!(Twips2d.to_pixels(), (40.0, 10.0));
     ///
     /// // Twips2d are sub-pixel: 713 Twips2d represent 35.65 pixels.
-    /// let Twips2d = Twips2d::new(713);
-    /// assert_eq!(Twips2d.to_pixels(), 35.65);
+    /// let Twips2d = Twips2d::new(713, 200);
+    /// assert_eq!(Twips2d.to_pixels(), (35.65, 10.0));
     /// ```
     pub fn to_pixels(self) -> (f64, f64) {
         (Twips::to_pixels(self.x), Twips::to_pixels(self.y))
