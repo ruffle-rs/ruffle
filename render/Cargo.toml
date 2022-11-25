@@ -10,7 +10,7 @@ swf = { path = "../swf"}
 log = "0.4"
 gif = "0.12.0"
 png = { version = "0.17.7" }
-flate2 = "1.0.24"
+flate2 = "1.0.25"
 smallvec = { version = "1.10.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }

@@ -39,8 +39,8 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = "2.3.1"
 wasm-bindgen = "=0.2.83"
-wasm-bindgen-futures = "0.4.32"
-serde-wasm-bindgen = "0.4.3"
+wasm-bindgen-futures = "0.4.33"
+serde-wasm-bindgen = "0.4.5"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.147", features = ["derive"] }
