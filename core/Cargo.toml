@@ -30,7 +30,7 @@ url = "2.3.1"
 weak-table = "0.3.2"
 percent-encoding = "2.2.0"
 thiserror = "1.0"
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
 encoding_rs = "0.8.31"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
