@@ -20,7 +20,7 @@ libflate = {version = "1.2", optional = true}
 log = "0.4"
 flate2 = {version = "1.0", optional = true}
 lzma-rs = {version = "0.2.0", optional = true }
-enum-map = "2.4.0"
+enum-map = "2.4.1"
 simple_asn1 = "0.6.2"
 
 [features]
