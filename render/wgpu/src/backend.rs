@@ -218,7 +218,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &self.descriptors.device
     }
 
-    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, RegistryData> {
+    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, Texture> {
         &self.bitmap_registry
     }
 }

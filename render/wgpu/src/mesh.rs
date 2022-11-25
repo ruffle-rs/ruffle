@@ -30,7 +30,6 @@ impl Draw {
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
-        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
     ) -> Self {
         let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
         let descriptors = backend.descriptors();
@@ -64,13 +63,23 @@ impl Draw {
                 num_indices: index_count,
                 num_mask_indices: draw.mask_index_count,
             },
-            TessDrawType::Bitmap(bitmap) => Draw {
-                draw_type: DrawType::bitmap(backend, source, bitmap, shape_id, draw_id),
-                vertex_buffer,
-                index_buffer,
-                num_indices: index_count,
-                num_mask_indices: draw.mask_index_count,
-            },
+            TessDrawType::Bitmap(bitmap) => {
+                let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
+                let texture = &backend.bitmap_registry()[&bitmap_handle];
+                Draw {
+                    draw_type: DrawType::bitmap(
+                        &backend.descriptors(),
+                        bitmap,
+                        texture,
+                        shape_id,
+                        draw_id,
+                    ),
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices: index_count,
+                    num_mask_indices: draw.mask_index_count,
+                }
+            }
         }
     }
 }
@@ -179,16 +188,15 @@ impl DrawType {
 
     pub fn bitmap(
         descriptors: &Descriptors,
-        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
         bitmap: Bitmap,
+        texture: &Texture,
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Self {
-        let entry = bitmap_registry.get(&bitmap.bitmap).unwrap();
-        let texture_view = entry.texture.create_view(&Default::default());
+        let texture_view = texture.texture.create_view(&Default::default());
 
         let texture_transforms = create_texture_transforms(
-            &backend.descriptors().device,
+            &descriptors.device,
             &bitmap.matrix,
             create_debug_label!(
                 "Shape {} draw {} textransforms ubo transfer buffer",
