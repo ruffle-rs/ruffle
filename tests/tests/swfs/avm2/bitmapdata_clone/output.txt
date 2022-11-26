@@ -1,0 +1,13 @@
+///var tbd = new TestBitmapData(128, 128).clone();
+///tbd.width;
+32
+///tbd.height;
+24
+///tbd.getPixel(0,0);
+16777215
+///tbd.getPixel(12,12);
+0
+///tbd instanceof BitmapData
+true
+///tbd instanceof TestBitmapData
+false

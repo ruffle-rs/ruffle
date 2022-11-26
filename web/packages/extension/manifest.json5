@@ -19,7 +19,8 @@
             "matches": ["<all_urls>"],
             "exclude_matches": [
                 "https://sso.godaddy.com/*",
-                "https://authentication.td.com/*"
+                "https://authentication.td.com/*",
+                "https://*.twitch.tv/*",
             ],
             "js": ["dist/content.js"],
             "all_frames": true,

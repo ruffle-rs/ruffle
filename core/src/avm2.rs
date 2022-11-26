@@ -9,7 +9,6 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::rc::Rc;
 use swf::avm2::read::Reader;
 use swf::{DoAbc, DoAbcFlag};
 
@@ -23,14 +22,16 @@ macro_rules! avm_debug {
 }
 
 pub mod activation;
+mod amf;
 mod array;
 pub mod bytearray;
 mod call_stack;
 mod class;
 mod domain;
+pub mod error;
 mod events;
 mod function;
-mod globals;
+pub mod globals;
 mod method;
 mod multiname;
 mod namespace;
@@ -51,6 +52,8 @@ pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
 pub use crate::avm2::domain::Domain;
+pub use crate::avm2::error::Error;
+pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
@@ -60,13 +63,9 @@ pub use crate::avm2::object::{
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
-const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
+use self::scope::Scope;
 
-/// Boxed error alias.
-///
-/// As AVM2 is a far stricter VM than AVM1, this may eventually be replaced
-/// with a proper Avm2Error enum.
-pub type Error = Box<dyn std::error::Error>;
+const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
@@ -74,6 +73,9 @@ pub type Error = Box<dyn std::error::Error>;
 pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
+
+    /// Scopes currently present of the scope stack.
+    scope_stack: Vec<Scope<'gc>>,
 
     /// The current call stack of the player.
     call_stack: GcCell<'gc, CallStack<'gc>>,
@@ -85,10 +87,13 @@ pub struct Avm2<'gc> {
     system_classes: Option<SystemClasses<'gc>>,
 
     #[collect(require_static)]
-    native_method_table: &'static [Option<NativeMethodImpl>],
+    native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     #[collect(require_static)]
-    native_instance_allocator_table: &'static [Option<AllocatorFn>],
+    native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
+
+    #[collect(require_static)]
+    native_instance_init_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     /// A list of objects which are capable of recieving broadcasts.
     ///
@@ -111,11 +116,13 @@ impl<'gc> Avm2<'gc> {
 
         Self {
             stack: Vec::new(),
+            scope_stack: Vec::new(),
             call_stack: GcCell::allocate(mc, CallStack::new()),
             globals,
             system_classes: None,
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
+            native_instance_init_table: Default::default(),
             broadcast_list: Default::default(),
 
             #[cfg(feature = "avm_debug")]
@@ -123,7 +130,7 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
         globals::load_player_globals(&mut activation, globals)
@@ -140,7 +147,7 @@ impl<'gc> Avm2<'gc> {
     pub fn run_script_initializer(
         script: Script<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
         let (method, scope, _domain) = script.init();
@@ -184,7 +191,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         use crate::avm2::events::dispatch_event;
         let mut activation = Activation::from_nothing(context.reborrow());
         dispatch_event(&mut activation, target, event)
@@ -233,7 +240,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Object<'gc>,
         on_type: ClassObject<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let base_event = event.as_event().unwrap(); // TODO: unwrap?
         let event_name = base_event.event_type();
         drop(base_event);
@@ -277,7 +284,7 @@ impl<'gc> Avm2<'gc> {
         reciever: Option<Object<'gc>>,
         args: &[Value<'gc>],
         context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         let mut evt_activation = Activation::from_nothing(context.reborrow());
         callable.call(reciever, args, &mut evt_activation)?;
 
@@ -289,20 +296,29 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         do_abc: DoAbc,
         domain: Domain<'gc>,
-    ) -> Result<(), Error> {
-        let mut read = Reader::new(do_abc.data);
+    ) -> Result<(), Error<'gc>> {
+        let mut reader = Reader::new(do_abc.data);
+        let abc = match reader.read() {
+            Ok(abc) => abc,
+            Err(_) => {
+                let mut activation = Activation::from_nothing(context.reborrow());
+                return Err(Error::AvmError(crate::avm2::error::verify_error(
+                    &mut activation,
+                    "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
+                    1107,
+                )?));
+            }
+        };
 
-        let abc_file = Rc::new(read.read()?);
-        let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
-
-        for i in (0..abc_file.scripts.len()).rev() {
+        let num_scripts = abc.scripts.len();
+        let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
+        for i in (0..num_scripts).rev() {
             let mut script = tunit.load_script(i as u32, context)?;
 
             if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
                 script.globals(context)?;
             }
         }
-
         Ok(())
     }
 
@@ -330,7 +346,11 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Push a value onto the operand stack.
-    fn push(&mut self, value: impl Into<Value<'gc>>) {
+    fn push(&mut self, value: impl Into<Value<'gc>>, depth: usize, max: usize) {
+        if self.stack.len() - depth > max {
+            log::warn!("Avm2::push: Stack overflow");
+            return;
+        }
         let mut value = value.into();
         if let Value::Object(o) = value {
             if let Some(prim) = o.as_primitive() {
@@ -344,11 +364,13 @@ impl<'gc> Avm2<'gc> {
 
     /// Retrieve the top-most value on the operand stack.
     #[allow(clippy::let_and_return)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().unwrap_or_else(|| {
-            log::warn!("Avm1::pop: Stack underflow");
+    fn pop(&mut self, depth: usize) -> Value<'gc> {
+        let value = if self.stack.len() <= depth {
+            log::warn!("Avm2::pop: Stack underflow");
             Value::Undefined
-        });
+        } else {
+            self.stack.pop().unwrap_or(Value::Undefined)
+        };
 
         avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
 
@@ -372,12 +394,30 @@ impl<'gc> Avm2<'gc> {
         value
     }
 
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
+    fn pop_args(&mut self, arg_count: u32, depth: usize) -> Vec<Value<'gc>> {
         let mut args = vec![Value::Undefined; arg_count as usize];
         for arg in args.iter_mut().rev() {
-            *arg = self.pop();
+            *arg = self.pop(depth);
         }
         args
+    }
+
+    fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
+        if self.scope_stack.len() - depth > max {
+            log::warn!("Avm2::push_scope: Scope Stack overflow");
+            return;
+        }
+
+        self.scope_stack.push(scope);
+    }
+
+    fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
+        if self.scope_stack.len() <= depth {
+            log::warn!("Avm2::pop_scope: Scope Stack underflow");
+            None
+        } else {
+            self.scope_stack.pop()
+        }
     }
 
     #[cfg(feature = "avm_debug")]

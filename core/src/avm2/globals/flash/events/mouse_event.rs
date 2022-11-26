@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::{Namespace, QName};
+use crate::avm2::Multiname;
 use crate::display_object::TDisplayObject;
 use swf::Twips;
 
@@ -11,14 +11,11 @@ pub fn get_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
             let local_x = this
-                .get_property(
-                    &QName::new(Namespace::public(), "localX").into(),
-                    activation,
-                )?
+                .get_property(&Multiname::public("localX"), activation)?
                 .coerce_to_number(activation)?;
 
             if local_x.is_nan() {
@@ -42,14 +39,11 @@ pub fn get_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
             let local_y = this
-                .get_property(
-                    &QName::new(Namespace::public(), "localY").into(),
-                    activation,
-                )?
+                .get_property(&Multiname::public("localY"), activation)?
                 .coerce_to_number(activation)?;
 
             if local_y.is_nan() {

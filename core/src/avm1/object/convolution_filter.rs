@@ -79,11 +79,11 @@ impl<'gc> ConvolutionFilterObject<'gc> {
         self.update_matrix_length(gc_context);
     }
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         ConvolutionFilterObject(GcCell::allocate(
             gc_context,
             ConvolutionFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 alpha: 0.0,
                 bias: 0.0,
                 clamp: true,

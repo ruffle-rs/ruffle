@@ -1,0 +1,3 @@
+Caught error: ArgumentError: Error #2012: StaticText$ class cannot be instantiated.
+e.errorID: 2012
+Child: [object StaticText]

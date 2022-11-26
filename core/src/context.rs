@@ -27,6 +27,7 @@ use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::RenderBackend;
+use ruffle_render::commands::CommandList;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
@@ -127,7 +128,10 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub instance_counter: &'a mut i32,
 
     /// Shared objects cache
-    pub shared_objects: &'a mut HashMap<String, Avm1Object<'gc>>,
+    pub avm1_shared_objects: &'a mut HashMap<String, Avm1Object<'gc>>,
+
+    /// Shared objects cache
+    pub avm2_shared_objects: &'a mut HashMap<String, Avm2Object<'gc>>,
 
     /// Text fields with unbound variable bindings.
     pub unbound_text_fields: &'a mut Vec<EditText<'gc>>,
@@ -319,7 +323,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             load_manager: self.load_manager,
             system: self.system,
             instance_counter: self.instance_counter,
-            shared_objects: self.shared_objects,
+            avm1_shared_objects: self.avm1_shared_objects,
+            avm2_shared_objects: self.avm2_shared_objects,
             unbound_text_fields: self.unbound_text_fields,
             timers: self.timers,
             current_context_menu: self.current_context_menu,
@@ -350,7 +355,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
 /// A queued ActionScript call.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct QueuedActions<'gc> {
+pub struct QueuedAction<'gc> {
     /// The movie clip this ActionScript is running on.
     pub clip: DisplayObject<'gc>,
 
@@ -366,7 +371,7 @@ pub struct QueuedActions<'gc> {
 #[collect(no_drop)]
 pub struct ActionQueue<'gc> {
     /// Each priority is kept in a separate bucket.
-    action_queue: Vec<VecDeque<QueuedActions<'gc>>>,
+    action_queue: [VecDeque<QueuedAction<'gc>>; ActionQueue::NUM_PRIORITIES],
 }
 
 impl<'gc> ActionQueue<'gc> {
@@ -375,24 +380,20 @@ impl<'gc> ActionQueue<'gc> {
 
     /// Crates a new `ActionQueue` with an empty queue.
     pub fn new() -> Self {
-        let mut action_queue = Vec::with_capacity(Self::NUM_PRIORITIES);
-        for _ in 0..Self::NUM_PRIORITIES {
-            action_queue.push(VecDeque::with_capacity(Self::DEFAULT_CAPACITY))
-        }
+        let action_queue = std::array::from_fn(|_| VecDeque::with_capacity(Self::DEFAULT_CAPACITY));
         Self { action_queue }
     }
 
-    /// Queues ActionScript to run for the given movie clip.
-    /// `actions` is the slice of ActionScript bytecode to run.
-    /// The actions will be skipped if the clip is removed before the actions run.
-    pub fn queue_actions(
+    /// Queues an action to run for the given movie clip.
+    /// The action will be skipped if the clip is removed before the action runs.
+    pub fn queue_action(
         &mut self,
         clip: DisplayObject<'gc>,
         action_type: ActionType<'gc>,
         is_unload: bool,
     ) {
         let priority = action_type.priority();
-        let action = QueuedActions {
+        let action = QueuedAction {
             clip,
             action_type,
             is_unload,
@@ -404,14 +405,11 @@ impl<'gc> ActionQueue<'gc> {
     }
 
     /// Sorts and drains the actions from the queue.
-    pub fn pop_action(&mut self) -> Option<QueuedActions<'gc>> {
-        for queue in self.action_queue.iter_mut().rev() {
-            let action = queue.pop_front();
-            if action.is_some() {
-                return action;
-            }
-        }
-        None
+    pub fn pop_action(&mut self) -> Option<QueuedAction<'gc>> {
+        self.action_queue
+            .iter_mut()
+            .rev()
+            .find_map(VecDeque::pop_front)
     }
 }
 
@@ -424,8 +422,11 @@ impl<'gc> Default for ActionQueue<'gc> {
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
 pub struct RenderContext<'a, 'gc, 'gc_context> {
-    /// The renderer, used by the display objects to draw themselves.
+    /// The renderer, used by the display objects to register themselves.
     pub renderer: &'a mut dyn RenderBackend,
+
+    /// The command list, used by the display objects to draw themselves.
+    pub commands: &'a mut CommandList,
 
     /// The GC MutationContext, used to perform any GcCell writes
     /// that must occur during rendering.
@@ -439,6 +440,9 @@ pub struct RenderContext<'a, 'gc, 'gc_context> {
 
     /// The transform stack controls the matrix and color transform as we traverse the display hierarchy.
     pub transform_stack: &'a mut TransformStack,
+
+    /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
+    pub is_offscreen: bool,
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,

@@ -67,12 +67,12 @@ pub fn get_code<'gc>(
 
 pub fn create_key_object<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let key = ScriptObject::new(gc_context, proto);
+    let key = ScriptObject::new(gc_context, Some(proto));
     broadcaster_functions.initialize(gc_context, key.into(), array_proto);
     define_properties_on(OBJECT_DECLS, gc_context, key, fn_proto);
     key.into()

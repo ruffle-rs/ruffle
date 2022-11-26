@@ -108,7 +108,7 @@ impl<'gc> Executable<'gc> {
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         callee: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let ret = match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;
@@ -254,19 +254,18 @@ impl<'gc> Executable<'gc> {
                                 TraitKind::Getter { .. } => output.push_utf8("get "),
                                 _ => (),
                             }
-                            output.push_str(&method_trait.name().local_name());
+                            if method_trait.name().namespace().is_namespace() {
+                                output.push_str(&method_trait.name().to_qualified_name_no_mc());
+                            } else {
+                                output.push_str(&method_trait.name().local_name());
+                            }
                         }
                         // TODO: What happens if we can't find the trait?
                     }
                     // We purposely do nothing for instance initializers
-                } else if method.is_function {
+                } else if method.is_function && !method.method_name().is_empty() {
                     output.push_utf8("Function/");
-                    let name = method.method_name();
-                    if name.is_empty() {
-                        output.push_utf8("<anonymous>");
-                    } else {
-                        output.push_utf8(name);
-                    }
+                    output.push_utf8(method.method_name());
                 } else {
                     output.push_utf8("MethodInfo-");
                     output.push_utf8(&method.abc_method.to_string());
@@ -274,6 +273,13 @@ impl<'gc> Executable<'gc> {
             }
         }
         output.push_utf8("()");
+    }
+
+    pub fn num_parameters(&self) -> usize {
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => method.signature.len(),
+            Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
+        }
     }
 }
 

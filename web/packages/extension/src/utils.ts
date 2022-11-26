@@ -65,7 +65,7 @@ export let runtime: {
 export let openOptionsPage: () => Promise<void>;
 
 function promisify<T>(
-    func: (callback: (result?: T) => void) => void
+    func: (callback: (result: T) => void) => void
 ): Promise<T> {
     return new Promise((resolve, reject) => {
         func((result) => {
@@ -73,7 +73,7 @@ function promisify<T>(
             if (error) {
                 reject(error);
             } else {
-                resolve(result!);
+                resolve(result);
             }
         });
     });

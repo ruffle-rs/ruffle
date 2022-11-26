@@ -1,0 +1,7 @@
+///var tb = new Test.TestBitmap();
+///tb.bitmapData;
+[object BitmapData]
+///tb.pixelSnapping;
+auto
+///tb.smoothing;
+false

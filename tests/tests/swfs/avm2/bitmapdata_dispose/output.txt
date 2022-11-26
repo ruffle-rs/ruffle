@@ -1,0 +1,1 @@
+Caught error:  ArgumentError: Error #2015: Invalid BitmapData.

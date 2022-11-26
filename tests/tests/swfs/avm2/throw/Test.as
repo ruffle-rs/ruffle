@@ -1,22 +1,20 @@
 ﻿package {
+	import flash.errors.IllegalOperationError;
+	
 	public class Test {
-		public function Test() {}
+		public function Test() {
+		}
 	}
 }
 
-import flash.errors.IllegalOperationError;
-
 function foo() {
-	throw new IllegalOperationError("My Error", 30);
+	throw new ArgumentError("My Error", 50);
 }
 
 try {
 	foo()
 } catch (err) {
 	trace("Caught error!");
-	
-	// FIXME - we currently don't use the original thrown
-	// object in a 'catch' block. Once that's implemented, this
-	// statement will start printing the correct values.
+	trace(err.name);
 	trace(err);
 }

@@ -2,9 +2,10 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use gc_arena::MutationContext;
+use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
+use gc_arena::{GcCell, MutationContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "clone" => method(clone);
@@ -23,55 +24,32 @@ pub fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this.as_blur_filter_object() {
-        let proto = activation.context.avm1.prototypes().blur_filter_constructor;
-
-        let blur_x = this.get("blurX", activation)?;
-        let blur_y = this.get("blurY", activation)?;
-        let quality = this.get("quality", activation)?;
-
-        let cloned = proto.construct(activation, &[blur_x, blur_y, quality])?;
-        return Ok(cloned);
-    }
-
-    if let Some(this) = this.as_bevel_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .bevel_filter_constructor;
-
-        let distance = this.get("distance", activation)?;
-        let angle = this.get("angle", activation)?;
-        let highlight_color = this.get("highlightColor", activation)?;
-        let highlight_alpha = this.get("highlightAlpha", activation)?;
-        let shadow_color = this.get("shadowColor", activation)?;
-        let shadow_alpha = this.get("shadowAlpha", activation)?;
-        let blur_x = this.get("blurX", activation)?;
-        let blur_y = this.get("blurY", activation)?;
-        let strength = this.get("strength", activation)?;
-        let quality = this.get("quality", activation)?;
-        let type_ = this.get("type", activation)?;
-        let knockout = this.get("knockout", activation)?;
-
-        let cloned = proto.construct(
-            activation,
-            &[
-                distance,
-                angle,
-                highlight_color,
-                highlight_alpha,
-                shadow_color,
-                shadow_alpha,
-                blur_x,
-                blur_y,
-                strength,
-                quality,
-                type_,
-                knockout,
-            ],
-        )?;
-        return Ok(cloned);
+    let native = match this.native() {
+        NativeObject::BlurFilter(blur_filter) => NativeObject::BlurFilter(GcCell::allocate(
+            activation.context.gc_context,
+            blur_filter.read().clone(),
+        )),
+        NativeObject::BevelFilter(bevel_filter) => NativeObject::BevelFilter(GcCell::allocate(
+            activation.context.gc_context,
+            bevel_filter.read().clone(),
+        )),
+        _ => NativeObject::None,
+    };
+    if !matches!(native, NativeObject::None) {
+        let proto = this.get_local_stored("__proto__", activation);
+        let cloned = ScriptObject::new(activation.context.gc_context, None);
+        // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
+        // TODO: Pass `proto` to `ScriptObject::new()` once possible.
+        if let Some(proto) = proto {
+            cloned.define_value(
+                activation.context.gc_context,
+                "__proto__",
+                proto,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
+        cloned.set_native(activation.context.gc_context, native);
+        return Ok(cloned.into());
     }
 
     if let Some(this) = this.as_glow_filter_object() {

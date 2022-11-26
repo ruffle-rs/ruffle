@@ -164,7 +164,7 @@ where
 {
     let mut out = String::with_capacity(2 * hash.len());
     for byte in hash {
-        write!(out, "{:02X}", byte).map_err(|e| SerError::custom(e.to_string()))?;
+        write!(out, "{byte:02X}").map_err(|e| SerError::custom(e.to_string()))?;
     }
 
     s.serialize_str(&out)

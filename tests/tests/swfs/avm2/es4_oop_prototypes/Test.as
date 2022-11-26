@@ -68,6 +68,7 @@ try {
 	trace(x.nofield);
 } catch (e) {
 	trace("Caught missing field")
+	trace(e);
 }
 
 dynamic class DynamicClass{}

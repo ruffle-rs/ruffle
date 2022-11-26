@@ -82,11 +82,11 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
         self,
         _activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         Err("Cannot construct internal event dispatcher structures.".into())
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Err("Cannot subclass internal event dispatcher structures.".into())
     }
 

@@ -1,8 +1,5 @@
-#[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
-#[cfg(not(target_family = "wasm"))]
 use crate::Error;
-#[cfg(not(target_family = "wasm"))]
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 
@@ -53,16 +50,35 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 impl SwapChainTarget {
     pub fn new(
         surface: wgpu::Surface,
-        format: wgpu::TextureFormat,
-        size: (u32, u32),
+        adapter: &wgpu::Adapter,
+        (width, height): (u32, u32),
         device: &wgpu::Device,
     ) -> Self {
+        // Ideally we want to use an RGBA non-sRGB surface format, because Flash colors and
+        // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
+        // Some platforms may only support an sRGB surface, in which case we will draw to an
+        // intermediate linear buffer and then copy to the sRGB surface.
+        let formats = surface.get_supported_formats(adapter);
+        let format = formats
+            .iter()
+            .find(|format| {
+                matches!(
+                    format,
+                    wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Bgra8Unorm
+                )
+            })
+            .or_else(|| formats.first())
+            .copied()
+            // No surface (rendering to texture), default to linear RBGA.
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
-            width: size.0,
-            height: size.1,
+            width,
+            height,
             present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: surface.get_supported_alpha_modes(adapter)[0],
         };
         surface.configure(device, &surface_config);
         Self {
@@ -111,35 +127,33 @@ impl RenderTarget for SwapChainTarget {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTarget {
-    size: wgpu::Extent3d,
-    texture: wgpu::Texture,
-    format: wgpu::TextureFormat,
-    buffer: wgpu::Buffer,
-    buffer_dimensions: BufferDimensions,
+    pub size: wgpu::Extent3d,
+    pub texture: wgpu::Texture,
+    pub format: wgpu::TextureFormat,
+    pub buffer: wgpu::Buffer,
+    pub buffer_dimensions: BufferDimensions,
 }
 
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTargetFrame(wgpu::TextureView);
 
-#[cfg(not(target_family = "wasm"))]
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl TextureTarget {
     pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Result<Self, Error> {
         if size.0 > device.limits().max_texture_dimension_2d
             || size.1 > device.limits().max_texture_dimension_2d
+            || size.0 < 1
+            || size.1 < 1
         {
             return Err(format!(
-                "Texture target cannot be larger than {}px on either dimension (requested {} x {})",
+                "Texture target cannot be smaller than 1 or larger than {}px on either dimension (requested {} x {})",
                 device.limits().max_texture_dimension_2d,
                 size.0,
                 size.1
@@ -181,8 +195,12 @@ impl TextureTarget {
     }
 
     /// Captures the current contents of our texture buffer
-    /// as an `RgbaImage` (using straight alpha).
-    pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
+    /// as an `RgbaImage`
+    pub fn capture(
+        &self,
+        device: &wgpu::Device,
+        premultiplied_alpha: bool,
+    ) -> Option<image::RgbaImage> {
         let (sender, receiver) = std::sync::mpsc::channel();
         let buffer_slice = self.buffer.slice(..);
         buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -203,9 +221,11 @@ impl TextureTarget {
                         .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
                 }
 
-                // Our texture uses premutliplied alpha - convert to straight alpha
-                // so that this image can be saved directly as a PNG.
-                unmultiply_alpha_rgba(&mut buffer);
+                // The image copied from the GPU uses premultiplied alpha, so
+                // convert to straight alpha if requested by the user.
+                if !premultiplied_alpha {
+                    unmultiply_alpha_rgba(&mut buffer);
+                }
 
                 let image = image::RgbaImage::from_raw(self.size.width, self.size.height, buffer);
                 drop(map);
@@ -220,7 +240,6 @@ impl TextureTarget {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl RenderTarget for TextureTarget {
     type Frame = TextureTargetFrame;
 

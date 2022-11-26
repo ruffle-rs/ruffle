@@ -31,11 +31,11 @@ impl fmt::Debug for ColorMatrixFilterObject<'_> {
 impl<'gc> ColorMatrixFilterObject<'gc> {
     add_field_accessors!([set_matrix, matrix, matrix, [f64; 4 * 5]],);
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         ColorMatrixFilterObject(GcCell::allocate(
             gc_context,
             ColorMatrixFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 matrix: [
                     1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0,

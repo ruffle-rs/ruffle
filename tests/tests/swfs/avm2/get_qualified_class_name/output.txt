@@ -6,3 +6,5 @@ int
 String
 flash.utils::ByteArray
 String
+null
+void

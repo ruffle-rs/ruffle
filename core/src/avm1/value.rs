@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::{Object, TObject};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
@@ -207,7 +208,8 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let result = match self {
             Value::Object(object) => {
-                let val = if activation.swf_version() > 5 && object.as_date_object().is_some() {
+                let is_date = matches!(object.native(), NativeObject::Date(_));
+                let val = if activation.swf_version() > 5 && is_date {
                     // In SWFv6 and higher, Date objects call `toString`.
                     object.call_method(
                         "toString".into(),
@@ -565,8 +567,7 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
                 // 1.2345e+15
                 // This case fails to push an extra 0 to handle the rounding 9.9999 -> 10, which
                 // causes the -9999999999999999.0 -> "-e+16" bug later.
-                buf.push(digit());
-                buf.push(b'.');
+                buf.extend([digit(), b'.']);
                 for _ in 0..MAX_DECIMAL_PLACES - 1 {
                     buf.push(digit());
                 }
@@ -654,7 +655,7 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
                     buf.truncate(1);
                 }
             }
-            let _ = write!(&mut buf, "e{:+}", exp);
+            let _ = write!(&mut buf, "e{exp:+}");
         }
 
         // One final band-aid to eliminate any leading zeros.
@@ -885,7 +886,7 @@ mod test {
             let valueof = FunctionObject::function(
                 activation.context.gc_context,
                 Executable::Native(value_of_impl),
-                Some(protos.function),
+                protos.function,
                 protos.function,
             );
 

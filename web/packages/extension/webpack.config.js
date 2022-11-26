@@ -39,6 +39,10 @@ function transformManifest(content, env) {
                 /(script-src\s+[^;]*)(;|$)/i,
                 "$1 'wasm-eval'$2"
             );
+
+        // Chrome runs the extension in a single shared process by default,
+        // which prevents extension pages from loading in Incognito tabs
+        manifest.incognito = "split";
     }
 
     return JSON.stringify(manifest);

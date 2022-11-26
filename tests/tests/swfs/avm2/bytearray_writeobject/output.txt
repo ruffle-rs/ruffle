@@ -1,0 +1,24 @@
+AMF3 TESTS
+undefined
+null
+false
+true
+4
+4.5
+Infinity
+-Infinity
+NaN
+test
+,,false,true,4,4.5,Infinity,-Infinity,NaN,test
+AMF0 TESTS
+undefined
+null
+false
+true
+4
+4.5
+Infinity
+-Infinity
+NaN
+test
+,,false,true,4,4.5,Infinity,-Infinity,NaN,test

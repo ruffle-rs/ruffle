@@ -3,7 +3,7 @@ use crate::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
-pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
+pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
         y_min: Twips::new(i32::MAX),
@@ -1269,9 +1269,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
         let t0 = r * f64::cos(theta / 3.0) - offset;
         let t1 = r * f64::cos((theta + 2.0 * std::f64::consts::PI) / 3.0) - offset;
         let t2 = r * f64::cos((theta + 4.0 * std::f64::consts::PI) / 3.0) - offset;
-        roots.push(t0);
-        roots.push(t1);
-        roots.push(t2);
+        roots.extend([t0, t1, t2]);
     } else {
         let gamma1 = f64::cbrt(q + f64::sqrt(-disc));
         let gamma2 = f64::cbrt(q - f64::sqrt(-disc));

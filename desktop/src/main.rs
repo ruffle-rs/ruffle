@@ -20,11 +20,11 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState, StaticCallstack, ViewportDimensions,
+    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
+    PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
 };
+use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use ruffle_render_wgpu::WgpuRenderBackend;
 use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -37,7 +37,7 @@ use winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
@@ -52,39 +52,39 @@ thread_local! {
 )]
 struct Opt {
     /// Path to a Flash movie (SWF) to play.
-    #[clap(name = "FILE", value_parser)]
+    #[clap(name = "FILE")]
     input_path: Option<PathBuf>,
 
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
-    #[clap(short = 'P', number_of_values = 1, action = clap::ArgAction::Append)]
+    #[clap(short = 'P', action = clap::ArgAction::Append)]
     parameters: Vec<String>,
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "default")]
     graphics: GraphicsBackend,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
     /// Width of window in pixels.
-    #[clap(long, display_order = 1, value_parser)]
+    #[clap(long, display_order = 1)]
     width: Option<f64>,
 
     /// Height of window in pixels.
-    #[clap(long, display_order = 2, value_parser)]
+    #[clap(long, display_order = 2)]
     height: Option<f64>,
 
     /// Location to store a wgpu trace output
-    #[clap(long, value_parser)]
+    #[clap(long)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
 
     /// Proxy to use when loading movies via URL.
-    #[clap(long, value_parser)]
+    #[clap(long)]
     proxy: Option<Url>,
 
     /// Replace all embedded HTTP URLs with HTTPS.
@@ -100,6 +100,13 @@ struct Opt {
 
     #[clap(long, action)]
     dont_warn_on_unsupported_content: bool,
+
+    #[clap(long, default_value = "streaming")]
+    load_behavior: LoadBehavior,
+
+    /// Spoofs the root SWF URL provided to ActionScript.
+    #[clap(long, value_parser)]
+    spoof_url: Option<Url>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -161,7 +168,7 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
         let client = builder.build().context("Couldn't create HTTP client")?;
         let response = client
             .get(url.to_string())
-            .with_context(|| format!("Couldn't load URL {}", url))?;
+            .with_context(|| format!("Couldn't load URL {url}"))?;
         let mut buffer: Vec<u8> = Vec::new();
         response
             .into_body()
@@ -203,7 +210,7 @@ impl App {
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
 
-        let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
+        let event_loop = EventLoopBuilder::with_user_event().build();
 
         let title = if let Some(movie_url) = &movie_url {
             let filename = movie_url
@@ -211,7 +218,7 @@ impl App {
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| movie_url.as_str());
 
-            format!("Ruffle - {}", filename)
+            format!("Ruffle - {filename}")
         } else {
             "Ruffle".into()
         };
@@ -267,7 +274,9 @@ impl App {
             .with_autoplay(true)
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
-            .with_fullscreen(opt.fullscreen);
+            .with_fullscreen(opt.fullscreen)
+            .with_load_behavior(opt.load_behavior)
+            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()));
 
         let player = builder.build();
 
@@ -491,13 +500,8 @@ impl App {
                         .expect("active executor reference")
                         .poll_all(),
                     winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                        // TODO: Re-use `SwfMovie::width` and `SwfMovie::height`.
-                        let movie_width = (swf_header.stage_size().x_max
-                            - swf_header.stage_size().x_min)
-                            .to_pixels();
-                        let movie_height = (swf_header.stage_size().y_max
-                            - swf_header.stage_size().y_min)
-                            .to_pixels();
+                        let movie_width = swf_header.stage_size().width().to_pixels();
+                        let movie_height = swf_header.stage_size().height().to_pixels();
 
                         let window_size: Size = match (self.opt.width, self.opt.height) {
                             (None, None) => LogicalSize::new(movie_width, movie_height).into(),
@@ -815,7 +819,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
     let end = Instant::now();
     let duration = end.duration_since(start);
 
-    println!("Ran {} frames in {}s.", num_frames, duration.as_secs_f32());
+    println!("Ran {num_frames} frames in {}s.", duration.as_secs_f32());
 
     Ok(())
 }
@@ -842,7 +846,7 @@ fn init() {
 fn panic_hook() {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
-            callstack.avm2(|callstack| println!("AVM2 stack trace: {}", callstack))
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
         }
     });
 }

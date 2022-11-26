@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{textformat_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::ecma_conversions::round_to_even;
@@ -18,7 +19,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
@@ -99,7 +100,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -135,7 +136,7 @@ macro_rules! setter {
 fn align<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .align
         .as_ref()
@@ -151,7 +152,7 @@ fn set_align<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     let value = match value {
         Value::Undefined | Value::Null => {
             text_format.align = None;
@@ -180,7 +181,7 @@ fn set_align<'gc>(
 fn block_indent<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .block_indent
         .as_ref()
@@ -191,7 +192,7 @@ fn set_block_indent<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -202,7 +203,7 @@ fn set_block_indent<'gc>(
 fn bold<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .bold
         .as_ref()
@@ -213,7 +214,7 @@ fn set_bold<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.bold = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_boolean()),
@@ -224,7 +225,7 @@ fn set_bold<'gc>(
 fn bullet<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .bullet
         .as_ref()
@@ -235,7 +236,7 @@ fn set_bullet<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.bullet = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_boolean()),
@@ -246,7 +247,7 @@ fn set_bullet<'gc>(
 fn color<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .color
         .as_ref()
@@ -257,7 +258,7 @@ fn set_color<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.color = match value {
         Value::Undefined | Value::Null => None,
         value => Some(swf::Color::from_rgba(value.coerce_to_u32(activation)?)),
@@ -268,7 +269,7 @@ fn set_color<'gc>(
 fn font<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
         AvmString::new(activation.context.gc_context, font.as_wstr()).into()
     }))
@@ -278,7 +279,7 @@ fn set_font<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
@@ -289,7 +290,7 @@ fn set_font<'gc>(
 fn indent<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .indent
         .as_ref()
@@ -300,7 +301,7 @@ fn set_indent<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -311,7 +312,7 @@ fn set_indent<'gc>(
 fn italic<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .italic
         .as_ref()
@@ -322,7 +323,7 @@ fn set_italic<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.italic = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_boolean()),
@@ -333,7 +334,7 @@ fn set_italic<'gc>(
 fn kerning<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .kerning
         .as_ref()
@@ -344,7 +345,7 @@ fn set_kerning<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.kerning = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_boolean()),
@@ -355,7 +356,7 @@ fn set_kerning<'gc>(
 fn leading<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .leading
         .as_ref()
@@ -366,7 +367,7 @@ fn set_leading<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -377,7 +378,7 @@ fn set_leading<'gc>(
 fn left_margin<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .left_margin
         .as_ref()
@@ -388,7 +389,7 @@ fn set_left_margin<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -399,7 +400,7 @@ fn set_left_margin<'gc>(
 fn letter_spacing<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .letter_spacing
         .as_ref()
@@ -410,7 +411,7 @@ fn set_letter_spacing<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.letter_spacing = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_number(activation)?),
@@ -421,7 +422,7 @@ fn set_letter_spacing<'gc>(
 fn right_margin<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .right_margin
         .as_ref()
@@ -432,7 +433,7 @@ fn set_right_margin<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -443,7 +444,7 @@ fn set_right_margin<'gc>(
 fn size<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .size
         .as_ref()
@@ -454,7 +455,7 @@ fn set_size<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
         value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
@@ -465,7 +466,7 @@ fn set_size<'gc>(
 fn tab_stops<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     text_format
         .tab_stops
         .as_ref()
@@ -479,21 +480,20 @@ fn set_tab_stops<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.tab_stops = match value {
         Value::Undefined | Value::Null => None,
         value => {
             let object = value.coerce_to_object(activation)?;
             let length = object.as_array_storage().map_or(0, |v| v.length());
 
-            let tab_stops: Result<Vec<_>, Error> = (0..length)
+            let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     let element = object.get_property(
-                        &QName::new(
-                            Namespace::public(),
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                        )
-                        .into(),
+                        &Multiname::public(AvmString::new_utf8(
+                            activation.context.gc_context,
+                            i.to_string(),
+                        )),
                         activation,
                     )?;
                     Ok(round_to_even(element.coerce_to_number(activation)?).into())
@@ -508,7 +508,7 @@ fn set_tab_stops<'gc>(
 fn target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
         AvmString::new(activation.context.gc_context, target.as_wstr()).into()
     }))
@@ -518,7 +518,7 @@ fn set_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
@@ -529,7 +529,7 @@ fn set_target<'gc>(
 fn underline<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format
         .underline
         .as_ref()
@@ -540,7 +540,7 @@ fn set_underline<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.underline = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_boolean()),
@@ -551,7 +551,7 @@ fn set_underline<'gc>(
 fn url<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &TextFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
         AvmString::new(activation.context.gc_context, url.as_wstr()).into()
     }))
@@ -561,7 +561,7 @@ fn set_url<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     text_format: &mut TextFormat,
     value: &Value<'gc>,
-) -> Result<(), Error> {
+) -> Result<(), Error<'gc>> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
         value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
@@ -573,7 +573,7 @@ fn set_url<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "TextFormat"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<TextFormat instance initializer>", mc),
         Method::from_builtin(class_init, "<TextFormat class initializer>", mc),
         mc,

@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -25,7 +25,7 @@ fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.subclass_object().unwrap();
 
     if args.is_empty() {
@@ -43,7 +43,7 @@ pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
@@ -163,30 +163,39 @@ pub fn class_init<'gc>(
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    this.map(|t| t.to_string(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        this.to_string(activation)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    this.map(|t| t.to_locale_string(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        this.to_locale_string(activation)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
-    _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    this.map(|t| t.value_of(activation.context.gc_context))
-        .unwrap_or(Ok(Value::Undefined))
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        this.value_of(activation.context.gc_context)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 /// `Object.prototype.hasOwnProperty`
@@ -194,10 +203,12 @@ pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     let multiname = Multiname::public(name);
@@ -209,8 +220,8 @@ pub fn is_prototype_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let search_proto: Result<Object<'gc>, Error> =
+) -> Result<Value<'gc>, Error<'gc>> {
+    let search_proto: Result<Object<'gc>, Error<'gc>> =
         this.ok_or_else(|| "No valid this parameter".into());
     let search_proto = search_proto?;
     let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
@@ -231,10 +242,12 @@ pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     Ok(this.property_is_enumerable(name).into())
@@ -245,10 +258,12 @@ pub fn set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    let this: Result<Object<'gc>, Error> = this.ok_or_else(|| "No valid this parameter".into());
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this: Result<Object<'gc>, Error<'gc>> =
+        this.ok_or_else(|| "No valid this parameter".into());
     let this = this?;
-    let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
+    let name: Result<&Value<'gc>, Error<'gc>> =
+        args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
@@ -276,7 +291,7 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
 
     write.define_class_trait(Trait::from_const(
         QName::new(Namespace::public(), "length"),
-        QName::new(Namespace::public(), "int").into(),
+        Multiname::public("int"),
         None,
     ));
 

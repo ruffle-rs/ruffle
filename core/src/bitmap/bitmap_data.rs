@@ -1,12 +1,18 @@
-use gc_arena::Collect;
-
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
+use crate::context::RenderContext;
+use crate::context::UpdateContext;
+use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
+use gc_arena::{Collect, GcCell};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::color_transform::ColorTransform;
+use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::transform::Transform;
 use std::ops::Range;
+use swf::BlendMode;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
 /// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
@@ -124,6 +130,22 @@ impl From<i32> for Color {
     }
 }
 
+impl From<swf::Color> for Color {
+    fn from(c: swf::Color) -> Self {
+        Self::argb(c.a, c.r, c.g, c.b)
+    }
+}
+
+impl From<Color> for swf::Color {
+    fn from(c: Color) -> Self {
+        let r = c.red();
+        let g = c.green();
+        let b = c.blue();
+        let a = c.alpha();
+        Self { r, g, b, a }
+    }
+}
+
 bitflags! {
     pub struct ChannelOptions: u8 {
         const RED = 1 << 0;
@@ -143,6 +165,11 @@ pub struct BitmapData<'gc> {
     width: u32,
     height: u32,
     transparency: bool,
+
+    // Note that it's technically possible to have a BitmapData with zero width and height,
+    // (by embedding it in the SWF instead of using the BitmapData constructor),
+    // so we need a separate 'disposed' flag.
+    disposed: bool,
 
     /// The bitmap handle for this data.
     ///
@@ -170,6 +197,26 @@ impl<'gc> BitmapData<'gc> {
         self.dirty = true;
     }
 
+    pub fn check_valid(
+        &self,
+        activation: &mut crate::avm2::Activation<'_, 'gc, '_>,
+    ) -> Result<(), crate::avm2::Error<'gc>> {
+        if self.disposed() {
+            return Err(crate::avm2::Error::AvmError(
+                crate::avm2::error::argument_error(
+                    activation,
+                    "Error #2015: Invalid BitmapData.",
+                    2015,
+                )?,
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn disposed(&self) -> bool {
+        self.disposed
+    }
+
     pub fn dispose(&mut self, renderer: &mut dyn RenderBackend) {
         self.width = 0;
         self.height = 0;
@@ -180,6 +227,7 @@ impl<'gc> BitmapData<'gc> {
         }
         // There's no longer a handle to update
         self.dirty = false;
+        self.disposed = true;
     }
 
     pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
@@ -409,15 +457,11 @@ impl<'gc> BitmapData<'gc> {
 
         for x in src_min_x.max(0)..src_max_x.min(source_bitmap.width()) {
             for y in src_min_y.max(0)..src_max_y.min(source_bitmap.height()) {
-                if self.is_point_in_bounds((x + min_x) as i32, (y + min_y) as i32) {
+                if self.is_point_in_bounds(x as i32 + min_x as i32, y as i32 + min_y as i32) {
                     let original_color: u32 = self
-                        .get_pixel_raw((x + min_x) as u32, (y + min_y) as u32)
-                        .unwrap_or_else(|| 0.into())
+                        .get_pixel32(x as i32 + min_x as i32, y as i32 + min_y as i32)
                         .into();
-                    let source_color: u32 = source_bitmap
-                        .get_pixel_raw(x, y)
-                        .unwrap_or_else(|| 0.into())
-                        .into();
+                    let source_color: u32 = source_bitmap.get_pixel32(x as i32, y as i32).into();
 
                     let channel_shift: u32 = match source_channel {
                         // red
@@ -445,9 +489,9 @@ impl<'gc> BitmapData<'gc> {
                         _ => original_color,
                     };
 
-                    self.set_pixel32_raw(
-                        (x + min_x) as u32,
-                        (y + min_y) as u32,
+                    self.set_pixel32(
+                        x as i32 + min_x as i32,
+                        y as i32 + min_y as i32,
                         (result_color as i32).into(),
                     );
                 }
@@ -457,33 +501,22 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn color_transform(
         &mut self,
-        min_x: u32,
-        min_y: u32,
-        end_x: u32,
-        end_y: u32,
-        color_transform: &ColorTransformParams,
+        x_min: u32,
+        y_min: u32,
+        x_max: u32,
+        y_max: u32,
+        color_transform: ColorTransform,
     ) {
-        for x in min_x..end_x.min(self.width()) {
-            for y in min_y..end_y.min(self.height()) {
-                let color = self
-                    .get_pixel_raw(x, y)
-                    .unwrap_or_else(|| 0.into())
-                    .to_un_multiplied_alpha();
+        for x in x_min..x_max.min(self.width()) {
+            for y in y_min..y_max.min(self.height()) {
+                let color = self.get_pixel_raw(x, y).unwrap().to_un_multiplied_alpha();
 
-                let alpha = ((color.alpha() as f32 * color_transform.alpha_multiplier as f32)
-                    + color_transform.alpha_offset as f32) as u8;
-                let red = ((color.red() as f32 * color_transform.red_multiplier as f32)
-                    + color_transform.red_offset as f32) as u8;
-                let green = ((color.green() as f32 * color_transform.green_multiplier as f32)
-                    + color_transform.green_offset as f32) as u8;
-                let blue = ((color.blue() as f32 * color_transform.blue_multiplier as f32)
-                    + color_transform.blue_offset as f32) as u8;
+                let color = color_transform * swf::Color::from(color);
 
                 self.set_pixel32_raw(
                     x,
                     y,
-                    Color::argb(alpha, red, green, blue)
-                        .to_premultiplied_alpha(self.transparency()),
+                    Color::from(color).to_premultiplied_alpha(self.transparency()),
                 )
             }
         }
@@ -535,7 +568,8 @@ impl<'gc> BitmapData<'gc> {
         source_bitmap: &Self,
         src_rect: (i32, i32, i32, i32),
         dest_point: (i32, i32),
-        alpha_source: Option<(&Self, (i32, i32), bool)>,
+        alpha_source: Option<(&Self, (i32, i32))>,
+        merge_alpha: bool,
     ) {
         let (src_min_x, src_min_y, src_width, src_height) = src_rect;
         let (dest_min_x, dest_min_y) = dest_point;
@@ -557,8 +591,7 @@ impl<'gc> BitmapData<'gc> {
 
                 let mut dest_color = self.get_pixel_raw(dest_x as u32, dest_y as u32).unwrap();
 
-                if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y), merge_alpha)) = alpha_source
-                {
+                if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y))) = alpha_source {
                     let alpha_x = src_x - src_min_x + alpha_min_x;
                     let alpha_y = src_y - src_min_y + alpha_min_y;
 
@@ -603,11 +636,16 @@ impl<'gc> BitmapData<'gc> {
                         intermediate_color
                     };
                 } else {
-                    dest_color = if source_bitmap.transparency && !self.transparency {
-                        dest_color.blend_over(&source_color)
-                    } else {
-                        source_color
-                    };
+                    dest_color =
+                        if (source_bitmap.transparency && !self.transparency) || merge_alpha {
+                            dest_color.blend_over(&source_color)
+                        } else {
+                            source_color
+                        };
+
+                    if !self.transparency {
+                        dest_color = dest_color.with_alpha(0xFF)
+                    }
                 }
 
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
@@ -870,6 +908,23 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
+    // Updates the data stored with our `BitmapHandle` if this `BitmapData`
+    // is dirty
+    pub fn update_dirty_texture(&mut self, context: &mut RenderContext) {
+        let handle = self.bitmap_handle(context.renderer).unwrap();
+        if self.dirty() {
+            if let Err(e) = context.renderer.update_texture(
+                handle,
+                self.width(),
+                self.height(),
+                self.pixels_rgba(),
+            ) {
+                log::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
+            }
+            self.set_dirty(false);
+        }
+    }
+
     /// Compare two BitmapData objects.
     /// Returns `None` if the bitmaps are equivalent.
     pub fn compare(bitmap: &Self, other: &Self) -> Option<Self> {
@@ -917,6 +972,7 @@ impl<'gc> BitmapData<'gc> {
                 transparency: true,
                 bitmap_handle: None,
                 avm2_object: None,
+                disposed: false,
             })
         } else {
             None
@@ -931,5 +987,110 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
         self.avm2_object = Some(object)
+    }
+
+    pub fn draw(
+        &mut self,
+        mut source: IBitmapDrawable<'gc>,
+        transform: Transform,
+        smoothing: bool,
+        blend_mode: BlendMode,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+    ) {
+        let bitmapdata_width = self.width();
+        let bitmapdata_height = self.height();
+
+        let mut transform_stack = ruffle_render::transform::TransformStack::new();
+        transform_stack.push(&transform);
+        let handle = self.bitmap_handle(context.renderer).unwrap();
+        let mut commands = CommandList::new();
+
+        let mut render_context = RenderContext {
+            renderer: context.renderer,
+            commands: &mut commands,
+            gc_context: context.gc_context,
+            ui: context.ui,
+            library: &context.library,
+            transform_stack: &mut transform_stack,
+            is_offscreen: true,
+            stage: context.stage,
+            clip_depth_stack: vec![],
+            allow_mask: true,
+        };
+
+        // Make the screen opacity match the opacity of this bitmap
+        render_context.commands.push_blend_mode(blend_mode);
+        match &mut source {
+            IBitmapDrawable::BitmapData(data) => {
+                // if try_write fails,
+                // this is caused by recursive render attempt. TODO: support this.
+                if let Ok(mut bitmap_data) = data.try_write(context.gc_context) {
+                    bitmap_data.update_dirty_texture(&mut render_context);
+                    let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
+                    render_context.commands.render_bitmap(
+                        bitmap_handle,
+                        render_context.transform_stack.transform(),
+                        smoothing,
+                    );
+                }
+            }
+            IBitmapDrawable::DisplayObject(object) => {
+                // Note that we do *not* use `render_base`,
+                // as we want to ignore the object's mask and normal transform
+                object.render_self(&mut render_context);
+            }
+        }
+        render_context.commands.pop_blend_mode();
+
+        self.update_dirty_texture(&mut render_context);
+
+        let image = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            commands,
+        );
+
+        match image {
+            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+            Err(ruffle_render::error::Error::Unimplemented) => {
+                log::warn!("BitmapData.draw: Not yet implemented")
+            }
+            Err(e) => panic!("BitmapData.draw failed: {e:?}"),
+        }
+    }
+}
+
+pub enum IBitmapDrawable<'gc> {
+    BitmapData(GcCell<'gc, BitmapData<'gc>>),
+    DisplayObject(DisplayObject<'gc>),
+}
+
+fn copy_pixels_to_bitmapdata(write: &mut BitmapData, bytes: &[u8]) {
+    let height = write.height();
+    let width = write.width();
+
+    for y in 0..height {
+        for x in 0..width {
+            // note: this order of conversions helps llvm realize the index is 4-byte-aligned
+            let ind = ((x + y * width) as usize) * 4;
+
+            // TODO(mid): optimize this A LOT
+            let r = bytes[ind];
+            let g = bytes[ind + 1usize];
+            let b = bytes[ind + 2usize];
+            let a = if write.transparency() {
+                bytes[ind + 3usize]
+            } else {
+                255
+            };
+
+            // TODO(later): we might want to swap Color storage from argb to rgba, to make it cheaper
+            let nc = Color::argb(a, r, g, b);
+
+            // Ignore the original color entirely - the blending (including alpha)
+            // was done by the renderer when it wrote over the previous texture contents.
+            write.set_pixel32_raw(x, y, nc);
+        }
     }
 }

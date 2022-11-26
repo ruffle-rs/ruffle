@@ -364,8 +364,7 @@ impl<'gc> XmlNode<'gc> {
             Some(object) => object,
             None => {
                 let proto = activation.context.avm1.prototypes().xml_node;
-                XmlNodeObject::from_xml_node(activation.context.gc_context, *self, Some(proto))
-                    .into()
+                XmlNodeObject::from_xml_node(activation.context.gc_context, *self, proto).into()
             }
         }
     }

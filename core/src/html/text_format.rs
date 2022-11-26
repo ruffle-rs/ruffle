@@ -135,33 +135,33 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag<'gc>(
+    pub fn from_swf_tag(
         et: swf::EditText<'_>,
         swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, '_, '_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
-        let font = et.font_id.and_then(|fid| movie_library.get_font(fid));
+        let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
-            .font_class_name
+            .font_class()
             .map(|s| WString::from_utf8(&s.to_string_lossy(encoding)))
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().class())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
-        let align = et.layout.as_ref().map(|l| l.align);
-        let left_margin = et.layout.as_ref().map(|l| l.left_margin.to_pixels());
-        let right_margin = et.layout.as_ref().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout.as_ref().map(|l| l.indent.to_pixels());
-        let leading = et.layout.map(|l| l.leading.to_pixels());
+        let align = et.layout().map(|l| l.align);
+        let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
+        let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
+        let indent = et.layout().map(|l| l.indent.to_pixels());
+        let leading = et.layout().map(|l| l.leading.to_pixels());
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
         // Times New Roman non-bold, non-italic. This will need to be revised
         // when we start supporting device fonts.
         Self {
             font: Some(font_class),
-            size: et.height.map(|h| h.to_pixels()),
+            size: et.height().map(|h| h.to_pixels()),
             color: et
-                .color
+                .color()
                 .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
             align,
             bold: Some(font.map(|font| font.descriptor().bold()).unwrap_or(false)),
@@ -854,6 +854,15 @@ impl FormatSpans {
     /// `iter_spans` method will yield the string and span data directly.
     pub fn span(&self, index: usize) -> Option<&TextSpan> {
         self.spans.get(index)
+    }
+
+    /// Retrieve the last text span.
+    ///
+    /// Text span indices are ephemeral and can change arbitrarily any time the
+    /// `FormatSpans` are mutated. You should not use this method directly; the
+    /// `iter_spans` method will yield the string and span data directly.
+    pub fn last_span(&self) -> Option<&TextSpan> {
+        self.spans.last()
     }
 
     /// Find the index of the span that covers a given search position.

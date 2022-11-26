@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
+use crate::avm1::object::NativeObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -82,9 +83,8 @@ fn serialize_value<'gc>(
                 // TODO: What happens if an exception is thrown here?
                 let string = xml_node.into_string(activation).unwrap();
                 Some(AmfValue::XML(string.to_utf8_lossy().into_owned(), true))
-            } else if let Some(date) = o.as_date_object() {
-                date.date_time()
-                    .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
+            } else if let NativeObject::Date(date) = o.native() {
+                Some(AmfValue::Date(date.read().time(), None))
             } else {
                 let mut object_body = Vec::new();
                 recursive_serialize(activation, o, &mut object_body);
@@ -326,7 +326,7 @@ pub fn get_local<'gc>(
     // Final SO path: foo.com/folder/game.swf/SOName
     // SOName may be a path containing slashes. In this case, prefix with # to mimic Flash Player behavior.
     let prefix = if name.contains('/') { "#" } else { "" };
-    let full_name = format!("{}/{}/{}{}", movie_host, local_path, prefix, name);
+    let full_name = format!("{movie_host}/{local_path}/{prefix}{name}");
 
     // Avoid any paths with `..` to prevent SWFs from crawling the file system on desktop.
     // Flash will generally fail to save shared objects with a path component starting with `.`,
@@ -337,7 +337,7 @@ pub fn get_local<'gc>(
     }
 
     // Check if this is referencing an existing shared object
-    if let Some(so) = activation.context.shared_objects.get(&full_name) {
+    if let Some(so) = activation.context.avm1_shared_objects.get(&full_name) {
         return Ok((*so).into());
     }
 
@@ -380,7 +380,10 @@ pub fn get_local<'gc>(
         Attribute::DONT_DELETE,
     );
 
-    activation.context.shared_objects.insert(full_name, this);
+    activation
+        .context
+        .avm1_shared_objects
+        .insert(full_name, this);
 
     Ok(this.into())
 }
@@ -430,7 +433,7 @@ pub fn create_shared_object_object<'gc>(
         gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
-        Some(fn_proto),
+        fn_proto,
         shared_object_proto,
     );
     let object = shared_obj.as_script_object().unwrap();
@@ -552,7 +555,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj = SharedObject::empty_shared_obj(gc_context, Some(proto));
+    let shared_obj = SharedObject::empty_shared_obj(gc_context, proto);
     let object = shared_obj.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     shared_obj.into()

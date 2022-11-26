@@ -1,15 +1,17 @@
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSize, BitmapSource};
+use crate::commands::CommandList;
 use crate::error::Error;
-use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
-use crate::transform::Transform;
 use swf::Color;
 
 pub struct NullBitmapSource;
 
 impl BitmapSource for NullBitmapSource {
-    fn bitmap(&self, _id: u16) -> Option<BitmapInfo> {
+    fn bitmap_size(&self, _id: u16) -> Option<BitmapSize> {
+        None
+    }
+    fn bitmap_handle(&self, _id: u16, _renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
         None
     }
 }
@@ -48,22 +50,18 @@ impl RenderBackend for NullRenderer {
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn begin_frame(&mut self, _clear: Color) {}
-    fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
-    fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
-    fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
-    fn end_frame(&mut self) {}
-    fn push_mask(&mut self) {}
-    fn activate_mask(&mut self) {}
-    fn deactivate_mask(&mut self) {}
-    fn pop_mask(&mut self) {}
 
-    fn push_blend_mode(&mut self, _blend_mode: swf::BlendMode) {}
-    fn pop_blend_mode(&mut self) {}
-
-    fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
-        None
+    fn render_offscreen(
+        &mut self,
+        _handle: BitmapHandle,
+        _width: u32,
+        _height: u32,
+        _commands: CommandList,
+    ) -> Result<Bitmap, Error> {
+        Err(Error::Unimplemented)
     }
+
+    fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }
@@ -75,7 +73,7 @@ impl RenderBackend for NullRenderer {
         _width: u32,
         _height: u32,
         _rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        Ok(BitmapHandle(0))
+    ) -> Result<(), Error> {
+        Ok(())
     }
 }

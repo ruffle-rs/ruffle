@@ -9,5 +9,6 @@ ES4Class test_get
 -----------------
 1
 Caught missing field
+ReferenceError: Error #1069: Property nofield not found on Test.as$38.SealedClass and there is no default value.
 1
 undefined

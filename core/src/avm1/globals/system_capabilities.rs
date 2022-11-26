@@ -251,10 +251,10 @@ pub fn get_max_idc_level<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::new(gc_context, proto);
+    let capabilities = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, gc_context, capabilities, fn_proto);
     capabilities.into()
 }

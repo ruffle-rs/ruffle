@@ -288,7 +288,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_rectangle(&mut self, rectangle: &Rectangle) -> Result<()> {
+    fn write_rectangle(&mut self, rectangle: &Rectangle<Twips>) -> Result<()> {
         let num_bits = [
             rectangle.x_min,
             rectangle.x_max,
@@ -1096,42 +1096,42 @@ impl<W: Write> Writer<W> {
 
     fn write_morph_fill_style(&mut self, start: &FillStyle, end: &FillStyle) -> Result<()> {
         match (start, end) {
-            (&FillStyle::Color(ref start_color), &FillStyle::Color(ref end_color)) => {
+            (FillStyle::Color(start_color), FillStyle::Color(end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
                 self.write_rgba(start_color)?;
                 self.write_rgba(end_color)?;
             }
 
             (
-                &FillStyle::LinearGradient(ref start_gradient),
-                &FillStyle::LinearGradient(ref end_gradient),
+                FillStyle::LinearGradient(start_gradient),
+                FillStyle::LinearGradient(end_gradient),
             ) => {
                 self.write_u8(0x10)?; // Linear gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
             }
 
             (
-                &FillStyle::RadialGradient(ref start_gradient),
-                &FillStyle::RadialGradient(ref end_gradient),
+                FillStyle::RadialGradient(start_gradient),
+                FillStyle::RadialGradient(end_gradient),
             ) => {
                 self.write_u8(0x12)?; // Linear gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
             }
 
             (
-                &FillStyle::FocalGradient {
-                    gradient: ref start_gradient,
+                FillStyle::FocalGradient {
+                    gradient: start_gradient,
                     focal_point: start_focal_point,
                 },
-                &FillStyle::FocalGradient {
-                    gradient: ref end_gradient,
+                FillStyle::FocalGradient {
+                    gradient: end_gradient,
                     focal_point: end_focal_point,
                 },
             ) => {
                 self.write_u8(0x13)?; // Focal gradient.
                 self.write_morph_gradient(start_gradient, end_gradient)?;
-                self.write_fixed8(start_focal_point)?;
-                self.write_fixed8(end_focal_point)?;
+                self.write_fixed8(*start_focal_point)?;
+                self.write_fixed8(*end_focal_point)?;
             }
 
             (
@@ -1761,128 +1761,138 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_filter(&mut self, filter: &Filter) -> Result<()> {
-        match *filter {
-            Filter::DropShadowFilter(ref drop_shadow) => {
-                self.write_u8(0)?;
-                self.write_rgba(&drop_shadow.color)?;
-                self.write_fixed16(drop_shadow.blur_x)?;
-                self.write_fixed16(drop_shadow.blur_y)?;
-                self.write_fixed16(drop_shadow.angle)?;
-                self.write_fixed16(drop_shadow.distance)?;
-                self.write_fixed8(drop_shadow.strength)?;
-                let mut bits = self.bits();
-                bits.write_bit(drop_shadow.is_inner)?;
-                bits.write_bit(drop_shadow.is_knockout)?;
-                bits.write_bit(true)?;
-                bits.write_ubits(5, drop_shadow.num_passes.into())?;
-            }
+    fn write_drop_shadow_filter(&mut self, filter: &DropShadowFilter) -> Result<()> {
+        self.write_rgba(&filter.color)?;
+        self.write_fixed16(filter.blur_x)?;
+        self.write_fixed16(filter.blur_y)?;
+        self.write_fixed16(filter.angle)?;
+        self.write_fixed16(filter.distance)?;
+        self.write_fixed8(filter.strength)?;
+        let mut bits = self.bits();
+        bits.write_bit(filter.is_inner)?;
+        bits.write_bit(filter.is_knockout)?;
+        bits.write_bit(true)?;
+        bits.write_ubits(5, filter.num_passes.into())?;
+        Ok(())
+    }
 
-            Filter::BlurFilter(ref blur) => {
-                self.write_u8(1)?;
-                self.write_fixed16(blur.blur_x)?;
-                self.write_fixed16(blur.blur_y)?;
-                self.write_u8(blur.num_passes << 3)?;
-            }
+    fn write_blur_filter(&mut self, filter: &BlurFilter) -> Result<()> {
+        self.write_fixed16(filter.blur_x)?;
+        self.write_fixed16(filter.blur_y)?;
+        self.write_u8(filter.num_passes << 3)?;
+        Ok(())
+    }
 
-            Filter::GlowFilter(ref glow) => {
-                self.write_u8(2)?;
-                self.write_rgba(&glow.color)?;
-                self.write_fixed16(glow.blur_x)?;
-                self.write_fixed16(glow.blur_y)?;
-                self.write_fixed8(glow.strength)?;
-                let mut bits = self.bits();
-                bits.write_bit(glow.is_inner)?;
-                bits.write_bit(glow.is_knockout)?;
-                bits.write_bit(true)?;
-                bits.write_ubits(5, glow.num_passes.into())?;
-            }
+    fn write_glow_filter(&mut self, filter: &GlowFilter) -> Result<()> {
+        self.write_rgba(&filter.color)?;
+        self.write_fixed16(filter.blur_x)?;
+        self.write_fixed16(filter.blur_y)?;
+        self.write_fixed8(filter.strength)?;
+        let mut bits = self.bits();
+        bits.write_bit(filter.is_inner)?;
+        bits.write_bit(filter.is_knockout)?;
+        bits.write_bit(true)?;
+        bits.write_ubits(5, filter.num_passes.into())?;
+        Ok(())
+    }
 
-            Filter::BevelFilter(ref bevel) => {
-                self.write_u8(3)?;
-                self.write_rgba(&bevel.shadow_color)?;
-                self.write_rgba(&bevel.highlight_color)?;
-                self.write_fixed16(bevel.blur_x)?;
-                self.write_fixed16(bevel.blur_y)?;
-                self.write_fixed16(bevel.angle)?;
-                self.write_fixed16(bevel.distance)?;
-                self.write_fixed8(bevel.strength)?;
-                let mut bits = self.bits();
-                bits.write_bit(bevel.is_inner)?;
-                bits.write_bit(bevel.is_knockout)?;
-                bits.write_bit(true)?;
-                bits.write_bit(bevel.is_on_top)?;
-                bits.write_ubits(4, bevel.num_passes.into())?;
-            }
+    fn write_bevel_filter(&mut self, filter: &BevelFilter) -> Result<()> {
+        self.write_rgba(&filter.shadow_color)?;
+        self.write_rgba(&filter.highlight_color)?;
+        self.write_fixed16(filter.blur_x)?;
+        self.write_fixed16(filter.blur_y)?;
+        self.write_fixed16(filter.angle)?;
+        self.write_fixed16(filter.distance)?;
+        self.write_fixed8(filter.strength)?;
+        let mut bits = self.bits();
+        bits.write_bit(filter.is_inner)?;
+        bits.write_bit(filter.is_knockout)?;
+        bits.write_bit(true)?;
+        bits.write_bit(filter.is_on_top)?;
+        bits.write_ubits(4, filter.num_passes.into())?;
+        Ok(())
+    }
 
-            Filter::GradientGlowFilter(ref glow) => {
-                self.write_u8(4)?;
-                self.write_u8(glow.colors.len() as u8)?;
-                for gradient_record in &glow.colors {
-                    self.write_rgba(&gradient_record.color)?;
-                }
-                for gradient_record in &glow.colors {
-                    self.write_u8(gradient_record.ratio)?;
-                }
-                self.write_fixed16(glow.blur_x)?;
-                self.write_fixed16(glow.blur_y)?;
-                self.write_fixed16(glow.angle)?;
-                self.write_fixed16(glow.distance)?;
-                self.write_fixed8(glow.strength)?;
-                let mut bits = self.bits();
-                bits.write_bit(glow.is_inner)?;
-                bits.write_bit(glow.is_knockout)?;
-                bits.write_bit(true)?;
-                bits.write_bit(glow.is_on_top)?;
-                bits.write_ubits(4, glow.num_passes.into())?;
-            }
+    fn write_gradient_filter(&mut self, filter: &GradientFilter) -> Result<()> {
+        self.write_u8(filter.colors.len() as u8)?;
+        for gradient_record in &filter.colors {
+            self.write_rgba(&gradient_record.color)?;
+        }
+        for gradient_record in &filter.colors {
+            self.write_u8(gradient_record.ratio)?;
+        }
+        self.write_fixed16(filter.blur_x)?;
+        self.write_fixed16(filter.blur_y)?;
+        self.write_fixed16(filter.angle)?;
+        self.write_fixed16(filter.distance)?;
+        self.write_fixed8(filter.strength)?;
+        let mut bits = self.bits();
+        bits.write_bit(filter.is_inner)?;
+        bits.write_bit(filter.is_knockout)?;
+        bits.write_bit(true)?;
+        bits.write_bit(filter.is_on_top)?;
+        bits.write_ubits(4, filter.num_passes.into())?;
+        Ok(())
+    }
 
-            Filter::ConvolutionFilter(ref convolve) => {
-                self.write_u8(5)?;
-                self.write_u8(convolve.num_matrix_cols)?;
-                self.write_u8(convolve.num_matrix_rows)?;
-                self.write_fixed16(convolve.divisor)?;
-                self.write_fixed16(convolve.bias)?;
-                for val in &convolve.matrix {
-                    self.write_fixed16(*val)?;
-                }
-                self.write_rgba(&convolve.default_color)?;
-                self.write_u8(
-                    if convolve.is_clamped { 0b10 } else { 0 }
-                        | if convolve.is_preserve_alpha { 0b1 } else { 0 },
-                )?;
-            }
+    fn write_convolution_filter(&mut self, filter: &ConvolutionFilter) -> Result<()> {
+        self.write_u8(filter.num_matrix_cols)?;
+        self.write_u8(filter.num_matrix_rows)?;
+        self.write_fixed16(filter.divisor)?;
+        self.write_fixed16(filter.bias)?;
+        for val in &filter.matrix {
+            self.write_fixed16(*val)?;
+        }
+        self.write_rgba(&filter.default_color)?;
+        self.write_u8(
+            if filter.is_clamped { 0b10 } else { 0 }
+                | if filter.is_preserve_alpha { 0b1 } else { 0 },
+        )?;
+        Ok(())
+    }
 
-            Filter::ColorMatrixFilter(ref color_matrix) => {
-                self.write_u8(6)?;
-                for i in 0..20 {
-                    self.write_fixed16(color_matrix.matrix[i])?;
-                }
-            }
-
-            Filter::GradientBevelFilter(ref bevel) => {
-                self.write_u8(7)?;
-                self.write_u8(bevel.colors.len() as u8)?;
-                for gradient_record in &bevel.colors {
-                    self.write_rgba(&gradient_record.color)?;
-                }
-                for gradient_record in &bevel.colors {
-                    self.write_u8(gradient_record.ratio)?;
-                }
-                self.write_fixed16(bevel.blur_x)?;
-                self.write_fixed16(bevel.blur_y)?;
-                self.write_fixed16(bevel.angle)?;
-                self.write_fixed16(bevel.distance)?;
-                self.write_fixed8(bevel.strength)?;
-                let mut bits = self.bits();
-                bits.write_bit(bevel.is_inner)?;
-                bits.write_bit(bevel.is_knockout)?;
-                bits.write_bit(true)?;
-                bits.write_bit(bevel.is_on_top)?;
-                bits.write_ubits(4, bevel.num_passes.into())?;
-            }
+    fn write_color_matrix_filter(&mut self, filter: &ColorMatrixFilter) -> Result<()> {
+        for m in filter.matrix {
+            self.write_fixed16(m)?;
         }
         Ok(())
+    }
+
+    fn write_filter(&mut self, filter: &Filter) -> Result<()> {
+        match filter {
+            Filter::DropShadowFilter(filter) => {
+                self.write_u8(0)?;
+                self.write_drop_shadow_filter(filter)
+            }
+            Filter::BlurFilter(filter) => {
+                self.write_u8(1)?;
+                self.write_blur_filter(filter)
+            }
+            Filter::GlowFilter(filter) => {
+                self.write_u8(2)?;
+                self.write_glow_filter(filter)
+            }
+            Filter::BevelFilter(filter) => {
+                self.write_u8(3)?;
+                self.write_bevel_filter(filter)
+            }
+            Filter::GradientGlowFilter(filter) => {
+                self.write_u8(4)?;
+                self.write_gradient_filter(filter)
+            }
+            Filter::ConvolutionFilter(filter) => {
+                self.write_u8(5)?;
+                self.write_convolution_filter(filter)
+            }
+            Filter::ColorMatrixFilter(filter) => {
+                self.write_u8(6)?;
+                self.write_color_matrix_filter(filter)
+            }
+            Filter::GradientBevelFilter(filter) => {
+                self.write_u8(7)?;
+                self.write_gradient_filter(filter)
+            }
+        }
     }
 
     fn write_clip_actions(&mut self, clip_actions: &[ClipAction]) -> Result<()> {
@@ -2262,63 +2272,30 @@ impl<W: Write> Writer<W> {
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(edit_text.id)?;
             writer.write_rectangle(&edit_text.bounds)?;
-            let flags = if edit_text.initial_text.is_some() {
-                0b10000000
-            } else {
-                0
-            } | if edit_text.is_word_wrap { 0b1000000 } else { 0 }
-                | if edit_text.is_multiline { 0b100000 } else { 0 }
-                | if edit_text.is_password { 0b10000 } else { 0 }
-                | if edit_text.is_read_only { 0b1000 } else { 0 }
-                | if edit_text.color.is_some() { 0b100 } else { 0 }
-                | if edit_text.max_length.is_some() {
-                    0b10
-                } else {
-                    0
-                }
-                | if edit_text.font_id.is_some() { 0b1 } else { 0 };
-            let flags2 = if edit_text.font_class_name.is_some() {
-                0b10000000
-            } else {
-                0
-            } | if edit_text.is_auto_size { 0b1000000 } else { 0 }
-                | if edit_text.layout.is_some() {
-                    0b100000
-                } else {
-                    0
-                }
-                | if !edit_text.is_selectable { 0b10000 } else { 0 }
-                | if edit_text.has_border { 0b1000 } else { 0 }
-                | if edit_text.was_static { 0b100 } else { 0 }
-                | if edit_text.is_html { 0b10 } else { 0 }
-                | if !edit_text.is_device_font { 0b1 } else { 0 };
+            writer.write_u16(edit_text.flags.bits())?;
 
-            writer.write_u8(flags)?;
-            writer.write_u8(flags2)?;
-
-            if let Some(font_id) = edit_text.font_id {
+            if let Some(font_id) = edit_text.font_id() {
                 writer.write_character_id(font_id)?;
             }
 
             // TODO(Herschel): Check SWF version.
-            if let Some(class) = edit_text.font_class_name {
+            if let Some(class) = edit_text.font_class() {
                 writer.write_string(class)?;
             }
 
-            // TODO(Herschel): Height only exists iff HasFontId, maybe for HasFontClass too?
-            if let Some(height) = edit_text.height {
+            if let Some(height) = edit_text.height() {
                 writer.write_u16(height.get() as u16)?
             }
 
-            if let Some(ref color) = edit_text.color {
+            if let Some(color) = edit_text.color() {
                 writer.write_rgba(color)?
             }
 
-            if let Some(len) = edit_text.max_length {
+            if let Some(len) = edit_text.max_length() {
                 writer.write_u16(len)?;
             }
 
-            if let Some(ref layout) = edit_text.layout {
+            if let Some(layout) = edit_text.layout() {
                 writer.write_u8(layout.align as u8)?;
                 writer.write_u16(layout.left_margin.get() as u16)?; // TODO: Handle overflow
                 writer.write_u16(layout.right_margin.get() as u16)?;
@@ -2327,7 +2304,8 @@ impl<W: Write> Writer<W> {
             }
 
             writer.write_string(edit_text.variable_name)?;
-            if let Some(text) = edit_text.initial_text {
+
+            if let Some(text) = edit_text.initial_text() {
                 writer.write_string(text)?;
             }
         }
@@ -2401,13 +2379,8 @@ impl<W: Write> Writer<W> {
     }
 }
 
-fn count_ubits(mut n: u32) -> u32 {
-    let mut num_bits = 0;
-    while n > 0 {
-        n >>= 1;
-        num_bits += 1;
-    }
-    num_bits
+fn count_ubits(n: u32) -> u32 {
+    32 - n.leading_zeros()
 }
 
 fn count_sbits(n: i32) -> u32 {
@@ -2423,20 +2396,11 @@ fn count_sbits(n: i32) -> u32 {
 }
 
 fn count_sbits_twips(n: Twips) -> u32 {
-    let n = n.get();
-    if n == 0 {
-        0
-    } else if n == -1 {
-        1
-    } else if n < 0 {
-        count_ubits((!n) as u32) + 1
-    } else {
-        count_ubits(n as u32) + 1
-    }
+    count_sbits(n.get())
 }
 
 fn count_fbits(n: Fixed16) -> u32 {
-    count_sbits(n.get() as i32)
+    count_sbits(n.get())
 }
 
 #[cfg(test)]
@@ -2646,7 +2610,7 @@ mod tests {
 
     #[test]
     fn write_rectangle_zero() {
-        let rect: Rectangle = Default::default();
+        let rect: Rectangle<Twips> = Default::default();
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);

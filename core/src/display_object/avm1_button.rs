@@ -134,8 +134,7 @@ impl<'gc> Avm1Button<'gc> {
             self.iter_render_list().map(|o| o.depth()).collect();
 
         let movie = self.movie().unwrap();
-        let mut write = self.0.write(context.gc_context);
-        write.state = state;
+        self.0.write(context.gc_context).state = state;
 
         // Create any new children that exist in this state, and remove children
         // that only exist in the previous state.
@@ -143,12 +142,12 @@ impl<'gc> Avm1Button<'gc> {
         // TODO: This behavior probably differs in AVM2 (I suspect they always get recreated).
         let mut children = Vec::new();
 
-        for record in &write.static_data.read().records {
+        for record in &self.0.read().static_data.read().records {
             if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
 
-                let child = match write.container.get_depth(record.depth.into()) {
+                let child = match self.child_by_depth(record.depth.into()) {
                     // Re-use existing child.
                     Some(child) if child.id() == record.id => child,
 
@@ -177,12 +176,11 @@ impl<'gc> Avm1Button<'gc> {
                     .set_color_transform(context.gc_context, record.color_transform.clone().into());
             }
         }
-        drop(write);
 
         // Kill children that no longer exist in this state.
         for depth in removed_depths {
             if let Some(child) = self.child_by_depth(depth) {
-                self.remove_child(context, child, Lists::all());
+                self.remove_child(context, child);
             }
         }
 
@@ -267,7 +265,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             let object = StageObject::for_display_object(
                 context.gc_context,
                 (*self).into(),
-                Some(context.avm1.prototypes().button),
+                context.avm1.prototypes().button,
             );
             mc.object = Some(object.into());
 
@@ -401,15 +399,27 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
-    impl_display_object_container!(container);
+    fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
+        Ref::map(self.0.read(), |this| &this.container)
+    }
+
+    fn raw_container_mut(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> RefMut<'_, ChildContainer<'gc>> {
+        RefMut::map(self.0.write(gc_context), |this| &mut this.container)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -493,7 +503,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         // (e.g., clip.onRelease = foo).
         if context.swf.version() >= 6 {
             if let Some(name) = event.method_name() {
-                context.action_queue.queue_actions(
+                context.action_queue.queue_action(
                     self_display_object,
                     ActionType::Method {
                         object: write.object.unwrap(),
@@ -579,7 +589,7 @@ impl<'gc> Avm1ButtonData<'gc> {
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
                     handled = ClipEventResult::Handled;
-                    context.action_queue.queue_actions(
+                    context.action_queue.queue_action(
                         parent,
                         ActionType::Normal {
                             bytecode: action.action_data.clone(),

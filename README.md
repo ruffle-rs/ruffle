@@ -43,8 +43,21 @@ You must also have Java installed, and available on your PATH as `java`.
 
 ### Desktop
 
-If you are building for a Linux platform, make sure that the GTK 3 development packages are
-installed on your system. (Ubuntu: `libgtk-3-dev`, Fedora: `gtk3-devel`)
+If you are building for a Linux platform, the following are typical dependencies:
+#### Ubuntu
+
+* libasound2-dev
+* libxcb-shape0-dev
+* libxcb-xfixes0-dev
+* libgtk-3-dev
+* libssl-dev
+* libxcb-xinput-dev
+* libxcb-xkb-dev
+* libxcb-cursor-dev
+* default-jre-headless
+* cmake
+* g++
+
 
 Use the following command to build and run the desktop app:
 
@@ -138,6 +151,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   </a>
   <a href="https://movavi.com/">
     <img src="https://ruffle.rs/assets/sponsors/movavi.svg" alt="Movavi">
+  </a>
+  <a href="https://www.kongregate.com/">
+    <img src="https://ruffle.rs/assets/sponsors/kongregate.svg" alt="Kongregate">
   </a>
 </p>
 

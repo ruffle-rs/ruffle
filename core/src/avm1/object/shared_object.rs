@@ -30,14 +30,11 @@ impl fmt::Debug for SharedObject<'_> {
 }
 
 impl<'gc> SharedObject<'gc> {
-    pub fn empty_shared_obj(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> Self {
+    pub fn empty_shared_obj(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         SharedObject(GcCell::allocate(
             gc_context,
             SharedObjectData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 name: None,
             },
         ))
@@ -48,12 +45,7 @@ impl<'gc> SharedObject<'gc> {
     }
 
     pub fn get_name(&self) -> String {
-        self.0
-            .read()
-            .name
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| "".to_string())
+        self.0.read().name.as_ref().cloned().unwrap_or_default()
     }
 }
 

@@ -156,11 +156,11 @@ where
     }
 }
 
-impl<T> From<BoxBounds<T>> for Rectangle
+impl<T> From<BoxBounds<T>> for Rectangle<Twips>
 where
     T: Into<Twips> + Add<T, Output = T>,
 {
-    fn from(bounds: BoxBounds<T>) -> Rectangle {
+    fn from(bounds: BoxBounds<T>) -> Rectangle<Twips> {
         Rectangle {
             x_min: bounds.offset_x.into(),
             x_max: bounds.extent_x.into(),
@@ -170,11 +170,11 @@ where
     }
 }
 
-impl<T> From<Rectangle> for BoxBounds<T>
+impl<T> From<Rectangle<Twips>> for BoxBounds<T>
 where
     T: From<Twips>,
 {
-    fn from(bounds: Rectangle) -> Self {
+    fn from(bounds: Rectangle<Twips>) -> Self {
         Self {
             offset_x: T::from(bounds.x_min),
             extent_x: T::from(bounds.x_max),

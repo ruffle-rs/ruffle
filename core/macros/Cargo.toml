@@ -2,11 +2,11 @@
 name = "ruffle_macros"
 version = "0.1.0"
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
-edition = "2021"
+edition.workspace = true
 
 [lib]
 proc-macro = true
 
 [dependencies]
 quote = "1.0.21"
-syn = { version = "1.0.99", features = ["full"] }
+syn = { version = "1.0.103", features = ["full"] }

@@ -7,7 +7,7 @@ struct VertexOutput {
 
 @group(2) @binding(0) var<uniform> textureTransforms: TextureTransforms;
 @group(2) @binding(1) var texture: texture_2d<f32>;
-@group(3) @binding(0) var texture_sampler: sampler;
+@group(2) @binding(2) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {

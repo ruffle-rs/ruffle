@@ -45,6 +45,18 @@ pub enum Value<'gc> {
     Object(Object<'gc>),
 }
 
+// This type is used very frequently, so make sure it doesn't unexpectedly grow.
+// For now, we only test on Nightly, since a new niche optimization was recently
+// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
+// relative to stable.
+
+#[cfg(target_arch = "wasm32")]
+static_assertions::assert_eq_size!(Value<'_>, [u8; 16]);
+
+#[rustversion::nightly]
+#[cfg(target_pointer_width = "64")]
+static_assertions::assert_eq_size!(Value<'_>, [u8; 24]);
+
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
@@ -440,7 +452,11 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
-pub fn abc_int(translation_unit: TranslationUnit<'_>, index: Index<i32>) -> Result<i32, Error> {
+#[allow(clippy::needless_lifetimes)]
+pub fn abc_int<'gc>(
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<i32>,
+) -> Result<i32, Error<'gc>> {
     if index.0 == 0 {
         return Ok(0);
     }
@@ -454,7 +470,11 @@ pub fn abc_int(translation_unit: TranslationUnit<'_>, index: Index<i32>) -> Resu
         .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
 }
 
-pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Result<u32, Error> {
+#[allow(clippy::needless_lifetimes)]
+pub fn abc_uint<'gc>(
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<u32>,
+) -> Result<u32, Error<'gc>> {
     if index.0 == 0 {
         return Ok(0);
     }
@@ -468,7 +488,11 @@ pub fn abc_uint(translation_unit: TranslationUnit<'_>, index: Index<u32>) -> Res
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
-pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> Result<f64, Error> {
+#[allow(clippy::needless_lifetimes)]
+pub fn abc_double<'gc>(
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<f64>,
+) -> Result<f64, Error<'gc>> {
     if index.0 == 0 {
         return Ok(f64::NAN);
     }
@@ -487,7 +511,7 @@ pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
@@ -514,12 +538,12 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_namespace(&self) -> Result<Ref<Namespace<'gc>>, Error> {
+    pub fn as_namespace(&self) -> Result<Ref<Namespace<'gc>>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns
                 .as_namespace()
                 .ok_or_else(|| "Expected Namespace, found Object".into()),
-            _ => Err(format!("Expected Namespace, found {:?}", self).into()),
+            _ => Err(format!("Expected Namespace, found {self:?}").into()),
         }
     }
 
@@ -529,7 +553,7 @@ impl<'gc> Value<'gc> {
     /// object methods called. This should only be used if you specifically
     /// need the behavior of only handling actual numbers; otherwise you should
     /// use the appropriate `coerce_to_` method.
-    pub fn as_number(&self, mc: MutationContext<'gc, '_>) -> Result<f64, Error> {
+    pub fn as_number(&self, mc: MutationContext<'gc, '_>) -> Result<f64, Error<'gc>> {
         match self {
             // Methods that look for numbers in Flash Player don't seem to care
             // about user-defined `valueOf` implementations. This code upholds
@@ -538,11 +562,11 @@ impl<'gc> Value<'gc> {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num),
                 Value::Integer(num) => Ok(num as f64),
-                _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+                _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
             },
             Value::Number(num) => Ok(*num),
             Value::Integer(num) => Ok(*num as f64),
-            _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+            _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
         }
     }
 
@@ -586,7 +610,7 @@ impl<'gc> Value<'gc> {
         &self,
         hint: Option<Hint>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let hint = hint.unwrap_or_else(|| match self {
             Value::Object(o) => o.default_hint(),
             _ => Hint::Number,
@@ -598,13 +622,9 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("toString").into(), activation)?
+                    object.get_property(&Multiname::public("toString"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("toString").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -612,13 +632,9 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("valueOf").into(), activation)?
+                    object.get_property(&Multiname::public("valueOf"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("valueOf").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -632,13 +648,9 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("valueOf").into(), activation)?
+                    object.get_property(&Multiname::public("valueOf"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("valueOf").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -646,13 +658,9 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(_) =
-                    object.get_property(&QName::dynamic_name("toString").into(), activation)?
+                    object.get_property(&Multiname::public("toString"), activation)?
                 {
-                    prim = object.call_property(
-                        &QName::dynamic_name("toString").into(),
-                        &[],
-                        activation,
-                    )?;
+                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -673,7 +681,10 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToNumber algorithm which appears to match AVM2.
-    pub fn coerce_to_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<f64, Error> {
+    pub fn coerce_to_number(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Undefined => f64::NAN,
             Value::Null => 0.0,
@@ -698,7 +709,10 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
-    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<u32, Error> {
+    pub fn coerce_to_u32(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<u32, Error<'gc>> {
         Ok(f64_to_wrapping_u32(self.coerce_to_number(activation)?))
     }
 
@@ -709,7 +723,10 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
-    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error> {
+    pub fn coerce_to_i32(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<i32, Error<'gc>> {
         Ok(f64_to_wrapping_i32(self.coerce_to_number(activation)?))
     }
 
@@ -745,7 +762,7 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_string<'a>(
         &'a self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Undefined => "undefined".into(),
             Value::Null => "null".into(),
@@ -797,10 +814,10 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_debug_string<'a>(
         &'a self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<AvmString<'gc>, Error> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::String(s) => {
-                AvmString::new_utf8(activation.context.gc_context, format!("\"{}\"", s))
+                AvmString::new_utf8(activation.context.gc_context, format!("\"{s}\""))
             }
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
@@ -820,7 +837,7 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_object(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         match self {
             Value::Undefined => return Err("TypeError: undefined is not an Object".into()),
             Value::Null => return Err("TypeError: null is not an Object".into()),
@@ -840,7 +857,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Option<&Multiname<'gc>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         self.coerce_to_object(activation).map_err(|_| {
             if let Some(name) = name {
                 format!(
@@ -877,7 +894,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: Option<&Multiname<'gc>>,
         receiver: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         self.as_object()
             .filter(|o| o.as_class_object().is_some() || o.as_executable().is_some())
             .ok_or_else(|| {
@@ -920,7 +937,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         class: ClassObject<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if Object::ptr_eq(class, activation.avm2().classes().int) {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
@@ -969,7 +986,7 @@ impl<'gc> Value<'gc> {
 
         let name = class.inner_class_definition().read().name();
 
-        Err(format!("Cannot coerce {:?} to an {:?}", self, name).into())
+        Err(format!("Cannot coerce {self:?} to an {name:?}").into())
     }
 
     /// Determine if this value is any kind of number.
@@ -1043,7 +1060,7 @@ impl<'gc> Value<'gc> {
         &self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
             (Value::Null, Value::Null) => Ok(true),
@@ -1117,7 +1134,7 @@ impl<'gc> Value<'gc> {
         &self,
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<bool>, Error> {
+    ) -> Result<Option<bool>, Error<'gc>> {
         let prim_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
         let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 

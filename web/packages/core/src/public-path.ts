@@ -44,7 +44,7 @@ try {
 export function publicPath(config: Config): string {
     // Default to the directory where this script resides.
     let path = currentScriptURL;
-    if (config !== undefined && config.publicPath !== undefined) {
+    if (config.publicPath !== null && config.publicPath !== undefined) {
         path = config.publicPath;
     }
 

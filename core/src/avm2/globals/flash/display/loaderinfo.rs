@@ -6,12 +6,12 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{loaderinfo_allocator, DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
-use std::sync::Arc;
 use swf::{write_swf, Compression};
 
 // FIXME - Throw an actual 'Error' with the proper code
@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("LoaderInfo cannot be constructed".into())
 }
 
@@ -32,7 +32,7 @@ pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -45,7 +45,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -54,14 +54,14 @@ pub fn action_script_version<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err(INSUFFICIENT.into());
                 }
                 LoaderStream::Swf(movie, _) => {
@@ -80,14 +80,14 @@ pub fn application_domain<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Ok(DomainObject::from_domain(activation, activation.domain())?.into());
                 }
                 LoaderStream::Swf(movie, _) => {
@@ -106,21 +106,18 @@ pub fn application_domain<'gc>(
 }
 
 /// `bytesTotal` getter
-///
-/// TODO: This is also the getter for `bytesLoaded` as we don't yet support
-/// streaming loads yet. When we do, we'll need another property for this.
 pub fn bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf) => return Ok(swf.compressed_len().into()),
+                LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
                 LoaderStream::Swf(movie, _) => {
                     return Ok(movie.compressed_len().into());
                 }
@@ -131,26 +128,50 @@ pub fn bytes_total<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `content` getter
-pub fn content<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+/// `bytesLoaded` getter
+pub fn bytes_loaded<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf) => {
-                    if Arc::ptr_eq(swf, activation.context.swf) {
-                        return Ok(activation.context.stage.root_clip().object2());
-                    }
-                    return Ok(Value::Null);
+                LoaderStream::NotYetLoaded(_, None, _) => return Ok(0.into()),
+                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
+                    return Ok(root
+                        .as_movie_clip()
+                        .map(|mc| mc.compressed_loaded_bytes())
+                        .unwrap_or_default()
+                        .into())
                 }
-                LoaderStream::Swf(_, root) => {
+            };
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// `content` getter
+pub fn content<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this
+            .as_loader_info_object()
+            .and_then(|o| o.as_loader_stream())
+        {
+            match &*loader_stream {
+                LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                     return Ok(root.object2());
+                }
+                _ => {
+                    return Ok(Value::Null);
                 }
             }
         }
@@ -164,14 +185,14 @@ pub fn content_type<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => return Ok(Value::Null),
+                LoaderStream::NotYetLoaded(_, _, _) => return Ok(Value::Null),
                 LoaderStream::Swf(_, _) => {
                     return Ok("application/x-shockwave-flash".into());
                 }
@@ -187,14 +208,14 @@ pub fn frame_rate<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a frame rate".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -212,14 +233,14 @@ pub fn height<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a height".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -237,7 +258,7 @@ pub fn is_url_inaccessible<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
 }
 
@@ -246,14 +267,14 @@ pub fn swf_version<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a SWF version".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -271,15 +292,15 @@ pub fn url<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf) => swf,
-                LoaderStream::Swf(root, _) => root,
+                LoaderStream::NotYetLoaded(_, _, false) => return Ok(Value::Null),
+                LoaderStream::NotYetLoaded(root, _, true) | LoaderStream::Swf(root, _) => root,
             };
 
             let url = root.url().map_or(Value::Null, |url| {
@@ -297,14 +318,14 @@ pub fn width<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => {
+                LoaderStream::NotYetLoaded(_, _, _) => {
                     return Err("Error: The stage's loader info does not have a width".into())
                 }
                 LoaderStream::Swf(root, _) => {
@@ -322,14 +343,14 @@ pub fn bytes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf) => swf,
+                LoaderStream::NotYetLoaded(swf, _, _) => swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -379,7 +400,7 @@ pub fn loader<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(loader_info) = this.as_ref().and_then(|this| this.as_loader_info_object()) {
         Ok(loader_info.loader().map_or(Value::Null, |v| v.into()))
     } else {
@@ -392,14 +413,14 @@ pub fn loader_url<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(swf) => swf,
+                LoaderStream::NotYetLoaded(swf, _, _) => swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -416,14 +437,14 @@ pub fn parameters<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(loader_stream) = this
             .as_loader_info_object()
             .and_then(|o| o.as_loader_stream())
         {
             let root = match &*loader_stream {
-                LoaderStream::NotYetLoaded(_) => activation.context.swf,
+                LoaderStream::NotYetLoaded(_, _, _) => activation.context.swf,
                 LoaderStream::Swf(root, _) => root,
             };
 
@@ -437,11 +458,7 @@ pub fn parameters<'gc>(
             for (k, v) in parameters.iter() {
                 let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
                 let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
-                params_obj.set_property(
-                    &QName::new(Namespace::public(), avm_k).into(),
-                    avm_v.into(),
-                    activation,
-                )?;
+                params_obj.set_property(&Multiname::public(avm_k), avm_v.into(), activation)?;
             }
 
             return Ok(params_obj.into());
@@ -456,9 +473,21 @@ pub fn shared_events<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(loader_info) = this.as_ref().and_then(|this| this.as_loader_info_object()) {
         return Ok(loader_info.shared_events().into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// `uncaughtErrorEvents` getter
+pub fn uncaught_error_events<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(loader_info) = this.as_ref().and_then(|this| this.as_loader_info_object()) {
+        return Ok(loader_info.uncaught_error_events().into());
     }
     Ok(Value::Undefined)
 }
@@ -467,7 +496,10 @@ pub fn shared_events<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "LoaderInfo"),
-        Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.events"),
+            "EventDispatcher",
+        )),
         Method::from_builtin(instance_init, "<LoaderInfo instance initializer>", mc),
         Method::from_builtin(class_init, "<LoaderInfo class initializer>", mc),
         mc,
@@ -490,7 +522,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[
         ("actionScriptVersion", Some(action_script_version), None),
         ("applicationDomain", Some(application_domain), None),
-        ("bytesLoaded", Some(bytes_total), None),
+        ("bytesLoaded", Some(bytes_loaded), None),
         ("bytesTotal", Some(bytes_total), None),
         ("content", Some(content), None),
         ("contentType", Some(content_type), None),
@@ -505,6 +537,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("loaderURL", Some(loader_url), None),
         ("parameters", Some(parameters), None),
         ("sharedEvents", Some(shared_events), None),
+        ("uncaughtErrorEvents", Some(uncaught_error_events), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

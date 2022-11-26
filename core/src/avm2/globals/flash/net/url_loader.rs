@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::QName;
+use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::loader::DataFormat;
@@ -13,7 +13,7 @@ pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let request = match args.get(0) {
             Some(Value::Object(request)) => request,
@@ -22,7 +22,7 @@ pub fn load<'gc>(
         };
 
         let data_format = this
-            .get_property(&QName::dynamic_name("dataFormat").into(), activation)?
+            .get_property(&Multiname::public("dataFormat"), activation)?
             .coerce_to_string(activation)?;
 
         let data_format = if &data_format == b"binary" {
@@ -32,7 +32,7 @@ pub fn load<'gc>(
         } else if &data_format == b"variables" {
             DataFormat::Variables
         } else {
-            return Err(format!("Unknown data format: {}", data_format).into());
+            return Err(format!("Unknown data format: {data_format}").into());
         };
 
         return spawn_fetch(activation, this, request, data_format);
@@ -45,13 +45,13 @@ fn spawn_fetch<'gc>(
     loader_object: Object<'gc>,
     url_request: &Object<'gc>,
     data_format: DataFormat,
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let url = url_request
-        .get_property(&QName::dynamic_name("url").into(), activation)?
+        .get_property(&Multiname::public("url"), activation)?
         .coerce_to_string(activation)?;
 
     let method_str = url_request
-        .get_property(&QName::dynamic_name("method").into(), activation)?
+        .get_property(&Multiname::public("method"), activation)?
         .coerce_to_string(activation)?;
 
     let method = NavigationMethod::from_method_str(&method_str).unwrap_or_else(|| {

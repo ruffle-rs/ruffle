@@ -29,6 +29,7 @@ pub use error::Error;
 pub use function::ExecutionReason;
 pub use globals::context_menu::make_context_menu_state;
 pub use globals::shared_object::flush;
+pub use globals::sound::start as start_sound;
 pub use globals::system::SystemProperties;
 pub use object::array_object::ArrayObject;
 pub use object::script_object::ScriptObject;

@@ -117,8 +117,7 @@ struct JavascriptInterface {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(default = "Default::default")]
-pub struct Config {
+struct Config {
     #[serde(rename = "allowScriptAccess")]
     allow_script_access: bool,
 
@@ -154,26 +153,6 @@ pub struct Config {
     max_execution_duration: Duration,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            allow_script_access: false,
-            show_menu: true,
-            salign: Some("".to_owned()),
-            quality: Some("high".to_owned()),
-            scale: Some("showAll".to_owned()),
-            wmode: Some("opaque".to_owned()),
-            background_color: Default::default(),
-            letterbox: Default::default(),
-            upgrade_to_https: true,
-            base_url: None,
-            warn_on_unsupported_content: true,
-            log_level: log::Level::Error,
-            max_execution_duration: Duration::from_secs(15),
-        }
-    }
-}
-
 /// Metadata about the playing SWF file to be passed back to JavaScript.
 #[derive(Serialize)]
 struct MovieMetadata {
@@ -204,9 +183,11 @@ pub struct Ruffle(Index);
 impl Ruffle {
     #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
-    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: &JsValue) -> Promise {
-        let config: Config = config.into_serde().unwrap_or_default();
+    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
         wasm_bindgen_futures::future_to_promise(async move {
+            let config: Config = serde_wasm_bindgen::from_value(config)
+                .map_err(|e| format!("Error parsing config: {e}"))?;
+
             if RUFFLE_GLOBAL_PANIC.is_completed() {
                 // If an actual panic happened, then we can't trust the state it left us in.
                 // Prevent future players from loading so that they can inform the user about the error.
@@ -224,9 +205,9 @@ impl Ruffle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
-    pub fn stream_from(&mut self, movie_url: String, parameters: &JsValue) -> Result<(), JsValue> {
+    pub fn stream_from(&mut self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
-            let parameters_to_load = parse_movie_parameters(parameters);
+            let parameters_to_load = parse_movie_parameters(&parameters);
 
             let ruffle = *self;
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
@@ -241,10 +222,10 @@ impl Ruffle {
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
+    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: JsValue) -> Result<(), JsValue> {
         let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
-            .map_err(|e| format!("Error loading movie: {}", e))?;
-        movie.append_parameters(parse_movie_parameters(parameters));
+            .map_err(|e| format!("Error loading movie: {e}"))?;
+        movie.append_parameters(parse_movie_parameters(&parameters));
 
         self.on_metadata(movie.header());
 
@@ -289,7 +270,7 @@ impl Ruffle {
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
             let info = core.prepare_context_menu();
-            JsValue::from_serde(&info).unwrap_or(JsValue::UNDEFINED)
+            serde_wasm_bindgen::to_value(&info).unwrap_or(JsValue::UNDEFINED)
         })
         .unwrap_or(JsValue::UNDEFINED)
     }
@@ -1015,15 +996,13 @@ impl Ruffle {
 
     fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
-            let width = swf_header.stage_size().x_max - swf_header.stage_size().x_min;
-            let height = swf_header.stage_size().y_max - swf_header.stage_size().y_min;
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
                 .background_color()
                 .map(|color| format!("#{:06X}", color.to_rgb()));
             let metadata = MovieMetadata {
-                width: width.to_pixels(),
-                height: height.to_pixels(),
+                width: swf_header.stage_size().width().to_pixels(),
+                height: swf_header.stage_size().height().to_pixels(),
                 frame_rate: swf_header.frame_rate().to_f32(),
                 num_frames: swf_header.num_frames(),
                 uncompressed_len: swf_header.uncompressed_len(),
@@ -1032,7 +1011,7 @@ impl Ruffle {
                 is_action_script_3: swf_header.is_action_script_3(),
             };
 
-            if let Ok(value) = JsValue::from_serde(&metadata) {
+            if let Ok(value) = serde_wasm_bindgen::to_value(&metadata) {
                 instance.js_player.set_metadata(value);
             }
         });
@@ -1258,7 +1237,7 @@ async fn create_renderer(
                 .dyn_into()
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
-            match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas, "WebGPU"));
                 }
@@ -1275,7 +1254,7 @@ async fn create_renderer(
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
-        match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
             Ok(renderer) => {
                 return Ok((
                     builder.with_renderer(renderer),

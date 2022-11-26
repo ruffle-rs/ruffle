@@ -9,6 +9,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
@@ -19,14 +20,14 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
         activation.super_init(this, &[])?;
 
         let target = args.get(0).cloned().unwrap_or(Value::Null);
 
         this.init_property(
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
+            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
             target,
             activation,
         )?;
@@ -43,16 +44,16 @@ pub fn instance_init<'gc>(
 fn dispatch_list<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     mut this: Object<'gc>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
-        &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
+        &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
         activation,
     )? {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
             this.init_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
+                &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
                 dispatch_list.into(),
                 activation,
             )?;
@@ -67,7 +68,7 @@ pub fn add_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
@@ -108,7 +109,7 @@ pub fn remove_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
@@ -141,7 +142,7 @@ pub fn has_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
@@ -165,7 +166,7 @@ pub fn will_trigger<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
@@ -184,7 +185,7 @@ pub fn will_trigger<'gc>(
 
         let target = this
             .get_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
+                &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
                 activation,
             )?
             .as_object()
@@ -203,7 +204,7 @@ pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let event = args.get(0).cloned().unwrap_or(Value::Undefined).as_object();
 
     if event.map(|o| o.as_event().is_none()).unwrap_or(true) {
@@ -222,7 +223,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -234,9 +235,9 @@ pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let object_proto = activation.avm2().classes().object.prototype();
-    let name = QName::dynamic_name("toString").into();
+    let name = Multiname::public("toString");
     object_proto
         .get_property(&name, activation)?
         .as_callable(activation, Some(&name), Some(object_proto))?
@@ -247,7 +248,7 @@ pub fn to_string<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "EventDispatcher"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<EventDispatcher instance initializer>", mc),
         Method::from_builtin(class_init, "<EventDispatcher class initializer>", mc),
         mc,
@@ -257,7 +258,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
+    write.implements(Multiname::new(
+        Namespace::package("flash.events"),
+        "IEventDispatcher",
+    ));
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("addEventListener", add_event_listener),
@@ -271,12 +275,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
-        QName::new(Namespace::public(), "Object").into(),
+        Multiname::public("Object"),
         None,
     ));
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
-        QName::new(Namespace::public(), "Object").into(),
+        Multiname::public("Object"),
         None,
     ));
 

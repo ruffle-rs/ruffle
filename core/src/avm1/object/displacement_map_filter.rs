@@ -93,11 +93,11 @@ impl<'gc> DisplacementMapFilterObject<'gc> {
         [set_scale_y, scale_y, scale_y, f64],
     );
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         DisplacementMapFilterObject(GcCell::allocate(
             gc_context,
             DisplacementMapFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 alpha: 0.0,
                 color: 0,
                 component_x: 0,

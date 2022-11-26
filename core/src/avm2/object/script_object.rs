@@ -17,7 +17,7 @@ use std::fmt::Debug;
 pub fn scriptobject_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
@@ -72,7 +72,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 }
@@ -145,7 +145,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
             return Err(format!(
                 "Non-public property {} not found on Object",
@@ -189,12 +189,27 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            Err(format!(
-                "Cannot get undefined property {:?} on class {:?}",
-                local_name,
-                self.instance_of()
-            )
-            .into())
+            let class_name = self
+                .instance_of()
+                .map(|cls| {
+                    cls.inner_class_definition()
+                        .read()
+                        .name()
+                        .to_qualified_name_err_message(activation.context.gc_context)
+                })
+                .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+
+            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                "Error #1069: Property {local_name} not found on {class_name} and there is no default value.",
+            ));
+            Err(Error::AvmError(
+                activation
+                    .avm2()
+                    .classes()
+                    .referenceerror
+                    .construct(activation, &[message.into(), 1069.into()])?
+                    .into(),
+            ))
         } else {
             Ok(Value::Undefined)
         }
@@ -205,7 +220,7 @@ impl<'gc> ScriptObjectData<'gc> {
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if self
             .instance_of()
             .map(|cls| cls.inner_class_definition().read().is_sealed())
@@ -257,7 +272,7 @@ impl<'gc> ScriptObjectData<'gc> {
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         self.set_property_local(multiname, value, activation)
     }
 
@@ -274,11 +289,11 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {
+    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
         self.slots
             .get(id as usize)
             .cloned()
-            .ok_or_else(|| format!("Slot index {} out of bounds!", id).into())
+            .ok_or_else(|| format!("Slot index {id} out of bounds!").into())
     }
 
     /// Set a slot by its index.
@@ -287,12 +302,12 @@ impl<'gc> ScriptObjectData<'gc> {
         id: u32,
         value: Value<'gc>,
         _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             *slot = value;
             Ok(())
         } else {
-            Err(format!("Slot index {} out of bounds!", id).into())
+            Err(format!("Slot index {id} out of bounds!").into())
         }
     }
 
@@ -302,12 +317,12 @@ impl<'gc> ScriptObjectData<'gc> {
         id: u32,
         value: Value<'gc>,
         _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
             *slot = value;
             Ok(())
         } else {
-            Err(format!("Slot index {} out of bounds!", id).into())
+            Err(format!("Slot index {id} out of bounds!").into())
         }
     }
 

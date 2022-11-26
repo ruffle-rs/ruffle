@@ -2,14 +2,53 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates Function objects.
+/// This is only used when ActionScript manually calls 'new Function()',
+/// which produces a dummy object that just returns `Value::Undefined`
+/// when called.
+///
+/// Normal `FunctionObject` creation goes through `FunctionObject::from_method`
+/// or `FunctionObject::from_function`.
+pub fn function_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let base = ScriptObjectData::new(class);
+
+    let dummy = Gc::allocate(
+        activation.context.gc_context,
+        NativeMethod {
+            method: |_, _, _| Ok(Value::Undefined),
+            name: "<Empty Function>",
+            signature: vec![],
+            is_variadic: true,
+        },
+    );
+
+    Ok(FunctionObject(GcCell::allocate(
+        activation.context.gc_context,
+        FunctionObjectData {
+            base,
+            exec: Executable::from_method(
+                Method::Native(dummy),
+                activation.create_scopechain(),
+                None,
+                None,
+            ),
+            prototype: None,
+        },
+    ))
+    .into())
+}
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -38,7 +77,7 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-    ) -> Result<FunctionObject<'gc>, Error> {
+    ) -> Result<FunctionObject<'gc>, Error<'gc>> {
         let this = Self::from_method(activation, method, scope, None, None);
         let es3_proto = ScriptObject::custom_object(
             activation.context.gc_context,
@@ -84,6 +123,10 @@ impl<'gc> FunctionObject<'gc> {
     pub fn set_prototype(&self, proto: Object<'gc>, mc: MutationContext<'gc, '_>) {
         self.0.write(mc).prototype = Some(proto);
     }
+
+    pub fn num_parameters(&self) -> usize {
+        self.0.read().exec.num_parameters()
+    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
@@ -99,15 +142,21 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn to_string(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok("function Function() {}".into())
     }
 
-    fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        self.to_string(mc)
+    fn to_locale_string(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 
@@ -124,7 +173,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.0
             .read()
             .exec
@@ -135,7 +184,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Object<'gc>, Error<'gc>> {
         let prototype = self.prototype().unwrap();
 
         let instance =

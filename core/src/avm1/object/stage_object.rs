@@ -40,12 +40,12 @@ impl<'gc> StageObject<'gc> {
     pub fn for_display_object(
         gc_context: MutationContext<'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Option<Object<'gc>>,
+        proto: Object<'gc>,
     ) -> Self {
         Self(GcCell::allocate(
             gc_context,
             StageObjectData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 display_object,
                 text_field_bindings: Vec::new(),
             },
@@ -116,7 +116,7 @@ impl<'gc> StageObject<'gc> {
                     .unwrap_or(Value::Undefined),
             );
         } else if name.eq_with_case(b"_global", case_sensitive) {
-            return Some(activation.context.avm1.global_object());
+            return Some(activation.context.avm1.global_object().into());
         }
 
         // Resolve level names `_levelN`.
@@ -560,9 +560,10 @@ impl<'gc> DisplayProperty<'gc> {
         this: DisplayObject<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.set
-            .map(|f| f(activation, this, value))
-            .unwrap_or(Ok(()))
+        if let Some(set) = self.set {
+            (set)(activation, this, value)?;
+        }
+        Ok(())
     }
 }
 
@@ -672,9 +673,7 @@ fn set_y<'gc>(
 }
 
 fn x_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_x(activation.context.gc_context)
-        .into_fraction()
-        .into()
+    this.scale_x(activation.context.gc_context).percent().into()
 }
 
 fn set_x_scale<'gc>(
@@ -683,15 +682,13 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, Percent::from_fraction(val));
+        this.set_scale_x(activation.context.gc_context, Percent::from(val));
     }
     Ok(())
 }
 
 fn y_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_y(activation.context.gc_context)
-        .into_fraction()
-        .into()
+    this.scale_y(activation.context.gc_context).percent().into()
 }
 
 fn set_y_scale<'gc>(
@@ -700,7 +697,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, Percent::from_fraction(val));
+        this.set_scale_y(activation.context.gc_context, Percent::from(val));
     }
     Ok(())
 }
@@ -933,10 +930,7 @@ fn set_sound_buf_time<'gc>(
 ) -> Result<(), Error<'gc>> {
     avm_warn!(activation, "_soundbuftime is currently ignored by Ruffle");
     if let Some(val) = property_coerce_to_i32(activation, val)? {
-        activation
-            .context
-            .audio_manager
-            .set_stream_buffer_time(val as i32);
+        activation.context.audio_manager.set_stream_buffer_time(val);
     }
     Ok(())
 }

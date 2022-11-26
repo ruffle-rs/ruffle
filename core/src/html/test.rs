@@ -28,7 +28,7 @@ fn into_swf_rectangle() {
     let pos = Position::from((Twips::new(3), Twips::new(5)));
     let size = Size::from((Twips::new(20), Twips::new(80)));
     let bounds = BoxBounds::from_position_and_size(pos, size);
-    let rect: Rectangle = bounds.into();
+    let rect: Rectangle<Twips> = bounds.into();
 
     assert_eq!(
         rect,

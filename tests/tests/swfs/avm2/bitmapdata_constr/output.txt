@@ -3,6 +3,8 @@
 128
 ///bd.height;
 128
+///bd.rect;
+(x=0, y=0, w=128, h=128)
 ///bd.transparent;
 true
 ///bd.getPixel(0,0);
@@ -12,6 +14,8 @@ true
 128
 ///bd.height;
 128
+///bd.rect;
+(x=0, y=0, w=128, h=128)
 ///bd.transparent;
 false
 ///bd.getPixel(0,0);

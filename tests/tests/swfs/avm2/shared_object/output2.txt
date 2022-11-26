@@ -1,0 +1,26 @@
+typeof obj =object
+typeof otherObj =object
+obj.data.hidden: undefined
+otherObj.data.hidden: undefined
+
+obj dump:
+0 = true type boolean
+1 = hello type string
+2 = something else type string
+3 = 10,268435454,268435455,268435456,268435457,268435458 type object
+4 = 10,268435454,268435455,268435456,268435457,268435458,-268435458,-268435457,-268435456,-268435455,-268435454 type object
+5 = -5.1 type number
+6 = elem0,,,,elem4 type object
+7 = 1,2,3 type object
+8 = (UTC)  Sun Jan 25 20:31:23 1970 UTC
+
+otherObj dump:
+0 = true type boolean
+1 = hello type string
+2 = something else type string
+3 = 10,268435454,268435455,268435456,268435457,268435458 type object
+4 = 10,268435454,268435455,268435456,268435457,268435458,-268435458,-268435457,-268435456,-268435455,-268435454 type object
+5 = -5.1 type number
+6 = elem0,,,,elem4 type object
+7 = 1,2,3 type object
+8 = (UTC)  Sun Jan 25 20:31:23 1970 UTC

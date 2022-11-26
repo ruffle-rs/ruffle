@@ -1,0 +1,45 @@
+Error
+	at Test$cinit()
+	at global$init()
+	at test_fla::MainTimeline/frame1()
+Error
+	at MethodInfo-1()
+	at MethodInfo-2()
+	at global$init()
+	at test_fla::MainTimeline/frame1()
+100
+test message
+Test
+Test: test message
+Test: test message
+	at global$init()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test/uri::f()
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test/get getter()
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test$/class_method()
+	at Test/get getter()
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test/set setter()
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test$/class_method()
+	at Test/set setter()
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test$/class_method()
+	at Test()
+	at test_fla::MainTimeline/frame1()

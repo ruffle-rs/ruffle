@@ -76,7 +76,7 @@ impl Default for FramePhase {
 }
 
 /// Run one frame according to AVM2 frame order.
-pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_, '_>) {
     let stage = context.stage;
 
     *context.frame_phase = FramePhase::Enter;

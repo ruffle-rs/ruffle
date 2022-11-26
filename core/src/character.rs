@@ -6,13 +6,16 @@ use crate::display_object::{
 use crate::font::Font;
 use gc_arena::Collect;
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Character<'gc> {
     EditText(EditText<'gc>),
     Graphic(Graphic<'gc>),
     MovieClip(MovieClip<'gc>),
-    Bitmap(Bitmap<'gc>),
+    Bitmap {
+        bitmap: Bitmap<'gc>,
+        initial_data: Vec<i32>,
+    },
     Avm1Button(Avm1Button<'gc>),
     Avm2Button(Avm2Button<'gc>),
     Font(Font<'gc>),

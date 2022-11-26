@@ -16,7 +16,7 @@ use std::cell::{Ref, RefMut};
 pub fn proxy_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
     Ok(ProxyObject(GcCell::allocate(
@@ -50,7 +50,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Object::from(*self).into())
     }
 
@@ -58,7 +58,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: This is incorrect behavior.
         // `QName` should instead store the whole multiname's namespace set,
         // so that it can be used to index other objects using the same
@@ -70,8 +70,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty")
-                            .into(),
+                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty"),
                         &[qname.into()],
                         activation,
                     );
@@ -95,7 +94,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<'gc>> {
         // NOTE: This is incorrect behavior.
         // `QName` should instead store the whole multiname's namespace set,
         // so that it can be used to index other objects using the same
@@ -107,8 +106,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty")
-                            .into(),
+                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty"),
                         &[qname.into(), value],
                         activation,
                     )?;
@@ -123,7 +121,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             .map(|c| c.read().is_sealed())
             .unwrap_or(false)
         {
-            let local_name: Result<AvmString<'gc>, Error> = multiname
+            let local_name: Result<AvmString<'gc>, Error<'gc>> = multiname
                 .local_name()
                 .ok_or_else(|| "Cannot set undefined property using any name".into());
             let _ = local_name?;
@@ -138,7 +136,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: This is incorrect behavior.
         // `QName` should instead store the whole multiname's namespace set,
         // so that it can be used to index other objects using the same
@@ -153,8 +151,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     args.extend_from_slice(arguments);
 
                     return self.call_property(
-                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "callProperty")
-                            .into(),
+                        &Multiname::new(
+                            Namespace::Namespace(NS_FLASH_PROXY.into()),
+                            "callProperty",
+                        ),
                         &args[..],
                         activation,
                     );
@@ -173,7 +173,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         multiname: &Multiname<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         // NOTE: This is incorrect behavior.
         // `QName` should instead store the whole multiname's namespace set,
         // so that it can be used to index other objects using the same
@@ -186,11 +186,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
 
                     return Ok(self
                         .call_property(
-                            &QName::new(
+                            &Multiname::new(
                                 Namespace::Namespace(NS_FLASH_PROXY.into()),
                                 "deleteProperty",
-                            )
-                            .into(),
+                            ),
                             &[qname.into()],
                             activation,
                         )?
@@ -210,10 +209,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &Multiname<'gc>,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, Error<'gc>> {
         Ok(self
             .call_property(
-                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty").into(),
+                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty"),
                 // this should probably pass the multiname as-is? See above
                 &[name.local_name().unwrap().into()],
                 activation,
@@ -225,10 +224,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         last_index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<u32>, Error> {
+    ) -> Result<Option<u32>, Error<'gc>> {
         Ok(Some(
             self.call_property(
-                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex").into(),
+                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex"),
                 &[last_index.into()],
                 activation,
             )?
@@ -240,9 +239,9 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
-            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName").into(),
+            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName"),
             &[index.into()],
             activation,
         )
@@ -252,9 +251,9 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         self,
         index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
-            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue").into(),
+            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue"),
             &[index.into()],
             activation,
         )

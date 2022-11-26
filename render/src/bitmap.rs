@@ -1,10 +1,17 @@
+use crate::backend::RenderBackend;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BitmapHandle(pub usize);
 
-/// Info returned by the `register_bitmap` methods.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
+    pub width: u16,
+    pub height: u16,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct BitmapSize {
     pub width: u16,
     pub height: u16,
 }
@@ -14,7 +21,8 @@ pub struct BitmapInfo {
 /// This is used by render backends to get the bitmap used in a bitmap fill.
 /// For movie libraries, this will return the bitmap with the given character ID.
 pub trait BitmapSource {
-    fn bitmap(&self, id: u16) -> Option<BitmapInfo>;
+    fn bitmap_size(&self, id: u16) -> Option<BitmapSize>;
+    fn bitmap_handle(&self, id: u16, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle>;
 }
 
 /// Decoded bitmap data from an SWF tag.
@@ -31,7 +39,6 @@ impl Bitmap {
     pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = width as usize * height as usize * format.bytes_per_pixel();
-        debug_assert_eq!(data.len(), expected_len);
         if data.len() != expected_len {
             log::warn!(
                 "Incorrect bitmap data size, expected {} bytes, got {}",

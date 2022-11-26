@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::character::Character;
@@ -17,7 +18,7 @@ pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -30,7 +31,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -39,7 +40,7 @@ pub fn font_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
         activation
             .context
@@ -69,7 +70,7 @@ pub fn font_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
         activation
             .context
@@ -100,7 +101,7 @@ pub fn font_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
         activation
             .context
@@ -127,7 +128,7 @@ pub fn has_glyphs<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
         activation
             .context
@@ -159,7 +160,7 @@ pub fn enumerate_fonts<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Font.enumerateFonts is a stub".into())
 }
 
@@ -168,7 +169,7 @@ pub fn register_font<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Font.registerFont is a stub".into())
 }
 
@@ -176,7 +177,7 @@ pub fn register_font<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "Font"),
-        Some(QName::new(Namespace::package(""), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Font instance initializer>", mc),
         Method::from_builtin(class_init, "<Font class initializer>", mc),
         mc,

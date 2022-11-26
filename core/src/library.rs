@@ -8,6 +8,8 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, MutationContext};
+use ruffle_render::backend::RenderBackend;
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
@@ -165,12 +167,12 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         id: CharacterId,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.characters.get(&id) {
             self.instantiate_display_object(character, gc_context)
         } else {
             log::error!("Tried to instantiate non-registered character ID {}", id);
-            Err("Character id doesn't exist".into())
+            Err("Character id doesn't exist")
         }
     }
 
@@ -180,7 +182,7 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         export_name: AvmString<'gc>,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
@@ -188,7 +190,7 @@ impl<'gc> MovieLibrary<'gc> {
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
-            Err("Character id doesn't exist".into())
+            Err("Character id doesn't exist")
         }
     }
 
@@ -198,9 +200,12 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         character: &Character<'gc>,
         gc_context: MutationContext<'gc, '_>,
-    ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
+    ) -> Result<DisplayObject<'gc>, &'static str> {
         match character {
-            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
+            Character::Bitmap {
+                bitmap,
+                initial_data: _,
+            } => Ok(bitmap.instantiate(gc_context)),
             Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
             Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
             Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
@@ -209,12 +214,12 @@ impl<'gc> MovieLibrary<'gc> {
             Character::Avm2Button(button) => Ok(button.instantiate(gc_context)),
             Character::Text(text) => Ok(text.instantiate(gc_context)),
             Character::Video(video) => Ok(video.instantiate(gc_context)),
-            _ => Err("Not a DisplayObject".into()),
+            _ => Err("Not a DisplayObject"),
         }
     }
 
     pub fn get_bitmap(&self, id: CharacterId) -> Option<Bitmap<'gc>> {
-        if let Some(&Character::Bitmap(bitmap)) = self.characters.get(&id) {
+        if let Some(&Character::Bitmap { bitmap, .. }) = self.characters.get(&id) {
             Some(bitmap)
         } else {
             None
@@ -315,14 +320,16 @@ impl<'gc> MovieLibrary<'gc> {
 }
 
 impl<'gc> ruffle_render::bitmap::BitmapSource for MovieLibrary<'gc> {
-    fn bitmap(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapInfo> {
-        self.get_bitmap(id).and_then(|bitmap| {
-            Some(ruffle_render::bitmap::BitmapInfo {
-                handle: bitmap.bitmap_handle()?,
+    fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
+        self.get_bitmap(id)
+            .map(|bitmap| ruffle_render::bitmap::BitmapSize {
                 width: bitmap.width(),
                 height: bitmap.height(),
             })
-        })
+    }
+    fn bitmap_handle(&self, id: u16, _backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
+        self.get_bitmap(id)
+            .and_then(|bitmap| bitmap.bitmap_handle())
     }
 }
 

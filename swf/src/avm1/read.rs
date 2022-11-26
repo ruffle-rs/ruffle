@@ -311,26 +311,30 @@ impl<'a> Reader<'a> {
         let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
         let mut values = Vec::with_capacity(4);
         while self.input.as_ptr() < end_pos {
-            values.push(self.read_push_value()?);
+            let value = match self.read_u8()? {
+                0 => Value::Str(self.read_str()?),
+                1 => Value::Float(self.read_f32()?),
+                2 => Value::Null,
+                3 => Value::Undefined,
+                4 => Value::Register(self.read_u8()?),
+                5 => Value::Bool(self.read_u8()? != 0),
+                6 => Value::Double(self.read_f64_me()?),
+                7 => Value::Int(self.read_i32()?),
+                8 => Value::ConstantPool(self.read_u8()?.into()),
+                9 => Value::ConstantPool(self.read_u16()?),
+                type_ => {
+                    // Newest Flash Player exits on unknown value types. However, older versions
+                    // (at least FP9) just ignore them and continue to the next value.
+                    // We follow the lenient behavior in order to support more content (e.g. #8389
+                    // doesn't work on newest Flash Player).
+                    // TODO: Return an error if we ever add player version emulation.
+                    log::warn!("Invalid value type in ActionPush: {}", type_);
+                    continue;
+                }
+            };
+            values.push(value);
         }
         Ok(Push { values })
-    }
-
-    fn read_push_value(&mut self) -> Result<Value<'a>> {
-        let value = match self.read_u8()? {
-            0 => Value::Str(self.read_str()?),
-            1 => Value::Float(self.read_f32()?),
-            2 => Value::Null,
-            3 => Value::Undefined,
-            4 => Value::Register(self.read_u8()?),
-            5 => Value::Bool(self.read_u8()? != 0),
-            6 => Value::Double(self.read_f64_me()?),
-            7 => Value::Int(self.read_i32()?),
-            8 => Value::ConstantPool(self.read_u8()?.into()),
-            9 => Value::ConstantPool(self.read_u16()?),
-            _ => return Err(Error::invalid_data("Invalid value type in ActionPush")),
-        };
-        Ok(value)
     }
 
     fn read_set_target(&mut self) -> Result<SetTarget<'a>> {
@@ -430,7 +434,7 @@ pub mod tests {
         match reader.read_action() {
             Err(crate::error::Error::Avm1ParseError { .. }) => (),
             result => {
-                panic!("Expected Avm1ParseError, got {:?}", result);
+                panic!("Expected Avm1ParseError, got {result:?}");
             }
         }
     }
@@ -468,11 +472,19 @@ pub mod tests {
     }
 
     #[test]
-    fn read_push_to_end_of_action() {
+    fn read_push() {
         // ActionPush doesn't provide an explicit # of values, but instead reads values
         // until the end of the action. Ensure we don't read extra values.
-        let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let action_bytes = [
+            OpCode::Push as u8,
+            3,
+            0,
+            2,  // null
+            10, // Invalid value type.
+            3,  // undefined
+            3,  // Extra byte at the end shouldn't be read.
+        ];
+        let mut reader = Reader::new(&action_bytes, 5);
         let action = reader.read_action().unwrap();
         assert_eq!(
             action,

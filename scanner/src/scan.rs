@@ -97,7 +97,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
                 file_results.error = Some(
                     file_results
                         .error
-                        .map(|e| format!("{}\n{}", e, panic_error))
+                        .map(|e| format!("{e}\n{panic_error}"))
                         .unwrap_or(panic_error),
                 );
             }
@@ -145,7 +145,7 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
         .ser_bridge()
         .map(|result| {
             if let Err(e) = writer.serialize(result.clone()) {
-                eprintln!("{}", e);
+                eprintln!("{e}");
             };
 
             result

@@ -7,6 +7,7 @@ use crate::{
 };
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
+use simple_asn1::ASN1Block;
 use std::io::{self, Read};
 
 /// Parse a decompressed SWF.
@@ -26,6 +27,28 @@ pub fn parse_swf(swf_buf: &SwfBuf) -> Result<Swf<'_>> {
         header: swf_buf.header.clone(),
         tags: reader.read_tag_list()?,
     })
+}
+
+/// Extracts an SWF inside of an SWZ file.
+pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
+    let asn1_blocks =
+        simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
+    if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().next() {
+        for t in s {
+            if let ASN1Block::Explicit(_, _, _, block) = t {
+                if let ASN1Block::Sequence(_, s) = *block {
+                    if let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2) {
+                        if let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1) {
+                            if let ASN1Block::OctetString(_, bytes) = *octet {
+                                return Ok(bytes);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Err(Error::invalid_data("Invalid ASN1 blob"))
 }
 
 /// Parses an SWF header and returns a `Reader` that can be used
@@ -568,9 +591,7 @@ impl<'a> Reader<'a> {
 
             TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
 
-            TagCode::PlaceObject => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
-            }
+            TagCode::PlaceObject => Tag::PlaceObject(Box::new(tag_reader.read_place_object()?)),
             TagCode::PlaceObject2 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
             }
@@ -602,7 +623,7 @@ impl<'a> Reader<'a> {
         Ok(tag)
     }
 
-    pub fn read_rectangle(&mut self) -> Result<Rectangle> {
+    pub fn read_rectangle(&mut self) -> Result<Rectangle<Twips>> {
         let mut bits = self.bits();
         let num_bits = bits.read_ubits(5)?;
         Ok(Rectangle {
@@ -1012,7 +1033,7 @@ impl<'a> Reader<'a> {
 
                 // The glyph shapes must not overlap. Avoid exceeding to the next one.
                 // TODO: What happens on decreasing offsets?
-                let available_bytes = if i < num_glyphs as usize - 1 {
+                let available_bytes = if i < num_glyphs - 1 {
                     offsets[i + 1] - offsets[i]
                 } else {
                     code_table_offset - offsets[i]
@@ -1576,16 +1597,36 @@ impl<'a> Reader<'a> {
                 FillStyle::Color(color)
             }
 
-            0x10 => FillStyle::LinearGradient(self.read_gradient(shape_version)?),
+            0x10 => {
+                if let Some(gradient) = self.read_gradient(shape_version)? {
+                    FillStyle::LinearGradient(gradient)
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
-            0x12 => FillStyle::RadialGradient(self.read_gradient(shape_version)?),
+            0x12 => {
+                if let Some(gradient) = self.read_gradient(shape_version)? {
+                    FillStyle::RadialGradient(gradient)
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
-            0x13 => FillStyle::FocalGradient {
+            0x13 => {
                 // SWF19 says focal gradients are only allowed in SWFv8+ and DefineShape4,
                 // but it works even in earlier tags (#2730).
-                gradient: self.read_gradient(shape_version)?,
-                focal_point: self.read_fixed8()?,
-            },
+                let gradient = self.read_gradient(shape_version)?;
+                let focal_point = self.read_fixed8()?;
+                if let Some(gradient) = gradient {
+                    FillStyle::FocalGradient {
+                        gradient,
+                        focal_point,
+                    }
+                } else {
+                    FillStyle::Color(Color::BLACK)
+                }
+            }
 
             0x40..=0x43 => FillStyle::Bitmap {
                 id: self.read_u16()?,
@@ -1646,9 +1687,15 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_gradient(&mut self, shape_version: u8) -> Result<Gradient> {
+    fn read_gradient(&mut self, shape_version: u8) -> Result<Option<Gradient>> {
         let matrix = self.read_matrix()?;
         let (num_records, spread, interpolation) = self.read_gradient_flags()?;
+
+        // this can happen in some malformed SWFs (#4499, #4414, #3365)
+        if num_records == 0 {
+            return Ok(None);
+        }
+
         let mut records = Vec::with_capacity(num_records);
         for _ in 0..num_records {
             records.push(GradientRecord {
@@ -1660,12 +1707,12 @@ impl<'a> Reader<'a> {
                 },
             });
         }
-        Ok(Gradient {
+        Ok(Some(Gradient {
             matrix,
             spread,
             interpolation,
             records,
-        })
+        }))
     }
 
     fn read_gradient_flags(&mut self) -> Result<(usize, GradientSpread, GradientInterpolation)> {
@@ -1785,20 +1832,14 @@ impl<'a> Reader<'a> {
         Ok(exports)
     }
 
-    pub fn read_place_object(&mut self, tag_length: usize) -> Result<PlaceObject<'a>> {
-        // TODO: What's a best way to know if the tag has a color transform?
-        // You only know if there is still data remaining after the matrix.
-        // This sucks.
-        let mut vector = [0; 128];
-        self.get_mut().read_exact(&mut vector[..tag_length])?;
-        let mut reader = Reader::new(&vector[..], self.version);
+    pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
         Ok(PlaceObject {
             version: 1,
-            action: PlaceObjectAction::Place(reader.read_u16()?),
-            depth: reader.read_u16()?,
-            matrix: Some(reader.read_matrix()?),
-            color_transform: if !reader.get_ref().is_empty() {
-                Some(reader.read_color_transform(false)?)
+            action: PlaceObjectAction::Place(self.read_u16()?),
+            depth: self.read_u16()?,
+            matrix: Some(self.read_matrix()?),
+            color_transform: if !self.get_ref().is_empty() {
+                Some(self.read_color_transform(false)?)
             } else {
                 None
             },
@@ -2021,166 +2062,151 @@ impl<'a> Reader<'a> {
         ClipEventFlag::from_bits_truncate(bits)
     }
 
+    fn read_drop_shadow_filter(&mut self) -> Result<DropShadowFilter> {
+        let color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(DropShadowFilter {
+            color,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            num_passes: flags & 0b0001_1111,
+        })
+    }
+
+    fn read_blur_filter(&mut self) -> Result<BlurFilter> {
+        Ok(BlurFilter {
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
+        })
+    }
+
+    fn read_glow_filter(&mut self) -> Result<GlowFilter> {
+        let color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(GlowFilter {
+            color,
+            blur_x,
+            blur_y,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            num_passes: flags & 0b0001_1111,
+        })
+    }
+
+    fn read_bevel_filter(&mut self) -> Result<BevelFilter> {
+        let shadow_color = self.read_rgba()?;
+        let highlight_color = self.read_rgba()?;
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(BevelFilter {
+            shadow_color,
+            highlight_color,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            is_on_top: flags & 0b0001_0000 != 0,
+            num_passes: flags & 0b0000_1111,
+        })
+    }
+
+    fn read_gradient_filter(&mut self) -> Result<GradientFilter> {
+        let num_colors = self.read_u8()?;
+        let mut colors = Vec::with_capacity(num_colors as usize);
+        for _ in 0..num_colors {
+            colors.push(self.read_rgba()?);
+        }
+        let mut gradient_records = Vec::with_capacity(num_colors as usize);
+        for color in colors {
+            gradient_records.push(GradientRecord {
+                color,
+                ratio: self.read_u8()?,
+            });
+        }
+        let blur_x = self.read_fixed16()?;
+        let blur_y = self.read_fixed16()?;
+        let angle = self.read_fixed16()?;
+        let distance = self.read_fixed16()?;
+        let strength = self.read_fixed8()?;
+        let flags = self.read_u8()?;
+        Ok(GradientFilter {
+            colors: gradient_records,
+            blur_x,
+            blur_y,
+            angle,
+            distance,
+            strength,
+            is_inner: flags & 0b1000_0000 != 0,
+            is_knockout: flags & 0b0100_0000 != 0,
+            is_on_top: flags & 0b0001_0000 != 0,
+            num_passes: flags & 0b0000_1111,
+        })
+    }
+
+    fn read_convolution_filter(&mut self) -> Result<ConvolutionFilter> {
+        let num_matrix_cols = self.read_u8()?;
+        let num_matrix_rows = self.read_u8()?;
+        let divisor = self.read_fixed16()?;
+        let bias = self.read_fixed16()?;
+        let num_entries = num_matrix_cols * num_matrix_rows;
+        let mut matrix = Vec::with_capacity(num_entries as usize);
+        for _ in 0..num_entries {
+            matrix.push(self.read_fixed16()?);
+        }
+        let default_color = self.read_rgba()?;
+        let flags = self.read_u8()?;
+        Ok(ConvolutionFilter {
+            num_matrix_cols,
+            num_matrix_rows,
+            divisor,
+            bias,
+            matrix,
+            default_color,
+            is_clamped: (flags & 0b10) != 0,
+            is_preserve_alpha: (flags & 0b1) != 0,
+        })
+    }
+
+    fn read_color_matrix_filter(&mut self) -> Result<ColorMatrixFilter> {
+        let mut matrix = [Fixed16::ZERO; 20];
+        for m in &mut matrix {
+            *m = self.read_fixed16()?;
+        }
+        Ok(ColorMatrixFilter { matrix })
+    }
+
     pub fn read_filter(&mut self) -> Result<Filter> {
         let filter = match self.read_u8()? {
-            0 => {
-                let color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::DropShadowFilter(Box::new(DropShadowFilter {
-                    color,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    num_passes: flags & 0b0001_1111,
-                }))
-            }
-            1 => Filter::BlurFilter(Box::new(BlurFilter {
-                blur_x: self.read_fixed16()?,
-                blur_y: self.read_fixed16()?,
-                num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
-            })),
-            2 => {
-                let color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GlowFilter(Box::new(GlowFilter {
-                    color,
-                    blur_x,
-                    blur_y,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    num_passes: flags & 0b0001_1111,
-                }))
-            }
-            3 => {
-                let shadow_color = self.read_rgba()?;
-                let highlight_color = self.read_rgba()?;
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::BevelFilter(Box::new(BevelFilter {
-                    shadow_color,
-                    highlight_color,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
-            4 => {
-                let num_colors = self.read_u8()?;
-                let mut colors = Vec::with_capacity(num_colors as usize);
-                for _ in 0..num_colors {
-                    colors.push(self.read_rgba()?);
-                }
-                let mut gradient_records = Vec::with_capacity(num_colors as usize);
-                for color in colors {
-                    gradient_records.push(GradientRecord {
-                        color,
-                        ratio: self.read_u8()?,
-                    });
-                }
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GradientGlowFilter(Box::new(GradientGlowFilter {
-                    colors: gradient_records,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
-            5 => {
-                let num_matrix_cols = self.read_u8()?;
-                let num_matrix_rows = self.read_u8()?;
-                let divisor = self.read_fixed16()?;
-                let bias = self.read_fixed16()?;
-                let num_entries = num_matrix_cols * num_matrix_rows;
-                let mut matrix = Vec::with_capacity(num_entries as usize);
-                for _ in 0..num_entries {
-                    matrix.push(self.read_fixed16()?);
-                }
-                let default_color = self.read_rgba()?;
-                let flags = self.read_u8()?;
-                Filter::ConvolutionFilter(Box::new(ConvolutionFilter {
-                    num_matrix_cols,
-                    num_matrix_rows,
-                    divisor,
-                    bias,
-                    matrix,
-                    default_color,
-                    is_clamped: (flags & 0b10) != 0,
-                    is_preserve_alpha: (flags & 0b1) != 0,
-                }))
-            }
-            6 => {
-                let mut matrix = [Fixed16::ZERO; 20];
-                for m in &mut matrix {
-                    *m = self.read_fixed16()?;
-                }
-                Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix }))
-            }
-            7 => {
-                let num_colors = self.read_u8()?;
-                let mut colors = Vec::with_capacity(num_colors as usize);
-                for _ in 0..num_colors {
-                    colors.push(self.read_rgba()?);
-                }
-                let mut gradient_records = Vec::with_capacity(num_colors as usize);
-                for color in colors {
-                    gradient_records.push(GradientRecord {
-                        color,
-                        ratio: self.read_u8()?,
-                    });
-                }
-                let blur_x = self.read_fixed16()?;
-                let blur_y = self.read_fixed16()?;
-                let angle = self.read_fixed16()?;
-                let distance = self.read_fixed16()?;
-                let strength = self.read_fixed8()?;
-                let flags = self.read_u8()?;
-                Filter::GradientBevelFilter(Box::new(GradientBevelFilter {
-                    colors: gradient_records,
-                    blur_x,
-                    blur_y,
-                    angle,
-                    distance,
-                    strength,
-                    is_inner: flags & 0b1000_0000 != 0,
-                    is_knockout: flags & 0b0100_0000 != 0,
-                    is_on_top: flags & 0b0001_0000 != 0,
-                    num_passes: flags & 0b0000_1111,
-                }))
-            }
+            0 => Filter::DropShadowFilter(Box::new(self.read_drop_shadow_filter()?)),
+            1 => Filter::BlurFilter(Box::new(self.read_blur_filter()?)),
+            2 => Filter::GlowFilter(Box::new(self.read_glow_filter()?)),
+            3 => Filter::BevelFilter(Box::new(self.read_bevel_filter()?)),
+            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_filter()?)),
+            5 => Filter::ConvolutionFilter(Box::new(self.read_convolution_filter()?)),
+            6 => Filter::ColorMatrixFilter(Box::new(self.read_color_matrix_filter()?)),
+            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_filter()?)),
             _ => return Err(Error::invalid_data("Invalid filter type")),
         };
         Ok(filter)
@@ -2348,72 +2374,70 @@ impl<'a> Reader<'a> {
     pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
         let id = self.read_character_id()?;
         let bounds = self.read_rectangle()?;
-        let flags = self.read_u8()?;
-        let flags2 = self.read_u8()?;
-        let font_id = if flags & 0b1 != 0 {
-            Some(self.read_character_id()?)
+        let flags = EditTextFlag::from_bits_truncate(self.read_u16()?);
+        let font_id = if flags.contains(EditTextFlag::HAS_FONT) {
+            self.read_character_id()?
         } else {
-            None
+            Default::default()
         };
-        let font_class_name = if flags2 & 0b10000000 != 0 {
-            Some(self.read_str()?)
+        let font_class = if flags.contains(EditTextFlag::HAS_FONT_CLASS) {
+            self.read_str()?
         } else {
-            None
+            Default::default()
         };
-        let height = if flags & 0b1 != 0 {
-            Some(Twips::new(self.read_u16()?))
+        let height = if flags.intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS) {
+            // SWF19 errata: The specs say this field is only present if the HasFont flag is set,
+            // but it's also present when the HasFontClass flag is set.
+            Twips::new(self.read_u16()?)
         } else {
-            None
+            Twips::ZERO
         };
-        let color = if flags & 0b100 != 0 {
-            Some(self.read_rgba()?)
+        let color = if flags.contains(EditTextFlag::HAS_TEXT_COLOR) {
+            self.read_rgba()?
         } else {
-            None
+            Color::BLACK
         };
-        let max_length = if flags & 0b10 != 0 {
-            Some(self.read_u16()?)
+        let max_length = if flags.contains(EditTextFlag::HAS_MAX_LENGTH) {
+            self.read_u16()?
         } else {
-            None
+            0
         };
-        let layout = if flags2 & 0b100000 != 0 {
-            Some(TextLayout {
+        let layout = if flags.contains(EditTextFlag::HAS_LAYOUT) {
+            TextLayout {
                 align: TextAlign::from_u8(self.read_u8()?)
                     .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
                 left_margin: Twips::new(self.read_u16()?),
                 right_margin: Twips::new(self.read_u16()?),
                 indent: Twips::new(self.read_u16()?),
                 leading: Twips::new(self.read_i16()?),
-            })
+            }
         } else {
-            None
+            TextLayout {
+                align: TextAlign::Left,
+                left_margin: Twips::ZERO,
+                right_margin: Twips::ZERO,
+                indent: Twips::ZERO,
+                leading: Twips::ZERO,
+            }
         };
         let variable_name = self.read_str()?;
-        let initial_text = if flags & 0b10000000 != 0 {
-            Some(self.read_str()?)
+        let initial_text = if flags.contains(EditTextFlag::HAS_TEXT) {
+            self.read_str()?
         } else {
-            None
+            Default::default()
         };
         Ok(EditText {
             id,
             bounds,
             font_id,
-            font_class_name,
+            font_class,
             height,
             color,
             max_length,
             layout,
             variable_name,
             initial_text,
-            is_word_wrap: flags & 0b1000000 != 0,
-            is_multiline: flags & 0b100000 != 0,
-            is_password: flags & 0b10000 != 0,
-            is_read_only: flags & 0b1000 != 0,
-            is_auto_size: flags2 & 0b1000000 != 0,
-            is_selectable: flags2 & 0b10000 == 0,
-            has_border: flags2 & 0b1000 != 0,
-            was_static: flags2 & 0b100 != 0,
-            is_html: flags2 & 0b10 != 0,
-            is_device_font: flags2 & 0b1 == 0,
+            flags,
         })
     }
 
@@ -2984,7 +3008,7 @@ pub mod tests {
             let mut reader = Reader::new(&tag_bytes[..], swf_version);
             let parsed_tag = match reader.read_tag() {
                 Ok(tag) => tag,
-                Err(e) => panic!("Error parsing tag: {}", e),
+                Err(e) => panic!("Error parsing tag: {e}"),
             };
             assert_eq!(
                 parsed_tag, expected_tag,
@@ -3017,7 +3041,7 @@ pub mod tests {
         match reader.read_tag() {
             Err(crate::error::Error::SwfParseError { .. }) => (),
             result => {
-                panic!("Expected SwfParseError, got {:?}", result);
+                panic!("Expected SwfParseError, got {result:?}");
             }
         }
     }

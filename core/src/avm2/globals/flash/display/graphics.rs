@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::TDisplayObject;
@@ -21,7 +22,7 @@ fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("Graphics cannot be constructed directly.".into())
 }
 
@@ -30,7 +31,7 @@ fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -43,7 +44,7 @@ fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -58,7 +59,7 @@ fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let color = args
             .get(0)
@@ -79,12 +80,32 @@ fn begin_fill<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.beginBitmapFill`.
+fn begin_bitmap_fill<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("Graphics.beginBitmapFill: not yet implemented");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.beginGradientFill`.
+fn begin_gradient_fill<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("Graphics.beginGradientFill: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Implements `Graphics.clear`
 fn clear<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.clear()
@@ -99,7 +120,7 @@ fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x1 = Twips::from_pixels(
             args.get(0)
@@ -139,7 +160,7 @@ fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(None);
@@ -152,7 +173,7 @@ fn end_fill<'gc>(
 fn caps_to_cap_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     caps: Value<'gc>,
-) -> Result<LineCapStyle, Error> {
+) -> Result<LineCapStyle, Error<'gc>> {
     if let Value::Null = caps {
         return Ok(LineCapStyle::None);
     }
@@ -171,7 +192,7 @@ fn joints_to_join_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     joints: Value<'gc>,
     miter_limit: f64,
-) -> Result<LineJoinStyle, Error> {
+) -> Result<LineJoinStyle, Error<'gc>> {
     if let Value::Null = joints {
         return Ok(LineJoinStyle::Round);
     }
@@ -186,7 +207,7 @@ fn joints_to_join_style<'gc>(
     }
 }
 
-fn scale_mode_to_allow_scale_bits(scale_mode: &WStr) -> Result<(bool, bool), Error> {
+fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool), Error<'gc>> {
     if scale_mode == b"none" {
         Ok((false, false))
     } else if scale_mode == b"horizontal" {
@@ -203,7 +224,7 @@ fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let thickness = args
             .get(0)
@@ -274,7 +295,7 @@ fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = Twips::from_pixels(
             args.get(0)
@@ -302,7 +323,7 @@ fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = Twips::from_pixels(
             args.get(0)
@@ -330,7 +351,7 @@ fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = Twips::from_pixels(
             args.get(0)
@@ -641,7 +662,7 @@ fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = args
             .get(0)
@@ -695,7 +716,7 @@ fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = args
             .get(0)
@@ -734,7 +755,7 @@ fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let x = args
             .get(0)
@@ -769,7 +790,7 @@ fn draw_ellipse<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Graphics"),
-        Some(QName::new(Namespace::public(), "Object").into()),
+        Some(Multiname::public("Object")),
         Method::from_builtin(instance_init, "<Graphics instance initializer>", mc),
         Method::from_builtin(class_init, "<Graphics class initializer>", mc),
         mc,
@@ -787,6 +808,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("beginFill", begin_fill),
+        ("beginBitmapFill", begin_bitmap_fill),
+        ("beginGradientFill", begin_gradient_fill),
         ("clear", clear),
         ("curveTo", curve_to),
         ("endFill", end_fill),

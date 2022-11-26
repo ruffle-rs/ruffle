@@ -1,9 +1,8 @@
 use crate::add_field_accessors;
+use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-
-use crate::avm1::object::bevel_filter::BevelFilterType;
 use std::fmt;
 
 /// A GradientGlowFilter
@@ -76,11 +75,11 @@ impl<'gc> GradientGlowFilterObject<'gc> {
         self.0.read().ratios.clone()
     }
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         GradientGlowFilterObject(GcCell::allocate(
             gc_context,
             GradientGlowFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 alphas: vec![],
                 angle: 0.0,
                 blur_x: 0.0,

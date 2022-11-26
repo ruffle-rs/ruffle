@@ -5,6 +5,7 @@ use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8, Twips};
@@ -94,7 +95,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         let static_data = this.static_data;
         let shape_handle = static_data.get_shape(context.renderer, context.library, ratio);
         context
-            .renderer
+            .commands
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 

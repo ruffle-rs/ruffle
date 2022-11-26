@@ -10,7 +10,7 @@ pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     match args {
         [] => activation.context.avm_trace(""),
         [arg] => {
@@ -34,7 +34,7 @@ pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
         Ok(val.coerce_to_number(activation)?.is_finite().into())
     } else {
@@ -46,7 +46,7 @@ pub fn is_nan<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(val) = args.get(0) {
         Ok(val.coerce_to_number(activation)?.is_nan().into())
     } else {
@@ -58,7 +58,7 @@ pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let string = match args.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined => "null".into(),
         value => value.coerce_to_string(activation)?,
@@ -77,7 +77,7 @@ pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
         let string = value.coerce_to_string(activation)?;
         let swf_version = activation.context.swf.version();
@@ -93,7 +93,7 @@ pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let value = match args.first() {
         None => return Ok("undefined".into()),
         Some(Value::Undefined) => return Ok("null".into()),
@@ -111,9 +111,9 @@ pub fn escape<'gc>(
             output.push(x);
         } else {
             let encode = if x <= u8::MAX.into() {
-                format!("%{:02X}", x)
+                format!("%{x:02X}")
             } else {
-                format!("%u{:04X}", x)
+                format!("%u{x:04X}")
             };
             output.push_str(WStr::from_units(encode.as_bytes()));
         }

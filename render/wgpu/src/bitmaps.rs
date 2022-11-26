@@ -1,20 +1,17 @@
 #[derive(Debug)]
 pub struct BitmapSamplers {
-    layout: wgpu::BindGroupLayout,
-    repeat_linear: wgpu::BindGroup,
-    repeat_nearest: wgpu::BindGroup,
-    clamp_linear: wgpu::BindGroup,
-    clamp_nearest: wgpu::BindGroup,
+    repeat_linear: wgpu::Sampler,
+    repeat_nearest: wgpu::Sampler,
+    clamp_linear: wgpu::Sampler,
+    clamp_nearest: wgpu::Sampler,
 }
 
 fn create_sampler(
     device: &wgpu::Device,
-    layout: &wgpu::BindGroupLayout,
     address_mode: wgpu::AddressMode,
     filter: wgpu::FilterMode,
     sampler_label: Option<String>,
-    group_label: Option<String>,
-) -> wgpu::BindGroup {
+) -> wgpu::Sampler {
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         label: sampler_label.as_deref(),
         address_mode_u: address_mode,
@@ -29,64 +26,37 @@ fn create_sampler(
         anisotropy_clamp: None,
         border_color: None,
     });
-    device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: group_label.as_deref(),
-        layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: wgpu::BindingResource::Sampler(&sampler),
-        }],
-    })
+    sampler
 }
 
 impl BitmapSamplers {
     pub fn new(device: &wgpu::Device) -> Self {
-        let layout_label = create_debug_label!("Sampler layout");
-        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: layout_label.as_deref(),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            }],
-        });
-
         let repeat_linear = create_sampler(
             device,
-            &layout,
             wgpu::AddressMode::Repeat,
             wgpu::FilterMode::Linear,
             create_debug_label!("Repeat & Linear sampler"),
-            create_debug_label!("Repeat & Linear bind group"),
         );
         let repeat_nearest = create_sampler(
             device,
-            &layout,
             wgpu::AddressMode::Repeat,
             wgpu::FilterMode::Nearest,
             create_debug_label!("Repeat & Nearest sampler"),
-            create_debug_label!("Repeat & Nearest bind group"),
         );
         let clamp_linear = create_sampler(
             device,
-            &layout,
             wgpu::AddressMode::ClampToEdge,
             wgpu::FilterMode::Linear,
             create_debug_label!("Clamp & Linear sampler"),
-            create_debug_label!("Clamp & Linear bind group"),
         );
         let clamp_nearest = create_sampler(
             device,
-            &layout,
             wgpu::AddressMode::ClampToEdge,
             wgpu::FilterMode::Nearest,
             create_debug_label!("Clamp & Nearest sampler"),
-            create_debug_label!("Clamp & Nearest bind group"),
         );
 
         Self {
-            layout,
             repeat_linear,
             repeat_nearest,
             clamp_linear,
@@ -94,11 +64,7 @@ impl BitmapSamplers {
         }
     }
 
-    pub fn layout(&self) -> &wgpu::BindGroupLayout {
-        &self.layout
-    }
-
-    pub fn get_bind_group(&self, is_repeating: bool, is_smoothed: bool) -> &wgpu::BindGroup {
+    pub fn get_sampler(&self, is_repeating: bool, is_smoothed: bool) -> &wgpu::Sampler {
         match (is_repeating, is_smoothed) {
             (true, true) => &self.repeat_linear,
             (true, false) => &self.repeat_nearest,

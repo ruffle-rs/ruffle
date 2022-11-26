@@ -54,11 +54,11 @@ impl<'gc> GlowFilterObject<'gc> {
         [set_strength, strength, strength, f64],
     );
 
-    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         GlowFilterObject(GcCell::allocate(
             gc_context,
             GlowFilterData {
-                base: ScriptObject::new(gc_context, proto),
+                base: ScriptObject::new(gc_context, Some(proto)),
                 alpha: 1.0,
                 blur_x: 6.0,
                 blur_y: 6.0,

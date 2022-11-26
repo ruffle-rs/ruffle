@@ -10,6 +10,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
+use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -92,6 +93,12 @@ impl<'gc> Graphic<'gc> {
             },
         ))
     }
+
+    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+        RefMut::map(self.0.write(gc_context), |w| {
+            w.drawing.get_or_insert_with(Drawing::new)
+        })
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
@@ -160,7 +167,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext) {
-        if !self.world_bounds().intersects(&context.stage.view_bounds()) {
+        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }
@@ -169,7 +176,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             drawing.render(context);
         } else if let Some(render_handle) = self.0.read().static_data.render_handle {
             context
-                .renderer
+                .commands
                 .render_shape(render_handle, context.transform_stack.transform())
         }
     }
@@ -234,12 +241,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
-        let mut write = self.0.write(gc_context);
-        if write.drawing.is_none() {
-            write.drawing = Some(Drawing::new());
-        }
-
-        Some(RefMut::map(write, |m| m.drawing.as_mut().unwrap()))
+        Some(self.drawing(gc_context))
     }
 }
 

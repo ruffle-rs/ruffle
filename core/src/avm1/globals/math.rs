@@ -158,10 +158,10 @@ pub fn random<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let math = ScriptObject::new(gc_context, proto);
+    let math = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, gc_context, math, fn_proto);
     math.into()
 }
@@ -174,7 +174,7 @@ mod tests {
     fn setup<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
         create(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes().object),
+            activation.context.avm1.prototypes().object,
             activation.context.avm1.prototypes().function,
         )
     }
@@ -392,7 +392,7 @@ mod tests {
         with_avm(19, |activation, _root| -> Result<(), Error> {
             let math = create(
                 activation.context.gc_context,
-                Some(activation.context.avm1.prototypes().object),
+                activation.context.avm1.prototypes().object,
                 activation.context.avm1.prototypes().function,
             );
 
@@ -418,7 +418,7 @@ mod tests {
         with_avm(19, |activation, _root| -> Result<(), Error> {
             let math = create(
                 activation.context.gc_context,
-                Some(activation.context.avm1.prototypes().object),
+                activation.context.avm1.prototypes().object,
                 activation.context.avm1.prototypes().function,
             );
 

@@ -21,3 +21,6 @@ trace(getQualifiedClassName(String));
 trace(getQualifiedClassName(new flash.utils.ByteArray()));
 
 trace(getQualifiedClassName(new String()));
+
+trace(getQualifiedClassName(null));
+trace(getQualifiedClassName(undefined));

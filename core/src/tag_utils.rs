@@ -24,7 +24,16 @@ pub enum Error {
     InvalidSwfUrl,
 }
 
-pub type DecodeResult = Result<(), Error>;
+/// Whether or not to end tag decoding.
+pub enum ControlFlow {
+    /// Stop decoding after this tag.
+    Exit,
+
+    /// Continue decoding the next tag.
+    Continue,
+}
+
+pub type DecodeResult = Result<ControlFlow, Error>;
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
@@ -126,17 +135,21 @@ impl SwfMovie {
 
     /// The width of the movie in twips.
     pub fn width(&self) -> Twips {
-        self.header.stage_size().x_max - self.header.stage_size().x_min
+        self.header.stage_size().width()
     }
 
     /// The height of the movie in twips.
     pub fn height(&self) -> Twips {
-        self.header.stage_size().y_max - self.header.stage_size().y_min
+        self.header.stage_size().height()
     }
 
     /// Get the URL this SWF was fetched from.
     pub fn url(&self) -> Option<&str> {
         self.url.as_deref()
+    }
+
+    pub fn set_url(&mut self, url: Option<String>) {
+        self.url = url;
     }
 
     /// Get the URL that triggered the fetch of this SWF.
@@ -164,7 +177,7 @@ impl SwfMovie {
         self.header.is_action_script_3()
     }
 
-    pub fn stage_size(&self) -> &Rectangle {
+    pub fn stage_size(&self) -> &Rectangle<Twips> {
         self.header.stage_size()
     }
 
@@ -339,22 +352,42 @@ impl SwfSlice {
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
         swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
     }
+
+    /// Get the length of the SwfSlice.
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
 }
 
-pub fn decode_tags<'a, F>(
-    reader: &mut SwfStream<'a>,
-    mut tag_callback: F,
-    stop_tag: TagCode,
-) -> Result<(), Error>
+/// Decode tags from a SWF stream reader.
+///
+/// The given `tag_callback` will be called for each decoded tag. It will be
+/// provided with the stream to read from, the tag code read, and the tag's
+/// size. The callback is responsible for (optionally) parsing the contents of
+/// the tag; otherwise, it will be skipped.
+///
+/// Decoding will terminate when the following conditions occur:
+///
+///  * The `tag_callback` calls for the decoding to finish.
+///  * The decoder encounters a tag longer than the underlying SWF slice
+///    (indicated by returning false)
+///  * The SWF stream is otherwise corrupt or unreadable (indicated as an error
+///    result)
+///
+/// Decoding will also log tags longer than the SWF slice, error messages
+/// yielded from the tag callback, and unknown tags. It will *only* return an
+/// error message if the SWF tag itself could not be parsed. Other forms of
+/// irregular decoding will be signalled by returning false.
+pub fn decode_tags<'a, F>(reader: &mut SwfStream<'a>, mut tag_callback: F) -> Result<bool, Error>
 where
-    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> DecodeResult,
+    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> Result<ControlFlow, Error>,
 {
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         if tag_len > reader.get_ref().len() {
             log::error!("Unexpected EOF when reading tag");
             *reader.get_mut() = &reader.get_ref()[reader.get_ref().len()..];
-            break;
+            return Ok(false);
         }
 
         let tag_slice = &reader.get_ref()[..tag_len];
@@ -363,13 +396,15 @@ where
             *reader.get_mut() = tag_slice;
             let result = tag_callback(reader, tag, tag_len);
 
-            if let Err(e) = result {
-                log::error!("Error running definition tag: {:?}, got {}", tag, e);
-            }
-
-            if stop_tag == tag {
-                *reader.get_mut() = end_slice;
-                break;
+            match result {
+                Err(e) => {
+                    log::error!("Error running definition tag: {:?}, got {}", tag, e)
+                }
+                Ok(ControlFlow::Exit) => {
+                    *reader.get_mut() = end_slice;
+                    break;
+                }
+                Ok(ControlFlow::Continue) => {}
             }
         } else {
             log::warn!("Unknown tag code: {:?}", tag_code);
@@ -378,5 +413,5 @@ where
         *reader.get_mut() = end_slice;
     }
 
-    Ok(())
+    Ok(true)
 }

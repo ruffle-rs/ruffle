@@ -1,8 +1,7 @@
 use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
-    Value as Avm2Value,
+    Multiname as Avm2Multiname, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -36,9 +35,7 @@ mod text;
 mod video;
 
 use crate::avm1::Activation;
-pub use crate::display_object::container::{
-    DisplayObjectContainer, Lists, TDisplayObjectContainer,
-};
+pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
@@ -48,6 +45,7 @@ pub use interactive::{InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+use ruffle_render::commands::CommandHandler;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMode, WindowMode};
 pub use text::Text;
 pub use video::Video;
@@ -66,13 +64,13 @@ pub struct DisplayObjectBase<'gc> {
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
     // when AS requests one of these properties.
-    //
-    // `_xscale` and `_yscale` are stored in units of percentages to avoid
-    // floating-point precision errors with movies that accumulate onto the
-    // scale parameters.
+    #[collect(require_static)]
     rotation: Degrees,
+    #[collect(require_static)]
     scale_x: Percent,
+    #[collect(require_static)]
     scale_y: Percent,
+
     skew: f64,
 
     /// The next display object in order of execution.
@@ -107,13 +105,13 @@ pub struct DisplayObjectBase<'gc> {
     /// The 'internal' scroll rect used for rendering and methods like 'localToGlobal'.
     /// This is updated from 'pre_render'
     #[collect(require_static)]
-    scroll_rect: Option<Rectangle>,
+    scroll_rect: Option<Rectangle<Twips>>,
 
     /// The 'next' scroll rect, which we will copy to 'scroll_rect' from 'pre_render'.
     /// This is used by the ActionScript 'DisplayObject.scrollRect' getter, which sees
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
-    next_scroll_rect: Rectangle,
+    next_scroll_rect: Rectangle<Twips>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -262,10 +260,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos_y = f64::cos(degrees.into_radians() + self.skew);
         let sin_y = f64::sin(degrees.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
-        matrix.a = (self.scale_x.into_unit() * cos_x) as f32;
-        matrix.b = (self.scale_x.into_unit() * sin_x) as f32;
-        matrix.c = (self.scale_y.into_unit() * -sin_y) as f32;
-        matrix.d = (self.scale_y.into_unit() * cos_y) as f32;
+        matrix.a = (self.scale_x.unit() * cos_x) as f32;
+        matrix.b = (self.scale_x.unit() * sin_x) as f32;
+        matrix.c = (self.scale_y.unit() * -sin_y) as f32;
+        matrix.d = (self.scale_y.unit() * cos_y) as f32;
     }
 
     fn scale_x(&mut self) -> Percent {
@@ -280,8 +278,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos = f64::cos(self.rotation.into_radians());
         let sin = f64::sin(self.rotation.into_radians());
         let mut matrix = &mut self.transform.matrix;
-        matrix.a = (cos * value.into_unit()) as f32;
-        matrix.b = (sin * value.into_unit()) as f32;
+        matrix.a = (cos * value.unit()) as f32;
+        matrix.b = (sin * value.unit()) as f32;
     }
 
     fn scale_y(&mut self) -> Percent {
@@ -296,8 +294,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos = f64::cos(self.rotation.into_radians() + self.skew);
         let sin = f64::sin(self.rotation.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
-        matrix.c = (-sin * value.into_unit()) as f32;
-        matrix.d = (cos * value.into_unit()) as f32;
+        matrix.c = (-sin * value.unit()) as f32;
+        matrix.d = (cos * value.unit()) as f32;
     }
 
     fn name(&self) -> AvmString<'gc> {
@@ -493,7 +491,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     context.transform_stack.push(this.base().transform());
     let blend_mode = this.blend_mode();
     if blend_mode != BlendMode::Normal {
-        context.renderer.push_blend_mode(this.blend_mode());
+        context.commands.push_blend_mode(this.blend_mode());
     }
 
     let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
@@ -502,14 +500,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         // Note that we do *not* apply the translation yet
         Some(
             cur_transform.matrix
-                * Matrix {
-                    a: (rect.x_max - rect.x_min).to_pixels() as f32,
-                    b: 0.0,
-                    c: 0.0,
-                    d: (rect.y_max - rect.y_min).to_pixels() as f32,
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
-                },
+                * Matrix::scale(
+                    rect.width().to_pixels() as f32,
+                    rect.height().to_pixels() as f32,
+                ),
         )
     } else {
         None
@@ -528,13 +522,13 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if let Some(m) = mask {
         mask_transform.matrix = this.global_to_local_matrix();
         mask_transform.matrix *= m.local_to_global_matrix();
-        context.renderer.push_mask();
+        context.commands.push_mask();
         context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
         context.allow_mask = true;
-        context.renderer.activate_mask();
+        context.commands.activate_mask();
     }
 
     // There are two parts to 'DisplayObject.scrollRect':
@@ -549,10 +543,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     // lies in the intersection of the scroll rect and DisplayObject.mask,
     // which is exactly the behavior that we want.
     if let Some(rect_mat) = scroll_rect_matrix {
-        context.renderer.push_mask();
+        context.commands.push_mask();
         // The color doesn't matter, as this is a mask.
-        context.renderer.draw_rect(Color::BLACK, &rect_mat);
-        context.renderer.activate_mask();
+        context.commands.draw_rect(Color::BLACK, &rect_mat);
+        context.commands.activate_mask();
     }
 
     this.render_self(context);
@@ -560,22 +554,22 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if let Some(rect_mat) = scroll_rect_matrix {
         // Draw the rectangle again after deactivating the mask,
         // to reset the stencil buffer.
-        context.renderer.deactivate_mask();
-        context.renderer.draw_rect(Color::BLACK, &rect_mat);
-        context.renderer.pop_mask();
+        context.commands.deactivate_mask();
+        context.commands.draw_rect(Color::BLACK, &rect_mat);
+        context.commands.pop_mask();
     }
 
     if let Some(m) = mask {
-        context.renderer.deactivate_mask();
+        context.commands.deactivate_mask();
         context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
         context.allow_mask = true;
-        context.renderer.pop_mask();
+        context.commands.pop_mask();
     }
     if blend_mode != BlendMode::Normal {
-        context.renderer.pop_blend_mode();
+        context.commands.pop_blend_mode();
     }
 
     if scroll_rect_matrix.is_some() {
@@ -661,8 +655,8 @@ pub trait TDisplayObject<'gc>:
             return BoundingBox {
                 x_min: Twips::from_pixels(0.0),
                 y_min: Twips::from_pixels(0.0),
-                x_max: scroll_rect.x_max - scroll_rect.x_min,
-                y_max: scroll_rect.y_max - scroll_rect.y_min,
+                x_max: scroll_rect.width(),
+                y_max: scroll_rect.height(),
                 valid: true,
             }
             .transform(matrix);
@@ -789,7 +783,6 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The X axis scale for this display object in local space.
-    /// The normal scale is 100.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
         let percent = self.base_mut(gc_context).scale_x();
@@ -797,8 +790,7 @@ pub trait TDisplayObject<'gc>:
         percent
     }
 
-    /// Sets the scale of the X axis for this display object in local space.
-    /// The normal scale is 100.
+    /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_x(value);
@@ -806,7 +798,6 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The Y axis scale for this display object in local space.
-    /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn scale_y(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
         let percent = self.base_mut(gc_context).scale_y();
@@ -815,7 +806,6 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Sets the Y axis scale for this display object in local space.
-    /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_y(value);
@@ -825,8 +815,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
     fn width(&self) -> f64 {
-        let bounds = self.local_bounds();
-        (bounds.x_max - bounds.x_min).to_pixels()
+        self.local_bounds().width().to_pixels()
     }
 
     /// Sets the pixel width of this display object in local space.
@@ -835,8 +824,8 @@ pub trait TDisplayObject<'gc>:
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
-        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
-        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let object_width = object_bounds.width().to_pixels();
+        let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_height / object_width;
 
         let (target_scale_x, target_scale_y) = if object_width != 0.0 {
@@ -849,8 +838,8 @@ pub trait TDisplayObject<'gc>:
         // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
         // A = sin(t) * a + cos(t) * b
         // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x(gc_context).into_unit();
-        let prev_scale_y = self.scale_y(gc_context).into_unit();
+        let prev_scale_x = self.scale_x(gc_context).unit();
+        let prev_scale_y = self.scale_y(gc_context).unit();
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
@@ -874,8 +863,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(&self) -> f64 {
-        let bounds = self.local_bounds();
-        (bounds.y_max - bounds.y_min).to_pixels()
+        self.local_bounds().height().to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
@@ -883,8 +871,8 @@ pub trait TDisplayObject<'gc>:
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
-        let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
-        let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
+        let object_width = object_bounds.width().to_pixels();
+        let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_width / object_height;
 
         let (target_scale_x, target_scale_y) = if object_height != 0.0 {
@@ -897,8 +885,8 @@ pub trait TDisplayObject<'gc>:
         // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
         // A = sin(t) * a + cos(t) * b
         // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x(gc_context).into_unit();
-        let prev_scale_y = self.scale_y(gc_context).into_unit();
+        let prev_scale_x = self.scale_x(gc_context).unit();
+        let prev_scale_y = self.scale_y(gc_context).unit();
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
@@ -968,7 +956,7 @@ pub trait TDisplayObject<'gc>:
                     WString::new()
                 } else {
                     // Other levels do append their name.
-                    WString::from_utf8_owned(format!("_level{}", level))
+                    WString::from_utf8_owned(format!("_level{level}"))
                 }
             }
         }
@@ -1061,15 +1049,19 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_maskee(node);
     }
 
-    fn scroll_rect(&self) -> Option<Rectangle> {
+    fn scroll_rect(&self) -> Option<Rectangle<Twips>> {
         self.base().scroll_rect.clone()
     }
 
-    fn next_scroll_rect(&self) -> Rectangle {
+    fn next_scroll_rect(&self) -> Rectangle<Twips> {
         self.base().next_scroll_rect.clone()
     }
 
-    fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rectangle: Rectangle) {
+    fn set_next_scroll_rect(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        rectangle: Rectangle<Twips>,
+    ) {
         self.base_mut(gc_context).next_scroll_rect = rectangle;
     }
 
@@ -1653,7 +1645,7 @@ bitflags! {
         const PLACED_BY_SCRIPT         = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
-        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        /// When this flag is set, attempts to change the object's name from AVM2 throw an exception.
         const INSTANTIATED_BY_TIMELINE = 1 << 5;
 
         /// Whether this object is a "root", the top-most display object of a loaded SWF or Bitmap.
@@ -1765,41 +1757,26 @@ impl SoundTransform {
     pub fn from_avm2_object<'gc>(
         activation: &mut Avm2Activation<'_, 'gc, '_>,
         as3_st: Avm2Object<'gc>,
-    ) -> Result<Self, Avm2Error> {
+    ) -> Result<Self, Avm2Error<'gc>> {
         Ok(SoundTransform {
             left_to_left: (as3_st
-                .get_property(
-                    &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
-                    activation,
-                )?
+                .get_property(&Avm2Multiname::public("leftToLeft"), activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             left_to_right: (as3_st
-                .get_property(
-                    &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
-                    activation,
-                )?
+                .get_property(&Avm2Multiname::public("leftToRight"), activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             right_to_left: (as3_st
-                .get_property(
-                    &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
-                    activation,
-                )?
+                .get_property(&Avm2Multiname::public("rightToLeft"), activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             right_to_right: (as3_st
-                .get_property(
-                    &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
-                    activation,
-                )?
+                .get_property(&Avm2Multiname::public("rightToRight"), activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             volume: (as3_st
-                .get_property(
-                    &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
-                    activation,
-                )?
+                .get_property(&Avm2Multiname::public("volume"), activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
         })
@@ -1808,7 +1785,7 @@ impl SoundTransform {
     pub fn into_avm2_object<'gc>(
         self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
-    ) -> Result<Avm2Object<'gc>, Avm2Error> {
+    ) -> Result<Avm2Object<'gc>, Avm2Error<'gc>> {
         let mut as3_st = activation
             .avm2()
             .classes()
@@ -1816,27 +1793,27 @@ impl SoundTransform {
             .construct(activation, &[])?;
 
         as3_st.set_property(
-            &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
+            &Avm2Multiname::public("leftToLeft"),
             (self.left_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
+            &Avm2Multiname::public("leftToRight"),
             (self.left_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
+            &Avm2Multiname::public("rightToLeft"),
             (self.right_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
+            &Avm2Multiname::public("rightToRight"),
             (self.right_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
+            &Avm2Multiname::public("volume"),
             (self.volume as f64 / 100.0).into(),
             activation,
         )?;

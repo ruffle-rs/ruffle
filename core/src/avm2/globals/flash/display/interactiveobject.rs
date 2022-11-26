@@ -6,6 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
@@ -16,7 +17,7 @@ pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Err("You cannot directly construct InteractiveObject.".into())
 }
 
@@ -25,7 +26,7 @@ pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
     }
@@ -38,7 +39,7 @@ pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -47,7 +48,7 @@ pub fn mouse_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -63,7 +64,7 @@ pub fn set_mouse_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -84,7 +85,7 @@ pub fn double_click_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -100,7 +101,7 @@ pub fn set_double_click_enabled<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -121,7 +122,7 @@ fn context_menu<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
@@ -137,13 +138,13 @@ fn set_context_menu<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
+) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(int) = this
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls_name = QName::new(Namespace::package("flash.display"), "NativeMenu");
-        let cls = activation.resolve_class(&cls_name.into())?;
+        let cls_name = Multiname::new(Namespace::package("flash.display"), "NativeMenu");
+        let cls = activation.resolve_class(&cls_name)?;
         let value = args
             .get(0)
             .cloned()
@@ -155,11 +156,36 @@ fn set_context_menu<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub getter & setter for `tabEnabled`.
+pub fn tab_enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("InteractiveObject.tabEnabled is a stub");
+
+    Ok(false.into())
+}
+
+/// Stub getter & setter for `tabIndex`.
+pub fn tab_index<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("InteractiveObject.tabIndex is a stub");
+
+    Ok((-1).into())
+}
+
 /// Construct `InteractiveObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "InteractiveObject"),
-        Some(QName::new(Namespace::package("flash.display"), "DisplayObject").into()),
+        Some(Multiname::new(
+            Namespace::package("flash.display"),
+            "DisplayObject",
+        )),
         Method::from_builtin(
             instance_init,
             "<InteractiveObject instance initializer>",
@@ -189,6 +215,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_double_click_enabled),
         ),
         ("contextMenu", Some(context_menu), Some(set_context_menu)),
+        ("tabEnabled", Some(tab_enabled), Some(tab_enabled)),
+        ("tabIndex", Some(tab_index), Some(tab_index)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

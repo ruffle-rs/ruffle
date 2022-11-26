@@ -7,6 +7,8 @@
 //! This library consists of a `read` module for decoding SWF data, and a `write` library for
 //! writing SWF data.
 
+#![allow(clippy::bool_to_int_with_if)]
+
 #[cfg(feature = "flate2")]
 extern crate flate2;
 #[cfg(feature = "libflate")]

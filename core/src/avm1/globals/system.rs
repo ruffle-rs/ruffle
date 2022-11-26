@@ -108,9 +108,9 @@ impl Manufacturer {
         };
 
         if version <= 8 {
-            format!("Macromedia {}", os_part)
+            format!("Macromedia {os_part}")
         } else {
-            format!("Adobe {}", os_part)
+            format!("Adobe {os_part}")
         }
     }
 
@@ -518,13 +518,13 @@ pub fn on_status<'gc>(
 
 pub fn create<'gc>(
     gc_context: MutationContext<'gc, '_>,
-    proto: Option<Object<'gc>>,
+    proto: Object<'gc>,
     fn_proto: Object<'gc>,
     security: Object<'gc>,
     capabilities: Object<'gc>,
     ime: Object<'gc>,
 ) -> Object<'gc> {
-    let system = ScriptObject::new(gc_context, proto);
+    let system = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(OBJECT_DECLS, gc_context, system, fn_proto);
     system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
     system.define_value(gc_context, "security", security.into(), Attribute::empty());

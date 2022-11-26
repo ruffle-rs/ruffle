@@ -43,7 +43,12 @@ pub enum RegisterError {
 pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
+
+    /// Registers an sound embedded in an SWF.
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError>;
+
+    /// Registers MP3 audio from an external source.
+    fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError>;
 
     /// Plays a sound.
     fn start_sound(
@@ -90,6 +95,8 @@ pub trait AudioBackend: Downcast {
     /// Set the volume transform for a sound instance.
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
 
+    fn get_sound_peak(&mut self, instance: SoundInstanceHandle) -> Option<[f32; 2]>;
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -120,6 +127,9 @@ pub trait AudioBackend: Downcast {
 
     /// Sets the master volume of the audio backend.
     fn set_volume(&mut self, volume: f32);
+
+    /// Returns the last whole window of output samples.
+    fn get_sample_history(&self) -> [[f32; 2]; 1024];
 }
 
 impl_downcast!(AudioBackend);
@@ -174,6 +184,19 @@ impl AudioBackend for NullAudioBackend {
         }))
     }
 
+    fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
+        Ok(self.sounds.insert(NullSound {
+            size: 0,
+            duration: 0.0,
+            format: swf::SoundFormat {
+                compression: swf::AudioCompression::Mp3,
+                sample_rate: 44100,
+                is_stereo: true,
+                is_16_bit: true,
+            },
+        }))
+    }
+
     fn start_sound(
         &mut self,
         _sound: SoundHandle,
@@ -219,12 +242,20 @@ impl AudioBackend for NullAudioBackend {
 
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
 
+    fn get_sound_peak(&mut self, _instance: SoundInstanceHandle) -> Option<[f32; 2]> {
+        None
+    }
+
     fn volume(&self) -> f32 {
         self.volume
     }
 
     fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
+    }
+
+    fn get_sample_history(&self) -> [[f32; 2]; 1024] {
+        [[0.0f32; 2]; 1024]
     }
 }
 
@@ -306,7 +337,7 @@ impl<'gc> AudioManager<'gc> {
                     object.set_position(gc_context, duration.round() as u32);
 
                     // Fire soundComplete event.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Method {
                             object: object.into(),
@@ -322,7 +353,7 @@ impl<'gc> AudioManager<'gc> {
 
                     //TODO: AVM2 events are usually not queued, but we can't
                     //hold the update context in the audio manager yet.
-                    action_queue.queue_actions(
+                    action_queue.queue_action(
                         root,
                         crate::context::ActionType::Event2 {
                             event_type: "soundComplete",
