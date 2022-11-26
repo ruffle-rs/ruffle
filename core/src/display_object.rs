@@ -1,7 +1,8 @@
 use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Multiname as Avm2Multiname, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value, ArrayStorage,
+    Activation as Avm2Activation, ArrayStorage as Avm2ArrayStorage, Avm2, Error as Avm2Error,
+    EventObject as Avm2EventObject, Multiname as Avm2Multiname, Object as Avm2Object,
+    TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -59,7 +60,7 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     transform: Transform,
     name: AvmString<'gc>,
-    filters: ArrayStorage<'gc>,
+    filters: Avm2ArrayStorage<'gc>,
     clip_depth: Depth,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
@@ -123,7 +124,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             depth: Default::default(),
             transform: Default::default(),
             name: Default::default(),
-            filters: ArrayStorage::new(0),
+            filters: Avm2ArrayStorage::new(0),
             clip_depth: Default::default(),
             rotation: Degrees::from_radians(0.0),
             scale_x: Percent::from_unit(1.0),
@@ -308,11 +309,11 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.name = name;
     }
 
-    fn filters(&self) -> ArrayStorage<'gc> {
-        ArrayStorage::from_storage(self.filters.iter().collect())
+    fn filters(&self) -> Avm2ArrayStorage<'gc> {
+        Avm2ArrayStorage::from_storage(self.filters.iter().collect())
     }
 
-    fn set_filters(&mut self, filters: ArrayStorage<'gc>) {
+    fn set_filters(&mut self, filters: Avm2ArrayStorage<'gc>) {
         self.filters = filters;
     }
 
@@ -938,11 +939,11 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_name(name)
     }
 
-    fn filters(&self) -> ArrayStorage<'gc> {
+    fn filters(&self) -> Avm2ArrayStorage<'gc> {
         self.base().filters()
     }
 
-    fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: ArrayStorage<'gc>) {
+    fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Avm2ArrayStorage<'gc>) {
         self.base_mut(gc_context).set_filters(filters)
     }
 
