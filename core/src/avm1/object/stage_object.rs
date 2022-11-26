@@ -839,7 +839,13 @@ fn drop_target<'gc>(
     this.as_movie_clip()
         .and_then(|mc| mc.drop_target())
         .map_or_else(
-            || "".into(),
+            || {
+                if activation.swf_version() < 6 {
+                    Value::Undefined
+                } else {
+                    "".into()
+                }
+            },
             |drop_target| {
                 AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
             },
