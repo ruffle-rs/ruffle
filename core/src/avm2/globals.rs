@@ -114,6 +114,11 @@ pub struct SystemClasses<'gc> {
     pub uncaughterrorevents: ClassObject<'gc>,
     pub statictext: ClassObject<'gc>,
     pub textlinemetrics: ClassObject<'gc>,
+    pub stage3d: ClassObject<'gc>,
+    pub context3d: ClassObject<'gc>,
+    pub indexbuffer3d: ClassObject<'gc>,
+    pub vertexbuffer3d: ClassObject<'gc>,
+    pub program3d: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -195,6 +200,11 @@ impl<'gc> SystemClasses<'gc> {
             uncaughterrorevents: object,
             statictext: object,
             textlinemetrics: object,
+            stage3d: object,
+            context3d: object,
+            indexbuffer3d: object,
+            vertexbuffer3d: object,
+            program3d: object,
         }
     }
 }
@@ -712,6 +722,11 @@ fn load_playerglobal<'gc>(
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "Scene", scene),
+            ("flash.display", "Stage3D", stage3d),
+            ("flash.display3D", "Context3D", context3d),
+            ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
+            ("flash.display3D", "Program3D", program3d),
+            ("flash.display3D", "VertexBuffer3D", vertexbuffer3d),
             (
                 "flash.errors",
                 "IllegalOperationError",

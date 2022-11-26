@@ -33,7 +33,7 @@ edition = "2021"
 opt-level = 0
 
 [profile.dev]
-panic = "abort"
+panic = "unwind"
 
 [profile.release]
 panic = "abort"

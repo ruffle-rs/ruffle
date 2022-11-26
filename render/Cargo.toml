@@ -16,6 +16,7 @@ downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.83", optional = true }
+gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"

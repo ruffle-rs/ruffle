@@ -1205,38 +1205,35 @@ pub fn load_bitmap<'gc>(
 
     let movie = activation.target_clip_or_root().movie();
 
-    let renderer = &mut activation.context.renderer;
-
     let character = movie
         .and_then(|m| library.library_for_movie(m))
         .and_then(|l| l.character_by_export_name(name));
 
-    if let Some(Character::Bitmap(bitmap_object)) = character {
-        if let Some(bitmap_handle) = bitmap_object.bitmap_handle() {
-            if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_handle) {
-                let new_bitmap_data = BitmapDataObject::empty_object(
-                    activation.context.gc_context,
-                    activation.context.avm1.prototypes().bitmap_data,
-                );
+    if let Some(Character::Bitmap {
+        bitmap: bitmap_object,
+        initial_data,
+    }) = character
+    {
+        let new_bitmap_data = BitmapDataObject::empty_object(
+            activation.context.gc_context,
+            activation.context.avm1.prototypes().bitmap_data,
+        );
 
-                let width = bitmap.width();
-                let height = bitmap.height();
-                let pixels: Vec<i32> = bitmap.into();
-                new_bitmap_data
-                    .as_bitmap_data_object()
-                    .unwrap()
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .set_pixels(
-                        width,
-                        height,
-                        true,
-                        pixels.into_iter().map(|p| p.into()).collect(),
-                    );
+        let width = bitmap_object.width() as u32;
+        let height = bitmap_object.height() as u32;
+        new_bitmap_data
+            .as_bitmap_data_object()
+            .unwrap()
+            .bitmap_data()
+            .write(activation.context.gc_context)
+            .set_pixels(
+                width,
+                height,
+                true,
+                initial_data.iter().map(|p| (*p).into()).collect(),
+            );
 
-                return Ok(new_bitmap_data.into());
-            }
-        }
+        return Ok(new_bitmap_data.into());
     }
 
     Ok(Value::Undefined)

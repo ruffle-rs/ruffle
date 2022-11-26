@@ -123,10 +123,22 @@ fn flash_to_rust_path(path: &str) -> String {
     let components = path
         .split('.')
         .map(|component| {
+            // Special-case this so that it matches the Flash namespace
+            if component == "display3D" {
+                return component.to_string();
+            }
+
+            let mut without_boundaries = vec![Boundary::DigitUpper];
+            // Special case for classes ending in '3D' - we want to ave something like
+            // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
+            if !component.ends_with("3D") {
+                // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
+                without_boundaries.extend(&[Boundary::UpperDigit, Boundary::LowerDigit]);
+            }
+
             component
                 .from_case(Case::Camel)
-                // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                .without_boundaries(&[Boundary::UpperDigit, Boundary::LowerDigit])
+                .without_boundaries(&without_boundaries)
                 .to_case(Case::Snake)
         })
         .collect::<Vec<_>>();

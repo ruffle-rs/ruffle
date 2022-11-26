@@ -1,14 +1,17 @@
+use crate::context3d::WgpuContext3D;
 use crate::mesh::{Draw, Mesh};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals, RegistryData,
-    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
+    format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals, RenderTarget,
+    SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use fnv::FnvHashMap;
+use gc_arena::MutationContext;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::commands::CommandList;
@@ -19,6 +22,7 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
+use wgpu::Extent3d;
 
 const DEFAULT_SAMPLE_COUNT: u32 = 4;
 
@@ -30,7 +34,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     surface: Surface,
     meshes: Vec<Mesh>,
     shape_tessellator: ShapeTessellator,
-    bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
+    bitmap_registry: FnvHashMap<BitmapHandle, Texture>,
     next_bitmap_handle: BitmapHandle,
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
@@ -218,8 +222,17 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &self.descriptors.device
     }
 
-    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, RegistryData> {
+    pub fn bitmap_registry(&self) -> &FnvHashMap<BitmapHandle, Texture> {
         &self.bitmap_registry
+    }
+
+    fn raw_register_bitmap(&mut self, data: Texture) -> BitmapHandle {
+        let handle = self.next_bitmap_handle;
+        self.next_bitmap_handle.0 += 1;
+        if self.bitmap_registry.insert(handle, data).is_some() {
+            panic!("Overwrote existing bitmap {:?}", handle);
+        }
+        handle
     }
 }
 
@@ -246,6 +259,63 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.globals.set_resolution(width, height);
         self.viewport_scale_factor = dimensions.scale_factor;
+    }
+
+    fn create_context3d(
+        &mut self,
+    ) -> Result<Box<dyn ruffle_render::backend::Context3D>, BitmapError> {
+        let texture_label = create_debug_label!("Render target texture");
+        let format = wgpu::TextureFormat::Rgba8Unorm;
+        let dummy_texture = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: texture_label.as_deref(),
+                size: Extent3d {
+                    width: 1,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format,
+                usage: wgpu::TextureUsages::COPY_SRC,
+            });
+
+        let handle = self.raw_register_bitmap(Texture {
+            bind_linear: Default::default(),
+            bind_nearest: Default::default(),
+            texture: dummy_texture,
+            texture_offscreen: None,
+            width: 0,
+            height: 0,
+        });
+        Ok(Box::new(WgpuContext3D::new(
+            self.descriptors.clone(),
+            handle,
+        )))
+    }
+
+    fn context3d_present<'gc>(
+        &mut self,
+        context: &mut dyn Context3D,
+        commands: Vec<Context3DCommand<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), BitmapError> {
+        let context = context
+            .as_any_mut()
+            .downcast_mut::<WgpuContext3D>()
+            .unwrap();
+        if let Some(new_registry_data) = context.present(commands, mc) {
+            // Update the registry with the new texture, which will later
+            // be rendered by `Stage`
+            *self
+                .bitmap_registry
+                .get_mut(&context.bitmap_handle())
+                .unwrap() = new_registry_data;
+        }
+        Ok(())
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -327,10 +397,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
-    }
-
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         if bitmap.width() > self.descriptors.limits.max_texture_dimension_2d
             || bitmap.height() > self.descriptors.limits.max_texture_dimension_2d
@@ -378,27 +444,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        let handle = self.next_bitmap_handle;
-        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-
-        if self
-            .bitmap_registry
-            .insert(
-                handle,
-                RegistryData {
-                    bitmap,
-                    texture_wrapper: Texture {
-                        texture,
-                        bind_linear: Default::default(),
-                        bind_nearest: Default::default(),
-                        texture_offscreen: None,
-                    },
-                },
-            )
-            .is_some()
-        {
-            panic!("Overwrote existing bitmap {handle:?}");
-        }
+        let handle = self.raw_register_bitmap(Texture {
+            texture,
+            bind_linear: Default::default(),
+            bind_nearest: Default::default(),
+            texture_offscreen: None,
+            width: extent.width,
+            height: extent.height,
+        });
 
         Ok(handle)
     }
@@ -415,7 +468,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         rgba: Vec<u8>,
     ) -> Result<(), BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
-            &entry.texture_wrapper.texture
+            &entry.texture
         } else {
             return Err(BitmapError::UnknownHandle(handle));
         };
@@ -478,39 +531,35 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         // many buffers / depth textures rendered at once, we could
         // try storing this data in an LRU cache, evicting entries
         // as needed.
-        let mut texture_offscreen =
-            texture
-                .texture_wrapper
-                .texture_offscreen
-                .unwrap_or_else(|| {
-                    let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
-                    let buffer_label = create_debug_label!("Render target buffer");
-                    let buffer = self
-                        .descriptors
-                        .device
-                        .create_buffer(&wgpu::BufferDescriptor {
-                            label: buffer_label.as_deref(),
-                            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                                * buffer_dimensions.height as u64),
-                            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                            mapped_at_creation: false,
-                        });
-                    TextureOffscreen {
-                        buffer,
-                        buffer_dimensions,
-                        surface: Surface::new(
-                            &self.descriptors,
-                            DEFAULT_SAMPLE_COUNT,
-                            width,
-                            height,
-                            wgpu::TextureFormat::Rgba8Unorm,
-                        ),
-                    }
+        let mut texture_offscreen = texture.texture_offscreen.unwrap_or_else(|| {
+            let buffer_dimensions = BufferDimensions::new(width as usize, height as usize);
+            let buffer_label = create_debug_label!("Render target buffer");
+            let buffer = self
+                .descriptors
+                .device
+                .create_buffer(&wgpu::BufferDescriptor {
+                    label: buffer_label.as_deref(),
+                    size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                        * buffer_dimensions.height as u64),
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
                 });
+            TextureOffscreen {
+                buffer,
+                buffer_dimensions,
+                surface: Surface::new(
+                    &self.descriptors,
+                    DEFAULT_SAMPLE_COUNT,
+                    width,
+                    height,
+                    wgpu::TextureFormat::Rgba8Unorm,
+                ),
+            }
+        });
 
         let mut target = TextureTarget {
             size: extent,
-            texture: texture.texture_wrapper.texture,
+            texture: texture.texture,
             format: wgpu::TextureFormat::Rgba8Unorm,
             buffer: texture_offscreen.buffer,
             buffer_dimensions: texture_offscreen.buffer_dimensions,
@@ -555,9 +604,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.globals.set_resolution(old_width, old_height);
         texture_offscreen.buffer = target.buffer;
         texture_offscreen.buffer_dimensions = target.buffer_dimensions;
-        texture.texture_wrapper.texture_offscreen = Some(texture_offscreen);
-        texture.texture_wrapper.texture = target.texture;
-        texture.bitmap = image.clone().unwrap();
+        texture.texture_offscreen = Some(texture_offscreen);
+        texture.texture = target.texture;
         self.bitmap_registry.insert(handle, texture);
 
         Ok(image.unwrap())
@@ -584,7 +632,8 @@ async fn request_device(
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::DEPTH24PLUS_STENCIL8,
+                features: wgpu::Features::DEPTH24PLUS_STENCIL8
+                    | wgpu::Features::VERTEX_WRITABLE_STORAGE,
                 limits,
             },
             trace_path,

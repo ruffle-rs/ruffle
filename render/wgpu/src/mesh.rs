@@ -1,8 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, TextureTransforms,
-    Vertex,
+    create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, Texture,
+    TextureTransforms, Vertex,
 };
 
 use ruffle_render::bitmap::BitmapSource;
@@ -63,13 +63,23 @@ impl Draw {
                 num_indices: index_count,
                 num_mask_indices: draw.mask_index_count,
             },
-            TessDrawType::Bitmap(bitmap) => Draw {
-                draw_type: DrawType::bitmap(backend, source, bitmap, shape_id, draw_id),
-                vertex_buffer,
-                index_buffer,
-                num_indices: index_count,
-                num_mask_indices: draw.mask_index_count,
-            },
+            TessDrawType::Bitmap(bitmap) => {
+                let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
+                let texture = &backend.bitmap_registry()[&bitmap_handle];
+                Draw {
+                    draw_type: DrawType::bitmap(
+                        &backend.descriptors(),
+                        bitmap,
+                        texture,
+                        shape_id,
+                        draw_id,
+                    ),
+                    vertex_buffer,
+                    index_buffer,
+                    num_indices: index_count,
+                    num_mask_indices: draw.mask_index_count,
+                }
+            }
         }
     }
 }
@@ -176,23 +186,17 @@ impl DrawType {
         }
     }
 
-    pub fn bitmap<T: RenderTarget>(
-        backend: &mut WgpuRenderBackend<T>,
-        source: &dyn BitmapSource,
+    pub fn bitmap(
+        descriptors: &Descriptors,
         bitmap: Bitmap,
+        texture: &Texture,
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Self {
-        let bitmap_handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
-        let entry = backend.bitmap_registry().get(&bitmap_handle).unwrap();
-        let descriptors = backend.descriptors();
+        let texture_view = texture.texture.create_view(&Default::default());
 
-        let texture_view = entry
-            .texture_wrapper
-            .texture
-            .create_view(&Default::default());
         let texture_transforms = create_texture_transforms(
-            &backend.descriptors().device,
+            &descriptors.device,
             &bitmap.matrix,
             create_debug_label!(
                 "Shape {} draw {} textransforms ubo transfer buffer",

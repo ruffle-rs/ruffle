@@ -2,8 +2,11 @@
 
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
+use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{
+    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
+};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
@@ -987,10 +990,6 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
-    }
-
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let format = match bitmap.format() {
             BitmapFormat::Rgb => Gl::RGB,
@@ -1073,6 +1072,18 @@ impl RenderBackend for WebGlRenderBackend {
             .map_err(|e| BitmapError::JavascriptError(e.into()))?;
 
         Ok(())
+    }
+
+    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
+        Err(BitmapError::Unimplemented)
+    }
+    fn context3d_present<'gc>(
+        &mut self,
+        _context: &mut dyn Context3D,
+        _commands: Vec<Context3DCommand<'gc>>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), BitmapError> {
+        Err(BitmapError::Unimplemented)
     }
 }
 
