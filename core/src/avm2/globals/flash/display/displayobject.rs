@@ -5,7 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::ArrayObject;
+use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -239,23 +239,38 @@ pub fn set_scale_x<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `filters`'s getter.
 pub fn filters<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObject.filters getter - not yet implemented");
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(ArrayObject::from_storage(activation, dobj.filters())?.into());
+    }
     Ok(ArrayObject::empty(activation)?.into())
 }
 
-/// Implements `filters`'s setter.
 pub fn set_filters<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObject.filters setter - not yet implemented");
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_filters = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+
+        if let Some(filters_array) = new_filters.as_array_object() {
+            if let Some(filters_storage) = filters_array.as_array_storage() {
+                let new_storage = ArrayStorage::from_storage(filters_storage.iter().collect());
+
+                dobj.set_filters(activation.context.gc_context, new_storage);
+            }
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
