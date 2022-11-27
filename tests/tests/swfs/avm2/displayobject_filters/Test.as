@@ -20,12 +20,17 @@
 			trace("///this.filters.length == 0")
 			trace(this.filters.length == 0)
 			try {
-				trace("///this.filters = [1,2,3]")
-				this.filters = [1,2,3];
+				trace("///this.filters = [1, 2, 3]")
+				this.filters = [1, 2, 3];
 			} catch (e: Error) {
 				trace("Caught error: " + e);
 			}
-			
+			try {
+				trace("///this.filters = [new BlurFilter(), undefined]")
+				this.filters = [new BlurFilter(), undefined];
+			} catch (e: Error) {
+				trace("Caught error: " + e);
+			}
 		}
 	}
 }
