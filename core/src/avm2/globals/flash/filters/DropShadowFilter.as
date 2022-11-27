@@ -6,7 +6,7 @@ package flash.filters {
 		public var blurY: Number;
 		public var color: uint;
 		public var distance: Number;
-		public var hideObject: Number;
+		public var hideObject: Boolean;
 		public var inner: Boolean;
 		public var knockout: Boolean;
 		public var quality: int;
