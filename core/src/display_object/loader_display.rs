@@ -12,11 +12,11 @@ use crate::display_object::interactive::InteractiveObjectBase;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct LoaderDisplay<'gc>(GcCell<'gc, LoaderDisplayData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,

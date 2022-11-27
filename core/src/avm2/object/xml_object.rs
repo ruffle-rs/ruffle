@@ -22,11 +22,11 @@ pub fn xml_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct XmlObjectData<'gc> {
     /// Base script object

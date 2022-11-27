@@ -14,7 +14,6 @@ use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::fmt::Debug;
 use std::ops::{Bound, RangeBounds};
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
@@ -121,7 +120,7 @@ pub fn dispatch_added_event<'gc>(
 }
 
 #[enum_trait_object(
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy)]
     #[collect(no_drop)]
     pub enum DisplayObjectContainer<'gc> {
         Stage(Stage<'gc>),
@@ -131,7 +130,7 @@ pub fn dispatch_added_event<'gc>(
     }
 )]
 pub trait TDisplayObjectContainer<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<DisplayObjectContainer<'gc>> + Into<DisplayObject<'gc>>
+    'gc + Clone + Copy + Collect + Into<DisplayObjectContainer<'gc>> + Into<DisplayObject<'gc>>
 {
     /// Get read-only access to the raw container.
     fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>>;
@@ -463,7 +462,7 @@ impl<'gc> From<DisplayObjectContainer<'gc>> for DisplayObject<'gc> {
 /// list. The latter references display objects by their chosen depth; while
 /// the render list represents the order in which those children should be
 /// rendered. Not all children have a position on this depth.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ChildContainer<'gc> {
     /// The list of all children in render order.

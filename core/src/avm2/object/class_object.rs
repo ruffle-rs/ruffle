@@ -27,7 +27,7 @@ use std::hash::{Hash, Hasher};
 #[collect(no_drop)]
 pub struct ClassObject<'gc>(GcCell<'gc, ClassObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassObjectData<'gc> {
     /// Base script object

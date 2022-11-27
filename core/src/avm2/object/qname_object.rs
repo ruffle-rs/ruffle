@@ -24,11 +24,11 @@ pub fn qname_allocator<'gc>(
 }
 
 /// An Object which represents a boxed QName.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct QNameObject<'gc>(GcCell<'gc, QNameObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.

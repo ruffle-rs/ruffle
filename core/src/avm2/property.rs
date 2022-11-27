@@ -9,7 +9,7 @@ use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
 use gc_arena::{Collect, Gc};
 
-#[derive(Debug, Collect, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum Property {
     Virtual { get: Option<u32>, set: Option<u32> },
@@ -31,7 +31,7 @@ pub enum Property {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Debug, Collect, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows

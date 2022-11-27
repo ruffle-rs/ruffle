@@ -24,11 +24,11 @@ pub fn appdomain_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DomainObject<'gc>(GcCell<'gc, DomainObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DomainObjectData<'gc> {
     /// Base script object

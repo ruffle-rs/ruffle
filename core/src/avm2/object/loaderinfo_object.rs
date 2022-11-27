@@ -47,7 +47,7 @@ pub fn loaderinfo_allocator<'gc>(
 }
 
 /// Represents a thing which can be loaded by a loader.
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
     /// An SWF movie that has not yet loaded.
@@ -74,11 +74,11 @@ pub enum LoaderStream<'gc> {
 
 /// An Object which represents a loadable object, such as a SWF movie or image
 /// resource.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct LoaderInfoObject<'gc>(GcCell<'gc, LoaderInfoObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.

@@ -7,7 +7,6 @@ use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
 use gc_arena::{Collect, MutationContext};
-use std::fmt::Debug;
 use std::ops::Deref;
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, NamespaceSet as AbcNamespaceSet,

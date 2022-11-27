@@ -12,11 +12,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.

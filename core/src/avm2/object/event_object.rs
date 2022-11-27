@@ -36,7 +36,7 @@ pub fn event_allocator<'gc>(
 #[collect(no_drop)]
 pub struct EventObject<'gc>(GcCell<'gc, EventObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct EventObjectData<'gc> {
     /// Base script object

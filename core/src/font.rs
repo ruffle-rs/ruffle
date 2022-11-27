@@ -60,7 +60,7 @@ impl EvalParameters {
     }
 }
 
-#[derive(Debug, Clone, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
 

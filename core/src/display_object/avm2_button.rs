@@ -20,11 +20,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm2Button<'gc>(GcCell<'gc, Avm2ButtonData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm2ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,

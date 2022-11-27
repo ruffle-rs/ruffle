@@ -514,7 +514,7 @@ impl<'gc> fmt::Debug for XmlNode<'gc> {
                     .unwrap_or_else(|| "None".to_string()),
             )
             .field("node_value", &self.0.read().node_value)
-            .field("attributes", &self.0.read().attributes)
+            .field("attributes", &"_")
             .field("children", &self.0.read().children)
             .finish()
     }

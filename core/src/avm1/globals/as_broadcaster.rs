@@ -41,7 +41,7 @@ pub fn create<'gc>(
     )
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct BroadcasterFunctions<'gc> {
     pub add_listener: Object<'gc>,

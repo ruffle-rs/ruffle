@@ -26,11 +26,11 @@ pub fn textformat_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct TextFormatObject<'gc>(GcCell<'gc, TextFormatObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object

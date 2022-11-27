@@ -25,7 +25,7 @@ pub fn stage_3d_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Stage3DObject<'gc>(GcCell<'gc, Stage3DObjectData<'gc>>);
 
@@ -39,7 +39,7 @@ impl<'gc> Stage3DObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object

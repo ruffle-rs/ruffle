@@ -11,9 +11,9 @@ use crate::ecma_conversions::{
 };
 use crate::string::{AvmString, Integer, WStr};
 use gc_arena::Collect;
-use std::{borrow::Cow, io::Write, num::Wrapping};
+use std::{borrow::Cow, fmt, io::Write, num::Wrapping};
 
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 #[allow(dead_code)]
 pub enum Value<'gc> {
@@ -23,6 +23,19 @@ pub enum Value<'gc> {
     Number(f64),
     String(AvmString<'gc>),
     Object(Object<'gc>),
+}
+
+impl<'gc> fmt::Debug for Value<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Undefined => write!(f, "Undefined"),
+            Self::Null => write!(f, "Null"),
+            Self::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
+            Self::Number(n) => f.debug_tuple("Number").field(n).finish(),
+            Self::String(s) => f.debug_tuple("String").field(s).finish(),
+            Self::Object(_) => write!(f, "Object(_)"),
+        }
+    }
 }
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {

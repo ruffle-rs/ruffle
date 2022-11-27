@@ -12,7 +12,8 @@ ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
 wasm-bindgen = "=0.2.83"
 bytemuck = { version = "1.12.3", features = ["derive"] }
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "3415c1b1e73621daf51b8cee783a5dc5e63f28fb" }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 thiserror = "1.0"

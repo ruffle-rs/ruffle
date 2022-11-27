@@ -28,11 +28,11 @@ pub fn primitive_allocator<'gc>(
 }
 
 /// An Object which represents a primitive value of some other kind.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct PrimitiveObject<'gc>(GcCell<'gc, PrimitiveObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.

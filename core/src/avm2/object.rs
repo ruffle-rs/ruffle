@@ -24,7 +24,6 @@ use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
-use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 mod array_object;
@@ -93,7 +92,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 /// runtime.
 #[enum_trait_object(
     #[allow(clippy::enum_variant_names)]
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
@@ -127,7 +126,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         Program3DObject(Program3DObject<'gc>),
     }
 )]
-pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
     /// Any trait method implementations that were not overrided will forward the call to this instead.
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;

@@ -51,11 +51,11 @@ pub enum AutoSizeMode {
 /// In AS3, this is created with the `TextField` class. (https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/TextField.html)
 ///
 /// (SWF19 DefineEditText pp. 171-174)
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.

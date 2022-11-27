@@ -13,7 +13,6 @@ use crate::display_object::{
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::fmt;
 
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]
@@ -166,16 +165,6 @@ impl<'gc> StageObject<'gc> {
 struct TextFieldBinding<'gc> {
     text_field: EditText<'gc>,
     variable_name: AvmString<'gc>,
-}
-
-impl fmt::Debug for StageObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let o = self.0.read();
-        f.debug_struct("StageObject")
-            .field("base", &o.base)
-            .field("display_object", &o.display_object)
-            .finish()
-    }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {

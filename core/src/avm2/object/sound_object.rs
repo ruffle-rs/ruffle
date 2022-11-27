@@ -23,11 +23,11 @@ pub fn sound_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundObject<'gc>(GcCell<'gc, SoundObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SoundObjectData<'gc> {
     /// Base script object

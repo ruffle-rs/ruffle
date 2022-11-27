@@ -9,7 +9,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
-use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
 /// means.
@@ -279,24 +278,6 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(NativeExecutable { method, .. }) => method.signature.len(),
             Executable::Action(BytecodeExecutable { method, .. }) => method.signature.len(),
-        }
-    }
-}
-
-impl<'gc> fmt::Debug for Executable<'gc> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Action(be) => fmt
-                .debug_struct("Executable::Action")
-                .field("method", &be.method)
-                .field("scope", &be.scope)
-                .field("receiver", &be.receiver)
-                .finish(),
-            Self::Native(bm) => fmt
-                .debug_struct("Executable::Native")
-                .field("method", &bm.method)
-                .field("bound_receiver", &bm.bound_receiver)
-                .finish(),
         }
     }
 }

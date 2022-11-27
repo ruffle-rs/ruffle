@@ -4,7 +4,7 @@ use crate::context::UpdateContext;
 pub use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{Collect, GcCell, MutationContext};
 
-#[derive(Clone, Copy, Collect, Debug)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct FocusTracker<'gc>(GcCell<'gc, Option<DisplayObject<'gc>>>);
 
@@ -42,7 +42,7 @@ impl<'gc> FocusTracker<'gc> {
             new.on_focus_changed(context.gc_context, true);
         }
 
-        log::info!("Focus is now on {:?}", focused_element);
+        log::info!("Focus is now on {:?}", focused_element.map(|o| o.path()));
 
         let level0 = context.stage.root_clip();
         Avm1::notify_system_listeners(

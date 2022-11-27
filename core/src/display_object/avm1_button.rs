@@ -18,11 +18,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm1ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,

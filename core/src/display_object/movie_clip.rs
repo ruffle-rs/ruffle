@@ -65,11 +65,11 @@ enum NextFrame {
 /// However, in AVM2, Sprite is a separate display object, and MovieClip is a subclass of Sprite.
 ///
 /// (SWF19 pp. 201-203)
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
@@ -322,8 +322,8 @@ impl<'gc> MovieClip<'gc> {
         let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
         let total_frames = movie.num_frames();
-        assert_eq!(
-            mc.static_data.loader_info, None,
+        assert!(
+            mc.static_data.loader_info.is_none(),
             "Called replace_movie on a clip with LoaderInfo set"
         );
 
@@ -406,12 +406,8 @@ impl<'gc> MovieClip<'gc> {
                                 .cur_preload_symbol = None;
                         }
                     }
-                    Some(unk) => {
-                        log::error!(
-                            "Symbol {} changed to unexpected type {:?}",
-                            cur_preload_symbol,
-                            unk
-                        );
+                    Some(_) => {
+                        log::error!("Symbol {} changed to unexpected type", cur_preload_symbol,);
 
                         static_data
                             .preload_progress
@@ -4239,7 +4235,7 @@ impl ClipEventHandler {
 }
 
 /// An AVM2 frame script attached to a (presumably AVM2) MovieClip.
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm2FrameScript<'gc> {
     /// The frame to invoke this frame script on.

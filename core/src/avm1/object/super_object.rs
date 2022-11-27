@@ -15,11 +15,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 /// A `SuperObject` references all data from another object, but with one layer
 /// of prototyping removed. It's as if the given object had been constructed
 /// with its parent class.
-#[derive(Copy, Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SuperObject<'gc>(GcCell<'gc, SuperObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.

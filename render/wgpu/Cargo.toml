@@ -23,7 +23,8 @@ image = { version = "0.24.5", default-features = false }
 ouroboros = "0.15.5"
 typed-arena = "2.0.1"
 once_cell = "1.16.0"
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "3415c1b1e73621daf51b8cee783a5dc5e63f28fb" }
 naga-agal = { path = "../naga-agal" }
 downcast-rs = "1.2.0"
 

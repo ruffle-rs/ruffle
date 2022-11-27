@@ -29,11 +29,11 @@ pub fn array_allocator<'gc>(
 }
 
 /// An Object which stores numerical properties in an array.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ArrayObject<'gc>(GcCell<'gc, ArrayObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ArrayObjectData<'gc> {
     /// Base script object

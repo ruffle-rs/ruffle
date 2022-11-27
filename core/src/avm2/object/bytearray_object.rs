@@ -25,11 +25,11 @@ pub fn byte_array_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ByteArrayObject<'gc>(GcCell<'gc, ByteArrayObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object

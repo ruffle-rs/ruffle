@@ -71,7 +71,7 @@ impl fmt::Debug for DisplacementMapFilterObject<'_> {
             .field("color", &this.color)
             .field("componentX", &this.component_x)
             .field("componentY", &this.component_y)
-            .field("mapBitmap", &this.map_bitmap)
+            .field("mapBitmap", &this.map_bitmap.is_some())
             .field("mapPoint", &this.map_point)
             .field("mode", &this.mode)
             .field("scaleX", &this.scale_x)

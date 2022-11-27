@@ -12,6 +12,7 @@ use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
+use std::fmt;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
 /// Indicate what kind of primitive coercion would be preferred when coercing
@@ -30,7 +31,7 @@ pub enum Hint {
 /// An AVM2 value.
 ///
 /// TODO: AVM2 also needs Scope, Namespace, and XML values.
-#[derive(Clone, Copy, Collect, Debug)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub enum Value<'gc> {
     Undefined,
@@ -43,6 +44,20 @@ pub enum Value<'gc> {
     Integer(i32),
     String(AvmString<'gc>),
     Object(Object<'gc>),
+}
+
+impl<'gc> fmt::Debug for Value<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Undefined => write!(f, "Undefined"),
+            Self::Null => write!(f, "Null"),
+            Self::Bool(b) => f.debug_tuple("Bool").field(b).finish(),
+            Self::Number(n) => f.debug_tuple("Number").field(n).finish(),
+            Self::Integer(i) => f.debug_tuple("Integer").field(i).finish(),
+            Self::String(s) => f.debug_tuple("String").field(s).finish(),
+            Self::Object(_) => write!(f, "Object(_)"),
+        }
+    }
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.

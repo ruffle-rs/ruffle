@@ -73,6 +73,7 @@ impl_downcast!(IndexBuffer);
 pub trait VertexBuffer: Downcast + Collect {}
 impl_downcast!(VertexBuffer);
 
+// TODO(moulins): remove Collect requirement
 pub trait ShaderModule: Downcast + Collect {}
 impl_downcast!(ShaderModule);
 

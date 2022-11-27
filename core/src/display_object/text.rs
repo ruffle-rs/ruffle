@@ -13,11 +13,11 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,

@@ -37,11 +37,11 @@ pub fn vector_allocator<'gc>(
 }
 
 /// An Object which stores typed properties in vector storage
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct VectorObject<'gc>(GcCell<'gc, VectorObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct VectorObjectData<'gc> {
     /// Base script object

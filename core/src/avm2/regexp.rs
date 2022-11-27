@@ -12,7 +12,7 @@ use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
 
-#[derive(Collect, Debug)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct RegExp<'gc> {
     source: AvmString<'gc>,
@@ -361,7 +361,7 @@ impl<'gc> RegExp<'gc> {
     }
 }
 
-#[derive(Collect, Debug)]
+#[derive(Collect)]
 #[collect(no_drop)]
 struct CachedText<'gc> {
     text: AvmString<'gc>,

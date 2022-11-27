@@ -23,7 +23,7 @@ pub fn date_allocator<'gc>(
     ))
     .into())
 }
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DateObject<'gc>(GcCell<'gc, DateObjectData<'gc>>);
 
@@ -41,7 +41,7 @@ impl<'gc> DateObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DateObjectData<'gc> {
     /// Base script object

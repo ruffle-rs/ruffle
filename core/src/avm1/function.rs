@@ -47,7 +47,7 @@ pub enum ExecutionReason {
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
@@ -272,7 +272,7 @@ impl<'gc> Avm1Function<'gc> {
     }
 }
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct Param<'gc> {
     /// The register the argument will be preloaded into.
@@ -316,7 +316,7 @@ impl fmt::Debug for Executable<'_> {
                 .debug_tuple("Executable::Native")
                 .field(&format!("{nf:p}"))
                 .finish(),
-            Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
+            Executable::Action(_) => write!(f, "Executable::Action(_)"),
         }
     }
 }
@@ -476,7 +476,7 @@ impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
 }
 
 /// Represents an `Object` that holds executable code.
-#[derive(Debug, Clone, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc> {
     /// The script object base.
@@ -487,7 +487,7 @@ pub struct FunctionObject<'gc> {
     data: GcCell<'gc, FunctionObjectData<'gc>>,
 }
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct FunctionObjectData<'gc> {
     /// The code that will be invoked when this object is called.

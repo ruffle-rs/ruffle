@@ -27,11 +27,11 @@ pub fn soundchannel_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundChannelObject<'gc>(GcCell<'gc, SoundChannelObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object

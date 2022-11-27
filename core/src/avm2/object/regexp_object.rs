@@ -27,11 +27,11 @@ pub fn regexp_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct RegExpObject<'gc>(GcCell<'gc, RegExpObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct RegExpObjectData<'gc> {
     /// Base script object

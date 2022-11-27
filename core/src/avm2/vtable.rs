@@ -14,11 +14,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 use std::ops::DerefMut;
 
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct VTableData<'gc> {
     /// should always be Some post-initialization
@@ -43,7 +43,7 @@ pub struct VTableData<'gc> {
 // TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
 // would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
 // to be more intuitive and cheaper
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
     pub class: ClassObject<'gc>,

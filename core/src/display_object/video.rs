@@ -30,11 +30,11 @@ use super::StageQuality;
 /// a host SWF, or an externally-loaded FLV or F4V file. In the latter form,
 /// video framerates are (supposedly) permitted to differ from the stage
 /// framerate.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Video<'gc>(GcCell<'gc, VideoData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct VideoData<'gc> {
     base: DisplayObjectBase<'gc>,

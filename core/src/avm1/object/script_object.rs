@@ -6,10 +6,9 @@ use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::string::AvmString;
-use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Watcher<'gc> {
     callback: Object<'gc>,
@@ -46,7 +45,7 @@ impl<'gc> Watcher<'gc> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
@@ -57,15 +56,6 @@ pub struct ScriptObjectData<'gc> {
     properties: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
-}
-
-impl fmt::Debug for ScriptObjectData<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Object")
-            .field("properties", &self.properties)
-            .field("watchers", &self.watchers)
-            .finish()
-    }
 }
 
 impl<'gc> ScriptObject<'gc> {

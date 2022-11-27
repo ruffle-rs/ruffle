@@ -8,7 +8,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
-use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
 use swf::avm2::types::{
@@ -37,7 +36,7 @@ pub type NativeMethodImpl = for<'gc> fn(
 ) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Configuration of a single parameter of a method.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ParamConfig<'gc> {
     /// The name of the parameter.
@@ -101,7 +100,7 @@ impl<'gc> ParamConfig<'gc> {
 }
 
 /// Represents a reference to an AVM2 method and body.
-#[derive(Collect, Clone, Debug)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct BytecodeMethod<'gc> {
     /// The translation unit this function was defined in.
@@ -278,20 +277,9 @@ unsafe impl<'gc> Collect for NativeMethod<'gc> {
     }
 }
 
-impl<'gc> fmt::Debug for NativeMethod<'gc> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("NativeMethod")
-            .field("method", &format!("{:p}", &self.method))
-            .field("name", &self.name)
-            .field("signature", &self.signature)
-            .field("is_variadic", &self.is_variadic)
-            .finish()
-    }
-}
-
 /// An uninstantiated method that can either be natively implemented or sourced
 /// from an ABC file.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum Method<'gc> {
     /// A native method.

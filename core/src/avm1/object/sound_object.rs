@@ -5,7 +5,6 @@ use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::display_object::DisplayObject;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::fmt;
 
 /// A SoundObject that is tied to a sound from the AudioBackend.
 #[derive(Clone, Copy, Collect)]
@@ -42,17 +41,6 @@ pub struct SoundObjectData<'gc> {
     /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
     /// A streaming sound can only have a single active instance.
     is_streaming: bool,
-}
-
-impl fmt::Debug for SoundObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let this = self.0.read();
-        f.debug_struct("SoundObject")
-            .field("sound", &this.sound)
-            .field("sound_instance", &this.sound_instance)
-            .field("owner", &this.owner)
-            .finish()
-    }
 }
 
 impl<'gc> SoundObject<'gc> {

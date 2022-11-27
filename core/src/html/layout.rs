@@ -591,7 +591,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 /// `EditText`.
 ///
 /// The content of each box is determined by `LayoutContent`.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
     /// The rectangle corresponding to the outer boundaries of the content box.
@@ -604,7 +604,7 @@ pub struct LayoutBox<'gc> {
 /// Represents different content modes of a given `LayoutBox`.
 ///
 /// Currently, a `LayoutBox` can contain `Text`, `Bullet`s, or a `Drawing`.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum LayoutContent<'gc> {
     /// A layout box containing some part of a text span.

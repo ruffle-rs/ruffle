@@ -292,7 +292,7 @@ impl Ord for Timer<'_> {
 }
 
 /// A callback fired by a `setInterval`/`setTimeout` timer.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum TimerCallback<'gc> {
     Avm1Function {

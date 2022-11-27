@@ -19,7 +19,7 @@ use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
-use std::fmt::Debug;
+use std::fmt;
 use std::time::Duration;
 use swf::Twips;
 
@@ -75,7 +75,7 @@ bitflags! {
     }
 }
 
-#[derive(Collect, Clone, Debug)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
@@ -102,7 +102,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
 }
 
 #[enum_trait_object(
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy)]
     #[collect(no_drop)]
     pub enum InteractiveObject<'gc> {
         Stage(Stage<'gc>),
@@ -114,7 +114,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
     }
 )]
 pub trait TInteractiveObject<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<InteractiveObject<'gc>>
+    'gc + Clone + Copy + Collect + Into<InteractiveObject<'gc>>
 {
     fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>>;
 
@@ -506,3 +506,16 @@ impl<'gc> PartialEq for InteractiveObject<'gc> {
 }
 
 impl<'gc> Eq for InteractiveObject<'gc> {}
+
+impl<'gc> fmt::Debug for InteractiveObject<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Stage(_) => write!(f, "Stage(_)"),
+            Self::Avm1Button(_) => write!(f, "Avm1Button(_)"),
+            Self::Avm2Button(_) => write!(f, "Avm2Button(_)"),
+            Self::MovieClip(_) => write!(f, "MovieClip(_)"),
+            Self::EditText(_) => write!(f, "EditText(_)"),
+            Self::LoaderDisplay(_) => write!(f, "LoaderDisplay(_)"),
+        }
+    }
+}

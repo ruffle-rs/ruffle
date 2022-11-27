@@ -528,8 +528,7 @@ pub fn draw<'gc>(
             } else {
                 avm_error!(
                     activation,
-                    "BitmapData.draw: Unexpected source {:?} {:?}",
-                    source,
+                    "BitmapData.draw: Unexpected source {:?}",
                     args.get(0)
                 );
                 return Ok(Value::Undefined);

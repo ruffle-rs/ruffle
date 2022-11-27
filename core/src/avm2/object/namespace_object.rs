@@ -27,11 +27,11 @@ pub fn namespace_allocator<'gc>(
 }
 
 /// An Object which represents a boxed namespace name.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct NamespaceObject<'gc>(GcCell<'gc, NamespaceObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct NamespaceObjectData<'gc> {
     /// All normal script data.

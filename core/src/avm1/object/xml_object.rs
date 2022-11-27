@@ -219,9 +219,7 @@ impl<'gc> XmlObject<'gc> {
 
 impl fmt::Debug for XmlObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let this = self.0.read();
         f.debug_struct("XmlObject")
-            .field("base", &this.base)
             .field("root", &self.0.read().root)
             .finish()
     }

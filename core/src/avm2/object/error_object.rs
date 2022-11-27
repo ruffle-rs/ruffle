@@ -31,11 +31,11 @@ pub fn error_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ErrorObjectData<'gc> {
     /// Base script object

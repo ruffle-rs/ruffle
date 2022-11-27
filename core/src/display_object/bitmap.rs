@@ -18,7 +18,7 @@ use std::cell::{Ref, RefMut};
 ///
 /// Bitmaps may be associated with either a `Bitmap` or a `BitmapData`
 /// subclass. Its superclass determines how the Bitmap will be constructed.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub enum BitmapClass<'gc> {
     /// This Bitmap uses the stock Flash Player classes for itself.
@@ -47,11 +47,11 @@ pub enum BitmapClass<'gc> {
 /// but starting in AVM2, a raw `Bitmap` display object can be created
 /// with the `PlaceObject3` tag.
 /// It can also be created in ActionScript using the `Bitmap` class.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,

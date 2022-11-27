@@ -10,11 +10,11 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8, Twips};
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,

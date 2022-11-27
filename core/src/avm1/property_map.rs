@@ -13,7 +13,7 @@ use std::hash::{Hash, Hasher};
 type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
 
 /// A map from property names to values.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct PropertyMap<'gc, V>(FnvIndexMap<PropertyName<'gc>, V>);
 
 impl<'gc, V> PropertyMap<'gc, V> {
@@ -193,7 +193,7 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
 /// SWFv6, which is case insensitive. The equality check is handled by the `Equivalent`
 /// impls above, which allow it to be either case-sensitive or insensitive.
 /// Note that the property of if key1 == key2 -> hash(key1) == hash(key2) still holds.
-#[derive(Debug, Clone, PartialEq, Eq, Collect)]
+#[derive(Clone, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 struct PropertyName<'gc>(AvmString<'gc>);
 

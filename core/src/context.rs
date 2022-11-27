@@ -22,7 +22,6 @@ use crate::player::Player;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
-use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
@@ -506,60 +505,6 @@ impl ActionType<'_> {
             ActionType::Initialize { .. } => 2,
             ActionType::Construct { .. } => 1,
             _ => 0,
-        }
-    }
-}
-
-impl fmt::Debug for ActionType<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ActionType::Normal { bytecode } => f
-                .debug_struct("ActionType::Normal")
-                .field("bytecode", bytecode)
-                .finish(),
-            ActionType::Initialize { bytecode } => f
-                .debug_struct("ActionType::Initialize")
-                .field("bytecode", bytecode)
-                .finish(),
-            ActionType::Construct {
-                constructor,
-                events,
-            } => f
-                .debug_struct("ActionType::Construct")
-                .field("constructor", constructor)
-                .field("events", events)
-                .finish(),
-            ActionType::Method { object, name, args } => f
-                .debug_struct("ActionType::Method")
-                .field("object", object)
-                .field("name", name)
-                .field("args", args)
-                .finish(),
-            ActionType::NotifyListeners {
-                listener,
-                method,
-                args,
-            } => f
-                .debug_struct("ActionType::NotifyListeners")
-                .field("listener", listener)
-                .field("method", method)
-                .field("args", args)
-                .finish(),
-            ActionType::Callable2 {
-                callable,
-                reciever,
-                args,
-            } => f
-                .debug_struct("ActionType::Callable2")
-                .field("callable", callable)
-                .field("reciever", reciever)
-                .field("args", args)
-                .finish(),
-            ActionType::Event2 { event_type, target } => f
-                .debug_struct("ActionType::Event2")
-                .field("event_type", event_type)
-                .field("target", target)
-                .finish(),
         }
     }
 }

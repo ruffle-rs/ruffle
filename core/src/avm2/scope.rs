@@ -10,7 +10,7 @@ use gc_arena::{Collect, Gc, MutationContext};
 use std::ops::Deref;
 
 /// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
-#[derive(Debug, Collect, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct Scope<'gc> {
     /// The underlying object of this Scope
@@ -59,7 +59,7 @@ impl<'gc> Scope<'gc> {
 /// ScopeChain's are copy-on-write, meaning when we chain new scopes on top of a ScopeChain, we
 /// actually create a completely brand new ScopeChain. The Domain of the ScopeChain we are chaining
 /// on top of will be used for the new ScopeChain.
-#[derive(Debug, Collect, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ScopeChain<'gc> {
     scopes: Option<Gc<'gc, Vec<Scope<'gc>>>>,

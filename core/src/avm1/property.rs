@@ -2,7 +2,6 @@
 
 use crate::avm1::{Object, Value};
 use bitflags::bitflags;
-use core::fmt;
 use gc_arena::Collect;
 
 bitflags! {
@@ -138,16 +137,5 @@ impl<'gc> Property<'gc> {
             .copied()
             .unwrap_or_default();
         (self.attributes.bits() & mask) == 0
-    }
-}
-
-impl fmt::Debug for Property<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Property")
-            .field("data", &self.data)
-            .field("getter", &self.getter)
-            .field("setter", &self.setter)
-            .field("attributes", &self.attributes)
-            .finish()
     }
 }

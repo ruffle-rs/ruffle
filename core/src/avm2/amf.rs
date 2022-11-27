@@ -78,10 +78,7 @@ pub fn serialize_value<'gc>(
                         }),
                     ))
                 } else {
-                    log::warn!(
-                        "Serialization is not implemented for class other than Object: {:?}",
-                        o
-                    );
+                    log::warn!("Serialization is not implemented for class other than Object");
                     None
                 }
             }

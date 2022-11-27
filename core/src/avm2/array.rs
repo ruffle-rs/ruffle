@@ -9,7 +9,7 @@ use std::ops::RangeBounds;
 /// Array values may consist of either standard `Value`s or "holes": values
 /// which are not properties of the associated object and must be resolved in
 /// the prototype.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ArrayStorage<'gc> {
     storage: Vec<Option<Value<'gc>>>,

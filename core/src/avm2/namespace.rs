@@ -2,7 +2,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, MutationContext};
-use std::fmt::Debug;
 use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
 /// Represents the name of a namespace.

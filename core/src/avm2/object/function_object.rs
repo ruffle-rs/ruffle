@@ -51,11 +51,11 @@ pub fn function_allocator<'gc>(
 }
 
 /// An Object which can be called to execute its function code.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct FunctionObjectData<'gc> {
     /// Base script object

@@ -156,7 +156,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Collect, Default, Debug)]
+#[derive(Clone, Collect, Default)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values

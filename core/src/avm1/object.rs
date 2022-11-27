@@ -27,7 +27,6 @@ use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
-use std::fmt::Debug;
 
 pub mod array_object;
 pub mod bitmap_data;
@@ -64,7 +63,7 @@ pub enum NativeObject<'gc> {
 /// runtime.
 #[enum_trait_object(
     #[allow(clippy::enum_variant_names)]
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
@@ -88,7 +87,7 @@ pub enum NativeObject<'gc> {
         BitmapData(BitmapDataObject<'gc>),
     }
 )]
-pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Retrieve a named, non-virtual property from this object exclusively.
     ///
     /// This function should not inspect prototype chains. Instead, use

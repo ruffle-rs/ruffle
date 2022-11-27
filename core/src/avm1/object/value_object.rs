@@ -5,7 +5,6 @@ use crate::avm1::object::TObject;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::fmt;
 
 /// An Object that serves as a box for a primitive value.
 #[derive(Clone, Copy, Collect)]
@@ -98,16 +97,6 @@ impl<'gc> ValueObject<'gc> {
     /// Change the value in the box.
     pub fn replace_value(&mut self, gc_context: MutationContext<'gc, '_>, value: Value<'gc>) {
         self.0.write(gc_context).value = value;
-    }
-}
-
-impl fmt::Debug for ValueObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let this = self.0.read();
-        f.debug_struct("ValueObject")
-            .field("base", &this.base)
-            .field("value", &this.value)
-            .finish()
     }
 }
 

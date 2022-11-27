@@ -34,11 +34,11 @@ use std::cell::{Ref, RefMut};
 ///    `EventDispatcher` classes. This would require adding `DispatchList` to
 ///    other object representations that need to dispatch events, such as
 ///    `StageObject`.
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DispatchObject<'gc>(GcCell<'gc, DispatchObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DispatchObjectData<'gc> {
     /// Base script object

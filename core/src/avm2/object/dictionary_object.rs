@@ -32,11 +32,11 @@ pub fn dictionary_allocator<'gc>(
 /// This is implemented by way of "object space", parallel to the property
 /// space that ordinary properties live in. This space has no namespaces, and
 /// keys are objects instead of strings.
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DictionaryObject<'gc>(GcCell<'gc, DictionaryObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object

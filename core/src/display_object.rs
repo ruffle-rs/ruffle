@@ -50,7 +50,7 @@ pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMo
 pub use text::Text;
 pub use video::Video;
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
@@ -581,7 +581,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 }
 
 #[enum_trait_object(
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy)]
     #[collect(no_drop)]
     pub enum DisplayObject<'gc> {
         Stage(Stage<'gc>),
@@ -597,9 +597,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         LoaderDisplay(LoaderDisplay<'gc>)
     }
 )]
-pub trait TDisplayObject<'gc>:
-    'gc + Clone + Copy + Collect + Debug + Into<DisplayObject<'gc>>
-{
+pub trait TDisplayObject<'gc>: 'gc + Clone + Copy + Collect + Into<DisplayObject<'gc>> {
     fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
     fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>>;
 

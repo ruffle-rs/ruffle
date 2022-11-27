@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 /// Which phase of event dispatch is currently occurring.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Collect, PartialEq, Eq)]
 #[collect(require_static)]
 pub enum EventPhase {
     /// The event has yet to be fired on the target and is descending the
@@ -30,7 +30,7 @@ pub enum EventPhase {
 }
 
 /// How this event is allowed to propagate.
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Collect, PartialEq, Eq)]
 #[collect(require_static)]
 pub enum PropagationMode {
     /// Propagate events normally.
@@ -45,7 +45,7 @@ pub enum PropagationMode {
 
 /// Represents data fields of an event that can be fired on an object that
 /// implements `IEventDispatcher`.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Event<'gc> {
     /// Whether or not the event "bubbles" - fires on it's parents after it
@@ -174,7 +174,7 @@ impl<'gc> Event<'gc> {
 }
 
 /// A set of handlers organized by event type, priority, and order added.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DispatchList<'gc>(FnvHashMap<AvmString<'gc>, BTreeMap<i32, Vec<EventHandler<'gc>>>>);
 
@@ -306,7 +306,7 @@ impl<'gc> Default for DispatchList<'gc> {
 }
 
 /// A single instance of an event handler.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct EventHandler<'gc> {
     /// The event handler to call.
@@ -375,9 +375,8 @@ pub fn dispatch_event_to_target<'gc>(
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
-        "Event dispatch: {} to {:?}",
+        "Event dispatch: {}",
         event.as_event().unwrap().event_type(),
-        target
     );
     let dispatch_list = target
         .get_property(
@@ -419,12 +418,7 @@ pub fn dispatch_event_to_target<'gc>(
         let object = activation.global_scope();
 
         if let Err(err) = handler.call(object, &[event.into()], activation) {
-            log::error!(
-                "Error dispatching event {:?} to handler {:?} : {:?}",
-                event,
-                handler,
-                err
-            );
+            log::error!("Error dispatching event: {:?}", err);
         }
     }
 

@@ -38,7 +38,7 @@ bitflags! {
 /// load before all other code. We instead generate an initial heap in the same
 /// manner as we do in AVM1, which means that we need to have a way to
 /// dynamically originate traits that do not come from any particular ABC file.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Trait<'gc> {
     /// The name of this trait.
@@ -63,7 +63,7 @@ fn trait_attribs_from_abc_traits(abc_trait: &AbcTrait) -> TraitAttributes {
 ///
 /// The kind of a trait also determines how it's instantiated on the object.
 /// See each individual variant for more information.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum TraitKind<'gc> {
     /// A data field on an object instance that can be read from and written

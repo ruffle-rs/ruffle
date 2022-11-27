@@ -21,7 +21,7 @@ use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Script as AbcScript,
 };
 
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 
@@ -37,7 +37,7 @@ pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 /// names preloaded. This roughly corresponds to the logical "loading" phase of
 /// ABC execution as documented in the AVM2 Overview. "Linking" takes place by
 /// constructing the appropriate runtime object for that item.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct TranslationUnitData<'gc> {
     /// The domain that all scripts in the translation unit export defs to.
@@ -329,11 +329,11 @@ impl<'gc> TranslationUnit<'gc> {
 }
 
 /// A loaded Script from an ABC file.
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct ScriptData<'gc> {
     /// The global object for the script.

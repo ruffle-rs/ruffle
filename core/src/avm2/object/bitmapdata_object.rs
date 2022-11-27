@@ -26,11 +26,11 @@ pub fn bitmapdata_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct BitmapDataObject<'gc>(GcCell<'gc, BitmapDataObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object

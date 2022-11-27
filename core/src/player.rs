@@ -40,7 +40,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
+use gc_arena::{Arena, ArenaParameters, Collect, GcCell, Rootable};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -59,6 +59,8 @@ use std::time::Duration;
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
+
+type GcArena = Arena<Rootable![GcRoot<'gc>]>;
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -187,8 +189,6 @@ impl<'gc> GcRootData<'gc> {
         )
     }
 }
-
-make_arena!(GcArena, GcRoot);
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
@@ -1788,7 +1788,7 @@ impl Player {
                 Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
             for so in avm1_activation.context.avm1_shared_objects.clone().values() {
                 if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
-                    log::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                    log::error!("Error flushing AVM1 shared object: {:?}", e);
                 }
             }
 
@@ -1800,7 +1800,7 @@ impl Player {
                     Some(*so),
                     &[],
                 ) {
-                    log::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
+                    log::error!("Error flushing AVM2 shared object: {:?}", e);
                 }
             }
         });
@@ -2119,7 +2119,7 @@ impl PlayerBuilder {
                 spoofed_url: self.spoofed_url.clone(),
 
                 // GC data
-                gc_arena: Rc::new(RefCell::new(GcArena::new(
+                gc_arena: Rc::new(RefCell::new(Arena::new(
                     ArenaParameters::default(),
                     |gc_context| GcRoot {
                         callstack: GcCell::allocate(gc_context, GcCallstack::default()),

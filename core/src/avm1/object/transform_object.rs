@@ -2,7 +2,6 @@ use crate::avm1::{Object, ScriptObject, TObject};
 use crate::display_object::MovieClip;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::fmt;
 
 /// A flash.geom.Transform object
 #[derive(Clone, Copy, Collect)]
@@ -15,15 +14,6 @@ pub struct TransformData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
     clip: Option<MovieClip<'gc>>,
-}
-
-impl fmt::Debug for TransformObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let this = self.0.read();
-        f.debug_struct("Transform")
-            .field("clip", &this.clip)
-            .finish()
-    }
 }
 
 impl<'gc> TransformObject<'gc> {

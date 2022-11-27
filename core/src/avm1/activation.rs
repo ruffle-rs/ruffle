@@ -74,7 +74,7 @@ impl<'gc> RegisterSet<'gc> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum ReturnType<'gc> {
     Implicit,
     Explicit(Value<'gc>),
@@ -89,7 +89,7 @@ impl<'gc> ReturnType<'gc> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum FrameControl<'gc> {
     Continue,
     Return(ReturnType<'gc>),

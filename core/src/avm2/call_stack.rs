@@ -2,14 +2,14 @@ use crate::avm2::function::Executable;
 use crate::string::WString;
 use gc_arena::Collect;
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum CallNode<'gc> {
     GlobalInit,
     Method(Executable<'gc>),
 }
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct CallStack<'gc> {
     stack: Vec<CallNode<'gc>>,

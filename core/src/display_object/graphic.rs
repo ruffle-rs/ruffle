@@ -14,11 +14,11 @@ use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Graphic<'gc>(GcCell<'gc, GraphicData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,

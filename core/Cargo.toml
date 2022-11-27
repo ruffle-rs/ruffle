@@ -10,7 +10,8 @@ byteorder = "1.4"
 bitstream-io = "1.6.0"
 flate2 = "1.0.25"
 fnv = "1.0.7"
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+
+gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "3415c1b1e73621daf51b8cee783a5dc5e63f28fb" }
 generational-arena = "0.2.8"
 indexmap = "1.9.2"
 log = "0.4"
