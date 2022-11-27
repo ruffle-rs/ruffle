@@ -1,0 +1,59 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Riproduci i contenuti Flash in Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Riproduci i contenuti Flash anche in siti che disabilitano Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignora gli avvertimenti di compatibilità dei siti"
+    },
+    "settings_show_swf_download": {
+        "message": "Mostra l'opzione per scaricare gli SWF nel menu contestuale"
+    },
+    "status_init": {
+        "message": "Lettura tab corrente…"
+    },
+    "status_no_tabs": {
+        "message": "Non c'é alcuna tab attiva."
+    },
+    "status_tabs_error": {
+        "message": "É occorso un'errore cercando la tab corrente."
+    },
+    "status_message_init": {
+        "message": "Controllo dello stato di Ruffle nella tab corrente…"
+    },
+    "status_result_running": {
+        "message": "Ruffle é caricato e sta eseguendo contenuti Flash nella tab corrente."
+    },
+    "status_result_optout": {
+        "message": "Ruffle non é caricato perché la pagina corrente si é dichiarata incompatibile."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle non é caricato perché é stato disabilitato dall'utente."
+    },
+    "status_result_error": {
+        "message": "C'é stato un errore leggendo lo stato di Ruffle nella tab corrente."
+    },
+    "status_result_protected": {
+        "message": "Ruffle non puó essere caricato su pagine del browser protette."
+    },
+    "action_reload": {
+        "message": "Aggiorna la tab per applicare i cambiamenti"
+    },
+    "open_settings_page": {
+        "message": "Apri la Pagina Impostazioni"
+    },
+    "settings_page": {
+        "message": "Pagina Impostazioni"
+    },
+    "description": {
+        "message": "Rimettere Flash sul web dove appartiene."
+    },
+    "save_settings": {
+        "message": "Salva Impostazioni"
+    },
+    "settings_saved": {
+        "message": "Impostazioni Salvate"
+    }
+}
