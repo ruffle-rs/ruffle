@@ -250,23 +250,61 @@ pub fn filters<'gc>(
     Ok(ArrayObject::empty(activation)?.into())
 }
 
+fn is_filter_instance<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    val: &Option<Value<'gc>>,
+) -> bool {
+    let mut is_filter = false;
+    let filter_class = Multiname::new(Namespace::Package("flash.filters".into()), "BitmapFilter");
+
+    if let Some(filter) = val {
+        if let Ok(ty_class) = activation.resolve_class(&filter_class) {
+            is_filter = filter
+                .coerce_to_object(activation)
+                .map_or(false, |class_name| {
+                    class_name.is_of_type(ty_class, activation)
+                });
+        }
+    };
+
+    return is_filter;
+}
+
+fn build_argument_type_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Err(Error::AvmError(crate::avm2::error::argument_error(
+        activation,
+        "Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.",
+        2005,
+    )?))
+}
+
 pub fn set_filters<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_filters = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
+        let new_filters = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-        if let Some(filters_array) = new_filters.as_array_object() {
-            if let Some(filters_storage) = filters_array.as_array_storage() {
-                let new_storage = ArrayStorage::from_storage(filters_storage.iter().collect());
+        if matches!(new_filters, Value::Undefined | Value::Null) {
+            let new_storage = ArrayStorage::new(0);
+            dobj.set_filters(activation.context.gc_context, new_storage);
+        } else {
+            let new_filters = new_filters.coerce_to_object(activation)?;
 
-                dobj.set_filters(activation.context.gc_context, new_storage);
+            if let Some(filters_array) = new_filters.as_array_object() {
+                if let Some(filters_storage) = filters_array.as_array_storage() {
+                    for filter in filters_storage.iter() {
+                        if !is_filter_instance(activation, &filter) {
+                            return build_argument_type_error(activation);
+                        }
+                    }
+                    let new_storage = ArrayStorage::from_storage(filters_storage.iter().collect());
+
+                    dobj.set_filters(activation.context.gc_context, new_storage);
+                }
             }
         }
     }

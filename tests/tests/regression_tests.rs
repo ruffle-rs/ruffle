@@ -248,6 +248,7 @@ swf_tests! {
     (as3_dictionary_in, "avm2/dictionary_in", 1),
     (as3_dictionary_namespaces, "avm2/dictionary_namespaces", 1),
     (as3_displayobject_alpha, "avm2/displayobject_alpha", 1),
+    (as3_displayobject_filters, "avm2/displayobject_filters", 1),
     (as3_displayobject_blendmode, "avm2/displayobject_blendmode", 1, img = true),
     (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
     (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
