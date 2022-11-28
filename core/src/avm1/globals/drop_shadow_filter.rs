@@ -5,6 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
+use crate::types::F64Extension;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -62,7 +63,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.clamp(0.0, 1.0))?;
+        .map(|x| x.clamp_also_nan(0.0, 1.0))?;
 
     if let Some(object) = this.as_drop_shadow_filter_object() {
         object.set_alpha(activation.context.gc_context, alpha);
@@ -359,7 +360,7 @@ pub fn set_strength<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.clamp(0.0, 255.0))?;
+        .map(|x| x.clamp_also_nan(0.0, 255.0))?;
 
     if let Some(object) = this.as_drop_shadow_filter_object() {
         object.set_strength(activation.context.gc_context, strength);
