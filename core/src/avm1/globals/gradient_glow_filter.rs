@@ -7,6 +7,7 @@ use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::string::{AvmString, WStr};
+use crate::types::F64Extension;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -190,14 +191,18 @@ pub fn set_alphas<'gc>(
 
     if let Value::Object(obj) = alphas {
         if let Some(filter) = this.as_gradient_glow_filter_object() {
-            let length = (obj.length(activation)? as usize).min(filter.colors().len());
+            let length = filter.colors().len();
+            let obj_length = obj.length(activation)? as usize;
 
             let alphas: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
-                    Ok(obj
-                        .get_element(activation, i as i32)
-                        .coerce_to_f64(activation)?
-                        .clamp(0.0, 1.0))
+                    Ok(if i >= obj_length {
+                        1.0
+                    } else {
+                        obj.get_element(activation, i as i32)
+                            .coerce_to_f64(activation)?
+                            .clamp_also_nan(0.0, 1.0)
+                    })
                 })
                 .collect();
             let alphas = alphas?;
@@ -347,7 +352,7 @@ pub fn set_strength<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.clamp(0.0, 255.0))?;
+        .map(|x| x.clamp_also_nan(0.0, 255.0))?;
 
     if let Some(object) = this.as_gradient_glow_filter_object() {
         object.set_strength(activation.context.gc_context, strength);

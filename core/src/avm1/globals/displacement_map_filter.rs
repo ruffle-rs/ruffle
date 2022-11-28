@@ -6,6 +6,7 @@ use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::string::{AvmString, WStr};
+use crate::types::F64Extension;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -59,7 +60,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)
-        .map(|x| x.clamp(0.0, 1.0))?;
+        .map(|x| x.clamp_also_nan(0.0, 1.0))?;
 
     if let Some(filter) = this.as_displacement_map_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
