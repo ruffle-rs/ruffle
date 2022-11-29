@@ -1336,6 +1336,36 @@ pub trait TDisplayObject<'gc>:
         render_base((*self).into(), context)
     }
 
+    #[cfg(feature = "avm_debug")]
+    fn display_render_tree(&self, depth: usize) {
+        let self_str = format!("{:?}", self);
+        let paren = self_str.find('(').unwrap();
+        let self_str = &self_str[..paren];
+
+        let bounds = self.world_bounds();
+
+        let mut classname = "".to_string();
+        if let Some(o) = self.object2().as_object() {
+            classname = format!("{:?}", o.base().debug_class_name());
+        }
+
+        println!(
+            "{} rel({},{}) abs({},{}) {} {} {}",
+            " ".repeat(depth),
+            self.x(),
+            self.y(),
+            bounds.x_min.to_pixels(),
+            bounds.y_min.to_pixels(),
+            classname,
+            self.name(),
+            self_str
+        );
+
+        if let Some(ctr) = self.as_container() {
+            ctr.recurse_render_tree(depth + 1);
+        }
+    }
+
     fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {

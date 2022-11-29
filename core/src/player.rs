@@ -878,6 +878,16 @@ impl Player {
                         }
                     });
                 }
+                PlayerEvent::KeyDown {
+                    key_code: KeyCode::F,
+                    ..
+                } if self.input.is_key_down(KeyCode::Control)
+                    && self.input.is_key_down(KeyCode::Alt) =>
+                {
+                    self.mutate_with_update_context(|context| {
+                        context.stage.display_render_tree(0);
+                    });
+                }
                 _ => {}
             }
         }

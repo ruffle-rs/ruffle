@@ -443,6 +443,13 @@ pub trait TDisplayObjectContainer<'gc>:
             context.commands.pop_mask();
         }
     }
+
+    #[cfg(feature = "avm_debug")]
+    fn recurse_render_tree(&self, depth: usize) {
+        for child in self.iter_render_list() {
+            child.display_render_tree(depth);
+        }
+    }
 }
 
 impl<'gc> From<DisplayObjectContainer<'gc>> for DisplayObject<'gc> {
