@@ -12,5 +12,5 @@ num-derive = "0.3.3"
 num-traits = "0.2.15"
 
 [dev-dependencies]
-insta = "1.21.1"
+insta = "1.21.2"
 naga = { version = "0.10.0", features = ["wgsl-out", "validate"] }
