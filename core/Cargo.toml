@@ -34,7 +34,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
 encoding_rs = "0.8.31"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.147", features = ["derive"] }
+serde = { version = "1.0.148", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
 regress = "0.4"
