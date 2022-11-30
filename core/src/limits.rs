@@ -58,7 +58,7 @@ impl ExecutionLimit {
         Self {
             current_oplimit: Some(0),
             max_ops_per_check: Some(0),
-            time_limit: Duration::from_secs(0),
+            time_limit: Duration::from_secs(0.0),
         }
     }
 
@@ -80,7 +80,7 @@ impl ExecutionLimit {
             *oplimit = oplimit.saturating_sub(ops);
 
             if *oplimit == 0 {
-                if context.update_start.elapsed() >= self.time_limit {
+                if context.update_start.elapsed().as_nanos() as f64 >= self.time_limit.as_nanos() {
                     return true;
                 }
 

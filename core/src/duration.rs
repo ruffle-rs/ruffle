@@ -10,6 +10,7 @@ pub struct Duration(f64);
 impl Duration {
     pub const ZERO: Self = Self(0.0);
     pub const ONE_SECOND: Self = Self(1.0);
+    pub const MAX: Self = Self(f64::MAX);
 
     pub fn from_secs(secs: f64) -> Self {
         Self::from_nanos(secs * 1_000_000_000.0)
