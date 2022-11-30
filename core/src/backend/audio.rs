@@ -5,7 +5,6 @@ use crate::{
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
 use downcast_rs::Downcast;
-use duration_helper::from_f64_millis;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 
@@ -188,7 +187,7 @@ impl AudioBackend for NullAudioBackend {
     fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
         Ok(self.sounds.insert(NullSound {
             size: 0,
-            duration: RuffleDuration::zero(),
+            duration: Duration::ZERO,
             format: swf::SoundFormat {
                 compression: swf::AudioCompression::Mp3,
                 sample_rate: 44100,

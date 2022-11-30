@@ -1,4 +1,3 @@
-use duration_helper::from_f64_millis;
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, AudioMixerProxy, DecodeError, RegisterError, SoundHandle,
     SoundInstanceHandle, SoundTransform,

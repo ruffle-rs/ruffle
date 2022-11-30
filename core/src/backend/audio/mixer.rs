@@ -3,11 +3,9 @@ use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::duration::Duration;
 use crate::tag_utils::SwfSlice;
-use duration_helper::from_f64_millis;
 use generational_arena::Arena;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
-use crate::duration::RuffleDuration;
 use swf::AudioCompression;
 
 /// Holds the last 2048 output audio frames. Frames can be written to it one by

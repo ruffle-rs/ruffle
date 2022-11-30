@@ -1,5 +1,5 @@
 use crate::context::UpdateContext;
-use std::time::Duration;
+use crate::duration::Duration;
 
 /// Indication of how long execution is allowed to take.
 ///

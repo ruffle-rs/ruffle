@@ -18,6 +18,7 @@ use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
+use crate::duration::Duration;
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
@@ -32,7 +33,6 @@ use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
-use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::form_urlencoded;

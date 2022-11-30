@@ -19,7 +19,6 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 
-use ruffle_core::duration::RuffleDuration;
 #[cfg(feature = "imgtests")]
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 #[cfg(feature = "imgtests")]
