@@ -1,8 +1,12 @@
+use crate::avm2::{
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
@@ -19,6 +23,7 @@ pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, TextStatic>,
     render_settings: TextRenderSettings,
+    avm2_object: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> Text<'gc> {
@@ -42,6 +47,7 @@ impl<'gc> Text<'gc> {
                     },
                 ),
                 render_settings: Default::default(),
+                avm2_object: None,
             },
         ))
     }
@@ -219,6 +225,41 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         }
 
         false
+    }
+
+    fn post_instantiation(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _init_object: Option<crate::avm1::Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        if context.is_action_script_3() {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let statictext = activation.avm2().classes().statictext;
+            match Avm2StageObject::for_display_object_childless(
+                &mut activation,
+                (*self).into(),
+                statictext,
+            ) {
+                Ok(object) => {
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                }
+                Err(e) => log::error!("Got error when creating AVM2 side of Text: {}", e),
+            }
+        }
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .avm2_object
+            .map(|o| o.into())
+            .unwrap_or(Avm2Value::Undefined)
+    }
+
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).avm2_object = Some(to);
     }
 }
 

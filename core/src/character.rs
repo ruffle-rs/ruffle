@@ -12,7 +12,10 @@ pub enum Character<'gc> {
     EditText(EditText<'gc>),
     Graphic(Graphic<'gc>),
     MovieClip(MovieClip<'gc>),
-    Bitmap(Bitmap<'gc>),
+    Bitmap {
+        bitmap: Bitmap<'gc>,
+        initial_data: Vec<i32>,
+    },
     Avm1Button(Avm1Button<'gc>),
     Avm2Button(Avm2Button<'gc>),
     Font(Font<'gc>),

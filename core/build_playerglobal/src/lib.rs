@@ -20,6 +20,9 @@ const RUFFLE_METADATA_NAME: &str = "Ruffle";
 // Indicates that we should generate a reference to an instance allocator
 // method (used as a metadata key with `Ruffle` metadata)
 const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
+// Indicates that we should generate a reference to a native initializer
+// method (used as a metadata key with `Ruffle` metadata)
+const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
 
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
@@ -120,10 +123,22 @@ fn flash_to_rust_path(path: &str) -> String {
     let components = path
         .split('.')
         .map(|component| {
+            // Special-case this so that it matches the Flash namespace
+            if component == "display3D" {
+                return component.to_string();
+            }
+
+            let mut without_boundaries = vec![Boundary::DigitUpper];
+            // Special case for classes ending in '3D' - we want to ave something like
+            // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
+            if !component.ends_with("3D") {
+                // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
+                without_boundaries.extend(&[Boundary::UpperDigit, Boundary::LowerDigit]);
+            }
+
             component
                 .from_case(Case::Camel)
-                // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                .without_boundaries(&[Boundary::UpperDigit, Boundary::LowerDigit])
+                .without_boundaries(&without_boundaries)
                 .to_case(Case::Snake)
         })
         .collect::<Vec<_>>();
@@ -250,7 +265,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
     let none_tokens = quote! { None };
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
-    let mut rust_instance_allocators = vec![none_tokens; abc.classes.len()];
+    let mut rust_instance_allocators = vec![none_tokens.clone(); abc.classes.len()];
+    let mut rust_native_instance_initializers = vec![none_tokens; abc.classes.len()];
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
         let method_id = match trait_.kind {
@@ -301,8 +317,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             &abc.constant_pool.multinames[class_name_idx as usize - 1],
         );
 
-        let method_name = "::".to_string() + &flash_to_rust_path(class_name) + "_allocator";
-
+        let instance_allocator_method_name =
+            "::".to_string() + &flash_to_rust_path(class_name) + "_allocator";
+        let native_instance_init_method_name = "::native_instance_init".to_string();
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name = &abc.constant_pool.strings[metadata.name.0 as usize - 1];
@@ -323,8 +340,23 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     (None, METADATA_INSTANCE_ALLOCATOR) => {
                         // This results in a path of the form
                         // `crate::avm2::globals::<path::to::class>::<class_allocator>`
-                        rust_instance_allocators[class_id as usize] =
-                            rust_method_name_and_path(&abc, trait_, None, "", &method_name);
+                        rust_instance_allocators[class_id as usize] = rust_method_name_and_path(
+                            &abc,
+                            trait_,
+                            None,
+                            "",
+                            &instance_allocator_method_name,
+                        );
+                    }
+                    (None, METADATA_NATIVE_INSTANCE_INIT) => {
+                        rust_native_instance_initializers[class_id as usize] =
+                            rust_method_name_and_path(
+                                &abc,
+                                trait_,
+                                None,
+                                "",
+                                &native_instance_init_method_name,
+                            )
                     }
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }
@@ -382,6 +414,14 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         // load it into Ruffle.
         pub const NATIVE_INSTANCE_ALLOCATOR_TABLE: &[Option<(&'static str, crate::avm2::class::AllocatorFn)>] = &[
             #(#rust_instance_allocators,)*
+        ];
+
+        // This is very similar to `NATIVE_METHOD_TABLE`, but we have one entry per
+        // class, rather than per method. When an entry is `Some(fn_ptr)`, we use
+        // `fn_ptr` as the native initializer for the corresponding class when we
+        // load it into Ruffle.
+        pub const NATIVE_INSTANCE_INIT_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
+            #(#rust_native_instance_initializers,)*
         ];
     }
     .to_string();

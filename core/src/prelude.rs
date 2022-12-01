@@ -1,7 +1,6 @@
 pub use crate::avm2::Value as Avm2Value;
 pub use crate::display_object::{
-    DisplayObject, DisplayObjectContainer, HitTestOptions, Lists, TDisplayObject,
-    TDisplayObjectContainer,
+    DisplayObject, DisplayObjectContainer, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };
 pub use log::{error, info, trace, warn};
 pub use ruffle_render::bounding_box::BoundingBox;

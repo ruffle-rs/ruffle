@@ -225,13 +225,13 @@ impl<'gc> Multiname<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         let name = if self.has_lazy_name() {
-            Some(activation.avm2().pop().coerce_to_string(activation)?)
+            Some(activation.pop_stack().coerce_to_string(activation)?)
         } else {
             self.name
         };
 
         let ns = if self.has_lazy_ns() {
-            let ns_value = activation.avm2().pop();
+            let ns_value = activation.pop_stack();
             let ns = ns_value.as_namespace()?;
             NamespaceSet::single(*ns)
         } else {

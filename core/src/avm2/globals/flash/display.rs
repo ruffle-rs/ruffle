@@ -15,3 +15,4 @@ pub mod shape;
 pub mod simplebutton;
 pub mod sprite;
 pub mod stage;
+pub mod stage_3d;

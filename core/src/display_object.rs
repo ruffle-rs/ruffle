@@ -1,7 +1,8 @@
 use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Multiname as Avm2Multiname, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, ArrayStorage as Avm2ArrayStorage, Avm2, Error as Avm2Error,
+    EventObject as Avm2EventObject, Multiname as Avm2Multiname, Object as Avm2Object,
+    TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -35,9 +36,7 @@ mod text;
 mod video;
 
 use crate::avm1::Activation;
-pub use crate::display_object::container::{
-    DisplayObjectContainer, Lists, TDisplayObjectContainer,
-};
+pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
@@ -61,6 +60,7 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     transform: Transform,
     name: AvmString<'gc>,
+    filters: Avm2ArrayStorage<'gc>,
     clip_depth: Depth,
 
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
@@ -124,6 +124,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             depth: Default::default(),
             transform: Default::default(),
             name: Default::default(),
+            filters: Avm2ArrayStorage::new(0),
             clip_depth: Default::default(),
             rotation: Degrees::from_radians(0.0),
             scale_x: Percent::from_unit(1.0),
@@ -179,7 +180,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     pub fn set_matrix(&mut self, matrix: Matrix) {
         self.transform.matrix = matrix;
-        self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
+        self.set_scale_rotation_cached(false);
     }
 
     pub fn color_transform(&self) -> &ColorTransform {
@@ -216,10 +217,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     /// Calculating these requires heavy trig ops, so we only do it when `_xscale`, `_yscale` or
     /// `_rotation` is accessed.
     fn cache_scale_rotation(&mut self) {
-        if !self
-            .flags
-            .contains(DisplayObjectFlags::SCALE_ROTATION_CACHED)
-        {
+        if !self.scale_rotation_cached() {
             let (a, b, c, d) = (
                 f64::from(self.transform.matrix.a),
                 f64::from(self.transform.matrix.b),
@@ -248,7 +246,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.scale_x = Percent::from_unit(scale_x);
             self.scale_y = Percent::from_unit(scale_y);
             self.skew = rotation_y - rotation_x;
-            self.flags |= DisplayObjectFlags::SCALE_ROTATION_CACHED;
         }
     }
 
@@ -312,6 +309,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.name = name;
     }
 
+    fn filters(&self) -> Avm2ArrayStorage<'gc> {
+        Avm2ArrayStorage::from_storage(self.filters.iter().collect())
+    }
+
+    fn set_filters(&mut self, filters: Avm2ArrayStorage<'gc>) {
+        self.filters = filters;
+    }
+
     fn alpha(&self) -> f64 {
         f64::from(self.color_transform().a_mult)
     }
@@ -351,6 +356,19 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_removed(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::REMOVED, value);
+    }
+
+    fn scale_rotation_cached(&self) -> bool {
+        self.flags
+            .contains(DisplayObjectFlags::SCALE_ROTATION_CACHED)
+    }
+
+    fn set_scale_rotation_cached(&mut self, set_flag: bool) {
+        if set_flag {
+            self.flags |= DisplayObjectFlags::SCALE_ROTATION_CACHED;
+        } else {
+            self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
+        }
     }
 
     pub fn sound_transform(&self) -> &SoundTransform {
@@ -596,6 +614,14 @@ pub trait TDisplayObject<'gc>:
     fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
     fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>>;
 
+    /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
+    /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
+    fn set_scale_rotation_cached(&self, gc_context: MutationContext<'gc, '_>) {
+        if self.swf_version() >= 5 {
+            self.base_mut(gc_context).set_scale_rotation_cached(true);
+        }
+    }
+
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth {
         self.base().depth()
@@ -755,37 +781,46 @@ pub trait TDisplayObject<'gc>:
     /// The rotation in degrees this display object in local space.
     /// Returned by the `_rotation`/`rotation` ActionScript properties.
     fn rotation(&self, gc_context: MutationContext<'gc, '_>) -> Degrees {
-        self.base_mut(gc_context).rotation()
+        let degrees = self.base_mut(gc_context).rotation();
+        self.set_scale_rotation_cached(gc_context);
+        degrees
     }
 
     /// Sets the rotation in degrees this display object in local space.
     /// Set by the `_rotation`/`rotation` ActionScript properties.
     fn set_rotation(&self, gc_context: MutationContext<'gc, '_>, radians: Degrees) {
         self.base_mut(gc_context).set_rotation(radians);
+        self.set_scale_rotation_cached(gc_context);
     }
 
     /// The X axis scale for this display object in local space.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
-        self.base_mut(gc_context).scale_x()
+        let percent = self.base_mut(gc_context).scale_x();
+        self.set_scale_rotation_cached(gc_context);
+        percent
     }
 
     /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_x(value);
+        self.set_scale_rotation_cached(gc_context);
     }
 
     /// The Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn scale_y(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
-        self.base_mut(gc_context).scale_y()
+        let percent = self.base_mut(gc_context).scale_y();
+        self.set_scale_rotation_cached(gc_context);
+        percent
     }
 
     /// Sets the Y axis scale for this display object in local space.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_y(value);
+        self.set_scale_rotation_cached(gc_context);
     }
 
     /// Gets the pixel width of the AABB containing this display object in local space.
@@ -902,6 +937,14 @@ pub trait TDisplayObject<'gc>:
     }
     fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: AvmString<'gc>) {
         self.base_mut(gc_context).set_name(name)
+    }
+
+    fn filters(&self) -> Avm2ArrayStorage<'gc> {
+        self.base().filters()
+    }
+
+    fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Avm2ArrayStorage<'gc>) {
+        self.base_mut(gc_context).set_filters(filters)
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
@@ -1621,7 +1664,7 @@ bitflags! {
         const PLACED_BY_SCRIPT         = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
-        /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        /// When this flag is set, attempts to change the object's name from AVM2 throw an exception.
         const INSTANTIATED_BY_TIMELINE = 1 << 5;
 
         /// Whether this object is a "root", the top-most display object of a loaded SWF or Bitmap.

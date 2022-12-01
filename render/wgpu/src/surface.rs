@@ -7,7 +7,7 @@ use crate::surface::Surface::{Direct, DirectSrgb, Resolve, ResolveSrgb};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
 use crate::{
-    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, RegistryData,
+    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, Texture,
     TextureTransforms, Transforms, UniformBuffer,
 };
 use fnv::FnvHashMap;
@@ -387,7 +387,7 @@ impl Surface {
         globals: &mut Globals,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
-        bitmap_registry: &FnvHashMap<BitmapHandle, RegistryData>,
+        bitmap_registry: &FnvHashMap<BitmapHandle, Texture>,
         commands: CommandList,
     ) -> Vec<wgpu::CommandBuffer> {
         let label = create_debug_label!("Draw encoder");

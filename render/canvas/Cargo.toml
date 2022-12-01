@@ -12,6 +12,7 @@ ruffle_web_common = { path = "../../web/common" }
 wasm-bindgen = "=0.2.83"
 fnv = "1.0.7"
 ruffle_render = { path = "..", features = ["web"] }
+gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 swf = { path = "../../swf" }
 
 [dependencies.web-sys]

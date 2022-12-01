@@ -6,23 +6,23 @@ edition.workspace = true
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = { version = "4.0.26", features = ["derive"] }
+clap = { version = "4.0.27", features = ["derive"] }
 cpal = "0.14.1"
 ruffle_core = { path = "../core", features = ["audio", "symphonia", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-env_logger = { version = "0.9", default-features = false, features = ["humantime"] }
+env_logger = { version = "0.10", default-features = false, features = ["humantime"] }
 generational-arena = "0.2.8"
 log = "0.4"
 winit = "0.27.5"
 webbrowser = "0.8.2"
 url = "2.3.1"
-clipboard = "0.5.0"
+arboard = "3.2.0"
 dirs = "4.0"
 isahc = "1.7.2"
 rfd = "0.10.0"
 anyhow = "1.0"
-bytemuck = "1.7.2"
+bytemuck = "1.12.3"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"

@@ -116,7 +116,7 @@ impl<'gc> StageObject<'gc> {
                     .unwrap_or(Value::Undefined),
             );
         } else if name.eq_with_case(b"_global", case_sensitive) {
-            return Some(activation.context.avm1.global_object());
+            return Some(activation.context.avm1.global_object().into());
         }
 
         // Resolve level names `_levelN`.
@@ -839,7 +839,13 @@ fn drop_target<'gc>(
     this.as_movie_clip()
         .and_then(|mc| mc.drop_target())
         .map_or_else(
-            || "".into(),
+            || {
+                if activation.swf_version() < 6 {
+                    Value::Undefined
+                } else {
+                    "".into()
+                }
+            },
             |drop_target| {
                 AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
             },

@@ -1,6 +1,9 @@
 use fnv::FnvHashMap;
+use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{
+    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
+};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
@@ -169,30 +172,6 @@ impl BitmapData {
             canvas,
             context,
         })
-    }
-
-    fn get_pixels(&self) -> Option<Bitmap> {
-        if let Ok(bitmap_pixels) =
-            self.context
-                .get_image_data(0.0, 0.0, self.width().into(), self.height().into())
-        {
-            Some(Bitmap::new(
-                self.width(),
-                self.height(),
-                BitmapFormat::Rgba,
-                bitmap_pixels.data().to_vec(),
-            ))
-        } else {
-            None
-        }
-    }
-
-    fn width(&self) -> u32 {
-        self.bitmap.width()
-    }
-
-    fn height(&self) -> u32 {
-        self.bitmap.height()
     }
 }
 
@@ -458,11 +437,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands.execute(self);
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        let bitmap = &self.bitmaps[&bitmap];
-        bitmap.get_pixels()
-    }
-
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
@@ -490,6 +464,18 @@ impl RenderBackend for WebCanvasRenderBackend {
                 .map_err(Error::JavascriptError)?,
         );
         Ok(())
+    }
+
+    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error> {
+        Err(Error::Unimplemented)
+    }
+    fn context3d_present<'gc>(
+        &mut self,
+        _context: &mut dyn Context3D,
+        _commands: Vec<Context3DCommand<'gc>>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        Err(Error::Unimplemented)
     }
 }
 

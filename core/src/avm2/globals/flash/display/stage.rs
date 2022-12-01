@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
@@ -699,6 +700,29 @@ pub fn set_quality<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `stage3Ds`'s getter
+pub fn stage3ds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(stage) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        let storage = ArrayStorage::from_storage(
+            stage
+                .stage3ds()
+                .iter()
+                .map(|obj| Some(Value::Object(*obj)))
+                .collect(),
+        );
+        let stage3ds_array = ArrayObject::from_storage(activation, storage)?;
+        return Ok(stage3ds_array.into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -807,6 +831,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             None,
         ),
         ("quality", Some(quality), Some(set_quality)),
+        ("stage3Ds", Some(stage3ds), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

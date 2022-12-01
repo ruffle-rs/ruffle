@@ -570,6 +570,20 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Like `as_number`, but for `i32`
+    pub fn as_integer(&self, mc: MutationContext<'gc, '_>) -> Result<i32, Error<'gc>> {
+        match self {
+            Value::Object(num) => match num.value_of(mc)? {
+                Value::Number(num) => Ok(num as i32),
+                Value::Integer(num) => Ok(num),
+                _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+            },
+            Value::Number(num) => Ok(*num as i32),
+            Value::Integer(num) => Ok(*num),
+            _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+        }
+    }
+
     /// Yields `true` if the given value is an unboxed primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is

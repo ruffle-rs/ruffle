@@ -79,14 +79,19 @@ impl VideoBackend for SoftwareVideoBackend {
 
         let frame = stream.decoder.decode_frame(encoded_frame)?;
         let handle = if let Some(bitmap) = stream.bitmap {
-            renderer.update_texture(bitmap, frame.width.into(), frame.height.into(), frame.rgba)?;
+            renderer.update_texture(
+                bitmap,
+                frame.width.into(),
+                frame.height.into(),
+                frame.rgba.clone(),
+            )?;
             bitmap
         } else {
             let bitmap = Bitmap::new(
                 frame.width.into(),
                 frame.height.into(),
                 BitmapFormat::Rgba,
-                frame.rgba,
+                frame.rgba.clone(),
             );
             renderer.register_bitmap(bitmap)?
         };

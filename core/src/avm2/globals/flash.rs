@@ -2,6 +2,8 @@
 
 pub mod crypto;
 pub mod display;
+#[allow(non_snake_case)]
+pub mod display3D;
 pub mod events;
 pub mod external;
 pub mod geom;

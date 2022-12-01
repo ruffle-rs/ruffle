@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
 
@@ -24,10 +24,10 @@ pub struct Avm1<'gc> {
 
     /// The constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
+    constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
-    /// The global object.
-    globals: Object<'gc>,
+    /// The global scope (pre-allocated so that it can be reused by fresh `Activation`s).
+    global_scope: Gc<'gc, Scope<'gc>>,
 
     /// System built-ins that we use internally to construct new objects.
     prototypes: avm1::globals::SystemPrototypes<'gc>,
@@ -77,8 +77,8 @@ impl<'gc> Avm1<'gc> {
 
         Self {
             player_version,
-            constant_pool: GcCell::allocate(gc_context, vec![]),
-            globals,
+            constant_pool: Gc::allocate(gc_context, vec![]),
+            global_scope: Gc::allocate(gc_context, Scope::from_global_object(globals)),
             prototypes,
             broadcaster_functions,
             display_properties: stage_object::DisplayPropertyMap::new(gc_context),
@@ -115,21 +115,19 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Actions Parent]"),
-            globals,
             active_clip,
         );
 
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             parent_activation.context.gc_context,
             Scope::new(
-                parent_activation.scope_cell(),
+                parent_activation.scope(),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -166,13 +164,13 @@ impl<'gc> Avm1<'gc> {
             Value::Object(o) => o,
             _ => panic!("No script object for display object"),
         };
-        let global_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             action_context.gc_context,
-            Scope::from_global_object(action_context.avm1.global_object_cell()),
-        );
-        let child_scope = GcCell::allocate(
-            action_context.gc_context,
-            Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
+            Scope::new(
+                action_context.avm1.global_scope,
+                scope::ScopeClass::Target,
+                clip_obj,
+            ),
         );
         let constant_pool = action_context.avm1.constant_pool;
         let mut activation = Activation::from_action(
@@ -201,21 +199,19 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Init Parent]"),
-            globals,
             active_clip,
         );
 
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
-        let child_scope = GcCell::allocate(
+        let child_scope = Gc::allocate(
             parent_activation.context.gc_context,
             Scope::new(
-                parent_activation.scope_cell(),
+                parent_activation.scope(),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -254,11 +250,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let globals = context.avm1.global_object_cell();
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root(name.to_string()),
-            globals,
             active_clip,
         );
 
@@ -272,16 +266,16 @@ impl<'gc> Avm1<'gc> {
         method: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
-        let global = context.avm1.global_object_cell();
-
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[System Listeners]"),
-            global,
             active_clip,
         );
 
-        let broadcaster = global
+        let broadcaster = activation
+            .context
+            .avm1
+            .global_object()
             .get(broadcaster_name, &mut activation)
             .unwrap()
             .coerce_to_object(&mut activation);
@@ -336,14 +330,14 @@ impl<'gc> Avm1<'gc> {
         value
     }
 
-    /// Obtain the value of `_global`.
-    pub fn global_object(&self) -> Value<'gc> {
-        Value::Object(self.globals)
+    /// Obtain a reference to `_global`.
+    pub fn global_object(&self) -> Object<'gc> {
+        self.global_scope.locals_cell()
     }
 
-    /// Obtain a reference to `_global`.
-    pub fn global_object_cell(&self) -> Object<'gc> {
-        self.globals
+    /// Obtain a reference to the global scope.
+    pub fn global_scope(&self) -> Gc<'gc, Scope<'gc>> {
+        self.global_scope
     }
 
     /// Obtain system built-in prototypes for this instance.
@@ -353,13 +347,13 @@ impl<'gc> Avm1<'gc> {
 
     /// Obtains the constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    pub fn constant_pool(&self) -> GcCell<'gc, Vec<Value<'gc>>> {
+    pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {
         self.constant_pool
     }
 
     /// Sets the constant pool to use for new activations from code sources that
     /// don't close over the constant pool they were defined with.
-    pub fn set_constant_pool(&mut self, constant_pool: GcCell<'gc, Vec<Value<'gc>>>) {
+    pub fn set_constant_pool(&mut self, constant_pool: Gc<'gc, Vec<Value<'gc>>>) {
         self.constant_pool = constant_pool;
     }
 

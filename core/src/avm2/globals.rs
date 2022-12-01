@@ -112,7 +112,13 @@ pub struct SystemClasses<'gc> {
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
+    pub statictext: ClassObject<'gc>,
     pub textlinemetrics: ClassObject<'gc>,
+    pub stage3d: ClassObject<'gc>,
+    pub context3d: ClassObject<'gc>,
+    pub indexbuffer3d: ClassObject<'gc>,
+    pub vertexbuffer3d: ClassObject<'gc>,
+    pub program3d: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -192,7 +198,13 @@ impl<'gc> SystemClasses<'gc> {
             ioerror: object,
             eoferror: object,
             uncaughterrorevents: object,
+            statictext: object,
             textlinemetrics: object,
+            stage3d: object,
+            context3d: object,
+            indexbuffer3d: object,
+            vertexbuffer3d: object,
+            program3d: object,
         }
     }
 }
@@ -658,6 +670,7 @@ fn load_playerglobal<'gc>(
 ) -> Result<(), Error<'gc>> {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
 
     let movie =
         SwfMovie::from_data(PLAYERGLOBAL, None, None).expect("playerglobal.swf should be valid");
@@ -709,6 +722,11 @@ fn load_playerglobal<'gc>(
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "Scene", scene),
+            ("flash.display", "Stage3D", stage3d),
+            ("flash.display3D", "Context3D", context3d),
+            ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
+            ("flash.display3D", "Program3D", program3d),
+            ("flash.display3D", "VertexBuffer3D", vertexbuffer3d),
             (
                 "flash.errors",
                 "IllegalOperationError",
@@ -732,6 +750,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.utils", "ByteArray", bytearray),
+            ("flash.text", "StaticText", statictext),
             ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
     );

@@ -95,6 +95,8 @@ pub trait AudioBackend: Downcast {
     /// Set the volume transform for a sound instance.
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
 
+    fn get_sound_peak(&mut self, instance: SoundInstanceHandle) -> Option<[f32; 2]>;
+
     // TODO: Eventually remove this/move it to library.
     fn is_loading_complete(&self) -> bool {
         true
@@ -239,6 +241,10 @@ impl AudioBackend for NullAudioBackend {
     }
 
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
+
+    fn get_sound_peak(&mut self, _instance: SoundInstanceHandle) -> Option<[f32; 2]> {
+        None
+    }
 
     fn volume(&self) -> f32 {
         self.volume
