@@ -62,47 +62,29 @@ jobs:
           shared-key: "desktop"
 
       - name: Check formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Lint AS3 playerglobals 
         if: runner.os == 'Linux' && matrix.rust_version == 'stable'
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: -p build_playerglobal -- lint
+        run: cargo run -p build_playerglobal -- lint
 
       - name: Check clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all --all-features --tests -- -D warnings
+        run: cargo clippy --all --all-features --tests -- -D warnings
 
       - name: Check documentation
-        uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --no-deps --all-features
+        run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
         if: runner.os == 'Linux' || runner.os == 'Windows'
-        uses: actions-rs/cargo@v1
+        run: cargo test --locked --features imgtests
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
-        with:
-          command: test
-          args: --locked --features imgtests
 
       - name: Run tests without image tests
         if: ${{ !(runner.os == 'Linux' || runner.os == 'Windows') }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked
+        run: cargo test --locked
 
       - name: Upload images
         if: failure()
