@@ -43,11 +43,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust_version }}
-          override: true
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
