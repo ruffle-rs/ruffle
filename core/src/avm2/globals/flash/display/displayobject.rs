@@ -5,11 +5,11 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -239,23 +239,67 @@ pub fn set_scale_x<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `filters`'s getter.
 pub fn filters<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObject.filters getter - not yet implemented");
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        return Ok(ArrayObject::from_storage(activation, dobj.filters())?.into());
+    }
     Ok(ArrayObject::empty(activation)?.into())
 }
 
-/// Implements `filters`'s setter.
-pub fn set_filters<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+fn build_argument_type_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObject.filters setter - not yet implemented");
+    Err(Error::AvmError(crate::avm2::error::argument_error(
+        activation,
+        "Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.",
+        2005,
+    )?))
+}
+
+pub fn set_filters<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let new_filters = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+        if matches!(new_filters, Value::Undefined | Value::Null) {
+            let new_storage = ArrayStorage::new(0);
+            dobj.set_filters(activation.context.gc_context, new_storage);
+        } else {
+            let new_filters = new_filters.coerce_to_object(activation)?;
+
+            if let Some(filters_array) = new_filters.as_array_object() {
+                if let Some(filters_storage) = filters_array.as_array_storage() {
+                    let filter_class =
+                        Multiname::new(Namespace::Package("flash.filters".into()), "BitmapFilter");
+
+                    let filter_class_object = activation.resolve_class(&filter_class)?;
+
+                    for filter in filters_storage.iter().flatten() {
+                        if matches!(filter, Value::Undefined | Value::Null) {
+                            return build_argument_type_error(activation);
+                        } else {
+                            let filter_object = filter.coerce_to_object(activation)?;
+
+                            if !filter_object.is_of_type(filter_class_object, activation) {
+                                return build_argument_type_error(activation);
+                            }
+                        }
+                    }
+                    let new_storage = ArrayStorage::from_storage(filters_storage.iter().collect());
+
+                    dobj.set_filters(activation.context.gc_context, new_storage);
+                }
+            }
+        }
+    }
+
     Ok(Value::Undefined)
 }
 

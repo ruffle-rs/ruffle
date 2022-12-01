@@ -1,0 +1,17 @@
+///this.filters.length == 0
+true
+///this.filters === this.filters
+false
+///this.filters = [new BlurFilter()]
+///this.filters.length == 1
+true
+///this.filters = undefined
+///this.filters.length == 0
+true
+///this.filters = null
+///this.filters.length == 0
+true
+///this.filters = [1, 2, 3]
+Caught error: ArgumentError: Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.
+///this.filters = [new BlurFilter(), undefined]
+Caught error: ArgumentError: Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.
