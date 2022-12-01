@@ -109,7 +109,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -192,7 +192,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download aarch64 binary
         uses: actions/download-artifact@v2
@@ -297,7 +297,7 @@ jobs:
         demo: [false, true]
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -307,7 +307,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: "16"
           registry-url: https://registry.npmjs.org
@@ -424,7 +424,7 @@ jobs:
 
       - name: Clone web demo
         if: matrix.demo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -459,7 +459,7 @@ jobs:
 
       - name: Clone JS docs
         if: ${{ !matrix.demo }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -498,7 +498,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2
