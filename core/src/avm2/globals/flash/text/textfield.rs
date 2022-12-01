@@ -1122,6 +1122,125 @@ pub fn get_line_metrics<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn bottom_scroll_v<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.bottom_scroll().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn max_scroll_v<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.maxscroll().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn max_scroll_h<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.maxhscroll().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn scroll_v<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.scroll().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_scroll_v<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let input = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        this.set_scroll(input as f64, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn scroll_h<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.hscroll().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_scroll_h<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        // NOTE: The clamping behavior here is identical to AVM1.
+        // This is incorrect, SWFv9 uses more complex behavior and AS3 can only
+        // be present in v9 SWFs.
+        let input = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let clamped = input.clamp(0, this.maxhscroll() as i32);
+        this.set_hscroll(clamped as f64, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1153,6 +1272,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("border", Some(border), Some(set_border)),
         ("borderColor", Some(border_color), Some(set_border_color)),
+        ("bottomScrollV", Some(bottom_scroll_v), None),
         (
             "defaultTextFormat",
             Some(default_text_format),
@@ -1166,7 +1286,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("embedFonts", Some(embed_fonts), Some(set_embed_fonts)),
         ("htmlText", Some(html_text), Some(set_html_text)),
         ("length", Some(length), None),
+        ("maxScrollH", Some(max_scroll_h), None),
+        ("maxScrollV", Some(max_scroll_v), None),
         ("multiline", Some(multiline), Some(set_multiline)),
+        ("scrollH", Some(scroll_h), Some(set_scroll_h)),
+        ("scrollV", Some(scroll_v), Some(set_scroll_v)),
         ("selectable", Some(selectable), Some(set_selectable)),
         ("text", Some(text), Some(set_text)),
         ("textColor", Some(text_color), Some(set_text_color)),
