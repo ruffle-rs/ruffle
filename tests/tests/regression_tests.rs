@@ -375,6 +375,7 @@ swf_tests! {
     (as3_is_nan, "avm2/is_nan", 1),
     (as3_is_prototype_of, "avm2/is_prototype_of", 1),
     (as3_issue_5292, "avm2/issue_5292", 1),
+    (as3_issue_8630, "avm2/issue_8630", 1),
     (as3_istype, "avm2/istype", 1),
     (as3_istypelate_coerce, "avm2/istypelate_coerce", 1),
     (as3_istypelate, "avm2/istypelate", 1),
