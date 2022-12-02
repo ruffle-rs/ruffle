@@ -34,7 +34,7 @@
         "stylelint-prettier": "^2.0.0",
         "ts-loader": "^9.4.1",
         "typescript": "^4.8.2",
-        "wdio-chromedriver-service": "^7.3.2",
+        "wdio-chromedriver-service": "^8.0.0",
         "webpack": "^5.73.0",
         "webpack-cli": "^4.10.0"
     },
