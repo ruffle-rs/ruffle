@@ -52,7 +52,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Cache Cargo output
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@90429b3dea365e9a1b0cb82d7f98aabf3089dc63
         with:
           shared-key: "web"
 
