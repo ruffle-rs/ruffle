@@ -124,7 +124,10 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev
 
       - name: Cargo build
-        run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
@@ -162,7 +165,10 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
@@ -307,7 +313,10 @@ jobs:
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.83
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: wasm-bindgen-cli --version 0.2.83
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
