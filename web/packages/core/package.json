@@ -50,7 +50,7 @@
         "@typescript-eslint/eslint-plugin": "^5.45.0",
         "@typescript-eslint/parser": "^5.36.1",
         "eslint": "^8.24.0",
-        "eslint-plugin-jsdoc": "^39.3.4",
+        "eslint-plugin-jsdoc": "^39.6.4",
         "mocha": "^10.1.0",
         "replace-in-file": "^6.3.5",
         "shx": "^0.3.3",
