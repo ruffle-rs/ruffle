@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use crate::bitmaps::BitmapSamplers;
 use crate::descriptors::Quad;
 use crate::globals::Globals;

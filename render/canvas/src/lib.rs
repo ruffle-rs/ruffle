@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use fnv::FnvHashMap;
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;

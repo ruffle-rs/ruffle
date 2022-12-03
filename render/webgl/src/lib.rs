@@ -1,4 +1,5 @@
 #![allow(clippy::bool_to_int_with_if)]
+#![allow(clippy::uninlined_format_args)]
 
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
