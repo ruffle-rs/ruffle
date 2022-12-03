@@ -13,7 +13,7 @@ jobs:
     outputs:
       src: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - uses: dorny/paths-filter@v2
         id: filter
@@ -32,20 +32,17 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-latest]
-        include:
-          - rust_version: nightly
-            os: ubuntu-22.04
-          - rust_version: beta
-            os: ubuntu-22.04
+        os: [ubuntu-22.04]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: ${{ matrix.rust_version }}
+          override: true
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
@@ -57,38 +54,23 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers
 
       - name: Cache Cargo output
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@90429b3dea365e9a1b0cb82d7f98aabf3089dc63
         with:
           shared-key: "desktop"
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Lint AS3 playerglobals 
-        if: runner.os == 'Linux' && matrix.rust_version == 'stable'
-        run: cargo run -p build_playerglobal -- lint
-
-      - name: Check clippy
-        run: cargo clippy --all --all-features --tests -- -D warnings
-
-      - name: Check documentation
-        run: cargo doc --no-deps --all-features
-        env:
-          RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        if: runner.os == 'Windows'
-        run: cargo test --locked --features imgtests
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
-
-      - name: Run tests without image tests
-        if: ${{ !(runner.os == 'Windows') }}
-        run: cargo test --locked
+        run: |
+          ulimit -c unlimited
+          sudo cargo test --locked --features imgtests
+          sudo chmod -R +rwx /cores/*
+          sudo gdb cores/* --eval-command bt
 
       - name: Upload images
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: swf_images
           path: tests*/**/actual*.png
