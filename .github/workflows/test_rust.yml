@@ -64,7 +64,7 @@ jobs:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
         run: |
           ulimit -c unlimited
-          sudo cargo test --locked --features imgtests
+          sudo /home/runner/.cargo/bin/cargo test --locked --features imgtests
           sudo chmod -R +rwx /cores/*
           sudo gdb cores/* --eval-command bt
 
