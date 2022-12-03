@@ -1510,4 +1510,3 @@ fn web_key_to_codepoint(key: &str) -> Option<char> {
         }
     }
 }
-
