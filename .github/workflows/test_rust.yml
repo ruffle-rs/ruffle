@@ -66,7 +66,7 @@ jobs:
           ulimit -c unlimited
           sudo /home/runner/.cargo/bin/cargo test --locked --features imgtests
           sudo chmod -R +rwx /cores/*
-          sudo gdb cores/* --eval-command bt
+          sudo gdb /cores/* --eval-command bt
 
       - name: Upload images
         if: failure()
