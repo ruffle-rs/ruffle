@@ -56,7 +56,8 @@ jobs:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
         run: |
           ulimit -c unlimited
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sudo sh
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh
+          sudo sh ./rustup.sh -y
           sudo $HOME/.cargo/bin/cargo test --locked --features imgtests
           sudo chmod -R +rwx /cores/*
           sudo gdb /cores/* --eval-command bt
