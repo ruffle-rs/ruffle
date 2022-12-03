@@ -77,13 +77,13 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        if: runner.os == 'Linux' || runner.os == 'Windows'
+        if: runner.os == 'Windows'
         run: cargo test --locked --features imgtests
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
       - name: Run tests without image tests
-        if: ${{ !(runner.os == 'Linux' || runner.os == 'Windows') }}
+        if: ${{ !(runner.os == 'Windows') }}
         run: cargo test --locked
 
       - name: Upload images
