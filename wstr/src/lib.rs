@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::uninlined_format_args)]
 //! Provides UCS2 string types for usage in AVM1 and AVM2.
 //!
 //! Internally, these types are represeted by a sequence of 1-byte or 2-bytes (wide) code units,

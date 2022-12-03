@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 //! Tests running SWFs in a headless Ruffle instance.
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
