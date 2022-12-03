@@ -37,14 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust_version }}
-          override: true
-          components: rustfmt, clippy
-
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -64,7 +56,8 @@ jobs:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
         run: |
           ulimit -c unlimited
-          sudo /home/runner/.cargo/bin/cargo test --locked --features imgtests
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sudo sh
+          sudo $HOME/.cargo/bin/cargo test --locked --features imgtests
           sudo chmod -R +rwx /cores/*
           sudo gdb /cores/* --eval-command bt
 
