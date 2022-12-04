@@ -3,7 +3,6 @@
 
 use bytemuck::{Pod, Zeroable};
 
-use downcast_rs::Downcast;
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
@@ -163,7 +162,7 @@ impl Drop for RegistryData {
 impl BitmapHandleImpl for RegistryData {}
 
 fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
-    handle.as_any().downcast_ref::<RegistryData>().unwrap()
+    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;

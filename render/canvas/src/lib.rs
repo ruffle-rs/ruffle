@@ -2,13 +2,12 @@
 
 use std::sync::Arc;
 
-use downcast_rs::Downcast;
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
@@ -143,10 +142,10 @@ struct BitmapData {
     context: CanvasRenderingContext2d,
 }
 
-impl ruffle_render::bitmap::BitmapHandleImpl for BitmapData {}
+impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
-    handle.as_any().downcast_ref::<BitmapData>().unwrap()
+    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
 }
 
 impl BitmapData {

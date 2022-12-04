@@ -46,7 +46,7 @@ mod surface;
 impl BitmapHandleImpl for Texture {}
 
 pub fn as_texture(handle: &BitmapHandle) -> &Texture {
-    handle.0.as_any().downcast_ref().unwrap()
+    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Enum)]
