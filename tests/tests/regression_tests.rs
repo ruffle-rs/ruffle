@@ -318,6 +318,7 @@ swf_tests! {
     (as3_eventdispatcher_tostring, "avm2/eventdispatcher_tostring", 1),
     (as3_eventdispatcher_willtrigger, "avm2/eventdispatcher_willtrigger", 1),
     (as3_falsiness, "avm2/falsiness", 1),
+    (as3_filefilter_properties, "avm2/filefilter_properties", 1),
     (as3_font_embedded, "avm2/font_embedded", 1),
     (as3_font_hasglyphs, "avm2/font_hasglyphs", 1),
     (as3_framelabel_constr, "avm2/framelabel_constr", 5),

@@ -1,0 +1,3 @@
+Images (*.jpg;*.gif;*.png)
+*.jpg;*.gif;*.png
+null
