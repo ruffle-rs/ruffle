@@ -370,6 +370,7 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// call the wrong handlers.
 pub fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
+    dispatcher: Object<'gc>,
     target: Object<'gc>,
     event: Object<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -379,7 +380,7 @@ pub fn dispatch_event_to_target<'gc>(
         event.as_event().unwrap().event_type(),
         target
     );
-    let dispatch_list = target
+    let dispatch_list = dispatcher
         .get_property(
             &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
             activation,
@@ -463,7 +464,7 @@ pub fn dispatch_event<'gc>(
             break;
         }
 
-        dispatch_event_to_target(activation, *ancestor, event)?;
+        dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
     }
 
     event
@@ -472,7 +473,7 @@ pub fn dispatch_event<'gc>(
         .set_phase(EventPhase::AtTarget);
 
     if !event.as_event().unwrap().is_propagation_stopped() {
-        dispatch_event_to_target(activation, target, event)?;
+        dispatch_event_to_target(activation, this, target, event)?;
     }
 
     event
@@ -486,7 +487,7 @@ pub fn dispatch_event<'gc>(
                 break;
             }
 
-            dispatch_event_to_target(activation, *ancestor, event)?;
+            dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
         }
     }
 

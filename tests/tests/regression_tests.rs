@@ -314,6 +314,7 @@ swf_tests! {
     (as3_eventdispatcher_dispatchevent_handlerorder, "avm2/eventdispatcher_dispatchevent_handlerorder", 1),
     (as3_eventdispatcher_dispatchevent_this, "avm2/eventdispatcher_dispatchevent_this", 1),
     (as3_eventdispatcher_dispatchevent, "avm2/eventdispatcher_dispatchevent", 1),
+    (as3_eventdispatcher_dispatchevent_indirect, "avm2/eventdispatcher_dispatchevent_indirect", 1),
     (as3_eventdispatcher_haseventlistener, "avm2/eventdispatcher_haseventlistener", 1),
     (as3_eventdispatcher_tostring, "avm2/eventdispatcher_tostring", 1),
     (as3_eventdispatcher_willtrigger, "avm2/eventdispatcher_willtrigger", 1),
