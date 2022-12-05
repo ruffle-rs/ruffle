@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 clap = { version = "4.0.27", features = ["derive"] }
-cpal = "0.14.1"
+cpal = "0.14.2"
 ruffle_core = { path = "../core", features = ["audio", "symphonia", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
