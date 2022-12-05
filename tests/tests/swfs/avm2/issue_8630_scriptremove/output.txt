@@ -1,0 +1,11 @@
+child instantiation
+child instantiation
+[object ChildMovieClip]
+[object ChildMovieClip]
+true
+true
+
+[object ChildMovieClip]
+null
+true
+false

@@ -920,7 +920,7 @@ impl<'gc> MovieClip<'gc> {
 
         // In AS3, no-op gotos have side effects that are visible to user code.
         // Hence, we have to run them anyway.
-        if frame != self.current_frame() || context.is_action_script_3() {
+        if frame != self.current_frame() {
             if self
                 .0
                 .read()
@@ -933,6 +933,15 @@ impl<'gc> MovieClip<'gc> {
             } else {
                 self.run_goto(context, frame, false);
             }
+        } else if context.is_action_script_3() {
+            // Pretend we actually did a goto, but don't do anything.
+            self.construct_frame(context);
+            self.frame_constructed(context);
+            self.avm2_root(context)
+                .unwrap_or_else(|| self.into())
+                .run_frame_scripts(context);
+
+            self.exit_frame(context);
         }
     }
 
