@@ -885,7 +885,7 @@ impl Player {
                     && self.input.is_key_down(KeyCode::Alt) =>
                 {
                     self.mutate_with_update_context(|context| {
-                        context.stage.display_render_tree(0);
+                        context.stage.display_render_tree();
                     });
                 }
                 _ => {}
