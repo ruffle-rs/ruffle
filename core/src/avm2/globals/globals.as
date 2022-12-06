@@ -163,6 +163,7 @@ include "flash/media/StageVideoAvailabilityReason.as"
 include "flash/media/VideoCodec.as"
 include "flash/media/VideoStatus.as"
 
+include "flash/net.as"
 include "flash/net/FileFilter.as"
 include "flash/net/FileReference.as"
 include "flash/net/FileReferenceList.as"
