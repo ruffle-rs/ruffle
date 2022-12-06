@@ -80,6 +80,18 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         Some(self.into())
     }
+
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.enter_frame(context);
+        }
+    }
+
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.construct_frame(context);
+        }
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
