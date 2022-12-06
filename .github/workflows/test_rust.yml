@@ -50,11 +50,7 @@ jobs:
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa -y
-          sudo apt-get update
-          sudo apt-get dist-upgrade
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers
+        run: sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
