@@ -18,7 +18,7 @@
         "message": "沒有活動標籤頁。"
     },
     "status_tabs_error": {
-        "message": "查找目前標籤頁時發生錯誤。"
+        "message": "尋找目前標籤頁時發生錯誤。"
     },
     "status_message_init": {
         "message": "在此標籤頁上檢查 Ruffle 狀態…"
@@ -55,5 +55,8 @@
     },
     "settings_saved": {
         "message": "設定完成"
+    },
+    "warn_on_unsupported_content": {
+        "message": "警告未支援項目"
     }
 }
