@@ -444,6 +444,9 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
+    #[cfg(not(feature = "avm_debug"))]
+    fn recurse_render_tree(&self, _depth: usize) {}
+
     #[cfg(feature = "avm_debug")]
     fn recurse_render_tree(&self, depth: usize) {
         for child in self.iter_render_list() {

@@ -1336,6 +1336,9 @@ pub trait TDisplayObject<'gc>:
         render_base((*self).into(), context)
     }
 
+    #[cfg(not(feature = "avm_debug"))]
+    fn display_render_tree(&self, _depth: usize) {}
+
     #[cfg(feature = "avm_debug")]
     fn display_render_tree(&self, depth: usize) {
         let self_str = format!("{:?}", self);
