@@ -1,5 +1,6 @@
 import * as utils from "./utils";
 import { Options, bindOptions } from "./common";
+import { buildInfo } from "ruffle-core";
 
 let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
 let savedOptions: Options;
@@ -123,6 +124,11 @@ window.addEventListener("DOMContentLoaded", () => {
         "status-indicator"
     ) as HTMLDivElement;
     statusText = document.getElementById("status-text") as HTMLSpanElement;
+
+    const versionText = document.getElementById(
+        "version-text"
+    ) as HTMLDivElement;
+    versionText.textContent = `Ruffle extension ${buildInfo.versionName}`;
 
     const optionsButton = document.getElementById(
         "options-button"

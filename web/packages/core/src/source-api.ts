@@ -1,6 +1,7 @@
 import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./register-element";
 import { RufflePlayer } from "./ruffle-player";
+import { buildInfo } from "./build-info";
 
 /**
  * Represents this particular version of Ruffle.
@@ -14,7 +15,7 @@ export const SourceAPI = {
     /**
      * The version of this particular API, as a string in a semver compatible format.
      */
-    version: "%VERSION_NUMBER%",
+    version: buildInfo.versionNumber,
 
     /**
      * Start up the polyfills.
