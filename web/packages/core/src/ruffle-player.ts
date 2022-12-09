@@ -14,6 +14,7 @@ import {
 import type { MovieMetadata } from "./movie-metadata";
 import type { InternalContextMenuItem } from "./context-menu";
 import { swfFileName } from "./swf-file-name";
+import { buildInfo } from "./build-info";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -864,7 +865,7 @@ export class RufflePlayer extends HTMLElement {
 
         const extensionString = this.isExtension ? "extension" : "";
         items.push({
-            text: `About Ruffle ${extensionString} (%VERSION_NAME%)`,
+            text: `About Ruffle ${extensionString} (buildInfo.versionName)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -1154,11 +1155,11 @@ export class RufflePlayer extends HTMLElement {
         );
 
         dataArray.push("\n# Ruffle Info\n");
-        dataArray.push(`Version: %VERSION_NUMBER%\n`);
-        dataArray.push(`Name: %VERSION_NAME%\n`);
-        dataArray.push(`Channel: %VERSION_CHANNEL%\n`);
-        dataArray.push(`Built: %BUILD_DATE%\n`);
-        dataArray.push(`Commit: %COMMIT_HASH%\n`);
+        dataArray.push(`Version: buildInfo.versionNumber\n`);
+        dataArray.push(`Name: buildInfo.versionName\n`);
+        dataArray.push(`Channel: buildInfo.versionChannel\n`);
+        dataArray.push(`Built: buildInfo.buildDate\n`);
+        dataArray.push(`Commit: buildInfo.commitHash\n`);
         dataArray.push(`Is extension: ${this.isExtension}\n`);
         dataArray.push("\n# Metadata\n");
         if (this.metadata) {
@@ -1238,7 +1239,7 @@ export class RufflePlayer extends HTMLElement {
 
         const errorText = errorArray.join("");
 
-        const buildDate = new Date("%BUILD_DATE%");
+        const buildDate = new Date(buildInfo.buildDate);
         const monthsPrior = new Date();
         monthsPrior.setMonth(monthsPrior.getMonth() - 6); // 6 months prior
         const isBuildOutdated = monthsPrior > buildDate;
@@ -1390,7 +1391,7 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
                 `;
                 if (isBuildOutdated) {
-                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: %BUILD_DATE%).</p>`;
+                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: buildInfo.buildDate).</p>`;
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
@@ -1415,7 +1416,7 @@ export class RufflePlayer extends HTMLElement {
                 if (!isBuildOutdated) {
                     errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
                 } else {
-                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: %BUILD_DATE%).</p>`;
+                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: buildInfo.buildDate).</p>`;
                 }
                 errorFooter = `
                     <li>${actionTag}</li>

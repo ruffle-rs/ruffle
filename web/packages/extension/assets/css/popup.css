@@ -22,6 +22,10 @@ button {
     color: black;
 }
 
+#version-text {
+    text-align: center;
+}
+
 #status-container {
     text-align: center;
     background: white;
