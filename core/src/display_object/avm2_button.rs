@@ -640,7 +640,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn self_bounds(&self) -> BoundingBox {
         // No inherent bounds; contains child DisplayObjects.
-        BoundingBox::default()
+        BoundingBox::empty()
     }
 
     fn hit_test_shape(
