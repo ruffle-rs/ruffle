@@ -2491,7 +2491,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     } else {
                         clip_depth = child.clip_depth();
                     }
-                } else if child.depth() > clip_depth
+                } else if child.depth() >= clip_depth
                     && child.hit_test_shape(context, point, options)
                 {
                     return true;
