@@ -243,6 +243,15 @@ pub fn flush<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn close<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("SharedObject.close - not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `SharedObject`'s class.
 /// NOTE: We currently always use AMF3 serialization.
 /// If you implement the `defaultObjectEncoding` or `objectEncoding`,
@@ -278,7 +287,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("getLocal", get_local)];
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("flush", flush)];
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("flush", flush), ("close", close)];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
     class
 }
