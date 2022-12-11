@@ -2744,7 +2744,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
-        if self.visible() && self.mouse_enabled() {
+        if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
 
             if let Some(masker) = self.masker() {
@@ -2753,7 +2753,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            if self.world_bounds().contains(point) {
+            // In AVM2, mouse_enabled should only impact the ability to select the current clip
+            // but it should still be possible to select any children where child.mouse_enabled() is
+            // true.
+            // InteractiveObject.mouseEnabled:
+            // "Any children of this instance on the display list are not affected."
+            if self.mouse_enabled() && self.world_bounds().contains(point) {
                 // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
@@ -2789,7 +2794,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 } else if result.is_none() {
                     if let Some(child) = child.as_interactive() {
                         result = child.mouse_pick(context, point, require_button_mode);
-                    } else if check_non_interactive && child.hit_test_shape(context, point, options)
+                    } else if check_non_interactive &&  self.mouse_enabled() &&
+                        child.hit_test_shape(context, point, options)
                     {
                         result = Some(this);
                     }
@@ -2804,8 +2810,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return result;
             }
 
-            // Check drawing.
-            if check_non_interactive {
+            // Check drawing, because this selects the current clip, it must have mouse enabled
+            if self.mouse_enabled() && check_non_interactive {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
                 if self.0.read().drawing.hit_test(point, &local_matrix) {
