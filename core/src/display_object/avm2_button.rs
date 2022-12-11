@@ -814,7 +814,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                     .as_interactive()
                     .and_then(|c| c.mouse_pick(context, point, require_button_mode));
                 if mouse_pick.is_some() {
-                    return mouse_pick;
+                    // Selecting a child of a button is equivalent to selecting the button itself
+                    return Some((*self).into());
                 }
             }
 
