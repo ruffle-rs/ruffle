@@ -11,14 +11,6 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
-    /// Create a zero-sized, valid BoundingBox
-    pub fn empty() -> Self {
-        Self {
-            valid: true,
-            .. Default::default()
-        }
-    }
-
     /// Clamps the given point inside this bounding box.
     pub fn clamp(&self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
         if self.valid {
