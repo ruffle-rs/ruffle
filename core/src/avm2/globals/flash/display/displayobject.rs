@@ -652,6 +652,10 @@ pub fn hit_test_point<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        if !dobj.is_on_stage(&mut activation.context) {
+            return Ok(false.into());
+        }
+
         let x = Twips::from_pixels(
             args.get(0)
                 .cloned()
