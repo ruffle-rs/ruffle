@@ -640,7 +640,21 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn self_bounds(&self) -> BoundingBox {
         // No inherent bounds; contains child DisplayObjects.
-        BoundingBox::empty()
+        BoundingBox::default()
+    }
+
+    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+        // Get self bounds
+        let mut bounds = self.self_bounds().transform(matrix);
+
+        // Add the bounds of the child, dictated by current state
+        let state = self.0.read().state;
+        if let Some(child) = self.get_state_child(state.into()) {
+            let child_bounds = child.bounds_with_transform(matrix);
+            bounds.union(&child_bounds);
+        }
+
+        bounds
     }
 
     fn hit_test_shape(
