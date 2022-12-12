@@ -836,8 +836,13 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
             let hit_area = self.0.read().hit_area;
             if let Some(hit_area) = hit_area {
-                // hit_area is not actually a child, so transform point into local space before passing it down.
-                let point = self.global_to_local(point);
+                //TODO: the if below should probably always be taken, why does the hit area
+                // sometimes have a parent?
+                let mut point = point;
+                if hit_area.parent().is_none() {
+                    // hit_area is not actually a child, so transform point into local space before passing it down.
+                    point = self.global_to_local(point);
+                }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                     return Some((*self).into());
                 }
