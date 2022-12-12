@@ -2794,8 +2794,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 } else if result.is_none() {
                     if let Some(child) = child.as_interactive() {
                         result = child.mouse_pick(context, point, require_button_mode);
-                    } else if check_non_interactive &&  self.mouse_enabled() &&
-                        child.hit_test_shape(context, point, options)
+                    } else if check_non_interactive
+                        && self.mouse_enabled()
+                        && child.hit_test_shape(context, point, options)
                     {
                         result = Some(this);
                     }
