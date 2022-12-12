@@ -2783,6 +2783,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 !require_button_mode || matches!(self.object2(), Avm2Value::Object(_));
 
             for child in self.iter_render_list().rev() {
+                // Clicking static text is ignored
+                if matches!(child, DisplayObject::Text(_)) {
+                    continue;
+                }
+
                 if child.clip_depth() > 0 {
                     if result.is_some() && child.clip_depth() >= hit_depth {
                         if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
