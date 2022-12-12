@@ -15,6 +15,6 @@ csv = "1.1"
 indicatif = "0.17"
 path-slash = "0.2.1"
 swf = { path = "../swf" }
-rayon = "1.6.0"
+rayon = "1.6.1"
 crossbeam-channel = "0.5"
 sha2 = "0.10.6"
