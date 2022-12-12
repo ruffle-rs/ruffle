@@ -475,6 +475,7 @@ swf_tests! {
     (as3_proxy_setproperty, "avm2/proxy_setproperty", 1),
     (as3_qname_constr_namespace, "avm2/qname_constr_namespace", 1),
     (as3_qname_constr, "avm2/qname_constr", 1),
+    (as3_qname_indexing, "avm2/qname_indexing", 1),
     (as3_qname_tostring, "avm2/qname_tostring", 1),
     (as3_qname_valueof, "avm2/qname_valueof", 1),
     (as3_rectangle, "avm2/rectangle", 1),
