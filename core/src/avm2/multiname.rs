@@ -3,6 +3,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{Object, Value};
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -220,12 +221,37 @@ impl<'gc> Multiname<'gc> {
         })
     }
 
+    #[inline(never)]
+    #[cold]
+    pub fn try_replace_with_qname(
+        &self,
+        obj: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Self> {
+        if let Object::QNameObject(qname_object) = obj {
+            if self.has_lazy_ns() {
+                activation.pop_stack(); // ignore the ns component on stack
+            }
+            let qname = qname_object.qname().expect("Empty QName");
+            return Some((*qname).into());
+        }
+        None
+    }
+
     pub fn fill_with_runtime_params(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         let name = if self.has_lazy_name() {
-            Some(activation.pop_stack().coerce_to_string(activation)?)
+            let name_value = activation.pop_stack();
+
+            if let Value::Object(name_obj) = name_value {
+                if let Some(result) = self.try_replace_with_qname(name_obj, activation) {
+                    return Ok(result);
+                }
+            }
+
+            Some(name_value.coerce_to_string(activation)?)
         } else {
             self.name
         };
