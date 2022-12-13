@@ -666,8 +666,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
             let state = self.0.read().state;
             if let Some(child) = self.get_state_child(state.into()) {
-                // hit_area is not actually a child, so transform point into local space before passing it down.
-                let point = self.global_to_local(point);
+                //TODO: the if below should probably always be taken, why does the hit area
+                // sometimes have a parent?
+                let mut point = point;
+                if child.parent().is_none() {
+                    // hit_area is not actually a child, so transform point into local space before passing it down.
+                    point = self.global_to_local(point);
+                }
+
                 if child.hit_test_shape(context, point, options) {
                     return true;
                 }
