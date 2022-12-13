@@ -1,3 +1,3 @@
 //! `flash.external` namespace
 
-pub mod externalinterface;
+pub mod external_interface;

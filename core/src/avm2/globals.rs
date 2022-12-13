@@ -643,15 +643,6 @@ pub fn load_player_globals<'gc>(
     );
     class(activation, flash::text::font::create_class(mc), script)?;
 
-    // package `flash.crypto`
-
-    // package `flash.external`
-    class(
-        activation,
-        flash::external::externalinterface::create_class(mc),
-        script,
-    )?;
-
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relative late, so that it can access classes defined before
