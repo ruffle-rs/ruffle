@@ -109,6 +109,7 @@ function tryPolyfillReflect(): void {
     if (typeof Reflect.has !== "function") {
         Object.defineProperty(Reflect, "has", {
             value<T>(target: T, key: keyof T) {
+                // @ts-expect-error: Type 'T' is not assignable to type 'object'.
                 return key in target;
             },
         });
