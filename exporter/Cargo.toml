@@ -15,7 +15,7 @@ log = "0.4"
 walkdir = "2.3.2"
 indicatif = "0.17"
 anyhow = "1.0"
-rayon = "1.6.0"
+rayon = "1.6.1"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]

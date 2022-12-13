@@ -515,43 +515,42 @@ pub fn copy_channel<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)?;
 
-        let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
-        if !bitmap_data_write.disposed() {
-            if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
-                //TODO: what if source is disposed
-                let src_min_x = source_rect
-                    .get_property(&Multiname::public("x"), activation)?
-                    .coerce_to_u32(activation)?;
-                let src_min_y = source_rect
-                    .get_property(&Multiname::public("y"), activation)?
-                    .coerce_to_u32(activation)?;
-                let src_width = source_rect
-                    .get_property(&Multiname::public("width"), activation)?
-                    .coerce_to_u32(activation)?;
-                let src_height = source_rect
-                    .get_property(&Multiname::public("height"), activation)?
-                    .coerce_to_u32(activation)?;
-                let src_max_x = src_min_x + src_width;
-                let src_max_y = src_min_y + src_height;
+        if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
+            //TODO: what if source is disposed
+            let src_min_x = source_rect
+                .get_property(&Multiname::public("x"), activation)?
+                .coerce_to_u32(activation)?;
+            let src_min_y = source_rect
+                .get_property(&Multiname::public("y"), activation)?
+                .coerce_to_u32(activation)?;
+            let src_width = source_rect
+                .get_property(&Multiname::public("width"), activation)?
+                .coerce_to_u32(activation)?;
+            let src_height = source_rect
+                .get_property(&Multiname::public("height"), activation)?
+                .coerce_to_u32(activation)?;
+            let src_max_x = src_min_x + src_width;
+            let src_max_y = src_min_y + src_height;
 
-                if GcCell::ptr_eq(bitmap_data, source_bitmap) {
-                    let src_bitmap_data_clone = source_bitmap.read().clone();
-                    bitmap_data_write.copy_channel(
-                        (dest_x, dest_y),
-                        (src_min_x, src_min_y, src_max_x, src_max_y),
-                        &src_bitmap_data_clone,
-                        source_channel,
-                        dest_channel,
-                    );
-                } else {
-                    bitmap_data_write.copy_channel(
-                        (dest_x, dest_y),
-                        (src_min_x, src_min_y, src_max_x, src_max_y),
-                        &source_bitmap.read(),
-                        source_channel,
-                        dest_channel,
-                    );
-                }
+            if GcCell::ptr_eq(bitmap_data, source_bitmap) {
+                let src_bitmap_data_clone = source_bitmap.read().clone();
+                let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
+                bitmap_data_write.copy_channel(
+                    (dest_x, dest_y),
+                    (src_min_x, src_min_y, src_max_x, src_max_y),
+                    &src_bitmap_data_clone,
+                    source_channel,
+                    dest_channel,
+                );
+            } else {
+                let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
+                bitmap_data_write.copy_channel(
+                    (dest_x, dest_y),
+                    (src_min_x, src_min_y, src_max_x, src_max_y),
+                    &source_bitmap.read(),
+                    source_channel,
+                    dest_channel,
+                );
             }
         }
     }

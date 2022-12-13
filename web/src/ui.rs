@@ -56,6 +56,8 @@ impl UiBackend for WebUiBackend {
     }
 
     fn set_clipboard_content(&mut self, _content: String) {
+        //TODO: in AVM2 FP9+ this only works when called from a button handler due to sandbox
+        // restrictions
         log::warn!("set clipboard not implemented");
     }
 
