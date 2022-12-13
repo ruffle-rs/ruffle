@@ -3,5 +3,7 @@ package flash.system {
         public static function gc(): void {
 
         }
+
+        public static native function setClipboard(string:String): void;
     }
 }
