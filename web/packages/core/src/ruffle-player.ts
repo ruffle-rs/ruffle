@@ -865,7 +865,7 @@ export class RufflePlayer extends HTMLElement {
 
         const extensionString = this.isExtension ? "extension" : "";
         items.push({
-            text: `About Ruffle ${extensionString} (buildInfo.versionName)`,
+            text: `About Ruffle ${extensionString} (${buildInfo.versionName})`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -1155,11 +1155,11 @@ export class RufflePlayer extends HTMLElement {
         );
 
         dataArray.push("\n# Ruffle Info\n");
-        dataArray.push(`Version: buildInfo.versionNumber\n`);
-        dataArray.push(`Name: buildInfo.versionName\n`);
-        dataArray.push(`Channel: buildInfo.versionChannel\n`);
-        dataArray.push(`Built: buildInfo.buildDate\n`);
-        dataArray.push(`Commit: buildInfo.commitHash\n`);
+        dataArray.push(`Version: ${buildInfo.versionNumber}\n`);
+        dataArray.push(`Name: ${buildInfo.versionName}\n`);
+        dataArray.push(`Channel: ${buildInfo.versionChannel}\n`);
+        dataArray.push(`Built: ${buildInfo.buildDate}\n`);
+        dataArray.push(`Commit: ${buildInfo.commitHash}\n`);
         dataArray.push(`Is extension: ${this.isExtension}\n`);
         dataArray.push("\n# Metadata\n");
         if (this.metadata) {
@@ -1391,7 +1391,7 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
                 `;
                 if (isBuildOutdated) {
-                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: buildInfo.buildDate).</p>`;
+                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: ${buildInfo.buildDate}).</p>`;
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
@@ -1416,7 +1416,7 @@ export class RufflePlayer extends HTMLElement {
                 if (!isBuildOutdated) {
                     errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
                 } else {
-                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: buildInfo.buildDate).</p>`;
+                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: ${buildInfo.buildDate}).</p>`;
                 }
                 errorFooter = `
                     <li>${actionTag}</li>
