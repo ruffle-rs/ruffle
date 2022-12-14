@@ -314,7 +314,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);
     }
 
@@ -325,7 +325,7 @@ impl<'gc> Avm1<'gc> {
             Value::Undefined
         });
 
-        avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
 
         value
     }

@@ -259,7 +259,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         this: Value<'gc>,
         callee: Option<Object<'gc>>,
     ) -> Self {
-        avm_debug!(context.avm1, "START {}", id);
+        avm_debug!(context.avm1, "START {id}");
         Self {
             context,
             id,
@@ -282,7 +282,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         scope: Gc<'gc, Scope<'gc>>,
     ) -> Activation<'b, 'gc, 'gc_context> {
         let id = self.id.child(name);
-        avm_debug!(self.context.avm1, "START {}", id);
+        avm_debug!(self.context.avm1, "START {id}");
         Activation {
             id,
             context: self.context.reborrow(),
@@ -310,7 +310,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
-        avm_debug!(context.avm1, "START {}", id);
+        avm_debug!(context.avm1, "START {id}");
 
         Self {
             id,
@@ -446,9 +446,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let action = reader.read_action()?;
             avm_debug!(
                 self.context.avm1,
-                "({}) Action: {:?}",
+                "({}) Action: {action:?}",
                 self.id.depth(),
-                action
             );
 
             match action {
