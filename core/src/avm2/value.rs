@@ -576,11 +576,11 @@ impl<'gc> Value<'gc> {
             Value::Object(num) => match num.value_of(mc)? {
                 Value::Number(num) => Ok(num as i32),
                 Value::Integer(num) => Ok(num),
-                _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+                _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
             },
             Value::Number(num) => Ok(*num as i32),
             Value::Integer(num) => Ok(*num),
-            _ => Err(format!("Expected Number, int, or uint, found {:?}", self).into()),
+            _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
         }
     }
 

@@ -110,7 +110,7 @@ pub fn set_vertex_buffer_at<'gc>(
         } else if &*format == b"bytes4" {
             Context3DVertexBufferFormat::Bytes4
         } else {
-            panic!("Unknown vertex format {:?}", format);
+            panic!("Unknown vertex format {format:?}");
         };
 
         let buffer = buffer.as_vertex_buffer().unwrap();
@@ -231,7 +231,7 @@ pub fn set_program_constants_from_matrix<'gc>(
         } else if &*program_type == b"fragment" {
             ProgramType::Fragment
         } else {
-            panic!("Unknown program type {:?}", program_type);
+            panic!("Unknown program type {program_type:?}");
         };
 
         let first_register = args

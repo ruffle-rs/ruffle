@@ -1,7 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
-use std::sync::Arc;
-
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
@@ -15,6 +11,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::sync::Arc;
 use swf::{BlendMode, Color};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{

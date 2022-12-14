@@ -3012,8 +3012,7 @@ pub mod tests {
             };
             assert_eq!(
                 parsed_tag, expected_tag,
-                "Incorrectly parsed tag.\nRead:\n{:#?}\n\nExpected:\n{:#?}",
-                parsed_tag, expected_tag
+                "Incorrectly parsed tag.\nRead:\n{parsed_tag:#?}\n\nExpected:\n{expected_tag:#?}",
             );
         }
     }

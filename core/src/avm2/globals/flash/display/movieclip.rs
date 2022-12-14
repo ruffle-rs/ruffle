@@ -402,18 +402,14 @@ pub fn goto_frame<'gc>(
                     let scene = scene.coerce_to_string(activation)?;
                     if !mc.frame_exists_within_scene(&frame_or_label, &scene) {
                         return Err(format!(
-                            "ArgumentError: Frame label {} not found in scene {}",
-                            frame_or_label, scene
+                            "ArgumentError: Frame label {frame_or_label} not found in scene {scene}",
                         )
                         .into());
                     }
                 }
 
                 mc.frame_label_to_number(&frame_or_label).ok_or_else(|| {
-                    format!(
-                        "ArgumentError: {} is not a valid frame label.",
-                        frame_or_label
-                    )
+                    format!("ArgumentError: {frame_or_label} is not a valid frame label.")
                 })? as u32
             }
         }

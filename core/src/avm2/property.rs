@@ -108,8 +108,7 @@ impl<'gc> PropertyClass<'gc> {
                         }
 
                         return Err(Error::from(format!(
-                            "Attempted to perform (private) resolution of nonexistent type {:?}",
-                            name
+                            "Attempted to perform (private) resolution of nonexistent type {name:?}",
                         )));
                     }
                 };

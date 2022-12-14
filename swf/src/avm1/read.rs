@@ -420,8 +420,7 @@ pub mod tests {
             let parsed_action = reader.read_action().unwrap();
             assert_eq!(
                 parsed_action, expected_action,
-                "Incorrectly parsed action.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                parsed_action, expected_action
+                "Incorrectly parsed action.\nRead:\n{parsed_action:?}\n\nExpected:\n{expected_action:?}",
             );
         }
     }

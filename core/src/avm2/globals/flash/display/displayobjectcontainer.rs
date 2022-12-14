@@ -143,10 +143,7 @@ pub fn get_child_at<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
         let child = dobj.child_by_index(index as usize).ok_or_else(|| {
-            format!(
-                "RangeError: Display object container has no child with id {}",
-                index
-            )
+            format!("RangeError: Display object container has no child with id {index}")
         })?;
 
         return Ok(child.object2());

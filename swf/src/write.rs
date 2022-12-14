@@ -2691,8 +2691,7 @@ mod tests {
                 .unwrap();
             assert_eq!(
                 written_tag_bytes, expected_tag_bytes,
-                "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
-                tag, written_tag_bytes, expected_tag_bytes
+                "Error reading tag.\nTag:\n{tag:?}\n\nWrote:\n{written_tag_bytes:?}\n\nExpected:\n{expected_tag_bytes:?}",
             );
         }
     }

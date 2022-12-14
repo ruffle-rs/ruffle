@@ -508,12 +508,7 @@ impl<'a> Reader<'a> {
         let byte = self.read_u8()?;
         let opcode = match OpCode::from_u8(byte) {
             Some(o) => o,
-            None => {
-                return Err(Error::invalid_data(format!(
-                    "Unknown ABC opcode {:#x}",
-                    byte
-                )))
-            }
+            None => return Err(Error::invalid_data(format!("Unknown ABC opcode {byte:#x}"))),
         };
 
         let op = match opcode {
@@ -898,8 +893,7 @@ pub mod tests {
             let parsed = reader.read().unwrap();
             assert_eq!(
                 parsed, abc_file,
-                "Incorrectly parsed ABC.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                parsed, abc_file
+                "Incorrectly parsed ABC.\nRead:\n{parsed:?}\n\nExpected:\n{abc_file:?}",
             );
         }
     }

@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 use crate::analyze::analyze_main;
 use crate::cli_options::{Mode, Opt};
 use crate::execute::execute_report_main;
