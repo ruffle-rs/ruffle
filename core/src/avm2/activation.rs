@@ -957,7 +957,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let instruction_start = reader.pos(full_data);
         let op = reader.read_op();
         if let Ok(op) = op {
-            avm_debug!(self.avm2(), "Opcode: {:?}", op);
+            avm_debug!(self.avm2(), "Opcode: {op:?}");
 
             let result = match op {
                 Op::PushByte { value } => self.op_push_byte(value),
@@ -3183,13 +3183,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             if (register as usize) < self.local_registers.0.len() {
                 let value = self.local_register(register as u32)?;
 
-                avm_debug!(self.avm2(), "Debug: {} = {:?}", register_name, value);
+                avm_debug!(self.avm2(), "Debug: {register_name} = {value:?}");
             } else {
                 avm_debug!(
                     self.avm2(),
-                    "Debug: {} = <out-of-bounds register #{}>",
-                    register_name,
-                    register
+                    "Debug: {register_name} = <out-of-bounds register #{register}>",
                 );
             }
         } else {
@@ -3218,7 +3216,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let file_name = self.pool_string(&method, file_name)?;
 
-        avm_debug!(self.avm2(), "File: {}", file_name);
+        avm_debug!(self.avm2(), "File: {file_name}");
 
         Ok(FrameControl::Continue)
     }
@@ -3233,7 +3231,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_debug_line(&mut self, line_num: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        avm_debug!(self.avm2(), "Line: {}", line_num);
+        avm_debug!(self.avm2(), "Line: {line_num}");
 
         Ok(FrameControl::Continue)
     }

@@ -376,9 +376,8 @@ pub fn dispatch_event_to_target<'gc>(
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
-        "Event dispatch: {} to {:?}",
+        "Event dispatch: {} to {target:?}",
         event.as_event().unwrap().event_type(),
-        target
     );
     let dispatch_list = dispatcher
         .get_property(
