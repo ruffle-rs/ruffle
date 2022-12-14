@@ -82,6 +82,9 @@ module.exports = (env, _argv) => {
             assetFilter: (assetFilename) =>
                 !/\.(map|wasm)$/i.test(assetFilename),
         },
+        optimization: {
+            minimize: false,
+        },
         plugins: [
             new CopyPlugin({
                 patterns: [
