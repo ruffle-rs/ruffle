@@ -327,10 +327,11 @@ impl Player {
     /// should destroy and recreate the player instance.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
         info!(
-            "Loaded SWF version {}, with a resolution of {}x{}",
+            "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),
-            movie.height()
+            movie.height(),
+            movie.frame_rate()
         );
 
         self.frame_rate = movie.frame_rate().into();
