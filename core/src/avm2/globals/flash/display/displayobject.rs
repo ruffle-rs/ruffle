@@ -524,8 +524,7 @@ pub fn set_name<'gc>(
 
         if dobj.instantiated_by_timeline() {
             return Err(format!(
-                "Display object {} was placed by the timeline and cannot have it's name changed.",
-                new_name
+                "Display object {new_name} was placed by the timeline and cannot have it's name changed.",
             )
             .into());
         }

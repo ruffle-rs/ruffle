@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 //! Tests running SWFs in a headless Ruffle instance.
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
@@ -944,8 +942,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
+                "After calling `parrot` with a string: {parroted:?}",
             ));
 
             let mut nested = BTreeMap::new();
@@ -970,8 +967,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             let result = player_locked
                 .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
+                "After calling `callWith` with a complex payload: {result:?}",
             ));
             Ok(())
         },
@@ -1001,8 +997,7 @@ fn external_interface_avm2() -> Result<(), Error> {
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
+                "After calling `parrot` with a string: {parroted:?}",
             ));
 
             player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);
@@ -1018,8 +1013,7 @@ fn external_interface_avm2() -> Result<(), Error> {
             let result =
                 player_locked.call_internal_interface("callWith", vec!["trace".into(), root]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
+                "After calling `callWith` with a complex payload: {result:?}",
             ));
             Ok(())
         },
@@ -1534,10 +1528,7 @@ fn run_swf(
         if !matches {
             let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
-            panic!(
-                "Test output does not match expected image - saved actual image to {:?}",
-                actual_image_path
-            );
+            panic!("Test output does not match expected image - saved actual image to {actual_image_path:?}");
         }
     }
 

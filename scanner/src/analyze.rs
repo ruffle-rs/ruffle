@@ -50,34 +50,14 @@ pub fn analyze(results: impl Iterator<Item = FileResults>) {
     println!();
 
     if start > 0 {
-        println!(
-            "{:>digits$} movies panicked or crashed the scanner",
-            start,
-            digits = digits
-        );
+        println!("{start:>digits$} movies panicked or crashed the scanner");
     }
 
-    println!(
-        "{:>digits$} movies failed when reading",
-        read,
-        digits = digits
-    );
-    println!(
-        "{:>digits$} movies failed to decompress",
-        decompress,
-        digits = digits
-    );
+    println!("{read:>digits$} movies failed when reading");
+    println!("{decompress:>digits$} movies failed to decompress");
     println!("{parse:>digits$} movies failed to parse");
-    println!(
-        "{:>digits$} movies failed to execute",
-        execute,
-        digits = digits
-    );
-    println!(
-        "{:>digits$} movies completed without errors",
-        complete,
-        digits = digits
-    );
+    println!("{execute:>digits$} movies failed to execute");
+    println!("{complete:>digits$} movies completed without errors");
     println!();
 }
 

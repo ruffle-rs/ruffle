@@ -1,7 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
-use std::sync::Arc;
-
 use crate::bitmaps::BitmapSamplers;
 use crate::descriptors::Quad;
 use crate::globals::Globals;
@@ -18,6 +14,7 @@ use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
+use std::sync::Arc;
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;

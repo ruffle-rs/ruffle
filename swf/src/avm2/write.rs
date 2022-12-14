@@ -1061,8 +1061,7 @@ pub mod tests {
             }
             assert_eq!(
                 out, bytes,
-                "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
-                out, bytes
+                "Incorrectly written ABC.\nWritten:\n{out:?}\n\nExpected:\n{bytes:?}",
             );
         }
     }
