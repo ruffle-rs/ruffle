@@ -460,6 +460,7 @@ swf_tests! {
     (as3_op_escxattr, "avm2/op_escxattr", 1),
     (as3_op_escxelem, "avm2/op_escxelem", 1),
     (as3_op_lookupswitch, "avm2/op_lookupswitch", 1),
+    (as3_package_namespace, "avm2/package_namespace", 1),
     (as3_parse_int, "avm2/parse_int", 1),
     (as3_place_object_replace_2, "avm2/place_object_replace_2", 3),
     (as3_place_object_replace, "avm2/place_object_replace", 2),
