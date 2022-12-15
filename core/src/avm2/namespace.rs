@@ -10,8 +10,9 @@ use swf::avm2::types::{Index, Namespace as AbcNamespace};
 #[derive(Clone, Copy, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[collect(no_drop)]
 pub enum Namespace<'gc> {
+    // note: this is the default "public namespace", corresponding to both
+    // ABC Namespace and PackageNamespace
     Namespace(AvmString<'gc>),
-    Package(AvmString<'gc>),
     PackageInternal(AvmString<'gc>),
     Protected(AvmString<'gc>),
     Explicit(AvmString<'gc>),
@@ -44,7 +45,7 @@ impl<'gc> Namespace<'gc> {
             AbcNamespace::Namespace(idx) => {
                 Self::Namespace(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Package(idx) => Self::Package(translation_unit.pool_string(idx.0, mc)?),
+            AbcNamespace::Package(idx) => Self::Namespace(translation_unit.pool_string(idx.0, mc)?),
             AbcNamespace::PackageInternal(idx) => {
                 Self::PackageInternal(translation_unit.pool_string(idx.0, mc)?)
             }
@@ -60,7 +61,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn public() -> Self {
-        Self::Package("".into())
+        Self::Namespace("".into())
     }
 
     pub fn as3_namespace() -> Self {
@@ -68,7 +69,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn package(package_name: impl Into<AvmString<'gc>>) -> Self {
-        Self::Package(package_name.into())
+        Self::Namespace(package_name.into())
     }
 
     pub fn internal(package_name: impl Into<AvmString<'gc>>) -> Self {
@@ -80,7 +81,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_public(&self) -> bool {
-        matches!(self, Self::Package(name) if name.is_empty())
+        matches!(self, Self::Namespace(name) if name.is_empty())
     }
 
     pub fn is_any(&self) -> bool {
@@ -89,14 +90,6 @@ impl<'gc> Namespace<'gc> {
 
     pub fn is_private(&self) -> bool {
         matches!(self, Self::Private(_))
-    }
-
-    pub fn is_package(&self, package_name: impl Into<AvmString<'gc>>) -> bool {
-        if let Self::Package(my_name) = self {
-            return my_name == &package_name.into();
-        }
-
-        false
     }
 
     pub fn is_namespace(&self) -> bool {
@@ -109,7 +102,6 @@ impl<'gc> Namespace<'gc> {
     pub fn as_uri(&self) -> AvmString<'gc> {
         match self {
             Self::Namespace(s) => *s,
-            Self::Package(s) => *s,
             Self::PackageInternal(s) => *s,
             Self::Protected(s) => *s,
             Self::Explicit(s) => *s,

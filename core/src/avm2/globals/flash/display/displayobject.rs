@@ -277,7 +277,7 @@ pub fn set_filters<'gc>(
             if let Some(filters_array) = new_filters.as_array_object() {
                 if let Some(filters_storage) = filters_array.as_array_storage() {
                     let filter_class =
-                        Multiname::new(Namespace::Package("flash.filters".into()), "BitmapFilter");
+                        Multiname::new(Namespace::package("flash.filters"), "BitmapFilter");
 
                     let filter_class_object = activation.resolve_class(&filter_class)?;
 

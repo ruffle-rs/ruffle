@@ -97,7 +97,7 @@ macro_rules! define_indirect_properties {
 
                 $self.define_instance_trait(Trait::from_slot(
                     QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), $name),
-                    Multiname::new(Namespace::Package($type_ns.into()), $type_name),
+                    Multiname::new(Namespace::Namespace($type_ns.into()), $type_name),
                     None,
                 ));
             })();
@@ -776,7 +776,7 @@ impl<'gc> Class<'gc> {
         for &(name, type_ns, type_name) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(Namespace::public(), name),
-                Multiname::new(Namespace::Package(type_ns.into()), type_name),
+                Multiname::new(Namespace::Namespace(type_ns.into()), type_name),
                 None,
             ));
         }
@@ -804,7 +804,7 @@ impl<'gc> Class<'gc> {
         for &(ns, name, type_ns, type_name) in items {
             self.define_instance_trait(Trait::from_slot(
                 QName::new(Namespace::Private(ns.into()), name),
-                Multiname::new(Namespace::Package(type_ns.into()), type_name),
+                Multiname::new(Namespace::Namespace(type_ns.into()), type_name),
                 None,
             ));
         }
