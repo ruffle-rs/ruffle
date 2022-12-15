@@ -46,13 +46,13 @@ jobs:
         shell: bash
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2
+        uses: 1466587594/get-current-time@v2.0.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with underscores
-        uses: 1466587594/get-current-time@v2
+        uses: 1466587594/get-current-time@v2.0.2
         id: current_time_underscores
         with:
           format: YYYY_MM_DD
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload macOS build artifact
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.build_name }}
           path: |
@@ -188,17 +188,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download aarch64 binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: macos-aarch64
 
       - name: Download x86_64 binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: macos-x86_64
 
       - name: Download Safari extension
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: macos-safari
 
@@ -382,7 +382,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Safari build artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: macos-safari
           path: ./web/packages/extension/dist/ruffle_extension.zip
@@ -490,13 +490,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2
+        uses: 1466587594/get-current-time@v2.0.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with dots
-        uses: 1466587594/get-current-time@v2
+        uses: 1466587594/get-current-time@v2.0.2
         id: current_time_dots
         with:
           format: YYYY.MM.DD
