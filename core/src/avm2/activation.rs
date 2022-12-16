@@ -674,6 +674,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Pops a value off the operand stack.
     #[inline]
+    #[must_use]
     pub fn pop_stack(&mut self) -> Value<'gc> {
         let stack_depth = self.stack_depth;
         self.avm2().pop(stack_depth)
@@ -681,6 +682,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Pops multiple values off the operand stack.
     #[inline]
+    #[must_use]
     pub fn pop_stack_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
         let stack_depth = self.stack_depth;
         self.avm2().pop_args(arg_count, stack_depth)
@@ -1247,7 +1249,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.pop_stack();
+        let _ = self.pop_stack();
 
         Ok(FrameControl::Continue)
     }

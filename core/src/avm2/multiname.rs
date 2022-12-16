@@ -230,7 +230,7 @@ impl<'gc> Multiname<'gc> {
     ) -> Option<Self> {
         if let Object::QNameObject(qname_object) = obj {
             if self.has_lazy_ns() {
-                activation.pop_stack(); // ignore the ns component on stack
+                let _ = activation.pop_stack(); // ignore the ns component
             }
             let qname = qname_object.qname().expect("Empty QName");
             return Some((*qname).into());
