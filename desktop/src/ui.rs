@@ -5,11 +5,16 @@ use ruffle_core::backend::ui::{FullscreenError, MouseCursor, UiBackend};
 use std::rc::Rc;
 use tracing::error;
 use winit::window::{Fullscreen, Window};
+use std::net::TcpStream;
+use std::io::Read;
+use std::sync::Arc;
+use std::sync::RwLock;
 
 pub struct DesktopUiBackend {
     window: Rc<Window>,
     cursor_visible: bool,
     clipboard: Clipboard,
+    debug_event_queue: Arc<RwLock<Vec<ruffle_core::player::DebugMessageIn>>>,
 }
 
 impl DesktopUiBackend {
@@ -18,6 +23,7 @@ impl DesktopUiBackend {
             window,
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
+            debug_event_queue: Default::default(),
         })
     }
 }
@@ -93,5 +99,37 @@ impl UiBackend for DesktopUiBackend {
             .set_description(message)
             .set_buttons(MessageButtons::Ok);
         dialog.show();
+    }
+
+    fn connect_debugger(&mut self) {
+        let queue_local = Arc::clone(&self.debug_event_queue);
+
+        // spawn debugger thread
+        std::thread::spawn(move || {
+            let mut stream = TcpStream::connect("localhost:7979").unwrap();
+
+            loop {
+                let mut data = [0u8; 1024];
+                let len = stream.read(&mut data).unwrap();
+
+                if len == 0 {
+                    break;
+                }
+
+                let data = &data[..len];
+                println!("Got data: {:?}", data);
+                if data[0] == 0x1 {
+                    queue_local.write().unwrap().push(ruffle_core::player::DebugMessageIn::Pause);
+                }
+                if data[0] == 0x2 {
+                    queue_local.write().unwrap().push(ruffle_core::player::DebugMessageIn::Play);
+                }
+            }
+        });
+    }
+
+
+    fn get_debug_event(&mut self) -> Option<ruffle_core::player::DebugMessageIn> {
+        self.debug_event_queue.write().unwrap().pop()
     }
 }

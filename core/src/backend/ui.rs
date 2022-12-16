@@ -28,6 +28,22 @@ pub trait UiBackend {
 
     // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
+
+    /// Poll a single debug event
+    /// This wil be invoked before each frame and may or may not block until a message is available
+    /// The recommendation is to pull events from an internal queue
+    fn get_debug_event(&mut self) -> Option<crate::player::DebugMessageIn> {
+        Some(crate::player::DebugMessageIn::Pause)
+    }
+
+    /// Enqueue a debug message to be sent to the attached debugger if it exists
+    fn submit_debug_message(&mut self, evt: crate::player::DebugMessageOut) {
+        //NOOP
+    }
+
+    fn connect_debugger(&mut self) {
+        
+    }
 }
 
 /// A mouse cursor icon displayed by the Flash Player.

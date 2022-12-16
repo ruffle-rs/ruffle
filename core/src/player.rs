@@ -60,6 +60,19 @@ use tracing::{info, instrument};
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
+#[derive(Copy, Clone)]
+pub enum DebugMessageIn {
+    Pause,
+    Play
+}
+
+#[derive(Copy, Clone)]
+pub enum DebugMessageOut {
+    State {
+        playing: bool,
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRoot<'gc> {
@@ -421,6 +434,9 @@ impl Player {
             self.ui.display_unsupported_message();
         }
 
+        // Connect a debugger if one exists
+        self.ui_mut().connect_debugger();
+
         self.audio.set_frame_rate(self.frame_rate);
     }
 
@@ -462,6 +478,22 @@ impl Player {
         // TODO: Eventually we want to stream content similar to the Flash player.
         if !self.audio.is_loading_complete() {
             return;
+        }
+
+        // Check for any debug events before executing the next frame
+        while let Some(dbg_in) = self.ui_mut().get_debug_event() {
+            match dbg_in {
+                DebugMessageIn::Pause => {
+                    self.set_is_playing(false);
+                    let msg = DebugMessageOut::State { playing: self.is_playing() };
+                    self.ui_mut().submit_debug_message(msg);
+                },
+                DebugMessageIn::Play => {
+                    self.set_is_playing(true);
+                    let msg = DebugMessageOut::State { playing: self.is_playing() };
+                    self.ui_mut().submit_debug_message(msg);
+                },
+            }
         }
 
         if self.is_playing() {

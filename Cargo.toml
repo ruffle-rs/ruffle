@@ -22,6 +22,8 @@ members = [
 
     "tests",
     "tests/input-format",
+
+    "debugger"
 ]
 resolver = "2"
 

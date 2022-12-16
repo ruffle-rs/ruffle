@@ -33,7 +33,7 @@ mod library;
 pub mod limits;
 pub mod loader;
 mod locale;
-mod player;
+pub mod player;
 mod prelude;
 pub mod string;
 pub mod tag_utils;
