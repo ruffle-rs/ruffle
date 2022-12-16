@@ -208,6 +208,7 @@ swf_tests! {
     (as3_boolean_constr, "avm2/boolean_constr", 1),
     (as3_boolean_negation, "avm2/boolean_negation", 1),
     (as3_boolean_tostring, "avm2/boolean_tostring", 1),
+    (as3_button_hittest, "avm2/button_hittest", 1),
     (as3_bytearray_readobject_amf0, "avm2/bytearray_readobject_amf0", 1),
     (as3_bytearray_readobject_amf3, "avm2/bytearray_readobject_amf3", 1),
     (as3_bytearray_writeobject, "avm2/bytearray_writeobject", 1),

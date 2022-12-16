@@ -43,3 +43,7 @@ false
 false
 //this.symbol1_1.hitTestPoint(50.0, 50.0, true);
 false
+//this.symbol1.hitTestPoint(50.0, 50.0, true); (after removing from stage)
+false
+//this.symbol1.hitTestPoint(50.0, 50.0, false); (after removing from stage)
+true
