@@ -404,7 +404,7 @@ jobs:
         continue-on-error: true
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-        uses: mnao305/chrome-extension-upload@2.2.0
+        uses: mnao305/chrome-extension-upload@4.0.0
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
