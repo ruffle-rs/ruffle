@@ -1,9 +1,11 @@
 [package]
 name = "ruffle_render_webgl"
-version = "0.1.0"
-authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+authors.workspace = true
 edition.workspace = true
-license = "MIT OR Apache-2.0"
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 js-sys = "0.3.60"
