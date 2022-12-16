@@ -1,8 +1,11 @@
 [package]
 name = "ruffle_macros"
-version = "0.1.0"
-authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+authors.workspace = true
 edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [lib]
 proc-macro = true

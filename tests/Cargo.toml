@@ -1,8 +1,11 @@
 [package]
 name = "tests"
-version = "0.1.0"
 authors = ["Aaron Hill <aa1ronham@gmail.com>"]
 edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 futures = "0.3.25"

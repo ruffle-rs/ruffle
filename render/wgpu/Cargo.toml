@@ -1,9 +1,11 @@
 [package]
 name = "ruffle_render_wgpu"
-version = "0.1.0"
 authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
 edition.workspace = true
-license = "MIT OR Apache-2.0"
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 wgpu = { version = "0.14.2", features = ["naga"] }

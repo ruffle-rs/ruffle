@@ -26,7 +26,12 @@ members = [
 resolver = "2"
 
 [workspace.package]
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 edition = "2021"
+homepage = "https://ruffle.rs"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ruffle-rs/ruffle"
+version = "0.1.0"
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]

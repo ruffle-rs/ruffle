@@ -1,13 +1,12 @@
 [package]
 name = "swf"
 version = "0.2.0"
-edition.workspace = true
-authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
-repository = "https://github.com/ruffle-rs/ruffle"
-homepage = "https://github.com/ruffle-rs/ruffle"
-license = "MIT OR Apache-2.0"
-readme = "README.md"
 description = "Read and write the Adobe Flash SWF file format."
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 bitflags = "1.3.2"
