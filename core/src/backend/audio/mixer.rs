@@ -647,7 +647,7 @@ impl AudioMixer {
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        *self.volume.write().unwrap() = volume
+        *self.volume.write().unwrap() = volume;
     }
 }
 
@@ -690,7 +690,7 @@ impl AudioMixerProxy {
             self.num_output_channels,
             output_buffer,
             &mut output_memory,
-        )
+        );
     }
 }
 

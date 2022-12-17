@@ -565,7 +565,7 @@ mod tests {
             .into();
             test(activation, object);
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -575,7 +575,7 @@ mod tests {
                 object.get("not_defined", activation).unwrap(),
                 Value::Undefined
             );
-        })
+        });
     }
 
     #[test]
@@ -591,7 +591,7 @@ mod tests {
 
             assert_eq!(object.get("forced", activation).unwrap(), "forced".into());
             assert_eq!(object.get("natural", activation).unwrap(), "natural".into());
-        })
+        });
     }
 
     #[test]
@@ -620,7 +620,7 @@ mod tests {
                 object.get("readonly", activation).unwrap(),
                 "initial".into()
             );
-        })
+        });
     }
 
     #[test]
@@ -644,7 +644,7 @@ mod tests {
 
             assert!(!object.delete(activation, "test".into()));
             assert_eq!(object.get("test", activation).unwrap(), "replaced".into());
-        })
+        });
     }
 
     #[test]
@@ -670,7 +670,7 @@ mod tests {
             // This set should do nothing
             object.set("test", "Ignored!".into(), activation).unwrap();
             assert_eq!(object.get("test", activation).unwrap(), "Virtual!".into());
-        })
+        });
     }
 
     #[test]
@@ -726,7 +726,7 @@ mod tests {
                 object.get("stored_un", activation).unwrap(),
                 "Stored!".into()
             );
-        })
+        });
     }
 
     #[test]
@@ -772,6 +772,6 @@ mod tests {
             assert!(!keys.contains(&"stored_hidden".into()));
             assert!(keys.contains(&"virtual".into()));
             assert!(!keys.contains(&"virtual_hidden".into()));
-        })
+        });
     }
 }

@@ -236,7 +236,7 @@ impl Drawing {
                 paths.push(DrawPath::Fill {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
-                })
+                });
             }
 
             for line in &self.pending_lines {
@@ -254,7 +254,7 @@ impl Drawing {
                     style: &line.style,
                     commands,
                     is_closed,
-                })
+                });
             }
 
             if let Some(line) = &self.current_line {
@@ -272,7 +272,7 @@ impl Drawing {
                     style: &line.style,
                     commands,
                     is_closed,
-                })
+                });
             }
 
             let shape = DistilledShape {

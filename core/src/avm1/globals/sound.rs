@@ -460,7 +460,7 @@ fn stop<'gc>(
                     activation,
                     "Sound.stop: Cannot stop Sound '{}' without a library to reference",
                     name
-                )
+                );
             }
         } else if let Some(owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.

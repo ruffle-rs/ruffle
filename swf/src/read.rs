@@ -2259,7 +2259,7 @@ impl<'a> Reader<'a> {
                     sample: self.read_u32()?,
                     left_volume: f32::from(self.read_u16()?) / 32768f32,
                     right_volume: f32::from(self.read_u16()?) / 32768f32,
-                })
+                });
             }
             Some(envelope)
         } else {

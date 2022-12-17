@@ -32,7 +32,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
     let format = determine_jpeg_tag_format(data);
     if format != JpegTagFormat::Jpeg && alpha_data.is_some() {
         // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
-        log::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect")
+        log::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect");
     }
     match format {
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
@@ -351,7 +351,7 @@ fn premultiply_alpha_rgba(rgba: &mut [u8]) {
         rgba[0] = (f32::from(rgba[0]) * a) as u8;
         rgba[1] = (f32::from(rgba[1]) * a) as u8;
         rgba[2] = (f32::from(rgba[2]) * a) as u8;
-    })
+    });
 }
 
 /// Converts premultiplied RBGA to unmultipled RGBA.
@@ -364,7 +364,7 @@ pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
             rgba[1] = (f32::from(rgba[1]) / a) as u8;
             rgba[2] = (f32::from(rgba[2]) / a) as u8;
         }
-    })
+    });
 }
 
 /// Decodes zlib-compressed data.

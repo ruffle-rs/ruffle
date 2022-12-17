@@ -265,12 +265,12 @@ impl ByteArrayStorage {
     #[inline]
     pub fn clear(&mut self) {
         self.bytes.clear();
-        self.position.set(0)
+        self.position.set(0);
     }
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        self.bytes.shrink_to_fit()
+        self.bytes.shrink_to_fit();
     }
 
     #[inline]
@@ -284,7 +284,7 @@ impl ByteArrayStorage {
 
     pub fn set(&mut self, item: usize, value: u8) {
         if self.len() < (item + 1) {
-            self.bytes.resize(item + 1, 0)
+            self.bytes.resize(item + 1, 0);
         }
 
         *self.bytes.get_mut(item).unwrap() = value;

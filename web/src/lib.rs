@@ -1352,7 +1352,7 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
         for key in keys.values().into_iter().flatten() {
             if let Ok(value) = js_sys::Reflect::get(input, &key) {
                 if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                    params.push((key, value))
+                    params.push((key, value));
                 }
             }
         }

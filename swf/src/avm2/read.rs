@@ -26,12 +26,12 @@ impl<'a> Reader<'a> {
 
     #[inline]
     pub fn seek(&mut self, data: &'a [u8], relative_offset: i32) {
-        ReadSwfExt::seek(self, data, relative_offset as isize)
+        ReadSwfExt::seek(self, data, relative_offset as isize);
     }
 
     #[inline]
     pub fn seek_absolute(&mut self, data: &'a [u8], pos: usize) {
-        ReadSwfExt::seek_absolute(self, data, pos)
+        ReadSwfExt::seek_absolute(self, data, pos);
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
@@ -255,7 +255,7 @@ impl<'a> Reader<'a> {
                 kind: self.read_index()?,
                 name: None,
                 default_value: None,
-            })
+            });
         }
         let name = self.read_index()?;
         let flags = MethodFlags::from_bits_truncate(self.read_u8()?);
@@ -341,7 +341,7 @@ impl<'a> Reader<'a> {
             items.push(MetadataItem {
                 key: self.read_index()?,
                 value: self.read_index()?,
-            })
+            });
         }
         Ok(Metadata { name, items })
     }

@@ -108,7 +108,7 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw.clear()
+            draw.clear();
         }
     }
 
@@ -779,7 +779,7 @@ fn draw_ellipse<'gc>(
             .coerce_to_number(activation)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            draw_round_rect_internal(&mut draw, x, y, width, height, width, height)
+            draw_round_rect_internal(&mut draw, x, y, width, height, width, height);
         }
     }
 

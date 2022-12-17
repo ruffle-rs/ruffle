@@ -21,11 +21,11 @@ impl<'gc> CallStack<'gc> {
     }
 
     pub fn push(&mut self, exec: Executable<'gc>) {
-        self.stack.push(CallNode::Method(exec))
+        self.stack.push(CallNode::Method(exec));
     }
 
     pub fn push_global_init(&mut self) {
-        self.stack.push(CallNode::GlobalInit)
+        self.stack.push(CallNode::GlobalInit);
     }
 
     pub fn pop(&mut self) -> Option<CallNode<'gc>> {

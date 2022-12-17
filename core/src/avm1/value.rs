@@ -1014,7 +1014,7 @@ mod test {
             assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -1026,7 +1026,7 @@ mod test {
             assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             Ok(())
-        })
+        });
     }
 
     #[test]

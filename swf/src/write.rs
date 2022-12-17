@@ -580,25 +580,25 @@ impl<W: Write> Writer<W> {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
                     } else {
-                        writer.write_u16(0)?
+                        writer.write_u16(0)?;
                     };
                     if let Some(ref sound) = button_sounds.up_to_over_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
                     } else {
-                        writer.write_u16(0)?
+                        writer.write_u16(0)?;
                     };
                     if let Some(ref sound) = button_sounds.over_to_down_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
                     } else {
-                        writer.write_u16(0)?
+                        writer.write_u16(0)?;
                     };
                     if let Some(ref sound) = button_sounds.down_to_over_sound {
                         writer.write_u16(sound.0)?;
                         writer.write_sound_info(&sound.1)?;
                     } else {
-                        writer.write_u16(0)?
+                        writer.write_u16(0)?;
                     };
                 }
                 self.write_tag_header(TagCode::DefineButtonSound, buf.len() as u32)?;
@@ -681,7 +681,7 @@ impl<W: Write> Writer<W> {
             }
 
             Tag::DefineMorphShape(ref define_morph_shape) => {
-                self.write_define_morph_shape(define_morph_shape)?
+                self.write_define_morph_shape(define_morph_shape)?;
             }
 
             Tag::DefineScalingGrid {
@@ -911,7 +911,7 @@ impl<W: Write> Writer<W> {
             }
 
             Tag::DefineSceneAndFrameLabelData(ref data) => {
-                self.write_define_scene_and_frame_label_data(data)?
+                self.write_define_scene_and_frame_label_data(data)?;
             }
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
             Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
@@ -1498,7 +1498,7 @@ impl<W: Write> Writer<W> {
             FillStyle::Color(ref color) => {
                 self.write_u8(0x00)?; // Solid color.
                 if shape_version >= 3 {
-                    self.write_rgba(color)?
+                    self.write_rgba(color)?;
                 } else {
                     self.write_rgb(color)?;
                 }
@@ -1571,9 +1571,9 @@ impl<W: Write> Writer<W> {
                 ));
             };
             if shape_version >= 3 {
-                self.write_rgba(color)?
+                self.write_rgba(color)?;
             } else {
-                self.write_rgb(color)?
+                self.write_rgb(color)?;
             }
         }
         Ok(())
@@ -2130,7 +2130,7 @@ impl<W: Write> Writer<W> {
     fn write_define_font_4(&mut self, font: &Font4) -> Result<()> {
         let mut tag_len = 4 + font.name.len();
         if let Some(data) = font.data {
-            tag_len += data.len()
+            tag_len += data.len();
         };
         self.write_tag_header(TagCode::DefineFont4, tag_len as u32)?;
         self.write_character_id(font.id)?;
@@ -2284,11 +2284,11 @@ impl<W: Write> Writer<W> {
             }
 
             if let Some(height) = edit_text.height() {
-                writer.write_u16(height.get() as u16)?
+                writer.write_u16(height.get() as u16)?;
             }
 
             if let Some(color) = edit_text.color() {
-                writer.write_rgba(color)?
+                writer.write_rgba(color)?;
             }
 
             if let Some(len) = edit_text.max_length() {

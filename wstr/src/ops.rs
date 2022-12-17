@@ -154,9 +154,9 @@ pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
         Units::Bytes(us) => state.write(us),
         Units::Wide(us) => us.iter().for_each(|u| {
             if *u <= 0xFF {
-                state.write_u8(*u as u8)
+                state.write_u8(*u as u8);
             } else {
-                state.write_u16(*u)
+                state.write_u16(*u);
             }
         }),
     }

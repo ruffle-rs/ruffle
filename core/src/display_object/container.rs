@@ -33,7 +33,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 
     if let Some(child_container) = child.as_container() {
         for grandchild in child_container.iter_render_list() {
-            dispatch_removed_from_stage_event(grandchild, context)
+            dispatch_removed_from_stage_event(grandchild, context);
         }
     }
 }
@@ -52,7 +52,7 @@ pub fn dispatch_removed_event<'gc>(
         }
 
         if child.is_on_stage(context) {
-            dispatch_removed_from_stage_event(child, context)
+            dispatch_removed_from_stage_event(child, context);
         }
     }
 }
@@ -81,7 +81,7 @@ pub fn dispatch_added_to_stage_event<'gc>(
 
     if let Some(child_container) = child.as_container() {
         for grandchild in child_container.iter_render_list() {
-            dispatch_added_to_stage_event(grandchild, context)
+            dispatch_added_to_stage_event(grandchild, context);
         }
     }
 }
@@ -696,11 +696,11 @@ impl<'gc> ChildContainer<'gc> {
         {
             match old_id.cmp(&id) {
                 Ordering::Less if id < self.render_list.len() => {
-                    self.render_list[old_id..=id].rotate_left(1)
+                    self.render_list[old_id..=id].rotate_left(1);
                 }
                 Ordering::Less => self.render_list[old_id..id].rotate_left(1),
                 Ordering::Greater if old_id < self.render_list.len() => {
-                    self.render_list[id..=old_id].rotate_right(1)
+                    self.render_list[id..=old_id].rotate_right(1);
                 }
                 Ordering::Greater => self.render_list[id..old_id].rotate_right(1),
                 Ordering::Equal => {}

@@ -166,7 +166,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn set_letterbox(self, gc_context: MutationContext<'gc, '_>, letterbox: Letterbox) {
-        self.0.write(gc_context).letterbox = letterbox
+        self.0.write(gc_context).letterbox = letterbox;
     }
 
     /// Get the size of the SWF file.
@@ -232,7 +232,7 @@ impl<'gc> Stage<'gc> {
     /// This setting is currently ignored in Ruffle.
     pub fn set_stage_focus_rect(self, gc_context: MutationContext<'gc, '_>, fr: bool) {
         let mut this = self.0.write(gc_context);
-        this.stage_focus_rect = fr
+        this.stage_focus_rect = fr;
     }
 
     /// Get the size of the stage.

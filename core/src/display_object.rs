@@ -201,7 +201,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_x(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.tx = Twips::from_pixels(value)
+        self.transform.matrix.tx = Twips::from_pixels(value);
     }
 
     fn y(&self) -> f64 {
@@ -210,7 +210,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_y(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.ty = Twips::from_pixels(value)
+        self.transform.matrix.ty = Twips::from_pixels(value);
     }
 
     /// Caches the scale and rotation factors for this display object, if necessary.
@@ -323,7 +323,7 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.color_transform_mut().a_mult = Fixed8::from_f64(value)
+        self.color_transform_mut().a_mult = Fixed8::from_f64(value);
     }
 
     fn clip_depth(&self) -> Depth {
@@ -628,7 +628,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_depth(&self, gc_context: MutationContext<'gc, '_>, depth: Depth) {
-        self.base_mut(gc_context).set_depth(depth)
+        self.base_mut(gc_context).set_depth(depth);
     }
 
     /// The untransformed inherent bounding box of this object.
@@ -689,7 +689,7 @@ pub trait TDisplayObject<'gc>:
         self.base().place_frame()
     }
     fn set_place_frame(&self, gc_context: MutationContext<'gc, '_>, frame: u16) {
-        self.base_mut(gc_context).set_place_frame(frame)
+        self.base_mut(gc_context).set_place_frame(frame);
     }
 
     fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
@@ -702,7 +702,7 @@ pub trait TDisplayObject<'gc>:
         color_transform: ColorTransform,
     ) {
         self.base_mut(gc_context)
-            .set_color_transform(color_transform)
+            .set_color_transform(color_transform);
     }
 
     /// Should only be used to implement 'Transform.concatenatedMatrix'
@@ -929,14 +929,14 @@ pub trait TDisplayObject<'gc>:
     /// 1 is fully opaque.
     /// Set by the `_alpha`/`alpha` ActionScript properties.
     fn set_alpha(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_alpha(value)
+        self.base_mut(gc_context).set_alpha(value);
     }
 
     fn name(&self) -> AvmString<'gc> {
         self.base().name()
     }
     fn set_name(&self, gc_context: MutationContext<'gc, '_>, name: AvmString<'gc>) {
-        self.base_mut(gc_context).set_name(name)
+        self.base_mut(gc_context).set_name(name);
     }
 
     fn filters(&self) -> Avm2ArrayStorage<'gc> {
@@ -944,7 +944,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn set_filters(&self, gc_context: MutationContext<'gc, '_>, filters: Avm2ArrayStorage<'gc>) {
-        self.base_mut(gc_context).set_filters(filters)
+        self.base_mut(gc_context).set_filters(filters);
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
@@ -1005,7 +1005,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Set the parent of this display object.
     fn set_parent(&self, gc_context: MutationContext<'gc, '_>, parent: Option<DisplayObject<'gc>>) {
-        self.base_mut(gc_context).set_parent(parent)
+        self.base_mut(gc_context).set_parent(parent);
     }
 
     /// Retrieve the parent of this display object.
@@ -1088,7 +1088,7 @@ pub trait TDisplayObject<'gc>:
         self.base().removed()
     }
     fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_removed(value)
+        self.base_mut(gc_context).set_removed(value);
     }
 
     /// Whether this display object is visible.
@@ -1172,7 +1172,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has been transformed by ActionScript.
     /// When this flag is set, changes from SWF `PlaceObject` tags are ignored.
     fn set_transformed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_transformed_by_script(value)
+        self.base_mut(gc_context).set_transformed_by_script(value);
     }
 
     /// Whether this display object is cached into a bitmap rendering.
@@ -1185,7 +1185,7 @@ pub trait TDisplayObject<'gc>:
     /// Explicilty sets this display object to be cached into a bitmap rendering.
     /// Note that the object will still be bitmap cached if a filter or blend mode is active.
     fn set_is_bitmap_cached(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_is_bitmap_cached(value)
+        self.base_mut(gc_context).set_is_bitmap_cached(value);
     }
 
     /// Whether this display object has a scroll rectangle applied.
@@ -1195,7 +1195,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets whether this display object has a scroll rectangle applied.
     fn set_has_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_has_scroll_rect(value)
+        self.base_mut(gc_context).set_has_scroll_rect(value);
     }
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
@@ -1219,7 +1219,7 @@ pub trait TDisplayObject<'gc>:
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
     fn set_placed_by_script(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_placed_by_script(value)
+        self.base_mut(gc_context).set_placed_by_script(value);
     }
 
     /// Whether this display object has been instantiated by the timeline.
@@ -1333,7 +1333,7 @@ pub trait TDisplayObject<'gc>:
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc, '_>) {}
 
     fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
-        render_base((*self).into(), context)
+        render_base((*self).into(), context);
     }
 
     #[cfg(not(feature = "avm_debug"))]

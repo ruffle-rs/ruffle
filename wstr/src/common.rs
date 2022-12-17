@@ -485,7 +485,7 @@ impl core::cmp::Ord for WStr {
 impl core::hash::Hash for WStr {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        super::ops::str_hash(self, state)
+        super::ops::str_hash(self, state);
     }
 }
 

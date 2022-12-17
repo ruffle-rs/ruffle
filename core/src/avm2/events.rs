@@ -161,7 +161,7 @@ impl<'gc> Event<'gc> {
     }
 
     pub fn set_target(&mut self, target: Object<'gc>) {
-        self.target = Some(target)
+        self.target = Some(target);
     }
 
     pub fn current_target(&self) -> Option<Object<'gc>> {
@@ -169,7 +169,7 @@ impl<'gc> Event<'gc> {
     }
 
     pub fn set_current_target(&mut self, current_target: Object<'gc>) {
-        self.current_target = Some(current_target)
+        self.current_target = Some(current_target);
     }
 }
 

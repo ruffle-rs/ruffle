@@ -457,7 +457,7 @@ impl<'gc> ClassObject<'gc> {
                 }
             }
 
-            my_class = class.superclass_object()
+            my_class = class.superclass_object();
         }
 
         false

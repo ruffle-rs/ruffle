@@ -305,7 +305,7 @@ impl<'gc> Avm1<'gc> {
     pub fn halt(&mut self) {
         if !self.halted {
             self.halted = true;
-            log::error!("No more actions will be executed in this movie.")
+            log::error!("No more actions will be executed in this movie.");
         }
     }
 
@@ -367,7 +367,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     pub fn set_max_recursion_depth(&mut self, max_recursion_depth: u16) {
-        self.max_recursion_depth = max_recursion_depth
+        self.max_recursion_depth = max_recursion_depth;
     }
 
     pub fn broadcaster_functions(&self) -> BroadcasterFunctions<'gc> {

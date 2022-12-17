@@ -608,7 +608,7 @@ pub fn noise<'gc>(
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
                 let random_seed = random_seed_val.coerce_to_i32(activation)?;
-                bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale)
+                bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale);
             }
         }
     }
@@ -736,7 +736,7 @@ pub fn draw<'gc>(
         }
 
         if args.get(4).is_some() {
-            log::warn!("BitmapData.draw with clip rect - not implemented")
+            log::warn!("BitmapData.draw with clip rect - not implemented");
         }
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);

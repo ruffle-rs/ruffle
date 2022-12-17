@@ -24,7 +24,7 @@ where
         if let Err(e) = result {
             panic!("Encountered exception during test: {e}");
         }
-    })
+    });
 }
 
 macro_rules! test_method {

@@ -42,7 +42,7 @@ impl<'a> Frame<'a> {
     }
 
     pub fn finish(self) {
-        self.uniform_buffers.finish()
+        self.uniform_buffers.finish();
     }
 
     pub fn prep_color(&mut self) {

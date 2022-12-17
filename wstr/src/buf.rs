@@ -95,7 +95,7 @@ impl WString {
         #[inline(always)]
         fn ensure_valid_cap<T>(buf: &mut Vec<T>) {
             if buf.capacity() > MAX_STRING_LEN {
-                shrink(buf)
+                shrink(buf);
             }
         }
 
@@ -308,7 +308,7 @@ impl WString {
                 Units::Bytes(buf) => buf.push(ch as u8),
                 Units::Wide(buf) => buf.push(ch),
             },
-        )
+        );
     }
 
     // Appends a LATIN1 code unit to `self`.
@@ -316,7 +316,7 @@ impl WString {
         self.with_buf(|units| match units {
             Units::Bytes(buf) => buf.push(ch),
             Units::Wide(buf) => buf.push(ch.into()),
-        })
+        });
     }
 
     /// Appends a Unicode character to `self`.
@@ -332,7 +332,7 @@ impl WString {
                     buf.extend_from_slice(ch.encode_utf16(&mut tmp));
                 }
             },
-        )
+        );
     }
 
     /// Appends a UTF-8 string to `self`.
@@ -365,10 +365,10 @@ impl WString {
             (Units::Bytes(buf), Units::Bytes(other)) => buf.extend_from_slice(other),
             (Units::Wide(buf), Units::Wide(other)) => buf.extend_from_slice(other),
             (Units::Wide(buf), Units::Bytes(other)) => {
-                buf.extend(other.iter().map(|c| u16::from(*c)))
+                buf.extend(other.iter().map(|c| u16::from(*c)));
             }
             (Units::Bytes(_), Units::Wide(_)) => unreachable!(),
-        })
+        });
     }
 }
 
@@ -415,7 +415,7 @@ impl Clone for WString {
                 left.extend_from_slice(right);
             }
             _ => unreachable!(),
-        })
+        });
     }
 }
 

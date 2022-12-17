@@ -121,7 +121,7 @@ impl std::ops::Add for Twips {
 
 impl std::ops::AddAssign for Twips {
     fn add_assign(&mut self, other: Self) {
-        self.0 += other.0
+        self.0 += other.0;
     }
 }
 
@@ -134,7 +134,7 @@ impl std::ops::Sub for Twips {
 
 impl std::ops::SubAssign for Twips {
     fn sub_assign(&mut self, other: Self) {
-        self.0 -= other.0
+        self.0 -= other.0;
     }
 }
 
@@ -147,7 +147,7 @@ impl std::ops::Mul<i32> for Twips {
 
 impl std::ops::MulAssign<i32> for Twips {
     fn mul_assign(&mut self, other: i32) {
-        self.0 *= other
+        self.0 *= other;
     }
 }
 
@@ -160,7 +160,7 @@ impl std::ops::Div<i32> for Twips {
 
 impl std::ops::DivAssign<i32> for Twips {
     fn div_assign(&mut self, other: i32) {
-        self.0 /= other
+        self.0 /= other;
     }
 }
 

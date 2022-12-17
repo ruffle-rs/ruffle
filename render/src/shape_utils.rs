@@ -296,7 +296,7 @@ impl ActivePath {
     }
 
     fn add_point(&mut self, point: Point) {
-        self.segment.add_point(point)
+        self.segment.add_point(point);
     }
 
     fn flush_fill(&mut self, start: (Twips, Twips), pending: &mut [PendingPath], flip: bool) {

@@ -46,7 +46,7 @@ impl Log for ThreadLocalScanLogger {
         if self.enabled(record.metadata()) {
             LOCAL_LOGGER.with(|log_buffer| {
                 log_buffer.borrow_mut().push(format!("{}", record.args()));
-            })
+            });
         }
     }
 

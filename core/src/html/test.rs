@@ -58,7 +58,7 @@ fn from_swf_rectangle() {
             (Twips::new(3), Twips::new(5)).into(),
             (Twips::new(20), Twips::new(80)).into(),
         )
-    )
+    );
 }
 
 #[test]
@@ -240,7 +240,7 @@ fn bounds_with_size() {
     let size2 = Size::from((Twips::new(7780), Twips::new(500)));
     let bounds2 = bounds1.with_size(size2);
 
-    assert_eq!(bounds2.into_position_and_size(), (pos1, size2))
+    assert_eq!(bounds2.into_position_and_size(), (pos1, size2));
 }
 
 #[test]

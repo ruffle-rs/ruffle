@@ -328,12 +328,12 @@ impl<'gc> Avm2<'gc> {
 
     /// Pushes an executable on the call stack
     pub fn push_call(&self, mc: MutationContext<'gc, '_>, calling: Executable<'gc>) {
-        self.call_stack.write(mc).push(calling)
+        self.call_stack.write(mc).push(calling);
     }
 
     /// Pushes script initializer (global init) on the call stack
     pub fn push_global_init(&self, mc: MutationContext<'gc, '_>) {
-        self.call_stack.write(mc).push_global_init()
+        self.call_stack.write(mc).push_global_init();
     }
 
     /// Pops an executable off the call stack

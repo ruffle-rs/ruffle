@@ -204,7 +204,7 @@ mod tests {
                 "undefined"
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -212,7 +212,7 @@ mod tests {
         with_avm(19, |activation, _root| -> Result<(), Error> {
             assert_eq!(VariableDumper::dump(&Value::Null, " ", activation), "null");
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -224,7 +224,7 @@ mod tests {
                 "false"
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -236,7 +236,7 @@ mod tests {
                 "-0.05"
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -256,7 +256,7 @@ mod tests {
                 "\"Escape \\\"this\\\" string\\nplease! \\b\\f\\n\\r\\t\\\"\\\\\""
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod tests {
                 "[object #0] {}"
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -286,7 +286,7 @@ mod tests {
                 "[object #0] {\n child: [object #1] {\n  age: 6\n  parent: [object #0]\n }\n test: \"value\"\n self: [object #0]\n}",
             );
             Ok(())
-        })
+        });
     }
 
     #[test]
@@ -306,6 +306,6 @@ mod tests {
                 "Variables:\nobject.child = [object #0] {\n  age: 6\n  parent: [object #1] {\n   child: [object #0]\n   test: \"value\"\n   self: [object #1]\n  }\n }\nobject.test = \"value\"\nobject.self = [object #1]\n\n"
             );
             Ok(())
-        })
+        });
     }
 }

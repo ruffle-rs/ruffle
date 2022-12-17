@@ -398,7 +398,7 @@ where
 
             match result {
                 Err(e) => {
-                    log::error!("Error running definition tag: {:?}, got {}", tag, e)
+                    log::error!("Error running definition tag: {:?}, got {}", tag, e);
                 }
                 Ok(ControlFlow::Exit) => {
                     *reader.get_mut() = end_slice;

@@ -20,10 +20,10 @@ const RAND_Q: i64 = 127773; // m / a
 const RAND_R: i64 = 2836; // m % a
 fn setup_seed(mut seed: i64) -> i64 {
     if seed <= 0 {
-        seed = -(seed % (RAND_M - 1)) + 1
+        seed = -(seed % (RAND_M - 1)) + 1;
     };
     if seed > RAND_M - 1 {
-        seed = RAND_M - 1
+        seed = RAND_M - 1;
     };
     seed
 }
@@ -31,7 +31,7 @@ fn setup_seed(mut seed: i64) -> i64 {
 fn random(seed: i64) -> i64 {
     let mut result = RAND_A * (seed % RAND_Q) - RAND_R * (seed / RAND_Q);
     if result <= 0 {
-        result += RAND_M
+        result += RAND_M;
     };
     result
 }

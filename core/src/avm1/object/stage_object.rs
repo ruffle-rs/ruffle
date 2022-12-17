@@ -66,7 +66,7 @@ impl<'gc> StageObject<'gc> {
             .push(TextFieldBinding {
                 text_field,
                 variable_name,
-            })
+            });
     }
 
     /// Removes a text field binding for the given text field.
@@ -316,7 +316,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .define_value(gc_context, name, value, attributes)
+            .define_value(gc_context, name, value, attributes);
     }
 
     fn set_attributes(
@@ -331,7 +331,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             name,
             set_attributes,
             clear_attributes,
-        )
+        );
     }
 
     fn add_property(
@@ -345,7 +345,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .add_property(gc_context, name, get, set, attributes)
+            .add_property(gc_context, name, get, set, attributes);
     }
 
     fn add_property_with_case(
@@ -359,7 +359,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .add_property_with_case(activation, name, get, set, attributes)
+            .add_property_with_case(activation, name, get, set, attributes);
     }
 
     fn call_watcher(
@@ -507,7 +507,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .write(gc_context)
             .base
-            .set_interfaces(gc_context, iface_list)
+            .set_interfaces(gc_context, iface_list);
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
@@ -796,9 +796,9 @@ fn set_rotation<'gc>(
         // Normalize into the range of [-180, 180].
         degrees %= 360.0;
         if degrees < -180.0 {
-            degrees += 360.0
+            degrees += 360.0;
         } else if degrees > 180.0 {
-            degrees -= 360.0
+            degrees -= 360.0;
         }
         this.set_rotation(activation.context.gc_context, degrees.into());
     }

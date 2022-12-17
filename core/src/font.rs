@@ -433,7 +433,7 @@ impl Glyph {
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
         if self.shape_handle.get().is_none() {
             self.shape_handle
-                .set(Some(renderer.register_glyph_shape(&self.swf_glyph)))
+                .set(Some(renderer.register_glyph_shape(&self.swf_glyph)));
         }
         self.shape_handle.get().unwrap()
     }
@@ -706,7 +706,7 @@ mod tests {
             let device_font = Player::load_device_font(mc, &mut renderer);
 
             callback(mc, device_font);
-        })
+        });
     }
 
     #[test]

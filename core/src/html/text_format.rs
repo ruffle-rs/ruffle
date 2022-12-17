@@ -657,11 +657,11 @@ impl FormatSpans {
                         b"p" if is_multiline => {
                             if let Some(align) = attribute(b"align") {
                                 if align == WStr::from_units(b"left") {
-                                    format.align = Some(swf::TextAlign::Left)
+                                    format.align = Some(swf::TextAlign::Left);
                                 } else if align == WStr::from_units(b"center") {
-                                    format.align = Some(swf::TextAlign::Center)
+                                    format.align = Some(swf::TextAlign::Center);
                                 } else if align == WStr::from_units(b"right") {
-                                    format.align = Some(swf::TextAlign::Right)
+                                    format.align = Some(swf::TextAlign::Right);
                                 }
                             }
                         }

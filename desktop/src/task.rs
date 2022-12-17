@@ -42,7 +42,7 @@ impl Task {
 
     /// Marks this task to as ready to make progress.
     pub fn set_ready(&mut self) {
-        self.state = TaskState::Ready
+        self.state = TaskState::Ready;
     }
 
     /// Returns `true` if the task is awaiting further progress.

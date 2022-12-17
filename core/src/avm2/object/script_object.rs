@@ -334,7 +334,7 @@ impl<'gc> ScriptObjectData<'gc> {
             if let Some(value) = value {
                 self.slots.push(*value);
             } else {
-                self.slots.push(Value::Undefined)
+                self.slots.push(Value::Undefined);
             }
         }
     }
@@ -386,7 +386,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn set_proto(&mut self, proto: Object<'gc>) {
-        self.proto = Some(proto)
+        self.proto = Some(proto);
     }
 
     pub fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {

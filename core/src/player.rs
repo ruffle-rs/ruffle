@@ -85,9 +85,9 @@ impl StaticCallstack {
                 arena.mutate(|_, root| {
                     let callstack = root.callstack.read();
                     if let Some(callstack) = callstack.avm2 {
-                        f(&callstack.read())
+                        f(&callstack.read());
                     }
-                })
+                });
             }
         }
     }
@@ -530,7 +530,7 @@ impl Player {
         };
 
         if let Some(time_til_next_timer) = self.time_til_next_timer {
-            dt = dt.min(time_til_next_timer)
+            dt = dt.min(time_til_next_timer);
         }
 
         dt = dt.max(0.0);
@@ -549,7 +549,7 @@ impl Player {
 
     /// Sets the master volume of the player. 1.0 is 100% volume.
     pub fn set_volume(&mut self, volume: f32) {
-        self.audio.set_volume(volume)
+        self.audio.set_volume(volume);
     }
 
     pub fn prepare_context_menu(&mut self) -> Vec<ContextMenuItem> {
@@ -619,7 +619,7 @@ impl Player {
             if let Some(ref menu) = menu {
                 match menu.callback(index) {
                     ContextMenuCallback::Avm1 { item, callback } => {
-                        Self::run_context_menu_custom_callback(*item, *callback, context)
+                        Self::run_context_menu_custom_callback(*item, *callback, context);
                     }
                     ContextMenuCallback::Play => Self::toggle_play_root_movie(context),
                     ContextMenuCallback::Forward => Self::forward_root_movie(context),
@@ -681,7 +681,7 @@ impl Player {
     }
     fn rewind_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
         if let Some(mc) = context.stage.root_clip().as_movie_clip() {
-            mc.goto_frame(context, 1, true)
+            mc.goto_frame(context, 1, true);
         }
     }
     fn forward_root_movie(context: &mut UpdateContext<'_, '_, '_>) {
@@ -717,8 +717,8 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context
                 .stage
-                .set_background_color(context.gc_context, color)
-        })
+                .set_background_color(context.gc_context, color);
+        });
     }
 
     pub fn letterbox(&mut self) -> Letterbox {
@@ -727,8 +727,8 @@ impl Player {
 
     pub fn set_letterbox(&mut self, letterbox: Letterbox) {
         self.mutate_with_update_context(|context| {
-            context.stage.set_letterbox(context.gc_context, letterbox)
-        })
+            context.stage.set_letterbox(context.gc_context, letterbox);
+        });
     }
 
     pub fn movie_width(&mut self) -> u32 {
@@ -747,14 +747,14 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.renderer.set_viewport_dimensions(dimensions);
             context.stage.build_matrices(context);
-        })
+        });
     }
 
     pub fn set_show_menu(&mut self, show_menu: bool) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             stage.set_show_menu(context, show_menu);
-        })
+        });
     }
 
     pub fn set_stage_align(&mut self, stage_align: &str) {
@@ -763,7 +763,7 @@ impl Player {
             if let Ok(stage_align) = StageAlign::from_str(stage_align) {
                 stage.set_align(context, stage_align);
             }
-        })
+        });
     }
 
     pub fn set_quality(&mut self, quality: &str) {
@@ -772,7 +772,7 @@ impl Player {
             if let Ok(quality) = StageQuality::from_str(quality) {
                 stage.set_quality(context.gc_context, quality);
             }
-        })
+        });
     }
 
     pub fn set_scale_mode(&mut self, scale_mode: &str) {
@@ -781,7 +781,7 @@ impl Player {
             if let Ok(scale_mode) = StageScaleMode::from_str(scale_mode) {
                 stage.set_scale_mode(context, scale_mode);
             }
-        })
+        });
     }
 
     pub fn set_window_mode(&mut self, window_mode: &str) {
@@ -790,7 +790,7 @@ impl Player {
             if let Ok(window_mode) = WindowMode::from_str(window_mode) {
                 stage.set_window_mode(context, window_mode);
             }
-        })
+        });
     }
 
     /// Handle an event sent into the player from the external windowing system
@@ -1347,7 +1347,7 @@ impl Player {
         // Update mouse cursor if it has changed.
         if new_cursor != self.mouse_cursor {
             self.mouse_cursor = new_cursor;
-            self.ui.set_mouse_cursor(new_cursor)
+            self.ui.set_mouse_cursor(new_cursor);
         }
         self.mouse_cursor_needs_check = mouse_cursor_needs_check;
 
@@ -1831,7 +1831,7 @@ impl Player {
 
     pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
         self.mutate_with_update_context(|context| {
-            context.external_interface.add_provider(provider)
+            context.external_interface.add_provider(provider);
         });
     }
 
@@ -1862,7 +1862,7 @@ impl Player {
     }
 
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
-        self.max_execution_duration = max_execution_duration
+        self.max_execution_duration = max_execution_duration;
     }
 
     pub fn callstack(&self) -> StaticCallstack {

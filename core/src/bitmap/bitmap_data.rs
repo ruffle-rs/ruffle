@@ -286,7 +286,7 @@ impl<'gc> BitmapData<'gc> {
 
         let mut output = Vec::with_capacity(self.pixels.len() * 4);
         for p in &self.pixels {
-            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
+            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()]);
         }
         output
     }
@@ -341,14 +341,14 @@ impl<'gc> BitmapData<'gc> {
                 x as u32,
                 y as u32,
                 color.to_premultiplied_alpha(self.transparency()),
-            )
+            );
         }
     }
 
     pub fn fill_rect(&mut self, x: u32, y: u32, width: u32, height: u32, color: Color) {
         for x_offset in 0..width {
             for y_offset in 0..height {
-                self.set_pixel32((x + x_offset) as i32, (y + y_offset) as i32, color)
+                self.set_pixel32((x + x_offset) as i32, (y + y_offset) as i32, color);
             }
         }
     }
@@ -369,7 +369,7 @@ impl<'gc> BitmapData<'gc> {
                             pending.push((x, y - 1));
                         }
                         if x < self.width() - 1 {
-                            pending.push((x + 1, y))
+                            pending.push((x + 1, y));
                         }
                         if y < self.height() - 1 {
                             pending.push((x, y + 1));
@@ -514,7 +514,7 @@ impl<'gc> BitmapData<'gc> {
                     x,
                     y,
                     Color::from(color).to_premultiplied_alpha(self.transparency()),
-                )
+                );
             }
         }
     }
@@ -641,7 +641,7 @@ impl<'gc> BitmapData<'gc> {
                         };
 
                     if !self.transparency {
-                        dest_color = dest_color.with_alpha(0xFF)
+                        dest_color = dest_color.with_alpha(0xFF);
                     }
                 }
 
@@ -983,7 +983,7 @@ impl<'gc> BitmapData<'gc> {
     }
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
-        self.avm2_object = Some(object)
+        self.avm2_object = Some(object);
     }
 
     pub fn draw(
@@ -1051,7 +1051,7 @@ impl<'gc> BitmapData<'gc> {
         match image {
             Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
             Err(ruffle_render::error::Error::Unimplemented) => {
-                log::warn!("BitmapData.draw: Not yet implemented")
+                log::warn!("BitmapData.draw: Not yet implemented");
             }
             Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }

@@ -221,7 +221,7 @@ impl<'gc> Video<'gc> {
         drop(read);
 
         for fr in sweep_from..=frame_id {
-            self.seek_internal(context, fr)
+            self.seek_internal(context, fr);
         }
     }
 
@@ -402,7 +402,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             ) {
                 Ok(object) => {
                     let object: Avm2Object<'gc> = object.into();
-                    self.0.write(context.gc_context).object = Some(object.into())
+                    self.0.write(context.gc_context).object = Some(object.into());
                 }
                 Err(e) => log::error!("Got {} when constructing AVM2 side of video player", e),
             }

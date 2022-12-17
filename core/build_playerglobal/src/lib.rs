@@ -356,7 +356,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                                 None,
                                 "",
                                 &native_instance_init_method_name,
-                            )
+                            );
                     }
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }

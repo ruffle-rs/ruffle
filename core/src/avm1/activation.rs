@@ -1142,7 +1142,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     if url.is_empty() {
                         //Blank URL on movie loads = unload!
                         if let Some(mut mc) = level.as_movie_clip() {
-                            mc.replace_with_movie(&mut self.context, None, None)
+                            mc.replace_with_movie(&mut self.context, None, None);
                         }
                     } else {
                         let future = self.context.load_manager.load_movie_into_clip(
@@ -1258,7 +1258,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
-                        mc.replace_with_movie(&mut self.context, None, None)
+                        mc.replace_with_movie(&mut self.context, None, None);
                     }
                 } else {
                     let request = self.locals_into_request(
@@ -1282,7 +1282,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
-                        mc.replace_with_movie(&mut self.context, None, None)
+                        mc.replace_with_movie(&mut self.context, None, None);
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(
@@ -1687,7 +1687,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_play(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.play(&mut self.context)
+                clip.play(&mut self.context);
             } else {
                 avm_warn!(self, "Play: Target is not a MovieClip");
             }
@@ -2131,10 +2131,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     CatchVar::Var(name) => {
                         let name = name.to_str_lossy(activation.encoding());
                         let name = AvmString::new_utf8(activation.context.gc_context, name);
-                        activation.set_variable(name, value.to_owned())?
+                        activation.set_variable(name, value.to_owned())?;
                     }
                     CatchVar::Register(id) => {
-                        activation.set_current_register(*id, value.to_owned())
+                        activation.set_current_register(*id, value.to_owned());
                     }
                 }
 
@@ -2817,7 +2817,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
     pub fn force_define_local(&mut self, name: AvmString<'gc>, value: Value<'gc>) {
         self.scope
-            .force_define_local(name, value, self.context.gc_context)
+            .force_define_local(name, value, self.context.gc_context);
     }
 
     /// Returns value of `this` as a reference.

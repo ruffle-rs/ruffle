@@ -221,7 +221,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             if let Err(e) = future.await {
                 log::error!("Asynchronous error occurred: {}", e);
             }
-        })
+        });
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {

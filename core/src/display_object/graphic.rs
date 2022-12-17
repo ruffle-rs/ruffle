@@ -141,7 +141,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 shape_constr,
             ) {
                 Ok(object) => {
-                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into());
                 }
                 Err(e) => log::error!("Got {} when constructing AVM2 side of display object", e),
             }
@@ -177,7 +177,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         } else if let Some(render_handle) = self.0.read().static_data.render_handle {
             context
                 .commands
-                .render_shape(render_handle, context.transform_stack.transform())
+                .render_shape(render_handle, context.transform_stack.transform());
         }
     }
 

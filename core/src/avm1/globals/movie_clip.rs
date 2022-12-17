@@ -1136,7 +1136,7 @@ fn swap_depths<'gc>(
     {
         if let Some(target_parent) = target.avm1_parent() {
             if DisplayObject::ptr_eq(target_parent, parent.into()) && !target.removed() {
-                depth = Some(target.depth())
+                depth = Some(target.depth());
             } else {
                 avm_warn!(
                     activation,

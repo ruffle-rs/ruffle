@@ -454,7 +454,7 @@ pub mod tests {
 
         let mut n = Fixed8::from_f64(126.0);
         n += Fixed8::from_f64(1.5);
-        assert_eq!(n, Fixed8::from_f64(127.5))
+        assert_eq!(n, Fixed8::from_f64(127.5));
     }
 
     #[test]
@@ -496,7 +496,7 @@ pub mod tests {
 
         let mut n = Fixed8::from_f64(126.0);
         n -= Fixed8::from_f64(1.5);
-        assert_eq!(n, Fixed8::from_f64(124.5))
+        assert_eq!(n, Fixed8::from_f64(124.5));
     }
 
     #[test]
@@ -544,7 +544,7 @@ pub mod tests {
 
         let mut n = Fixed8::from_f64(126.0);
         n -= Fixed8::from_f64(1.5);
-        assert_eq!(n, Fixed8::from_f64(124.5))
+        assert_eq!(n, Fixed8::from_f64(124.5));
     }
 
     #[test]
@@ -618,7 +618,7 @@ pub mod tests {
 
         let mut n = Fixed8::from_f64(126.0);
         n /= Fixed8::from_f64(1.5);
-        assert_eq!(n, Fixed8::from_f64(84.0))
+        assert_eq!(n, Fixed8::from_f64(84.0));
     }
 
     #[test]

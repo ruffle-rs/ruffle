@@ -297,7 +297,7 @@ pub fn as_set_prop_flags<'gc>(
                         Some(AvmString::new(activation.context.gc_context, prop_name)),
                         set_attributes,
                         clear_attributes,
-                    )
+                    );
                 }
             } else {
                 object.set_attributes(
@@ -305,7 +305,7 @@ pub fn as_set_prop_flags<'gc>(
                     Some(props),
                     set_attributes,
                     clear_attributes,
-                )
+                );
             }
         }
         None => {

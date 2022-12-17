@@ -202,7 +202,7 @@ pub struct LoadManager<'gc>(Arena<Loader<'gc>>);
 unsafe impl<'gc> Collect for LoadManager<'gc> {
     fn trace(&self, cc: CollectionContext) {
         for (_, loader) in self.0.iter() {
-            loader.trace(cc)
+            loader.trace(cc);
         }
     }
 }
@@ -1364,7 +1364,7 @@ impl<'gc> Loader<'gc> {
                             ..
                         }) => {
                             *loader_status = LoaderStatus::Parsing;
-                            *old = Some(movie.clone())
+                            *old = Some(movie.clone());
                         }
                         _ => unreachable!(),
                     };

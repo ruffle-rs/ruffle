@@ -284,7 +284,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 bitmap,
             ) {
                 Ok(object) => {
-                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into());
                 }
                 Err(e) => log::error!("Got error when creating AVM2 side of bitmap: {}", e),
             }

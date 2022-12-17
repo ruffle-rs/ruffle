@@ -536,7 +536,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
         let mut base = self.base_mut(mc);
 
-        base.set_proto(proto)
+        base.set_proto(proto);
     }
 
     /// Get the next enumerant index in enumerant space.
@@ -609,7 +609,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) {
         let mut base = self.base_mut(mc);
 
-        base.set_local_property_is_enumerable(name, is_enumerable)
+        base.set_local_property_is_enumerable(name, is_enumerable);
     }
 
     /// Install a bound method on an object.
@@ -621,7 +621,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) {
         let mut base = self.base_mut(mc);
 
-        base.install_bound_method(disp_id, function)
+        base.install_bound_method(disp_id, function);
     }
 
     /// Install a const trait on the global object.
@@ -824,7 +824,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            my_proto = proto.proto()
+            my_proto = proto.proto();
         }
 
         Ok(false)

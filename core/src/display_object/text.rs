@@ -57,7 +57,7 @@ impl<'gc> Text<'gc> {
         gc_context: MutationContext<'gc, '_>,
         settings: TextRenderSettings,
     ) {
-        self.0.write(gc_context).render_settings = settings
+        self.0.write(gc_context).render_settings = settings;
     }
 }
 
@@ -243,7 +243,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 statictext,
             ) {
                 Ok(object) => {
-                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into());
                 }
                 Err(e) => log::error!("Got error when creating AVM2 side of Text: {}", e),
             }

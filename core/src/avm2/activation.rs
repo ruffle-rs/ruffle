@@ -367,7 +367,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
                 //Variadic parameters exist, just push them into the list
-                arguments_list.extend_from_slice(&user_arguments[signature.len()..])
+                arguments_list.extend_from_slice(&user_arguments[signature.len()..]);
             }
             Ordering::Less => {
                 //Apply remaining default parameters
@@ -669,7 +669,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
         let stack_depth = self.stack_depth;
         let max_stack_size = self.max_stack_size;
-        self.avm2().push(value.into(), stack_depth, max_stack_size)
+        self.avm2().push(value.into(), stack_depth, max_stack_size);
     }
 
     /// Pops a value off the operand stack.
@@ -693,7 +693,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn push_scope(&mut self, scope: Scope<'gc>) {
         let scope_depth = self.scope_depth;
         let max_scope_size = self.max_scope_size;
-        self.avm2().push_scope(scope, scope_depth, max_scope_size)
+        self.avm2().push_scope(scope, scope_depth, max_scope_size);
     }
 
     /// Pops a scope off of the scope stack.
@@ -707,14 +707,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     #[inline]
     pub fn clear_stack(&mut self) {
         let stack_depth = self.stack_depth;
-        self.avm2().stack.truncate(stack_depth)
+        self.avm2().stack.truncate(stack_depth);
     }
 
     /// Clears the scope stack used by this activation.
     #[inline]
     pub fn clear_scope(&mut self) {
         let scope_depth = self.scope_depth;
-        self.avm2().scope_stack.truncate(scope_depth)
+        self.avm2().scope_stack.truncate(scope_depth);
     }
 
     /// Get the superclass of the class that defined the currently-executing

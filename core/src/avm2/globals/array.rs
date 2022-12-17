@@ -577,7 +577,7 @@ pub fn push<'gc>(
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             for arg in args {
-                array.push(*arg)
+                array.push(*arg);
             }
             return Ok(array.length().into());
         }
@@ -606,9 +606,9 @@ pub fn reverse<'gc>(
                 (0..last_non_hole_index.unwrap_or_else(|| array.length().saturating_sub(1))).rev()
             {
                 if let Some(value) = array.get(i) {
-                    new_array.push(value)
+                    new_array.push(value);
                 } else {
-                    new_array.push_hole()
+                    new_array.push_hole();
                 }
             }
 
@@ -647,7 +647,7 @@ pub fn unshift<'gc>(
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             for arg in args.iter().rev() {
-                array.unshift(*arg)
+                array.unshift(*arg);
             }
             return Ok(array.length().into());
         }
@@ -756,7 +756,7 @@ pub fn splice<'gc>(
                 let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
 
                 if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
-                    swap(&mut *array, &mut resolved_array)
+                    swap(&mut *array, &mut resolved_array);
                 }
 
                 return build_array(activation, removed_array);

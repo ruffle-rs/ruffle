@@ -237,21 +237,21 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn stop_sound(&mut self, instance: SoundInstanceHandle) {
-        self.audio_manager.stop_sound(self.audio, instance)
+        self.audio_manager.stop_sound(self.audio, instance);
     }
 
     pub fn stop_sounds_with_handle(&mut self, sound: SoundHandle) {
         self.audio_manager
-            .stop_sounds_with_handle(self.audio, sound)
+            .stop_sounds_with_handle(self.audio, sound);
     }
 
     pub fn stop_sounds_with_display_object(&mut self, display_object: DisplayObject<'gc>) {
         self.audio_manager
-            .stop_sounds_with_display_object(self.audio, display_object)
+            .stop_sounds_with_display_object(self.audio, display_object);
     }
 
     pub fn stop_all_sounds(&mut self) {
-        self.audio_manager.stop_all_sounds(self.audio)
+        self.audio_manager.stop_all_sounds(self.audio);
     }
 
     pub fn is_sound_playing(&mut self, sound: SoundInstanceHandle) -> bool {
@@ -281,7 +281,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn set_sound_transforms_dirty(&mut self) {
-        self.audio_manager.set_sound_transforms_dirty()
+        self.audio_manager.set_sound_transforms_dirty();
     }
 }
 
@@ -400,7 +400,7 @@ impl<'gc> ActionQueue<'gc> {
         };
         debug_assert!(priority < Self::NUM_PRIORITIES);
         if let Some(queue) = self.action_queue.get_mut(priority) {
-            queue.push_back(action)
+            queue.push_back(action);
         }
     }
 

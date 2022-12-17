@@ -136,7 +136,7 @@ pub trait TInteractiveObject<'gc>:
     fn set_mouse_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
         self.raw_interactive_mut(mc)
             .flags
-            .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
+            .set(InteractiveObjectFlags::MOUSE_ENABLED, value);
     }
 
     /// Check if the interactive object accepts double-click events.
@@ -150,7 +150,7 @@ pub trait TInteractiveObject<'gc>:
     fn set_double_click_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
         self.raw_interactive_mut(mc)
             .flags
-            .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+            .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value);
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {

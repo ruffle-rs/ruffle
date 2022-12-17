@@ -42,7 +42,7 @@ impl<'gc> TransformObject<'gc> {
     }
 
     pub fn set_clip(self, gc_context: MutationContext<'gc, '_>, clip: MovieClip<'gc>) {
-        self.0.write(gc_context).clip = Some(clip)
+        self.0.write(gc_context).clip = Some(clip);
     }
 }
 

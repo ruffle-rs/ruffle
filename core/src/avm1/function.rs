@@ -765,7 +765,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         attributes: Attribute,
     ) {
-        self.base.define_value(gc_context, name, value, attributes)
+        self.base.define_value(gc_context, name, value, attributes);
     }
 
     fn set_attributes(
@@ -776,7 +776,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         clear_attributes: Attribute,
     ) {
         self.base
-            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+            .set_attributes(gc_context, name, set_attributes, clear_attributes);
     }
 
     fn add_property(
@@ -788,7 +788,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         attributes: Attribute,
     ) {
         self.base
-            .add_property(gc_context, name, get, set, attributes)
+            .add_property(gc_context, name, get, set, attributes);
     }
 
     fn add_property_with_case(
@@ -800,7 +800,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         attributes: Attribute,
     ) {
         self.base
-            .add_property_with_case(activation, name, get, set, attributes)
+            .add_property_with_case(activation, name, get, set, attributes);
     }
 
     fn call_watcher(
@@ -865,7 +865,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     /// Set the interface list for this object. (Only useful for prototypes.)
     fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.base.set_interfaces(gc_context, iface_list)
+        self.base.set_interfaces(gc_context, iface_list);
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {

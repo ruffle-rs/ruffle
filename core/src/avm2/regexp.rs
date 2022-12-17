@@ -185,12 +185,12 @@ impl<'gc> RegExp<'gc> {
                                 let two_digit_index = d_u * 10 + d1_u;
                                 if two_digit_index <= m.captures.len() {
                                     chars.next();
-                                    grp_index = two_digit_index
+                                    grp_index = two_digit_index;
                                 }
                             }
                         }
                         if let Some(Some(r)) = m.captures.get(grp_index - 1) {
-                            ret.push_str(&text[r.start..r.end])
+                            ret.push_str(&text[r.start..r.end]);
                         }
                         continue;
                     }

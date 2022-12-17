@@ -144,7 +144,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) {
         self.0
             .read()
-            .add_property(gc_context, name, get, set, attributes)
+            .add_property(gc_context, name, get, set, attributes);
     }
 
     fn add_property_with_case(
@@ -157,7 +157,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) {
         self.0
             .read()
-            .add_property_with_case(activation, name, get, set, attributes)
+            .add_property_with_case(activation, name, get, set, attributes);
     }
 
     fn call_watcher(
@@ -193,7 +193,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) {
         self.0
             .read()
-            .define_value(gc_context, name, value, attributes)
+            .define_value(gc_context, name, value, attributes);
     }
 
     fn set_attributes(
@@ -205,7 +205,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) {
         self.0
             .read()
-            .set_attributes(gc_context, name, set_attributes, clear_attributes)
+            .set_attributes(gc_context, name, set_attributes, clear_attributes);
     }
 
     fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
@@ -249,7 +249,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>) {
-        self.0.read().set_interfaces(gc_context, iface_list)
+        self.0.read().set_interfaces(gc_context, iface_list);
     }
 
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {

@@ -55,10 +55,10 @@ impl<'gc> ArrayStorage<'gc> {
     /// array will be extended with holes.
     pub fn set(&mut self, item: usize, value: Value<'gc>) {
         if self.storage.len() < (item + 1) {
-            self.storage.resize(item + 1, None)
+            self.storage.resize(item + 1, None);
         }
 
-        *self.storage.get_mut(item).unwrap() = Some(value)
+        *self.storage.get_mut(item).unwrap() = Some(value);
     }
 
     /// Delete an array storage slot, leaving a hole.
@@ -75,7 +75,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Set the length of the array.
     pub fn set_length(&mut self, size: usize) {
-        self.storage.resize(size, None)
+        self.storage.resize(size, None);
     }
 
     /// Append the contents of another array into this one.
@@ -86,7 +86,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// Holes are copied as holes and not resolved at append time.
     pub fn append(&mut self, other_array: &Self) {
         for other_item in other_array.storage.iter() {
-            self.storage.push(*other_item)
+            self.storage.push(*other_item);
         }
     }
 
@@ -94,12 +94,12 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// It is not possible to push a hole onto the array.
     pub fn push(&mut self, item: Value<'gc>) {
-        self.storage.push(Some(item))
+        self.storage.push(Some(item));
     }
 
     /// Push an array hole onto the end of this array.
     pub fn push_hole(&mut self) {
-        self.storage.push(None)
+        self.storage.push(None);
     }
 
     /// Pop a value from the back of the array.
@@ -142,7 +142,7 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// It is not possible to push a hole onto the array.
     pub fn unshift(&mut self, item: Value<'gc>) {
-        self.storage.insert(0, Some(item))
+        self.storage.insert(0, Some(item));
     }
 
     /// Iterate over array values.

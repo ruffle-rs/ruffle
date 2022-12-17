@@ -29,7 +29,7 @@ impl<'a> Reader<'a> {
 
     #[inline]
     pub fn seek(&mut self, data: &'a [u8], jump_offset: i16) {
-        ReadSwfExt::seek(self, data, jump_offset as isize)
+        ReadSwfExt::seek(self, data, jump_offset as isize);
     }
 
     #[inline]

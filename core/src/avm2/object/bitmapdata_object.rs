@@ -92,6 +92,6 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         mc: MutationContext<'gc, '_>,
         new_bitmap: GcCell<'gc, BitmapData<'gc>>,
     ) {
-        self.0.write(mc).bitmap_data = Some(new_bitmap)
+        self.0.write(mc).bitmap_data = Some(new_bitmap);
     }
 }

@@ -360,7 +360,7 @@ impl<'gc> AudioManager<'gc> {
                             target: object.into(),
                         },
                         false,
-                    )
+                    );
                 }
 
                 false

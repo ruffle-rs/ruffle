@@ -183,7 +183,7 @@ impl<'gc> Domain<'gc> {
         mc: MutationContext<'gc, '_>,
         domain_memory: ByteArrayObject<'gc>,
     ) {
-        self.0.write(mc).domain_memory = Some(domain_memory)
+        self.0.write(mc).domain_memory = Some(domain_memory);
     }
 
     /// Allocate the default domain memory for this domain, if it does not

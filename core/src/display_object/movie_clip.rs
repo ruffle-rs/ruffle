@@ -777,10 +777,13 @@ impl<'gc> MovieClip<'gc> {
                     } else {
                         match library.character_by_id(id) {
                             Some(Character::MovieClip(mc)) => {
-                                mc.set_avm2_class(activation.context.gc_context, Some(class_object))
+                                mc.set_avm2_class(
+                                    activation.context.gc_context,
+                                    Some(class_object),
+                                );
                             }
                             Some(Character::Avm2Button(btn)) => {
-                                btn.set_avm2_class(activation.context.gc_context, class_object)
+                                btn.set_avm2_class(activation.context.gc_context, class_object);
                             }
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
@@ -874,7 +877,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
-        self.0.write(mc).set_programmatically_played()
+        self.0.write(mc).set_programmatically_played();
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -884,7 +887,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn play(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).play()
+        self.0.write(context.gc_context).play();
     }
 
     pub fn prev_frame(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -894,7 +897,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn stop(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).stop(context)
+        self.0.write(context.gc_context).stop(context);
     }
 
     /// Queues up a goto to the specified frame.
@@ -1330,7 +1333,7 @@ impl<'gc> MovieClip<'gc> {
 
                 // AS3 removals need to happen before frame advance (see below)
                 if !context.is_action_script_3() {
-                    write.current_frame += 1
+                    write.current_frame += 1;
                 }
             }
             NextFrame::First => return self.run_goto(context, 1, true),
@@ -1815,7 +1818,7 @@ impl<'gc> MovieClip<'gc> {
                     log::error!(
                         "Unexpected PlaceObject during goto: {:?}",
                         params.place_object
-                    )
+                    );
                 }
             }
         };

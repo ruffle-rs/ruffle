@@ -294,7 +294,7 @@ impl App {
 
             CALLSTACK.with(|callstack| {
                 *callstack.borrow_mut() = Some(player.lock().unwrap().callstack());
-            })
+            });
         }
 
         Ok(Self {
@@ -846,7 +846,7 @@ fn init() {
 fn panic_hook() {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
-            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"));
         }
     });
 }

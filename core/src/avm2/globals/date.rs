@@ -279,7 +279,7 @@ pub fn instance_init<'gc>(
                         if let LocalResult::Single(time) =
                             Utc.timestamp_millis_opt(timestamp as i64)
                         {
-                            date.set_date_time(activation.context.gc_context, Some(time))
+                            date.set_date_time(activation.context.gc_context, Some(time));
                         } else {
                             date.set_date_time(activation.context.gc_context, None);
                         }
@@ -288,7 +288,7 @@ pub fn instance_init<'gc>(
                     }
                 }
             } else {
-                date.set_date_time(activation.context.gc_context, Some(get_current_date_time()))
+                date.set_date_time(activation.context.gc_context, Some(get_current_date_time()));
             }
         }
     }
@@ -1285,7 +1285,7 @@ pub fn parse<'gc>(
                 if final_time.day.is_some() {
                     return Ok(f64::NAN.into());
                 }
-                final_time.day = Some(Some(num as f64))
+                final_time.day = Some(Some(num as f64));
             }
         } else {
             return Ok(f64::NAN.into());

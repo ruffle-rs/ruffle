@@ -1093,7 +1093,7 @@ impl<'gc> EditText<'gc> {
         gc_context: MutationContext<'gc, '_>,
         settings: TextRenderSettings,
     ) {
-        self.0.write(gc_context).render_settings = settings
+        self.0.write(gc_context).render_settings = settings;
     }
 
     pub fn hscroll(self) -> f64 {
@@ -1373,7 +1373,7 @@ impl<'gc> EditText<'gc> {
         ) {
             Ok(object) => {
                 let object: Avm2Object<'gc> = object.into();
-                self.0.write(activation.context.gc_context).object = Some(object.into())
+                self.0.write(activation.context.gc_context).object = Some(object.into());
             }
             Err(e) => log::error!(
                 "Got {} when constructing AVM2 side of dynamic text field",

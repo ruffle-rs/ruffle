@@ -134,7 +134,7 @@ impl<'gc> Multiname<'gc> {
         } else {
             let mut result = Vec::with_capacity(ns_set.len());
             for ns in ns_set {
-                result.push(Namespace::from_abc_namespace(translation_unit, *ns, mc)?)
+                result.push(Namespace::from_abc_namespace(translation_unit, *ns, mc)?);
             }
             Ok(NamespaceSet::multiple(result, mc))
         }

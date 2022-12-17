@@ -477,7 +477,7 @@ pub fn noise<'gc>(
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .noise(random_seed, low, high.max(low), channel_options, gray_scale)
+                    .noise(random_seed, low, high.max(low), channel_options, gray_scale);
             }
 
             return Ok(Value::Undefined);
@@ -507,10 +507,10 @@ pub fn draw<'gc>(
                 .unwrap_or_default();
 
             if args.get(3).is_some() {
-                log::warn!("BitmapData.draw with blend mode - not implemented")
+                log::warn!("BitmapData.draw with blend mode - not implemented");
             }
             if args.get(4).is_some() {
-                log::warn!("BitmapData.draw with clip rect - not implemented")
+                log::warn!("BitmapData.draw with clip rect - not implemented");
             }
             let smoothing = args
                 .get(5)

@@ -34,7 +34,7 @@ impl CommandList {
                     smoothing,
                 } => handler.render_bitmap(bitmap, &transform, *smoothing),
                 Command::RenderShape { shape, transform } => {
-                    handler.render_shape(*shape, &transform)
+                    handler.render_shape(*shape, &transform);
                 }
                 Command::DrawRect { color, matrix } => handler.draw_rect(color.clone(), &matrix),
                 Command::PushMask => handler.push_mask(),
