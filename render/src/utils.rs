@@ -65,23 +65,68 @@ pub fn glue_tables_to_jpeg<'a>(
 }
 
 /// Removes potential invalid JPEG data from SWF DefineBitsJPEG tags.
-///
-/// SWF19 p.138:
-/// "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
 /// These bytes need to be removed for the JPEG to decode properly.
-pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> Cow<[u8]> {
-    // TODO: Might be better to return an Box<Iterator<Item=u8>> instead of a Cow here,
-    // where the spliced iter is a data[..n].chain(data[n+4..])?
-    if data.starts_with(&[0xFF, 0xD9, 0xFF, 0xD8]) {
-        data = &data[4..];
-    }
-    if let Some(pos) = data.windows(4).position(|w| w == [0xFF, 0xD9, 0xFF, 0xD8]) {
-        let mut out_data = Vec::with_capacity(data.len() - 4);
-        out_data.extend_from_slice(&data[..pos]);
-        out_data.extend_from_slice(&data[pos + 4..]);
-        out_data.into()
+pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
+    // SWF19 errata p.138:
+    // "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8
+    // before the JPEG SOI marker."
+    // 0xFFD9FFD8 is a JPEG EOI+SOI marker pair. Contrary to the spec, this invalid marker sequence can actually appear
+    // at any time before the 0xFFC0 SOF marker, not only at the beginning of the data. I believe this is a relic from
+    // the SWF JPEGTables tag, which stores encoding tables separately from the DefineBits image data, encased in its
+    // own SOI+EOI pair. When these data are glued together, an interior EOI+SOI sequence is produced. The Flash JPEG
+    // decoder expects this pair and ignores it, despite standard JPEG decoders stopping at the EOI.
+    // When DefineBitsJPEG2 etc. were introduced, the Flash encoders/decoders weren't properly adjusted, resulting in
+    // this sequence persisting. Also, despite what the spec says, this doesn't appear to be version checked (e.g., a
+    // v9 SWF can contain one of these malformed JPEGs and display correctly).
+    // See https://github.com/ruffle-rs/ruffle/issues/8775 for various examples.
+
+    // JPEG markers
+    const SOF0: u8 = 0xC0; // Start of frame
+    const RST0: u8 = 0xD0; // Restart (we shouldn't see this before SOS, but just in case)
+    const RST7: u8 = 0xD7;
+    const SOI: u8 = 0xD8; // Start of image
+    const EOI: u8 = 0xD9; // End of image
+
+    if data.starts_with(&[0xFF, EOI, 0xFF, SOI]) {
+        // Common case: usually the sequence is at the beginning as the spec says, so adjust the slice to avoid a copy.
+        data[4..].into()
     } else {
-        data.into()
+        // Parse the JPEG markers searching for the 0xFFD9FFD8 marker sequence to splice out.
+        // We only have to search up to the SOF0 marker.
+        // This might be another case where eventually we want to write our own full JPEG decoder to match Flash's decoder.
+        let mut jpeg_data = data;
+        let mut pos = 0;
+        loop {
+            if jpeg_data.len() < 4 {
+                // No invalid sequence found before SOF marker, return data as-is.
+                break data.into();
+            }
+            let payload_len: usize = match &jpeg_data[..4] {
+                [0xFF, EOI, 0xFF, SOI] => {
+                    // Invalid EOI+SOI sequence found, splice it out.
+                    let mut out_data = Vec::with_capacity(data.len() - 4);
+                    out_data.extend_from_slice(&data[..pos]);
+                    out_data.extend_from_slice(&data[pos + 4..]);
+                    break out_data.into();
+                }
+                // EOI, SOI, RST markers do not include a size.
+                [0xFF, EOI | SOI | RST0..=RST7, _, _] => 0,
+                [0xFF, SOF0, _, _] => {
+                    // No invalid sequence found before SOF marker, return data as-is.
+                    break data.into();
+                }
+                // Other tags include a length.
+                [0xFF, _, a, b] => u16::from_be_bytes([*a, *b]).into(),
+                _ => {
+                    // All JPEG markers should start with 0xFF.
+                    // So this is either not a JPEG, or we screwed up parsing the markers. Bail out.
+                    break data.into();
+                }
+            };
+            // Advance to next JPEG marker.
+            jpeg_data = jpeg_data.get(payload_len + 2..).unwrap_or_default();
+            pos += payload_len + 2;
+        }
     }
 }
 
