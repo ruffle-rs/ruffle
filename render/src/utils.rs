@@ -87,7 +87,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
     const SOI: u8 = 0xD8; // Start of image
     const EOI: u8 = 0xD9; // End of image
 
-    if data.starts_with(&[0xFF, EOI, 0xFF, SOI]) {
+    let mut data: Cow<[u8]> = if data.starts_with(&[0xFF, EOI, 0xFF, SOI]) {
         // Common case: usually the sequence is at the beginning as the spec says, so adjust the slice to avoid a copy.
         data[4..].into()
     } else {
@@ -127,6 +127,17 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
             jpeg_data = jpeg_data.get(payload_len + 2..).unwrap_or_default();
             pos += payload_len + 2;
         }
+    };
+
+    // Some JPEGs are missing the final EOI marker (JPEG optimizers truncate it?)
+    // Flash and most image decoders will still display these images, but jpeg-decoder errors.
+    // Glue on an EOI marker if its not already there and hope for the best.
+    if data.ends_with(&[0xFF, EOI]) {
+        data
+    } else {
+        log::warn!("JPEG is missing EOI marker and may not decode properly");
+        data.to_mut().extend_from_slice(&[0xFF, EOI]);
+        data
     }
 }
 
