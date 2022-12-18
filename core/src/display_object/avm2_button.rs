@@ -643,6 +643,20 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         BoundingBox::default()
     }
 
+    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+        // Get self bounds
+        let mut bounds = self.self_bounds().transform(matrix);
+
+        // Add the bounds of the child, dictated by current state
+        let state = self.0.read().state;
+        if let Some(child) = self.get_state_child(state.into()) {
+            let child_bounds = child.bounds_with_transform(matrix);
+            bounds.union(&child_bounds);
+        }
+
+        bounds
+    }
+
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -652,8 +666,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
             let state = self.0.read().state;
             if let Some(child) = self.get_state_child(state.into()) {
-                // hit_area is not actually a child, so transform point into local space before passing it down.
-                let point = self.global_to_local(point);
+                //TODO: the if below should probably always be taken, why does the hit area
+                // sometimes have a parent?
+                let mut point = point;
+                if child.parent().is_none() {
+                    // hit_area is not actually a child, so transform point into local space before passing it down.
+                    point = self.global_to_local(point);
+                }
+
                 if child.hit_test_shape(context, point, options) {
                     return true;
                 }
@@ -780,6 +800,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             ClipEvent::Press => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
             ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
             ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
+            ClipEvent::MouseUpInside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
             ClipEvent::RollOut { .. } => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
             ClipEvent::RollOver { .. } => {
                 (ButtonState::Over, static_data.up_to_over_sound.as_ref())
@@ -814,14 +835,20 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                     .as_interactive()
                     .and_then(|c| c.mouse_pick(context, point, require_button_mode));
                 if mouse_pick.is_some() {
-                    return mouse_pick;
+                    // Selecting a child of a button is equivalent to selecting the button itself
+                    return Some((*self).into());
                 }
             }
 
             let hit_area = self.0.read().hit_area;
             if let Some(hit_area) = hit_area {
-                // hit_area is not actually a child, so transform point into local space before passing it down.
-                let point = self.global_to_local(point);
+                //TODO: the if below should probably always be taken, why does the hit area
+                // sometimes have a parent?
+                let mut point = point;
+                if hit_area.parent().is_none() {
+                    // hit_area is not actually a child, so transform point into local space before passing it down.
+                    point = self.global_to_local(point);
+                }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                     return Some((*self).into());
                 }

@@ -671,6 +671,10 @@ pub fn hit_test_point<'gc>(
             .coerce_to_boolean();
 
         if shape_flag {
+            if !dobj.is_on_stage(&activation.context) {
+                return Ok(false.into());
+            }
+
             return Ok(dobj
                 .hit_test_shape(
                     &mut activation.context,
