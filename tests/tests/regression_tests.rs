@@ -598,6 +598,7 @@ swf_tests! {
     (bitmap_data_max_size_swf10, "avm1/bitmap_data_max_size_swf10", 1),
     (bitmap_data_max_size_swf9, "avm1/bitmap_data_max_size_swf9", 1),
     (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
+    (bitmap_data_threshold, "avm1/bitmap_data_threshold", 1),
     (bitmap_filter, "avm1/bitmap_filter", 1),
     (biturshift, "avm1/biturshift", 1),
     (biturshift_swf8, "avm1/biturshift_swf8", 1),

@@ -1154,7 +1154,6 @@ pub fn threshold<'gc>(
             let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
             let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
-            // TODO: how does this handle undefined
             let operation = args
                 .get(3)
                 .unwrap_or(&Value::Undefined)
@@ -1165,7 +1164,6 @@ pub fn threshold<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
 
-            //TODO: check how we get these values below
             let colour = args.get(5).unwrap_or(&0.into()).coerce_to_u32(activation)?;
 
             let mask = args
@@ -1174,13 +1172,10 @@ pub fn threshold<'gc>(
                 .coerce_to_u32(activation)?;
 
             let copy_source = args
-                .get(6)
-                .unwrap_or(&Value::Bool(false))
-                .as_bool(activation.context.player_version);
+                .get(7)
+                .unwrap_or(&false.into())
+                .as_bool(activation.swf_version());
 
-            //TODO: what kind of aliasing do we need here
-            // copy_pixels or pallet map
-            // I think pallet map tbh
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
                     // dealing with object aliasing...

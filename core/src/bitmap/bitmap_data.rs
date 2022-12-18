@@ -956,6 +956,7 @@ impl<'gc> BitmapData<'gc> {
         let (dest_min_x, dest_min_y) = dest_point;
 
         // The number of modified pixels
+        // This doesn't seem to include pixels changed due to copy_source
         let mut modified_count = 0;
 
         // Check each pixel
@@ -988,7 +989,6 @@ impl<'gc> BitmapData<'gc> {
                             .unwrap()
                             .to_un_multiplied_alpha();
 
-                        modified_count += 1;
                         self.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
                     }
                 }
@@ -1071,8 +1071,8 @@ impl<'gc> BitmapData<'gc> {
                 mask,
                 copy_source,
             ),
-            //TODO: how do we handle other ops
-            _ => panic!(),
+            // For undefined/invalid operations FP seems to just return 0 here
+            _ => 0,
         }
     }
 
