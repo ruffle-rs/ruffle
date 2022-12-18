@@ -13,6 +13,7 @@ use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
+use ruffle_wstr::WStr;
 use std::ops::Range;
 use swf::{BlendMode, Rectangle, Twips};
 
@@ -934,6 +935,144 @@ impl<'gc> BitmapData<'gc> {
                 src_x += dx;
             }
             src_y += dy;
+        }
+    }
+
+    /// This implements the threshold operation generically over the test operation performed for each pixel
+    /// Returns the number of pixels modified
+    #[allow(clippy::too_many_arguments)]
+    fn threshold_internal<Op: Fn(u32) -> bool>(
+        &mut self,
+        source_bitmap: &Self,
+        src_rect: (i32, i32, i32, i32),
+        dest_point: (i32, i32),
+        operation: Op,
+        colour: u32,
+        mask: u32,
+        copy_source: bool,
+    ) -> u32 {
+        // Extract coords
+        let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+        let (dest_min_x, dest_min_y) = dest_point;
+
+        // The number of modified pixels
+        let mut modified_count = 0;
+
+        // Check each pixel
+        for src_y in src_min_y..(src_min_y + src_height) {
+            for src_x in src_min_x..(src_min_x + src_width) {
+                let dest_x = src_x - src_min_x + dest_min_x;
+                let dest_y = src_y - src_min_y + dest_min_y;
+
+                if !self.is_point_in_bounds(dest_x, dest_y)
+                    || !source_bitmap.is_point_in_bounds(src_x, src_y)
+                {
+                    continue;
+                }
+
+                // Extract source colour
+                let source_color = source_bitmap
+                    .get_pixel_raw(src_x as u32, src_y as u32)
+                    .unwrap()
+                    .to_un_multiplied_alpha();
+
+                // If the test, as defined by the operation pass then set to input colour
+                if operation(source_color.0 as u32 & mask) {
+                    modified_count += 1;
+                    self.set_pixel32_raw(dest_x as u32, dest_y as u32, Color(colour as _));
+                } else {
+                    // If the test fails, but copy_source is true then take the colour from the source
+                    if copy_source {
+                        let new_color = source_bitmap
+                            .get_pixel_raw(dest_x as u32, dest_y as u32)
+                            .unwrap()
+                            .to_un_multiplied_alpha();
+
+                        modified_count += 1;
+                        self.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
+                    }
+                }
+            }
+        }
+
+        modified_count
+    }
+
+    /// Perform the threshold operation
+    /// Returns the number of modified pixels
+    #[allow(clippy::too_many_arguments)]
+    pub fn threshold(
+        &mut self,
+        source_bitmap: &Self,
+        src_rect: (i32, i32, i32, i32),
+        dest_point: (i32, i32),
+        operation: &WStr,
+        threshold: u32,
+        colour: u32,
+        mask: u32,
+        copy_source: bool,
+    ) -> u32 {
+        // Pre-compute the masked threshold
+        let masked_threshold = threshold & mask;
+
+        // Define the test that will be performed for each pixel
+        match operation.to_utf8_lossy().as_ref() {
+            "==" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v == masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            "!=" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v != masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            "<" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v < masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            "<=" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v <= masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            ">" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v > masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            ">=" => self.threshold_internal(
+                source_bitmap,
+                src_rect,
+                dest_point,
+                |v| v >= masked_threshold,
+                colour,
+                mask,
+                copy_source,
+            ),
+            //TODO: how do we handle other ops
+            _ => panic!(),
         }
     }
 
