@@ -178,6 +178,21 @@ pub fn tab_index<'gc>(
     Ok((-1).into())
 }
 
+pub fn focus_rect<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // NOTE: all values other than true or null are converted to false. (false/null do differ)
+
+    // let's only warn on true, as games sometimes just set focusRect to false for some reason.
+    if matches!(args.get(0), Some(Value::Bool(true))) {
+        log::warn!("InteractiveObject.focusRect is a stub");
+    }
+
+    Ok(Value::Null)
+}
+
 /// Construct `InteractiveObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -217,6 +232,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("contextMenu", Some(context_menu), Some(set_context_menu)),
         ("tabEnabled", Some(tab_enabled), Some(tab_enabled)),
         ("tabIndex", Some(tab_index), Some(tab_index)),
+        ("focusRect", Some(focus_rect), Some(focus_rect)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
