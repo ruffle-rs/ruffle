@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 //! Tests running SWFs in a headless Ruffle instance.
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
@@ -463,6 +461,7 @@ swf_tests! {
     (as3_op_escxattr, "avm2/op_escxattr", 1),
     (as3_op_escxelem, "avm2/op_escxelem", 1),
     (as3_op_lookupswitch, "avm2/op_lookupswitch", 1),
+    (as3_package_namespace, "avm2/package_namespace", 1),
     (as3_parse_int, "avm2/parse_int", 1),
     (as3_place_object_replace_2, "avm2/place_object_replace_2", 3),
     (as3_place_object_replace, "avm2/place_object_replace", 2),
@@ -477,6 +476,7 @@ swf_tests! {
     (as3_proxy_setproperty, "avm2/proxy_setproperty", 1),
     (as3_qname_constr_namespace, "avm2/qname_constr_namespace", 1),
     (as3_qname_constr, "avm2/qname_constr", 1),
+    (as3_qname_indexing, "avm2/qname_indexing", 1),
     (as3_qname_tostring, "avm2/qname_tostring", 1),
     (as3_qname_valueof, "avm2/qname_valueof", 1),
     (as3_rectangle, "avm2/rectangle", 1),
@@ -945,8 +945,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
+                "After calling `parrot` with a string: {parroted:?}",
             ));
 
             let mut nested = BTreeMap::new();
@@ -971,8 +970,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             let result = player_locked
                 .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
+                "After calling `callWith` with a complex payload: {result:?}",
             ));
             Ok(())
         },
@@ -1002,8 +1000,7 @@ fn external_interface_avm2() -> Result<(), Error> {
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
+                "After calling `parrot` with a string: {parroted:?}",
             ));
 
             player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);
@@ -1019,8 +1016,7 @@ fn external_interface_avm2() -> Result<(), Error> {
             let result =
                 player_locked.call_internal_interface("callWith", vec!["trace".into(), root]);
             player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
+                "After calling `callWith` with a complex payload: {result:?}",
             ));
             Ok(())
         },
@@ -1535,10 +1531,7 @@ fn run_swf(
         if !matches {
             let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
-            panic!(
-                "Test output does not match expected image - saved actual image to {:?}",
-                actual_image_path
-            );
+            panic!("Test output does not match expected image - saved actual image to {actual_image_path:?}");
         }
     }
 

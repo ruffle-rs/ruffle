@@ -244,7 +244,7 @@ pub fn fill_proto<'gc>(
     object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
-    let object = object_proto.as_script_object().unwrap();
+    let object = object_proto.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
 }
 
@@ -328,7 +328,7 @@ pub fn create_object_object<'gc>(
         fn_proto,
         proto,
     );
-    let object = object_function.as_script_object().unwrap();
+    let object = object_function.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     object_function
 }

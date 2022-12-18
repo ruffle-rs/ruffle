@@ -150,8 +150,7 @@ fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
     let mut actual: Vec<_> = core::iter::from_fn(|| searcher.next_match()).collect();
     assert_eq!(
         actual, forwards,
-        "incorrect forwards matching: haystack={:?}; pattern={:?}",
-        haystack, pattern
+        "incorrect forwards matching: haystack={haystack:?}; pattern={pattern:?}",
     );
 
     searcher = pattern.clone().into_searcher(haystack);
@@ -160,9 +159,7 @@ fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
     assert_eq!(
         actual,
         backwards.unwrap_or(forwards),
-        "incorrect backwards matching: haystack={:?}; pattern={:?}",
-        haystack,
-        pattern
+        "incorrect backwards matching: haystack={haystack:?}; pattern={pattern:?}",
     );
 }
 

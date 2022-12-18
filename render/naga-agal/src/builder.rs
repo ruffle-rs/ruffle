@@ -121,8 +121,7 @@ impl VertexAttributeFormat {
             VertexAttributeFormat::Float4 => base_expr,
             _ => {
                 return Err(Error::Unimplemented(format!(
-                    "Unsupported conversion from {:?} to float4",
-                    self
+                    "Unsupported conversion from {self:?} to float4",
                 )))
             }
         })
@@ -560,8 +559,7 @@ impl<'a> NagaBuilder<'a> {
             RegisterType::Varying => self.get_varying_pointer(dest.reg_num as usize)?,
             _ => {
                 return Err(Error::Unimplemented(format!(
-                    "Unimplemented dest reg type: {:?}",
-                    dest
+                    "Unimplemented dest reg type: {dest:?}",
                 )))
             }
         };
@@ -689,8 +687,7 @@ impl<'a> NagaBuilder<'a> {
             }
             _ => {
                 return Err(Error::Unimplemented(format!(
-                    "Unimplemented opcode: {:?}",
-                    opcode
+                    "Unimplemented opcode: {opcode:?}",
                 )))
             }
         }

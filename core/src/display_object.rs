@@ -1341,7 +1341,7 @@ pub trait TDisplayObject<'gc>:
 
     #[cfg(feature = "avm_debug")]
     fn display_render_tree(&self, depth: usize) {
-        let self_str = format!("{:?}", self);
+        let self_str = format!("{self:?}");
         let paren = self_str.find('(').unwrap();
         let self_str = &self_str[..paren];
 

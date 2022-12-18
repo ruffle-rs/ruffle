@@ -1,16 +1,14 @@
 [package]
 name = "ruffle_render_wgpu"
-version = "0.1.0"
 authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
 edition.workspace = true
-license = "MIT OR Apache-2.0"
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
-wgpu = { version = "0.14.0", features = ["naga"] }
-# Pin `wgpu-hal` and `wgpu-types` to include https://github.com/gfx-rs/wgpu/pull/3165.
-# TODO: Remove when upgrading `wgpu`.
-wgpu-hal = "0.14.1"
-wgpu-types = "0.14.1"
+wgpu = { version = "0.14.2", features = ["naga"] }
 log = "0.4"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.3", features = ["derive"] }

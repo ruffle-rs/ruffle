@@ -8,7 +8,6 @@
 //! writing SWF data.
 
 #![allow(clippy::bool_to_int_with_if)]
-#![allow(clippy::uninlined_format_args)]
 
 #[cfg(feature = "flate2")]
 extern crate flate2;

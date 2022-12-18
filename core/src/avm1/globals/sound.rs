@@ -61,7 +61,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let sound = SoundObject::empty_sound(gc_context, proto);
-    let object = sound.as_script_object().unwrap();
+    let object = sound.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     sound.into()
 }

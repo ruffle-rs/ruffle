@@ -2288,6 +2288,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if context.is_action_script_3() && self.frames_loaded() >= 1 {
+            let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
                 self.allocate_as_avm2_object(context, (*self).into());
                 true
@@ -2328,23 +2329,29 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     dispatch_added_to_stage_event_only(self_dobj, context);
                 }
             }
+
+            if is_load_frame {
+                self.0.write(context.gc_context).set_initialized(true);
+            }
         }
     }
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // Run my load/enterFrame clip event.
-        let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
-        if is_load_frame {
-            self.event_dispatch(context, ClipEvent::Load);
-            self.0.write(context.gc_context).set_initialized(true);
-        } else {
-            self.event_dispatch(context, ClipEvent::EnterFrame);
-        }
+        if !context.is_action_script_3() {
+            // Run my load/enterFrame clip event.
+            let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
+            if is_load_frame {
+                self.event_dispatch(context, ClipEvent::Load);
+                self.0.write(context.gc_context).set_initialized(true);
+            } else {
+                self.event_dispatch(context, ClipEvent::EnterFrame);
+            }
 
-        // Run my SWF tags.
-        // In AVM2, SWF tags are processed at enterFrame time.
-        if self.playing() && !context.is_action_script_3() {
-            self.run_frame_internal(context, true, true);
+            // Run my SWF tags.
+            // In AVM2, SWF tags are processed at enterFrame time.
+            if self.playing() {
+                self.run_frame_internal(context, true, true);
+            }
         }
     }
 

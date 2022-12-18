@@ -358,7 +358,7 @@ impl<'gc> Avm2<'gc> {
             }
         }
 
-        avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);
     }
 
@@ -372,7 +372,7 @@ impl<'gc> Avm2<'gc> {
             self.stack.pop().unwrap_or(Value::Undefined)
         };
 
-        avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
 
         value
     }
@@ -389,7 +389,7 @@ impl<'gc> Avm2<'gc> {
                 Value::Undefined
             });
 
-        avm_debug!(self, "Stack peek {}: {:?}", self.stack.len(), value);
+        avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
 
         value
     }

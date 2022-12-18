@@ -478,8 +478,7 @@ mod tests {
                 .unwrap();
             assert_eq!(
                 written_bytes, expected_bytes,
-                "Error writing action.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
-                action, written_bytes, expected_bytes
+                "Error writing action.\nTag:\n{action:?}\n\nWrote:\n{written_bytes:?}\n\nExpected:\n{expected_bytes:?}",
             );
         }
     }

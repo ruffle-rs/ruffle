@@ -72,7 +72,7 @@ pub fn create_number_object<'gc>(
         fn_proto,
         number_proto,
     );
-    let object = number.as_script_object().unwrap();
+    let object = number.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     number
 }
@@ -84,7 +84,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number_proto = ValueObject::empty_box(gc_context, proto);
-    let object = number_proto.as_script_object().unwrap();
+    let object = number_proto.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     number_proto
 }

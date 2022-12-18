@@ -262,6 +262,16 @@ pub fn is_url_inaccessible<'gc>(
     Ok(false.into())
 }
 
+/// `parentAllowsChild` getter stub
+pub fn parent_allows_child<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    log::warn!("LoaderInfo.parentAllowsChild is a stub");
+    Ok(false.into())
+}
+
 /// `swfVersion` getter
 pub fn swf_version<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -529,6 +539,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("frameRate", Some(frame_rate), None),
         ("height", Some(height), None),
         ("isURLInaccessible", Some(is_url_inaccessible), None),
+        ("parentAllowsChild", Some(parent_allows_child), None),
         ("swfVersion", Some(swf_version), None),
         ("url", Some(url), None),
         ("width", Some(width), None),

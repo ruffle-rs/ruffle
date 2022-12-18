@@ -425,8 +425,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [memoffset](https://github.com/Gilnaa/memoffset) | [MIT](#MIT) | Copyright (c) 2017 Gilad Naaman  | 
 | [metal](https://github.com/gfx-rs/metal-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2010 The Rust Project Developers  | 
 | [mime](https://github.com/hyperium/mime) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Sean McArthur  | 
-| [minimp3](https://github.com/germangb/minimp3-rs.git) | [MIT](#MIT) | Copyright (c) 2018 German Gomez Bajo  | 
-| [minimp3-sys](https://github.com/germangb/minimp3-rs.git) | [MIT](#MIT) | Copyright (c) 2018 German Gomez Bajo  | 
 | [miniz_oxide](https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide) | [Apache-2.0](#Apache-20)/[MIT](#MIT)/[Zlib](#Zlib) | Copyright (c) 2017 Frommi  | 
 | [mio](https://github.com/tokio-rs/mio) | [MIT](#MIT) | Copyright (c) 2014 Carl Lerche and other MIO contributors  | 
 | [mio-extras](https://github.com/dimbleby/mio-extras) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Mio authors  | 
@@ -550,6 +548,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [strsim](https://github.com/dguo/strsim-rs) | [MIT](#MIT) | Copyright (c) 2015 Danny Guo Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com> Copyright (c) 2018 Akash Kurdekar  | 
 | [svg](https://github.com/bodoni/svg) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright 2015–2021 The svg Developers Copyright 2015–2021 The svg Developers  | 
 | [swf](https://github.com/ruffle-rs/ruffle) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2018 Ruffle LLC <ruffle@ruffle.rs> and Ruffle contributors  | 
+| [symphonia](https://github.com/pdeljanov/Symphonia) | [MPL-2.0](#MPL-20) | Copyright (c) Philip Deljanov | 
 | [syn](https://github.com/dtolnay/syn) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) David Tolnay <dtolnay@gmail.com> | 
 | [synstructure](https://github.com/mystor/synstructure) | [MIT](#MIT) | Copyright 2016 Nika Layzell  | 
 | [tar](https://github.com/alexcrichton/tar-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 

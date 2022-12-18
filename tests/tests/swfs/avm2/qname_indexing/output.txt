@@ -1,0 +1,23 @@
+basic indexing
+1
+1
+1
+
+qname with namespace
+2
+2
+
+namespace part is ignored
+2
+3
+
+through a proxy
+QName
+ns1::y
+2
+QName
+ns2::y
+3
+QName
+x
+1

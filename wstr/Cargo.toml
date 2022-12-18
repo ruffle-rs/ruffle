@@ -1,9 +1,11 @@
 [package]
 name = "ruffle_wstr"
-version = "0.1.0"
-edition.workspace = true
 authors = ["Arthur Heuillard <arthur.heuillard<orange.fr>"]
-license = "MIT OR Apache-2.0"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [dependencies]
 static_assertions = "1.1.0"

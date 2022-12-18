@@ -71,7 +71,7 @@ pub fn create_array_object<'gc>(
         fn_proto,
         array_proto,
     );
-    let object = array.as_script_object().unwrap();
+    let object = array.raw_script_object();
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
@@ -752,7 +752,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let array = ArrayObject::empty_with_proto(gc_context, proto);
-    let object = array.as_script_object().unwrap();
+    let object = array.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }

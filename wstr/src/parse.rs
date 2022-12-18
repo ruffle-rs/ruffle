@@ -96,8 +96,7 @@ mod int_parse {
     pub fn from_wstr_radix<T: IntParse>(s: &WStr, radix: u32) -> Option<T> {
         assert!(
             radix >= 2 && radix <= 36,
-            "from_str_radix: radix must be between 2 and 36, got {}",
-            radix
+            "from_str_radix: radix must be between 2 and 36, got {radix}",
         );
 
         let (is_neg, digits) = match s.get(0).map(u8::try_from) {

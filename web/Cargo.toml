@@ -1,13 +1,12 @@
 [package]
 name = "ruffle_web"
-version = "0.1.0"
-authors = ["Mike Welsh <mwelsh@gmail.com>"]
-edition.workspace = true
-license = "MIT OR Apache-2.0"
 description = "Web (WASM) bindings to the Ruffle flash player"
-readme = "README.md"
-homepage = "https://ruffle.rs"
-repository = "https://github.com/ruffle-rs/ruffle/"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
 publish = false # This crate is useless alone, people should use the npm package
 
 [lib]
@@ -43,14 +42,14 @@ wasm-bindgen-futures = "0.4.33"
 serde-wasm-bindgen = "0.4.5"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.149", features = ["derive"] }
+serde = { version = "1.0.150", features = ["derive"] }
 thiserror = "1.0"
-base64 = "0.13.1"
+base64 = "0.20.0"
 
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["audio", "nellymoser", "symphonia", "wasm-bindgen"]
+features = ["audio", "mp3", "nellymoser", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.60"

@@ -337,11 +337,7 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         if position >= self.storage.len() {
-            Err(format!(
-                "RangeError: Index {} extends beyond the end of the vector",
-                position
-            )
-            .into())
+            Err(format!("RangeError: Index {position} extends beyond the end of the vector").into())
         } else {
             Ok(self.storage.remove(position))
         }

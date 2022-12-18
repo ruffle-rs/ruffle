@@ -1186,7 +1186,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let bitmap_data_object = BitmapDataObject::empty_object(gc_context, proto);
-    let object = bitmap_data_object.as_script_object().unwrap();
+    let object = bitmap_data_object.raw_script_object();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     bitmap_data_object.into()
 }
@@ -1251,7 +1251,7 @@ pub fn create_bitmap_data_object<'gc>(
         fn_proto,
         bitmap_data_proto,
     );
-    let object = bitmap_data.as_script_object().unwrap();
+    let object = bitmap_data.raw_script_object();
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
     bitmap_data
 }

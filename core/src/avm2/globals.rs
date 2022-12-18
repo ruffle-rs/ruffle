@@ -453,6 +453,13 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(array, activation, array::create_class(mc), script);
 
     function(activation, "", "trace", toplevel::trace, script)?;
+    function(
+        activation,
+        "__ruffle__",
+        "log_warn",
+        toplevel::log_warn,
+        script,
+    )?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
@@ -636,15 +643,6 @@ pub fn load_player_globals<'gc>(
     );
     class(activation, flash::text::font::create_class(mc), script)?;
 
-    // package `flash.crypto`
-
-    // package `flash.external`
-    class(
-        activation,
-        flash::external::externalinterface::create_class(mc),
-        script,
-    )?;
-
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relative late, so that it can access classes defined before
@@ -687,10 +685,7 @@ fn load_playerglobal<'gc>(
             Avm2::do_abc(&mut activation.context, do_abc, domain)
                 .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
-            panic!(
-                "playerglobal should only contain `DoAbc` tag - found tag {:?}",
-                tag_code
-            )
+            panic!("playerglobal should only contain `DoAbc` tag - found tag {tag_code:?}")
         }
         Ok(ControlFlow::Continue)
     };

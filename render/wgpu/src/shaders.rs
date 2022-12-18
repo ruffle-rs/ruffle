@@ -42,7 +42,7 @@ fn create_shader(
 ) -> wgpu::ShaderModule {
     const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
     let src = [COMMON_SRC, src].concat();
-    let label = create_debug_label!("Shader {}", name,);
+    let label = create_debug_label!("Shader {}", name);
     let desc = wgpu::ShaderModuleDescriptor {
         label: label.as_deref(),
         source: wgpu::ShaderSource::Wgsl(src.into()),
