@@ -1,5 +1,6 @@
 use crate::mesh::{DrawType, Mesh};
-use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer, TextureBuffers};
+use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer};
+use crate::utils::create_buffer_with_data;
 use crate::{
     as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Transforms,
     UniformBuffer,
@@ -11,31 +12,146 @@ use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color};
 
 pub struct CommandTarget<'pass> {
-    frame_buffer: &'pass FrameBuffer,
-    blend_buffer: &'pass BlendBuffer,
-    resolve_buffer: Option<&'pass ResolveBuffer>,
-    depth: &'pass DepthBuffer,
+    frame_buffer: FrameBuffer,
+    blend_buffer: BlendBuffer,
+    resolve_buffer: Option<ResolveBuffer>,
+    depth: DepthBuffer,
+    globals: &'pass Globals,
+    size: wgpu::Extent3d,
+    format: wgpu::TextureFormat,
+    sample_count: u32,
+    _whole_frame_buffer: wgpu::Buffer,
+    whole_frame_bind_group: wgpu::BindGroup,
 }
 
 impl<'pass> CommandTarget<'pass> {
     pub fn new(
-        frame_buffer: &'pass FrameBuffer,
-        blend_buffer: &'pass BlendBuffer,
-        resolve_buffer: Option<&'pass ResolveBuffer>,
-        depth: &'pass DepthBuffer,
+        globals: &'pass Globals,
+        descriptors: &Descriptors,
+        size: wgpu::Extent3d,
+        format: wgpu::TextureFormat,
+        sample_count: u32,
     ) -> Self {
+        let transform = Transforms {
+            world_matrix: [
+                [size.width as f32, 0.0, 0.0, 0.0],
+                [0.0, size.height as f32, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            color_adjustments: ColorAdjustments {
+                mult_color: [1.0, 1.0, 1.0, 1.0],
+                add_color: [0.0, 0.0, 0.0, 0.0],
+            },
+        };
+        let transforms_buffer = create_buffer_with_data(
+            &descriptors.device,
+            bytemuck::cast_slice(&[transform]),
+            wgpu::BufferUsages::UNIFORM,
+            create_debug_label!("Whole-frame transforms buffer"),
+        );
+        let whole_frame_bind_group =
+            descriptors
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &descriptors.bind_layouts.transforms,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                            buffer: &transforms_buffer,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
+                        }),
+                    }],
+                    label: create_debug_label!("Whole-frame transforms bind group").as_deref(),
+                });
+
+        let frame_buffer = FrameBuffer::new(
+            &descriptors,
+            create_debug_label!("Frame buffer"),
+            sample_count,
+            size,
+            format,
+            if sample_count > 1 {
+                wgpu::TextureUsages::RENDER_ATTACHMENT
+            } else {
+                wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_SRC
+                    | wgpu::TextureUsages::TEXTURE_BINDING
+            },
+        );
+
+        let blend_buffer = BlendBuffer::new(
+            &descriptors,
+            create_debug_label!("Blend buffer"),
+            size,
+            format,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        );
+
+        let resolve_buffer = if sample_count > 1 {
+            Some(ResolveBuffer::new(
+                &descriptors,
+                create_debug_label!("Resolve buffer"),
+                size,
+                format,
+                wgpu::TextureUsages::COPY_SRC
+                    | wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            ))
+        } else {
+            None
+        };
+
+        let depth = DepthBuffer::new(
+            &descriptors.device,
+            create_debug_label!("Depth buffer"),
+            sample_count,
+            size,
+        );
+
         Self {
             frame_buffer,
             blend_buffer,
             resolve_buffer,
             depth,
+            globals,
+            size,
+            format,
+            sample_count,
+            _whole_frame_buffer: transforms_buffer,
+            whole_frame_bind_group,
         }
+    }
+
+    pub fn create_child(
+        &self,
+        globals: &'pass Globals,
+        descriptors: &Descriptors,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        Self::new(
+            globals,
+            descriptors,
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            self.format,
+            self.sample_count,
+        )
+    }
+
+    pub fn whole_frame_bind_group(&self) -> &wgpu::BindGroup {
+        &self.whole_frame_bind_group
     }
 
     pub fn color_attachments(
         &self,
         clear: Option<wgpu::Color>,
-    ) -> Option<wgpu::RenderPassColorAttachment<'pass>> {
+    ) -> Option<wgpu::RenderPassColorAttachment> {
         Some(wgpu::RenderPassColorAttachment {
             view: &self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
@@ -50,10 +166,7 @@ impl<'pass> CommandTarget<'pass> {
         })
     }
 
-    pub fn depth_attachment(
-        &self,
-        clear: bool,
-    ) -> Option<wgpu::RenderPassDepthStencilAttachment<'pass>> {
+    pub fn depth_attachment(&self, clear: bool) -> Option<wgpu::RenderPassDepthStencilAttachment> {
         Some(wgpu::RenderPassDepthStencilAttachment {
             view: self.depth.view(),
             depth_ops: Some(wgpu::Operations {
@@ -138,9 +251,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
     #[allow(clippy::too_many_arguments)]
     pub fn execute(
-        globals: &'frame Globals,
         pipelines: &'frame Pipelines,
-        texture_buffers: &'frame mut TextureBuffers,
         target: &'pass CommandTarget<'pass>,
         meshes: &'global Vec<Mesh>,
         descriptors: &'global Descriptors,
@@ -172,7 +283,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: target.depth_attachment(first && clear_depth),
                         });
-                    render_pass.set_bind_group(0, globals.bind_group(), &[]);
+                    render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
                         &pipelines,
                         &meshes,
@@ -236,22 +347,21 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     };
 
                     target.update_blend_buffer(&mut draw_encoder);
-
-                    let frame_buffer = texture_buffers.take_frame_buffer(&descriptors);
-                    let resolve_buffer = texture_buffers.take_resolve_buffer(&descriptors);
-                    let blend_buffer = texture_buffers.take_blend_buffer(&descriptors);
-
-                    let child = CommandTarget::new(
-                        &frame_buffer,
-                        &blend_buffer,
-                        resolve_buffer.as_ref(),
-                        &target.depth,
+                    let child_globals = Globals::new(
+                        &descriptors.device,
+                        &descriptors.bind_layouts.globals,
+                        target.size.width,
+                        target.size.height,
+                    );
+                    let child = target.create_child(
+                        &child_globals,
+                        &descriptors,
+                        target.size.width,
+                        target.size.height,
                     );
 
                     CommandRenderer::execute(
-                        &globals,
                         &pipelines,
-                        texture_buffers,
                         &child,
                         &meshes,
                         &descriptors,
@@ -306,9 +416,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
                             color_attachments: &[target.color_attachments(clear_color.take())],
-                            depth_stencil_attachment: child.depth_attachment(false),
+                            depth_stencil_attachment: target.depth_attachment(false),
                         });
-                    render_pass.set_bind_group(0, globals.bind_group(), &[]);
+                    render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
 
                     match mask_state {
                         MaskState::NoMask => {}
@@ -325,7 +435,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
                     render_pass.set_pipeline(pipelines.blend.pipeline_for(mask_state));
 
-                    render_pass.set_bind_group(1, texture_buffers.whole_frame_bind_group(), &[0]);
+                    render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
