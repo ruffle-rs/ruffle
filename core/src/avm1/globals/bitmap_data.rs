@@ -1117,13 +1117,103 @@ pub fn scroll<'gc>(
 }
 
 pub fn threshold<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            tracing::warn!("BitmapData.threshold - not yet implemented");
+            let source_bitmap = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let source_rect = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let src_min_x = source_rect
+                .get("x", activation)?
+                .coerce_to_f64(activation)? as i32;
+            let src_min_y = source_rect
+                .get("y", activation)?
+                .coerce_to_f64(activation)? as i32;
+            let src_width = source_rect
+                .get("width", activation)?
+                .coerce_to_f64(activation)? as i32;
+            let src_height = source_rect
+                .get("height", activation)?
+                .coerce_to_f64(activation)? as i32;
+
+            let dest_point = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
+            let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
+
+            // TODO: how does this handle undefined
+            let operation = args
+                .get(3)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_string(activation)?;
+
+            let threshold = args
+                .get(4)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
+
+            //TODO: check how we get these values below
+            let colour = args.get(5).unwrap_or(&0.into()).coerce_to_u32(activation)?;
+
+            let mask = args
+                .get(6)
+                .unwrap_or(&0xFFFFFFFFu32.into())
+                .coerce_to_u32(activation)?;
+
+            let copy_source = args
+                .get(6)
+                .unwrap_or(&Value::Bool(false))
+                .as_bool(activation.context.player_version);
+
+            //TODO: what kind of aliasing do we need here
+            // copy_pixels or pallet map
+            // I think pallet map tbh
+            if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
+                if !src_bitmap.disposed() {
+                    // dealing with object aliasing...
+                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
+                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+                    let source_bitmap_ref = // holds the reference to either of the ones above
+                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
+                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
+                            &src_bitmap_clone
+                        } else {
+                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
+                            &src_bitmap_gc_ref
+                        };
+
+                    let modified_count = bitmap_data
+                        .bitmap_data()
+                        .write(activation.context.gc_context)
+                        .threshold(
+                            source_bitmap_ref,
+                            (src_min_x, src_min_y, src_width, src_height),
+                            (dest_x, dest_y),
+                            operation.as_wstr(),
+                            threshold,
+                            colour,
+                            mask,
+                            copy_source,
+                        );
+
+                    return Ok(modified_count.into());
+                }
+            }
+
             return Ok(Value::Undefined);
         }
     }
