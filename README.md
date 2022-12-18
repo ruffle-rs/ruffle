@@ -3,8 +3,8 @@
 </p>
 <p align="center">
   <a href="https://github.com/ruffle-rs/ruffle/actions">
-    <img alt="Rust Build Status" src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Rust?label=Rust%20Build&logo=github" />
-    <img alt="Web Build Status" src="https://img.shields.io/github/workflow/status/ruffle-rs/ruffle/Test%20Web?label=Web%20Build&logo=github" />
+    <img alt="Rust Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_rust.yml?label=Rust%20Build&logo=github&branch=master" />
+    <img alt="Web Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_web.yml?label=Web%20Build&logo=github&branch=master" />
   </a>
   <a href="https://www.npmjs.com/package/@ruffle-rs/ruffle">
     <img alt="Ruffle npm" src="https://img.shields.io/npm/v/@ruffle-rs/ruffle?color=007acc&logo=npm" />
