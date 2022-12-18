@@ -32,13 +32,16 @@ impl<'pass> CommandTarget<'pass> {
         }
     }
 
-    pub fn color_attachments(&self, clear: bool) -> Option<wgpu::RenderPassColorAttachment<'pass>> {
+    pub fn color_attachments(
+        &self,
+        clear: Option<wgpu::Color>,
+    ) -> Option<wgpu::RenderPassColorAttachment<'pass>> {
         Some(wgpu::RenderPassColorAttachment {
             view: &self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
             ops: wgpu::Operations {
-                load: if clear {
-                    wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT)
+                load: if let Some(color) = clear {
+                    wgpu::LoadOp::Clear(color)
                 } else {
                     wgpu::LoadOp::Load
                 },
@@ -147,6 +150,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         output: &mut Vec<wgpu::CommandBuffer>,
         nearest_layer: &'pass CommandTarget<'pass>,
         clear_depth: bool,
+        clear_color: &mut Option<wgpu::Color>,
     ) {
         let label = create_debug_label!("Draw encoder");
         let mut draw_encoder =
@@ -165,7 +169,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
-                            color_attachments: &[target.color_attachments(first)],
+                            color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: target.depth_attachment(first && clear_depth),
                         });
                     render_pass.set_bind_group(0, globals.bind_group(), &[]);
@@ -261,6 +265,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             nearest_layer
                         },
                         false,
+                        clear_color,
                     );
 
                     let blend_bind_group =
@@ -300,7 +305,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
-                            color_attachments: &[target.color_attachments(first)],
+                            color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: child.depth_attachment(false),
                         });
                     render_pass.set_bind_group(0, globals.bind_group(), &[]);
