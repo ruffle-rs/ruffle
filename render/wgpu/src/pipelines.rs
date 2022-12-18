@@ -23,6 +23,7 @@ pub struct Pipelines {
     pub color: ShapePipeline,
     pub bitmap: ShapePipeline,
     pub gradient: ShapePipeline,
+    pub blend: ShapePipeline,
 }
 
 impl ShapePipeline {
@@ -64,6 +65,7 @@ impl Pipelines {
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
             &[&bind_layouts.globals, &bind_layouts.transforms],
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
         let bitmap_pipelines = create_shape_pipeline(
@@ -78,6 +80,7 @@ impl Pipelines {
                 &bind_layouts.transforms,
                 &bind_layouts.bitmap,
             ],
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
         let gradient_pipelines = create_shape_pipeline(
@@ -92,12 +95,29 @@ impl Pipelines {
                 &bind_layouts.transforms,
                 &bind_layouts.gradient,
             ],
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+        );
+
+        let blend_pipeline = create_shape_pipeline(
+            "Blend",
+            device,
+            format,
+            &shaders.blend_shader,
+            msaa_sample_count,
+            &VERTEX_BUFFERS_DESCRIPTION,
+            &[
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.blend,
+            ],
+            wgpu::BlendState::REPLACE,
         );
 
         Self {
             color: color_pipelines,
             bitmap: bitmap_pipelines,
             gradient: gradient_pipelines,
+            blend: blend_pipeline,
         }
     }
 }
@@ -145,6 +165,7 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_shape_pipeline(
     name: &'static str,
     device: &wgpu::Device,
@@ -153,6 +174,7 @@ fn create_shape_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
+    blend: wgpu::BlendState,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -181,7 +203,7 @@ fn create_shape_pipeline(
             }),
             &[Some(wgpu::ColorTargetState {
                 format,
-                blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                blend: Some(blend),
                 write_mask,
             })],
             vertex_buffers_layout,
