@@ -4,6 +4,7 @@ pub struct BindLayouts {
     pub transforms: wgpu::BindGroupLayout,
     pub bitmap: wgpu::BindGroupLayout,
     pub gradient: wgpu::BindGroupLayout,
+    pub blend: wgpu::BindGroupLayout,
 }
 
 impl BindLayouts {
@@ -71,6 +72,49 @@ impl BindLayouts {
             label: bitmap_bind_layout_label.as_deref(),
         });
 
+        let blend_bind_layout_label = create_debug_label!("Blend bind group layout");
+        let blend = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+            label: blend_bind_layout_label.as_deref(),
+        });
+
         let gradient_bind_layout_label = create_debug_label!("Gradient shape bind group");
         let gradient = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -107,6 +151,7 @@ impl BindLayouts {
             transforms,
             bitmap,
             gradient,
+            blend,
         }
     }
 }

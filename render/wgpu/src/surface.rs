@@ -98,6 +98,7 @@ impl FrameBuffer {
 #[derive(Debug)]
 pub struct BlendBuffer {
     texture: wgpu::Texture,
+    view: wgpu::TextureView,
 }
 
 impl BlendBuffer {
@@ -117,8 +118,13 @@ impl BlendBuffer {
             format,
             usage,
         });
+        let view = texture.create_view(&Default::default());
 
-        Self { texture }
+        Self { texture, view }
+    }
+
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.view
     }
 
     pub fn texture(&self) -> &wgpu::Texture {

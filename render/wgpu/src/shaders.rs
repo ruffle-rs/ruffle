@@ -5,6 +5,7 @@ pub struct Shaders {
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
+    pub blend_shader: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -23,6 +24,7 @@ impl Shaders {
             include_str!("../shaders/copy_srgb.wgsl"),
         );
         let copy_shader = create_shader(device, "copy", include_str!("../shaders/copy.wgsl"));
+        let blend_shader = create_shader(device, "blend", include_str!("../shaders/blend.wgsl"));
 
         Self {
             color_shader,
@@ -30,6 +32,7 @@ impl Shaders {
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
+            blend_shader,
         }
     }
 }

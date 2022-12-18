@@ -1,8 +1,8 @@
 use crate::mesh::{DrawType, Mesh};
 use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer, TextureBuffers};
 use crate::{
-    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, TextureTransforms,
-    Transforms, UniformBuffer,
+    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Transforms,
+    UniformBuffer,
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -226,6 +226,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     mask_state = renderer.mask_state;
                 }
                 Chunk::Blend(commands, blend_mode) => {
+                    let parent = match blend_mode {
+                        BlendMode::Alpha | BlendMode::Erase => nearest_layer,
+                        _ => target,
+                    };
+
                     target.update_blend_buffer(&mut draw_encoder);
 
                     let frame_buffer = texture_buffers.take_frame_buffer(&descriptors);
@@ -258,25 +263,17 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         false,
                     );
 
-                    let bitmap_bind_group =
+                    let blend_bind_group =
                         descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
                                 label: None,
-                                layout: &descriptors.bind_layouts.bitmap,
+                                layout: &descriptors.bind_layouts.blend,
                                 entries: &[
                                     wgpu::BindGroupEntry {
                                         binding: 0,
-                                        resource: wgpu::BindingResource::Buffer(
-                                            wgpu::BufferBinding {
-                                                buffer: &descriptors.quad.texture_transforms,
-                                                offset: 0,
-                                                size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                    TextureTransforms,
-                                                >(
-                                                )
-                                                    as u64),
-                                            },
+                                        resource: wgpu::BindingResource::TextureView(
+                                            parent.blend_buffer.view(),
                                         ),
                                     },
                                     wgpu::BindGroupEntry {
@@ -288,11 +285,18 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                     wgpu::BindGroupEntry {
                                         binding: 2,
                                         resource: wgpu::BindingResource::Sampler(
-                                            &descriptors.bitmap_samplers.get_sampler(false, false),
+                                            descriptors.bitmap_samplers.get_sampler(false, false),
                                         ),
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 3,
+                                        resource: descriptors
+                                            .blend_buffer(blend_mode)
+                                            .as_entire_binding(),
                                     },
                                 ],
                             });
+
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
@@ -314,10 +318,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         }
                     }
 
-                    render_pass.set_pipeline(pipelines.bitmap.pipeline_for(mask_state));
+                    render_pass.set_pipeline(pipelines.blend.pipeline_for(mask_state));
 
                     render_pass.set_bind_group(1, texture_buffers.whole_frame_bind_group(), &[0]);
-                    render_pass.set_bind_group(2, &bitmap_bind_group, &[]);
+                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
                     render_pass.set_index_buffer(
