@@ -2,12 +2,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{
-    ClassObject, FunctionObject, NamespaceObject, Object, ScriptObject, TObject,
-};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
-use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -300,41 +297,6 @@ fn class<'gc>(
     Ok(class_object)
 }
 
-/// Add a builtin constant to the global scope.
-fn constant<'gc>(
-    mc: MutationContext<'gc, '_>,
-    package: impl Into<AvmString<'gc>>,
-    name: impl Into<AvmString<'gc>>,
-    value: Value<'gc>,
-    script: Script<'gc>,
-    class: ClassObject<'gc>,
-) -> Result<(), Error<'gc>> {
-    let (_, mut global, mut domain) = script.init();
-    let name = QName::new(Namespace::package(package), name);
-    domain.export_definition(name, script, mc)?;
-    global.install_const_late(mc, name, value, class);
-
-    Ok(())
-}
-
-fn namespace<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    package: impl Into<AvmString<'gc>>,
-    name: impl Into<AvmString<'gc>>,
-    uri: impl Into<AvmString<'gc>>,
-    script: Script<'gc>,
-) -> Result<(), Error<'gc>> {
-    let namespace = NamespaceObject::from_namespace(activation, Namespace::Namespace(uri.into()))?;
-    constant(
-        activation.context.gc_context,
-        package,
-        name,
-        namespace.into(),
-        script,
-        activation.avm2().classes().namespace,
-    )
-}
-
 macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $script:expr) => {
         let class_object = class($activation, $class, $script)?;
@@ -499,15 +461,6 @@ pub fn load_player_globals<'gc>(
         flash::utils::dictionary::create_class(mc),
         script,
     )?;
-
-    namespace(
-        activation,
-        "flash.utils",
-        "flash_proxy",
-        flash::utils::NS_FLASH_PROXY,
-        script,
-    )?;
-    class(activation, flash::utils::proxy::create_class(mc), script)?;
 
     // package `flash.display`
     class(

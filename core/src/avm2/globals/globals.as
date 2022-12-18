@@ -227,6 +227,7 @@ include "flash/ui/MultitouchInputMode.as"
 include "flash/ui/Multitouch.as"
 
 include "flash/utils.as"
+include "flash/utils/Proxy.as"
 include "flash/utils/CompressionAlgorithm.as"
 include "flash/utils/Endian.as"
 include "flash/utils/Timer.as"
