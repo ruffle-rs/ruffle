@@ -2,10 +2,7 @@ use crate::commands::{CommandRenderer, CommandTarget};
 use crate::mesh::Mesh;
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{
-    create_buffer_with_data, ColorAdjustments, Descriptors, Globals, Pipelines, TextureTransforms,
-    Transforms, UniformBuffer,
-};
+use crate::{Descriptors, Globals, Pipelines, TextureTransforms, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 
@@ -164,164 +161,9 @@ impl DepthBuffer {
 }
 
 #[derive(Debug)]
-pub struct TextureBuffers {
-    size: wgpu::Extent3d,
-    format: wgpu::TextureFormat,
-    sample_count: u32,
-    _whole_frame_buffer: wgpu::Buffer,
-    whole_frame_bind_group: wgpu::BindGroup,
-}
-
-impl TextureBuffers {
-    pub fn new(
-        descriptors: &Descriptors,
-        size: wgpu::Extent3d,
-        format: wgpu::TextureFormat,
-        sample_count: u32,
-    ) -> Self {
-        let transform = Transforms {
-            world_matrix: [
-                [size.width as f32, 0.0, 0.0, 0.0],
-                [0.0, size.height as f32, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-            color_adjustments: ColorAdjustments {
-                mult_color: [1.0, 1.0, 1.0, 1.0],
-                add_color: [0.0, 0.0, 0.0, 0.0],
-            },
-        };
-        let transforms_buffer = create_buffer_with_data(
-            &descriptors.device,
-            bytemuck::cast_slice(&[transform]),
-            wgpu::BufferUsages::UNIFORM,
-            create_debug_label!("Whole-frame transforms buffer"),
-        );
-        let whole_frame_bind_group =
-            descriptors
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &descriptors.bind_layouts.transforms,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &transforms_buffer,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(std::mem::size_of::<Transforms>() as u64),
-                        }),
-                    }],
-                    label: create_debug_label!("Whole-frame transforms bind group").as_deref(),
-                });
-
-        Self {
-            size,
-            format,
-            sample_count,
-            _whole_frame_buffer: transforms_buffer,
-            whole_frame_bind_group,
-        }
-    }
-
-    pub fn whole_frame_bind_group(&self) -> &wgpu::BindGroup {
-        &self.whole_frame_bind_group
-    }
-
-    pub fn take_frame_buffer(&mut self, descriptors: &Descriptors) -> FrameBuffer {
-        self.create_frame_buffer(descriptors)
-    }
-
-    fn create_frame_buffer(&self, descriptors: &Descriptors) -> FrameBuffer {
-        let label = if cfg!(feature = "render_debug_labels") {
-            static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
-            let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            Some(format!("Frame buffer {}", id))
-        } else {
-            None
-        };
-        FrameBuffer::new(
-            &descriptors,
-            label,
-            self.sample_count,
-            self.size,
-            self.format,
-            if self.sample_count > 1 {
-                wgpu::TextureUsages::RENDER_ATTACHMENT
-            } else {
-                wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING
-            },
-        )
-    }
-
-    pub fn take_blend_buffer(&mut self, descriptors: &Descriptors) -> BlendBuffer {
-        self.create_blend_buffer(descriptors)
-    }
-
-    fn create_blend_buffer(&self, descriptors: &Descriptors) -> BlendBuffer {
-        let label = if cfg!(feature = "render_debug_labels") {
-            static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
-            let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            Some(format!("Blend buffer {}", id))
-        } else {
-            None
-        };
-        BlendBuffer::new(
-            &descriptors,
-            label,
-            self.size,
-            self.format,
-            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        )
-    }
-
-    pub fn take_resolve_buffer(&mut self, descriptors: &Descriptors) -> Option<ResolveBuffer> {
-        if self.sample_count > 1 {
-            Some(self.create_resolve_buffer(
-                descriptors,
-                wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
-            ))
-        } else {
-            None
-        }
-    }
-
-    fn create_resolve_buffer(
-        &self,
-        descriptors: &Descriptors,
-        usage: wgpu::TextureUsages,
-    ) -> ResolveBuffer {
-        let label = if cfg!(feature = "render_debug_labels") {
-            static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
-            let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            Some(format!("Resolve buffer {}", id))
-        } else {
-            None
-        };
-        ResolveBuffer::new(&descriptors, label, self.size, self.format, usage)
-    }
-
-    pub fn take_depth_buffer(&mut self, descriptors: &Descriptors) -> DepthBuffer {
-        self.create_depth_buffer(descriptors)
-    }
-
-    fn create_depth_buffer(&self, descriptors: &Descriptors) -> DepthBuffer {
-        let label = if cfg!(feature = "render_debug_labels") {
-            static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
-            let id = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            Some(format!("depth buffer {}", id))
-        } else {
-            None
-        };
-        DepthBuffer::new(&descriptors.device, label, self.sample_count, self.size)
-    }
-}
-
-#[derive(Debug)]
 pub struct Surface {
-    buffers: TextureBuffers,
+    size: wgpu::Extent3d,
+    sample_count: u32,
     pipelines: Arc<Pipelines>,
     globals: Globals,
     format: wgpu::TextureFormat,
@@ -352,7 +194,8 @@ impl Surface {
 
         let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
         Self {
-            buffers: TextureBuffers::new(&descriptors, size, frame_buffer_format, sample_count),
+            size,
+            sample_count,
             pipelines,
             globals,
             format: frame_buffer_format,
@@ -379,24 +222,18 @@ impl Surface {
                     label: uniform_encoder_label.as_deref(),
                 });
 
-        let frame_buffer = self.buffers.take_frame_buffer(&descriptors);
-        let blend_buffer = self.buffers.take_blend_buffer(&descriptors);
-        let resolve_buffer = self.buffers.take_resolve_buffer(&descriptors);
-        let depth_buffer = self.buffers.take_depth_buffer(&descriptors);
-
         let target = CommandTarget::new(
-            &frame_buffer,
-            &blend_buffer,
-            resolve_buffer.as_ref(),
-            &depth_buffer,
+            &self.globals,
+            &descriptors,
+            self.size,
+            self.format,
+            self.sample_count,
         );
 
         let mut buffers = vec![];
 
         CommandRenderer::execute(
-            &self.globals,
             &self.pipelines,
-            &mut self.buffers,
             &target,
             &meshes,
             &descriptors,
@@ -426,12 +263,7 @@ impl Surface {
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::TextureView(
-                            &resolve_buffer
-                                .as_ref()
-                                .map(|b| b.view())
-                                .unwrap_or_else(|| frame_buffer.view()),
-                        ),
+                        resource: wgpu::BindingResource::TextureView(&target.color_view()),
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
@@ -473,7 +305,7 @@ impl Surface {
 
         render_pass.set_pipeline(&pipeline);
         render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-        render_pass.set_bind_group(1, &self.buffers.whole_frame_bind_group, &[0]);
+        render_pass.set_bind_group(1, &target.whole_frame_bind_group(), &[0]);
         render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
