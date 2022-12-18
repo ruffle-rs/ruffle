@@ -363,7 +363,7 @@ impl Surface {
     pub fn draw_commands(
         &mut self,
         frame_view: &wgpu::TextureView,
-        clear_color: Option<wgpu::Color>,
+        mut clear_color: Option<wgpu::Color>,
         descriptors: &Descriptors,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
@@ -406,6 +406,7 @@ impl Surface {
             &mut buffers,
             &target,
             true,
+            &mut clear_color,
         );
 
         let copy_bind_group = descriptors
