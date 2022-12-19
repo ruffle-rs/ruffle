@@ -6,7 +6,7 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
-use crate::display_object::{Depth, DisplayObject, TDisplayObject};
+use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::string::WStr;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -299,12 +299,29 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
+    ///
+    /// Will also handle AVM1 delayed clip removal, when a unload listener is present
     fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
+        // We should always be the parent of this child
         debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
             (*self).into()
         ));
 
+        // Check if this child should have delayed removal
+        if ChildContainer::should_delay_removal(child) {
+            ChildContainer::queue_removal(child, context);
+        } else {
+            self.remove_child_directly(context, child);
+        }
+    }
+
+    /// Remove (and unloads) a child display object from this container's render and depth lists.
+    fn remove_child_directly(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        child: DisplayObject<'gc>,
+    ) {
         dispatch_removed_event(child, context);
 
         let mut write = self.raw_container_mut(context.gc_context);
@@ -774,8 +791,51 @@ impl<'gc> ChildContainer<'gc> {
     }
 
     /// Yield children in the order they are rendered.
-    fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
+    pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
         self.render_list.iter().copied()
+    }
+
+    /// Should the removal of this clip be delayed to the start of the next frame
+    ///
+    /// Checks recursively for unload handlers
+    pub fn should_delay_removal(child: DisplayObject<'gc>) -> bool {
+        // Do we have an unload event handler
+        if let Some(mc) = child.as_movie_clip() {
+            if mc.has_unload_handler() {
+                return true;
+            }
+        }
+
+        // Otherwise, check children if we have them
+        if let Some(c) = child.as_container() {
+            for child in c.iter_render_list() {
+                if Self::should_delay_removal(child) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Enqueue the given child and all sub-children for delayed removal at the start of the next frame
+    ///
+    /// This just moves the children to a negative depth
+    /// Will also fire unload events, as they should occur when the removal is queued, not when it actually occurs
+    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+        if let Some(c) = child.as_container() {
+            for child in c.iter_render_list() {
+                Self::queue_removal(child, context);
+            }
+        }
+
+        let cur_depth = child.depth();
+        child.set_depth(context.gc_context, -cur_depth);
+
+        if let Some(mc) = child.as_movie_clip() {
+            // Clip events should still fire
+            mc.event_dispatch(context, crate::events::ClipEvent::Unload);
+        }
     }
 }
 

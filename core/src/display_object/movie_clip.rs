@@ -897,6 +897,15 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).stop(context)
     }
 
+    /// Does this clip have a unload handler
+    pub fn has_unload_handler(&self) -> bool {
+        self.0
+            .read()
+            .clip_event_handlers
+            .iter()
+            .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
+    }
+
     /// Queues up a goto to the specified frame.
     /// `frame` should be 1-based.
     ///
@@ -2561,7 +2570,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);
         }
-        self.event_dispatch(context, ClipEvent::Unload);
+
+        // If this clip is currently pending removal, then it unload event will have already been dispatched
+        if !self.pending_removal() {
+            self.event_dispatch(context, ClipEvent::Unload);
+        }
+
         self.set_removed(context.gc_context, true);
     }
 

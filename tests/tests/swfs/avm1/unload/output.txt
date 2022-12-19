@@ -1,0 +1,20 @@
+Frame 1:
+clip = _level0.clip
+clip2 = _level0.clip2
+clip3 = _level0.clip3
+clip4 = _level0.clip4
+End frame 1
+Unload clip4
+unload clipEvent
+Frame 2
+clip = _level0.clip
+clip2 = undefined
+clip3 = undefined
+clip4 = undefined
+End frame 2
+Frame 3
+clip = undefined
+clip2 = undefined
+clip3 = undefined
+clip4 = undefined
+End frame 3
