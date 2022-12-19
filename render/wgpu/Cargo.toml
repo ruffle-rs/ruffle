@@ -14,7 +14,7 @@ ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.3", features = ["derive"] }
 raw-window-handle = "0.5"
 clap = { version = "4.0.27", features = ["derive"], optional = true }
-enum-map = "2.4.1"
+enum-map = "2.4.2"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.5", default-features = false }
