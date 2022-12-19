@@ -4,7 +4,7 @@ use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Multiname, Object, Value};
 
 pub mod object_encoding;
-pub mod sharedobject;
+pub mod shared_object;
 pub mod url_loader;
 
 /// Implements `flash.net.navigateToURL`

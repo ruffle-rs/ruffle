@@ -86,7 +86,6 @@ pub struct SystemClasses<'gc> {
     pub bitmapdata: ClassObject<'gc>,
     pub date: ClassObject<'gc>,
     pub qname: ClassObject<'gc>,
-    pub sharedobject: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
     pub progressevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
@@ -172,7 +171,6 @@ impl<'gc> SystemClasses<'gc> {
             bitmapdata: object,
             date: object,
             qname: object,
-            sharedobject: object,
             mouseevent: object,
             progressevent: object,
             textevent: object,
@@ -569,14 +567,6 @@ pub fn load_player_globals<'gc>(
         soundchannel,
         activation,
         flash::media::soundchannel::create_class(mc),
-        script
-    );
-
-    // package `flash.net`
-    avm2_system_class!(
-        sharedobject,
-        activation,
-        flash::net::sharedobject::create_class(mc),
         script
     );
 

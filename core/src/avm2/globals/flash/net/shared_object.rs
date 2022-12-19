@@ -1,49 +1,17 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::TObject;
-use crate::avm2::traits::Trait;
 use crate::avm2::Multiname;
-use crate::avm2::{Activation, Error, Namespace, Object, QName, Value};
+use crate::avm2::{Activation, Error, Namespace, Object, Value};
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::types::{AMFVersion, Lso};
-use gc_arena::{GcCell, MutationContext};
 use std::borrow::Cow;
-
-fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut this) = this {
-        activation.super_init(this, &[])?;
-
-        let data = activation
-            .context
-            .avm2
-            .classes()
-            .object
-            .construct(activation, &[])?;
-        this.set_property(&Multiname::public("data"), data.into(), activation)?;
-    }
-
-    Ok(Value::Undefined)
-}
-
-fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
 
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: It appears that Flash does some kind of escaping here:
@@ -169,11 +137,11 @@ pub fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation.avm2().classes().sharedobject;
-    let mut this = constructor.construct(activation, &[])?;
+    let sharedobject_cls = this.unwrap(); // `this` of a static method is the class
+    let mut this = sharedobject_cls.construct(activation, &[])?;
 
     // Set the internal name
-    let ruffle_name = Multiname::new(Namespace::Private("".into()), "_ruffleName");
+    let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
     this.set_property(
         &ruffle_name,
         AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
@@ -218,7 +186,7 @@ pub fn flush<'gc>(
             .get_property(&Multiname::public("data"), activation)?
             .coerce_to_object(activation)?;
 
-        let ruffle_name = Multiname::new(Namespace::Private("".into()), "_ruffleName");
+        let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
         let name = this
             .get_property(&ruffle_name, activation)?
             .coerce_to_string(activation)?;
@@ -259,51 +227,4 @@ pub fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     log::warn!("SharedObject.clear - not yet implemented");
     Ok(Value::Undefined)
-}
-
-/// Construct `SharedObject`'s class.
-/// NOTE: We currently always use AMF3 serialization.
-/// If you implement the `defaultObjectEncoding` or `objectEncoding`,
-/// you will need to adjust the serialization and deserialization code
-/// to work with AMF0.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    let class = Class::new(
-        QName::new(Namespace::package("flash.net"), "SharedObject"),
-        Some(Multiname::new(
-            Namespace::package("flash.events"),
-            "EventDispatcher",
-        )),
-        Method::from_builtin(instance_init, "<SharedObject instance initializer>", mc),
-        Method::from_builtin(class_init, "<SharedObject class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::SEALED);
-
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "data"),
-        Multiname::public("Object"),
-        None,
-    ));
-
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::public(), "size"),
-        Multiname::public("uint"),
-        None,
-    ));
-
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::private(""), "_ruffleName"),
-        Multiname::public("String"),
-        None,
-    ));
-
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("getLocal", get_local)];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("flush", flush), ("close", close), ("clear", clear)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
-    class
 }
