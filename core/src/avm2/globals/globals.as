@@ -5,6 +5,7 @@ include "Error.as"
 
 include "ArgumentError.as"
 include "DefinitionError.as"
+include "JSON.as"
 include "EvalError.as"
 include "TypeError.as"
 include "Math.as"

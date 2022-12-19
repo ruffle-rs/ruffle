@@ -428,7 +428,6 @@ pub fn load_player_globals<'gc>(
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
 
-    class(activation, json::create_class(mc), script)?;
     avm2_system_class!(regexp, activation, regexp::create_class(mc), script);
     avm2_system_class!(vector, activation, vector::create_class(mc), script);
 
