@@ -60,17 +60,22 @@ use tracing::{info, instrument};
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
-#[derive(Copy, Clone)]
+use serde::{Serialize, Deserialize};
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DebugMessageIn {
     Pause,
-    Play
+    Play,
+    /// Get a variable, path is a AVM1 style target e.g. "this.foo"
+    GetVar { path: String}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone,  Serialize, Deserialize, Debug)]
 pub enum DebugMessageOut {
     State {
         playing: bool,
-    }
+    },
+    BreakpointHit { name: String },
+    GetVarResult { value: String },
 }
 
 #[derive(Collect)]
@@ -489,10 +494,13 @@ impl Player {
                     self.ui_mut().submit_debug_message(msg);
                 },
                 DebugMessageIn::Play => {
+                    println!("Handling play");
                     self.set_is_playing(true);
                     let msg = DebugMessageOut::State { playing: self.is_playing() };
                     self.ui_mut().submit_debug_message(msg);
                 },
+                // Ignore here
+                DebugMessageIn::GetVar { path: _ } => {},
             }
         }
 

@@ -3244,6 +3244,44 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_bkpt_line(&mut self, _line_num: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
+
+        self.context.ui.submit_debug_message(crate::player::DebugMessageOut::BreakpointHit {
+            name: format!("line {}", _line_num),
+        });
+
+        // Check for any debug events before executing the next
+        use crate::player::{DebugMessageIn};
+        println!("Waiting for end of bp");
+        'check_msg: loop {
+            while let Some(dbg_in) = self.context.ui.get_debug_event() {
+                match dbg_in {
+                    DebugMessageIn::Pause => {},
+                    DebugMessageIn::Play => {
+                        break 'check_msg;
+                    },
+                    DebugMessageIn::GetVar { path } => {
+                        let parts = path.split(".");
+
+                        let mut current = None;
+
+                        for (i, p) in parts.enumerate() {
+                            if i == 0 && p == "this" {
+                                current = Some(self.local_register(0).unwrap());
+                            } else {
+                                let current_obj = current.unwrap().coerce_to_object(self).unwrap();
+                                let p = p.to_string();
+                                let ns = crate::avm2::Namespace::Private("Screens:ScreenManager".into());
+                                //crate::avm2::Namespace::Any
+                                current = Some(crate::avm2::TObject::get_property(current_obj, &crate::avm2::Multiname::new(ns, AvmString::new_utf8(self.context.gc_context, p)), self).unwrap());
+                            }
+                        }
+
+                        self.context.ui.submit_debug_message(crate::player::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
+                    },
+                }
+            }
+        }
+
         // while a debugger is not attached, this is a no-op
         Ok(FrameControl::Continue)
     }

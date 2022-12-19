@@ -37,7 +37,7 @@ pub trait UiBackend {
     }
 
     /// Enqueue a debug message to be sent to the attached debugger if it exists
-    fn submit_debug_message(&mut self, evt: crate::player::DebugMessageOut) {
+    fn submit_debug_message(&mut self, _evt: crate::player::DebugMessageOut) {
         //NOOP
     }
 

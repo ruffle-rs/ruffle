@@ -15,6 +15,7 @@ pub struct DesktopUiBackend {
     cursor_visible: bool,
     clipboard: Clipboard,
     debug_event_queue: Arc<RwLock<Vec<ruffle_core::player::DebugMessageIn>>>,
+    debug_event_queue_out: Arc<RwLock<Vec<ruffle_core::player::DebugMessageOut>>>,
 }
 
 impl DesktopUiBackend {
@@ -24,6 +25,7 @@ impl DesktopUiBackend {
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
             debug_event_queue: Default::default(),
+            debug_event_queue_out: Default::default(),
         })
     }
 }
@@ -103,29 +105,41 @@ impl UiBackend for DesktopUiBackend {
 
     fn connect_debugger(&mut self) {
         let queue_local = Arc::clone(&self.debug_event_queue);
+        let queue_out_local = Arc::clone(&self.debug_event_queue_out);
 
         // spawn debugger thread
         std::thread::spawn(move || {
             let mut stream = TcpStream::connect("localhost:7979").unwrap();
+            stream.set_read_timeout(Some(std::time::Duration::from_millis(100))).unwrap();
 
             loop {
-                let mut data = [0u8; 1024];
-                let len = stream.read(&mut data).unwrap();
+                {
+                    let mut data = [0u8; 1024];
+                    if let Ok(len) = stream.read(&mut data) {
 
-                if len == 0 {
-                    break;
+                        if len == 0 {
+                            break;
+                        }
+
+                        let data = &data[..len];
+                        let s = String::from_utf8(data.to_vec()).unwrap();
+
+                        if let Ok(msg) = serde_json::from_str::<ruffle_core::player::DebugMessageIn>(&s) {
+                            println!("Got data: {:?}", msg);
+                            queue_local.write().unwrap().push(msg);
+                        }
+                    }
                 }
 
-                let data = &data[..len];
-                println!("Got data: {:?}", data);
-                if data[0] == 0x1 {
-                    queue_local.write().unwrap().push(ruffle_core::player::DebugMessageIn::Pause);
-                }
-                if data[0] == 0x2 {
-                    queue_local.write().unwrap().push(ruffle_core::player::DebugMessageIn::Play);
+                if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
+                    std::io::Write::write(&mut stream, serde_json::to_string(&out_msg).unwrap().as_bytes()).unwrap();
                 }
             }
         });
+    }
+
+    fn submit_debug_message(&mut self, evt: ruffle_core::player::DebugMessageOut) {
+        self.debug_event_queue_out.write().unwrap().push(evt.clone());
     }
 
 
@@ -133,3 +147,4 @@ impl UiBackend for DesktopUiBackend {
         self.debug_event_queue.write().unwrap().pop()
     }
 }
+
