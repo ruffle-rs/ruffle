@@ -41,6 +41,7 @@ const enum PanicError {
     WasmNotFound,
     WasmDisabledMicrosoftEdge,
     SwfFetchError,
+    SwfCors,
 }
 
 // Safari still requires prefixed fullscreen APIs, see:
@@ -1285,7 +1286,7 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 errorFooter = `
                     <li><a target="_top" href="${RUFFLE_ORIGIN}/demo">Web Demo</a></li>
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/tags">Desktop Application</a></li>
+                    <li><a target="_top" href="${RUFFLE_ORIGIN}#downloads">Desktop Application</a></li>
                 `;
                 break;
             case PanicError.JavascriptConfiguration:
@@ -1334,6 +1335,18 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
+            case PanicError.SwfCors:
+                // Self hosted: Cannot load SWF file - CORS issues
+                errorBody = `
+                    <p>Ruffle failed to load the Flash SWF file.</p>
+                    <p>Access to fetch has likely been blocked by CORS policy.</p>
+                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = `
@@ -1342,7 +1355,7 @@ export class RufflePlayer extends HTMLElement {
                     <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web">View Ruffle Wiki</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header">View Ruffle Wiki</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
@@ -1458,7 +1471,14 @@ export class RufflePlayer extends HTMLElement {
             !window.location.protocol.includes("http")
         ) {
             const error = new Error("Failed to fetch: " + this.swfUrl);
-            error.ruffleIndexError = PanicError.SwfFetchError;
+            if (
+                window.location.origin !== this.swfUrl!.origin &&
+                !this.isExtension
+            ) {
+                error.ruffleIndexError = PanicError.SwfCors;
+            } else {
+                error.ruffleIndexError = PanicError.SwfFetchError;
+            }
             this.panic(error);
             return;
         }
