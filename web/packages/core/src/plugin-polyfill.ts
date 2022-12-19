@@ -153,6 +153,10 @@ class RufflePluginArray {
 
     [name: string]: unknown;
 
+    [Symbol.iterator](): IterableIterator<Plugin> {
+        return this.__plugins[Symbol.iterator]();
+    }
+
     get length(): number {
         return this.__plugins.length;
     }
