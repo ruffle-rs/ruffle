@@ -663,7 +663,7 @@ impl Ruffle {
 
             // Create mouse up handler.
             let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
-                let _ = ruffle.with_instance_mut(|instance| {
+                let _ = ruffle.with_instance(|instance| {
                     if let Some(target) = js_event.current_target() {
                         let _ = target
                             .unchecked_ref::<Element>()
