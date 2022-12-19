@@ -45,7 +45,7 @@ dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = 
 symphonia = { version = "0.5.1", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.0.12"
 static_assertions = "1.1.0"
-rustversion = "1.0.9"
+rustversion = "1.0.11"
 bytemuck = "1.12.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
