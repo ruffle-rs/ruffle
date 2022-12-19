@@ -1,0 +1,15 @@
+[
+    {
+        "type": "MouseDown",
+        "pos": [253.0, 231.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [253.0, 231.0],
+        "btn": "Left"
+    }
+]

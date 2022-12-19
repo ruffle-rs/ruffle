@@ -1566,8 +1566,8 @@ impl Player {
     pub fn run_actions(context: &mut UpdateContext<'_, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
-            // We don't run frame actions if the clip was removed after it queued the action.
-            if !action.is_unload && action.clip.removed() {
+            // We don't run frame actions if the clip was removed (or scheduled to be removed) after it queued the action.
+            if !action.is_unload && (action.clip.removed() || action.clip.pending_removal()) {
                 continue;
             }
 

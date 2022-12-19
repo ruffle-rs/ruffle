@@ -392,9 +392,53 @@ impl<'gc> Avm1<'gc> {
         self.registers.get_mut(id)
     }
 
+    /// Find all display objects with negative depth recurisvely
+    ///
+    /// If an object is pending removal due to being removed by a removeObject tag on the previous frame,
+    /// while it had an unload event listener attached, avm1 requires that the object is kept around for one extra frame.
+    ///
+    /// This will be called at the start of each frame, to gather the objects for removal
+    fn find_display_objects_pending_removal(
+        obj: DisplayObject<'gc>,
+        out: &mut Vec<DisplayObject<'gc>>,
+    ) {
+        if let Some(parent) = obj.as_container() {
+            for child in parent.iter_render_list() {
+                if child.pending_removal() {
+                    out.push(child);
+                }
+
+                Self::find_display_objects_pending_removal(child, out);
+            }
+        }
+    }
+
+    /// Remove all display objects pending removal
+    /// See [`find_display_objects_pending_removal`] for details
+    fn remove_pending(context: &mut UpdateContext<'_, 'gc>) {
+        // Storage for objects to remove
+        // Have to do this in two passes to avoid borrow-mut while already borrowed
+        let mut out = Vec::new();
+
+        // Find objects to remove
+        Self::find_display_objects_pending_removal(context.stage.root_clip(), &mut out);
+
+        for child in out {
+            // Get the parent of this object
+            let parent = child.parent().unwrap();
+            let parent_container = parent.as_container().unwrap();
+
+            // Remove it
+            parent_container.remove_child_directly(context, child);
+        }
+    }
+
     // Run a single frame.
     #[instrument(level = "debug", skip_all)]
     pub fn run_frame(context: &mut UpdateContext<'_, 'gc>) {
+        // Remove pending objects
+        Self::remove_pending(context);
+
         // In AVM1, we only ever execute the update phase, and all the work that
         // would ordinarily be phased is instead run all at once in whatever order
         // the SWF requests it.

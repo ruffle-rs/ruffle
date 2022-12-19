@@ -1096,8 +1096,14 @@ pub trait TDisplayObject<'gc>:
     fn removed(&self) -> bool {
         self.base().removed()
     }
+
     fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_removed(value)
+    }
+
+    /// Is this object waiting to be removed on the start of the next frame
+    fn pending_removal(&self) -> bool {
+        self.depth() < 0
     }
 
     /// Whether this display object is visible.
