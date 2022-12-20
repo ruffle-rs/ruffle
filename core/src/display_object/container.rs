@@ -1,5 +1,6 @@
 //! Container mix-in for display objects
 
+use crate::avm1::{Activation, ActivationIdentifier, TObject};
 use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
@@ -308,12 +309,24 @@ pub trait TDisplayObjectContainer<'gc>:
             (*self).into()
         ));
 
-        // Check if this child should have delayed removal
-        if ChildContainer::should_delay_removal(child) {
-            ChildContainer::queue_removal(child, context);
-        } else {
-            self.remove_child_directly(context, child);
+        // Check if this child should have delayed removal (AVM1 only)
+        if !context.is_action_script_3() {
+            let should_delay_removal = {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Unload Handler Check]"),
+                );
+
+                ChildContainer::should_delay_removal(&mut activation, child)
+            };
+
+            if should_delay_removal {
+                ChildContainer::queue_removal(child, context);
+                return;
+            }
         }
+
+        self.remove_child_directly(context, child);
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
@@ -798,18 +811,28 @@ impl<'gc> ChildContainer<'gc> {
     /// Should the removal of this clip be delayed to the start of the next frame
     ///
     /// Checks recursively for unload handlers
-    pub fn should_delay_removal(child: DisplayObject<'gc>) -> bool {
+    pub fn should_delay_removal(
+        activation: &mut Activation<'_, 'gc>,
+        child: DisplayObject<'gc>,
+    ) -> bool {
         // Do we have an unload event handler
         if let Some(mc) = child.as_movie_clip() {
+            // If we have an unload handler, we need the delay
             if mc.has_unload_handler() {
                 return true;
+            // If we were created via timeline and we have a dynamic unload handler, we need the delay
+            } else if !child.placed_by_script() {
+                let obj = child.object().coerce_to_object(activation);
+                if obj.has_property(activation, "onUnload".into()) {
+                    return true;
+                }
             }
         }
 
         // Otherwise, check children if we have them
         if let Some(c) = child.as_container() {
             for child in c.iter_render_list() {
-                if Self::should_delay_removal(child) {
+                if Self::should_delay_removal(activation, child) {
                     return true;
                 }
             }
