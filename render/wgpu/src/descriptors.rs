@@ -1,12 +1,10 @@
 use crate::layouts::BindLayouts;
-use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
+use crate::pipelines::{ComplexBlend, VERTEX_BUFFERS_DESCRIPTION};
 use crate::shaders::Shaders;
 use crate::{create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex};
+use enum_map::{enum_map, EnumMap};
 use fnv::FnvHashMap;
 use std::sync::{Arc, Mutex};
-use swf::BlendMode;
-
-const MAX_BLEND_MODES: usize = 13;
 
 pub struct Descriptors {
     pub adapter: wgpu::Adapter,
@@ -16,7 +14,7 @@ pub struct Descriptors {
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
     pub quad: Quad,
-    blend_buffers: [wgpu::Buffer; MAX_BLEND_MODES],
+    blend_buffers: EnumMap<ComplexBlend, wgpu::Buffer>,
     copy_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     shaders: Shaders,
@@ -31,12 +29,26 @@ impl Descriptors {
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
 
-        let blend_buffers = core::array::from_fn(|blend_id| {
+        let blend_buffers = enum_map! {
+            ComplexBlend::Multiply => 1,
+            ComplexBlend::Screen => 2,
+            ComplexBlend::Lighten => 3,
+            ComplexBlend::Darken => 4,
+            ComplexBlend::Difference => 5,
+            ComplexBlend::Add => 6,
+            ComplexBlend::Subtract => 7,
+            ComplexBlend::Invert => 8,
+            ComplexBlend::Alpha => 9,
+            ComplexBlend::Erase => 10,
+            ComplexBlend::Overlay => 11,
+            ComplexBlend::HardLight => 12,
+        }
+        .map(|blend, id| {
             create_buffer_with_data(
                 &device,
-                bytemuck::cast_slice(&[blend_id, 0, 0, 0]),
+                bytemuck::cast_slice(&[id, 0, 0, 0]),
                 wgpu::BufferUsages::UNIFORM,
-                create_debug_label!("Blend mode {:?}", blend_id),
+                create_debug_label!("Blend mode {:?}", blend),
             )
         });
 
@@ -197,24 +209,8 @@ impl Descriptors {
             .clone()
     }
 
-    pub fn blend_buffer(&self, blend_mode: BlendMode) -> &wgpu::Buffer {
-        let index = match blend_mode {
-            BlendMode::Normal => 0,
-            BlendMode::Layer => 0,
-            BlendMode::Multiply => 1,
-            BlendMode::Screen => 2,
-            BlendMode::Lighten => 3,
-            BlendMode::Darken => 4,
-            BlendMode::Difference => 5,
-            BlendMode::Add => 6,
-            BlendMode::Subtract => 7,
-            BlendMode::Invert => 8,
-            BlendMode::Alpha => 9,
-            BlendMode::Erase => 10,
-            BlendMode::Overlay => 11,
-            BlendMode::HardLight => 12,
-        };
-        &self.blend_buffers[index]
+    pub fn blend_buffer(&self, blend: ComplexBlend) -> &wgpu::Buffer {
+        &self.blend_buffers[blend]
     }
 }
 

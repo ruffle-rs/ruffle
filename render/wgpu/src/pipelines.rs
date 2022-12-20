@@ -2,6 +2,7 @@ use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
+use swf::BlendMode;
 use wgpu::vertex_attr_array;
 
 pub const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
@@ -18,12 +19,79 @@ pub struct ShapePipeline {
     pub pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
 }
 
+#[derive(Enum, Debug)]
+pub enum TrivialBlend {
+    Normal,
+}
+
+#[derive(Enum, Debug)]
+pub enum ComplexBlend {
+    Multiply,
+    Screen,
+    Lighten,
+    Darken,
+    Difference,
+    Add,
+    Subtract,
+    Invert,
+    Alpha,
+    Erase,
+    Overlay,
+    HardLight,
+}
+
+impl ComplexBlend {
+    pub fn id(&self) -> i32 {
+        match self {
+            ComplexBlend::Multiply => 1,
+            ComplexBlend::Screen => 2,
+            ComplexBlend::Lighten => 3,
+            ComplexBlend::Darken => 4,
+            ComplexBlend::Difference => 5,
+            ComplexBlend::Add => 6,
+            ComplexBlend::Subtract => 7,
+            ComplexBlend::Invert => 8,
+            ComplexBlend::Alpha => 9,
+            ComplexBlend::Erase => 10,
+            ComplexBlend::Overlay => 11,
+            ComplexBlend::HardLight => 12,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum BlendType {
+    Trivial(TrivialBlend),
+    Complex(ComplexBlend),
+}
+
+impl BlendType {
+    pub fn from(mode: BlendMode) -> BlendType {
+        match mode {
+            BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
+            BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
+            BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
+            BlendMode::Screen => BlendType::Complex(ComplexBlend::Screen),
+            BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
+            BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
+            BlendMode::Difference => BlendType::Complex(ComplexBlend::Difference),
+            BlendMode::Add => BlendType::Complex(ComplexBlend::Add),
+            BlendMode::Subtract => BlendType::Complex(ComplexBlend::Subtract),
+            BlendMode::Invert => BlendType::Complex(ComplexBlend::Invert),
+            BlendMode::Alpha => BlendType::Complex(ComplexBlend::Alpha),
+            BlendMode::Erase => BlendType::Complex(ComplexBlend::Erase),
+            BlendMode::Overlay => BlendType::Complex(ComplexBlend::Overlay),
+            BlendMode::HardLight => BlendType::Complex(ComplexBlend::HardLight),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Pipelines {
     pub color: ShapePipeline,
-    pub bitmap: ShapePipeline,
+    pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradient: ShapePipeline,
-    pub blend: ShapePipeline,
+    pub complex_blend: ShapePipeline,
 }
 
 impl ShapePipeline {
@@ -68,21 +136,6 @@ impl Pipelines {
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
-        let bitmap_pipelines = create_shape_pipeline(
-            "Bitmap",
-            device,
-            format,
-            &shaders.bitmap_shader,
-            msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION,
-            &[
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.bitmap,
-            ],
-            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-        );
-
         let gradient_pipelines = create_shape_pipeline(
             "Gradient",
             device,
@@ -98,8 +151,8 @@ impl Pipelines {
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
-        let blend_pipeline = create_shape_pipeline(
-            "Blend",
+        let complex_blend_pipeline = create_shape_pipeline(
+            "Complex Blend",
             device,
             format,
             &shaders.blend_shader,
@@ -113,11 +166,36 @@ impl Pipelines {
             wgpu::BlendState::REPLACE,
         );
 
+        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
+            .map(|blend| {
+                let blend = match TrivialBlend::from_usize(blend) {
+                    TrivialBlend::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                };
+                let name = format!("Bitmap ({:?})", blend);
+                create_shape_pipeline(
+                    &name,
+                    device,
+                    format,
+                    &shaders.bitmap_shader,
+                    msaa_sample_count,
+                    &VERTEX_BUFFERS_DESCRIPTION,
+                    &[
+                        &bind_layouts.globals,
+                        &bind_layouts.transforms,
+                        &bind_layouts.bitmap,
+                    ],
+                    blend,
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
         Self {
             color: color_pipelines,
-            bitmap: bitmap_pipelines,
+            bitmap: EnumMap::from_array(bitmap_pipelines),
             gradient: gradient_pipelines,
-            blend: blend_pipeline,
+            complex_blend: complex_blend_pipeline,
         }
     }
 }
@@ -167,7 +245,7 @@ fn create_pipeline_descriptor<'a>(
 
 #[allow(clippy::too_many_arguments)]
 fn create_shape_pipeline(
-    name: &'static str,
+    name: &str,
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
     shader: &wgpu::ShaderModule,
