@@ -1,0 +1,7 @@
+before super(), numChildren: 1
+child instantiation
+after super(), numChildren: 1
+frameConstructed 1, numChildren: 1
+enterFrame 2, numChildren: 2
+child instantiation
+frameConstructed 2, numChildren: 2

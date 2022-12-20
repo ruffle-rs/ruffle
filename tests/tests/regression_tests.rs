@@ -362,6 +362,8 @@ swf_tests! {
     (as3_increment_i, "avm2/increment_i", 1),
     (as3_increment, "avm2/increment", 1),
     (as3_instanceof, "avm2/instanceof", 1),
+    (as3_instantiation_on_enter_frame, "avm2/instantiation_on_enter_frame", 1),
+    (as3_instantiation_on_enterframe_gotoandstop, "avm2/instantiation_on_enterframe_gotoandstop", 1),
     (as3_int_constr, "avm2/int_constr", 1),
     (as3_int_edge_cases, "avm2/int_edge_cases", 1),
     #[ignore] (as3_int_toexponential, "avm2/int_toexponential", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
@@ -463,6 +465,7 @@ swf_tests! {
     (as3_op_lookupswitch, "avm2/op_lookupswitch", 1),
     (as3_package_namespace, "avm2/package_namespace", 1),
     (as3_parse_int, "avm2/parse_int", 1),
+    (as3_place_multiple, "avm2/place_multiple", 1),
     (as3_place_object_replace_2, "avm2/place_object_replace_2", 3),
     (as3_place_object_replace, "avm2/place_object_replace", 2),
     (as3_point, "avm2/point", 1),
