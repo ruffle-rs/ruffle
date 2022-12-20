@@ -1,9 +1,10 @@
 use crate::mesh::{DrawType, Mesh};
+use crate::pipelines::{BlendType, TrivialBlend};
 use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer};
 use crate::utils::create_buffer_with_data;
 use crate::{
-    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Transforms,
-    UniformBuffer,
+    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, TextureTransforms,
+    Transforms, UniformBuffer,
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -346,7 +347,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         _ => target,
                     };
 
-                    target.update_blend_buffer(&mut draw_encoder);
                     let child_globals = Globals::new(
                         &descriptors.device,
                         &descriptors.bind_layouts.globals,
@@ -359,6 +359,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         target.size.width,
                         target.size.height,
                     );
+                    let mut child_clear_color = clear_color.take();
+                    child_clear_color.get_or_insert(wgpu::Color::TRANSPARENT);
 
                     CommandRenderer::execute(
                         &pipelines,
@@ -374,78 +376,167 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         } else {
                             nearest_layer
                         },
-                        false,
-                        clear_color,
+                        true,
+                        &mut child_clear_color,
                     );
 
-                    let blend_bind_group =
-                        descriptors
-                            .device
-                            .create_bind_group(&wgpu::BindGroupDescriptor {
-                                label: None,
-                                layout: &descriptors.bind_layouts.blend,
-                                entries: &[
-                                    wgpu::BindGroupEntry {
-                                        binding: 0,
-                                        resource: wgpu::BindingResource::TextureView(
-                                            parent.blend_buffer.view(),
-                                        ),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 1,
-                                        resource: wgpu::BindingResource::TextureView(
-                                            child.color_view(),
-                                        ),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 2,
-                                        resource: wgpu::BindingResource::Sampler(
-                                            descriptors.bitmap_samplers.get_sampler(false, false),
-                                        ),
-                                    },
-                                    wgpu::BindGroupEntry {
-                                        binding: 3,
-                                        resource: descriptors
-                                            .blend_buffer(blend_mode)
-                                            .as_entire_binding(),
-                                    },
-                                ],
-                            });
+                    match BlendType::from(blend_mode) {
+                        BlendType::Trivial(blend) => {
+                            let bitmap_bind_group =
+                                descriptors
+                                    .device
+                                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                                        label: None,
+                                        layout: &descriptors.bind_layouts.bitmap,
+                                        entries: &[
+                                            wgpu::BindGroupEntry {
+                                                binding: 0,
+                                                resource: wgpu::BindingResource::Buffer(
+                                                    wgpu::BufferBinding {
+                                                        buffer: &descriptors
+                                                            .quad
+                                                            .texture_transforms,
+                                                        offset: 0,
+                                                        size: wgpu::BufferSize::new(
+                                                            std::mem::size_of::<TextureTransforms>()
+                                                                as u64,
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                            wgpu::BindGroupEntry {
+                                                binding: 1,
+                                                resource: wgpu::BindingResource::TextureView(
+                                                    child.color_view(),
+                                                ),
+                                            },
+                                            wgpu::BindGroupEntry {
+                                                binding: 2,
+                                                resource: wgpu::BindingResource::Sampler(
+                                                    descriptors
+                                                        .bitmap_samplers
+                                                        .get_sampler(false, false),
+                                                ),
+                                            },
+                                        ],
+                                    });
 
-                    let mut render_pass =
-                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: None,
-                            color_attachments: &[target.color_attachments(clear_color.take())],
-                            depth_stencil_attachment: target.depth_attachment(false),
-                        });
-                    render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
+                            let mut render_pass =
+                                draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: None,
+                                    color_attachments: &[
+                                        target.color_attachments(clear_color.take())
+                                    ],
+                                    depth_stencil_attachment: target.depth_attachment(false),
+                                });
+                            render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
 
-                    match mask_state {
-                        MaskState::NoMask => {}
-                        MaskState::DrawMaskStencil => {
-                            render_pass.set_stencil_reference(num_masks - 1);
+                            match mask_state {
+                                MaskState::NoMask => {}
+                                MaskState::DrawMaskStencil => {
+                                    render_pass.set_stencil_reference(num_masks - 1);
+                                }
+                                MaskState::DrawMaskedContent => {
+                                    render_pass.set_stencil_reference(num_masks);
+                                }
+                                MaskState::ClearMaskStencil => {
+                                    render_pass.set_stencil_reference(num_masks);
+                                }
+                            }
+
+                            render_pass
+                                .set_pipeline(pipelines.bitmap[blend].pipeline_for(mask_state));
+
+                            render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
+                            render_pass.set_bind_group(2, &bitmap_bind_group, &[]);
+
+                            render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
+                            render_pass.set_index_buffer(
+                                descriptors.quad.indices.slice(..),
+                                wgpu::IndexFormat::Uint32,
+                            );
+
+                            render_pass.draw_indexed(0..6, 0, 0..1);
+                            drop(render_pass);
                         }
-                        MaskState::DrawMaskedContent => {
-                            render_pass.set_stencil_reference(num_masks);
-                        }
-                        MaskState::ClearMaskStencil => {
-                            render_pass.set_stencil_reference(num_masks);
+                        BlendType::Complex(blend) => {
+                            target.update_blend_buffer(&mut draw_encoder);
+
+                            let blend_bind_group =
+                                descriptors
+                                    .device
+                                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                                        label: None,
+                                        layout: &descriptors.bind_layouts.blend,
+                                        entries: &[
+                                            wgpu::BindGroupEntry {
+                                                binding: 0,
+                                                resource: wgpu::BindingResource::TextureView(
+                                                    parent.blend_buffer.view(),
+                                                ),
+                                            },
+                                            wgpu::BindGroupEntry {
+                                                binding: 1,
+                                                resource: wgpu::BindingResource::TextureView(
+                                                    child.color_view(),
+                                                ),
+                                            },
+                                            wgpu::BindGroupEntry {
+                                                binding: 2,
+                                                resource: wgpu::BindingResource::Sampler(
+                                                    descriptors
+                                                        .bitmap_samplers
+                                                        .get_sampler(false, false),
+                                                ),
+                                            },
+                                            wgpu::BindGroupEntry {
+                                                binding: 3,
+                                                resource: descriptors
+                                                    .blend_buffer(blend)
+                                                    .as_entire_binding(),
+                                            },
+                                        ],
+                                    });
+
+                            let mut render_pass =
+                                draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    label: None,
+                                    color_attachments: &[
+                                        target.color_attachments(clear_color.take())
+                                    ],
+                                    depth_stencil_attachment: target.depth_attachment(false),
+                                });
+                            render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
+
+                            match mask_state {
+                                MaskState::NoMask => {}
+                                MaskState::DrawMaskStencil => {
+                                    render_pass.set_stencil_reference(num_masks - 1);
+                                }
+                                MaskState::DrawMaskedContent => {
+                                    render_pass.set_stencil_reference(num_masks);
+                                }
+                                MaskState::ClearMaskStencil => {
+                                    render_pass.set_stencil_reference(num_masks);
+                                }
+                            }
+
+                            render_pass
+                                .set_pipeline(pipelines.complex_blend.pipeline_for(mask_state));
+
+                            render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
+                            render_pass.set_bind_group(2, &blend_bind_group, &[]);
+
+                            render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
+                            render_pass.set_index_buffer(
+                                descriptors.quad.indices.slice(..),
+                                wgpu::IndexFormat::Uint32,
+                            );
+
+                            render_pass.draw_indexed(0..6, 0, 0..1);
+                            drop(render_pass);
                         }
                     }
-
-                    render_pass.set_pipeline(pipelines.blend.pipeline_for(mask_state));
-
-                    render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
-                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
-
-                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
-                    render_pass.set_index_buffer(
-                        descriptors.quad.indices.slice(..),
-                        wgpu::IndexFormat::Uint32,
-                    );
-
-                    render_pass.draw_indexed(0..6, 0, 0..1);
-                    drop(render_pass);
                 }
             }
             first = false;
@@ -467,8 +558,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     }
 
     pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup) {
-        self.render_pass
-            .set_pipeline(self.pipelines.bitmap.pipeline_for(self.mask_state));
+        self.render_pass.set_pipeline(
+            self.pipelines.bitmap[TrivialBlend::Normal].pipeline_for(self.mask_state),
+        );
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
