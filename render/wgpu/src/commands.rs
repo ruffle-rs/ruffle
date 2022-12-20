@@ -6,6 +6,7 @@ use crate::{
     as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, TextureTransforms,
     Transforms, UniformBuffer,
 };
+use once_cell::sync::OnceCell;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::{Command, CommandList};
@@ -14,7 +15,7 @@ use swf::{BlendMode, Color};
 
 pub struct CommandTarget<'pass> {
     frame_buffer: FrameBuffer,
-    blend_buffer: BlendBuffer,
+    blend_buffer: OnceCell<BlendBuffer>,
     resolve_buffer: Option<ResolveBuffer>,
     depth: DepthBuffer,
     globals: &'pass Globals,
@@ -82,14 +83,6 @@ impl<'pass> CommandTarget<'pass> {
             },
         );
 
-        let blend_buffer = BlendBuffer::new(
-            &descriptors,
-            create_debug_label!("Blend buffer"),
-            size,
-            format,
-            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        );
-
         let resolve_buffer = if sample_count > 1 {
             Some(ResolveBuffer::new(
                 &descriptors,
@@ -113,7 +106,7 @@ impl<'pass> CommandTarget<'pass> {
 
         Self {
             frame_buffer,
-            blend_buffer,
+            blend_buffer: OnceCell::new(),
             resolve_buffer,
             depth,
             globals,
@@ -185,7 +178,20 @@ impl<'pass> CommandTarget<'pass> {
         })
     }
 
-    pub fn update_blend_buffer(&self, encoder: &mut wgpu::CommandEncoder) {
+    pub fn update_blend_buffer(
+        &self,
+        descriptors: &Descriptors,
+        encoder: &mut wgpu::CommandEncoder,
+    ) -> &BlendBuffer {
+        let blend_buffer = self.blend_buffer.get_or_init(|| {
+            BlendBuffer::new(
+                &descriptors,
+                create_debug_label!("Blend buffer"),
+                self.size,
+                self.format,
+                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            )
+        });
         encoder.copy_texture_to_texture(
             wgpu::ImageCopyTextureBase {
                 texture: self
@@ -198,13 +204,14 @@ impl<'pass> CommandTarget<'pass> {
                 aspect: Default::default(),
             },
             wgpu::ImageCopyTextureBase {
-                texture: self.blend_buffer.texture(),
+                texture: blend_buffer.texture(),
                 mip_level: 0,
                 origin: Default::default(),
                 aspect: Default::default(),
             },
             self.frame_buffer.size(),
         );
+        blend_buffer
     }
 
     pub fn color_view(&self) -> &wgpu::TextureView {
@@ -460,7 +467,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             drop(render_pass);
                         }
                         BlendType::Complex(blend) => {
-                            target.update_blend_buffer(&mut draw_encoder);
+                            let parent_blend_buffer =
+                                parent.update_blend_buffer(&descriptors, &mut draw_encoder);
 
                             let blend_bind_group =
                                 descriptors
@@ -472,7 +480,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                             wgpu::BindGroupEntry {
                                                 binding: 0,
                                                 resource: wgpu::BindingResource::TextureView(
-                                                    parent.blend_buffer.view(),
+                                                    parent_blend_buffer.view(),
                                                 ),
                                             },
                                             wgpu::BindGroupEntry {
