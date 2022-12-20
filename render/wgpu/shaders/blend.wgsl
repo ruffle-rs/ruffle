@@ -26,9 +26,6 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 
 fn blend_func(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
     switch (blend.mode) {
-        default: {
-            return src;
-        }
         case 1: { // Multiply
             return src * dst;
         }
@@ -60,6 +57,9 @@ fn blend_func(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
             if (src.g <= 0.5) { out.g = (2.0 * src.g * dst.g); } else { out.g = (1.0 - 2.0 * (1.0 - dst.g) * (1.0 - src.g)); }
             if (src.b <= 0.5) { out.b = (2.0 * src.b * dst.b); } else { out.b = (1.0 - 2.0 * (1.0 - dst.b) * (1.0 - src.b)); }
             return out;
+        }
+        default: {
+            return src;
         }
     }
 }
