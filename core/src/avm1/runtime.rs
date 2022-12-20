@@ -430,6 +430,11 @@ impl<'gc> Avm1<'gc> {
 
             // Remove it
             parent_container.remove_child_directly(context, child);
+
+            // Update pending removal state
+            parent_container
+                .raw_container_mut(context.gc_context)
+                .update_pending_removals();
         }
     }
 
