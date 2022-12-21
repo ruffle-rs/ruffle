@@ -362,8 +362,8 @@ swf_tests! {
     (as3_increment_i, "avm2/increment_i", 1),
     (as3_increment, "avm2/increment", 1),
     (as3_instanceof, "avm2/instanceof", 1),
-    (as3_instantiation_on_enter_frame, "avm2/instantiation_on_enter_frame", 1),
-    (as3_instantiation_on_enterframe_gotoandstop, "avm2/instantiation_on_enterframe_gotoandstop", 1),
+    (as3_instantiation_on_enter_frame, "avm2/instantiation_on_enter_frame", 2),
+    (as3_instantiation_on_enterframe_gotoandstop, "avm2/instantiation_on_enterframe_gotoandstop", 2),
     (as3_int_constr, "avm2/int_constr", 1),
     (as3_int_edge_cases, "avm2/int_edge_cases", 1),
     #[ignore] (as3_int_toexponential, "avm2/int_toexponential", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
