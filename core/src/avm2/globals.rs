@@ -451,14 +451,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    // package `flash.utils`
-
-    class(
-        activation,
-        flash::utils::dictionary::create_class(mc),
-        script,
-    )?;
-
     // package `flash.display`
     class(
         activation,
