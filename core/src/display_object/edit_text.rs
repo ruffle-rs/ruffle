@@ -16,6 +16,7 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::container::{dispatch_added_event_only, dispatch_added_to_stage_event_only};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
@@ -1380,6 +1381,12 @@ impl<'gc> EditText<'gc> {
                 e
             ),
         }
+                
+        // Since we construct AVM2 display objects after they are
+        // allocated and placed on the render list, we have to emit all
+        // events after this point.
+        dispatch_added_event_only((*self).into(), &mut activation.context);
+        dispatch_added_to_stage_event_only((*self).into(), &mut activation.context);   
     }
 
     /// Count the number of lines in the text box's layout.

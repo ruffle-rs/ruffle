@@ -7,6 +7,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::container::{dispatch_added_event_only, dispatch_added_to_stage_event_only};
 use crate::prelude::*;
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -288,6 +289,12 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 }
                 Err(e) => log::error!("Got error when creating AVM2 side of bitmap: {}", e),
             }
+                
+            // Since we construct AVM2 display objects after they are
+            // allocated and placed on the render list, we have to emit all
+            // events after this point.
+            dispatch_added_event_only((*self).into(), &mut activation.context);
+            dispatch_added_to_stage_event_only((*self).into(), &mut activation.context);    
         } else {
             context
                 .avm1

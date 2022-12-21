@@ -1453,7 +1453,6 @@ impl<'gc> MovieClip<'gc> {
                 // Remove previous child from children list,
                 // and add new child onto front of the list.
                 let prev_child = self.replace_at_depth(context, child, depth);
-                let mut placed_with_name = false;
                 {
                     // Set initial properties for child.
                     child.set_instantiated_by_timeline(context.gc_context, true);
@@ -1464,7 +1463,6 @@ impl<'gc> MovieClip<'gc> {
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
-                        placed_with_name = true;
                         let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
                         let name = name.to_str_lossy(encoding);
                         child.set_name(
@@ -1502,26 +1500,8 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
 
-                dispatch_added_event_only(child, context);
-                dispatch_added_to_stage_event_only(child, context);
                 if let Some(prev_child) = prev_child {
                     dispatch_removed_event(prev_child, context);
-                }
-
-                if placed_with_name {
-                    if let Avm2Value::Object(mut p) = self.object2() {
-                        if let Avm2Value::Object(c) = child.object2() {
-                            let name = Avm2Multiname::public(child.name());
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                            if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
-                                log::error!(
-                                    "Got error when setting AVM2 child named \"{}\": {}",
-                                    &child.name(),
-                                    e
-                                );
-                            }
-                        }
-                    }
                 }
 
                 Some(child)
@@ -2274,29 +2254,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if is_playing {
                 self.run_frame_internal(context, true, true);
             }
-        }
-    }
-
-    /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        // New children will be constructed when they are instantiated and thus
-        // if we construct before our children, they'll get double-constructed.
-        for child in self.iter_render_list() {
-            child.construct_frame(context);
-        }
-
-        // AVM1 code expects to execute in line with timeline instructions, so
-        // it's exempted from frame construction.
-        if context.is_action_script_3() && self.frames_loaded() >= 1 {
-            let is_load_frame = !self.0.read().initialized();
-            let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
-                self.allocate_as_avm2_object(context, (*self).into());
-                true
-            } else {
-                false
-            };
-
+            
             // PlaceObject tags execute at this time.
+            // Note that this is NOT when constructors run; that happens later
+            // after tags have executed.
             let data = self.0.read().static_data.swf.clone();
             let place_actions = self.unqueue_adds(context);
 
@@ -2311,22 +2272,51 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
                 }
             }
+        }
+    }
+
+    /// Construct objects placed on this frame.
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // AVM1 code expects to execute in line with timeline instructions, so
+        // it's exempted from frame construction.
+        if context.is_action_script_3() && self.frames_loaded() >= 1 {
+            let is_load_frame = !self.0.read().initialized();
+            let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
+                self.allocate_as_avm2_object(context, (*self).into());
+                true
+            } else {
+                false
+            };
 
             self.0.write(context.gc_context).unset_loop_queued();
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
+                
+                // Since we construct AVM2 display objects after they are
+                // allocated and placed on the render list, we have to emit all
+                // events after this point.
+                dispatch_added_event_only((*self).into(), context);
+                dispatch_added_to_stage_event_only((*self).into(), context);
 
-                // AVM2 roots work exactly the same as any other timeline- or
-                // script-constructed object in terms of events received on
-                // them. However, because roots are added by the player itself,
-                // we can't fire the events until we run our first frame, so we
-                // have to actually check if we've just built the root and act
-                // like it just got added to the timeline.
-                let self_dobj: DisplayObject<'gc> = (*self).into();
-                if self_dobj.is_root() {
-                    dispatch_added_event_only(self_dobj, context);
-                    dispatch_added_to_stage_event_only(self_dobj, context);
+                if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
+                    if let Avm2Value::Object(c) = self.object2() {
+                        let name = Avm2Multiname::public(self.name());
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
+                            log::error!(
+                                "Got error when setting AVM2 child named \"{}\": {}",
+                                &self.name(),
+                                e
+                            );
+                        }
+                    }
+                }
+            } else {
+                // The supercall constructor for display objects is responsible
+                // for triggering construct_frame on frame 1.
+                for child in self.iter_render_list() {
+                    child.construct_frame(context);
                 }
             }
 
