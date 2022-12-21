@@ -66,16 +66,16 @@ fn blend_func(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
 
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    // dst is the parent pixel we're blending onto - it is either 0 or 1 alpha.
+    // dst is the parent pixel we're blending onto
     var dst: vec4<f32> = textureSample(parent_texture, texture_sampler, in.uv);
-    // src is the pixel that we want to apply - it may have any alpha.
+    // src is the pixel that we want to apply
     var src: vec4<f32> = textureSample(current_texture, texture_sampler, in.uv);
 
     if (src.a > 0.0) {
         if (blend.mode == 6) { // Add
-            return vec4<f32>(src.rgb + dst.rgb, 1.0);
+            return src + dst;
         } else if (blend.mode == 7) { // Subtract
-            return vec4<f32>(dst.rgb - src.rgb, 1.0);
+            return vec4<f32>(dst.rgb - src.rgb, src.a + dst.a);
         } else if (blend.mode == 9) { // Alpha
             return vec4<f32>(dst.rgb * src.a, src.a * dst.a);
         } else if (blend.mode == 10) { // Erase
