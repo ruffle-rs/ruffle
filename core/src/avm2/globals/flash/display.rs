@@ -4,7 +4,6 @@ pub mod bitmap;
 pub mod bitmapdata;
 pub mod displayobject;
 pub mod displayobjectcontainer;
-pub mod framelabel;
 pub mod graphics;
 pub mod ibitmapdrawable;
 pub mod interactiveobject;

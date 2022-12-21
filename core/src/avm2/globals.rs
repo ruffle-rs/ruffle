@@ -498,12 +498,6 @@ pub fn load_player_globals<'gc>(
         script
     );
     avm2_system_class!(
-        framelabel,
-        activation,
-        flash::display::framelabel::create_class(mc),
-        script
-    );
-    avm2_system_class!(
         graphics,
         activation,
         flash::display::graphics::create_class(mc),
@@ -651,6 +645,7 @@ fn load_playerglobal<'gc>(
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "Scene", scene),
+            ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
