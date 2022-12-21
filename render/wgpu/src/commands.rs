@@ -17,7 +17,7 @@ pub struct CommandTarget<'pass> {
     frame_buffer: FrameBuffer,
     blend_buffer: OnceCell<BlendBuffer>,
     resolve_buffer: Option<ResolveBuffer>,
-    depth: DepthBuffer,
+    depth: OnceCell<DepthBuffer>,
     globals: &'pass Globals,
     size: wgpu::Extent3d,
     format: wgpu::TextureFormat,
@@ -97,18 +97,11 @@ impl<'pass> CommandTarget<'pass> {
             None
         };
 
-        let depth = DepthBuffer::new(
-            &descriptors.device,
-            create_debug_label!("Depth buffer"),
-            sample_count,
-            size,
-        );
-
         Self {
             frame_buffer,
             blend_buffer: OnceCell::new(),
             resolve_buffer,
-            depth,
+            depth: OnceCell::new(),
             globals,
             size,
             format,
@@ -160,9 +153,21 @@ impl<'pass> CommandTarget<'pass> {
         })
     }
 
-    pub fn depth_attachment(&self, clear: bool) -> Option<wgpu::RenderPassDepthStencilAttachment> {
+    pub fn depth_attachment(
+        &self,
+        descriptors: &Descriptors,
+        clear: bool,
+    ) -> Option<wgpu::RenderPassDepthStencilAttachment> {
+        let depth = self.depth.get_or_init(|| {
+            DepthBuffer::new(
+                &descriptors.device,
+                create_debug_label!("Depth buffer"),
+                self.sample_count,
+                self.size,
+            )
+        });
         Some(wgpu::RenderPassDepthStencilAttachment {
-            view: self.depth.view(),
+            view: depth.view(),
             depth_ops: Some(wgpu::Operations {
                 load: if clear {
                     wgpu::LoadOp::Clear(0.0)
@@ -231,6 +236,7 @@ pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     render_pass: wgpu::RenderPass<'pass>,
     uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
     uniform_encoder: &'frame mut wgpu::CommandEncoder,
+    needs_depth: bool,
 }
 
 impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'global> {
@@ -244,6 +250,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         render_pass: wgpu::RenderPass<'pass>,
         num_masks: u32,
         mask_state: MaskState,
+        needs_depth: bool,
     ) -> Self {
         Self {
             pipelines,
@@ -254,6 +261,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             descriptors,
             uniform_buffers,
             uniform_encoder,
+            needs_depth,
         }
     }
 
@@ -284,12 +292,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
         for chunk in chunk_blends(commands.0) {
             match chunk {
-                Chunk::Draw(chunk) => {
+                Chunk::Draw(chunk, needs_depth) => {
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
                             color_attachments: &[target.color_attachments(clear_color.take())],
-                            depth_stencil_attachment: target.depth_attachment(first && clear_depth),
+                            depth_stencil_attachment: if needs_depth {
+                                target.depth_attachment(&descriptors, first && clear_depth)
+                            } else {
+                                None
+                            },
                         });
                     render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
@@ -301,6 +313,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         render_pass,
                         num_masks,
                         mask_state,
+                        needs_depth,
                     );
 
                     for command in &chunk {
@@ -348,7 +361,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     num_masks = renderer.num_masks;
                     mask_state = renderer.mask_state;
                 }
-                Chunk::Blend(commands, blend_mode) => {
+                Chunk::Blend(commands, blend_mode, needs_depth) => {
                     let parent = match blend_mode {
                         BlendMode::Alpha | BlendMode::Erase => nearest_layer,
                         _ => target,
@@ -434,7 +447,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                     color_attachments: &[
                                         target.color_attachments(clear_color.take())
                                     ],
-                                    depth_stencil_attachment: target.depth_attachment(false),
+                                    depth_stencil_attachment: if needs_depth {
+                                        target.depth_attachment(descriptors, false)
+                                    } else {
+                                        None
+                                    },
                                 });
                             render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
 
@@ -451,8 +468,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                 }
                             }
 
-                            render_pass
-                                .set_pipeline(pipelines.bitmap[blend].pipeline_for(mask_state));
+                            if needs_depth {
+                                render_pass
+                                    .set_pipeline(pipelines.bitmap[blend].pipeline_for(mask_state));
+                            } else {
+                                render_pass
+                                    .set_pipeline(pipelines.bitmap[blend].depthless_pipeline());
+                            }
 
                             render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
                             render_pass.set_bind_group(2, &bitmap_bind_group, &[]);
@@ -512,7 +534,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                     color_attachments: &[
                                         target.color_attachments(clear_color.take())
                                     ],
-                                    depth_stencil_attachment: target.depth_attachment(false),
+                                    depth_stencil_attachment: if needs_depth {
+                                        target.depth_attachment(descriptors, false)
+                                    } else {
+                                        None
+                                    },
                                 });
                             render_pass.set_bind_group(0, target.globals.bind_group(), &[]);
 
@@ -529,8 +555,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                 }
                             }
 
-                            render_pass
-                                .set_pipeline(pipelines.complex_blend.pipeline_for(mask_state));
+                            if needs_depth {
+                                render_pass
+                                    .set_pipeline(pipelines.complex_blend.pipeline_for(mask_state));
+                            } else {
+                                render_pass
+                                    .set_pipeline(pipelines.complex_blend.depthless_pipeline());
+                            }
 
                             render_pass.set_bind_group(1, target.whole_frame_bind_group(), &[0]);
                             render_pass.set_bind_group(2, &blend_bind_group, &[]);
@@ -554,21 +585,36 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     }
 
     pub fn prep_color(&mut self) {
-        self.render_pass
-            .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
+        if self.needs_depth {
+            self.render_pass
+                .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.color.depthless_pipeline());
+        }
     }
 
     pub fn prep_gradient(&mut self, bind_group: &'pass wgpu::BindGroup) {
-        self.render_pass
-            .set_pipeline(self.pipelines.gradient.pipeline_for(self.mask_state));
+        if self.needs_depth {
+            self.render_pass
+                .set_pipeline(self.pipelines.gradient.pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.gradient.depthless_pipeline());
+        }
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
 
     pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup) {
-        self.render_pass.set_pipeline(
-            self.pipelines.bitmap[TrivialBlend::Normal].pipeline_for(self.mask_state),
-        );
+        if self.needs_depth {
+            self.render_pass.set_pipeline(
+                self.pipelines.bitmap[TrivialBlend::Normal].pipeline_for(self.mask_state),
+            );
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.bitmap[TrivialBlend::Normal].depthless_pipeline());
+        }
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
     }
@@ -749,22 +795,30 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
 #[derive(Debug)]
 pub enum Chunk {
-    Draw(Vec<Command>),
-    Blend(CommandList, BlendMode),
+    Draw(Vec<Command>, bool),
+    Blend(CommandList, BlendMode, bool),
 }
 
 /// Chunk the commands such that every Blend is separated out
 fn chunk_blends(commands: Vec<Command>) -> Vec<Chunk> {
     let mut result = vec![];
     let mut current = vec![];
+    let mut needs_depth = false;
 
     for command in commands {
         match command {
             Command::Blend(commands, blend_mode) => {
                 if !current.is_empty() {
-                    result.push(Chunk::Draw(std::mem::take(&mut current)));
+                    result.push(Chunk::Draw(std::mem::take(&mut current), needs_depth));
                 }
-                result.push(Chunk::Blend(commands, blend_mode));
+                result.push(Chunk::Blend(commands, blend_mode, needs_depth));
+            }
+            Command::PushMask
+            | Command::ActivateMask
+            | Command::PopMask
+            | Command::DeactivateMask => {
+                needs_depth = true;
+                current.push(command);
             }
             _ => {
                 current.push(command);
@@ -773,7 +827,7 @@ fn chunk_blends(commands: Vec<Command>) -> Vec<Chunk> {
     }
 
     if !current.is_empty() {
-        result.push(Chunk::Draw(current));
+        result.push(Chunk::Draw(current, needs_depth));
     }
 
     result
