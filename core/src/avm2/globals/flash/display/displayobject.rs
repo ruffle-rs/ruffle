@@ -64,6 +64,14 @@ pub fn native_instance_init<'gc>(
                 catchup_display_object_to_frame(&mut activation.context, child);
             }
         }
+
+        if let Some(dobj) = this.as_display_object() {
+            if let Some(container) = dobj.as_container() {
+                for child in container.iter_render_list() {
+                    child.construct_frame(&mut activation.context);
+                }
+            }
+        }
     }
 
     Ok(Value::Undefined)

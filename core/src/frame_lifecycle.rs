@@ -111,12 +111,10 @@ pub fn catchup_display_object_to_frame<'gc>(
     }
 
     match *context.frame_phase {
-        //NOTE: We currently do not have test coverage to justify `Enter`
-        //running `construct_frame`. However, `Idle` *does* need frame
-        //construction to happen, because event handlers expect to be able to
-        //construct new movie clips and see their grandchildren. So I suspect
-        //that constructing symbols in `enterFrame` works the same way.
-        FramePhase::Enter | FramePhase::Construct => {
+        FramePhase::Enter => {
+            dobj.enter_frame(context);
+        }
+        FramePhase::Construct => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
         }
