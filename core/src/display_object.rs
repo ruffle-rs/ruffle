@@ -36,7 +36,10 @@ mod text;
 mod video;
 
 use crate::avm1::Activation;
-pub use crate::display_object::container::{DisplayObjectContainer, TDisplayObjectContainer};
+pub use crate::display_object::container::{
+    dispatch_added_event_only, dispatch_added_to_stage_event_only, DisplayObjectContainer,
+    TDisplayObjectContainer,
+};
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
@@ -1252,6 +1255,48 @@ pub trait TDisplayObject<'gc>:
     /// 2. That newly created children have been instantiated and are present
     ///    as properties on the class
     fn construct_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
+    /// To be called when an AVM2 display object has finished being constructed.
+    ///
+    /// This function must be called once and ONLY once, after the object's
+    /// AVM2 side has been constructed. Typically, this is in construct_frame,
+    /// unless your object needs to construct itself earlier or later. When
+    /// this function is called on the child, it will fire its add events and,
+    /// if possible, set a named property on the parent matching the name of
+    /// the object.
+    ///
+    /// If the child was placed by AVM2, this function is a no-op, since AVM2
+    /// will already trip these events. Objects that cannot be constructed by
+    /// the timeline do not need to call this method.
+    ///
+    /// Since we construct AVM2 display objects after they are allocated and
+    /// placed on the render list, these steps have to be done by the child
+    /// object to signal to its parent that it was added.
+    fn on_construction_complete(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !self.placed_by_script() {
+            // Since we construct AVM2 display objects after they are
+            // allocated and placed on the render list, we have to emit all
+            // events after this point.
+            dispatch_added_event_only((*self).into(), context);
+            dispatch_added_to_stage_event_only((*self).into(), context);
+
+            //TODO: Don't report missing property errors.
+            //TODO: Don't attempt to set properties if object was placed without a name.
+            if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
+                if let Avm2Value::Object(c) = self.object2() {
+                    let name = Avm2Multiname::public(self.name());
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
+                        log::error!(
+                            "Got error when setting AVM2 child named \"{}\": {}",
+                            &self.name(),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     /// Execute all other timeline actions on this object.
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}

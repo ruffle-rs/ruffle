@@ -3,7 +3,6 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
-use crate::display_object::container::{dispatch_added_event_only, dispatch_added_to_stage_event_only};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -248,12 +247,8 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 }
                 Err(e) => log::error!("Got error when creating AVM2 side of Text: {}", e),
             }
-                
-            // Since we construct AVM2 display objects after they are
-            // allocated and placed on the render list, we have to emit all
-            // events after this point.
-            dispatch_added_event_only((*self).into(), &mut activation.context);
-            dispatch_added_to_stage_event_only((*self).into(), &mut activation.context);   
+
+            self.on_construction_complete(context);
         }
     }
 
