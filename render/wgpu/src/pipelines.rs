@@ -171,7 +171,7 @@ impl Pipelines {
                 let blend = match TrivialBlend::from_usize(blend) {
                     TrivialBlend::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
                 };
-                let name = format!("Bitmap ({:?})", blend);
+                let name = format!("Bitmap ({blend:?})");
                 create_shape_pipeline(
                     &name,
                     device,
