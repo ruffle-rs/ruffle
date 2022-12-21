@@ -480,6 +480,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
                 Err(e) => log::error!("Got {} when constructing AVM2 side of button", e),
             };
+
+            self.on_construction_complete(context);
         }
 
         let needs_frame_construction = self.0.read().needs_frame_construction;

@@ -12,11 +12,13 @@ use crate::avm2::{
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::container::{
+    dispatch_added_event_only, dispatch_added_to_stage_event_only,
+};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
-use crate::display_object::container::{dispatch_added_event_only, dispatch_added_to_stage_event_only};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
@@ -1381,12 +1383,12 @@ impl<'gc> EditText<'gc> {
                 e
             ),
         }
-                
+
         // Since we construct AVM2 display objects after they are
         // allocated and placed on the render list, we have to emit all
         // events after this point.
         dispatch_added_event_only((*self).into(), &mut activation.context);
-        dispatch_added_to_stage_event_only((*self).into(), &mut activation.context);   
+        dispatch_added_to_stage_event_only((*self).into(), &mut activation.context);
     }
 
     /// Count the number of lines in the text box's layout.
@@ -1491,6 +1493,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Undefined) {
             self.construct_as_avm2_object(context, (*self).into());
+            self.on_construction_complete(context);
         }
     }
 

@@ -4,9 +4,8 @@ use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Multiname as Avm2Multiname,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
-    TObject as Avm2TObject, Value as Avm2Value,
+    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
+    QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::ui::MouseCursor;
@@ -18,8 +17,7 @@ use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
-    dispatch_added_event_only, dispatch_added_to_stage_event_only, dispatch_removed_event,
-    ChildContainer, TDisplayObjectContainer,
+    dispatch_removed_event, ChildContainer, TDisplayObjectContainer,
 };
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -2254,7 +2252,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if is_playing {
                 self.run_frame_internal(context, true, true);
             }
-            
+
             // PlaceObject tags execute at this time.
             // Note that this is NOT when constructors run; that happens later
             // after tags have executed.
@@ -2292,26 +2290,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
-                
-                // Since we construct AVM2 display objects after they are
-                // allocated and placed on the render list, we have to emit all
-                // events after this point.
-                dispatch_added_event_only((*self).into(), context);
-                dispatch_added_to_stage_event_only((*self).into(), context);
-
-                if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
-                    if let Avm2Value::Object(c) = self.object2() {
-                        let name = Avm2Multiname::public(self.name());
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
-                            log::error!(
-                                "Got error when setting AVM2 child named \"{}\": {}",
-                                &self.name(),
-                                e
-                            );
-                        }
-                    }
-                }
+                self.on_construction_complete(context);
             } else {
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
