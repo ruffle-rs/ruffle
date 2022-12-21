@@ -314,6 +314,10 @@ impl<'gc> Avm1<'gc> {
         self.stack.len()
     }
 
+    pub fn clear_stack(&mut self) {
+        self.stack.clear()
+    }
+
     pub fn push(&mut self, value: Value<'gc>) {
         avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
         self.stack.push(value);
