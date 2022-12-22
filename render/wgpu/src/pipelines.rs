@@ -20,12 +20,12 @@ pub struct ShapePipeline {
     depthless: wgpu::RenderPipeline,
 }
 
-#[derive(Enum, Debug)]
+#[derive(Enum, Debug, Copy, Clone)]
 pub enum TrivialBlend {
     Normal,
 }
 
-#[derive(Enum, Debug)]
+#[derive(Enum, Debug, Copy, Clone)]
 pub enum ComplexBlend {
     Multiply,
     Screen,
@@ -60,7 +60,7 @@ impl ComplexBlend {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum BlendType {
     Trivial(TrivialBlend),
     Complex(ComplexBlend),

@@ -2,9 +2,10 @@ use crate::commands::{CommandRenderer, CommandTarget};
 use crate::mesh::Mesh;
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{Descriptors, Globals, Pipelines, TextureTransforms, Transforms, UniformBuffer};
+use crate::{Descriptors, Pipelines, TextureTransforms, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
+use wgpu::Texture;
 
 #[derive(Debug)]
 pub struct ResolveBuffer {
@@ -41,6 +42,10 @@ impl ResolveBuffer {
 
     pub fn texture(&self) -> &wgpu::Texture {
         &self.texture
+    }
+
+    pub fn take_texture(self) -> Texture {
+        self.texture
     }
 }
 
@@ -85,6 +90,10 @@ impl FrameBuffer {
 
     pub fn texture(&self) -> &wgpu::Texture {
         &self.texture
+    }
+
+    pub fn take_texture(self) -> Texture {
+        self.texture
     }
 
     pub fn size(&self) -> wgpu::Extent3d {
@@ -165,7 +174,6 @@ pub struct Surface {
     size: wgpu::Extent3d,
     sample_count: u32,
     pipelines: Arc<Pipelines>,
-    globals: Globals,
     format: wgpu::TextureFormat,
     actual_surface_format: wgpu::TextureFormat,
 }
@@ -185,28 +193,20 @@ impl Surface {
         };
         let frame_buffer_format = remove_srgb(surface_format);
 
-        let globals = Globals::new(
-            &descriptors.device,
-            &descriptors.bind_layouts.globals,
-            width,
-            height,
-        );
-
         let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
         Self {
             size,
             sample_count,
             pipelines,
-            globals,
             format: frame_buffer_format,
             actual_surface_format: surface_format,
         }
     }
 
-    pub fn draw_commands(
+    pub fn draw_commands_to(
         &mut self,
         frame_view: &wgpu::TextureView,
-        mut clear_color: Option<wgpu::Color>,
+        clear_color: Option<wgpu::Color>,
         descriptors: &Descriptors,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
@@ -221,30 +221,25 @@ impl Surface {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: uniform_encoder_label.as_deref(),
                 });
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
 
-        let target = CommandTarget::new(
-            &self.globals,
-            &descriptors,
-            self.size,
-            self.format,
-            self.sample_count,
-        );
-
-        let mut buffers = vec![];
-
-        CommandRenderer::execute(
-            &self.pipelines,
-            &target,
-            &meshes,
-            &descriptors,
+        let target = self.draw_commands(
+            clear_color,
+            descriptors,
+            meshes,
+            &commands,
             &mut uniform_buffer,
             &mut uniform_encoder,
-            commands,
-            &mut buffers,
-            &target,
-            true,
-            &mut clear_color,
+            &mut draw_encoder,
+            None,
         );
+        let mut buffers = vec![draw_encoder.finish()];
 
         let copy_bind_group = descriptors
             .device
@@ -304,8 +299,8 @@ impl Surface {
         });
 
         render_pass.set_pipeline(&pipeline);
-        render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-        render_pass.set_bind_group(1, &target.whole_frame_bind_group(), &[0]);
+        render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+        render_pass.set_bind_group(1, &target.whole_frame_bind_group(descriptors), &[0]);
         render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
@@ -320,6 +315,37 @@ impl Surface {
         buffers.push(copy_encoder.finish());
         buffers.insert(0, uniform_encoder.finish());
         uniform_buffer.finish();
+
         buffers
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_commands<'frame, 'global: 'frame>(
+        &mut self,
+        mut clear_color: Option<wgpu::Color>,
+        descriptors: &'global Descriptors,
+        meshes: &'global Vec<Mesh>,
+        commands: &CommandList,
+        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+        uniform_encoder: &'frame mut wgpu::CommandEncoder,
+        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        nearest_layer: Option<&'frame CommandTarget>,
+    ) -> CommandTarget {
+        let target = CommandTarget::new(&descriptors, self.size, self.format, self.sample_count);
+
+        CommandRenderer::execute(
+            &self.pipelines,
+            &target,
+            &meshes,
+            &descriptors,
+            uniform_buffers,
+            uniform_encoder,
+            commands,
+            nearest_layer.unwrap_or(&target),
+            &mut clear_color,
+            draw_encoder,
+        );
+
+        target
     }
 }
