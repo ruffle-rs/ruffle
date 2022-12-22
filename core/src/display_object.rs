@@ -1277,8 +1277,12 @@ pub trait TDisplayObject<'gc>:
             // Since we construct AVM2 display objects after they are
             // allocated and placed on the render list, we have to emit all
             // events after this point.
-            dispatch_added_event_only((*self).into(), context);
-            dispatch_added_to_stage_event_only((*self).into(), context);
+            //
+            // Children added to buttons by the timeline do not emit events.
+            if self.parent().and_then(|p| p.as_avm2_button()).is_none() {
+                dispatch_added_event_only((*self).into(), context);
+                dispatch_added_to_stage_event_only((*self).into(), context);
+            }
 
             //TODO: Don't report missing property errors.
             //TODO: Don't attempt to set properties if object was placed without a name.
