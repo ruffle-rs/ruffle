@@ -29,6 +29,7 @@ pub mod target;
 mod uniform_buffer;
 
 pub mod backend;
+mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 mod commands;

@@ -1,9 +1,10 @@
-use crate::mesh::{DrawType, Mesh};
+use crate::buffer_pool::{PoolEntry, TexturePool};
+use crate::mesh::{BitmapBinds, DrawType, Mesh};
 use crate::pipelines::{BlendType, ComplexBlend, TrivialBlend};
 use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer, Surface};
 use crate::utils::create_buffer_with_data;
 use crate::{
-    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Texture, Transforms,
+    as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Transforms,
     UniformBuffer,
 };
 use once_cell::sync::OnceCell;
@@ -12,7 +13,6 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::{Command, CommandList};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
-use std::sync::Arc;
 use swf::{BlendMode, Color};
 
 pub struct CommandTarget {
@@ -27,34 +27,16 @@ pub struct CommandTarget {
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
 }
 
-impl From<CommandTarget> for Texture {
-    fn from(value: CommandTarget) -> Self {
-        Texture {
-            texture: Arc::new(
-                value
-                    .resolve_buffer
-                    .map(|b| b.take_texture())
-                    .unwrap_or_else(|| value.frame_buffer.take_texture()),
-            ),
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
-            texture_offscreen: Default::default(),
-            width: value.size.width,
-            height: value.size.height,
-        }
-    }
-}
-
 impl CommandTarget {
     pub fn new(
         descriptors: &Descriptors,
+        pool: &mut TexturePool,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         sample_count: u32,
     ) -> Self {
         let frame_buffer = FrameBuffer::new(
             &descriptors,
-            create_debug_label!("Frame buffer"),
             sample_count,
             size,
             format,
@@ -65,17 +47,18 @@ impl CommandTarget {
                     | wgpu::TextureUsages::COPY_SRC
                     | wgpu::TextureUsages::TEXTURE_BINDING
             },
+            pool,
         );
 
         let resolve_buffer = if sample_count > 1 {
             Some(ResolveBuffer::new(
                 &descriptors,
-                create_debug_label!("Resolve buffer"),
                 size,
                 format,
                 wgpu::TextureUsages::COPY_SRC
                     | wgpu::TextureUsages::TEXTURE_BINDING
                     | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                pool,
             ))
         } else {
             None
@@ -101,17 +84,18 @@ impl CommandTarget {
         }
     }
 
-    pub fn create_child(&self, descriptors: &Descriptors, width: u32, height: u32) -> Self {
-        Self::new(
-            descriptors,
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            self.format,
-            self.sample_count,
-        )
+    pub fn width(&self) -> u32 {
+        self.size.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.size.height
+    }
+
+    pub fn take_color_texture(self) -> PoolEntry<wgpu::Texture> {
+        self.resolve_buffer
+            .map(|b| b.take_texture())
+            .unwrap_or_else(|| self.frame_buffer.take_texture())
     }
 
     pub fn globals(&self) -> &Globals {
@@ -184,16 +168,12 @@ impl CommandTarget {
     pub fn depth_attachment(
         &self,
         descriptors: &Descriptors,
+        pool: &mut TexturePool,
         clear: bool,
     ) -> Option<wgpu::RenderPassDepthStencilAttachment> {
-        let depth = self.depth.get_or_init(|| {
-            DepthBuffer::new(
-                &descriptors.device,
-                create_debug_label!("Depth buffer"),
-                self.sample_count,
-                self.size,
-            )
-        });
+        let depth = self
+            .depth
+            .get_or_init(|| DepthBuffer::new(descriptors, self.sample_count, self.size, pool));
         Some(wgpu::RenderPassDepthStencilAttachment {
             view: depth.view(),
             depth_ops: Some(wgpu::Operations {
@@ -214,15 +194,16 @@ impl CommandTarget {
     pub fn update_blend_buffer(
         &self,
         descriptors: &Descriptors,
+        pool: &mut TexturePool,
         encoder: &mut wgpu::CommandEncoder,
     ) -> &BlendBuffer {
         let blend_buffer = self.blend_buffer.get_or_init(|| {
             BlendBuffer::new(
                 &descriptors,
-                create_debug_label!("Blend buffer"),
                 self.size,
                 self.format,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                pool,
             )
         });
         encoder.copy_texture_to_texture(
@@ -305,6 +286,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         nearest_layer: &'pass CommandTarget,
         clear_color: &mut Option<wgpu::Color>,
         draw_encoder: &'pass mut wgpu::CommandEncoder,
+        texture_pool: &mut TexturePool,
     ) {
         let mut first = true;
         let mut num_masks = 0;
@@ -320,6 +302,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             target.size.width,
             target.size.height,
             nearest_layer,
+            texture_pool,
         );
 
         for chunk in chunks {
@@ -330,7 +313,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             label: None,
                             color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(&descriptors, first)
+                                target.depth_attachment(&descriptors, texture_pool, first)
                             } else {
                                 None
                             },
@@ -379,6 +362,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             } => {
                                 renderer.render_bitmap(bitmap, &transform, *smoothing, *blend_mode)
                             }
+                            DrawCommand::RenderTexture {
+                                _texture,
+                                binds,
+                                transform,
+                                blend_mode,
+                            } => renderer.render_texture(&transform, binds, *blend_mode),
                             DrawCommand::RenderShape { shape, transform } => {
                                 renderer.render_shape(*shape, &transform)
                             }
@@ -402,8 +391,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     };
 
                     let parent_blend_buffer =
-                        parent.update_blend_buffer(&descriptors, draw_encoder);
+                        parent.update_blend_buffer(&descriptors, texture_pool, draw_encoder);
 
+                    let texture_view = texture.create_view(&Default::default());
                     let blend_bind_group =
                         descriptors
                             .device
@@ -419,9 +409,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 1,
-                                        resource: wgpu::BindingResource::TextureView(
-                                            texture.color_view(),
-                                        ),
+                                        resource: wgpu::BindingResource::TextureView(&texture_view),
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 2,
@@ -443,7 +431,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                             label: None,
                             color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(descriptors, first)
+                                target.depth_attachment(descriptors, texture_pool, first)
                             } else {
                                 None
                             },
@@ -599,6 +587,25 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
     }
 
+    fn render_texture(
+        &mut self,
+        transform: &Transform,
+        bind_group: &'frame wgpu::BindGroup,
+        blend_mode: TrivialBlend,
+    ) {
+        self.apply_transform(
+            &transform.matrix,
+            ColorAdjustments::from(transform.color_transform),
+        );
+        self.prep_bitmap(bind_group, blend_mode);
+
+        self.draw(
+            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.indices.slice(..),
+            6,
+        );
+    }
+
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         self.apply_transform(
             &transform.matrix,
@@ -696,7 +703,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
 pub enum Chunk {
     Draw(Vec<DrawCommand>),
-    Blend(CommandTarget, ComplexBlend),
+    Blend(PoolEntry<wgpu::Texture>, ComplexBlend),
 }
 
 #[derive(Debug)]
@@ -705,6 +712,12 @@ pub enum DrawCommand {
         bitmap: BitmapHandle,
         transform: Transform,
         smoothing: bool,
+        blend_mode: TrivialBlend,
+    },
+    RenderTexture {
+        _texture: PoolEntry<wgpu::Texture>,
+        binds: wgpu::BindGroup,
+        transform: Transform,
         blend_mode: TrivialBlend,
     },
     RenderShape {
@@ -735,6 +748,7 @@ fn chunk_blends<'a>(
     width: u32,
     height: u32,
     nearest_layer: &CommandTarget,
+    texture_pool: &mut TexturePool,
 ) -> (Vec<Chunk>, bool) {
     let mut result = vec![];
     let mut current = vec![];
@@ -763,20 +777,36 @@ fn chunk_blends<'a>(
                     } else {
                         Some(nearest_layer)
                     },
+                    texture_pool,
                 );
 
                 match BlendType::from(*blend_mode) {
-                    BlendType::Trivial(blend_mode) => current.push(DrawCommand::RenderBitmap {
-                        bitmap: BitmapHandle(Arc::<Texture>::new(target.into())),
-                        transform: Default::default(),
-                        smoothing: false,
-                        blend_mode,
-                    }),
+                    BlendType::Trivial(blend_mode) => {
+                        let transform = Transform {
+                            matrix: Matrix::scale(target.width() as f32, target.height() as f32),
+                            color_transform: Default::default(),
+                        };
+                        let texture = target.take_color_texture();
+                        let binds = BitmapBinds::new(
+                            &descriptors.device,
+                            &descriptors.bind_layouts.bitmap,
+                            descriptors.bitmap_samplers.get_sampler(false, false),
+                            &descriptors.quad.texture_transforms,
+                            texture.create_view(&Default::default()),
+                            None,
+                        );
+                        current.push(DrawCommand::RenderTexture {
+                            _texture: texture,
+                            binds: binds.bind_group,
+                            transform,
+                            blend_mode,
+                        })
+                    }
                     BlendType::Complex(blend_mode) => {
                         if !current.is_empty() {
                             result.push(Chunk::Draw(std::mem::take(&mut current)));
                         }
-                        result.push(Chunk::Blend(target, blend_mode));
+                        result.push(Chunk::Blend(target.take_color_texture(), blend_mode));
                     }
                 }
             }
