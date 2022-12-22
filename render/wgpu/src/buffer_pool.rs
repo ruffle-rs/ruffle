@@ -1,4 +1,5 @@
 use crate::descriptors::Descriptors;
+use crate::globals::Globals;
 use fnv::FnvHashMap;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
@@ -7,16 +8,15 @@ use std::sync::{Arc, Mutex, Weak};
 type PoolInner<T> = Mutex<Vec<T>>;
 type Constructor<T> = Box<dyn Fn(&Descriptors) -> T>;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TexturePool {
     pools: FnvHashMap<TextureKey, BufferPool<wgpu::Texture>>,
+    globals_cache: FnvHashMap<GlobalsKey, Weak<Globals>>,
 }
 
 impl TexturePool {
     pub fn new() -> Self {
-        Self {
-            pools: FnvHashMap::default(),
-        }
+        Default::default()
     }
 
     pub fn get_texture(
@@ -48,6 +48,34 @@ impl TexturePool {
         });
         pool.take(&descriptors)
     }
+
+    pub fn get_globals(
+        &mut self,
+        descriptors: &Descriptors,
+        viewport_width: u32,
+        viewport_height: u32,
+    ) -> Arc<Globals> {
+        let globals = self
+            .globals_cache
+            .entry(GlobalsKey {
+                viewport_width,
+                viewport_height,
+            })
+            .or_default();
+        match globals.upgrade() {
+            None => {
+                let replacement = Arc::new(Globals::new(
+                    &descriptors.device,
+                    &descriptors.bind_layouts.globals,
+                    viewport_width,
+                    viewport_height,
+                ));
+                *globals = Arc::downgrade(&replacement);
+                replacement
+            }
+            Some(globals) => globals,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
@@ -56,6 +84,12 @@ struct TextureKey {
     usage: wgpu::TextureUsages,
     format: wgpu::TextureFormat,
     sample_count: u32,
+}
+
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+struct GlobalsKey {
+    viewport_width: u32,
+    viewport_height: u32,
 }
 
 pub struct BufferPool<T> {
