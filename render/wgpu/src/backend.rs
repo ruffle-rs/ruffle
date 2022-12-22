@@ -347,7 +347,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands(
+        let command_buffers = self.surface.draw_commands_to(
             frame_output.view(),
             Some(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
@@ -524,7 +524,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height,
             wgpu::TextureFormat::Rgba8Unorm,
         );
-        let command_buffers = surface.draw_commands(
+        let command_buffers = surface.draw_commands_to(
             frame_output.view(),
             None,
             &self.descriptors,
