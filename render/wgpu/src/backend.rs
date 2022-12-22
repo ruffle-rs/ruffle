@@ -570,13 +570,20 @@ async fn request_device(
     limits.max_storage_buffers_per_shader_stage =
         adapter.limits().max_storage_buffers_per_shader_stage;
     limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
+    let mut features = wgpu::Features::DEPTH24PLUS_STENCIL8;
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::VERTEX_WRITABLE_STORAGE)
+    {
+        features |= wgpu::Features::VERTEX_WRITABLE_STORAGE;
+    }
 
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::DEPTH24PLUS_STENCIL8
-                    | wgpu::Features::VERTEX_WRITABLE_STORAGE,
+                features,
                 limits,
             },
             trace_path,
