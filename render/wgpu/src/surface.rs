@@ -1,3 +1,4 @@
+use crate::buffer_pool::{PoolEntry, TexturePool};
 use crate::commands::{CommandRenderer, CommandTarget};
 use crate::mesh::Mesh;
 use crate::uniform_buffer::BufferStorage;
@@ -5,31 +6,22 @@ use crate::utils::remove_srgb;
 use crate::{Descriptors, Pipelines, TextureTransforms, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
-use wgpu::Texture;
 
 #[derive(Debug)]
 pub struct ResolveBuffer {
-    texture: wgpu::Texture,
+    texture: PoolEntry<wgpu::Texture>,
     view: wgpu::TextureView,
 }
 
 impl ResolveBuffer {
     pub fn new(
         descriptors: &Descriptors,
-        label: Option<String>,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
+        pool: &mut TexturePool,
     ) -> Self {
-        let texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage,
-        });
+        let texture = pool.get_texture(descriptors, size, usage, format, 1);
 
         let view = texture.create_view(&Default::default());
 
@@ -44,14 +36,14 @@ impl ResolveBuffer {
         &self.texture
     }
 
-    pub fn take_texture(self) -> Texture {
+    pub fn take_texture(self) -> PoolEntry<wgpu::Texture> {
         self.texture
     }
 }
 
 #[derive(Debug)]
 pub struct FrameBuffer {
-    texture: wgpu::Texture,
+    texture: PoolEntry<wgpu::Texture>,
     view: wgpu::TextureView,
     size: wgpu::Extent3d,
 }
@@ -59,21 +51,13 @@ pub struct FrameBuffer {
 impl FrameBuffer {
     pub fn new(
         descriptors: &Descriptors,
-        label: Option<String>,
         sample_count: u32,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
+        pool: &mut TexturePool,
     ) -> Self {
-        let texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size,
-            mip_level_count: 1,
-            sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage,
-        });
+        let texture = pool.get_texture(descriptors, size, usage, format, sample_count);
 
         let view = texture.create_view(&Default::default());
 
@@ -92,7 +76,7 @@ impl FrameBuffer {
         &self.texture
     }
 
-    pub fn take_texture(self) -> Texture {
+    pub fn take_texture(self) -> PoolEntry<wgpu::Texture> {
         self.texture
     }
 
@@ -103,27 +87,19 @@ impl FrameBuffer {
 
 #[derive(Debug)]
 pub struct BlendBuffer {
-    texture: wgpu::Texture,
+    texture: PoolEntry<wgpu::Texture>,
     view: wgpu::TextureView,
 }
 
 impl BlendBuffer {
     pub fn new(
         descriptors: &Descriptors,
-        label: Option<String>,
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
+        pool: &mut TexturePool,
     ) -> Self {
-        let texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage,
-        });
+        let texture = pool.get_texture(descriptors, size, usage, format, 1);
         let view = texture.create_view(&Default::default());
 
         Self { texture, view }
@@ -140,28 +116,30 @@ impl BlendBuffer {
 
 #[derive(Debug)]
 pub struct DepthBuffer {
+    _texture: PoolEntry<wgpu::Texture>,
     view: wgpu::TextureView,
 }
 
 impl DepthBuffer {
     pub fn new(
-        device: &wgpu::Device,
-        label: Option<String>,
+        descriptors: &Descriptors,
         msaa_sample_count: u32,
         size: wgpu::Extent3d,
+        pool: &mut TexturePool,
     ) -> Self {
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
+        let texture = pool.get_texture(
+            descriptors,
             size,
-            mip_level_count: 1,
-            sample_count: msaa_sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth24PlusStencil8,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        });
+            wgpu::TextureUsages::RENDER_ATTACHMENT,
+            wgpu::TextureFormat::Depth24PlusStencil8,
+            msaa_sample_count,
+        );
 
         let view = texture.create_view(&Default::default());
-        Self { view }
+        Self {
+            _texture: texture,
+            view,
+        }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
@@ -229,6 +207,7 @@ impl Surface {
                     label: label.as_deref(),
                 });
 
+        let mut texture_pool = TexturePool::new();
         let target = self.draw_commands(
             clear_color,
             descriptors,
@@ -238,6 +217,7 @@ impl Surface {
             &mut uniform_encoder,
             &mut draw_encoder,
             None,
+            &mut texture_pool,
         );
         let mut buffers = vec![draw_encoder.finish()];
 
@@ -330,8 +310,15 @@ impl Surface {
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         nearest_layer: Option<&'frame CommandTarget>,
+        texture_pool: &mut TexturePool,
     ) -> CommandTarget {
-        let target = CommandTarget::new(&descriptors, self.size, self.format, self.sample_count);
+        let target = CommandTarget::new(
+            &descriptors,
+            texture_pool,
+            self.size,
+            self.format,
+            self.sample_count,
+        );
 
         CommandRenderer::execute(
             &self.pipelines,
@@ -344,6 +331,7 @@ impl Surface {
             nearest_layer.unwrap_or(&target),
             &mut clear_color,
             draw_encoder,
+            texture_pool,
         );
 
         target
