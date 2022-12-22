@@ -941,16 +941,20 @@ impl<'gc> BitmapData<'gc> {
     /// This implements the threshold operation generically over the test operation performed for each pixel
     /// Returns the number of pixels modified
     #[allow(clippy::too_many_arguments)]
-    fn threshold_internal<Op: Fn(u32) -> bool>(
+    fn threshold_internal<Op: Fn(u32, u32) -> bool>(
         &mut self,
         source_bitmap: &Self,
         src_rect: (i32, i32, i32, i32),
         dest_point: (i32, i32),
         operation: Op,
+        threshold: u32,
         colour: u32,
         mask: u32,
         copy_source: bool,
     ) -> u32 {
+        // Pre-compute the masked threshold
+        let masked_threshold = threshold & mask;
+
         // Extract coords
         let (src_min_x, src_min_y, src_width, src_height) = src_rect;
         let (dest_min_x, dest_min_y) = dest_point;
@@ -978,7 +982,7 @@ impl<'gc> BitmapData<'gc> {
                     .to_un_multiplied_alpha();
 
                 // If the test, as defined by the operation pass then set to input colour
-                if operation(source_color.0 as u32 & mask) {
+                if operation(source_color.0 as u32 & mask, masked_threshold) {
                     modified_count += 1;
                     self.set_pixel32_raw(dest_x as u32, dest_y as u32, Color(colour as _));
                 } else {
@@ -1012,68 +1016,28 @@ impl<'gc> BitmapData<'gc> {
         mask: u32,
         copy_source: bool,
     ) -> u32 {
-        // Pre-compute the masked threshold
-        let masked_threshold = threshold & mask;
-
         // Define the test that will be performed for each pixel
-        match operation.to_utf8_lossy().as_ref() {
-            "==" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v == masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
-            "!=" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v != masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
-            "<" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v < masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
-            "<=" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v <= masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
-            ">" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v > masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
-            ">=" => self.threshold_internal(
-                source_bitmap,
-                src_rect,
-                dest_point,
-                |v| v >= masked_threshold,
-                colour,
-                mask,
-                copy_source,
-            ),
+        let op = match operation.to_utf8_lossy().as_ref() {
+            "==" => |v, mt| v == mt,
+            "!=" => |v, mt| v != mt,
+            "<" => |v, mt| v < mt,
+            "<=" => |v, mt| v <= mt,
+            ">" => |v, mt| v > mt,
+            ">=" => |v, mt| v >= mt,
             // For undefined/invalid operations FP seems to just return 0 here
-            _ => 0,
-        }
+            _ => return 0,
+        };
+
+        self.threshold_internal(
+            source_bitmap,
+            src_rect,
+            dest_point,
+            op,
+            threshold,
+            colour,
+            mask,
+            copy_source,
+        )
     }
 
     // Updates the data stored with our `BitmapHandle` if this `BitmapData`
