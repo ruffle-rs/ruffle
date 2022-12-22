@@ -13,6 +13,7 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::{Command, CommandList};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
+use std::sync::Arc;
 use swf::{BlendMode, Color};
 
 pub struct CommandTarget {
@@ -20,7 +21,7 @@ pub struct CommandTarget {
     blend_buffer: OnceCell<BlendBuffer>,
     resolve_buffer: Option<ResolveBuffer>,
     depth: OnceCell<DepthBuffer>,
-    globals: Globals,
+    globals: Arc<Globals>,
     size: wgpu::Extent3d,
     format: wgpu::TextureFormat,
     sample_count: u32,
@@ -64,12 +65,7 @@ impl CommandTarget {
             None
         };
 
-        let globals = Globals::new(
-            &descriptors.device,
-            &descriptors.bind_layouts.globals,
-            size.width,
-            size.height,
-        );
+        let globals = pool.get_globals(descriptors, size.width, size.height);
 
         Self {
             frame_buffer,
