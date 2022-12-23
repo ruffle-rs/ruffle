@@ -1435,7 +1435,7 @@ fn run_swf(
         let target = TextureTarget::new(&descriptors.device, (width, height))?;
 
         builder = builder
-            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)
+            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target, 4)?)
             .with_viewport_dimensions(width, height, 1.0);
     };
 
