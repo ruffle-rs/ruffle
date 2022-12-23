@@ -287,7 +287,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         let mut first = true;
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
-        let (chunks, needs_depth) = chunk_blends(
+        let chunks = chunk_blends(
             commands.0,
             descriptors,
             uniform_buffers,
@@ -303,7 +303,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk) => {
+                Chunk::Draw(chunk, needs_depth) => {
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
@@ -380,7 +380,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     num_masks = renderer.num_masks;
                     mask_state = renderer.mask_state;
                 }
-                Chunk::Blend(texture, blend_mode) => {
+                Chunk::Blend(texture, blend_mode, needs_depth) => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => nearest_layer,
                         _ => target,
@@ -698,8 +698,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 }
 
 pub enum Chunk {
-    Draw(Vec<DrawCommand>),
-    Blend(PoolEntry<wgpu::Texture>, ComplexBlend),
+    Draw(Vec<DrawCommand>, bool),
+    Blend(PoolEntry<wgpu::Texture>, ComplexBlend, bool),
 }
 
 #[derive(Debug)]
@@ -745,10 +745,11 @@ fn chunk_blends<'a>(
     height: u32,
     nearest_layer: &CommandTarget,
     texture_pool: &mut TexturePool,
-) -> (Vec<Chunk>, bool) {
+) -> Vec<Chunk> {
     let mut result = vec![];
     let mut current = vec![];
     let mut needs_depth = false;
+    let mut num_masks = 0;
 
     for command in commands {
         match command {
@@ -800,9 +801,14 @@ fn chunk_blends<'a>(
                     }
                     BlendType::Complex(blend_mode) => {
                         if !current.is_empty() {
-                            result.push(Chunk::Draw(std::mem::take(&mut current)));
+                            result.push(Chunk::Draw(std::mem::take(&mut current), needs_depth));
                         }
-                        result.push(Chunk::Blend(target.take_color_texture(), blend_mode));
+                        result.push(Chunk::Blend(
+                            target.take_color_texture(),
+                            blend_mode,
+                            num_masks > 0,
+                        ));
+                        needs_depth = num_masks > 0;
                     }
                 }
             }
@@ -824,6 +830,7 @@ fn chunk_blends<'a>(
             }
             Command::PushMask => {
                 needs_depth = true;
+                num_masks += 1;
                 current.push(DrawCommand::PushMask);
             }
             Command::ActivateMask => {
@@ -836,14 +843,15 @@ fn chunk_blends<'a>(
             }
             Command::PopMask => {
                 needs_depth = true;
+                num_masks -= 1;
                 current.push(DrawCommand::PopMask);
             }
         }
     }
 
     if !current.is_empty() {
-        result.push(Chunk::Draw(current));
+        result.push(Chunk::Draw(current, needs_depth));
     }
 
-    (result, needs_depth)
+    result
 }
