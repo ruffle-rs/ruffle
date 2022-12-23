@@ -1,3 +1,4 @@
+use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Draw, Mesh};
 use crate::surface::Surface;
@@ -35,6 +36,8 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
+    // Texture pool to use for a frame - should be reset at the end of each frame
+    frame_texture_pool: TexturePool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -148,6 +151,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
+            frame_texture_pool: TexturePool::new(),
         })
     }
 
@@ -359,6 +363,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.frame_texture_pool,
         );
 
         self.target.submit(
@@ -367,6 +372,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             command_buffers,
             frame_output,
         );
+        self.frame_texture_pool = TexturePool::new();
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
@@ -531,6 +537,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.frame_texture_pool,
         );
         target.submit(
             &self.descriptors.device,
