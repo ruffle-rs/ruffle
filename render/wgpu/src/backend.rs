@@ -24,8 +24,6 @@ use std::sync::Arc;
 use swf::Color;
 use wgpu::Extent3d;
 
-const DEFAULT_SAMPLE_COUNT: u32 = 4;
-
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Arc<Descriptors>,
     uniform_buffers_storage: BufferStorage<Transforms>,
@@ -38,11 +36,15 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_scale_factor: f64,
     // Texture pool to use for a frame - should be reset at the end of each frame
     frame_texture_pool: TexturePool,
+    preferred_sample_count: u32,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+    pub async fn for_canvas(
+        canvas: &web_sys::HtmlCanvasElement,
+        sample_count: u32,
+    ) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL);
         let surface = instance.create_surface_from_canvas(canvas);
         let descriptors = Self::build_descriptors(
@@ -55,7 +57,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         .await?;
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, sample_count)
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -82,7 +84,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             trace_path,
         ))?;
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, 4)
     }
 }
 
@@ -109,7 +111,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             trace_path,
         ))?;
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, 4)
     }
 
     pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
@@ -119,7 +121,11 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
+    pub fn new(
+        descriptors: Arc<Descriptors>,
+        target: T,
+        preferred_sample_count: u32,
+    ) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
             || target.height() > descriptors.limits.max_texture_dimension_2d
         {
@@ -134,7 +140,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let surface = Surface::new(
             &descriptors,
-            DEFAULT_SAMPLE_COUNT,
+            preferred_sample_count,
             target.width(),
             target.height(),
             target.format(),
@@ -152,6 +158,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
             frame_texture_pool: TexturePool::new(),
+            preferred_sample_count,
         })
     }
 
@@ -237,7 +244,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.surface = Surface::new(
             &self.descriptors,
-            DEFAULT_SAMPLE_COUNT,
+            self.preferred_sample_count,
             width,
             height,
             self.target.format(),
@@ -525,7 +532,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut surface = Surface::new(
             &self.descriptors,
-            DEFAULT_SAMPLE_COUNT,
+            self.preferred_sample_count,
             width,
             height,
             wgpu::TextureFormat::Rgba8Unorm,
