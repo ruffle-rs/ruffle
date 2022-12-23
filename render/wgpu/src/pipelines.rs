@@ -23,13 +23,13 @@ pub struct ShapePipeline {
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum TrivialBlend {
     Normal,
-    Multiply,
     Add,
     Subtract,
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum ComplexBlend {
+    Multiply,   // Can't be trivial, 0 alpha is special case
     Screen,     // Can't be trivial. (dst + src) - (dst * src)
     Lighten,    // Might be trivial but I can't reproduce the right colors
     Darken,     // Might be trivial but I can't reproduce the right colors
@@ -44,6 +44,7 @@ pub enum ComplexBlend {
 impl ComplexBlend {
     pub fn id(&self) -> i32 {
         match self {
+            ComplexBlend::Multiply => 1,
             ComplexBlend::Screen => 2,
             ComplexBlend::Lighten => 3,
             ComplexBlend::Darken => 4,
@@ -71,7 +72,7 @@ impl BlendType {
         match mode {
             BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
             BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
-            BlendMode::Multiply => BlendType::Trivial(TrivialBlend::Multiply),
+            BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
             BlendMode::Screen => BlendType::Complex(ComplexBlend::Screen),
             BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
             BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
@@ -87,10 +88,7 @@ impl BlendType {
     }
 
     pub fn default_color(&self) -> wgpu::Color {
-        match self {
-            BlendType::Trivial(TrivialBlend::Multiply) => wgpu::Color::WHITE,
-            _ => wgpu::Color::TRANSPARENT,
-        }
+        wgpu::Color::TRANSPARENT
     }
 }
 
@@ -191,14 +189,6 @@ impl Pipelines {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::One,
                             dst_factor: wgpu::BlendFactor::One,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent::OVER,
-                    },
-                    TrivialBlend::Multiply => wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::Dst,
-                            dst_factor: wgpu::BlendFactor::Zero,
                             operation: wgpu::BlendOperation::Add,
                         },
                         alpha: wgpu::BlendComponent::OVER,

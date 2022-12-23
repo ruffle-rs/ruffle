@@ -26,6 +26,9 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 
 fn blend_func(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
     switch (blend.mode) {
+        case 1: { // Multiply
+            return src * dst;
+        }
         case 2: { // Screen
             return (dst + src) - (dst * src);
         }
