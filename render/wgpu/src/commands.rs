@@ -8,6 +8,7 @@ use crate::{
     as_texture, ColorAdjustments, Descriptors, Globals, MaskState, Pipelines, Transforms,
     UniformBuffer,
 };
+use once_cell::race::OnceBool;
 use once_cell::sync::OnceCell;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -27,6 +28,7 @@ pub struct CommandTarget {
     format: wgpu::TextureFormat,
     sample_count: u32,
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
+    color_needs_clear: OnceBool,
 }
 
 impl CommandTarget {
@@ -78,6 +80,7 @@ impl CommandTarget {
             format,
             sample_count,
             whole_frame_bind_group: OnceCell::new(),
+            color_needs_clear: OnceBool::new(),
         }
     }
 
@@ -87,6 +90,17 @@ impl CommandTarget {
 
     pub fn height(&self) -> u32 {
         self.size.height
+    }
+
+    pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder, clear_color: wgpu::Color) {
+        if self.color_needs_clear.get().is_some() {
+            return;
+        }
+        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: create_debug_label!("Clearing command target").as_deref(),
+            color_attachments: &[self.color_attachments(clear_color)],
+            depth_stencil_attachment: None,
+        });
     }
 
     pub fn take_color_texture(self) -> PoolEntry<wgpu::Texture> {
@@ -146,14 +160,14 @@ impl CommandTarget {
 
     pub fn color_attachments(
         &self,
-        clear: Option<wgpu::Color>,
+        clear_color: wgpu::Color,
     ) -> Option<wgpu::RenderPassColorAttachment> {
         Some(wgpu::RenderPassColorAttachment {
             view: &self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
             ops: wgpu::Operations {
-                load: if let Some(color) = clear {
-                    wgpu::LoadOp::Clear(color)
+                load: if self.color_needs_clear.set(false).is_ok() {
+                    wgpu::LoadOp::Clear(clear_color)
                 } else {
                     wgpu::LoadOp::Load
                 },
@@ -166,15 +180,15 @@ impl CommandTarget {
         &self,
         descriptors: &Descriptors,
         pool: &mut TexturePool,
-        clear: bool,
     ) -> Option<wgpu::RenderPassDepthStencilAttachment> {
+        let new_buffer = self.depth.get().is_none();
         let depth = self
             .depth
             .get_or_init(|| DepthBuffer::new(descriptors, self.sample_count, self.size, pool));
         Some(wgpu::RenderPassDepthStencilAttachment {
             view: depth.view(),
             depth_ops: Some(wgpu::Operations {
-                load: if clear {
+                load: if new_buffer {
                     wgpu::LoadOp::Clear(0.0)
                 } else {
                     wgpu::LoadOp::Load
@@ -182,7 +196,11 @@ impl CommandTarget {
                 store: true,
             }),
             stencil_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
+                load: if new_buffer {
+                    wgpu::LoadOp::Clear(0)
+                } else {
+                    wgpu::LoadOp::Load
+                },
                 store: true,
             }),
         })
@@ -281,11 +299,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         commands: CommandList,
         nearest_layer: &'pass CommandTarget,
-        clear_color: &mut Option<wgpu::Color>,
+        clear_color: wgpu::Color,
         draw_encoder: &'pass mut wgpu::CommandEncoder,
         texture_pool: &mut TexturePool,
     ) {
-        let mut first = true;
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
         let chunks = chunk_blends(
@@ -316,9 +333,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                 }
                             )
                             .as_deref(),
-                            color_attachments: &[target.color_attachments(clear_color.take())],
+                            color_attachments: &[target.color_attachments(clear_color)],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(&descriptors, texture_pool, first)
+                                target.depth_attachment(&descriptors, texture_pool)
                             } else {
                                 None
                             },
@@ -446,9 +463,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                 }
                             )
                             .as_deref(),
-                            color_attachments: &[target.color_attachments(clear_color.take())],
+                            color_attachments: &[target.color_attachments(clear_color)],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(descriptors, texture_pool, first)
+                                target.depth_attachment(&descriptors, texture_pool)
                             } else {
                                 None
                             },
@@ -490,7 +507,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     drop(render_pass);
                 }
             }
-            first = false;
         }
     }
 
@@ -812,8 +828,9 @@ fn chunk_blends<'a>(
                     height,
                     wgpu::TextureFormat::Rgba8Unorm,
                 );
+                let clear_color = BlendType::from(blend_mode).default_color();
                 let target = surface.draw_commands(
-                    Some(BlendType::from(blend_mode).default_color()),
+                    clear_color,
                     &descriptors,
                     &meshes,
                     commands,
@@ -827,6 +844,7 @@ fn chunk_blends<'a>(
                     },
                     texture_pool,
                 );
+                target.ensure_cleared(draw_encoder, clear_color);
 
                 match BlendType::from(blend_mode) {
                     BlendType::Trivial(blend_mode) => {

@@ -1,3 +1,4 @@
+use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Draw, Mesh};
 use crate::surface::Surface;
@@ -34,6 +35,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
     preferred_sample_count: u32,
+    texture_pool: TexturePool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -155,6 +157,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
             preferred_sample_count,
+            texture_pool: TexturePool::new(),
         })
     }
 
@@ -366,6 +369,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.texture_pool,
         );
 
         self.target.submit(
@@ -374,6 +378,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             command_buffers,
             frame_output,
         );
+        self.uniform_buffers_storage.recall();
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
@@ -538,6 +543,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.uniform_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.texture_pool,
         );
         let index = target.submit(
             &self.descriptors.device,
@@ -545,6 +551,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             command_buffers,
             frame_output,
         );
+        self.uniform_buffers_storage.recall();
 
         // Capture with premultiplied alpha, which is what we use for all textures
         let image = target.capture(&self.descriptors.device, true, Some(index));

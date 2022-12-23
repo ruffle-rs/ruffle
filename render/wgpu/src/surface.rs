@@ -181,6 +181,7 @@ impl Surface {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_commands_to(
         &mut self,
         frame_view: &wgpu::TextureView,
@@ -189,6 +190,7 @@ impl Surface {
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         meshes: &Vec<Mesh>,
         commands: CommandList,
+        texture_pool: &mut TexturePool,
     ) -> Vec<wgpu::CommandBuffer> {
         uniform_buffers_storage.recall();
         let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
@@ -207,9 +209,8 @@ impl Surface {
                     label: label.as_deref(),
                 });
 
-        let mut texture_pool = TexturePool::new();
         let target = self.draw_commands(
-            clear_color,
+            clear_color.unwrap_or(wgpu::Color::TRANSPARENT),
             descriptors,
             meshes,
             commands,
@@ -217,7 +218,7 @@ impl Surface {
             &mut uniform_encoder,
             &mut draw_encoder,
             None,
-            &mut texture_pool,
+            texture_pool,
         );
         let mut buffers = vec![draw_encoder.finish()];
 
@@ -302,7 +303,7 @@ impl Surface {
     #[allow(clippy::too_many_arguments)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
-        mut clear_color: Option<wgpu::Color>,
+        clear_color: wgpu::Color,
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -329,7 +330,7 @@ impl Surface {
             uniform_encoder,
             commands,
             nearest_layer.unwrap_or(&target),
-            &mut clear_color,
+            clear_color,
             draw_encoder,
             texture_pool,
         );
