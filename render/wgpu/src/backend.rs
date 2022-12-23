@@ -114,7 +114,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
 
     pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
         self.target
-            .capture(&self.descriptors.device, premultiplied_alpha)
+            .capture(&self.descriptors.device, premultiplied_alpha, None)
     }
 }
 
@@ -539,7 +539,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             commands,
             &mut self.frame_texture_pool,
         );
-        target.submit(
+        let index = target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
             command_buffers,
@@ -547,7 +547,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         // Capture with premultiplied alpha, which is what we use for all textures
-        let image = target.capture(&self.descriptors.device, true);
+        let image = target.capture(&self.descriptors.device, true, Some(index));
 
         let image = image.map(|image| {
             Bitmap::new(

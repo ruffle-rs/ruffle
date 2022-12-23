@@ -29,7 +29,7 @@ pub trait RenderTarget: Debug + 'static {
         queue: &wgpu::Queue,
         command_buffers: I,
         frame: Self::Frame,
-    );
+    ) -> wgpu::SubmissionIndex;
 }
 
 #[derive(Debug)]
@@ -128,9 +128,10 @@ impl RenderTarget for SwapChainTarget {
         queue: &wgpu::Queue,
         command_buffers: I,
         frame: Self::Frame,
-    ) {
-        queue.submit(command_buffers);
+    ) -> wgpu::SubmissionIndex {
+        let index = queue.submit(command_buffers);
         frame.texture.present();
+        index
     }
 }
 
@@ -211,13 +212,18 @@ impl TextureTarget {
         &self,
         device: &wgpu::Device,
         premultiplied_alpha: bool,
+        index: Option<wgpu::SubmissionIndex>,
     ) -> Option<image::RgbaImage> {
         let (sender, receiver) = std::sync::mpsc::channel();
         let buffer_slice = self.buffer.slice(..);
         buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
             sender.send(result).unwrap();
         });
-        device.poll(wgpu::Maintain::Wait);
+        device.poll(
+            index
+                .map(wgpu::Maintain::WaitForSubmissionIndex)
+                .unwrap_or(wgpu::Maintain::Wait),
+        );
         let result = receiver.recv().unwrap();
         match result {
             Ok(()) => {
@@ -283,7 +289,7 @@ impl RenderTarget for TextureTarget {
         queue: &wgpu::Queue,
         command_buffers: I,
         _frame: Self::Frame,
-    ) {
+    ) -> wgpu::SubmissionIndex {
         let label = create_debug_label!("Render target transfer encoder");
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: label.as_deref(),
@@ -305,6 +311,6 @@ impl RenderTarget for TextureTarget {
             },
             self.size,
         );
-        queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())));
+        queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())))
     }
 }
