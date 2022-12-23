@@ -345,18 +345,22 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 /// "special" properties stored in a separate map that display objects look at in addition
 /// to normal property lookup.
 /// The map of property names to display object getts/setters.
-#[derive(Copy, Clone)]
-pub struct DisplayProperty<'gc> {
-    get: DisplayGetter<'gc>,
-    set: Option<DisplaySetter<'gc>>,
+#[derive(Copy, Clone, Collect)]
+#[collect(require_static)]
+pub struct DisplayProperty {
+    get: DisplayGetter,
+    set: Option<DisplaySetter>,
 }
 
-pub type DisplayGetter<'gc> = fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>) -> Value<'gc>;
+pub type DisplayGetter =
+    for<'gc> fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>) -> Value<'gc>;
+pub type DisplaySetter = for<'gc> fn(
+    &mut Activation<'_, 'gc, '_>,
+    DisplayObject<'gc>,
+    Value<'gc>,
+) -> Result<(), Error<'gc>>;
 
-pub type DisplaySetter<'gc> =
-    fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>, Value<'gc>) -> Result<(), Error<'gc>>;
-
-impl<'gc> DisplayProperty<'gc> {
+impl<'gc> DisplayProperty {
     pub fn get(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -378,16 +382,10 @@ impl<'gc> DisplayProperty<'gc> {
     }
 }
 
-unsafe impl<'gc> Collect for DisplayProperty<'gc> {
-    fn needs_trace() -> bool {
-        false
-    }
-}
-
 /// The map from key/index to function pointers for special display object properties.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty<'gc>>);
+pub struct DisplayPropertyMap<'gc>(PropertyMap<'gc, DisplayProperty>);
 
 impl<'gc> DisplayPropertyMap<'gc> {
     /// Creates the display property map.
@@ -428,7 +426,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty<'gc>> {
+    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
         self.0.get(name, false)
@@ -438,15 +436,15 @@ impl<'gc> DisplayPropertyMap<'gc> {
     /// The order is defined by the SWF specs.
     /// Used by `GetProperty`/`SetProperty`.
     /// SWF19 pp. 85-86
-    pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty<'gc>> {
+    pub fn get_by_index(&self, index: usize) -> Option<&DisplayProperty> {
         self.0.get_index(index)
     }
 
     fn add_property(
         &mut self,
         name: AvmString<'gc>,
-        get: DisplayGetter<'gc>,
-        set: Option<DisplaySetter<'gc>>,
+        get: DisplayGetter,
+        set: Option<DisplaySetter>,
     ) {
         let prop = DisplayProperty { get, set };
         self.0.insert(name, prop, false);

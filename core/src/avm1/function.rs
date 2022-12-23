@@ -10,7 +10,7 @@ use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
-use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 
@@ -290,23 +290,15 @@ struct Param<'gc> {
 
 /// Represents a function that can be defined in the Ruffle runtime or by the
 /// AVM1 bytecode itself.
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
-    Native(NativeFunction),
+    Native(#[collect(require_static)] NativeFunction),
 
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
     Action(Gc<'gc, Avm1Function<'gc>>),
-}
-
-unsafe impl<'gc> Collect for Executable<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Self::Native(_) => {}
-            Self::Action(af) => af.trace(cc),
-        }
-    }
 }
 
 impl fmt::Debug for Executable<'_> {

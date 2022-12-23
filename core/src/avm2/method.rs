@@ -7,7 +7,7 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
-use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -256,9 +256,11 @@ impl<'gc> BytecodeMethod<'gc> {
 }
 
 /// An uninstantiated method
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct NativeMethod<'gc> {
     /// The function to call to execute the method.
+    #[collect(require_static)]
     pub method: NativeMethodImpl,
 
     /// The name of the method.
@@ -270,12 +272,6 @@ pub struct NativeMethod<'gc> {
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
     pub is_variadic: bool,
-}
-
-unsafe impl<'gc> Collect for NativeMethod<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        self.signature.trace(cc);
-    }
 }
 
 impl<'gc> fmt::Debug for NativeMethod<'gc> {
