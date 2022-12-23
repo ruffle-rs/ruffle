@@ -1,6 +1,7 @@
+use crate::blend::TrivialBlend;
+use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::{PoolEntry, TexturePool};
 use crate::mesh::{BitmapBinds, DrawType, Mesh};
-use crate::pipelines::{BlendType, ComplexBlend, TrivialBlend};
 use crate::surface::{BlendBuffer, DepthBuffer, FrameBuffer, ResolveBuffer, Surface};
 use crate::utils::create_buffer_with_data;
 use crate::{
@@ -430,12 +431,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                             descriptors.bitmap_samplers.get_sampler(false, false),
                                         ),
                                     },
-                                    wgpu::BindGroupEntry {
-                                        binding: 3,
-                                        resource: descriptors
-                                            .blend_buffer(blend_mode)
-                                            .as_entire_binding(),
-                                    },
                                 ],
                             });
 
@@ -473,9 +468,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                                 render_pass.set_stencil_reference(num_masks);
                             }
                         }
-                        render_pass.set_pipeline(pipelines.complex_blend.pipeline_for(mask_state));
+                        render_pass.set_pipeline(
+                            pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
+                        );
                     } else {
-                        render_pass.set_pipeline(pipelines.complex_blend.depthless_pipeline());
+                        render_pass.set_pipeline(
+                            pipelines.complex_blends[blend_mode].depthless_pipeline(),
+                        );
                     }
 
                     render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
