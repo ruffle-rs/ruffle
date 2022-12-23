@@ -275,7 +275,7 @@ impl Surface {
                 resolve_target: None,
             })],
             depth_stencil_attachment: None,
-            label: None,
+            label: create_debug_label!("Copy back to render target").as_deref(),
         });
 
         render_pass.set_pipeline(&pipeline);

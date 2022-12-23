@@ -306,7 +306,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 Chunk::Draw(chunk, needs_depth) => {
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: None,
+                            label: create_debug_label!(
+                                "Chunked draw calls {}",
+                                if needs_depth {
+                                    "(with depth)"
+                                } else {
+                                    "(Depthless)"
+                                }
+                            )
+                            .as_deref(),
                             color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: if needs_depth {
                                 target.depth_attachment(&descriptors, texture_pool, first)
@@ -394,7 +402,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                         descriptors
                             .device
                             .create_bind_group(&wgpu::BindGroupDescriptor {
-                                label: None,
+                                label: create_debug_label!(
+                                    "Complex blend binds {:?} {}",
+                                    blend_mode,
+                                    if needs_depth {
+                                        "(with depth)"
+                                    } else {
+                                        "(Depthless)"
+                                    }
+                                )
+                                .as_deref(),
                                 layout: &descriptors.bind_layouts.blend,
                                 entries: &[
                                     wgpu::BindGroupEntry {
@@ -424,7 +441,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: None,
+                            label: create_debug_label!(
+                                "Complex blend {:?} {}",
+                                blend_mode,
+                                if needs_depth {
+                                    "(with depth)"
+                                } else {
+                                    "(Depthless)"
+                                }
+                            )
+                            .as_deref(),
                             color_attachments: &[target.color_attachments(clear_color.take())],
                             depth_stencil_attachment: if needs_depth {
                                 target.depth_attachment(descriptors, texture_pool, first)
