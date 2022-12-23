@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, Weak};
 type PoolInner<T> = Mutex<Vec<T>>;
 type Constructor<T> = Box<dyn Fn(&Descriptors) -> T>;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TexturePool {
     pools: FnvHashMap<TextureKey, BufferPool<wgpu::Texture>>,
     globals_cache: FnvHashMap<GlobalsKey, Weak<Globals>>,
@@ -16,7 +16,10 @@ pub struct TexturePool {
 
 impl TexturePool {
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            pools: FnvHashMap::default(),
+            globals_cache: FnvHashMap::default(),
+        }
     }
 
     pub fn get_texture(
@@ -34,9 +37,17 @@ impl TexturePool {
             sample_count,
         };
         let pool = self.pools.entry(key).or_insert_with(|| {
+            let label = if cfg!(feature = "render_debug_labels") {
+                use std::sync::atomic::{AtomicU32, Ordering};
+                static ID_COUNT: AtomicU32 = AtomicU32::new(0);
+                let id = ID_COUNT.fetch_add(1, Ordering::Relaxed);
+                create_debug_label!("Pooled texture {}", id)
+            } else {
+                None
+            };
             BufferPool::new(Box::new(move |descriptors| {
                 descriptors.device.create_texture(&wgpu::TextureDescriptor {
-                    label: None,
+                    label: label.as_deref(),
                     size,
                     mip_level_count: 1,
                     sample_count,
