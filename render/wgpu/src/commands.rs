@@ -761,7 +761,7 @@ fn chunk_blends<'a>(
                     wgpu::TextureFormat::Rgba8Unorm,
                 );
                 let target = surface.draw_commands(
-                    Some(wgpu::Color::TRANSPARENT),
+                    Some(BlendType::from(*blend_mode).default_color()),
                     &descriptors,
                     &meshes,
                     commands,

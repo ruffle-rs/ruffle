@@ -26,9 +26,6 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 
 fn blend_func(src: vec3<f32>, dst: vec3<f32>) -> vec3<f32> {
     switch (blend.mode) {
-        case 1: { // Multiply
-            return src * dst;
-        }
         case 2: { // Screen
             return (dst + src) - (dst * src);
         }
@@ -72,11 +69,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var src: vec4<f32> = textureSample(current_texture, texture_sampler, in.uv);
 
     if (src.a > 0.0) {
-        if (blend.mode == 6) { // Add
-            return src + dst;
-        } else if (blend.mode == 7) { // Subtract
-            return vec4<f32>(dst.rgb - src.rgb, src.a + dst.a);
-        } else if (blend.mode == 9) { // Alpha
+        if (blend.mode == 9) { // Alpha
             return vec4<f32>(dst.rgb * src.a, src.a * dst.a);
         } else if (blend.mode == 10) { // Erase
             return vec4<f32>(dst.rgb * (1.0 - src.a), (1.0 - src.a) * dst.a);

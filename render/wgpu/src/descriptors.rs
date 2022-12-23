@@ -30,13 +30,10 @@ impl Descriptors {
         let quad = Quad::new(&device);
 
         let blend_buffers = enum_map! {
-            ComplexBlend::Multiply => 1,
             ComplexBlend::Screen => 2,
             ComplexBlend::Lighten => 3,
             ComplexBlend::Darken => 4,
             ComplexBlend::Difference => 5,
-            ComplexBlend::Add => 6,
-            ComplexBlend::Subtract => 7,
             ComplexBlend::Invert => 8,
             ComplexBlend::Alpha => 9,
             ComplexBlend::Erase => 10,

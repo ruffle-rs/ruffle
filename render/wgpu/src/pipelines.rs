@@ -23,34 +23,31 @@ pub struct ShapePipeline {
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum TrivialBlend {
     Normal,
+    Multiply,
+    Add,
+    Subtract,
 }
 
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum ComplexBlend {
-    Multiply,
-    Screen,
-    Lighten,
-    Darken,
-    Difference,
-    Add,
-    Subtract,
-    Invert,
-    Alpha,
-    Erase,
-    Overlay,
-    HardLight,
+    Screen,     // Can't be trivial. (dst + src) - (dst * src)
+    Lighten,    // Might be trivial but I can't reproduce the right colors
+    Darken,     // Might be trivial but I can't reproduce the right colors
+    Difference, // Can't be trivial, relies on abs operation
+    Invert,     // May be trivial using a constant? Hard because it's without premultiplied alpha
+    Alpha,      // Can't be trivial, requires layer tracking
+    Erase,      // Can't be trivial, requires layer tracking
+    Overlay,    // Can't be trivial, big math expression
+    HardLight,  // Can't be trivial, big math expression
 }
 
 impl ComplexBlend {
     pub fn id(&self) -> i32 {
         match self {
-            ComplexBlend::Multiply => 1,
             ComplexBlend::Screen => 2,
             ComplexBlend::Lighten => 3,
             ComplexBlend::Darken => 4,
             ComplexBlend::Difference => 5,
-            ComplexBlend::Add => 6,
-            ComplexBlend::Subtract => 7,
             ComplexBlend::Invert => 8,
             ComplexBlend::Alpha => 9,
             ComplexBlend::Erase => 10,
@@ -62,7 +59,10 @@ impl ComplexBlend {
 
 #[derive(Debug, Copy, Clone)]
 pub enum BlendType {
+    /// Trivial blends can be expressed with just a "draw bitmap" with blend states
     Trivial(TrivialBlend),
+
+    /// Complex blends require a shader to express, so they are separated out into their own render
     Complex(ComplexBlend),
 }
 
@@ -71,18 +71,25 @@ impl BlendType {
         match mode {
             BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
             BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
-            BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
+            BlendMode::Multiply => BlendType::Trivial(TrivialBlend::Multiply),
             BlendMode::Screen => BlendType::Complex(ComplexBlend::Screen),
             BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
             BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
             BlendMode::Difference => BlendType::Complex(ComplexBlend::Difference),
-            BlendMode::Add => BlendType::Complex(ComplexBlend::Add),
-            BlendMode::Subtract => BlendType::Complex(ComplexBlend::Subtract),
+            BlendMode::Add => BlendType::Trivial(TrivialBlend::Add),
+            BlendMode::Subtract => BlendType::Trivial(TrivialBlend::Subtract),
             BlendMode::Invert => BlendType::Complex(ComplexBlend::Invert),
             BlendMode::Alpha => BlendType::Complex(ComplexBlend::Alpha),
             BlendMode::Erase => BlendType::Complex(ComplexBlend::Erase),
             BlendMode::Overlay => BlendType::Complex(ComplexBlend::Overlay),
             BlendMode::HardLight => BlendType::Complex(ComplexBlend::HardLight),
+        }
+    }
+
+    pub fn default_color(&self) -> wgpu::Color {
+        match self {
+            BlendType::Trivial(TrivialBlend::Multiply) => wgpu::Color::WHITE,
+            _ => wgpu::Color::TRANSPARENT,
         }
     }
 }
@@ -178,7 +185,32 @@ impl Pipelines {
         let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
             .map(|blend| {
                 let blend = match TrivialBlend::from_usize(blend) {
+                    // out = <src_factor> * src <operation> <dst_factor> * dst
                     TrivialBlend::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                    TrivialBlend::Add => wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent::OVER,
+                    },
+                    TrivialBlend::Multiply => wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::Dst,
+                            dst_factor: wgpu::BlendFactor::Zero,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent::OVER,
+                    },
+                    TrivialBlend::Subtract => wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::ReverseSubtract,
+                        },
+                        alpha: wgpu::BlendComponent::OVER,
+                    },
                 };
                 let name = format!("Bitmap ({blend:?})");
                 create_shape_pipeline(
