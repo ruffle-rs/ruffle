@@ -579,6 +579,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         smoothing: bool,
         blend_mode: TrivialBlend,
     ) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass
+                .push_debug_group(&format!("render_bitmap {:?}", bitmap.0));
+        }
         let texture = as_texture(bitmap);
 
         self.apply_transform(
@@ -607,6 +611,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.descriptors.quad.indices.slice(..),
             6,
         );
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
     }
 
     fn render_texture(
@@ -615,6 +622,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         bind_group: &'frame wgpu::BindGroup,
         blend_mode: TrivialBlend,
     ) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.push_debug_group("render_texture");
+        }
         self.apply_transform(
             &transform.matrix,
             ColorAdjustments::from(transform.color_transform),
@@ -626,9 +636,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.descriptors.quad.indices.slice(..),
             6,
         );
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass
+                .push_debug_group(&format!("render_shape {}", shape.0));
+        }
         self.apply_transform(
             &transform.matrix,
             ColorAdjustments::from(transform.color_transform),
@@ -666,9 +683,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 num_indices,
             );
         }
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
     }
 
     fn draw_rect(&mut self, color: &Color, matrix: &ruffle_render::matrix::Matrix) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.push_debug_group("draw_rect");
+        }
         self.apply_transform(
             &matrix,
             ColorAdjustments {
@@ -688,6 +711,9 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.descriptors.quad.indices.slice(..),
             6,
         );
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
     }
 
     fn push_mask(&mut self) {
