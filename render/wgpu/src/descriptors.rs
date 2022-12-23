@@ -1,8 +1,7 @@
 use crate::layouts::BindLayouts;
-use crate::pipelines::{ComplexBlend, VERTEX_BUFFERS_DESCRIPTION};
+use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
 use crate::shaders::Shaders;
 use crate::{create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex};
-use enum_map::{enum_map, EnumMap};
 use fnv::FnvHashMap;
 use std::sync::{Arc, Mutex};
 
@@ -14,7 +13,6 @@ pub struct Descriptors {
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
     pub quad: Quad,
-    blend_buffers: EnumMap<ComplexBlend, wgpu::Buffer>,
     copy_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     shaders: Shaders,
@@ -29,18 +27,6 @@ impl Descriptors {
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
 
-        let blend_buffers = enum_map! {
-            blend => ComplexBlend::id(&blend),
-        }
-        .map(|blend, id| {
-            create_buffer_with_data(
-                &device,
-                bytemuck::cast_slice(&[id, 0, 0, 0]),
-                wgpu::BufferUsages::UNIFORM,
-                create_debug_label!("Blend mode {:?}", blend),
-            )
-        });
-
         Self {
             adapter,
             device,
@@ -49,7 +35,6 @@ impl Descriptors {
             bitmap_samplers,
             bind_layouts,
             quad,
-            blend_buffers,
             copy_pipeline: Default::default(),
             copy_srgb_pipeline: Default::default(),
             shaders,
@@ -196,10 +181,6 @@ impl Descriptors {
                 ))
             })
             .clone()
-    }
-
-    pub fn blend_buffer(&self, blend: ComplexBlend) -> &wgpu::Buffer {
-        &self.blend_buffers[blend]
     }
 }
 

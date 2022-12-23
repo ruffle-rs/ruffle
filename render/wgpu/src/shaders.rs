@@ -1,3 +1,6 @@
+use crate::blend::ComplexBlend;
+use enum_map::{enum_map, EnumMap};
+
 #[derive(Debug)]
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
@@ -5,7 +8,7 @@ pub struct Shaders {
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
-    pub blend_shader: wgpu::ShaderModule,
+    pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
 }
 
 impl Shaders {
@@ -24,7 +27,19 @@ impl Shaders {
             include_str!("../shaders/copy_srgb.wgsl"),
         );
         let copy_shader = create_shader(device, "copy", include_str!("../shaders/copy.wgsl"));
-        let blend_shader = create_shader(device, "blend", include_str!("../shaders/blend.wgsl"));
+
+        let blend_shaders = enum_map! {
+            ComplexBlend::Multiply => create_shader(device, "blend - multiply", include_str!("../shaders/blend/multiply.wgsl")),
+            ComplexBlend::Screen => create_shader(device, "blend - screen", include_str!("../shaders/blend/screen.wgsl")),
+            ComplexBlend::Lighten => create_shader(device, "blend - lighten", include_str!("../shaders/blend/lighten.wgsl")),
+            ComplexBlend::Darken => create_shader(device, "blend - darken", include_str!("../shaders/blend/darken.wgsl")),
+            ComplexBlend::Difference => create_shader(device, "blend - difference", include_str!("../shaders/blend/difference.wgsl")),
+            ComplexBlend::Invert => create_shader(device, "blend - invert", include_str!("../shaders/blend/invert.wgsl")),
+            ComplexBlend::Alpha => create_shader(device, "blend - alpha", include_str!("../shaders/blend/alpha.wgsl")),
+            ComplexBlend::Erase => create_shader(device, "blend - erase", include_str!("../shaders/blend/erase.wgsl")),
+            ComplexBlend::Overlay => create_shader(device, "blend - overlay", include_str!("../shaders/blend/overlay.wgsl")),
+            ComplexBlend::HardLight => create_shader(device, "blend - hardlight", include_str!("../shaders/blend/hardlight.wgsl")),
+        };
 
         Self {
             color_shader,
@@ -32,7 +47,7 @@ impl Shaders {
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
-            blend_shader,
+            blend_shaders,
         }
     }
 }
