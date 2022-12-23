@@ -278,7 +278,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
-        commands: &CommandList,
+        commands: CommandList,
         nearest_layer: &'pass CommandTarget,
         clear_color: &mut Option<wgpu::Color>,
         draw_encoder: &'pass mut wgpu::CommandEncoder,
@@ -288,7 +288,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
         let (chunks, needs_depth) = chunk_blends(
-            &commands.0,
+            commands.0,
             descriptors,
             uniform_buffers,
             uniform_encoder,
@@ -734,7 +734,7 @@ pub enum DrawCommand {
 /// Every complex blend will be its own item, but every other draw will be chunked together
 #[allow(clippy::too_many_arguments)]
 fn chunk_blends<'a>(
-    commands: &[Command],
+    commands: Vec<Command>,
     descriptors: &'a Descriptors,
     uniform_buffers: &mut UniformBuffer<'a, Transforms>,
     uniform_encoder: &mut wgpu::CommandEncoder,
@@ -761,14 +761,14 @@ fn chunk_blends<'a>(
                     wgpu::TextureFormat::Rgba8Unorm,
                 );
                 let target = surface.draw_commands(
-                    Some(BlendType::from(*blend_mode).default_color()),
+                    Some(BlendType::from(blend_mode).default_color()),
                     &descriptors,
                     &meshes,
                     commands,
                     uniform_buffers,
                     uniform_encoder,
                     draw_encoder,
-                    if blend_mode == &BlendMode::Layer {
+                    if blend_mode == BlendMode::Layer {
                         None
                     } else {
                         Some(nearest_layer)
@@ -776,7 +776,7 @@ fn chunk_blends<'a>(
                     texture_pool,
                 );
 
-                match BlendType::from(*blend_mode) {
+                match BlendType::from(blend_mode) {
                     BlendType::Trivial(blend_mode) => {
                         let transform = Transform {
                             matrix: Matrix::scale(target.width() as f32, target.height() as f32),
@@ -811,19 +811,17 @@ fn chunk_blends<'a>(
                 transform,
                 smoothing,
             } => current.push(DrawCommand::RenderBitmap {
-                bitmap: bitmap.to_owned(),
-                transform: transform.to_owned(),
-                smoothing: *smoothing,
+                bitmap,
+                transform,
+                smoothing,
                 blend_mode: TrivialBlend::Normal,
             }),
-            Command::RenderShape { shape, transform } => current.push(DrawCommand::RenderShape {
-                shape: shape.to_owned(),
-                transform: transform.to_owned(),
-            }),
-            Command::DrawRect { color, matrix } => current.push(DrawCommand::DrawRect {
-                color: color.to_owned(),
-                matrix: matrix.to_owned(),
-            }),
+            Command::RenderShape { shape, transform } => {
+                current.push(DrawCommand::RenderShape { shape, transform })
+            }
+            Command::DrawRect { color, matrix } => {
+                current.push(DrawCommand::DrawRect { color, matrix })
+            }
             Command::PushMask => {
                 needs_depth = true;
                 current.push(DrawCommand::PushMask);
