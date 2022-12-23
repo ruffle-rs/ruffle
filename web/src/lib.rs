@@ -1238,8 +1238,8 @@ async fn create_renderer(
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
             let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-                log::info!("Running on a mobile device; defaulting to 2x MSAA");
-                2
+                log::info!("Running on a mobile device; defaulting to no MSAA");
+                1
             } else {
                 4
             };
@@ -1264,8 +1264,8 @@ async fn create_renderer(
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
         let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-            log::info!("Running on a mobile device; defaulting to 2x MSAA");
-            2
+            log::info!("Running on a mobile device; defaulting to no MSAA");
+            1
         } else {
             4
         };
