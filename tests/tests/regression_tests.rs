@@ -389,6 +389,7 @@ swf_tests! {
     (as3_lazyinit, "avm2/lazyinit", 1),
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),
+    (as3_loader_applicationdomain, "avm2/loader_applicationDomain", 2),
     (as3_loader_events, "avm2/loader_events", 3, img = true),
     (as3_loader_loadbytes_events, "avm2/loader_loadbytes_events", 3, img = true),
     (as3_loaderinfo_events, "avm2/loaderinfo_events", 2),
