@@ -1,15 +1,8 @@
 /// Shader used for drawing all flavors of gradients.
 
-struct wrapped_f32 {
-  elem: f32,
-  _padding1: f32,
-  _padding2: f32,
-  _padding3: f32,
-}
-
 struct Gradient {
     colors: array<vec4<f32>, 16>,
-    ratios: array<wrapped_f32,16u>,
+    ratios: array<vec4<f32>, 4u>, // secretly array<f32; 16> but this let's us squeeze it into alignment
     gradient_type: i32,
     num_colors: u32,
     repeat_mode: i32,
@@ -31,6 +24,10 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
     let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, uv);
+}
+
+fn ratio(i: u32) -> f32 {
+    return gradient.ratios[i / 4u][i % 4u];
 }
 
 @fragment
@@ -91,17 +88,17 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
             break;
         }
     }
-    t = clamp(t, gradient.ratios[0].elem, gradient.ratios[last].elem);
+    t = clamp(t, ratio(0u), ratio(last));
 
     // Find the two gradient colors bordering our position.
     var j: u32;
-    for( j = 1u; t > gradient.ratios[j].elem; j = j + 1u) {
+    for( j = 1u; t > ratio(j); j = j + 1u) {
         // Noop
     }
     let i = j - 1u;
 
     // Lerp between the two colors.
-    let a = (t - gradient.ratios[i].elem) / (gradient.ratios[j].elem - gradient.ratios[i].elem);
+    let a = (t - ratio(i)) / (ratio(j) - ratio(i));
     var color: vec4<f32> = mix(gradient.colors[i], gradient.colors[j], a);
     if( gradient.interpolation != 0 ) {
         color = linear_to_srgb(color);

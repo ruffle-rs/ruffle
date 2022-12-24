@@ -108,7 +108,7 @@ impl From<TessVertex> for Vertex {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GradientUniforms {
     colors: [[f32; 4]; 16],
-    ratios: [[f32; 4]; 16],
+    ratios: [f32; 16],
     gradient_type: i32,
     num_colors: u32,
     repeat_mode: i32,
@@ -119,11 +119,11 @@ struct GradientUniforms {
 
 impl From<TessGradient> for GradientUniforms {
     fn from(gradient: TessGradient) -> Self {
-        let mut ratios = [[0.0; 4]; 16];
+        let mut ratios = [0.0; 16];
         let mut colors = [[0.0; 4]; 16];
 
         for i in 0..gradient.num_colors {
-            ratios[i] = [gradient.ratios[i], 0.0, 0.0, 0.0];
+            ratios[i] = gradient.ratios[i];
             colors[i].copy_from_slice(&gradient.colors[i]);
         }
 
