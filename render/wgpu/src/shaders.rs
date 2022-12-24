@@ -20,7 +20,7 @@ impl Shaders {
         } else {
             include_str!("../shaders/gradient_uniform.wgsl")
         };
-        let gradient_shader = create_shader(device, "gradient", gradient_shader);
+        let gradient_shader = create_gradient_shader(device, "gradient", gradient_shader);
         let copy_srgb_shader = create_shader(
             device,
             "copy sRGB",
@@ -56,11 +56,7 @@ impl Shaders {
 ///
 /// The source is prepended with common code in `common.wgsl`, simulating a `#include` preprocessor.
 /// We could possibly does this as an offline build step instead.
-fn create_shader(
-    device: &wgpu::Device,
-    name: &'static str,
-    src: &'static str,
-) -> wgpu::ShaderModule {
+fn create_shader(device: &wgpu::Device, name: &str, src: &str) -> wgpu::ShaderModule {
     const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
     let src = [COMMON_SRC, src].concat();
     let label = create_debug_label!("Shader {}", name);
@@ -69,4 +65,11 @@ fn create_shader(
         source: wgpu::ShaderSource::Wgsl(src.into()),
     };
     device.create_shader_module(desc)
+}
+
+fn create_gradient_shader(device: &wgpu::Device, name: &str, src: &str) -> wgpu::ShaderModule {
+    const COMMON_SRC: &str = include_str!("../shaders/gradient/common.wgsl");
+    let src = [src, COMMON_SRC].concat();
+
+    create_shader(device, name, &src)
 }
