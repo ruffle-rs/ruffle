@@ -95,7 +95,7 @@ impl Pipelines {
 
         let complex_blend_pipelines = enum_map! {
             blend => create_shape_pipeline(
-                &format!("Complex Blend: {:?}", blend),
+                &format!("Complex Blend: {blend:?}"),
                 device,
                 format,
                 &shaders.blend_shaders[blend],
