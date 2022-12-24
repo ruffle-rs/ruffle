@@ -271,6 +271,7 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         loader_url: Option<String>,
         event_handler: Option<MovieLoaderEventHandler<'gc>>,
+        context: Option<Avm2Object<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
@@ -278,6 +279,7 @@ impl<'gc> LoadManager<'gc> {
             event_handler,
             loader_status: LoaderStatus::Pending,
             movie: None,
+            context,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -293,6 +295,7 @@ impl<'gc> LoadManager<'gc> {
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
         event_handler: Option<MovieLoaderEventHandler<'gc>>,
+        context: Option<Avm2Object<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
@@ -300,6 +303,7 @@ impl<'gc> LoadManager<'gc> {
             event_handler,
             loader_status: LoaderStatus::Pending,
             movie: None,
+            context,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -511,6 +515,9 @@ pub enum Loader<'gc> {
         /// completed and we expect the Player to periodically tick preload
         /// until loading completes.
         movie: Option<Arc<SwfMovie>>,
+
+        /// The context of the SWF being loaded. (AVM2 only)
+        context: Option<Avm2Object<'gc>>,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.

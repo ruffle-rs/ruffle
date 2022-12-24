@@ -1341,6 +1341,7 @@ fn load_movie<'gc>(
         request,
         None,
         None,
+        None,
     );
     activation.context.navigator.spawn_future(future);
 

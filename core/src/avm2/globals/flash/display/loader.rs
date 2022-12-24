@@ -52,15 +52,10 @@ pub fn load<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let url_request = args[0].as_object().unwrap();
+        let context = args
+            .get(1)
+            .and_then(|v| v.coerce_to_object(activation).ok());
 
-        if let Some(context) = args.get(1) {
-            if !matches!(context, Value::Null) {
-                log::warn!(
-                    "Loader.load: 'context' argument is not yet implemented: {:?}",
-                    context
-                );
-            }
-        }
         let url = url_request
             .get_property(&Multiname::public("url"), activation)?
             .coerce_to_string(activation)?;
@@ -86,6 +81,7 @@ pub fn load<'gc>(
             Request::get(url.to_string()),
             Some(url.to_string()),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
+            context,
         );
         activation.context.navigator.spawn_future(future);
     }
@@ -100,15 +96,9 @@ pub fn load_bytes<'gc>(
     if let Some(this) = this {
         let arg0 = args[0].as_object().unwrap();
         let bytearray = arg0.as_bytearray().unwrap();
-
-        if let Some(context) = args.get(1) {
-            if !matches!(context, Value::Null) {
-                log::warn!(
-                    "Loader.load: 'context' argument is not yet implemented: {:?}",
-                    context
-                );
-            }
-        }
+        let context = args
+            .get(1)
+            .and_then(|v| v.coerce_to_object(activation).ok());
 
         // This is a dummy MovieClip, which will get overwritten in `Loader`
         let content = MovieClip::new(
@@ -129,6 +119,7 @@ pub fn load_bytes<'gc>(
             content.into(),
             bytearray.bytes().to_vec(),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
+            context,
         );
         activation.context.navigator.spawn_future(future);
     }
