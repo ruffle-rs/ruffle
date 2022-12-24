@@ -1346,12 +1346,13 @@ impl<'gc> Loader<'gc> {
             }
         }
         player.lock().unwrap().update(|uc| {
-            let (clip, event_handler) = match uc.load_manager.get_loader(handle) {
+            let (clip, event_handler, context) = match uc.load_manager.get_loader(handle) {
                 Some(Loader::Movie {
                     target_clip,
                     event_handler,
+                    context,
                     ..
-                }) => (*target_clip, *event_handler),
+                }) => (*target_clip, *event_handler, *context),
                 None => return Err(Error::Cancelled),
                 _ => unreachable!(),
             };
@@ -1396,8 +1397,20 @@ impl<'gc> Loader<'gc> {
                     }
 
                     let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                    let parent_domain = activation.avm2().global_domain();
-                    let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
+                    let domain = context
+                        .and_then(|o| {
+                            o.get_property(
+                                &Avm2Multiname::public("applicationDomain"),
+                                &mut activation,
+                            )
+                            .ok()
+                        })
+                        .and_then(|v| v.coerce_to_object(&mut activation).ok())
+                        .and_then(|o| o.as_application_domain())
+                        .unwrap_or_else(|| {
+                            let parent_domain = activation.avm2().global_domain();
+                            Avm2Domain::movie_domain(&mut activation, parent_domain)
+                        });
                     activation
                         .context
                         .library
