@@ -65,6 +65,7 @@ fn load_clip<'gc>(
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
                     Some(MovieLoaderEventHandler::Avm1Broadcast(this)),
+                    None,
                 );
                 activation.context.navigator.spawn_future(future);
 

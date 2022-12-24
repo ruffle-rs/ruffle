@@ -1142,6 +1142,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                             Request::get(url),
                             None,
                             None,
+                            None,
                         );
                         self.context.navigator.spawn_future(future);
                     }
@@ -1262,6 +1263,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         request,
                         None,
                         None,
+                        None,
                     );
                     self.context.navigator.spawn_future(future);
                 }
@@ -1280,6 +1282,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         self.context.player.clone(),
                         clip_target,
                         Request::get(url.to_utf8_lossy().into_owned()),
+                        None,
                         None,
                         None,
                     );
