@@ -1,12 +1,5 @@
 /// Shader used for drawing all flavors of gradients.
 
-struct wrapped_vecf32 {
-  elem: vec4<f32>,
-  _padding1: vec4<f32>,
-  _padding2: vec4<f32>,
-  _padding3: vec4<f32>
-}
-
 struct wrapped_f32 {
   elem: f32,
   _padding1: f32,
@@ -15,7 +8,7 @@ struct wrapped_f32 {
 }
 
 struct Gradient {
-    colors: array<wrapped_vecf32,16u>,
+    colors: array<vec4<f32>, 16>,
     ratios: array<wrapped_f32,16u>,
     gradient_type: i32,
     num_colors: u32,
@@ -109,7 +102,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Lerp between the two colors.
     let a = (t - gradient.ratios[i].elem) / (gradient.ratios[j].elem - gradient.ratios[i].elem);
-    var color: vec4<f32> = mix(gradient.colors[i].elem, gradient.colors[j].elem, a);
+    var color: vec4<f32> = mix(gradient.colors[i], gradient.colors[j], a);
     if( gradient.interpolation != 0 ) {
         color = linear_to_srgb(color);
     }
