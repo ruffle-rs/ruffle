@@ -32,7 +32,7 @@ package flash.display {
 		public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
 		
 		public function unload():void {
-			log_warn("flash.display.Loader.unload - not yet implemented");
+			throw new Error("flash.display.Loader.unload - not yet implemented");
 		}
 
 		override public function addChild(child:DisplayObject):DisplayObject {
