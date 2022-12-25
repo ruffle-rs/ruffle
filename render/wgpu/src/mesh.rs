@@ -7,8 +7,10 @@ use crate::{
 
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapSource;
-use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
-use swf::CharacterId;
+use ruffle_render::tessellator::{
+    Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient, GradientType,
+};
+use swf::{CharacterId, GradientSpread};
 
 #[derive(Debug)]
 pub struct Mesh {
@@ -90,6 +92,8 @@ pub enum DrawType {
         texture_transforms: wgpu::Buffer,
         gradient: wgpu::Buffer,
         bind_group: wgpu::BindGroup,
+        spread: GradientSpread,
+        mode: GradientType,
     },
     Bitmap {
         texture_transforms: wgpu::Buffer,
@@ -117,6 +121,9 @@ impl DrawType {
                 draw_id
             ),
         );
+
+        let spread = gradient.repeat_mode;
+        let mode = gradient.gradient_type;
 
         let (gradient_ubo, buffer_size) =
             if descriptors.limits.max_storage_buffers_per_shader_stage > 0 {
@@ -180,6 +187,8 @@ impl DrawType {
         DrawType::Gradient {
             texture_transforms: tex_transforms_ubo,
             gradient: gradient_ubo,
+            spread,
+            mode,
             bind_group,
         }
     }

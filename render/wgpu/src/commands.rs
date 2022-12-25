@@ -14,9 +14,10 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::{Command, CommandList};
 use ruffle_render::matrix::Matrix;
+use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, Color, GradientSpread};
 
 pub struct CommandTarget {
     frame_buffer: FrameBuffer,
@@ -520,13 +521,18 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn prep_gradient(&mut self, bind_group: &'pass wgpu::BindGroup) {
+    pub fn prep_gradient(
+        &mut self,
+        bind_group: &'pass wgpu::BindGroup,
+        mode: GradientType,
+        spread: GradientSpread,
+    ) {
         if self.needs_depth {
             self.render_pass
-                .set_pipeline(self.pipelines.gradient.pipeline_for(self.mask_state));
+                .set_pipeline(self.pipelines.gradients[mode][spread].pipeline_for(self.mask_state));
         } else {
             self.render_pass
-                .set_pipeline(self.pipelines.gradient.depthless_pipeline());
+                .set_pipeline(self.pipelines.gradients[mode][spread].depthless_pipeline());
         }
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
@@ -684,8 +690,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 DrawType::Color => {
                     self.prep_color();
                 }
-                DrawType::Gradient { bind_group, .. } => {
-                    self.prep_gradient(bind_group);
+                DrawType::Gradient {
+                    bind_group,
+                    spread,
+                    mode,
+                    ..
+                } => {
+                    self.prep_gradient(bind_group, *mode, *spread);
                 }
                 DrawType::Bitmap { binds, .. } => {
                     self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal);

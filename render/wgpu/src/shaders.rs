@@ -1,11 +1,13 @@
 use crate::blend::ComplexBlend;
 use enum_map::{enum_map, EnumMap};
+use ruffle_render::tessellator::GradientType;
+use swf::GradientSpread;
 
 #[derive(Debug)]
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
     pub bitmap_shader: wgpu::ShaderModule,
-    pub gradient_shader: wgpu::ShaderModule,
+    pub gradient_shaders: EnumMap<GradientType, EnumMap<GradientSpread, wgpu::ShaderModule>>,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
@@ -15,12 +17,6 @@ impl Shaders {
     pub fn new(device: &wgpu::Device) -> Self {
         let color_shader = create_shader(device, "color", include_str!("../shaders/color.wgsl"));
         let bitmap_shader = create_shader(device, "bitmap", include_str!("../shaders/bitmap.wgsl"));
-        let gradient_shader = if device.limits().max_storage_buffers_per_shader_stage > 0 {
-            include_str!("../shaders/gradient_storage.wgsl")
-        } else {
-            include_str!("../shaders/gradient_uniform.wgsl")
-        };
-        let gradient_shader = create_gradient_shader(device, "gradient", gradient_shader);
         let copy_srgb_shader = create_shader(
             device,
             "copy sRGB",
@@ -41,10 +37,25 @@ impl Shaders {
             ComplexBlend::HardLight => create_shader(device, "blend - hardlight", include_str!("../shaders/blend/hardlight.wgsl")),
         };
 
+        let gradient_shader = if device.limits().max_storage_buffers_per_shader_stage > 0 {
+            include_str!("../shaders/gradient_storage.wgsl")
+        } else {
+            include_str!("../shaders/gradient_uniform.wgsl")
+        };
+        let type_focal = include_str!("../shaders/gradient/mode/focal.wgsl");
+        let type_linear = include_str!("../shaders/gradient/mode/linear.wgsl");
+        let type_radial = include_str!("../shaders/gradient/mode/radial.wgsl");
+
+        let gradient_shaders = enum_map! {
+            GradientType::Focal => create_gradient_shaders(device, "focal", type_focal, gradient_shader),
+            GradientType::Linear => create_gradient_shaders(device, "linear", type_linear, gradient_shader),
+            GradientType::Radial => create_gradient_shaders(device, "radial", type_radial, gradient_shader),
+        };
+
         Self {
             color_shader,
             bitmap_shader,
-            gradient_shader,
+            gradient_shaders,
             copy_srgb_shader,
             copy_shader,
             blend_shaders,
@@ -67,9 +78,20 @@ fn create_shader(device: &wgpu::Device, name: &str, src: &str) -> wgpu::ShaderMo
     device.create_shader_module(desc)
 }
 
-fn create_gradient_shader(device: &wgpu::Device, name: &str, src: &str) -> wgpu::ShaderModule {
+fn create_gradient_shaders(
+    device: &wgpu::Device,
+    name: &str,
+    mode: &str,
+    special: &str,
+) -> EnumMap<GradientSpread, wgpu::ShaderModule> {
     const COMMON_SRC: &str = include_str!("../shaders/gradient/common.wgsl");
-    let src = [src, COMMON_SRC].concat();
+    const SPREAD_REFLECT: &str = include_str!("../shaders/gradient/repeat/mirror.wgsl");
+    const SPREAD_REPEAT: &str = include_str!("../shaders/gradient/repeat/repeat.wgsl");
+    const SPREAD_PAD: &str = include_str!("../shaders/gradient/repeat/clamp.wgsl");
 
-    create_shader(device, name, &src)
+    enum_map! {
+        GradientSpread::Reflect => create_shader(device, &format!("gradient - {name} reflect"), &[mode, SPREAD_REFLECT, special, COMMON_SRC].concat()),
+        GradientSpread::Repeat => create_shader(device, &format!("gradient - {name} repeat"), &[mode, SPREAD_REPEAT, special, COMMON_SRC].concat()),
+        GradientSpread::Pad => create_shader(device, &format!("gradient - {name} pad"), &[mode, SPREAD_PAD, special, COMMON_SRC].concat()),
+    }
 }

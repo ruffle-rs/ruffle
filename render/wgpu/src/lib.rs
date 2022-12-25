@@ -111,10 +111,8 @@ struct GradientUniforms {
     ratios: [f32; 16],
     gradient_type: i32,
     num_colors: u32,
-    repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
-    _padding: [f32; 3],
 }
 
 impl From<TessGradient> for GradientUniforms {
@@ -136,14 +134,8 @@ impl From<TessGradient> for GradientUniforms {
                 GradientType::Focal => 2,
             },
             num_colors: gradient.num_colors as u32,
-            repeat_mode: match gradient.repeat_mode {
-                swf::GradientSpread::Pad => 0,
-                swf::GradientSpread::Repeat => 1,
-                swf::GradientSpread::Reflect => 2,
-            },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
-            _padding: Default::default(),
         }
     }
 }
@@ -155,10 +147,8 @@ struct GradientStorage {
     ratios: [f32; 16],
     gradient_type: i32,
     num_colors: u32,
-    repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
-    _padding: [f32; 3],
 }
 
 impl From<TessGradient> for GradientStorage {
@@ -177,14 +167,8 @@ impl From<TessGradient> for GradientStorage {
                 GradientType::Focal => 2,
             },
             num_colors: gradient.num_colors as u32,
-            repeat_mode: match gradient.repeat_mode {
-                swf::GradientSpread::Pad => 0,
-                swf::GradientSpread::Repeat => 1,
-                swf::GradientSpread::Reflect => 2,
-            },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
-            _padding: Default::default(),
         }
     }
 }

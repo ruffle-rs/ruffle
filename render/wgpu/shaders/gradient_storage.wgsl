@@ -5,7 +5,6 @@ struct Gradient {
     ratios: array<f32,16u>,
     gradient_type: i32,
     num_colors: u32,
-    repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
 };
