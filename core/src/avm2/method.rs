@@ -1,6 +1,7 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
@@ -9,6 +10,7 @@ use crate::avm2::Multiname;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::fmt;
+use std::cell::Cell;
 use std::ops::Deref;
 use std::rc::Rc;
 use swf::avm2::types::{
@@ -44,6 +46,21 @@ pub struct ParamConfig<'gc> {
     /// The default value for this parameter.
     pub default_value: Option<Value<'gc>>,
 }
+
+/// Configuration of a single parameter of a method.
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub struct ResolvedParamConfig<'gc> {
+    /// The name of the parameter.
+    pub param_name: AvmString<'gc>,
+
+    /// The the type of the parameter.
+    pub param_type: Option<GcCell<'gc, Class<'gc>>>,
+
+    /// The default value for this parameter.
+    pub default_value: Option<Value<'gc>>,
+}
+
 
 impl<'gc> ParamConfig<'gc> {
     fn from_abc_param(
@@ -120,6 +137,10 @@ pub struct BytecodeMethod<'gc> {
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
+    pub has_resolved_signature: Cell<bool>,
+    pub resolved_signature: GcCell<'gc, Vec<ResolvedParamConfig<'gc>>>,
+    pub resolved_return_type: GcCell<'gc, Option<GcCell<'gc, Class<'gc>>>>,
+
     /// The associated activation class. None if not needed. Initialized lazily.
     pub activation_class: Option<GcCell<'gc, Option<ClassObject<'gc>>>>,
 
@@ -166,6 +187,9 @@ impl<'gc> BytecodeMethod<'gc> {
                         abc_method: abc_method.0,
                         abc_method_body: Some(index as u32),
                         signature,
+                        has_resolved_signature: Cell::new(false),
+                        resolved_signature: GcCell::allocate(activation.context.gc_context, vec![]),
+                        resolved_return_type: GcCell::allocate(activation.context.gc_context, None),
                         return_type,
                         is_function,
                         activation_class,
@@ -180,7 +204,12 @@ impl<'gc> BytecodeMethod<'gc> {
             abc_method: abc_method.0,
             abc_method_body: None,
             signature,
+
+            has_resolved_signature: Cell::new(false),
+            resolved_signature: GcCell::allocate(activation.context.gc_context, vec![]),
+            resolved_return_type: GcCell::allocate(activation.context.gc_context, None),
             return_type: Multiname::any(activation.context.gc_context),
+
             is_function,
             activation_class: None,
         })
@@ -215,6 +244,39 @@ impl<'gc> BytecodeMethod<'gc> {
     /// Get the list of method params for this method.
     pub fn signature(&self) -> &[ParamConfig<'gc>] {
         &self.signature
+    }
+
+    fn resolve_signature(&self, activation: &mut Activation<'_, 'gc>) {
+        self.has_resolved_signature.set(true);
+        let mut write = self.resolved_signature.write(activation.context.gc_context);
+        for param in &self.signature {
+            let t = activation.domain().get_class(&param.param_type_name, activation.context.gc_context).unwrap();
+            write.push(ResolvedParamConfig {
+                param_name: param.param_name,
+                param_type: t,
+                default_value: param.default_value,
+            });
+        }
+        let mut write = self.resolved_return_type.write(activation.context.gc_context);
+        let t = activation.domain().get_class(&self.return_type, activation.context.gc_context).unwrap();
+        *write = t;
+    }
+
+    pub fn resolved_signature(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> GcCell<'gc, Vec<ResolvedParamConfig<'gc>>> {
+        if !self.has_resolved_signature.get() {
+            self.resolve_signature(activation);
+        }
+        self.resolved_signature
+    }
+
+    pub fn resolved_return_type(&self, activation: &mut Activation<'_, 'gc>) -> Option<GcCell<'gc, Class<'gc>>> {
+        if !self.has_resolved_signature.get() {
+            self.resolve_signature(activation);
+        }
+        *self.resolved_return_type.read()
     }
 
     /// Get the name of this method.
@@ -280,9 +342,34 @@ pub struct NativeMethod<'gc> {
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
+    pub has_resolved_signature: Cell<bool>,
+    pub resolved_signature: GcCell<'gc, Vec<ResolvedParamConfig<'gc>>>,
+
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
     pub is_variadic: bool,
+}
+
+
+impl<'gc> NativeMethod<'gc> {
+    pub fn resolved_signature(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> GcCell<'gc, Vec<ResolvedParamConfig<'gc>>> {
+        if !self.has_resolved_signature.get() {
+            self.has_resolved_signature.set(true);
+            let mut write = self.resolved_signature.write(activation.context.gc_context);
+            for param in &self.signature {
+                let t = activation.domain().get_class(&param.param_type_name, activation.context.gc_context).unwrap();
+                write.push(ResolvedParamConfig {
+                    param_name: param.param_name,
+                    param_type: t,
+                    default_value: param.default_value,
+                });
+            }
+        }
+        return self.resolved_signature;
+    }
 }
 
 impl<'gc> fmt::Debug for NativeMethod<'gc> {
@@ -331,6 +418,8 @@ impl<'gc> Method<'gc> {
                 signature,
                 // FIXME - take in the real return type. This is needed for 'describeType'
                 return_type: Multiname::any(mc),
+                has_resolved_signature: Cell::new(false),
+                resolved_signature: GcCell::allocate(mc, vec![]),
                 is_variadic,
             },
         ))
@@ -350,6 +439,8 @@ impl<'gc> Method<'gc> {
                 signature: Vec::new(),
                 // FIXME - take in the real return type. This is needed for 'describeType'
                 return_type: Multiname::any(mc),
+                has_resolved_signature: Cell::new(false),
+                resolved_signature: GcCell::allocate(mc, vec![]),
                 is_variadic: true,
             },
         ))

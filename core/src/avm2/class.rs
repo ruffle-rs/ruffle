@@ -185,6 +185,12 @@ impl Hash for ClassKey<'_> {
     }
 }
 
+impl<'gc> fmt::Debug for Class<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Class").field("name", &self.name).finish()
+    }
+}
+
 impl<'gc> Class<'gc> {
     /// Create a new class.
     ///

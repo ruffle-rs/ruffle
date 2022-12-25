@@ -227,7 +227,12 @@ impl<'gc> Avm2<'gc> {
             Method::Native(method) => {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
-                init_activation.resolve_parameters(method.name, &[], &method.signature)?;
+
+                let signature = method.resolved_signature(&mut init_activation);
+                let signature = signature.read();
+                let signature = &*signature;
+                init_activation.resolve_parameters(method.name, &[], signature)?;
+
                 init_activation
                     .context
                     .avm2

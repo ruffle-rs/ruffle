@@ -143,10 +143,13 @@ impl<'gc> Executable<'gc> {
                     .into());
                 }
 
+                let signature = bm.method.resolved_signature(&mut activation);
+                let signature = signature.read();
+
                 let arguments = activation.resolve_parameters(
                     bm.method.name,
                     arguments,
-                    &bm.method.signature,
+                    &signature,
                 )?;
                 activation
                     .context

@@ -8,7 +8,7 @@ use crate::avm2::error::{
     argument_error, make_null_or_undefined_error, make_reference_error, type_error,
     ReferenceErrorCode,
 };
-use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
+use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
 };
@@ -332,14 +332,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method_name: &str,
         value: Option<&Value<'gc>>,
-        param_config: &ParamConfig<'gc>,
+        param_config: &ResolvedParamConfig<'gc>,
         index: usize,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let arg = if let Some(value) = value {
             Cow::Borrowed(value)
         } else if let Some(default) = &param_config.default_value {
             Cow::Borrowed(default)
-        } else if param_config.param_type_name.is_any_name() {
+        } else if param_config.param_type.is_none() {
             return Ok(Value::Undefined);
         } else {
             return Err(Error::AvmError(argument_error(
@@ -352,7 +352,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             )?));
         };
 
-        arg.coerce_to_type_name(self, &param_config.param_type_name)
+        let param_type = param_config.param_type;
+
+        if let Some(param_type) = param_type {
+            arg.coerce_to_type(self, param_type)
+        } else {
+            Ok(arg.into_owned())
+        }
     }
 
     /// Statically resolve all of the parameters for a given method.
@@ -366,7 +372,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method_name: &str,
         user_arguments: &[Value<'gc>],
-        signature: &[ParamConfig<'gc>],
+        signature: &[ResolvedParamConfig<'gc>],
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
         for (i, (arg, param_config)) in user_arguments.iter().zip(signature.iter()).enumerate() {
@@ -474,6 +480,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             max_scope_size: (body.max_scope_depth - body.init_scope_depth) as usize,
             context,
         };
+
+        let signature = method.resolved_signature(&mut activation);
+        let signature = signature.read();
+        let signature = &*signature;
 
         //Statically verify all non-variadic, provided parameters.
         let arguments_list =
@@ -1441,7 +1451,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let return_value = self.pop_stack();
-        let coerced = return_value.coerce_to_type_name(self, &method.return_type)?;
+        let coerced = if let Some(cls) = method.resolved_return_type(self) {
+            return_value.coerce_to_type(self, cls)?
+        } else {
+            return_value
+        };
         Ok(FrameControl::Return(coerced))
     }
 
