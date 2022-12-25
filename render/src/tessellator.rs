@@ -1,5 +1,6 @@
 use crate::bitmap::BitmapSource;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
     self,
@@ -440,7 +441,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
 pub enum GradientType {
     Linear,
     Radial,

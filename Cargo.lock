@@ -3448,6 +3448,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "downcast-rs",
+ "enum-map",
  "flate2",
  "gc-arena",
  "gif 0.12.0",

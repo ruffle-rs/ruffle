@@ -19,6 +19,7 @@ lyon = { version = "1.0.1", optional = true }
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.83", optional = true }
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+enum-map = "2.4.2"
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"
