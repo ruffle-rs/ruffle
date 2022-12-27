@@ -4,7 +4,7 @@ pub mod target;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
-use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer, DrawCommand};
+use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
 use crate::{Descriptors, MaskState, Pipelines, TextureTransforms, Transforms, UniformBuffer};
@@ -236,57 +236,11 @@ impl Surface {
                     );
 
                     for command in &chunk {
-                        if needs_depth {
-                            match renderer.mask_state {
-                                MaskState::NoMask => {}
-                                MaskState::DrawMaskStencil => {
-                                    renderer
-                                        .render_pass
-                                        .set_stencil_reference(renderer.num_masks - 1);
-                                }
-                                MaskState::DrawMaskedContent => {
-                                    renderer
-                                        .render_pass
-                                        .set_stencil_reference(renderer.num_masks);
-                                }
-                                MaskState::ClearMaskStencil => {
-                                    renderer
-                                        .render_pass
-                                        .set_stencil_reference(renderer.num_masks);
-                                }
-                            }
-                        }
-
-                        match command {
-                            DrawCommand::RenderBitmap {
-                                bitmap,
-                                transform,
-                                smoothing,
-                                blend_mode,
-                            } => {
-                                renderer.render_bitmap(bitmap, &transform, *smoothing, *blend_mode)
-                            }
-                            DrawCommand::RenderTexture {
-                                _texture,
-                                binds,
-                                transform,
-                                blend_mode,
-                            } => renderer.render_texture(&transform, binds, *blend_mode),
-                            DrawCommand::RenderShape { shape, transform } => {
-                                renderer.render_shape(*shape, &transform)
-                            }
-                            DrawCommand::DrawRect { color, matrix } => {
-                                renderer.draw_rect(color, &matrix)
-                            }
-                            DrawCommand::PushMask => renderer.push_mask(),
-                            DrawCommand::ActivateMask => renderer.activate_mask(),
-                            DrawCommand::DeactivateMask => renderer.deactivate_mask(),
-                            DrawCommand::PopMask => renderer.pop_mask(),
-                        }
+                        renderer.execute(command);
                     }
 
-                    num_masks = renderer.num_masks;
-                    mask_state = renderer.mask_state;
+                    num_masks = renderer.num_masks();
+                    mask_state = renderer.mask_state();
                 }
                 Chunk::Blend(texture, blend_mode, needs_depth) => {
                     let parent = match blend_mode {
