@@ -17,7 +17,9 @@ pub trait CommandHandler<'a> {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct CommandList(pub Vec<Command>);
+pub struct CommandList {
+    pub commands: Vec<Command>,
+}
 
 impl CommandList {
     pub fn new() -> Self {
@@ -25,7 +27,7 @@ impl CommandList {
     }
 
     pub fn execute<'a>(&'a self, handler: &mut impl CommandHandler<'a>) {
-        for command in &self.0 {
+        for command in &self.commands {
             match command {
                 Command::RenderBitmap {
                     bitmap,
@@ -48,7 +50,7 @@ impl CommandList {
 
 impl<'a> CommandHandler<'a> for CommandList {
     fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
-        self.0.push(Command::RenderBitmap {
+        self.commands.push(Command::RenderBitmap {
             bitmap: bitmap.clone(),
             transform: transform.clone(),
             smoothing,
@@ -56,37 +58,38 @@ impl<'a> CommandHandler<'a> for CommandList {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        self.0.push(Command::RenderShape {
+        self.commands.push(Command::RenderShape {
             shape,
             transform: transform.clone(),
         });
     }
 
     fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
-        self.0.push(Command::DrawRect {
+        self.commands.push(Command::DrawRect {
             color,
             matrix: *matrix,
         });
     }
 
     fn push_mask(&mut self) {
-        self.0.push(Command::PushMask);
+        self.commands.push(Command::PushMask);
     }
 
     fn activate_mask(&mut self) {
-        self.0.push(Command::ActivateMask);
+        self.commands.push(Command::ActivateMask);
     }
 
     fn deactivate_mask(&mut self) {
-        self.0.push(Command::DeactivateMask);
+        self.commands.push(Command::DeactivateMask);
     }
 
     fn pop_mask(&mut self) {
-        self.0.push(Command::PopMask);
+        self.commands.push(Command::PopMask);
     }
 
     fn blend(&mut self, commands: &'a CommandList, blend_mode: BlendMode) {
-        self.0.push(Command::Blend(commands.to_owned(), blend_mode));
+        self.commands
+            .push(Command::Blend(commands.to_owned(), blend_mode));
     }
 }
 
