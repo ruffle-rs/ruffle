@@ -1,6 +1,5 @@
 use crate::bitmaps::BitmapSamplers;
 use crate::descriptors::Quad;
-use crate::globals::Globals;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
