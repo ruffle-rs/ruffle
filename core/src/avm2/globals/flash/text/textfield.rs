@@ -840,11 +840,11 @@ pub fn set_text_format<'gc>(
             if let Some(tf) = tf.as_text_format() {
                 let mut begin_index = args
                     .get(1)
-                    .unwrap_or(&Value::Undefined)
+                    .unwrap_or(&(-1).into())
                     .coerce_to_i32(activation)?;
                 let mut end_index = args
                     .get(2)
-                    .unwrap_or(&Value::Undefined)
+                    .unwrap_or(&(-1).into())
                     .coerce_to_i32(activation)?;
 
                 if begin_index < 0 {
