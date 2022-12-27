@@ -32,7 +32,6 @@ mod blend;
 mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
-mod commands;
 pub mod descriptors;
 mod layouts;
 mod mesh;

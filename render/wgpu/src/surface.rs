@@ -1,8 +1,9 @@
+mod commands;
 pub mod target;
 
 use crate::buffer_pool::TexturePool;
-use crate::commands::CommandRenderer;
 use crate::mesh::Mesh;
+use crate::surface::commands::CommandRenderer;
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
 use crate::{Descriptors, Pipelines, TextureTransforms, Transforms, UniformBuffer};
