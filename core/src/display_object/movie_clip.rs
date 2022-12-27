@@ -29,7 +29,6 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
@@ -1488,8 +1487,8 @@ impl<'gc> MovieClip<'gc> {
                     // TODO: Missing PlaceObject properties: amf_data, filters
 
                     // Run first frame.
-                    catchup_display_object_to_frame(context, child);
                     child.post_instantiation(context, None, Instantiator::Movie, false);
+                    child.enter_frame(context);
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
