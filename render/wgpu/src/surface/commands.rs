@@ -19,9 +19,9 @@ pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
     meshes: &'global Vec<Mesh>,
     descriptors: &'global Descriptors,
-    pub num_masks: u32,
-    pub mask_state: MaskState,
-    pub render_pass: wgpu::RenderPass<'pass>,
+    num_masks: u32,
+    mask_state: MaskState,
+    render_pass: wgpu::RenderPass<'pass>,
     uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
     uniform_encoder: &'frame mut wgpu::CommandEncoder,
     needs_depth: bool,
@@ -50,6 +50,44 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             uniform_buffers,
             uniform_encoder,
             needs_depth,
+        }
+    }
+
+    pub fn execute(&mut self, command: &'frame DrawCommand) {
+        if self.needs_depth {
+            match self.mask_state {
+                MaskState::NoMask => {}
+                MaskState::DrawMaskStencil => {
+                    self.render_pass.set_stencil_reference(self.num_masks - 1);
+                }
+                MaskState::DrawMaskedContent => {
+                    self.render_pass.set_stencil_reference(self.num_masks);
+                }
+                MaskState::ClearMaskStencil => {
+                    self.render_pass.set_stencil_reference(self.num_masks);
+                }
+            }
+        }
+
+        match command {
+            DrawCommand::RenderBitmap {
+                bitmap,
+                transform,
+                smoothing,
+                blend_mode,
+            } => self.render_bitmap(bitmap, &transform, *smoothing, *blend_mode),
+            DrawCommand::RenderTexture {
+                _texture,
+                binds,
+                transform,
+                blend_mode,
+            } => self.render_texture(&transform, binds, *blend_mode),
+            DrawCommand::RenderShape { shape, transform } => self.render_shape(*shape, &transform),
+            DrawCommand::DrawRect { color, matrix } => self.draw_rect(color, &matrix),
+            DrawCommand::PushMask => self.push_mask(),
+            DrawCommand::ActivateMask => self.activate_mask(),
+            DrawCommand::DeactivateMask => self.deactivate_mask(),
+            DrawCommand::PopMask => self.pop_mask(),
         }
     }
 
@@ -105,11 +143,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    pub fn apply_transform(
-        &mut self,
-        matrix: &ruffle_render::matrix::Matrix,
-        color_adjustments: ColorAdjustments,
-    ) {
+    pub fn apply_transform(&mut self, matrix: &Matrix, color_adjustments: ColorAdjustments) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -150,7 +184,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
         self.apply_transform(
             &(transform.matrix
-                * ruffle_render::matrix::Matrix {
+                * Matrix {
                     a: texture.width as f32,
                     d: texture.height as f32,
                     ..Default::default()
@@ -256,7 +290,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn draw_rect(&mut self, color: &Color, matrix: &ruffle_render::matrix::Matrix) {
+    pub fn draw_rect(&mut self, color: &Color, matrix: &Matrix) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("draw_rect");
         }
@@ -314,6 +348,14 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         } else {
             self.mask_state = MaskState::DrawMaskedContent;
         };
+    }
+
+    pub fn num_masks(&self) -> u32 {
+        self.num_masks
+    }
+
+    pub fn mask_state(&self) -> MaskState {
+        self.mask_state
     }
 }
 
