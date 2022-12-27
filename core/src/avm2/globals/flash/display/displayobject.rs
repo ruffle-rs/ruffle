@@ -678,20 +678,22 @@ pub fn hit_test_point<'gc>(
             .unwrap_or_else(|| false.into())
             .coerce_to_boolean();
 
+        // Transform the coordinates from root to world space.
+        let point = match dobj.avm2_root(&mut activation.context) {
+            Some(root) => root.local_to_global((x, y)),
+            None => (x, y),
+        };
+
         if shape_flag {
             if !dobj.is_on_stage(&activation.context) {
                 return Ok(false.into());
             }
 
             return Ok(dobj
-                .hit_test_shape(
-                    &mut activation.context,
-                    (x, y),
-                    HitTestOptions::AVM_HIT_TEST,
-                )
+                .hit_test_shape(&mut activation.context, point, HitTestOptions::AVM_HIT_TEST)
                 .into());
         } else {
-            return Ok(dobj.hit_test_bounds((x, y)).into());
+            return Ok(dobj.hit_test_bounds(point).into());
         }
     }
 
