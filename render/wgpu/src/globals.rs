@@ -10,7 +10,7 @@ pub struct Globals {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct GlobalsUniform {
+pub struct GlobalsUniform {
     view_matrix: [[f32; 4]; 4],
 }
 
