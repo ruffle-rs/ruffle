@@ -76,7 +76,11 @@ impl Pipelines {
             &shaders.color_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
-            &[&bind_layouts.globals, &bind_layouts.transforms],
+            &[
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.color_transforms,
+            ],
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
@@ -92,6 +96,7 @@ impl Pipelines {
                     &[
                         &bind_layouts.globals,
                         &bind_layouts.transforms,
+                        &bind_layouts.color_transforms,
                         &bind_layouts.gradient,
                     ],
                     wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
@@ -130,6 +135,7 @@ impl Pipelines {
                     &[
                         &bind_layouts.globals,
                         &bind_layouts.transforms,
+                        &bind_layouts.color_transforms,
                         &bind_layouts.bitmap,
                     ],
                     blend.blend_state(),

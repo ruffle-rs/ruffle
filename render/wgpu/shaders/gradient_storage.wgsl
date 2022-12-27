@@ -9,7 +9,7 @@ struct Gradient {
     focal_point: f32,
 };
 
-@group(2) @binding(1) var<storage> gradient: Gradient;
+@group(3) @binding(1) var<storage> gradient: Gradient;
 
 fn ratio(i: u32) -> f32 {
     return gradient.ratios[i];

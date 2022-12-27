@@ -1,7 +1,10 @@
 use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
 use crate::shaders::Shaders;
-use crate::{create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex};
+use crate::{
+    create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex,
+    DEFAULT_COLOR_ADJUSTMENTS,
+};
 use fnv::FnvHashMap;
 use std::sync::{Arc, Mutex};
 
@@ -17,6 +20,7 @@ pub struct Descriptors {
     copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
+    pub default_color_bind_group: wgpu::BindGroup,
 }
 
 impl Descriptors {
@@ -26,6 +30,20 @@ impl Descriptors {
         let bitmap_samplers = BitmapSamplers::new(&device);
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
+        let default_color_transform = create_buffer_with_data(
+            &device,
+            bytemuck::cast_slice(&[DEFAULT_COLOR_ADJUSTMENTS]),
+            wgpu::BufferUsages::UNIFORM,
+            create_debug_label!("Default colors"),
+        );
+        let default_color_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: create_debug_label!("Default colors").as_deref(),
+            layout: &bind_layouts.color_transforms,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: default_color_transform.as_entire_binding(),
+            }],
+        });
 
         Self {
             adapter,
@@ -39,6 +57,7 @@ impl Descriptors {
             copy_srgb_pipeline: Default::default(),
             shaders,
             pipelines: Default::default(),
+            default_color_bind_group,
         }
     }
 

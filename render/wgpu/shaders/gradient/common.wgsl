@@ -3,7 +3,9 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-@group(2) @binding(0) var<uniform> textureTransforms: TextureTransforms;
+@group(2) @binding(0) var<uniform> colorTransforms: ColorTransforms;
+
+@group(3) @binding(0) var<uniform> textureTransforms: TextureTransforms;
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
@@ -35,7 +37,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if( gradient.interpolation != 0 ) {
         color = linear_to_srgb(color);
     }
-    let out = color * transforms.mult_color + transforms.add_color;
+    let out = color * colorTransforms.mult_color + colorTransforms.add_color;
     let alpha = clamp(out.a, 0.0, 1.0);
     return vec4<f32>(out.rgb * alpha, alpha);
 }
