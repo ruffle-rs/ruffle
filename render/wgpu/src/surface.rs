@@ -1,12 +1,13 @@
 mod commands;
 pub mod target;
 
+use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
-use crate::surface::commands::CommandRenderer;
+use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer, DrawCommand};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{Descriptors, Pipelines, TextureTransforms, Transforms, UniformBuffer};
+use crate::{Descriptors, MaskState, Pipelines, TextureTransforms, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -184,20 +185,213 @@ impl Surface {
             self.format,
             self.sample_count,
         );
-
-        CommandRenderer::execute(
-            &self.pipelines,
-            &target,
-            &meshes,
-            &descriptors,
+        let mut num_masks = 0;
+        let mut mask_state = MaskState::NoMask;
+        let chunks = chunk_blends(
+            commands.0,
+            descriptors,
             uniform_buffers,
             uniform_encoder,
-            commands,
-            nearest_layer.unwrap_or(&target),
-            clear_color,
             draw_encoder,
+            meshes,
+            target.sample_count(),
+            target.width(),
+            target.height(),
+            nearest_layer.unwrap_or(&target),
             texture_pool,
         );
+
+        for chunk in chunks {
+            match chunk {
+                Chunk::Draw(chunk, needs_depth) => {
+                    let mut render_pass =
+                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: create_debug_label!(
+                                "Chunked draw calls {}",
+                                if needs_depth {
+                                    "(with depth)"
+                                } else {
+                                    "(Depthless)"
+                                }
+                            )
+                            .as_deref(),
+                            color_attachments: &[target.color_attachments(clear_color)],
+                            depth_stencil_attachment: if needs_depth {
+                                target.depth_attachment(&descriptors, texture_pool)
+                            } else {
+                                None
+                            },
+                        });
+                    render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+                    let mut renderer = CommandRenderer::new(
+                        &self.pipelines,
+                        &meshes,
+                        &descriptors,
+                        uniform_buffers,
+                        uniform_encoder,
+                        render_pass,
+                        num_masks,
+                        mask_state,
+                        needs_depth,
+                    );
+
+                    for command in &chunk {
+                        if needs_depth {
+                            match renderer.mask_state {
+                                MaskState::NoMask => {}
+                                MaskState::DrawMaskStencil => {
+                                    renderer
+                                        .render_pass
+                                        .set_stencil_reference(renderer.num_masks - 1);
+                                }
+                                MaskState::DrawMaskedContent => {
+                                    renderer
+                                        .render_pass
+                                        .set_stencil_reference(renderer.num_masks);
+                                }
+                                MaskState::ClearMaskStencil => {
+                                    renderer
+                                        .render_pass
+                                        .set_stencil_reference(renderer.num_masks);
+                                }
+                            }
+                        }
+
+                        match command {
+                            DrawCommand::RenderBitmap {
+                                bitmap,
+                                transform,
+                                smoothing,
+                                blend_mode,
+                            } => {
+                                renderer.render_bitmap(bitmap, &transform, *smoothing, *blend_mode)
+                            }
+                            DrawCommand::RenderTexture {
+                                _texture,
+                                binds,
+                                transform,
+                                blend_mode,
+                            } => renderer.render_texture(&transform, binds, *blend_mode),
+                            DrawCommand::RenderShape { shape, transform } => {
+                                renderer.render_shape(*shape, &transform)
+                            }
+                            DrawCommand::DrawRect { color, matrix } => {
+                                renderer.draw_rect(color, &matrix)
+                            }
+                            DrawCommand::PushMask => renderer.push_mask(),
+                            DrawCommand::ActivateMask => renderer.activate_mask(),
+                            DrawCommand::DeactivateMask => renderer.deactivate_mask(),
+                            DrawCommand::PopMask => renderer.pop_mask(),
+                        }
+                    }
+
+                    num_masks = renderer.num_masks;
+                    mask_state = renderer.mask_state;
+                }
+                Chunk::Blend(texture, blend_mode, needs_depth) => {
+                    let parent = match blend_mode {
+                        ComplexBlend::Alpha | ComplexBlend::Erase => {
+                            nearest_layer.unwrap_or(&target)
+                        }
+                        _ => &target,
+                    };
+
+                    let parent_blend_buffer =
+                        parent.update_blend_buffer(&descriptors, texture_pool, draw_encoder);
+
+                    let texture_view = texture.create_view(&Default::default());
+                    let blend_bind_group =
+                        descriptors
+                            .device
+                            .create_bind_group(&wgpu::BindGroupDescriptor {
+                                label: create_debug_label!(
+                                    "Complex blend binds {:?} {}",
+                                    blend_mode,
+                                    if needs_depth {
+                                        "(with depth)"
+                                    } else {
+                                        "(Depthless)"
+                                    }
+                                )
+                                .as_deref(),
+                                layout: &descriptors.bind_layouts.blend,
+                                entries: &[
+                                    wgpu::BindGroupEntry {
+                                        binding: 0,
+                                        resource: wgpu::BindingResource::TextureView(
+                                            parent_blend_buffer.view(),
+                                        ),
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 1,
+                                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                                    },
+                                    wgpu::BindGroupEntry {
+                                        binding: 2,
+                                        resource: wgpu::BindingResource::Sampler(
+                                            descriptors.bitmap_samplers.get_sampler(false, false),
+                                        ),
+                                    },
+                                ],
+                            });
+
+                    let mut render_pass =
+                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: create_debug_label!(
+                                "Complex blend {:?} {}",
+                                blend_mode,
+                                if needs_depth {
+                                    "(with depth)"
+                                } else {
+                                    "(Depthless)"
+                                }
+                            )
+                            .as_deref(),
+                            color_attachments: &[target.color_attachments(clear_color)],
+                            depth_stencil_attachment: if needs_depth {
+                                target.depth_attachment(&descriptors, texture_pool)
+                            } else {
+                                None
+                            },
+                        });
+                    render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+
+                    if needs_depth {
+                        match mask_state {
+                            MaskState::NoMask => {}
+                            MaskState::DrawMaskStencil => {
+                                render_pass.set_stencil_reference(num_masks - 1);
+                            }
+                            MaskState::DrawMaskedContent => {
+                                render_pass.set_stencil_reference(num_masks);
+                            }
+                            MaskState::ClearMaskStencil => {
+                                render_pass.set_stencil_reference(num_masks);
+                            }
+                        }
+                        render_pass.set_pipeline(
+                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
+                        );
+                    } else {
+                        render_pass.set_pipeline(
+                            self.pipelines.complex_blends[blend_mode].depthless_pipeline(),
+                        );
+                    }
+
+                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
+
+                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
+                    render_pass.set_index_buffer(
+                        descriptors.quad.indices.slice(..),
+                        wgpu::IndexFormat::Uint32,
+                    );
+
+                    render_pass.draw_indexed(0..6, 0, 0..1);
+                    drop(render_pass);
+                }
+            }
+        }
 
         target
     }
