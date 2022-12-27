@@ -1,3 +1,6 @@
+use crate::globals::GlobalsUniform;
+use crate::{GradientStorage, GradientUniforms, TextureTransforms, Transforms};
+
 #[derive(Debug)]
 pub struct BindLayouts {
     pub globals: wgpu::BindGroupLayout,
@@ -17,7 +20,9 @@ impl BindLayouts {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: true,
-                    min_binding_size: None,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<Transforms>() as u64
+                    ),
                 },
                 count: None,
             }],
@@ -33,7 +38,9 @@ impl BindLayouts {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: None,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<GlobalsUniform>() as u64
+                    ),
                 },
                 count: None,
             }],
@@ -48,7 +55,9 @@ impl BindLayouts {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: None,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<TextureTransforms>() as u64,
+                        ),
                     },
                     count: None,
                 },
@@ -114,7 +123,9 @@ impl BindLayouts {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: None,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<TextureTransforms>() as u64,
+                        ),
                     },
                     count: None,
                 },
@@ -128,7 +139,13 @@ impl BindLayouts {
                             wgpu::BufferBindingType::Uniform
                         },
                         has_dynamic_offset: false,
-                        min_binding_size: None,
+                        min_binding_size: wgpu::BufferSize::new(
+                            if device.limits().max_storage_buffers_per_shader_stage > 0 {
+                                std::mem::size_of::<GradientStorage>() as u64
+                            } else {
+                                std::mem::size_of::<GradientUniforms>() as u64
+                            },
+                        ),
                     },
                     count: None,
                 },
