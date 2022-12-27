@@ -2,7 +2,7 @@ use crate::buffer_pool::{PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::utils::create_buffer_with_data;
-use crate::{ColorAdjustments, Transforms};
+use crate::Transforms;
 use once_cell::race::OnceBool;
 use once_cell::sync::OnceCell;
 use std::sync::Arc;
@@ -257,10 +257,6 @@ impl CommandTarget {
                         [0.0, 0.0, 1.0, 0.0],
                         [0.0, 0.0, 0.0, 1.0],
                     ],
-                    color_adjustments: ColorAdjustments {
-                        mult_color: [1.0, 1.0, 1.0, 1.0],
-                        add_color: [0.0, 0.0, 0.0, 0.0],
-                    },
                 };
                 let transforms_buffer = create_buffer_with_data(
                     &descriptors.device,

@@ -6,8 +6,8 @@ use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, RenderTarget,
-    SwapChainTarget, Texture, TextureOffscreen, Transforms,
+    as_texture, format_list, get_backend_names, BufferDimensions, ColorAdjustments, Descriptors,
+    Error, RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use gc_arena::MutationContext;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
@@ -27,6 +27,7 @@ use wgpu::Extent3d;
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Arc<Descriptors>,
     uniform_buffers_storage: BufferStorage<Transforms>,
+    color_buffers_storage: BufferStorage<ColorAdjustments>,
     target: T,
     surface: Surface,
     meshes: Vec<Mesh>,
@@ -148,9 +149,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let uniform_buffers_storage =
             BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
 
+        let color_buffers_storage =
+            BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
+
         Ok(Self {
             descriptors,
             uniform_buffers_storage,
+            color_buffers_storage,
             target,
             surface,
             meshes: Vec::new(),
@@ -344,6 +349,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
+        if cfg!(target_family = "wasm") {
+            // web_sys::console::time_with_label("submit_frame");
+        }
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
             Err(e) => {
@@ -368,6 +376,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }),
             &self.descriptors,
             &mut self.uniform_buffers_storage,
+            &mut self.color_buffers_storage,
             &self.meshes,
             commands,
             &mut self.texture_pool,
@@ -380,6 +389,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_output,
         );
         self.uniform_buffers_storage.recall();
+        self.color_buffers_storage.recall();
+        if cfg!(target_family = "wasm") {
+            // web_sys::console::time_end_with_label("submit_frame");
+        }
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
@@ -542,6 +555,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             None,
             &self.descriptors,
             &mut self.uniform_buffers_storage,
+            &mut self.color_buffers_storage,
             &self.meshes,
             commands,
             &mut self.texture_pool,
@@ -553,6 +567,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             frame_output,
         );
         self.uniform_buffers_storage.recall();
+        self.color_buffers_storage.recall();
 
         // Capture with premultiplied alpha, which is what we use for all textures
         let image = target.capture(&self.descriptors.device, true, Some(index));

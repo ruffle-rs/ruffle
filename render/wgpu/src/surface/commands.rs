@@ -9,11 +9,12 @@ use crate::{
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
-use swf::{BlendMode, Color, GradientSpread};
+use swf::{BlendMode, Color, Fixed8, GradientSpread};
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
@@ -23,6 +24,7 @@ pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     mask_state: MaskState,
     render_pass: wgpu::RenderPass<'pass>,
     uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+    color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
     uniform_encoder: &'frame mut wgpu::CommandEncoder,
     needs_depth: bool,
 }
@@ -34,6 +36,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         meshes: &'global Vec<Mesh>,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         render_pass: wgpu::RenderPass<'pass>,
         num_masks: u32,
@@ -48,6 +51,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             render_pass,
             descriptors,
             uniform_buffers,
+            color_buffers,
             uniform_encoder,
             needs_depth,
         }
@@ -115,7 +119,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.gradients[mode][spread].depthless_pipeline());
         }
 
-        self.render_pass.set_bind_group(2, bind_group, &[]);
+        self.render_pass.set_bind_group(3, bind_group, &[]);
     }
 
     pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup, blend_mode: TrivialBlend) {
@@ -127,7 +131,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
         }
 
-        self.render_pass.set_bind_group(2, bind_group, &[]);
+        self.render_pass.set_bind_group(3, bind_group, &[]);
     }
 
     pub fn draw(
@@ -143,7 +147,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    pub fn apply_transform(&mut self, matrix: &Matrix, color_adjustments: ColorAdjustments) {
+    pub fn apply_transform(&mut self, matrix: &Matrix, color_adjustments: &ColorTransform) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -162,11 +166,22 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             &mut self.uniform_encoder,
             &mut self.render_pass,
             1,
-            &Transforms {
-                world_matrix,
-                color_adjustments,
-            },
+            &Transforms { world_matrix },
         );
+
+        if color_adjustments == &ColorTransform::IDENTITY {
+            self.render_pass
+                .set_bind_group(2, &self.descriptors.default_color_bind_group, &[0]);
+        } else {
+            self.color_buffers.write_uniforms(
+                &self.descriptors.device,
+                &self.descriptors.bind_layouts.color_transforms,
+                &mut self.uniform_encoder,
+                &mut self.render_pass,
+                2,
+                &ColorAdjustments::from(*color_adjustments),
+            );
+        }
     }
 
     pub fn render_bitmap(
@@ -189,7 +204,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     d: texture.height as f32,
                     ..Default::default()
                 }),
-            ColorAdjustments::from(transform.color_transform),
+            &transform.color_transform,
         );
         let descriptors = self.descriptors;
         let bind = texture.bind_group(
@@ -222,10 +237,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("render_texture");
         }
-        self.apply_transform(
-            &transform.matrix,
-            ColorAdjustments::from(transform.color_transform),
-        );
+        self.apply_transform(&transform.matrix, &transform.color_transform);
         self.prep_bitmap(bind_group, blend_mode);
 
         self.draw(
@@ -243,10 +255,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.render_pass
                 .push_debug_group(&format!("render_shape {}", shape.0));
         }
-        self.apply_transform(
-            &transform.matrix,
-            ColorAdjustments::from(transform.color_transform),
-        );
+        self.apply_transform(&transform.matrix, &transform.color_transform);
 
         let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
@@ -296,14 +305,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
         self.apply_transform(
             &matrix,
-            ColorAdjustments {
-                mult_color: [
-                    f32::from(color.r) / 255.0,
-                    f32::from(color.g) / 255.0,
-                    f32::from(color.b) / 255.0,
-                    f32::from(color.a) / 255.0,
-                ],
-                add_color: [0.0, 0.0, 0.0, 0.0],
+            &ColorTransform {
+                r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
+                g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
+                b_mult: Fixed8::from_f32(f32::from(color.b) / 255.0),
+                a_mult: Fixed8::from_f32(f32::from(color.a) / 255.0),
+                ..Default::default()
             },
         );
 
@@ -399,6 +406,7 @@ pub fn chunk_blends<'a>(
     commands: Vec<Command>,
     descriptors: &'a Descriptors,
     uniform_buffers: &mut UniformBuffer<'a, Transforms>,
+    color_buffers: &mut UniformBuffer<'a, ColorAdjustments>,
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
     meshes: &'a Vec<Mesh>,
@@ -430,6 +438,7 @@ pub fn chunk_blends<'a>(
                     &meshes,
                     commands,
                     uniform_buffers,
+                    color_buffers,
                     uniform_encoder,
                     draw_encoder,
                     if blend_mode == BlendMode::Layer {

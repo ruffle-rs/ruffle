@@ -56,7 +56,6 @@ pub enum MaskState {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
-    color_adjustments: ColorAdjustments,
 }
 
 #[repr(C)]
@@ -66,17 +65,26 @@ struct TextureTransforms {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 pub struct ColorAdjustments {
     mult_color: [f32; 4],
     add_color: [f32; 4],
 }
 
+pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
+    mult_color: [1.0, 1.0, 1.0, 1.0],
+    add_color: [0.0, 0.0, 0.0, 0.0],
+};
+
 impl From<ColorTransform> for ColorAdjustments {
     fn from(transform: ColorTransform) -> Self {
-        Self {
-            mult_color: transform.mult_rgba_normalized(),
-            add_color: transform.add_rgba_normalized(),
+        if transform == ColorTransform::IDENTITY {
+            DEFAULT_COLOR_ADJUSTMENTS
+        } else {
+            Self {
+                mult_color: transform.mult_rgba_normalized(),
+                add_color: transform.add_rgba_normalized(),
+            }
         }
     }
 }

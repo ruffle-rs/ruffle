@@ -7,7 +7,10 @@ use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{Descriptors, MaskState, Pipelines, TextureTransforms, Transforms, UniformBuffer};
+use crate::{
+    ColorAdjustments, Descriptors, MaskState, Pipelines, TextureTransforms, Transforms,
+    UniformBuffer,
+};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -53,13 +56,16 @@ impl Surface {
         clear_color: Option<wgpu::Color>,
         descriptors: &Descriptors,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
+        color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
         meshes: &Vec<Mesh>,
         commands: CommandList,
         texture_pool: &mut TexturePool,
     ) -> Vec<wgpu::CommandBuffer> {
         uniform_buffers_storage.recall();
+        color_buffers_storage.recall();
         let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
         let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
+        let mut color_buffer = UniformBuffer::new(color_buffers_storage);
         let mut uniform_encoder =
             descriptors
                 .device
@@ -80,6 +86,7 @@ impl Surface {
             meshes,
             commands,
             &mut uniform_buffer,
+            &mut color_buffer,
             &mut uniform_encoder,
             &mut draw_encoder,
             None,
@@ -161,6 +168,7 @@ impl Surface {
         buffers.push(copy_encoder.finish());
         buffers.insert(0, uniform_encoder.finish());
         uniform_buffer.finish();
+        color_buffer.finish();
 
         buffers
     }
@@ -173,6 +181,7 @@ impl Surface {
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
+        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         nearest_layer: Option<&'frame CommandTarget>,
@@ -191,6 +200,7 @@ impl Surface {
             commands.0,
             descriptors,
             uniform_buffers,
+            color_buffers,
             uniform_encoder,
             draw_encoder,
             meshes,
@@ -228,6 +238,7 @@ impl Surface {
                         &meshes,
                         &descriptors,
                         uniform_buffers,
+                        color_buffers,
                         uniform_encoder,
                         render_pass,
                         num_masks,
