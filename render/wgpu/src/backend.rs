@@ -250,6 +250,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         self.viewport_scale_factor = dimensions.scale_factor;
+        self.texture_pool = TexturePool::new();
     }
 
     fn create_context3d(
