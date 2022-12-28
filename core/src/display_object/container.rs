@@ -322,7 +322,7 @@ pub trait TDisplayObjectContainer<'gc>:
             //TODO: This is an awful, *awful* hack to deal with the fact
             //that unloaded AVM1 clips see their parents, while AVM2 clips
             //don't.
-            if !matches!(child.object2(), Avm2Value::Undefined) {
+            if !matches!(child.object2(), Avm2Value::Null) {
                 child.set_parent(context.gc_context, None);
             }
         }
@@ -371,7 +371,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
             removed.unload(context);
 
-            if !matches!(removed.object2(), Avm2Value::Undefined) {
+            if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context.gc_context, None);
             }
 

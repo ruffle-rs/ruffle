@@ -1535,7 +1535,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
-        Avm2Value::Undefined // TODO: See above.
+        Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
     }
 
     fn set_object2(&mut self, _mc: MutationContext<'gc, '_>, _to: Avm2Object<'gc>) {}

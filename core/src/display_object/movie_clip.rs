@@ -2278,7 +2278,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // it's exempted from frame construction.
         if context.is_action_script_3() && self.frames_loaded() >= 1 {
             let is_load_frame = !self.0.read().initialized();
-            let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
+            let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
                 self.allocate_as_avm2_object(context, (*self).into());
                 true
             } else {
@@ -2525,7 +2525,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             .object
             .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Undefined)
+            .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {

@@ -979,7 +979,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn object2(&self) -> Avm2Value<'gc> {
         self.avm2_object
             .map(|o| o.into())
-            .unwrap_or(Avm2Value::Undefined)
+            .unwrap_or(Avm2Value::Null)
     }
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {

@@ -257,7 +257,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .read()
             .avm2_object
             .map(|o| o.into())
-            .unwrap_or(Avm2Value::Undefined)
+            .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
