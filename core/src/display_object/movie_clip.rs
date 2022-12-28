@@ -1466,6 +1466,7 @@ impl<'gc> MovieClip<'gc> {
                             context.gc_context,
                             AvmString::new_utf8(context.gc_context, name),
                         );
+                        child.set_has_explicit_name(context.gc_context, true);
                     }
                     if let Some(clip_depth) = place_object.clip_depth {
                         child.set_clip_depth(context.gc_context, clip_depth.into());
