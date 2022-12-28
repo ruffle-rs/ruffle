@@ -5,4 +5,4 @@ child instantiation
 frameConstructed 2, numChildren: 2
 frameConstructed 2, numChildren: 2
 enterFrame 2, numChildren: 2
-
+frameConstructed 2, numChildren: 2
