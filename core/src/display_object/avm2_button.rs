@@ -425,8 +425,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if run_frame {
             self.run_frame_avm2(context);
         }
-
-        self.set_state(context, ButtonState::Up);
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -547,7 +545,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 self.frame_constructed(context);
 
-                self.set_state(context, ButtonState::Over);
+                self.set_state(context, ButtonState::Up);
 
                 //NOTE: Yes, we do have to run these in a different order from the
                 //regular run_frame method.
