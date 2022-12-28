@@ -17,6 +17,10 @@ jobs:
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
+    
+    # Only run the scheduled workflows on the main repo.
+    if: github.repository == 'ruffle-rs/ruffle'
+
     steps:
       - name: Activity check
         run: |
