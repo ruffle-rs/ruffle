@@ -481,6 +481,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(DisplayObjectFlags::HAS_SCROLL_RECT, value);
     }
 
+    fn has_explicit_name(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::HAS_EXPLICIT_NAME)
+    }
+
+    fn set_has_explicit_name(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::HAS_EXPLICIT_NAME, value);
+    }
+
     fn masker(&self) -> Option<DisplayObject<'gc>> {
         self.masker
     }
@@ -1240,6 +1248,24 @@ pub trait TDisplayObject<'gc>:
             .set_instantiated_by_timeline(value);
     }
 
+    /// Whether this display object was placed by a SWF tag with an explicit
+    /// name.
+    ///
+    /// When this flag is set, the object will attempt to set a dynamic property
+    /// on the parent with the same name as itself.
+    fn has_explicit_name(&self) -> bool {
+        self.base().has_explicit_name()
+    }
+
+    /// Sets whether this display object was placed by a SWF tag with an
+    /// explicit name.
+    ///
+    /// When this flag is set, the object will attempt to set a dynamic property
+    /// on the parent with the same name as itself.
+    fn set_has_explicit_name(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context).set_has_explicit_name(value);
+    }
+
     /// Run any start-of-frame actions for this display object.
     ///
     /// When fired on `Stage`, this also emits the AVM2 `enterFrame` broadcast.
@@ -1286,16 +1312,18 @@ pub trait TDisplayObject<'gc>:
 
             //TODO: Don't report missing property errors.
             //TODO: Don't attempt to set properties if object was placed without a name.
-            if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
-                if let Avm2Value::Object(c) = self.object2() {
-                    let name = Avm2Multiname::public(self.name());
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
-                        log::error!(
-                            "Got error when setting AVM2 child named \"{}\": {}",
-                            &self.name(),
-                            e
-                        );
+            if self.has_explicit_name() {
+                if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
+                    if let Avm2Value::Object(c) = self.object2() {
+                        let name = Avm2Multiname::public(self.name());
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
+                            log::error!(
+                                "Got error when setting AVM2 child named \"{}\": {}",
+                                &self.name(),
+                                e
+                            );
+                        }
                     }
                 }
             }
@@ -1762,6 +1790,9 @@ bitflags! {
 
         /// Whether this object has a scroll rectangle applied.
         const HAS_SCROLL_RECT          = 1 << 9;
+
+        /// Whether this object has an explicit name.
+        const HAS_EXPLICIT_NAME        = 1 << 10;
     }
 }
 
