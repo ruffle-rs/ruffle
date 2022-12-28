@@ -311,12 +311,8 @@ impl CommandTarget {
         Some(wgpu::RenderPassDepthStencilAttachment {
             view: depth.view(),
             depth_ops: Some(wgpu::Operations {
-                load: if new_buffer {
-                    wgpu::LoadOp::Clear(0.0)
-                } else {
-                    wgpu::LoadOp::Load
-                },
-                store: true,
+                load: wgpu::LoadOp::Load,
+                store: false,
             }),
             stencil_ops: Some(wgpu::Operations {
                 load: if new_buffer {
