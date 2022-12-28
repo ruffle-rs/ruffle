@@ -1,0 +1,9 @@
+// inside with(o)
+foo = 2, bar = 3, baz = 4, fizz = 5
+_root.o.foo = 2, _root.o.bar = undefined, _root.o.baz = undefined, _root.o.fizz = undefined
+// outside with(o)
+foo = undefined, bar = 3, baz = 4, fizz = 5
+o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined
+// outside test()
+foo = undefined, bar = 3, baz = undefined, fizz = 5
+o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined

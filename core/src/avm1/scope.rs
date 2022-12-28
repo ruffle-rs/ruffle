@@ -177,7 +177,13 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.locals().set(name, value, activation)
+        // When defininging a local in a with scope, the value should be defined in the parent scope
+        //TODO: test this with nesting with scopes
+        if let (ScopeClass::With, Some(parent)) = (self.class, self.parent) {
+            parent.define_local(name, value, activation)
+        } else {
+            self.locals().set(name, value, activation)
+        }
     }
 
     /// Create a local property on the activation.
