@@ -7,3 +7,19 @@ o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined
 // outside test()
 foo = undefined, bar = 3, baz = undefined, fizz = 5
 o.foo = 2, o.bar = undefined, o.baz = undefined, o.fizz = undefined
+// inside with(o)
+buzz = 10
+_root.o.buzz = undefined
+_root.p.buzz = undefined
+// outside with(o), inside with(p)
+buzz = 10
+_root.o.buzz = undefined
+_root.p.buzz = undefined
+// outside with(p)
+buzz = 10
+_root.o.buzz = undefined
+_root.p.buzz = undefined
+// outside test2()
+buzz = undefined
+_root.o.buzz = undefined
+_root.p.buzz = undefined
