@@ -1482,7 +1482,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Undefined) {
+        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             self.construct_as_avm2_object(context, (*self).into());
             self.on_construction_complete(context);
         }
@@ -1535,7 +1535,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .object
             .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Undefined)
+            .unwrap_or(Avm2Value::Null)
     }
 
     fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
