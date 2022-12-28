@@ -7,10 +7,7 @@ use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{
-    ColorAdjustments, Descriptors, MaskState, Pipelines, TextureTransforms, Transforms,
-    UniformBuffer,
-};
+use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -101,13 +98,7 @@ impl Surface {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &descriptors.quad.texture_transforms,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
+                        resource: descriptors.quad.texture_transforms.as_entire_binding(),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,

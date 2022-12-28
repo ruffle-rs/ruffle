@@ -271,13 +271,7 @@ impl CommandTarget {
                             layout: &descriptors.bind_layouts.transforms,
                             entries: &[wgpu::BindGroupEntry {
                                 binding: 0,
-                                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &transforms_buffer,
-                                    offset: 0,
-                                    size: wgpu::BufferSize::new(
-                                        std::mem::size_of::<Transforms>() as u64
-                                    ),
-                                }),
+                                resource: transforms_buffer.as_entire_binding(),
                             }],
                             label: create_debug_label!("Whole-frame transforms bind group")
                                 .as_deref(),
