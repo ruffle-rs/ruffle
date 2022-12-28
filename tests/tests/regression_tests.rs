@@ -866,6 +866,7 @@ swf_tests! {
     (watch, "avm1/watch", 1),
     (with_return, "avm1/with_return", 1),
     (with, "avm1/with", 1),
+    (with_variable_scopes, "avm1/with_variable_scopes", 1),
     (xml_append_child_with_parent, "avm1/xml_append_child_with_parent", 1),
     (xml_append_child, "avm1/xml_append_child", 1),
     (xml_attributes_read, "avm1/xml_attributes_read", 1),
