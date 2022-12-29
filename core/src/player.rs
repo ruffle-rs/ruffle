@@ -1917,6 +1917,7 @@ pub struct PlayerBuilder {
     warn_on_unsupported_content: bool,
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
+    player_version: Option<u8>,
 }
 
 impl PlayerBuilder {
@@ -1952,6 +1953,7 @@ impl PlayerBuilder {
             warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
+            player_version: None,
         }
     }
 
@@ -2071,6 +2073,12 @@ impl PlayerBuilder {
         self
     }
 
+    // Configures the target player version.
+    pub fn with_player_version(mut self, version: Option<u8>) -> Self {
+        self.player_version = version;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2101,8 +2109,10 @@ impl PlayerBuilder {
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
+        let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
+
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
+        let fake_movie = Arc::new(SwfMovie::empty(player_version));
         let frame_rate = 12.0;
         let player = Arc::new_cyclic(|self_ref| {
             Mutex::new(Player {
@@ -2141,7 +2151,7 @@ impl PlayerBuilder {
                 system: SystemProperties::default(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
-                player_version: NEWEST_PLAYER_VERSION,
+                player_version,
                 is_playing: self.autoplay,
                 needs_render: true,
                 warn_on_unsupported_content: self.warn_on_unsupported_content,
@@ -2159,7 +2169,7 @@ impl PlayerBuilder {
                             GcRootData {
                                 audio_manager: AudioManager::new(),
                                 action_queue: ActionQueue::new(),
-                                avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                                avm1: Avm1::new(gc_context, player_version),
                                 avm2: Avm2::new(gc_context),
                                 current_context_menu: None,
                                 drag_object: None,
