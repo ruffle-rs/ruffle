@@ -1427,13 +1427,18 @@ pub trait TDisplayObject<'gc>:
             classname = format!("{:?}", o.base().debug_class_name());
         }
 
+        let path = self.slash_path().to_string();
+        let v = self.visible();
+
         println!(
-            "{} rel({},{}) abs({},{}) {} {} {}",
+            "{} rel({},{}) abs({},{}) path({}) vis({}) {} {} {}",
             " ".repeat(depth),
             self.x(),
             self.y(),
             bounds.x_min.to_pixels(),
             bounds.y_min.to_pixels(),
+            path,
+            v,
             classname,
             self.name(),
             self_str
@@ -1499,6 +1504,11 @@ pub trait TDisplayObject<'gc>:
         None
     }
     fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        None
+    }
+
+
+    fn as_debuggable(self) -> Option<crate::debugable::Debuggable<'gc>> {
         None
     }
 

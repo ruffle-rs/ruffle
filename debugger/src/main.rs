@@ -13,6 +13,7 @@ pub enum Command {
     Play,
     Reconnect,
     GetVar { path: String },
+    CurrentFrame,
 }
 
 fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>) -> thread::JoinHandle<()> {
@@ -40,6 +41,8 @@ fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>) -> thre
                     cmd = Some(Command::Play);
                 } else if s.starts_with("reconnect") || s == "rc\n" {
                     cmd = Some(Command::Reconnect);
+                } else if s.starts_with("current_frame") || s == "cf\n" {
+                    cmd = Some(Command::CurrentFrame)
                 } else if s == "\n" {
                     cmd = last_cmd.take();
                 }
@@ -75,6 +78,9 @@ fn handle_client(mut stream: TcpStream) {
                 Command::GetVar { path } => {
                     stream.write(serde_json::to_string(&DebugMessageIn::GetVar { path: path }).unwrap().as_bytes()).unwrap();
                 }
+                Command::CurrentFrame => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::GetCurrentFrame).unwrap().as_bytes()).unwrap();
+                }
             }
         }
 
@@ -100,6 +106,9 @@ fn handle_client(mut stream: TcpStream) {
                         }
                         DebugMessageOut::GetVarResult { value } => {
                             println!("Result: {:?}", value);
+                        }
+                        DebugMessageOut::CurrentFrame { num } => {
+                            println!("cf = {}", num);
                         }
                     }
                 }

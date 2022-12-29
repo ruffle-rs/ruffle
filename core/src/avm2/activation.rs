@@ -3278,6 +3278,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                         self.context.ui.submit_debug_message(crate::player::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
                     },
+                    DebugMessageIn::GetCurrentFrame => {},
                 }
             }
         }

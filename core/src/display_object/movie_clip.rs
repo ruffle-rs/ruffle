@@ -2493,6 +2493,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.drawing(gc_context))
     }
 
+    fn as_debuggable(self) -> Option<crate::debugable::Debuggable<'gc>> {
+        use crate::debugable::Debuggable;
+        use crate::debugable::MovieClipDebugger;
+        Some(Debuggable::MovieClip(MovieClipDebugger::with(self)))
+    }
+
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc>,

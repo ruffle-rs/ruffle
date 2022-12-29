@@ -66,7 +66,8 @@ pub enum DebugMessageIn {
     Pause,
     Play,
     /// Get a variable, path is a AVM1 style target e.g. "this.foo"
-    GetVar { path: String}
+    GetVar { path: String},
+    GetCurrentFrame,
 }
 
 #[derive(Clone,  Serialize, Deserialize, Debug)]
@@ -76,6 +77,7 @@ pub enum DebugMessageOut {
     },
     BreakpointHit { name: String },
     GetVarResult { value: String },
+    CurrentFrame { num: u16 },
 }
 
 #[derive(Collect)]
@@ -501,6 +503,15 @@ impl Player {
                 },
                 // Ignore here
                 DebugMessageIn::GetVar { path: _ } => {},
+                DebugMessageIn::GetCurrentFrame => {
+                    use crate::debugable::DebugProvider;
+                    self.mutate_with_update_context(|context| {
+                        let evt = context.stage.root_clip().as_debuggable().unwrap().dispatch(DebugMessageIn::GetCurrentFrame);
+                        if let Some(evt) = evt {
+                            context.ui.submit_debug_message(evt);
+                        }
+                    });
+                }
             }
         }
 
