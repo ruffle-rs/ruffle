@@ -113,6 +113,10 @@ struct Opt {
     /// Spoofs the root SWF URL provided to ActionScript.
     #[clap(long, value_parser)]
     spoof_url: Option<Url>,
+
+    /// The version of the player to emulate
+    #[clap(long, short)]
+    player_version: Option<u8>
 }
 
 #[cfg(feature = "render_trace")]
@@ -281,7 +285,8 @@ impl App {
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
-            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()));
+            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
+            .with_player_version(opt.player_version);
 
         let player = builder.build();
 
