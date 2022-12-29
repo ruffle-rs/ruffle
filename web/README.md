@@ -46,6 +46,13 @@ rust using the above instructions).
 
 For the compiler to be able to output WebAssembly, an additional target has to be added to it: `rustup target add wasm32-unknown-unknown`
 
+#### Java
+
+Follow the instructions [to install OpenJDK](https://openjdk.org/projects/jdk/19/) on your machine.
+
+We do not have a specific Java support policy. Any Java version that supports running the AS3 compiler
+should work.
+
 #### Node.js
 
 Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
