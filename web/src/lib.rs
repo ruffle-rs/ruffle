@@ -166,6 +166,9 @@ struct Config {
 
     #[serde(rename = "maxExecutionDuration")]
     max_execution_duration: Duration,
+
+    #[serde(rename = "playerVersion")]
+    plaver_version: Option<u8>,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -518,6 +521,7 @@ impl Ruffle {
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
+            .with_player_version(config.plaver_version)
             .build();
 
         let mut callstack = None;
