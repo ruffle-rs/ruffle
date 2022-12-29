@@ -572,6 +572,7 @@ impl<'gc> MovieClip<'gc> {
                     reader,
                     cur_frame,
                     &mut static_data,
+                    context,
                 ),
                 TagCode::JpegTables => self
                     .0
@@ -1181,11 +1182,24 @@ impl<'gc> MovieClip<'gc> {
         write.avm2_class = constr;
     }
 
-    pub fn frame_label_to_number(self, frame_label: &WStr) -> Option<FrameNumber> {
-        // Frame labels are case insensitive (ASCII).
-        // TODO: Should be case sensitive in AVM2.
-        let label = frame_label.to_ascii_lowercase();
-        self.0.read().static_data.frame_labels.get(&label).copied()
+    pub fn frame_label_to_number(
+        self,
+        frame_label: &WStr,
+        context: &UpdateContext<'_, 'gc>,
+    ) -> Option<FrameNumber> {
+        // In AVM1, frame labels are case insensitive (ASCII).
+        // They are case sensitive in AVM2.
+        if context.is_action_script_3() {
+            self.0
+                .read()
+                .static_data
+                .frame_labels
+                .get(frame_label)
+                .copied()
+        } else {
+            let label = frame_label.to_ascii_lowercase();
+            self.0.read().static_data.frame_labels.get(&label).copied()
+        }
     }
 
     pub fn scene_label_to_number(self, scene_label: &WStr) -> Option<FrameNumber> {
@@ -1199,9 +1213,14 @@ impl<'gc> MovieClip<'gc> {
             .copied()
     }
 
-    pub fn frame_exists_within_scene(self, frame_label: &WStr, scene_label: &WStr) -> bool {
+    pub fn frame_exists_within_scene(
+        self,
+        frame_label: &WStr,
+        scene_label: &WStr,
+        context: &UpdateContext<'_, 'gc>,
+    ) -> bool {
         let scene = self.scene_label_to_number(scene_label);
-        let frame = self.frame_label_to_number(frame_label);
+        let frame = self.frame_label_to_number(frame_label, context);
 
         if scene.is_none() || frame.is_none() {
             return false;
@@ -2622,7 +2641,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         };
 
         if let Some(frame_name) = frame_name {
-            if let Some(frame_number) = self.frame_label_to_number(frame_name) {
+            if let Some(frame_number) = self.frame_label_to_number(frame_name, &context) {
                 if self.is_button_mode(context) {
                     self.goto_frame(context, frame_number, true);
                 }
@@ -3526,6 +3545,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic<'gc>,
+        context: &UpdateContext<'_, 'gc>,
     ) -> Result<(), Error> {
         let frame_label = reader.read_frame_label()?;
         let mut label = frame_label
@@ -3533,8 +3553,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .to_str_lossy(reader.encoding())
             .into_owned();
 
-        // Frame labels are case insensitive (ASCII).
-        label.make_ascii_lowercase();
+        // In AVM1, frame labels are case insensitive (ASCII), but in AVM2 they are case sensitive.
+        if !context.is_action_script_3() {
+            label.make_ascii_lowercase();
+        }
         let label = WString::from_utf8_owned(label);
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {

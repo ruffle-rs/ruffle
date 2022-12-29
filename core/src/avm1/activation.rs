@@ -708,7 +708,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame) {
+                    } else if let Some(frame) = clip.frame_label_to_number(frame, &self.context) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame.into()));
                     }
@@ -1338,7 +1338,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 let label = WString::from_utf8(&action.label.to_str_lossy(self.encoding()));
-                if let Some(frame) = clip.frame_label_to_number(&label) {
+                if let Some(frame) = clip.frame_label_to_number(&label, &self.context) {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
