@@ -178,14 +178,14 @@ impl PathSegment {
         self.points.len() <= 1
     }
 
-    fn start(&self) -> (Twips, Twips) {
-        let pt = &self.points.first().unwrap();
-        (pt.x, pt.y)
+    fn start(&self) -> Option<(Twips, Twips)> {
+        let pt = &self.points.first()?;
+        Some((pt.x, pt.y))
     }
 
-    fn end(&self) -> (Twips, Twips) {
-        let pt = &self.points.last().unwrap();
-        (pt.x, pt.y)
+    fn end(&self) -> Option<(Twips, Twips)> {
+        let pt = &self.points.last()?;
+        Some((pt.x, pt.y))
     }
 
     fn is_closed(&self) -> bool {
