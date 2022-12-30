@@ -274,7 +274,7 @@ impl App {
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(storage::DiskStorageBackend::new()?)
-            .with_ui(ui::DesktopUiBackend::new(window.clone()))
+            .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
