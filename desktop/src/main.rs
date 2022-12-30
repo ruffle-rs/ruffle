@@ -162,9 +162,13 @@ fn pick_file() -> Option<PathBuf> {
 
 fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     let mut movie = if url.scheme() == "file" {
-        SwfMovie::from_path(url.to_file_path().unwrap(), None)
-            .map_err(|e| anyhow!(e.to_string()))
-            .context("Couldn't load swf")?
+        SwfMovie::from_path(
+            url.to_file_path()
+                .map_err(|_| anyhow!("Invalid swf path"))?,
+            None,
+        )
+        .map_err(|e| anyhow!(e.to_string()))
+        .context("Couldn't load swf")?
     } else {
         let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -291,14 +295,14 @@ impl App {
                 let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
             };
 
-            player.lock().unwrap().fetch_root_movie(
+            player.lock().expect("Cannot reenter").fetch_root_movie(
                 movie_url.to_string(),
                 parse_parameters(&opt).collect(),
                 Box::new(on_metadata),
             );
 
             CALLSTACK.with(|callstack| {
-                *callstack.borrow_mut() = Some(player.lock().unwrap().callstack());
+                *callstack.borrow_mut() = Some(player.lock().expect("Cannot reenter").callstack());
             })
         }
 
@@ -338,7 +342,7 @@ impl App {
                             ..
                         } if modifiers.alt() => {
                             if !fullscreen_down {
-                                self.player.lock().unwrap().update(|uc| {
+                                self.player.lock().expect("Cannot reenter").update(|uc| {
                                     uc.stage.toggle_display_state(uc);
                                 });
                             }
@@ -356,7 +360,7 @@ impl App {
                             state: ElementState::Pressed,
                             virtual_keycode: Some(VirtualKeyCode::Escape),
                             ..
-                        } => self.player.lock().unwrap().update(|uc| {
+                        } => self.player.lock().expect("Cannot reenter").update(|uc| {
                             uc.stage.set_display_state(uc, StageDisplayState::Normal);
                         }),
                         _ => (),
@@ -365,7 +369,10 @@ impl App {
 
                 match event {
                     winit::event::Event::LoopDestroyed => {
-                        self.player.lock().unwrap().flush_shared_objects();
+                        self.player
+                            .lock()
+                            .expect("Cannot reenter")
+                            .flush_shared_objects();
                         shutdown();
                         return;
                     }
@@ -376,7 +383,7 @@ impl App {
                         let dt = new_time.duration_since(time).as_micros();
                         if dt > 0 {
                             time = new_time;
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             player_lock.tick(dt as f64 / 1000.0);
                             next_frame_time = new_time + player_lock.time_til_next_frame();
                             if player_lock.needs_render() {
@@ -389,7 +396,7 @@ impl App {
                     winit::event::Event::RedrawRequested(_) => {
                         // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                         if !minimized {
-                            self.player.lock().unwrap().render();
+                            self.player.lock().expect("Cannot reenter").render();
                             #[cfg(feature = "tracy")]
                             tracing_tracy::client::Client::running()
                                 .expect("tracy client must be running")
@@ -407,7 +414,7 @@ impl App {
                             minimized = size.width == 0 && size.height == 0;
 
                             let viewport_scale_factor = self.window.scale_factor();
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             player_lock.set_viewport_dimensions(ViewportDimensions {
                                 width: size.width,
                                 height: size.height,
@@ -416,7 +423,7 @@ impl App {
                             self.window.request_redraw();
                         }
                         WindowEvent::CursorMoved { position, .. } => {
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             mouse_pos = position;
                             let event = PlayerEvent::MouseMove {
                                 x: position.x,
@@ -429,7 +436,7 @@ impl App {
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
                             use ruffle_core::events::MouseButton as RuffleMouseButton;
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             let x = mouse_pos.x;
                             let y = mouse_pos.y;
                             let button = match button {
@@ -449,7 +456,7 @@ impl App {
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
                             use ruffle_core::events::MouseWheelDelta;
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             let delta = match delta {
                                 MouseScrollDelta::LineDelta(_, dy) => {
                                     MouseWheelDelta::Lines(dy.into())
@@ -463,7 +470,7 @@ impl App {
                             }
                         }
                         WindowEvent::CursorLeft { .. } => {
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             player_lock.handle_event(PlayerEvent::MouseLeave);
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
@@ -472,7 +479,7 @@ impl App {
                         // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
                         #[allow(deprecated)]
                         WindowEvent::KeyboardInput { input, .. } => {
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
                                 let key_char = winit_key_to_char(
@@ -494,7 +501,7 @@ impl App {
                             }
                         }
                         WindowEvent::ReceivedCharacter(codepoint) => {
-                            let mut player_lock = self.player.lock().unwrap();
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
                             let event = PlayerEvent::TextInput { codepoint };
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
@@ -538,7 +545,7 @@ impl App {
 
                         let viewport_size = self.window.inner_size();
                         let viewport_scale_factor = self.window.scale_factor();
-                        let mut player_lock = self.player.lock().unwrap();
+                        let mut player_lock = self.player.lock().expect("Cannot reenter");
                         player_lock.set_viewport_dimensions(ViewportDimensions {
                             width: viewport_size.width,
                             height: viewport_size.height,
@@ -813,7 +820,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
         .with_autoplay(true)
         .build();
 
-    let mut player_lock = player.lock().unwrap();
+    let mut player_lock = player.lock().expect("Cannot reenter");
 
     println!("Running {}...", path.to_string_lossy());
 
