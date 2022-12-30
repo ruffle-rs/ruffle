@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 use generational_arena::Index;
 
 pub mod backend;
