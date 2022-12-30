@@ -21,7 +21,7 @@ fn execute_swf(file: &Path) {
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let player = PlayerBuilder::new()
         .with_log(ScanLogBackend::new())
-        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
+        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor).unwrap())
         .with_max_execution_duration(Duration::from_secs(300))
         .with_movie(movie)
         .build();
