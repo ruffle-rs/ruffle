@@ -5,9 +5,13 @@ mod macos {
     use objc::runtime::Protocol;
 
     pub fn extension_class() {
-        let mut ruffle = ClassDecl::new("RuffleWebExtension", class!(NSObject)).unwrap();
+        let mut ruffle = ClassDecl::new("RuffleWebExtension", class!(NSObject))
+            .expect("Couldn't allocate new ClassDecl");
 
-        ruffle.add_protocol(Protocol::get("NSExtensionRequestHandling").unwrap());
+        ruffle.add_protocol(
+            Protocol::get("NSExtensionRequestHandling")
+                .expect("Couldn't find NSExtensionRequestHandling"),
+        );
 
         ruffle.register();
     }
