@@ -38,7 +38,7 @@ impl WebAudioBackend {
         // These buffers ping-pong as the audio stream plays.
         for _ in 0..2 {
             let buffer = Buffer::new(&audio)?;
-            let _ = buffer.write().unwrap().play();
+            let _ = buffer.write().expect("Cannot reenter locks").play();
             audio.buffers.push(buffer);
         }
 
@@ -103,9 +103,12 @@ impl Buffer {
 
         // Swap in the onended handler.
         let buffer_handle = buffer.clone();
-        buffer.write().unwrap().on_ended_handler = Closure::wrap(Box::new(move || {
+        buffer
+            .write()
+            .expect("Cannot reenter locks")
+            .on_ended_handler = Closure::wrap(Box::new(move || {
             // Refill and schedule the buffer for playback.
-            let _ = buffer_handle.write().unwrap().play();
+            let _ = buffer_handle.write().expect("Cannot reenter locks").play();
         }) as Box<dyn FnMut()>);
 
         Ok(buffer)
@@ -125,7 +128,7 @@ impl Buffer {
         audio_node.set_onended(Some(self.on_ended_handler.as_ref().unchecked_ref()));
 
         // Sanity: ensure our player time is not in the past. This can happen due to underruns.
-        let mut time = self.time.write().unwrap();
+        let mut time = self.time.write().expect("Cannot reenter locks");
         *time = f64::max(*time, self.context.current_time());
 
         // Schedule this buffer for playback and advance the player time.
