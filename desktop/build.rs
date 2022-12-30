@@ -24,12 +24,14 @@ fn main() {
         println!("cargo:rustc-cfg=nightly");
     }
 
-    let out_dir: PathBuf = env::var_os("OUT_DIR").unwrap().into();
+    let out_dir: PathBuf = env::var_os("OUT_DIR")
+        .expect("OUT_DIR environment variable must be set and valid")
+        .into();
 
     File::create(out_dir.join("version-info.txt"))
-        .unwrap()
+        .expect("Must be able to create a file in OUT_DIR")
         .write_all(commit_info().as_bytes())
-        .unwrap();
+        .expect("Must be able to write to OUT_DIR");
 }
 
 // Try to get hash and date of the last commit on a best effort basis. If anything goes wrong
