@@ -1,5 +1,7 @@
 //! Special object that implements `super`
 
+use core::fmt;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
@@ -15,11 +17,19 @@ use gc_arena::{Collect, Gc, MutationContext};
 /// A `SuperObject` references all data from another object, but with one layer
 /// of prototyping removed. It's as if the given object had been constructed
 /// with its parent class.
-#[derive(Copy, Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct SuperObject<'gc>(Gc<'gc, SuperObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+impl fmt::Debug for SuperObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("SuperObject")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.

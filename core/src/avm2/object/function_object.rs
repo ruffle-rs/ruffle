@@ -8,6 +8,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -51,11 +52,19 @@ pub fn function_allocator<'gc>(
 }
 
 /// An Object which can be called to execute its function code.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+impl fmt::Debug for FunctionObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FunctionObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct FunctionObjectData<'gc> {
     /// Base script object

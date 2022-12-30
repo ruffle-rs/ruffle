@@ -66,7 +66,7 @@ impl fmt::Debug for Allocator {
 }
 
 /// A loaded ABC Class which can be used to construct objects with.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Class<'gc> {
     /// The name of the class.

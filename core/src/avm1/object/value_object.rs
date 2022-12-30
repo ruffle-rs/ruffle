@@ -105,8 +105,8 @@ impl fmt::Debug for ValueObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
         f.debug_struct("ValueObject")
-            .field("base", &this.base)
             .field("value", &this.value)
+            .field("ptr", &self.0.as_ptr())
             .finish()
     }
 }

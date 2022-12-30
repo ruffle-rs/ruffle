@@ -101,7 +101,7 @@ impl<'gc> ParamConfig<'gc> {
 }
 
 /// Represents a reference to an AVM2 method and body.
-#[derive(Collect, Clone, Debug)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct BytecodeMethod<'gc> {
     /// The translation unit this function was defined in.
@@ -287,7 +287,7 @@ impl<'gc> fmt::Debug for NativeMethod<'gc> {
 
 /// An uninstantiated method that can either be natively implemented or sourced
 /// from an ABC file.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum Method<'gc> {
     /// A native method.

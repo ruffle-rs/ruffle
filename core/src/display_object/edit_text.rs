@@ -25,6 +25,7 @@ use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::Utc;
+use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
@@ -33,7 +34,7 @@ use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, Twips};
 
 /// The kind of autosizing behavior an `EditText` should have, if any
-#[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
+#[derive(Copy, Clone, Collect, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum AutoSizeMode {
     None,
@@ -51,11 +52,19 @@ pub enum AutoSizeMode {
 /// In AS3, this is created with the `TextField` class. (https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/TextField.html)
 ///
 /// (SWF19 DefineEditText pp. 171-174)
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for EditText<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EditText")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.

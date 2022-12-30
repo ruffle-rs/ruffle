@@ -6,6 +6,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -34,11 +35,19 @@ use std::cell::{Ref, RefMut};
 ///    `EventDispatcher` classes. This would require adding `DispatchList` to
 ///    other object representations that need to dispatch events, such as
 ///    `StageObject`.
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DispatchObject<'gc>(GcCell<'gc, DispatchObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+impl fmt::Debug for DispatchObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DispatchObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DispatchObjectData<'gc> {
     /// Base script object

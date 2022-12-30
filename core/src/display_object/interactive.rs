@@ -75,7 +75,7 @@ bitflags! {
     }
 }
 
-#[derive(Collect, Clone, Debug)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
@@ -102,7 +102,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
 }
 
 #[enum_trait_object(
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy, Debug)]
     #[collect(no_drop)]
     pub enum InteractiveObject<'gc> {
         Stage(Stage<'gc>),
