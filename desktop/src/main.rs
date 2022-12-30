@@ -116,7 +116,7 @@ struct Opt {
 
     /// The version of the player to emulate
     #[clap(long, short)]
-    player_version: Option<u8>
+    player_version: Option<u8>,
 }
 
 #[cfg(feature = "render_trace")]
