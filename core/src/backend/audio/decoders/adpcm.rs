@@ -172,6 +172,7 @@ impl<R: AsRef<[u8]> + Default + Send + Sync> SeekableDecoder for AdpcmDecoder<Cu
         let bit_stream = std::mem::replace(&mut self.inner, BitReader::new(Default::default()));
         let mut cursor = bit_stream.into_reader();
         cursor.set_position(0);
-        *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate()).unwrap();
+        *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate())
+            .expect("Existing valid decoder should be valid when recreated");
     }
 }

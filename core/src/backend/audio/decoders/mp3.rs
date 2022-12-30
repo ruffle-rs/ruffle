@@ -67,7 +67,7 @@ impl Mp3Decoder {
     ) -> Result<Self, Error> {
         let source = Box::new(reader) as Box<dyn io::MediaSource>;
         let source = io::MediaSourceStream::new(source, Default::default());
-        let reader = SymphoniaMp3Reader::try_new(source, &Default::default()).unwrap();
+        let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
         let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
         let codec_params = track.codec_params.clone();
         let decoder = symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
