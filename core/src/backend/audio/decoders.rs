@@ -307,8 +307,9 @@ impl Iterator for StreamTagReader {
                             // RESEARCHME: How does Flash Player actually determine when there is an audio gap or not?
                             // If an MP3 audio track has gaps, Flash Player will often play it out of sync (too early).
                             // Seems closely related to `stream_info.num_samples_per_block`.
-                            let num_samples =
-                                u16::from_le_bytes(audio_block[..2].try_into().unwrap());
+                            let num_samples = u16::from_le_bytes(
+                                audio_block[..2].try_into().expect("2 bytes fit into a u16"),
+                            );
                             self.mp3_samples_buffered += i32::from(num_samples);
                             audio_block = &audio_block[4..];
                         }

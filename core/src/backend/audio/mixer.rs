@@ -33,9 +33,13 @@ impl CircBuf {
     /// being written to.
     pub fn get(&self) -> &[[f32; 2]; 1024] {
         if self.pos < 1024 {
-            self.samples[1024..2048].try_into().unwrap()
+            self.samples[1024..2048]
+                .try_into()
+                .expect("Length is 1024, cast is infallible")
         } else {
-            self.samples[0..1024].try_into().unwrap()
+            self.samples[0..1024]
+                .try_into()
+                .expect("Length is 1024, cast is infallible")
         }
     }
 }
@@ -263,9 +267,15 @@ impl AudioMixer {
             + dasp::sample::ToSample<f32>
             + dasp::sample::FromSample<i16>,
     {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
-        let volume = *self.volume.read().unwrap();
-        let mut output_memory = self.output_memory.write().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        let volume = *self.volume.read().expect("Cannot be called reentrant");
+        let mut output_memory = self
+            .output_memory
+            .write()
+            .expect("Cannot be called reentrant");
         Self::mix_audio::<T>(
             &mut sound_instances,
             volume,
@@ -468,7 +478,10 @@ impl AudioMixer {
     }
 
     pub fn get_sample_history(&self) -> [[f32; 2]; 1024] {
-        let output_memory = self.output_memory.read().unwrap();
+        let output_memory = self
+            .output_memory
+            .read()
+            .expect("Cannot be called reentrant");
 
         *output_memory.get()
     }
@@ -533,7 +546,10 @@ impl AudioMixer {
         // feed the decoder audio data on the fly.
         let stream = self.make_stream_from_swf_slice(stream_info, clip_data)?;
 
-        let mut sound_instances = self.sound_instances.lock().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         let handle = sound_instances.insert(SoundInstance::new_stream(stream));
         Ok(handle)
     }
@@ -563,19 +579,28 @@ impl AudioMixer {
         };
 
         // Add sound instance to active list.
-        let mut sound_instances = self.sound_instances.lock().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         let handle = sound_instances.insert(SoundInstance::new_sound(sound_handle, stream));
         Ok(handle)
     }
 
     /// Stops a playing sound instance.
     pub fn stop_sound(&mut self, sound: SoundInstanceHandle) {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         sound_instances.remove(sound);
     }
 
     pub fn stop_all_sounds(&mut self) {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         // This is a workaround for a bug in generational-arena:
         // Arena::clear does not properly bump the generational index, allowing for stale references
         // to continue to work (this caused #1315). Arena::remove will force a generation bump.
@@ -590,7 +615,10 @@ impl AudioMixer {
     ///
     ////// Returns `None` if the sound is no longer playing.
     pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
-        let sound_instances = self.sound_instances.lock().unwrap();
+        let sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         sound_instances.get(instance).map(|instance| {
             // Get the current sample position from the underlying audio source.
             let num_sample_frames: f64 = instance.stream.source_position().into();
@@ -600,7 +628,10 @@ impl AudioMixer {
     }
 
     pub fn get_sound_peak(&self, instance: SoundInstanceHandle) -> Option<[f32; 2]> {
-        let sound_instances = self.sound_instances.lock().unwrap();
+        let sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         sound_instances.get(instance).map(|instance| instance.peak)
     }
 
@@ -633,7 +664,10 @@ impl AudioMixer {
         instance: SoundInstanceHandle,
         transform: SoundTransform,
     ) {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
         if let Some(instance) = sound_instances.get_mut(instance) {
             instance.left_transform = [transform.left_to_left, transform.right_to_left];
             instance.right_transform = [transform.left_to_right, transform.right_to_right];
@@ -641,11 +675,11 @@ impl AudioMixer {
     }
 
     pub fn volume(&self) -> f32 {
-        *self.volume.read().unwrap()
+        *self.volume.read().expect("Cannot be called reentrant")
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        *self.volume.write().unwrap() = volume
+        *self.volume.write().expect("Cannot be called reentrant") = volume
     }
 }
 
@@ -679,9 +713,15 @@ impl AudioMixerProxy {
             + dasp::sample::ToSample<f32>
             + dasp::sample::FromSample<i16>,
     {
-        let mut sound_instances = self.sound_instances.lock().unwrap();
-        let volume = *self.volume.read().unwrap();
-        let mut output_memory = self.output_memory.write().unwrap();
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        let volume = *self.volume.read().expect("Cannot be called reentrant");
+        let mut output_memory = self
+            .output_memory
+            .write()
+            .expect("Cannot be called reentrant");
         AudioMixer::mix_audio::<T>(
             &mut sound_instances,
             volume,
