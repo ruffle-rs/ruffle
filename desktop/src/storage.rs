@@ -1,3 +1,4 @@
+use anyhow::{Context, Error};
 use ruffle_core::backend::storage::StorageBackend;
 use std::fs;
 use std::fs::File;
@@ -10,8 +11,10 @@ pub struct DiskStorageBackend {
 }
 
 impl DiskStorageBackend {
-    pub fn new() -> Self {
-        let base_path = dirs::data_local_dir().unwrap().join("ruffle");
+    pub fn new() -> Result<Self, Error> {
+        let base_path = dirs::data_local_dir()
+            .context("Couldn't find a valid data_local dir")?
+            .join("ruffle");
         let shared_objects_path = base_path.join("SharedObjects");
 
         // Create a base dir if one doesn't exist yet
@@ -22,10 +25,10 @@ impl DiskStorageBackend {
             }
         }
 
-        DiskStorageBackend {
+        Ok(DiskStorageBackend {
             base_path,
             shared_objects_path,
-        }
+        })
     }
 
     /// Verifies that the path contains no `..` components to prevent accessing files outside of the Ruffle directory.
