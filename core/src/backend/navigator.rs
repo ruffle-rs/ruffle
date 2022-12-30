@@ -249,11 +249,11 @@ impl NullNavigatorBackend {
         }
     }
 
-    pub fn with_base_path(path: &Path, executor: &NullExecutor) -> Self {
-        Self {
+    pub fn with_base_path(path: &Path, executor: &NullExecutor) -> Result<Self, std::io::Error> {
+        Ok(Self {
             spawner: executor.spawner(),
-            relative_base_path: path.canonicalize().unwrap(),
-        }
+            relative_base_path: path.canonicalize()?,
+        })
     }
 
     #[cfg(any(unix, windows, target_os = "redox"))]

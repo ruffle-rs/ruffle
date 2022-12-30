@@ -1444,7 +1444,7 @@ fn run_swf(
 
     let player = builder
         .with_log(TestLogBackend::new(trace_output.clone()))
-        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
+        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor)?)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
