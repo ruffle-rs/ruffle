@@ -51,12 +51,9 @@ impl ExternalNavigatorBackend {
 
         // Force replace the last segment with empty. //
 
-        base_url
-            .path_segments_mut()
-            .unwrap()
-            .pop_if_empty()
-            .pop()
-            .push("");
+        if let Ok(mut base_url) = base_url.path_segments_mut() {
+            base_url.pop_if_empty().pop().push("");
+        }
 
         Self {
             channel,
@@ -143,7 +140,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         if e.kind() == ErrorKind::PermissionDenied {
                             let attempt_sandbox_open = MessageDialog::new()
                                 .set_level(MessageLevel::Warning)
-                                .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap().to_string_lossy()))
+                                .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
                                 .set_buttons(MessageButtons::YesNo)
                                 .show();
 
