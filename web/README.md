@@ -51,7 +51,7 @@ For the compiler to be able to output WebAssembly, an additional target has to b
 Follow the instructions [to install OpenJDK](https://openjdk.org/projects/jdk/19/) on your machine.
 
 We do not have a specific Java support policy. Any Java version that supports running the AS3 compiler
-should work.
+should work. Additionally, headless JREs should also work.
 
 #### Node.js
 
