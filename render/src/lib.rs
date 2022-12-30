@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 pub mod backend;
 pub mod bitmap;
 pub mod bounding_box;
