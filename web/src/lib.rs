@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 //! Ruffle web frontend.
 mod audio;
 mod log_adapter;
