@@ -32,7 +32,7 @@ pub fn stage_allocator<'gc>(
 #[collect(no_drop)]
 pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
@@ -141,7 +141,7 @@ impl<'gc> Debug for StageObject<'gc> {
             Ok(obj) => f
                 .debug_struct("StageObject")
                 .field("name", &obj.base.debug_class_name())
-                .field("display_object", &obj.display_object)
+                // .field("display_object", &obj.display_object) TOOO(moulins)
                 .field("ptr", &self.0.as_ptr())
                 .finish(),
             Err(err) => f

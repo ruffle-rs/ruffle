@@ -11,7 +11,9 @@ pub struct ArrayObject<'gc>(ScriptObject<'gc>);
 
 impl fmt::Debug for ArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ArrayObject").finish()
+        f.debug_struct("ArrayObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
     }
 }
 

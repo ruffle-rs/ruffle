@@ -21,6 +21,7 @@ impl fmt::Debug for TransformObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
         f.debug_struct("Transform")
+            .field("ptr", &self.0.as_ptr())
             .field("clip", &this.clip)
             .finish()
     }

@@ -3,6 +3,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::library::Library;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::commands::CommandHandler;
@@ -10,11 +11,19 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8, Twips};
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MorphShape<'gc>(GcCell<'gc, MorphShapeData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for MorphShape<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MorphShape")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,

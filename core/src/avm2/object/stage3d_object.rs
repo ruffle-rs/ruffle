@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -25,9 +26,17 @@ pub fn stage_3d_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Stage3DObject<'gc>(GcCell<'gc, Stage3DObjectData<'gc>>);
+
+impl fmt::Debug for Stage3DObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Stage3DObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
 
 impl<'gc> Stage3DObject<'gc> {
     pub fn context3d(self) -> Option<Object<'gc>> {
@@ -39,7 +48,7 @@ impl<'gc> Stage3DObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object

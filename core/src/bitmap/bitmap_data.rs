@@ -5,6 +5,7 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
+use core::fmt;
 use gc_arena::{Collect, GcCell};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
@@ -156,7 +157,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Collect, Default, Debug)]
+#[derive(Clone, Collect, Default)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
@@ -183,6 +184,19 @@ pub struct BitmapData<'gc> {
     /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
     /// this does not need to hold an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
+}
+
+impl fmt::Debug for BitmapData<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BitmapData")
+            .field("dirty", &self.dirty)
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("transparency", &self.transparency)
+            .field("disposed", &self.disposed)
+            .field("bitmap_handle", &self.bitmap_handle)
+            .finish()
+    }
 }
 
 impl<'gc> BitmapData<'gc> {

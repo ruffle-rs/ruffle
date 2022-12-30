@@ -9,6 +9,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_render::bounding_box::BoundingBox;
@@ -30,11 +31,19 @@ use super::StageQuality;
 /// a host SWF, or an externally-loaded FLV or F4V file. In the latter form,
 /// video framerates are (supposedly) permitted to differ from the stage
 /// framerate.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Video<'gc>(GcCell<'gc, VideoData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Video<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Video")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct VideoData<'gc> {
     base: DisplayObjectBase<'gc>,

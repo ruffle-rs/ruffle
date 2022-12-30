@@ -494,7 +494,7 @@ impl<'gc> XmlNode<'gc> {
 impl<'gc> fmt::Debug for XmlNode<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("XmlNodeData")
-            .field("0", &self.0.as_ptr())
+            .field("ptr", &self.0.as_ptr())
             .field(
                 "script_object",
                 &self

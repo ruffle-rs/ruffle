@@ -44,8 +44,8 @@ impl fmt::Debug for XmlNodeObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
         f.debug_struct("XmlNodeObject")
-            .field("base", &this.base)
             .field("node", &this.node)
+            .field("ptr", &self.0.as_ptr())
             .finish()
     }
 }

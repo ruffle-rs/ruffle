@@ -7,17 +7,26 @@ use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Text<'gc>(GcCell<'gc, TextData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Text<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Text")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,

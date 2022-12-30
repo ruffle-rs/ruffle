@@ -121,7 +121,7 @@ pub fn dispatch_added_event<'gc>(
 }
 
 #[enum_trait_object(
-    #[derive(Clone, Collect, Debug, Copy)]
+    #[derive(Clone, Collect, Copy, Debug)]
     #[collect(no_drop)]
     pub enum DisplayObjectContainer<'gc> {
         Stage(Stage<'gc>),
@@ -473,7 +473,7 @@ impl<'gc> From<DisplayObjectContainer<'gc>> for DisplayObject<'gc> {
 /// list. The latter references display objects by their chosen depth; while
 /// the render list represents the order in which those children should be
 /// rendered. Not all children have a position on this depth.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ChildContainer<'gc> {
     /// The list of all children in render order.

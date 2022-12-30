@@ -168,11 +168,11 @@ struct TextFieldBinding<'gc> {
 }
 
 impl fmt::Debug for StageObject<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let o = self.0.read();
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let this = self.0.read();
         f.debug_struct("StageObject")
-            .field("base", &o.base)
-            .field("display_object", &o.display_object)
+            .field("ptr", &self.0.as_ptr())
+            .field("display_object", &this.display_object)
             .finish()
     }
 }
