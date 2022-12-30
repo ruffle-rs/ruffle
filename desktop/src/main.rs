@@ -209,7 +209,7 @@ impl App {
             None => pick_file().map(std::borrow::Cow::Owned),
         };
         let movie_url = if let Some(path) = path {
-            Some(parse_url(&path).context("Couldn't load specified path")?)
+            parse_url(&path).context("Couldn't load specified path")?
         } else {
             shutdown();
             std::process::exit(0);
@@ -221,16 +221,11 @@ impl App {
 
         let event_loop = EventLoopBuilder::with_user_event().build();
 
-        let title = if let Some(movie_url) = &movie_url {
-            let filename = movie_url
-                .path_segments()
-                .and_then(|segments| segments.last())
-                .unwrap_or_else(|| movie_url.as_str());
-
-            format!("Ruffle - {filename}")
-        } else {
-            "Ruffle".into()
-        };
+        let filename = movie_url
+            .path_segments()
+            .and_then(|segments| segments.last())
+            .unwrap_or_else(|| movie_url.as_str());
+        let title = format!("Ruffle - {filename}");
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -250,7 +245,7 @@ impl App {
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
-            movie_url.as_ref().unwrap().to_owned(),
+            movie_url.to_owned(),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
@@ -289,22 +284,20 @@ impl App {
 
         let player = builder.build();
 
-        if let Some(movie_url) = movie_url {
-            let event_loop_proxy = event_loop.create_proxy();
-            let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
-                let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
-            };
+        let event_loop_proxy = event_loop.create_proxy();
+        let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
+            let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
+        };
 
-            player.lock().expect("Cannot reenter").fetch_root_movie(
-                movie_url.to_string(),
-                parse_parameters(&opt).collect(),
-                Box::new(on_metadata),
-            );
+        player.lock().expect("Cannot reenter").fetch_root_movie(
+            movie_url.to_string(),
+            parse_parameters(&opt).collect(),
+            Box::new(on_metadata),
+        );
 
-            CALLSTACK.with(|callstack| {
-                *callstack.borrow_mut() = Some(player.lock().expect("Cannot reenter").callstack());
-            })
-        }
+        CALLSTACK.with(|callstack| {
+            *callstack.borrow_mut() = Some(player.lock().expect("Cannot reenter").callstack());
+        });
 
         Ok(Self {
             opt,
