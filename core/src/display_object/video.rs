@@ -489,4 +489,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
         self.0.write(mc).object = Some(to.into());
     }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        match &*self.0.read().source.read() {
+            VideoSource::Swf { movie, .. } => Some(movie.clone()),
+        }
+    }
 }

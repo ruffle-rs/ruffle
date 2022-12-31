@@ -334,6 +334,9 @@ impl Player {
                 context.swf.width().to_pixels() as u32,
                 context.swf.height().to_pixels() as u32,
             );
+            context
+                .stage
+                .set_movie(context.gc_context, context.swf.clone());
 
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let global_domain = activation.avm2().global_domain();
@@ -2151,7 +2154,11 @@ impl PlayerBuilder {
                                 mouse_pressed_object: None,
                                 avm1_shared_objects: HashMap::new(),
                                 avm2_shared_objects: HashMap::new(),
-                                stage: Stage::empty(gc_context, self.fullscreen),
+                                stage: Stage::empty(
+                                    gc_context,
+                                    self.fullscreen,
+                                    fake_movie.clone(),
+                                ),
                                 timers: Timers::new(),
                                 unbound_text_fields: Vec::new(),
                             },

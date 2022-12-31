@@ -138,6 +138,10 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
         false
     }
+
+    fn movie(&self) -> Option<Arc<SwfMovie>> {
+        Some(self.0.read().static_data.movie.clone())
+    }
 }
 
 /// A precalculated intermediate frame for a morph shape.
