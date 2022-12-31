@@ -118,7 +118,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
-            if let Character::Font(font) = character.clone() {
+            if let Character::Font(font) = character {
                 self.fonts.insert(font.descriptor().clone(), font);
             }
 
