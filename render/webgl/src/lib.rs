@@ -1,4 +1,5 @@
 #![allow(clippy::bool_to_int_with_if)]
+#![deny(clippy::unwrap_used)]
 
 use bytemuck::{Pod, Zeroable};
 use std::borrow::Cow;
