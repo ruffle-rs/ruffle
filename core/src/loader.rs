@@ -1572,7 +1572,7 @@ impl<'gc> Loader<'gc> {
                     .as_loader_info_object()
                     .unwrap()
                     .set_loader_stream(
-                        LoaderStream::Swf(clip.as_movie_clip().unwrap().movie().unwrap(), clip),
+                        LoaderStream::Swf(clip.as_movie_clip().unwrap().movie(), clip),
                         uc.gc_context,
                     );
             }

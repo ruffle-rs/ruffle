@@ -787,8 +787,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(self.0.read().loader_info)
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().movie.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }
 

@@ -36,8 +36,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     };
 
-    let mut movie_url = if let Some(url) = movie.movie().and_then(|m| m.url().map(|u| u.to_owned()))
-    {
+    let mut movie_url = if let Some(url) = movie.movie().url().map(|u| u.to_owned()) {
         if let Ok(url) = url::Url::parse(&url) {
             url
         } else {

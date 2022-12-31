@@ -232,12 +232,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let movie = if let Some(movie) = activation.base_clip().movie() {
-        movie
-    } else {
-        log::error!("SharedObject::get_local: Movie was None");
-        return Ok(Value::Null);
-    };
+    let movie = activation.base_clip().movie();
 
     let mut movie_url = if let Some(url) = movie.url() {
         if let Ok(url) = url::Url::parse(url) {

@@ -661,7 +661,7 @@ fn attach_movie<'gc>(
     if let Ok(new_clip) = activation
         .context
         .library
-        .library_for_movie(movie_clip.movie().unwrap())
+        .library_for_movie(movie_clip.movie())
         .ok_or("Movie is missing!")
         .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc_context))
     {
@@ -709,10 +709,7 @@ fn create_empty_movie_clip<'gc>(
     };
 
     // Create empty movie clip.
-    let swf_movie = movie_clip
-        .movie()
-        .or_else(|| activation.base_clip().movie())
-        .unwrap();
+    let swf_movie = movie_clip.movie();
     let new_clip = MovieClip::new(swf_movie, activation.context.gc_context);
 
     // Set name and attach to parent.
@@ -728,7 +725,7 @@ fn create_text_field<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = activation.base_clip().movie().unwrap();
+    let movie = activation.base_clip().movie();
     let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
         .get(1)
@@ -820,10 +817,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let movie = parent
-        .movie()
-        .or_else(|| activation.base_clip().movie())
-        .unwrap_or_else(|| activation.context.swf.clone());
+    let movie = parent.movie();
     let new_clip = if movie_clip.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = activation.context.library.library_for_movie(movie).unwrap();

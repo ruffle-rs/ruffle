@@ -327,7 +327,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         Some(self)
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().movie.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }

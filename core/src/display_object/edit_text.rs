@@ -1485,8 +1485,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.read().static_data.id
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().static_data.swf.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().static_data.swf.clone()
     }
 
     /// Construct objects placed on this frame.
@@ -1524,7 +1524,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .add_to_exec_list(context.gc_context, (*self).into());
         }
 
-        if !self.movie().unwrap().is_action_script_3() {
+        if !self.movie().is_action_script_3() {
             self.construct_as_avm1_object(context, run_frame);
         }
     }

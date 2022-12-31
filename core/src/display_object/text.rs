@@ -91,14 +91,14 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.0.read().static_data.id
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().static_data.swf.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().static_data.swf.clone()
     }
 
     fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
         if let Some(new_text) = context
             .library
-            .library_for_movie_mut(self.movie().unwrap())
+            .library_for_movie_mut(self.movie())
             .get_text(id)
         {
             self.0.write(context.gc_context).static_data = new_text.0.read().static_data;
@@ -139,7 +139,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             height = block.height.unwrap_or(height);
             if let Some(font) = context
                 .library
-                .library_for_movie(self.movie().unwrap())
+                .library_for_movie(self.movie())
                 .unwrap()
                 .get_font(font_id)
             {
@@ -201,7 +201,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
                 if let Some(font) = context
                     .library
-                    .library_for_movie(self.movie().unwrap())
+                    .library_for_movie(self.movie())
                     .unwrap()
                     .get_font(font_id)
                 {

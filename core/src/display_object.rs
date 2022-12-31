@@ -1608,7 +1608,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(&self) -> Option<Arc<SwfMovie>>;
+    fn movie(&self) -> Arc<SwfMovie>;
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {
         None

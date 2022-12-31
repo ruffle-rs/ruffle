@@ -181,7 +181,7 @@ pub fn register_class<'gc>(
     let class_name = class_name.coerce_to_string(activation)?;
 
     activation.context.avm1.register_constructor(
-        activation.base_clip().movie().unwrap().version(),
+        activation.base_clip().movie().version(),
         class_name,
         constructor,
     );

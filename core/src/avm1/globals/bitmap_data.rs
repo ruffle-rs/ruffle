@@ -1205,8 +1205,8 @@ pub fn load_bitmap<'gc>(
 
     let movie = activation.target_clip_or_root().movie();
 
-    let character = movie
-        .and_then(|m| library.library_for_movie(m))
+    let character = library
+        .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
     if let Some(Character::Bitmap {

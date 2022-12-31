@@ -490,9 +490,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.write(mc).object = Some(to.into());
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
+    fn movie(&self) -> Arc<SwfMovie> {
         match &*self.0.read().source.read() {
-            VideoSource::Swf { movie, .. } => Some(movie.clone()),
+            VideoSource::Swf { movie, .. } => movie.clone(),
         }
     }
 }
