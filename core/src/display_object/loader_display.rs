@@ -107,8 +107,8 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         }
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().movie.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }
 

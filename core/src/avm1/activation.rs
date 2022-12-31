@@ -2682,7 +2682,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             level
         } else {
             let level: DisplayObject<'_> =
-                MovieClip::new(self.base_clip().movie().unwrap(), self.context.gc_context).into();
+                MovieClip::new(self.base_clip().movie(), self.context.gc_context).into();
 
             level.set_depth(self.context.gc_context, level_id);
             level.set_default_root_name(&mut self.context);

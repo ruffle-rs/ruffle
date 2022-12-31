@@ -17,12 +17,7 @@ pub fn domain<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = if let Some(movie) = activation.base_clip().movie() {
-        movie
-    } else {
-        log::error!("LocalConnection::domain: Movie was None");
-        return Ok(Value::Null);
-    };
+    let movie = activation.base_clip().movie();
 
     let domain = if let Some(url) = movie.url() {
         if let Ok(url) = url::Url::parse(url) {

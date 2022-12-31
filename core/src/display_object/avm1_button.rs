@@ -142,7 +142,7 @@ impl<'gc> Avm1Button<'gc> {
         let mut removed_depths: fnv::FnvHashSet<_> =
             self.iter_render_list().map(|o| o.depth()).collect();
 
-        let movie = self.movie().unwrap();
+        let movie = self.movie();
         self.0.write(context.gc_context).state = state;
 
         // Create any new children that exist in this state, and remove children
@@ -250,8 +250,8 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.read().static_data.read().id
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().movie())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie()
     }
 
     fn post_instantiation(
