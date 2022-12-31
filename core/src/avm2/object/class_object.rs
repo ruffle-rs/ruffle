@@ -545,13 +545,8 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee = FunctionObject::from_method(
-                activation,
-                method.clone(),
-                scope,
-                Some(reciever),
-                Some(class),
-            );
+            let callee =
+                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
 
             callee.call(Some(reciever), arguments, activation)
         } else {
@@ -607,13 +602,8 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee = FunctionObject::from_method(
-                activation,
-                method.clone(),
-                scope,
-                Some(reciever),
-                Some(class),
-            );
+            let callee =
+                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
 
             callee.call(Some(reciever), &[], activation)
         } else {
@@ -671,13 +661,8 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee = FunctionObject::from_method(
-                activation,
-                method.clone(),
-                scope,
-                Some(reciever),
-                Some(class),
-            );
+            let callee =
+                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
 
             callee.call(Some(reciever), &[value], activation)?;
 
