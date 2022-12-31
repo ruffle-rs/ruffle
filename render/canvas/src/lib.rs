@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
