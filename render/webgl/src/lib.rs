@@ -50,6 +50,9 @@ pub enum Error {
     #[error("Couldn't create vertex array object")]
     UnableToCreateVAO,
 
+    #[error("Couldn't create buffer")]
+    UnableToCreateBuffer,
+
     #[error("Javascript error: {0}")]
     JavascriptError(#[from] JsError),
 
@@ -162,7 +165,8 @@ impl Drop for RegistryData {
 impl BitmapHandleImpl for RegistryData {}
 
 fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
+        .expect("Bitmap handle must be BitmapHandleImpl")
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
@@ -338,7 +342,7 @@ impl WebGlRenderBackend {
     fn build_quad_mesh(&self, program: &ShaderProgram) -> Result<Mesh, Error> {
         let vao = self.create_vertex_array()?;
 
-        let vertex_buffer = self.gl.create_buffer().unwrap();
+        let vertex_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
         self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
         self.gl.buffer_data_with_u8_array(
             Gl::ARRAY_BUFFER,
@@ -363,7 +367,7 @@ impl WebGlRenderBackend {
             Gl::STATIC_DRAW,
         );
 
-        let index_buffer = self.gl.create_buffer().unwrap();
+        let index_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
         self.gl
             .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
         self.gl.buffer_data_with_u8_array(
@@ -452,7 +456,7 @@ impl WebGlRenderBackend {
             return Ok(());
         }
 
-        let gl = self.gl2.as_ref().unwrap();
+        let gl = self.gl2.as_ref().expect("gl2 must exist at this point");
 
         // Delete previous buffers, if they exist.
         if let Some(msaa_buffers) = self.msaa_buffers.take() {
@@ -568,7 +572,7 @@ impl WebGlRenderBackend {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-    ) -> Mesh {
+    ) -> Result<Mesh, Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
         let lyon_mesh = self
@@ -580,8 +584,8 @@ impl WebGlRenderBackend {
             let num_indices = draw.indices.len() as i32;
             let num_mask_indices = draw.mask_index_count as i32;
 
-            let vao = self.create_vertex_array().unwrap();
-            let vertex_buffer = self.gl.create_buffer().unwrap();
+            let vao = self.create_vertex_array()?;
+            let vertex_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
             self.gl.bind_buffer(Gl::ARRAY_BUFFER, Some(&vertex_buffer));
 
             let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
@@ -591,7 +595,7 @@ impl WebGlRenderBackend {
                 Gl::STATIC_DRAW,
             );
 
-            let index_buffer = self.gl.create_buffer().unwrap();
+            let index_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
             self.gl
                 .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
             self.gl.buffer_data_with_u8_array(
@@ -696,7 +700,7 @@ impl WebGlRenderBackend {
             }
         }
 
-        Mesh { draws }
+        Ok(Mesh { draws })
     }
 
     /// Creates and binds a new VAO.
@@ -922,7 +926,7 @@ impl WebGlRenderBackend {
     fn pop_blend_mode(&mut self) {
         let old = self.blend_modes.pop();
         // We never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap();
+        let current = *self.blend_modes.last().unwrap_or(&BlendMode::Normal);
         if old != Some(current) {
             self.apply_blend_mode(current);
         }
@@ -979,8 +983,10 @@ impl RenderBackend for WebGlRenderBackend {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes.push(mesh);
+        match self.register_shape_internal(shape, bitmap_source) {
+            Ok(mesh) => self.meshes.push(mesh),
+            Err(e) => log::error!("Couldn't register shape: {:?}", e),
+        }
         handle
     }
 
@@ -991,15 +997,19 @@ impl RenderBackend for WebGlRenderBackend {
         handle: ShapeHandle,
     ) {
         self.delete_mesh(&self.meshes[handle.0]);
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes[handle.0] = mesh;
+        match self.register_shape_internal(shape, bitmap_source) {
+            Ok(mesh) => self.meshes[handle.0] = mesh,
+            Err(e) => log::error!("Couldn't replace shape: {:?}", e),
+        }
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
-        self.meshes.push(mesh);
+        match self.register_shape_internal((&shape).into(), &NullBitmapSource) {
+            Ok(mesh) => self.meshes.push(mesh),
+            Err(e) => log::error!("Couldn't register glyph shape: {:?}", e),
+        }
         handle
     }
 
@@ -1015,7 +1025,12 @@ impl RenderBackend for WebGlRenderBackend {
             BitmapFormat::Rgba => Gl::RGBA,
         };
 
-        let texture = self.gl.create_texture().unwrap();
+        let texture = self
+            .gl
+            .create_texture()
+            .ok_or(BitmapError::JavascriptError(
+                "Unable to create texture".into(),
+            ))?;
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1313,7 +1328,13 @@ impl CommandHandler for WebGlRenderBackend {
                     );
                 }
                 DrawType::Bitmap(bitmap) => {
-                    let texture = &as_registry_data(&bitmap.handle.as_ref().unwrap()).texture;
+                    let texture = match &bitmap.handle {
+                        Some(handle) => &as_registry_data(&handle).texture,
+                        None => {
+                            log::warn!("Tried to render a handleless bitmap");
+                            continue;
+                        }
+                    };
 
                     program.uniform_matrix3fv(
                         &self.gl,
