@@ -143,7 +143,8 @@ struct BitmapData {
 impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0).unwrap()
+    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
+        .expect("Bitmap handle must be BitmapHandleImpl")
 }
 
 impl BitmapData {
@@ -154,8 +155,8 @@ impl BitmapData {
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
                 .into_js_result()?;
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+        let window = web_sys::window().expect("window()");
+        let document = window.document().expect("document()");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
@@ -164,11 +165,10 @@ impl BitmapData {
         canvas.set_height(bitmap.height());
 
         let context: CanvasRenderingContext2d = canvas
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
+            .get_context("2d")?
+            .expect("get_context method must return a value")
             .dyn_into()
-            .unwrap();
+            .expect("get_context method returned something other than a CanvasRenderingContext2d");
         context
             .put_image_data(&image_data, 0.0, 0.0)
             .into_js_result()?;
@@ -219,8 +219,8 @@ impl WebCanvasRenderBackend {
             .dyn_into()
             .map_err(|_| "Expected CanvasRenderingContext2d")?;
 
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
+        let window = web_sys::window().expect("window()");
+        let document = window.document().expect("document()");
 
         // Create a color matrix filter to handle Flash color effects.
         // We may have a previous instance if this canvas was re-used, so remove it.
@@ -308,7 +308,7 @@ impl WebCanvasRenderBackend {
                 matrix.tx.to_pixels(),
                 matrix.ty.to_pixels(),
             )
-            .unwrap();
+            .warn_on_error();
     }
 
     #[allow(clippy::float_cmp)]
@@ -337,7 +337,7 @@ impl WebCanvasRenderBackend {
 
             self.color_matrix
                 .set_attribute("values", &matrix_str)
-                .unwrap();
+                .warn_on_error();
 
             self.context.set_filter("url('#_cm')");
         }
@@ -377,7 +377,7 @@ impl WebCanvasRenderBackend {
 
     fn begin_frame(&mut self, clear: Color) {
         // Reset canvas transform in case it was left in a dirty state.
-        self.context.reset_transform().unwrap();
+        self.context.reset_transform().warn_on_error();
 
         let width = self.canvas.width();
         let height = self.canvas.height();
@@ -407,7 +407,7 @@ impl WebCanvasRenderBackend {
     fn pop_blend_mode(&mut self) {
         let old = self.blend_modes.pop();
         // We should never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap();
+        let current = *self.blend_modes.last().unwrap_or(&BlendMode::Normal);
         if old != Some(current) {
             self.apply_blend_mode(current);
         }
@@ -567,7 +567,8 @@ impl CommandHandler for WebCanvasRenderBackend {
                                                 matrix[4], matrix[5],
                                             );
                                             transform_dirty = true;
-                                            let untransformed_path = Path2d::new().unwrap();
+                                            let untransformed_path = Path2d::new()
+                                                .expect("Path2d constructor must succeed");
                                             untransformed_path.add_path_with_transformation(
                                                 path,
                                                 gradient_transform.inverse_matrix.unchecked_ref(),
@@ -611,7 +612,8 @@ impl CommandHandler for WebCanvasRenderBackend {
                                 // that the geometry remains untransformed.
                                 let _ = self.context.reset_transform();
                                 transform_dirty = true;
-                                let transformed_path = Path2d::new().unwrap();
+                                let transformed_path =
+                                    Path2d::new().expect("Path2d constructor must succeed");
                                 transformed_path
                                     .add_path_with_transformation(path, dom_matrix.unchecked_ref());
 
@@ -734,13 +736,14 @@ impl CommandHandler for WebCanvasRenderBackend {
         if self.mask_state == MaskState::DrawContent {
             // Save the current mask layer so that it can be restored when the mask is popped.
             self.context.save();
-            self.mask_state = MaskState::DrawMask(Path2d::new().unwrap());
+            self.mask_state =
+                MaskState::DrawMask(Path2d::new().expect("Path2d constructor must succeed"));
         }
     }
 
     fn activate_mask(&mut self) {
         if let MaskState::DrawMask(mask_path) = &self.mask_state {
-            self.context.reset_transform().unwrap();
+            self.context.reset_transform().warn_on_error();
             // Apply the clipping path to the canvas for future draws.
             // TODO: Canvas almost, but not completely, provides a clean way to implement Flash masks.
             // Subsequent calls to `CanvasRenderingContext2d.clip` support nested masks (intersection),
@@ -785,7 +788,7 @@ impl CommandHandler for WebCanvasRenderBackend {
 /// The resulting path is in the shape's own coordinate space and needs to be
 /// transformed to fit within the shape's bounds.
 fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d {
-    let path = Path2d::new().unwrap();
+    let path = Path2d::new().expect("Path2d constructor must succeed");
     for command in commands {
         match command {
             DrawCommand::MoveTo { x, y } => path.move_to(x.get().into(), y.get().into()),
@@ -820,7 +823,7 @@ fn swf_shape_to_canvas_commands(
 
     let mut canvas_data = ShapeData(vec![]);
 
-    let bounds_viewbox_matrix = DomMatrix::new().unwrap();
+    let bounds_viewbox_matrix = DomMatrix::new().expect("DomMatrix constructor must succeed");
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
@@ -829,7 +832,7 @@ fn swf_shape_to_canvas_commands(
             DrawPath::Fill {
                 commands, style, ..
             } => {
-                let canvas_path = Path2d::new().unwrap();
+                let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
                 canvas_path.add_path_with_transformation(
                     &draw_commands_to_path2d(commands, false),
                     bounds_viewbox_matrix.unchecked_ref(),
@@ -838,10 +841,12 @@ fn swf_shape_to_canvas_commands(
                 let fill_style = match style {
                     FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
                     FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_linear_gradient(&backend.context, gradient, true).unwrap(),
+                        create_linear_gradient(&backend.context, gradient, true)
+                            .expect("Couldn't create linear gradient"),
                     ),
                     FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_radial_gradient(&backend.context, gradient, 0.0, true).unwrap(),
+                        create_radial_gradient(&backend.context, gradient, 0.0, true)
+                            .expect("Couldn't create radial gradient"),
                     ),
                     FillStyle::FocalGradient {
                         gradient,
@@ -853,7 +858,7 @@ fn swf_shape_to_canvas_commands(
                             focal_point.to_f64(),
                             true,
                         )
-                        .unwrap(),
+                        .expect("Couldn't create radial gradient"),
                     ),
                     FillStyle::Bitmap {
                         id,
@@ -887,7 +892,7 @@ fn swf_shape_to_canvas_commands(
                 style,
                 is_closed,
             } => {
-                let canvas_path = Path2d::new().unwrap();
+                let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
                 canvas_path.add_path_with_transformation(
                     &draw_commands_to_path2d(commands, *is_closed),
                     bounds_viewbox_matrix.unchecked_ref(),
@@ -1109,24 +1114,24 @@ fn swf_to_canvas_gradient(
             }
         }
         swf::GradientSpread::Repeat => {
-            let first_stop = color_stops.first().unwrap();
-            let last_stop = color_stops.last().unwrap();
-            let mut t = 0.0;
-            let step = 1.0 / NUM_REPEATS;
-            while t < 1.0 {
-                // Duplicate the start/end stops to ensure we don't blend between the seams.
-                canvas_gradient
-                    .add_color_stop(t, &first_stop.1)
-                    .warn_on_error();
-                for stop in &color_stops {
+            if let (Some(first_stop), Some(last_stop)) = (color_stops.first(), color_stops.last()) {
+                let mut t = 0.0;
+                let step = 1.0 / NUM_REPEATS;
+                while t < 1.0 {
+                    // Duplicate the start/end stops to ensure we don't blend between the seams.
                     canvas_gradient
-                        .add_color_stop(t + stop.0 * step, &stop.1)
+                        .add_color_stop(t, &first_stop.1)
                         .warn_on_error();
+                    for stop in &color_stops {
+                        canvas_gradient
+                            .add_color_stop(t + stop.0 * step, &stop.1)
+                            .warn_on_error();
+                    }
+                    canvas_gradient
+                        .add_color_stop(t + step, &last_stop.1)
+                        .warn_on_error();
+                    t += step;
                 }
-                canvas_gradient
-                    .add_color_stop(t + step, &last_stop.1)
-                    .warn_on_error();
-                t += step;
             }
         }
     }
@@ -1227,7 +1232,7 @@ impl MatrixExt for Matrix {
             ]
             .as_mut_slice(),
         )
-        .unwrap()
+        .expect("DomMatrix constructor must succeed")
     }
 }
 
@@ -1244,6 +1249,6 @@ impl MatrixExt for swf::Matrix {
             ]
             .as_mut_slice(),
         )
-        .unwrap()
+        .expect("DomMatrix constructor must succeed")
     }
 }
