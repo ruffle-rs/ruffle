@@ -20,9 +20,10 @@ ruffleShadowTemplate.innerHTML = `
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
+            line-height: normal;
         }
 
-        /* Ruffle's width/height CSS interferes Safari fullscreen CSS. */
+        /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
         /* Ensure that Safari's fullscreen mode actually fills the screen. */
         :host(:-webkit-full-screen) {
             display: block;
