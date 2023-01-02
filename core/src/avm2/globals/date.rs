@@ -604,7 +604,20 @@ pub fn set_full_year<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
-        let timestamp = DateAdjustment::new(activation, &get_timezone())
+        let timezone = get_timezone();
+        if this.date_time().is_none() {
+            this.set_date_time(
+                activation.context.gc_context,
+                Some(
+                    timezone
+                        .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                        .single()
+                        .expect("Unambiguous epoch time when constructing Date")
+                        .into(),
+                ),
+            );
+        }
+        let timestamp = DateAdjustment::new(activation, &timezone)
             .year(args.get(0))?
             .month(args.get(1))?
             .day(args.get(2))?
@@ -857,6 +870,16 @@ pub fn set_full_year_utc<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if this.date_time().is_none() {
+            this.set_date_time(
+                activation.context.gc_context,
+                Some(
+                    Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
+                        .single()
+                        .expect("Unambiguous epoch time when constructing Date"),
+                ),
+            );
+        }
         let timestamp = DateAdjustment::new(activation, &Utc)
             .year(args.get(0))?
             .month(args.get(1))?
