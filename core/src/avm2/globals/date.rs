@@ -274,7 +274,11 @@ pub fn instance_init<'gc>(
                         .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
                         .apply(date);
                 } else {
-                    let timestamp = timestamp.coerce_to_number(activation)?;
+                    let timestamp = if let Value::String(date_str) = timestamp {
+                        parse_full_date(activation, *date_str).unwrap_or(f64::NAN)
+                    } else {
+                        timestamp.coerce_to_number(activation)?
+                    };
                     if timestamp.is_finite() {
                         if let LocalResult::Single(time) =
                             Utc.timestamp_millis_opt(timestamp as i64)
