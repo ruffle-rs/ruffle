@@ -277,11 +277,7 @@ pub fn instance_init<'gc>(
                             Utc.timestamp_millis_opt(timestamp as i64)
                         {
                             date.set_date_time(activation.context.gc_context, Some(time))
-                        } else {
-                            date.set_date_time(activation.context.gc_context, None);
                         }
-                    } else {
-                        date.set_date_time(activation.context.gc_context, None);
                     }
                 }
             } else {
