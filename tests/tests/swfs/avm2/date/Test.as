@@ -53,3 +53,13 @@ trace(date.fullYearUTC, date.monthUTC, date.dateUTC, date.dayUTC, date.hoursUTC,
 
 trace("// Using getter methods")
 trace(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds(), date.getUTCMilliseconds());
+
+trace("// Setting properties of a NaN date object")
+var date = new Date(NaN);
+trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
+date.date = 9;
+date.fullYear = 1999;
+trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
+date.time = NaN;
+date.fullYearUTC = 2004;
+trace(date.fullYearUTC, date.monthUTC, date.dateUTC, date.dayUTC, date.hoursUTC, date.minutesUTC, date.secondsUTC);
