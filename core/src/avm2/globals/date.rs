@@ -1180,26 +1180,18 @@ fn parse_hms(item: &WStr) -> Option<(u32, u32, u32)> {
     ))
 }
 
-/// Implements the `parse` class method.
-// False
-#[allow(clippy::question_mark)]
-pub fn parse<'gc>(
+pub fn parse_full_date<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
+    date: AvmString<'gc>,
+) -> Option<f64> {
     const DAYS: [&[u8]; 7] = [b"Sun", b"Mon", b"Tue", b"Wed", b"Thu", b"Fri", b"Sat"];
 
-    let date_str = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
     let timezone = get_timezone();
     let mut final_time = DateAdjustment::new(activation, &timezone);
     let mut new_timezone = None;
     // The Date parser is flash is super flexible, so we need to go through each item individually and parse it to match Flash.
     // NOTE: DateTime::parse_from_str is not flexible enough for this, so we need to parse manually.
-    for item in date_str
+    for item in date
         .split(string_utils::swf_is_whitespace)
         .filter(|s| !s.is_empty())
     {
@@ -1209,7 +1201,7 @@ pub fn parse<'gc>(
             // First we check if the fields we are going to set have already been set, if they are, we return NaN.
             // The same logic applies for all other if/else branches.
             if final_time.year.is_some() || final_time.month.is_some() || final_time.day.is_some() {
-                return Ok(f64::NAN.into());
+                return None;
             }
             final_time.year = Some(Some(year as f64));
             final_time.month = Some(Some(month as f64));
@@ -1221,7 +1213,7 @@ pub fn parse<'gc>(
                 || final_time.minute.is_some()
                 || final_time.second.is_some()
             {
-                return Ok(f64::NAN.into());
+                return None;
             }
             final_time.hour = Some(Some(hours as f64));
             final_time.minute = Some(Some(minutes as f64));
@@ -1238,34 +1230,24 @@ pub fn parse<'gc>(
             // Parse GMT-HHMM/GMT+HHMM or UTC-HHMM/UTC+HHMM
 
             if new_timezone.is_some() || item.len() != 8 {
-                return Ok(f64::NAN.into());
+                return None;
             }
             let (other, tzn) = item.split_at(4);
             if tzn.len() != 4 {
-                return Ok(f64::NAN.into());
+                return None;
             }
             let (hours, minutes) = tzn.split_at(2);
-            let hours = if let Ok(hours) = hours.parse::<u32>() {
-                hours
-            } else {
-                return Ok(f64::NAN.into());
-            };
-            let minutes = if let Ok(minutes) = minutes.parse::<u32>() {
-                minutes
-            } else {
-                return Ok(f64::NAN.into());
-            };
+            let hours = hours.parse::<u32>().ok()?;
+            let minutes = minutes.parse::<u32>().ok()?;
             let sign = other.at(3);
             // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
             // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
             new_timezone = Some(if sign == b'-' as u16 {
-                FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)
-                    .ok_or("Error: Invalid timezone")?
+                FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)?
             } else if sign == b'+' as u16 {
-                FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)
-                    .ok_or("Error: Invalid timezone")?
+                FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)?
             } else {
-                return Ok(f64::NAN.into());
+                return None;
             });
         } else if let Ok(mut num) = item.parse::<u32>() {
             // Parse either a day or a year
@@ -1273,7 +1255,7 @@ pub fn parse<'gc>(
             // If the number is greater than 70, lets parse as a year
             if num >= 70 {
                 if final_time.year.is_some() {
-                    return Ok(f64::NAN.into());
+                    return None;
                 }
                 // If the number is less than 100, we add 1900 to it.
                 if num < 100 {
@@ -1283,17 +1265,17 @@ pub fn parse<'gc>(
             // Otherwise, lets parse as a day
             } else {
                 if final_time.day.is_some() {
-                    return Ok(f64::NAN.into());
+                    return None;
                 }
                 final_time.day = Some(Some(num as f64))
             }
         } else {
-            return Ok(f64::NAN.into());
+            return None;
         }
     }
     // It is required that year, month, and day all have data.
     if final_time.year.is_none() || final_time.month.is_none() || final_time.day.is_none() {
-        return Ok(f64::NAN.into());
+        return None;
     }
     if let Some(timestamp) = final_time.calculate(
         new_timezone
@@ -1302,10 +1284,27 @@ pub fn parse<'gc>(
             .single()
             .expect("Unambiguous starting time when converting parsed dates into local timezone"),
     ) {
-        Ok((timestamp.timestamp_millis() as f64).into())
+        Some(timestamp.timestamp_millis() as f64)
     } else {
-        Ok(f64::NAN.into())
+        None
     }
+}
+
+/// Implements the `parse` class method.
+#[allow(clippy::question_mark)]
+pub fn parse<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let date_str = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+
+    Ok(parse_full_date(activation, date_str)
+        .unwrap_or(f64::NAN)
+        .into())
 }
 
 /// Construct `Date`'s class.
