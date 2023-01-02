@@ -239,3 +239,9 @@ impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
         Error::RustError(val.into())
     }
 }
+
+impl<'gc> From<quick_xml::Error> for Error<'gc> {
+    fn from(val: quick_xml::Error) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}

@@ -55,6 +55,7 @@ mod stage_object;
 mod textformat_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
+mod xml_list_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
@@ -87,6 +88,7 @@ pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
 pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
+pub use crate::avm2::object::xml_list_object::{xml_list_allocator, E4XOrXml, XmlListObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
@@ -106,6 +108,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         EventObject(EventObject<'gc>),
         DispatchObject(DispatchObject<'gc>),
         XmlObject(XmlObject<'gc>),
+        XmlListObject(XmlListObject<'gc>),
         RegExpObject(RegExpObject<'gc>),
         ByteArrayObject(ByteArrayObject<'gc>),
         LoaderInfoObject(LoaderInfoObject<'gc>),
@@ -1207,7 +1210,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_xml(&self) -> Option<XmlObject<'gc>> {
+    fn as_xml_object(&self) -> Option<XmlObject<'gc>> {
+        None
+    }
+
+    fn as_xml_list(&self) -> Option<XmlListObject<'gc>> {
         None
     }
 

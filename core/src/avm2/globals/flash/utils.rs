@@ -3,6 +3,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::QName;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2_stub_method;
 use crate::string::AvmString;
 use crate::string::WString;
 use instant::Instant;
@@ -259,4 +260,26 @@ pub fn get_definition_by_name<'gc>(
         .coerce_to_string(activation)?;
     let qname = QName::from_qualified_name(name, activation);
     appdomain.get_defined_value(activation, qname)
+}
+
+pub fn describe_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.utils", "describeType");
+
+    let mut xml_string = String::new();
+    let qualified_name =
+        get_qualified_class_name(activation, None, &[args[0]])?.coerce_to_string(activation)?;
+
+    xml_string += &format!("<type name=\"{qualified_name}\"></type>");
+    let xml_avm_string = AvmString::new_utf8(activation.context.gc_context, xml_string);
+
+    Ok(activation
+        .avm2()
+        .classes()
+        .xml
+        .construct(activation, &[xml_avm_string.into()])?
+        .into())
 }

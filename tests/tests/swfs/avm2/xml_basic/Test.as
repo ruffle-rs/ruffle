@@ -1,0 +1,43 @@
+﻿package {
+	public class Test {
+		public static function run() {
+			var soapXML:XML = 
+					<soap:Envelope xmlns:soap="http://www.w3.org/2001/12/soap-envelope"
+						soap:encodingStyle="http://www.w3.org/2001/12/soap-encoding">
+
+									<soap:Body xmlns:wx = "http://example.com/weather">
+							<wx:forecast>
+								<wx:city>Quito</wx:city>
+							</wx:forecast>
+						</soap:Body>
+					</soap:Envelope>;
+					
+			trace(soapXML.localName()); // Envelope
+			
+			var simpleXML:XML = <outerElem><innerElem><p>Hello world</p></innerElem></outerElem>;
+			trace("simpleXML.innerElem.p = " + simpleXML.innerElem.p);
+			
+			var noArgs = new XML();
+			trace("noArgs.toString() = " + noArgs.toString());
+			trace("noArgs.toXMLString() = " + noArgs.toXMLString());
+			
+			var nullArg = new XML(null);
+			trace("nullArg.toString() = " + nullArg.toString());
+			trace("nullArg.toString() = " + nullArg.toXMLString());
+			
+			var undefinedArg = new XML(undefined);
+			trace("undefinedArg.toString() = " + undefinedArg.toString());
+			trace("undefinedArg.toXMLString() = " + undefinedArg.toString());
+			
+			var plainString:XML = new XML("Hello");
+			trace("plainString.toString() = " + plainString.toString());
+			trace("plainString.toXMLString() = " + plainString.toString());
+			
+			var list = new XMLList("<p>First</p><p>Second</p>");
+			trace("List children: " + list.length());
+			
+			trace("List first child: " + list[0]);
+			trace("List second child: " + list[1]);
+		}
+	}
+}

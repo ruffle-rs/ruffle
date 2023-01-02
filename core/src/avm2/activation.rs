@@ -2877,7 +2877,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             "object"
                         }
                     }
-                    Object::XmlObject(_) => {
+                    Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if is_not_subclass {
                             "xml"
                         } else {

@@ -58,6 +58,8 @@ bitflags! {
         /// Whether the name needs to be read at runtime before use
         /// This should only be set when lazy-initialized in Activation.
         const HAS_LAZY_NAME = 1 << 1;
+        /// Whether this was a 'MultinameA' - used for XML attribute lookups
+        const ATTRIBUTE = 1 << 2;
     }
 }
 
@@ -99,6 +101,11 @@ impl<'gc> Multiname<'gc> {
     #[inline(always)]
     pub fn has_lazy_component(&self) -> bool {
         self.has_lazy_ns() || self.has_lazy_name()
+    }
+
+    #[inline(always)]
+    pub fn is_attribute(&self) -> bool {
+        self.flags.contains(MultinameFlags::ATTRIBUTE)
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -174,12 +181,18 @@ impl<'gc> Multiname<'gc> {
             | AbcMultiname::MultinameA {
                 namespace_set,
                 name,
-            } => Self {
-                ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
-                name: translation_unit.pool_string_option(name.0, mc)?,
-                params: Vec::new(),
-                flags: Default::default(),
-            },
+            } => {
+                let flags = match abc_multiname {
+                    AbcMultiname::MultinameA { .. } => MultinameFlags::ATTRIBUTE,
+                    _ => Default::default(),
+                };
+                Self {
+                    ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
+                    name: translation_unit.pool_string_option(name.0, mc)?,
+                    params: Vec::new(),
+                    flags,
+                }
+            }
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,

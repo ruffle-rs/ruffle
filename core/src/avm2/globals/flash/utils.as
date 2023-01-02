@@ -8,14 +8,7 @@ package flash.utils {
 	// made specifically to fool com.adobe.serialization.json.JsonEncoder.
 	// this relies on the fact that a.@b in Ruffle is unimplemented and behaves like a.b.
 	// once we get proper XML support, this entire impl is to be trashed.
-	public function describeType(value:*): XML {
-		import __ruffle__.stub_method;
-		stub_method("flash.utils", "describeType");
-
-		var ret = new XML();
-		ret.name = getQualifiedClassName(value);
-		return ret;
-	}
+	public native function describeType(value:*): XML;
 
 	public native function setInterval(closure:Function, delay:Number, ... arguments):uint;
 	public native function clearInterval(id:uint):void;

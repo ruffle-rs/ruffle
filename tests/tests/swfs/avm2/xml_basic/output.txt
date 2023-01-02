@@ -1,0 +1,13 @@
+Envelope
+simpleXML.innerElem.p = Hello world
+noArgs.toString() = 
+noArgs.toXMLString() = 
+nullArg.toString() = 
+nullArg.toString() = 
+undefinedArg.toString() = 
+undefinedArg.toXMLString() = 
+plainString.toString() = Hello
+plainString.toXMLString() = Hello
+List children: 2
+List first child: First
+List second child: Second
