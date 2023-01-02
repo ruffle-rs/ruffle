@@ -37,6 +37,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_scale_factor: f64,
     preferred_sample_count: u32,
     texture_pool: TexturePool,
+    offscreen_texture_pool: TexturePool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -163,6 +164,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             viewport_scale_factor: 1.0,
             preferred_sample_count,
             texture_pool: TexturePool::new(),
+            offscreen_texture_pool: TexturePool::new(),
         })
     }
 
@@ -349,9 +351,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
-        if cfg!(target_family = "wasm") {
-            // web_sys::console::time_with_label("submit_frame");
-        }
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
             Err(e) => {
@@ -390,9 +389,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         self.uniform_buffers_storage.recall();
         self.color_buffers_storage.recall();
-        if cfg!(target_family = "wasm") {
-            // web_sys::console::time_end_with_label("submit_frame");
-        }
+        self.offscreen_texture_pool = TexturePool::new();
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
@@ -558,7 +555,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &mut self.color_buffers_storage,
             &self.meshes,
             commands,
-            &mut self.texture_pool,
+            &mut self.offscreen_texture_pool,
         );
         let index = target.submit(
             &self.descriptors.device,
