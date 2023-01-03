@@ -11,6 +11,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::borrow::Cow;
 use std::sync::Arc;
 use swf::{BlendMode, Color};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
@@ -497,6 +498,10 @@ impl RenderBackend for WebCanvasRenderBackend {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         Err(Error::Unimplemented)
+    }
+
+    fn debug_info(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Renderer: Canvas")
     }
 }
 

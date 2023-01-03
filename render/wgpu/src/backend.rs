@@ -18,6 +18,7 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
+use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
@@ -308,6 +309,32 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .unwrap();
         context.present(commands, mc);
         Ok(())
+    }
+
+    fn debug_info(&self) -> Cow<'static, str> {
+        let mut result = vec![];
+        result.push("Renderer: wgpu".to_string());
+
+        let info = self.descriptors.adapter.get_info();
+        result.push(format!("Adapter Backend: {:?}", info.backend));
+        result.push(format!("Adapter Name: {:?}", info.name));
+        result.push(format!("Adapter Device Type: {:?}", info.device_type));
+        result.push(format!("Adapter Driver Name: {:?}", info.driver));
+        result.push(format!("Adapter Driver Info: {:?}", info.driver_info));
+
+        let enabled_features = self.descriptors.device.features();
+        let available_features = self.descriptors.adapter.features() - enabled_features;
+        let current_limits = &self.descriptors.limits;
+        let available_limits = &self.descriptors.limits;
+
+        result.push(format!("Enabled features: {enabled_features:?}"));
+        result.push(format!("Available features: {available_features:?}"));
+        result.push(format!("Current limits: {current_limits:?}"));
+        result.push(format!("Available limits: {available_limits:?}"));
+        result.push(format!("Surface samples: {}", self.surface.sample_count()));
+        result.push(format!("Surface size: {:?}", self.surface.size()));
+
+        Cow::Owned(result.join("\n"))
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {

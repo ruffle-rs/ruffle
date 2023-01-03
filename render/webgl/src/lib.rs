@@ -1,6 +1,7 @@
 #![allow(clippy::bool_to_int_with_if)]
 
 use bytemuck::{Pod, Zeroable};
+use std::borrow::Cow;
 
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
@@ -1087,6 +1088,14 @@ impl RenderBackend for WebGlRenderBackend {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), BitmapError> {
         Err(BitmapError::Unimplemented)
+    }
+
+    fn debug_info(&self) -> Cow<'static, str> {
+        if self.gl2.is_some() {
+            Cow::Borrowed("Renderer: WebGL 2.0")
+        } else {
+            Cow::Borrowed("Renderer: WebGL 1.0")
+        }
     }
 }
 

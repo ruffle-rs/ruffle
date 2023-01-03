@@ -6,6 +6,7 @@ use crate::error::Error;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::rc::Rc;
 use swf;
 
@@ -62,6 +63,8 @@ pub trait RenderBackend: Downcast {
         commands: Vec<Context3DCommand<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error>;
+
+    fn debug_info(&self) -> Cow<'static, str>;
 }
 impl_downcast!(RenderBackend);
 
