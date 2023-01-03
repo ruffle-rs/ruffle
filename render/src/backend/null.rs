@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -95,5 +96,9 @@ impl RenderBackend for NullRenderer {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         Err(Error::Unimplemented)
+    }
+
+    fn debug_info(&self) -> Cow<'static, str> {
+        Cow::Borrowed("Renderer: Null")
     }
 }
