@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundHandle;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -23,11 +24,19 @@ pub fn sound_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundObject<'gc>(GcCell<'gc, SoundObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+impl fmt::Debug for SoundObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SoundObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SoundObjectData<'gc> {
     /// Base script object

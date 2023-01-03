@@ -1450,16 +1450,15 @@ impl Player {
     pub fn render(&mut self) {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
-        let mut commands = CommandList::new();
         let mut background_color = Color::WHITE;
 
-        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
+        let commands = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
             let root_data = gc_root.data.read();
             let stage = root_data.stage;
 
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
-                commands: &mut commands,
+                commands: CommandList::new(),
                 gc_context,
                 ui: ui.deref_mut(),
                 library: &root_data.library,
@@ -1478,6 +1477,8 @@ impl Player {
                 } else {
                     Color::from_rgba(0)
                 };
+
+            render_context.commands
         });
 
         renderer.submit_frame(background_color, commands);

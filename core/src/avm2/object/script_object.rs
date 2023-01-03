@@ -33,7 +33,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 /// Host implementations of `TObject` should embed `ScriptObjectData` and
 /// forward any trait method implementations it does not overwrite to this
 /// struct.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
     /// Values stored on this object.

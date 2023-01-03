@@ -8,17 +8,26 @@ use crate::drawing::Drawing;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Graphic<'gc>(GcCell<'gc, GraphicData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Graphic<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Graphic")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,

@@ -16,15 +16,24 @@ use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm2Button<'gc>(GcCell<'gc, Avm2ButtonData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Avm2Button<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Avm2Button")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm2ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,

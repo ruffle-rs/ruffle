@@ -845,6 +845,18 @@ swf_tests! {
     (unloadmovienum, "avm1/unloadmovienum", 11),
     (use_hand_cursor, "avm1/use_hand_cursor", 1),
     (variable_args, "avm1/variable_args", 1),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_add, "visual/blend_modes/add", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_darken, "visual/blend_modes/darken", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_difference, "visual/blend_modes/difference", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_hardlight, "visual/blend_modes/hardlight", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_invert, "visual/blend_modes/invert", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_layer_alpha, "visual/blend_modes/layer_alpha", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_layer_erase, "visual/blend_modes/layer_erase", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_lighten, "visual/blend_modes/lighten", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_multiply, "visual/blend_modes/multiply", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_overlay, "visual/blend_modes/overlay", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_screen, "visual/blend_modes/screen", 1, img = true),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (visual_blendmodes_subtract, "visual/blend_modes/subtract", 1, img = true),
     (waitforframe, "avm1/waitforframe", 1),
     (watch_textfield, "avm1/watch_textfield", 1),
     (watch_virtual_property_proto, "avm1/watch_virtual_property_proto", 1),
@@ -1423,7 +1435,7 @@ fn run_swf(
         let target = TextureTarget::new(&descriptors.device, (width, height))?;
 
         builder = builder
-            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)
+            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target, 4)?)
             .with_viewport_dimensions(width, height, 1.0);
     };
 

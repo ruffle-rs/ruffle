@@ -1,3 +1,4 @@
+use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Draw, Mesh};
 use crate::surface::Surface;
@@ -5,8 +6,8 @@ use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
 use crate::{
-    as_texture, format_list, get_backend_names, BufferDimensions, Descriptors, Error, Globals,
-    RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
+    as_texture, format_list, get_backend_names, BufferDimensions, ColorAdjustments, Descriptors,
+    Error, RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use gc_arena::MutationContext;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
@@ -23,12 +24,10 @@ use std::sync::Arc;
 use swf::Color;
 use wgpu::Extent3d;
 
-const DEFAULT_SAMPLE_COUNT: u32 = 4;
-
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Arc<Descriptors>,
-    globals: Globals,
     uniform_buffers_storage: BufferStorage<Transforms>,
+    color_buffers_storage: BufferStorage<ColorAdjustments>,
     target: T,
     surface: Surface,
     meshes: Vec<Mesh>,
@@ -36,11 +35,17 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
+    preferred_sample_count: u32,
+    texture_pool: TexturePool,
+    offscreen_texture_pool: TexturePool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+    pub async fn for_canvas(
+        canvas: &web_sys::HtmlCanvasElement,
+        sample_count: u32,
+    ) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL);
         let surface = instance.create_surface_from_canvas(canvas);
         let descriptors = Self::build_descriptors(
@@ -53,7 +58,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         .await?;
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, sample_count)
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -80,7 +85,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             trace_path,
         ))?;
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, 4)
     }
 }
 
@@ -107,17 +112,21 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
             trace_path,
         ))?;
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
-        Self::new(Arc::new(descriptors), target)
+        Self::new(Arc::new(descriptors), target, 4)
     }
 
     pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
         self.target
-            .capture(&self.descriptors.device, premultiplied_alpha)
+            .capture(&self.descriptors.device, premultiplied_alpha, None)
     }
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
+    pub fn new(
+        descriptors: Arc<Descriptors>,
+        target: T,
+        preferred_sample_count: u32,
+    ) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
             || target.height() > descriptors.limits.max_texture_dimension_2d
         {
@@ -130,30 +139,32 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 .into());
         }
 
-        // TODO: Allow the sample count to be set from command line/settings file.
         let surface = Surface::new(
             &descriptors,
-            DEFAULT_SAMPLE_COUNT,
+            preferred_sample_count,
             target.width(),
             target.height(),
             target.format(),
         );
 
-        let mut globals = Globals::new(&descriptors.device, &descriptors.bind_layouts.globals);
-        globals.set_resolution(target.width(), target.height());
-
         let uniform_buffers_storage =
+            BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
+
+        let color_buffers_storage =
             BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
 
         Ok(Self {
             descriptors,
-            globals,
             uniform_buffers_storage,
+            color_buffers_storage,
             target,
             surface,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
+            preferred_sample_count,
+            texture_pool: TexturePool::new(),
+            offscreen_texture_pool: TexturePool::new(),
         })
     }
 
@@ -236,10 +247,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             1,
         );
         self.target.resize(&self.descriptors.device, width, height);
-        self.surface = Surface::new(&self.descriptors, 4, width, height, self.target.format());
 
-        self.globals.set_resolution(width, height);
+        self.surface = Surface::new(
+            &self.descriptors,
+            self.preferred_sample_count,
+            width,
+            height,
+            self.target.format(),
+        );
+
         self.viewport_scale_factor = dimensions.scale_factor;
+        self.texture_pool = TexturePool::new();
     }
 
     fn create_context3d(
@@ -347,7 +365,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands(
+        let command_buffers = self.surface.draw_commands_to(
             frame_output.view(),
             Some(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
@@ -356,10 +374,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 a: f64::from(clear.a) / 255.0,
             }),
             &self.descriptors,
-            &mut self.globals,
             &mut self.uniform_buffers_storage,
+            &mut self.color_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.texture_pool,
         );
 
         self.target.submit(
@@ -368,6 +387,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             command_buffers,
             frame_output,
         );
+        self.uniform_buffers_storage.recall();
+        self.color_buffers_storage.recall();
+        self.offscreen_texture_pool = TexturePool::new();
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
@@ -503,13 +525,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             TextureOffscreen {
                 buffer: Arc::new(buffer),
                 buffer_dimensions,
-                surface: Surface::new(
-                    &self.descriptors,
-                    DEFAULT_SAMPLE_COUNT,
-                    width,
-                    height,
-                    wgpu::TextureFormat::Rgba8Unorm,
-                ),
             }
         });
 
@@ -521,31 +536,38 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
         };
 
-        let (old_width, old_height) = self.globals.resolution();
-        self.globals.set_resolution(width, height);
-
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
 
-        let command_buffers = texture_offscreen.surface.draw_commands(
+        let mut surface = Surface::new(
+            &self.descriptors,
+            self.preferred_sample_count,
+            width,
+            height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+        let command_buffers = surface.draw_commands_to(
             frame_output.view(),
             None,
             &self.descriptors,
-            &mut self.globals,
             &mut self.uniform_buffers_storage,
+            &mut self.color_buffers_storage,
             &self.meshes,
             commands,
+            &mut self.offscreen_texture_pool,
         );
-        target.submit(
+        let index = target.submit(
             &self.descriptors.device,
             &self.descriptors.queue,
             command_buffers,
             frame_output,
         );
+        self.uniform_buffers_storage.recall();
+        self.color_buffers_storage.recall();
 
         // Capture with premultiplied alpha, which is what we use for all textures
-        let image = target.capture(&self.descriptors.device, true);
+        let image = target.capture(&self.descriptors.device, true, Some(index));
 
         let image = image.map(|image| {
             Bitmap::new(
@@ -555,8 +577,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 image.into_raw(),
             )
         });
-
-        self.globals.set_resolution(old_width, old_height);
 
         Ok(image.unwrap())
     }
@@ -577,13 +597,20 @@ async fn request_device(
     limits.max_storage_buffers_per_shader_stage =
         adapter.limits().max_storage_buffers_per_shader_stage;
     limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
+    let mut features = wgpu::Features::DEPTH24PLUS_STENCIL8;
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::VERTEX_WRITABLE_STORAGE)
+    {
+        features |= wgpu::Features::VERTEX_WRITABLE_STORAGE;
+    }
 
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::DEPTH24PLUS_STENCIL8
-                    | wgpu::Features::VERTEX_WRITABLE_STORAGE,
+                features,
                 limits,
             },
             trace_path,

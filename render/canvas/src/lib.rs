@@ -395,6 +395,22 @@ impl WebCanvasRenderBackend {
 
         self.mask_state = MaskState::DrawContent;
     }
+
+    fn push_blend_mode(&mut self, blend: BlendMode) {
+        if Some(&blend) != self.blend_modes.last() {
+            self.apply_blend_mode(blend);
+        }
+        self.blend_modes.push(blend);
+    }
+
+    fn pop_blend_mode(&mut self) {
+        let old = self.blend_modes.pop();
+        // We should never pop our base 'BlendMode::Normal'
+        let current = *self.blend_modes.last().unwrap();
+        if old != Some(current) {
+            self.apply_blend_mode(current);
+        }
+    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -484,7 +500,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
-impl<'a> CommandHandler<'a> for WebCanvasRenderBackend {
+impl CommandHandler for WebCanvasRenderBackend {
     fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         if self.mask_state == MaskState::ClearMask {
             return;
@@ -750,20 +766,10 @@ impl<'a> CommandHandler<'a> for WebCanvasRenderBackend {
         }
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        if Some(&blend) != self.blend_modes.last() {
-            self.apply_blend_mode(blend);
-        }
-        self.blend_modes.push(blend);
-    }
-
-    fn pop_blend_mode(&mut self) {
-        let old = self.blend_modes.pop();
-        // We should never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap();
-        if old != Some(current) {
-            self.apply_blend_mode(current);
-        }
+    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
+        self.push_blend_mode(blend);
+        commands.execute(self);
+        self.pop_blend_mode();
     }
 }
 

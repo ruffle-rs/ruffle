@@ -12,17 +12,26 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Avm1Button<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Avm1Button")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm1ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,

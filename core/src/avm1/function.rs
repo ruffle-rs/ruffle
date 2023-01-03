@@ -47,7 +47,7 @@ pub enum ExecutionReason {
 
 /// Represents a function defined in the AVM1 runtime, either through
 /// `DefineFunction` or `DefineFunction2`.
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm1Function<'gc> {
     /// The file format version of the SWF that generated this function.
@@ -468,7 +468,7 @@ impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
 }
 
 /// Represents an `Object` that holds executable code.
-#[derive(Debug, Clone, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc> {
     /// The script object base.
@@ -479,7 +479,15 @@ pub struct FunctionObject<'gc> {
     data: GcCell<'gc, FunctionObjectData<'gc>>,
 }
 
-#[derive(Debug, Clone, Collect)]
+impl fmt::Debug for FunctionObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("FunctionObject")
+            .field("ptr", &self.data.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct FunctionObjectData<'gc> {
     /// The code that will be invoked when this object is called.

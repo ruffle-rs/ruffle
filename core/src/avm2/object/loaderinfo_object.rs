@@ -10,6 +10,7 @@ use crate::avm2::EventObject;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfMovie;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -47,7 +48,7 @@ pub fn loaderinfo_allocator<'gc>(
 }
 
 /// Represents a thing which can be loaded by a loader.
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
     /// An SWF movie that has not yet loaded.
@@ -74,11 +75,19 @@ pub enum LoaderStream<'gc> {
 
 /// An Object which represents a loadable object, such as a SWF movie or image
 /// resource.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct LoaderInfoObject<'gc>(GcCell<'gc, LoaderInfoObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+impl fmt::Debug for LoaderInfoObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LoaderInfoObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.

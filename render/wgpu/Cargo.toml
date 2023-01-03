@@ -20,7 +20,7 @@ swf = { path = "../../swf" }
 image = { version = "0.24.5", default-features = false }
 ouroboros = "0.15.5"
 typed-arena = "2.0.1"
-once_cell = "1.16.0"
+once_cell = "1.17.0"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 naga-agal = { path = "../naga-agal" }
 downcast-rs = "1.2.0"

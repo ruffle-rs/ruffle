@@ -47,11 +47,11 @@
     },
     "devDependencies": {
         "@types/mocha": "^10.0.1",
-        "@typescript-eslint/eslint-plugin": "^5.45.0",
+        "@typescript-eslint/eslint-plugin": "^5.48.0",
         "@typescript-eslint/parser": "^5.36.1",
         "eslint": "^8.24.0",
         "eslint-plugin-jsdoc": "^39.6.4",
-        "mocha": "^10.1.0",
+        "mocha": "^10.2.0",
         "replace-in-file": "^6.3.5",
         "shx": "^0.3.3",
         "ts-node": "^10.9.1",
