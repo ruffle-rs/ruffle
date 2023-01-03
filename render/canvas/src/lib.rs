@@ -500,7 +500,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 }
 
-impl<'a> CommandHandler<'a> for WebCanvasRenderBackend {
+impl CommandHandler for WebCanvasRenderBackend {
     fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         if self.mask_state == MaskState::ClearMask {
             return;
@@ -766,7 +766,7 @@ impl<'a> CommandHandler<'a> for WebCanvasRenderBackend {
         }
     }
 
-    fn blend(&mut self, commands: &'a CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();

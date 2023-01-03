@@ -4,8 +4,8 @@ use crate::matrix::Matrix;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
-pub trait CommandHandler<'a> {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool);
+pub trait CommandHandler {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn push_mask(&mut self);
@@ -13,7 +13,7 @@ pub trait CommandHandler<'a> {
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 
-    fn blend(&mut self, commands: &'a CommandList, blend_mode: BlendMode);
+    fn blend(&mut self, commands: &CommandList, blend_mode: BlendMode);
 }
 
 #[derive(Debug, Default, Clone)]
@@ -26,7 +26,7 @@ impl CommandList {
         Self::default()
     }
 
-    pub fn execute<'a>(&'a self, handler: &mut impl CommandHandler<'a>) {
+    pub fn execute(&self, handler: &mut impl CommandHandler) {
         for command in &self.commands {
             match command {
                 Command::RenderBitmap {
@@ -48,8 +48,8 @@ impl CommandList {
     }
 }
 
-impl<'a> CommandHandler<'a> for CommandList {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
+impl CommandHandler for CommandList {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         self.commands.push(Command::RenderBitmap {
             bitmap: bitmap.clone(),
             transform: transform.clone(),
@@ -87,7 +87,7 @@ impl<'a> CommandHandler<'a> for CommandList {
         self.commands.push(Command::PopMask);
     }
 
-    fn blend(&mut self, commands: &'a CommandList, blend_mode: BlendMode) {
+    fn blend(&mut self, commands: &CommandList, blend_mode: BlendMode) {
         self.commands
             .push(Command::Blend(commands.to_owned(), blend_mode));
     }
