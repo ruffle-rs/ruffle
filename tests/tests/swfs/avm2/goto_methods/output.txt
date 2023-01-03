@@ -1,0 +1,56 @@
+// clip.gotoAndStop(999)
+3
+// clip.gotoAndStop(0)
+1
+// clip.gotoAndPlay(1)
+1
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(0x80000000)
+3
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(0x100000002)
+3
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(-0x80000000)
+3
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(-0x7FFFFFFF)
+1
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(-99999999999999999999)
+3
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay('3 ')
+3
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay('-99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999')
+3
+// clip.gotoAndPlay(Number(2.0))
+2
+// clip.gotoAndPlay(Number(-99.0))
+1
+// clip.gotoAndPlay(2)
+2
+// clip.gotoAndPlay(-99)
+1
+// clip.prevFrame()
+1
+// clip.prevFrame()
+1
+// clip.prevFrame()
+1
+// clip.gotoAndStop('TheFrame')
+2
+// clip.nextFrame()
+3
+// clip.nextFrame()
+3
+// clip.gotoAndStop({toString: function() { return 'TheFrame' }})
+2
