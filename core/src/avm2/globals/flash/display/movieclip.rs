@@ -412,9 +412,14 @@ pub fn goto_frame<'gc>(
                     }
                 }
 
-                mc.frame_label_to_number(&frame_or_label).ok_or_else(|| {
-                    format!("ArgumentError: {frame_or_label} is not a valid frame label.")
-                })? as i32
+                let frame = mc.frame_label_to_number(&frame_or_label);
+                if activation.context.swf.version() >= 11 {
+                    frame.ok_or_else(|| {
+                        format!("ArgumentError: {frame_or_label} is not a valid frame label.")
+                    })? as i32
+                } else {
+                    frame.unwrap_or(0) as i32 // Old swf versions silently jump to frame 1 for invalid labels.
+                }
             }
         }
     };
