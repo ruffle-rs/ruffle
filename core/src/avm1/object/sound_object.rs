@@ -48,6 +48,7 @@ impl fmt::Debug for SoundObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
         f.debug_struct("SoundObject")
+            .field("ptr", &self.0.as_ptr())
             .field("sound", &this.sound)
             .field("sound_instance", &this.sound_instance)
             .field("owner", &this.owner)

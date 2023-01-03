@@ -45,7 +45,7 @@ pub enum PropagationMode {
 
 /// Represents data fields of an event that can be fired on an object that
 /// implements `IEventDispatcher`.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Event<'gc> {
     /// Whether or not the event "bubbles" - fires on it's parents after it
@@ -174,7 +174,7 @@ impl<'gc> Event<'gc> {
 }
 
 /// A set of handlers organized by event type, priority, and order added.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DispatchList<'gc>(FnvHashMap<AvmString<'gc>, BTreeMap<i32, Vec<EventHandler<'gc>>>>);
 
@@ -306,7 +306,7 @@ impl<'gc> Default for DispatchList<'gc> {
 }
 
 /// A single instance of an event handler.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct EventHandler<'gc> {
     /// The event handler to call.

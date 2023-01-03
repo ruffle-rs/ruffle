@@ -1,7 +1,10 @@
+use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, Vertex};
-use enum_map::{Enum, EnumMap};
+use enum_map::{enum_map, Enum, EnumMap};
+use ruffle_render::tessellator::GradientType;
+use swf::GradientSpread;
 use wgpu::vertex_attr_array;
 
 pub const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
@@ -13,101 +16,47 @@ pub const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::Ver
     ],
 }];
 
-#[derive(Debug, Enum, Copy, Clone)]
-pub enum BlendMode {
-    Normal,
-    Add,
-    Subtract,
-}
-
-// Use the GPU blend modes to roughly approximate Flash's blend modes.
-// This should look reasonable for the most common cases, but full support requires
-// rendering to an intermediate texture and custom shaders for the complex blend modes.
-impl From<swf::BlendMode> for BlendMode {
-    fn from(blend: swf::BlendMode) -> Self {
-        match blend {
-            swf::BlendMode::Normal => BlendMode::Normal,
-
-            // dst + src
-            swf::BlendMode::Add => BlendMode::Add,
-
-            // dst - src
-            swf::BlendMode::Subtract => BlendMode::Subtract,
-
-            // Unsupported blend mode. Default to normal for now.
-            _ => BlendMode::Normal,
-        }
-    }
-}
-
-impl BlendMode {
-    pub fn blend_state(&self) -> wgpu::BlendState {
-        match self {
-            BlendMode::Normal => wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            BlendMode::Add => wgpu::BlendState {
-                color: wgpu::BlendComponent {
-                    src_factor: wgpu::BlendFactor::One,
-                    dst_factor: wgpu::BlendFactor::One,
-                    operation: wgpu::BlendOperation::Add,
-                },
-                alpha: wgpu::BlendComponent::OVER,
-            },
-            BlendMode::Subtract => wgpu::BlendState {
-                color: wgpu::BlendComponent {
-                    src_factor: wgpu::BlendFactor::One,
-                    dst_factor: wgpu::BlendFactor::One,
-                    operation: wgpu::BlendOperation::ReverseSubtract,
-                },
-                alpha: wgpu::BlendComponent::OVER,
-            },
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ShapePipeline {
-    pub pipelines: EnumMap<BlendMode, EnumMap<MaskState, wgpu::RenderPipeline>>,
+    pub pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
+    depthless: wgpu::RenderPipeline,
 }
 
 #[derive(Debug)]
 pub struct Pipelines {
     pub color: ShapePipeline,
-    pub bitmap: ShapePipeline,
-    pub gradient: ShapePipeline,
+    pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
+    pub gradients: EnumMap<GradientType, EnumMap<GradientSpread, ShapePipeline>>,
+    pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
 }
 
 impl ShapePipeline {
-    pub fn pipeline_for(
-        &self,
-        blend_mode: BlendMode,
-        mask_state: MaskState,
-    ) -> &wgpu::RenderPipeline {
-        &self.pipelines[blend_mode][mask_state]
+    pub fn pipeline_for(&self, mask_state: MaskState) -> &wgpu::RenderPipeline {
+        &self.pipelines[mask_state]
     }
 
-    /// Builds of a nested `EnumMap` that maps a `BlendMode` and `MaskState` to
+    pub fn depthless_pipeline(&self) -> &wgpu::RenderPipeline {
+        &self.depthless
+    }
+
+    /// Builds of a nested `EnumMap` that maps a `MaskState` to
     /// a `RenderPipeline`. The provided callback is used to construct the `RenderPipeline`
-    /// for each possible `(BlendMode, MaskState)` pair.
-    fn build(mut f: impl FnMut(BlendMode, MaskState) -> wgpu::RenderPipeline) -> Self {
-        let blend_array: [EnumMap<MaskState, wgpu::RenderPipeline>; BlendMode::LENGTH] = (0
-            ..BlendMode::LENGTH)
-            .map(|blend_enum| {
-                let blend_mode = BlendMode::from_usize(blend_enum);
-                let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
-                    .map(|mask_enum| {
-                        let mask_state = MaskState::from_usize(mask_enum);
-                        f(blend_mode, mask_state)
-                    })
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap();
-                EnumMap::from_array(mask_array)
+    /// for each possible `MaskState`.
+    fn build(
+        depthless: wgpu::RenderPipeline,
+        mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
+    ) -> Self {
+        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
+            .map(|mask_enum| {
+                let mask_state = MaskState::from_usize(mask_enum);
+                f(mask_state)
             })
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
         ShapePipeline {
-            pipelines: EnumMap::from_array(blend_array),
+            pipelines: EnumMap::from_array(mask_array),
+            depthless,
         }
     }
 }
@@ -127,41 +76,80 @@ impl Pipelines {
             &shaders.color_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
-            &[&bind_layouts.globals, &bind_layouts.transforms],
-        );
-
-        let bitmap_pipelines = create_shape_pipeline(
-            "Bitmap",
-            device,
-            format,
-            &shaders.bitmap_shader,
-            msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION,
             &[
                 &bind_layouts.globals,
                 &bind_layouts.transforms,
-                &bind_layouts.bitmap,
+                &bind_layouts.color_transforms,
             ],
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
         );
 
-        let gradient_pipelines = create_shape_pipeline(
-            "Gradient",
-            device,
-            format,
-            &shaders.gradient_shader,
-            msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION,
-            &[
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.gradient,
-            ],
-        );
+        let gradient_pipelines = enum_map! {
+            mode => enum_map! {
+                spread => create_shape_pipeline(
+                    &format!("Gradient - {mode:?} {spread:?}"),
+                    device,
+                    format,
+                    &shaders.gradient_shaders[mode][spread],
+                    msaa_sample_count,
+                    &VERTEX_BUFFERS_DESCRIPTION,
+                    &[
+                        &bind_layouts.globals,
+                        &bind_layouts.transforms,
+                        &bind_layouts.color_transforms,
+                        &bind_layouts.gradient,
+                    ],
+                    wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                )
+            }
+        };
+
+        let complex_blend_pipelines = enum_map! {
+            blend => create_shape_pipeline(
+                &format!("Complex Blend: {blend:?}"),
+                device,
+                format,
+                &shaders.blend_shaders[blend],
+                msaa_sample_count,
+                &VERTEX_BUFFERS_DESCRIPTION,
+                &[
+                    &bind_layouts.globals,
+                    &bind_layouts.transforms,
+                    &bind_layouts.blend,
+                ],
+                wgpu::BlendState::REPLACE,
+            )
+        };
+
+        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
+            .map(|blend| {
+                let blend = TrivialBlend::from_usize(blend);
+                let name = format!("Bitmap ({blend:?})");
+                create_shape_pipeline(
+                    &name,
+                    device,
+                    format,
+                    &shaders.bitmap_shader,
+                    msaa_sample_count,
+                    &VERTEX_BUFFERS_DESCRIPTION,
+                    &[
+                        &bind_layouts.globals,
+                        &bind_layouts.transforms,
+                        &bind_layouts.color_transforms,
+                        &bind_layouts.bitmap,
+                    ],
+                    blend.blend_state(),
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
 
         Self {
             color: color_pipelines,
-            bitmap: bitmap_pipelines,
-            gradient: gradient_pipelines,
+            bitmap: EnumMap::from_array(bitmap_pipelines),
+            gradients: gradient_pipelines,
+            complex_blends: complex_blend_pipelines,
         }
     }
 }
@@ -209,14 +197,16 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_shape_pipeline(
-    name: &'static str,
+    name: &str,
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
     shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
+    blend: wgpu::BlendState,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -225,7 +215,7 @@ fn create_shape_pipeline(
         push_constant_ranges: &[],
     });
 
-    let mask_render_state = |mask_name, stencil_state, write_mask, blend| {
+    let mask_render_state = |mask_name, stencil_state, write_mask| {
         device.create_render_pipeline(&create_pipeline_descriptor(
             create_debug_label!("{} pipeline {}", name, mask_name).as_deref(),
             shader,
@@ -253,9 +243,22 @@ fn create_shape_pipeline(
         ))
     };
 
-    ShapePipeline::build(|blend_mode, mask_state| {
-        let blend = blend_mode.blend_state();
-        match mask_state {
+    ShapePipeline::build(
+        device.create_render_pipeline(&create_pipeline_descriptor(
+            create_debug_label!("{} depthless pipeline", name).as_deref(),
+            shader,
+            shader,
+            &pipeline_layout,
+            None,
+            &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(blend),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+            vertex_buffers_layout,
+            msaa_sample_count,
+        )),
+        |mask_state| match mask_state {
             MaskState::NoMask => mask_render_state(
                 "no mask",
                 wgpu::StencilFaceState {
@@ -265,7 +268,6 @@ fn create_shape_pipeline(
                     pass_op: wgpu::StencilOperation::Keep,
                 },
                 wgpu::ColorWrites::ALL,
-                blend,
             ),
             MaskState::DrawMaskStencil => mask_render_state(
                 "draw mask stencil",
@@ -276,7 +278,6 @@ fn create_shape_pipeline(
                     pass_op: wgpu::StencilOperation::IncrementClamp,
                 },
                 wgpu::ColorWrites::empty(),
-                blend,
             ),
             MaskState::DrawMaskedContent => mask_render_state(
                 "draw masked content",
@@ -287,7 +288,6 @@ fn create_shape_pipeline(
                     pass_op: wgpu::StencilOperation::Keep,
                 },
                 wgpu::ColorWrites::ALL,
-                blend,
             ),
             MaskState::ClearMaskStencil => mask_render_state(
                 "clear mask stencil",
@@ -298,8 +298,7 @@ fn create_shape_pipeline(
                     pass_op: wgpu::StencilOperation::DecrementClamp,
                 },
                 wgpu::ColorWrites::empty(),
-                blend,
             ),
-        }
-    })
+        },
+    )
 }

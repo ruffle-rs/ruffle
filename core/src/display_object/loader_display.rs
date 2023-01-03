@@ -9,14 +9,23 @@ use crate::prelude::*;
 
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct LoaderDisplay<'gc>(GcCell<'gc, LoaderDisplayData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for LoaderDisplay<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LoaderDisplay")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,

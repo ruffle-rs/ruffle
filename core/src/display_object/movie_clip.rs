@@ -34,6 +34,7 @@ use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
+use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
@@ -62,11 +63,19 @@ enum NextFrame {
 /// However, in AVM2, Sprite is a separate display object, and MovieClip is a subclass of Sprite.
 ///
 /// (SWF19 pp. 201-203)
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for MovieClip<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MovieClip")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
@@ -4236,7 +4245,7 @@ impl ClipEventHandler {
 }
 
 /// An AVM2 frame script attached to a (presumably AVM2) MovieClip.
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Avm2FrameScript<'gc> {
     /// The frame to invoke this frame script on.

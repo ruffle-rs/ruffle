@@ -1,14 +1,15 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms,
-    TextureTransforms, Vertex,
+    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, Vertex,
 };
 
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapSource;
-use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
-use swf::CharacterId;
+use ruffle_render::tessellator::{
+    Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient, GradientType,
+};
+use swf::{CharacterId, GradientSpread};
 
 #[derive(Debug)]
 pub struct Mesh {
@@ -90,6 +91,8 @@ pub enum DrawType {
         texture_transforms: wgpu::Buffer,
         gradient: wgpu::Buffer,
         bind_group: wgpu::BindGroup,
+        spread: GradientSpread,
+        mode: GradientType,
     },
     Bitmap {
         texture_transforms: wgpu::Buffer,
@@ -118,36 +121,32 @@ impl DrawType {
             ),
         );
 
-        let (gradient_ubo, buffer_size) =
-            if descriptors.limits.max_storage_buffers_per_shader_stage > 0 {
-                (
-                    create_buffer_with_data(
-                        &descriptors.device,
-                        bytemuck::cast_slice(&[GradientStorage::from(gradient)]),
-                        wgpu::BufferUsages::STORAGE,
-                        create_debug_label!(
-                            "Shape {} draw {} gradient ubo transfer buffer",
-                            shape_id,
-                            draw_id
-                        ),
-                    ),
-                    wgpu::BufferSize::new(std::mem::size_of::<GradientStorage>() as u64),
-                )
-            } else {
-                (
-                    create_buffer_with_data(
-                        &descriptors.device,
-                        bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-                        wgpu::BufferUsages::UNIFORM,
-                        create_debug_label!(
-                            "Shape {} draw {} gradient ubo transfer buffer",
-                            shape_id,
-                            draw_id
-                        ),
-                    ),
-                    wgpu::BufferSize::new(std::mem::size_of::<GradientUniforms>() as u64),
-                )
-            };
+        let spread = gradient.repeat_mode;
+        let mode = gradient.gradient_type;
+
+        let gradient_ubo = if descriptors.limits.max_storage_buffers_per_shader_stage > 0 {
+            create_buffer_with_data(
+                &descriptors.device,
+                bytemuck::cast_slice(&[GradientStorage::from(gradient)]),
+                wgpu::BufferUsages::STORAGE,
+                create_debug_label!(
+                    "Shape {} draw {} gradient ubo transfer buffer",
+                    shape_id,
+                    draw_id
+                ),
+            )
+        } else {
+            create_buffer_with_data(
+                &descriptors.device,
+                bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
+                wgpu::BufferUsages::UNIFORM,
+                create_debug_label!(
+                    "Shape {} draw {} gradient ubo transfer buffer",
+                    shape_id,
+                    draw_id
+                ),
+            )
+        };
 
         let bind_group_label =
             create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
@@ -158,21 +157,11 @@ impl DrawType {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &tex_transforms_ubo,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
+                        resource: tex_transforms_ubo.as_entire_binding(),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &gradient_ubo,
-                            offset: 0,
-                            size: buffer_size,
-                        }),
+                        resource: gradient_ubo.as_entire_binding(),
                     },
                 ],
                 label: bind_group_label.as_deref(),
@@ -180,6 +169,8 @@ impl DrawType {
         DrawType::Gradient {
             texture_transforms: tex_transforms_ubo,
             gradient: gradient_ubo,
+            spread,
+            mode,
             bind_group,
         }
     }
@@ -239,31 +230,24 @@ impl BitmapBinds {
         texture_view: wgpu::TextureView,
         label: Option<String>,
     ) -> Self {
-        let bind_group =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &texture_transforms,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
-                ],
-                label: label.as_deref(),
-            });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: texture_transforms.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: label.as_deref(),
+        });
         Self { bind_group }
     }
 }

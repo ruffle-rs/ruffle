@@ -21,31 +21,47 @@ An ideal render pass looks like this:
 ## Group 0: Render pass globals
 These should be set for the whole render pass and be immutable during it.
 
-| Index | Type    | Description |
-|:-----:|---------|:------------|
-|   0   | uniform | View matrix |
+| Index | Type    | Description | Availability |
+|:-----:|---------|:------------|--------------|
+|   0   | uniform | View matrix | Vertex       |
 
 ## Group 1: Mesh transforms
 These should be set for the current mesh being rendered.
 
-| Index | Type    | Description                        |
-|:-----:|---------|:-----------------------------------|
-|   0   | uniform | World matrix and color adjustments |
+| Index | Type    | Description       | Availability |
+|:-----:|---------|:------------------|--------------|
+|   0   | uniform | World matrix      | Vertex       |
 
 # Bitmaps
-## Group 2: Texture transforms
-| Index | Type       | Description                          |
-|:-----:|------------|:-------------------------------------|
-|   0   | uniform    | Transformation matrix of the texture |
-|   1   | texture_2d | Texture to be drawn                  |
-|   2   | sampler    | Sampler used for the texture         |
+## Group 2: Color transforms
+| Index | Type       | Description                          | Availability |
+|:-----:|------------|:-------------------------------------|--------------|
+|   0   | uniform    | Color adjustments                    | Fragment     |
+
+## Group 3: Texture transforms
+| Index | Type       | Description                          | Availability |
+|:-----:|------------|:-------------------------------------|--------------|
+|   0   | uniform    | Transformation matrix of the texture | Vertex       |
+|   1   | texture_2d | Texture to be drawn                  | Fragment     |
+|   2   | sampler    | Sampler used for the texture         | Fragment     |
 
 # Gradient
-## Group 2: Texture transforms
+## Group 2: Color transforms
+| Index | Type       | Description                          | Availability |
+|:-----:|------------|:-------------------------------------|--------------|
+|   0   | uniform    | Color adjustments                    | Fragment     |
+
+## Group 3: Texture transforms
 Index 1 is a storage buffer when supported by the device, or a uniform buffer otherwise.
 Storage buffers are more efficient and waste less memory, but are not as widely supported (ie WebGL)
 
-| Index | Type               | Description                           |
-|:-----:|--------------------|:--------------------------------------|
-|   0   | uniform            | Transformation matrix of the gradient |
-|   1   | uniform or storage | Gradient information, colors etc      |
+| Index | Type               | Description                           | Availability |
+|:-----:|--------------------|:--------------------------------------|--------------|
+|   0   | uniform            | Transformation matrix of the gradient | Vertex       |
+|   1   | uniform or storage | Gradient information, colors etc      | Fragment     |
+
+# Color
+## Group 2: Color transforms
+| Index | Type       | Description                          | Availability |
+|:-----:|------------|:-------------------------------------|--------------|
+|   0   | uniform    | Color adjustments                    | Fragment     |

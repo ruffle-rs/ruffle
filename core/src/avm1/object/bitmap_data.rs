@@ -23,8 +23,10 @@ pub struct BitmapDataData<'gc> {
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
+        let data = this.data.read();
         f.debug_struct("BitmapData")
-            .field("data", &this.data)
+            .field("ptr", &self.0.as_ptr())
+            .field("data", &data)
             .finish()
     }
 }

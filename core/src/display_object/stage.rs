@@ -31,11 +31,19 @@ use std::str::FromStr;
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
 /// levels as well as AVM2 movies.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Stage<'gc>(GcCell<'gc, StageData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Stage<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Stage")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct StageData<'gc> {
     /// Base properties for interactive display objects.

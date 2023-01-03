@@ -5,6 +5,7 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
+use core::fmt;
 use gc_arena::{Collect, GcCell};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
@@ -156,7 +157,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Collect, Default, Debug)]
+#[derive(Clone, Collect, Default)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
@@ -183,6 +184,19 @@ pub struct BitmapData<'gc> {
     /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
     /// this does not need to hold an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
+}
+
+impl fmt::Debug for BitmapData<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BitmapData")
+            .field("dirty", &self.dirty)
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("transparency", &self.transparency)
+            .field("disposed", &self.disposed)
+            .field("bitmap_handle", &self.bitmap_handle)
+            .finish()
+    }
 }
 
 impl<'gc> BitmapData<'gc> {
@@ -1000,11 +1014,10 @@ impl<'gc> BitmapData<'gc> {
         let mut transform_stack = ruffle_render::transform::TransformStack::new();
         transform_stack.push(&transform);
         let handle = self.bitmap_handle(context.renderer).unwrap();
-        let mut commands = CommandList::new();
 
         let mut render_context = RenderContext {
             renderer: context.renderer,
-            commands: &mut commands,
+            commands: CommandList::new(),
             gc_context: context.gc_context,
             ui: context.ui,
             library: &context.library,
@@ -1016,7 +1029,6 @@ impl<'gc> BitmapData<'gc> {
         };
 
         // Make the screen opacity match the opacity of this bitmap
-        render_context.commands.push_blend_mode(blend_mode);
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
                 // if try_write fails,
@@ -1037,9 +1049,16 @@ impl<'gc> BitmapData<'gc> {
                 object.render_self(&mut render_context);
             }
         }
-        render_context.commands.pop_blend_mode();
 
         self.update_dirty_texture(&mut render_context);
+
+        let commands = if blend_mode == BlendMode::Normal {
+            render_context.commands
+        } else {
+            let mut commands = CommandList::new();
+            commands.blend(&render_context.commands, blend_mode);
+            commands
+        };
 
         let image = context.renderer.render_offscreen(
             handle,

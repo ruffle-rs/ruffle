@@ -5,9 +5,11 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
 };
 
-@group(2) @binding(0) var<uniform> textureTransforms: TextureTransforms;
-@group(2) @binding(1) var texture: texture_2d<f32>;
-@group(2) @binding(2) var texture_sampler: sampler;
+@group(2) @binding(0) var<uniform> colorTransforms: ColorTransforms;
+
+@group(3) @binding(0) var<uniform> textureTransforms: TextureTransforms;
+@group(3) @binding(1) var texture: texture_2d<f32>;
+@group(3) @binding(2) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
@@ -24,7 +26,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Unmultiply alpha, apply color transform, remultiply alpha.
     if( color.a > 0.0 ) {
         color = vec4<f32>(color.rgb / color.a, color.a);
-        color = color * transforms.mult_color + transforms.add_color;
+        color = color * colorTransforms.mult_color + colorTransforms.add_color;
         let alpha = clamp(color.a, 0.0, 1.0);
         color = vec4<f32>(color.rgb * alpha, alpha);
     }

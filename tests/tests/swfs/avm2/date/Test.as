@@ -13,6 +13,26 @@ var date = new Date(2021, 7, 29, 4, 22, 55, 11);
 trace("// Date(2021, 7, 29, 4, 22, 55, 11)")
 trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
 
+trace("// Date with invalid string argument");
+var date = new Date("12");
+trace("// Date(\"12\")");
+trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
+
+trace("// Date with object argument");
+var date = new Date({valueOf: function(){return 929156400000}});
+trace("// Date({valueOf: function(){return 929156400000})");
+trace(date.fullYearUTC, date.monthUTC, date.dateUTC, date.dayUTC, date.hoursUTC, date.minutesUTC, date.secondsUTC);
+
+trace("// Date with invalid object argument");
+var date = new Date({valueOf: function(){return "Tue Feb 1 05:12:30 2005"}});
+trace("// Date({valueOf: function(){return \"Tue Feb 1 05:12:30 2005\"})");
+trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
+
+trace("// Date with string argument");
+var date = new Date("Tue Feb 1 05:12:30 2005");
+trace("// Date(\"Tue Feb 1 00:00:00 2005\")");
+trace(date.fullYear, date.month, date.date, date.day, date.hours, date.minutes, date.seconds);
+
 trace("// Setting the date after construction");
 date.fullYear = 1999;
 date.month = 2;

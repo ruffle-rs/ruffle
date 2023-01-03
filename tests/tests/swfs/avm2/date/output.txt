@@ -4,11 +4,23 @@
 // Date with fields chosen
 // Date(2021, 7, 29, 4, 22, 55, 11)
 2021 7 29 0 4 22 55
+// Date with invalid string argument
+// Date("12")
+NaN NaN NaN NaN NaN NaN NaN
+// Date with object argument
+// Date({valueOf: function(){return 929156400000})
+1999 5 12 6 3 0 0
+// Date with invalid object argument
+// Date({valueOf: function(){return "Tue Feb 1 05:12:30 2005"})
+NaN NaN NaN NaN NaN NaN NaN
+// Date with string argument
+// Date("Tue Feb 1 00:00:00 2005")
+2005 1 1 2 5 12 30
 // Setting the date after construction
 1999 2 31
 // Setting the date after construction using setter methods
 // Using getter methods
-1988 5 2 4 22 55 11
+1988 5 2 5 12 30 0
 1999 5 3 4 9 8 5 3
 // Using getter methods
 1999 5 3 9 8 5 3

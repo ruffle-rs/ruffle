@@ -1237,7 +1237,16 @@ async fn create_renderer(
                 .dyn_into()
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
-            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
+            let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
+                log::info!("Running on a mobile device; defaulting to no MSAA");
+                1
+            } else {
+                4
+            };
+
+            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas, sample_count)
+                .await
+            {
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas, "WebGPU"));
                 }
@@ -1254,7 +1263,16 @@ async fn create_renderer(
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
-        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
+        let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
+            log::info!("Running on a mobile device; defaulting to no MSAA");
+            1
+        } else {
+            4
+        };
+
+        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas, sample_count)
+            .await
+        {
             Ok(renderer) => {
                 return Ok((
                     builder.with_renderer(renderer),

@@ -1,9 +1,7 @@
 use crate::bitmaps::BitmapSamplers;
 use crate::descriptors::Quad;
-use crate::globals::Globals;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
-use crate::surface::Surface;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names, BufferDimensions};
@@ -30,11 +28,11 @@ pub mod target;
 mod uniform_buffer;
 
 pub mod backend;
+mod blend;
+mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
-mod commands;
 pub mod descriptors;
-mod frame;
 mod layouts;
 mod mesh;
 mod shaders;
@@ -58,7 +56,6 @@ pub enum MaskState {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
-    color_adjustments: ColorAdjustments,
 }
 
 #[repr(C)]
@@ -68,17 +65,26 @@ struct TextureTransforms {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
 pub struct ColorAdjustments {
     mult_color: [f32; 4],
     add_color: [f32; 4],
 }
 
+pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
+    mult_color: [1.0, 1.0, 1.0, 1.0],
+    add_color: [0.0, 0.0, 0.0, 0.0],
+};
+
 impl From<ColorTransform> for ColorAdjustments {
     fn from(transform: ColorTransform) -> Self {
-        Self {
-            mult_color: transform.mult_rgba_normalized(),
-            add_color: transform.add_rgba_normalized(),
+        if transform == ColorTransform::IDENTITY {
+            DEFAULT_COLOR_ADJUSTMENTS
+        } else {
+            Self {
+                mult_color: transform.mult_rgba_normalized(),
+                add_color: transform.add_rgba_normalized(),
+            }
         }
     }
 }
@@ -107,24 +113,22 @@ impl From<TessVertex> for Vertex {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GradientUniforms {
-    colors: [[f32; 16]; 16],
-    ratios: [[f32; 4]; 16],
+    colors: [[f32; 4]; 16],
+    ratios: [f32; 16],
     gradient_type: i32,
     num_colors: u32,
-    repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
-    _padding: [f32; 3],
 }
 
 impl From<TessGradient> for GradientUniforms {
     fn from(gradient: TessGradient) -> Self {
-        let mut ratios = [[0.0; 4]; 16];
-        let mut colors = [[0.0; 16]; 16];
+        let mut ratios = [0.0; 16];
+        let mut colors = [[0.0; 4]; 16];
 
         for i in 0..gradient.num_colors {
-            ratios[i] = [gradient.ratios[i], 0.0, 0.0, 0.0];
-            colors[i][0..4].copy_from_slice(&gradient.colors[i]);
+            ratios[i] = gradient.ratios[i];
+            colors[i].copy_from_slice(&gradient.colors[i]);
         }
 
         Self {
@@ -136,14 +140,8 @@ impl From<TessGradient> for GradientUniforms {
                 GradientType::Focal => 2,
             },
             num_colors: gradient.num_colors as u32,
-            repeat_mode: match gradient.repeat_mode {
-                swf::GradientSpread::Pad => 0,
-                swf::GradientSpread::Repeat => 1,
-                swf::GradientSpread::Reflect => 2,
-            },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
-            _padding: Default::default(),
         }
     }
 }
@@ -155,10 +153,8 @@ struct GradientStorage {
     ratios: [f32; 16],
     gradient_type: i32,
     num_colors: u32,
-    repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
-    _padding: [f32; 3],
 }
 
 impl From<TessGradient> for GradientStorage {
@@ -177,14 +173,8 @@ impl From<TessGradient> for GradientStorage {
                 GradientType::Focal => 2,
             },
             num_colors: gradient.num_colors as u32,
-            repeat_mode: match gradient.repeat_mode {
-                swf::GradientSpread::Pad => 0,
-                swf::GradientSpread::Repeat => 1,
-                swf::GradientSpread::Reflect => 2,
-            },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
-            _padding: Default::default(),
         }
     }
 }
@@ -230,5 +220,4 @@ impl Texture {
 struct TextureOffscreen {
     buffer: Arc<wgpu::Buffer>,
     buffer_dimensions: BufferDimensions,
-    surface: Surface,
 }

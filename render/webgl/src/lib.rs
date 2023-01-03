@@ -910,6 +910,22 @@ impl WebGlRenderBackend {
             );
         }
     }
+
+    fn push_blend_mode(&mut self, blend: BlendMode) {
+        if self.blend_modes.last() != Some(&blend) {
+            self.apply_blend_mode(blend);
+        }
+        self.blend_modes.push(blend);
+    }
+
+    fn pop_blend_mode(&mut self) {
+        let old = self.blend_modes.pop();
+        // We never pop our base 'BlendMode::Normal'
+        let current = *self.blend_modes.last().unwrap();
+        if old != Some(current) {
+            self.apply_blend_mode(current);
+        }
+    }
 }
 
 impl RenderBackend for WebGlRenderBackend {
@@ -1074,8 +1090,8 @@ impl RenderBackend for WebGlRenderBackend {
     }
 }
 
-impl<'a> CommandHandler<'a> for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
+impl CommandHandler for WebGlRenderBackend {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
         let entry = as_registry_data(bitmap);
         // Adjust the quad draw to use the target bitmap.
@@ -1401,20 +1417,10 @@ impl<'a> CommandHandler<'a> for WebGlRenderBackend {
         self.mask_state_dirty = true;
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        if self.blend_modes.last() != Some(&blend) {
-            self.apply_blend_mode(blend);
-        }
-        self.blend_modes.push(blend);
-    }
-
-    fn pop_blend_mode(&mut self) {
-        let old = self.blend_modes.pop();
-        // We never pop our base 'BlendMode::Normal'
-        let current = *self.blend_modes.last().unwrap();
-        if old != Some(current) {
-            self.apply_blend_mode(current);
-        }
+    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
+        self.push_blend_mode(blend);
+        commands.execute(self);
+        self.pop_blend_mode();
     }
 }
 

@@ -31,8 +31,12 @@ Keys: 1234567,[object Object],foo
 ///a[a] = a
 /// (enumerating object keys...)
 Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined
+/// (enumerating object values...)
+Values: 23,6,Key3 False Value,Key3 True Value,Key4 False Value,Key4 True Value,Testing,The value,[object Dictionary],no I haven't,stringy false,stringy true,this is perfectly acceptable,true,uh huh...,yeah sure
 ///a.setPropertyIsEnumerable(key2, false);
 ///a.setPropertyIsEnumerable(key3, false);
 ///a.setPropertyIsEnumerable(key4, false);
 /// (enumerating object keys...)
 Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined
+/// (enumerating object values...)
+Values: 23,6,Key3 False Value,Key3 True Value,Key4 False Value,Key4 True Value,Testing,The value,[object Dictionary],no I haven't,stringy false,stringy true,this is perfectly acceptable,true,uh huh...,yeah sure

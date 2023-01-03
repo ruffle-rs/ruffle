@@ -9,7 +9,7 @@ pub enum CallNode<'gc> {
     Method(Executable<'gc>),
 }
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct CallStack<'gc> {
     stack: Vec<CallNode<'gc>>,

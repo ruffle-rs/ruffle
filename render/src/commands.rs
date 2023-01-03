@@ -4,8 +4,8 @@ use crate::matrix::Matrix;
 use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
-pub trait CommandHandler<'a> {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool);
+pub trait CommandHandler {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
     fn draw_rect(&mut self, color: Color, matrix: &Matrix);
     fn push_mask(&mut self);
@@ -13,20 +13,21 @@ pub trait CommandHandler<'a> {
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 
-    fn push_blend_mode(&mut self, blend: BlendMode);
-    fn pop_blend_mode(&mut self);
+    fn blend(&mut self, commands: &CommandList, blend_mode: BlendMode);
 }
 
-#[derive(Debug, Default)]
-pub struct CommandList(Vec<Command>);
+#[derive(Debug, Default, Clone)]
+pub struct CommandList {
+    pub commands: Vec<Command>,
+}
 
 impl CommandList {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn execute<'a>(&'a self, handler: &mut impl CommandHandler<'a>) {
-        for command in &self.0 {
+    pub fn execute(&self, handler: &mut impl CommandHandler) {
+        for command in &self.commands {
             match command {
                 Command::RenderBitmap {
                     bitmap,
@@ -41,16 +42,15 @@ impl CommandList {
                 Command::ActivateMask => handler.activate_mask(),
                 Command::DeactivateMask => handler.deactivate_mask(),
                 Command::PopMask => handler.pop_mask(),
-                Command::PushBlendMode(blend) => handler.push_blend_mode(*blend),
-                Command::PopBlendMode => handler.pop_blend_mode(),
+                Command::Blend(commands, blend_mode) => handler.blend(commands, *blend_mode),
             }
         }
     }
 }
 
-impl<'a> CommandHandler<'a> for CommandList {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
-        self.0.push(Command::RenderBitmap {
+impl CommandHandler for CommandList {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
+        self.commands.push(Command::RenderBitmap {
             bitmap: bitmap.clone(),
             transform: transform.clone(),
             smoothing,
@@ -58,45 +58,42 @@ impl<'a> CommandHandler<'a> for CommandList {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        self.0.push(Command::RenderShape {
+        self.commands.push(Command::RenderShape {
             shape,
             transform: transform.clone(),
         });
     }
 
     fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
-        self.0.push(Command::DrawRect {
+        self.commands.push(Command::DrawRect {
             color,
             matrix: *matrix,
         });
     }
 
     fn push_mask(&mut self) {
-        self.0.push(Command::PushMask);
+        self.commands.push(Command::PushMask);
     }
 
     fn activate_mask(&mut self) {
-        self.0.push(Command::ActivateMask);
+        self.commands.push(Command::ActivateMask);
     }
 
     fn deactivate_mask(&mut self) {
-        self.0.push(Command::DeactivateMask);
+        self.commands.push(Command::DeactivateMask);
     }
 
     fn pop_mask(&mut self) {
-        self.0.push(Command::PopMask);
+        self.commands.push(Command::PopMask);
     }
 
-    fn push_blend_mode(&mut self, blend: BlendMode) {
-        self.0.push(Command::PushBlendMode(blend));
-    }
-
-    fn pop_blend_mode(&mut self) {
-        self.0.push(Command::PopBlendMode);
+    fn blend(&mut self, commands: &CommandList, blend_mode: BlendMode) {
+        self.commands
+            .push(Command::Blend(commands.to_owned(), blend_mode));
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Command {
     RenderBitmap {
         bitmap: BitmapHandle,
@@ -115,6 +112,5 @@ pub enum Command {
     ActivateMask,
     DeactivateMask,
     PopMask,
-    PushBlendMode(BlendMode),
-    PopBlendMode,
+    Blend(CommandList, BlendMode),
 }

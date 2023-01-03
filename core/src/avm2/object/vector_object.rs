@@ -8,6 +8,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
+use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -37,11 +38,19 @@ pub fn vector_allocator<'gc>(
 }
 
 /// An Object which stores typed properties in vector storage
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct VectorObject<'gc>(GcCell<'gc, VectorObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+impl fmt::Debug for VectorObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("VectorObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct VectorObjectData<'gc> {
     /// Base script object
