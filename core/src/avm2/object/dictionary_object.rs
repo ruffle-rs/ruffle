@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Multiname};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -132,6 +132,22 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
                 .base
                 .get_enumerant_name(index - object_space_len)
                 .unwrap_or(Value::Undefined))
+        }
+    }
+
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let name_value = self.get_enumerant_name(index, activation)?;
+        if !name_value.is_primitive() {
+            Ok(self.get_property_by_object(name_value.as_object().unwrap()))
+        } else {
+            self.get_property(
+                &Multiname::public(name_value.coerce_to_string(activation)?),
+                activation,
+            )
         }
     }
 
