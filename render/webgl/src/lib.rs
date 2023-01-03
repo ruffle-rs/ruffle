@@ -1090,8 +1090,8 @@ impl RenderBackend for WebGlRenderBackend {
     }
 }
 
-impl<'a> CommandHandler<'a> for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: &'a BitmapHandle, transform: &Transform, smoothing: bool) {
+impl CommandHandler for WebGlRenderBackend {
+    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
         self.set_stencil_state();
         let entry = as_registry_data(bitmap);
         // Adjust the quad draw to use the target bitmap.
@@ -1417,7 +1417,7 @@ impl<'a> CommandHandler<'a> for WebGlRenderBackend {
         self.mask_state_dirty = true;
     }
 
-    fn blend(&mut self, commands: &'a CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();
