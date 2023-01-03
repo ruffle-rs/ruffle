@@ -1,0 +1,8 @@
+// clip.gotoAndStop(3.0)
+3
+// clip.gotoAndStop(2.5)
+1
+// clip.gotoAndStop(3.0)
+3
+// clip.gotoAndStop('doesNotExist')
+1
