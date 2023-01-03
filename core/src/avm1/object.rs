@@ -88,7 +88,7 @@ pub enum NativeObject<'gc> {
         BitmapData(BitmapDataObject<'gc>),
     }
 )]
-pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Get the underlying raw script object.
     fn raw_script_object(&self) -> ScriptObject<'gc>;
 

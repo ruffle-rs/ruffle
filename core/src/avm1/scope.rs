@@ -29,7 +29,7 @@ pub enum ScopeClass {
 }
 
 /// Represents a scope chain for an AVM1 activation.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Scope<'gc> {
     parent: Option<Gc<'gc, Scope<'gc>>>,

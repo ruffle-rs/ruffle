@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use core::fmt;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -32,11 +33,19 @@ pub fn dictionary_allocator<'gc>(
 /// This is implemented by way of "object space", parallel to the property
 /// space that ordinary properties live in. This space has no namespaces, and
 /// keys are objects instead of strings.
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DictionaryObject<'gc>(GcCell<'gc, DictionaryObjectData<'gc>>);
 
-#[derive(Clone, Collect, Debug)]
+impl fmt::Debug for DictionaryObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DictionaryObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object

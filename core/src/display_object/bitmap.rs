@@ -9,6 +9,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
 use crate::vminterface::Instantiator;
+use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::commands::CommandHandler;
@@ -18,7 +19,7 @@ use std::cell::{Ref, RefMut};
 ///
 /// Bitmaps may be associated with either a `Bitmap` or a `BitmapData`
 /// subclass. Its superclass determines how the Bitmap will be constructed.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub enum BitmapClass<'gc> {
     /// This Bitmap uses the stock Flash Player classes for itself.
@@ -47,11 +48,19 @@ pub enum BitmapClass<'gc> {
 /// but starting in AVM2, a raw `Bitmap` display object can be created
 /// with the `PlaceObject3` tag.
 /// It can also be created in ActionScript using the `Bitmap` class.
-#[derive(Clone, Debug, Collect, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
-#[derive(Clone, Debug, Collect)]
+impl fmt::Debug for Bitmap<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Bitmap")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,

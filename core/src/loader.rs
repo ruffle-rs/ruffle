@@ -468,7 +468,7 @@ pub enum LoaderStatus {
     Failed,
 }
 
-#[derive(Collect, Clone, Copy, Debug)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum MovieLoaderEventHandler<'gc> {
     Avm1Broadcast(Object<'gc>),

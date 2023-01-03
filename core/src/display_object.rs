@@ -54,7 +54,7 @@ pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMo
 pub use text::Text;
 pub use video::Video;
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,

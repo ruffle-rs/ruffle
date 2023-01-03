@@ -1,5 +1,6 @@
 //! Boxed primitives
 
+use core::fmt;
 use std::cell::{Ref, RefMut};
 
 use crate::avm2::activation::Activation;
@@ -28,11 +29,19 @@ pub fn primitive_allocator<'gc>(
 }
 
 /// An Object which represents a primitive value of some other kind.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct PrimitiveObject<'gc>(GcCell<'gc, PrimitiveObjectData<'gc>>);
 
-#[derive(Collect, Debug, Clone)]
+impl fmt::Debug for PrimitiveObject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PrimitiveObject")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
+    }
+}
+
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.

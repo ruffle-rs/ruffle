@@ -63,7 +63,7 @@ impl<'gc> RegisterSet<'gc> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum FrameControl<'gc> {
     Continue,
     Return(Value<'gc>),
