@@ -20,7 +20,6 @@
         "@wdio/static-server-service": "^7.25.4",
         "chai": "^4.3.6",
         "chai-html": "^2.1.0",
-        "chromedriver": "^106.0.1",
         "copy-webpack-plugin": "^11.0.0",
         "cross-env": "^7.0.3",
         "eslint": "^8.24.0",
@@ -37,6 +36,9 @@
         "wdio-chromedriver-service": "^7.3.2",
         "webpack": "^5.73.0",
         "webpack-cli": "^5.0.1"
+    },
+    "optionalDependencies": {
+        "chromedriver": "^106.0.1"
     },
     "scripts": {
         "build": "npm run build --workspaces",
