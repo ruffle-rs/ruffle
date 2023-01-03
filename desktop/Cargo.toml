@@ -17,7 +17,7 @@ env_logger = { version = "0.10", default-features = false, features = ["humantim
 generational-arena = "0.2.8"
 log = "0.4"
 winit = "0.27.5"
-webbrowser = "0.8.2"
+webbrowser = "0.8.4"
 url = "2.3.1"
 arboard = "3.2.0"
 dirs = "4.0"
