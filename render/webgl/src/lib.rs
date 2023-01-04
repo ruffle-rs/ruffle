@@ -1091,11 +1091,34 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
+        let mut result = vec![];
+
         if self.gl2.is_some() {
-            Cow::Borrowed("Renderer: WebGL 2.0")
+            result.push("Renderer: WebGL 2.0".to_string());
         } else {
-            Cow::Borrowed("Renderer: WebGL 1.0")
+            result.push("Renderer: WebGL 1.0".to_string());
         }
+
+        let mut add_line = |name, val: Result<JsValue, JsValue>| {
+            result.push(format!(
+                "{name}: {}",
+                val.ok()
+                    .and_then(|val| val.as_string())
+                    .unwrap_or_else(|| "<unknown>".to_string())
+            ))
+        };
+
+        add_line("Adapter Vendor", self.gl.get_parameter(Gl::VENDOR));
+        add_line("Adapter Renderer", self.gl.get_parameter(Gl::RENDERER));
+        add_line("Adapter Version", self.gl.get_parameter(Gl::VERSION));
+
+        result.push(format!("Surface samples: {} x ", self.msaa_sample_count));
+        result.push(format!(
+            "Surface size: {} x {}",
+            self.renderbuffer_width, self.renderbuffer_height
+        ));
+
+        return Cow::Owned(result.join("\n"));
     }
 }
 
