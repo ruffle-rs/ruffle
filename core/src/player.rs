@@ -54,7 +54,7 @@ use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use tracing::info;
+use tracing::{info, instrument};
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -1434,6 +1434,7 @@ impl Player {
         })
     }
 
+    #[instrument(level = "debug", skip_all)]
     pub fn run_frame(&mut self) {
         let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
         let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
@@ -1465,6 +1466,7 @@ impl Player {
         self.needs_render = true;
     }
 
+    #[instrument(level = "debug", skip_all)]
     pub fn render(&mut self) {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
