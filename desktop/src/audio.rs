@@ -34,7 +34,7 @@ impl CpalAudioBackend {
         // Start the audio stream.
         let stream = {
             let mixer = mixer.proxy();
-            let error_handler = move |err| log::error!("Audio stream error: {}", err);
+            let error_handler = move |err| tracing::error!("Audio stream error: {}", err);
 
             match sample_format {
                 cpal::SampleFormat::F32 => device.build_output_stream(

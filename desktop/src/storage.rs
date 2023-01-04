@@ -16,9 +16,9 @@ impl DiskStorageBackend {
 
         // Create a base dir if one doesn't exist yet
         if !shared_objects_path.exists() {
-            log::info!("Creating storage dir");
+            tracing::info!("Creating storage dir");
             if let Err(r) = fs::create_dir_all(&base_path) {
-                log::warn!("Unable to create storage dir {}", r);
+                tracing::warn!("Unable to create storage dir {}", r);
             }
         }
 
@@ -58,13 +58,13 @@ impl StorageBackend for DiskStorageBackend {
                 match std::fs::read(path) {
                     Ok(data) => Some(data),
                     Err(e) => {
-                        log::warn!("Unable to read file {:?}", e);
+                        tracing::warn!("Unable to read file {:?}", e);
                         None
                     }
                 }
             }
             Err(e) => {
-                log::warn!("Unable to read file {:?}", e);
+                tracing::warn!("Unable to read file {:?}", e);
                 None
             }
         }
@@ -78,7 +78,7 @@ impl StorageBackend for DiskStorageBackend {
         if let Some(parent_dir) = path.parent() {
             if !parent_dir.exists() {
                 if let Err(r) = fs::create_dir_all(&parent_dir) {
-                    log::warn!("Unable to create storage dir {}", r);
+                    tracing::warn!("Unable to create storage dir {}", r);
                     return false;
                 }
             }
@@ -87,14 +87,14 @@ impl StorageBackend for DiskStorageBackend {
         match File::create(path) {
             Ok(mut file) => {
                 if let Err(r) = file.write_all(value) {
-                    log::warn!("Unable to write file content {:?}", r);
+                    tracing::warn!("Unable to write file content {:?}", r);
                     false
                 } else {
                     true
                 }
             }
             Err(r) => {
-                log::warn!("Unable to save file {:?}", r);
+                tracing::warn!("Unable to save file {:?}", r);
                 false
             }
         }
