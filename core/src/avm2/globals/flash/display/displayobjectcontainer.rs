@@ -170,7 +170,7 @@ pub fn get_child_by_name<'gc>(
         if let Some(child) = dobj.child_by_name(&name, false) {
             return Ok(child.object2());
         } else {
-            log::warn!("Display object container has no child with name {}", name);
+            tracing::warn!("Display object container has no child with name {}", name);
             return Ok(Value::Null);
         }
     }
@@ -581,7 +581,7 @@ pub fn mouse_children<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObjectContainer.mouseChildren getter: not yet implemented");
+    tracing::warn!("DisplayObjectContainer.mouseChildren getter: not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -590,7 +590,7 @@ pub fn set_mouse_children<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObjectContainer.mouseChildren setter: not yet implemented");
+    tracing::warn!("DisplayObjectContainer.mouseChildren setter: not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -600,7 +600,7 @@ pub fn tab_children<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("DisplayObjectContainer.tabChildren is a stub");
+    tracing::warn!("DisplayObjectContainer.tabChildren is a stub");
 
     Ok(true.into())
 }

@@ -13,7 +13,7 @@ impl NullLogBackend {
 
 impl LogBackend for NullLogBackend {
     fn avm_trace(&self, message: &str) {
-        log::info!(target: "avm_trace", "{}", message);
+        tracing::info!(target: "avm_trace", "{}", message);
     }
 }
 

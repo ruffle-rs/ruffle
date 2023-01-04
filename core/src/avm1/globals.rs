@@ -341,7 +341,7 @@ pub fn clear_interval<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
     if !activation.context.timers.remove(id) {
-        log::info!("clearInterval: Timer {} does not exist", id);
+        tracing::info!("clearInterval: Timer {} does not exist", id);
     }
 
     Ok(Value::Undefined)
@@ -357,7 +357,7 @@ pub fn clear_timeout<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
     if !activation.context.timers.remove(id) {
-        log::info!("clearTimeout: Timer {} does not exist", id);
+        tracing::info!("clearTimeout: Timer {} does not exist", id);
     }
 
     Ok(Value::Undefined)

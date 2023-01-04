@@ -30,7 +30,7 @@ pub fn domain<'gc>(
                 "localhost".into()
             }
         } else {
-            log::error!("LocalConnection::domain: Unable to parse movie URL");
+            tracing::error!("LocalConnection::domain: Unable to parse movie URL");
             return Ok(Value::Null);
         }
     } else {

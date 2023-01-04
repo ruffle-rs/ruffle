@@ -20,7 +20,7 @@ pub fn allow_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Security.allowDomain not implemented");
+    tracing::warn!("Security.allowDomain not implemented");
     Ok(Value::Undefined)
 }
 
@@ -29,7 +29,7 @@ pub fn allow_insecure_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Security.allowInsecureDomain not implemented");
+    tracing::warn!("Security.allowInsecureDomain not implemented");
     Ok(Value::Undefined)
 }
 
@@ -38,7 +38,7 @@ pub fn load_policy_file<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Security.loadPolicyFile not implemented");
+    tracing::warn!("Security.loadPolicyFile not implemented");
     Ok(Value::Undefined)
 }
 
@@ -47,6 +47,6 @@ pub fn show_settings<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Security.showSettings not implemented");
+    tracing::warn!("Security.showSettings not implemented");
     Ok(Value::Undefined)
 }

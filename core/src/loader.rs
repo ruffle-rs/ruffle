@@ -439,7 +439,7 @@ impl<'gc> LoadManager<'gc> {
             if matches!(status, Some(LoaderStatus::Parsing)) {
                 match Loader::preload_tick(handle, context, limit) {
                     Ok(f) => did_finish = did_finish && f,
-                    Err(e) => log::error!("Error encountered while preloading movie: {}", e),
+                    Err(e) => tracing::error!("Error encountered while preloading movie: {}", e),
                 }
             }
         }
@@ -602,7 +602,7 @@ impl<'gc> Loader<'gc> {
 
                 if target_clip.as_movie_clip().is_none() {
                     // Non-movie-clip loads should not be handled in preload_tick
-                    log::error!("Cannot preload non-movie-clip loader");
+                    tracing::error!("Cannot preload non-movie-clip loader");
                     return Ok(false);
                 }
 
@@ -783,7 +783,7 @@ impl<'gc> Loader<'gc> {
                     )?;
                 }
                 Err(e) => {
-                    log::error!("Error during movie loading: {:?}", e);
+                    tracing::error!("Error during movie loading: {:?}", e);
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {
                         Loader::movie_loader_error(handle, uc)
                     })?;
@@ -1046,7 +1046,7 @@ impl<'gc> Loader<'gc> {
                             &body,
                         )),
                         DataFormat::Variables => {
-                            log::warn!(
+                            tracing::warn!(
                                 "Support for URLLoaderDataFormat.VARIABLES not yet implemented"
                             );
                             Avm2Value::Undefined
@@ -1075,7 +1075,7 @@ impl<'gc> Loader<'gc> {
                         if let Err(e) =
                             Avm2::dispatch_event(&mut activation.context, open_evt, target)
                         {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `open` event: {}",
                                 e
                             );
@@ -1089,7 +1089,7 @@ impl<'gc> Loader<'gc> {
                         );
 
                         if let Err(e) = Avm2::dispatch_event(uc, complete_evt, target) {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `complete` event: {}",
                                 e
                             );
@@ -1118,7 +1118,7 @@ impl<'gc> Loader<'gc> {
                             .map_err(|e| Error::Avm2Error(e.to_string()))?;
 
                         if let Err(e) = Avm2::dispatch_event(uc, io_error_evt, target) {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `ioError` event: {}",
                                 e
                             );
@@ -1235,7 +1235,7 @@ impl<'gc> Loader<'gc> {
                         if let Err(e) =
                             Avm2::dispatch_event(&mut activation.context, open_evt, sound_object)
                         {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `open` event: {}",
                                 e
                             );
@@ -1246,7 +1246,7 @@ impl<'gc> Loader<'gc> {
                             "complete",
                         );
                         if let Err(e) = Avm2::dispatch_event(uc, complete_evt, sound_object) {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `complete` event: {}",
                                 e
                             );
@@ -1270,7 +1270,7 @@ impl<'gc> Loader<'gc> {
                             .map_err(|e| Error::Avm2Error(e.to_string()))?;
 
                         if let Err(e) = Avm2::dispatch_event(uc, io_error_evt, sound_object) {
-                            log::error!(
+                            tracing::error!(
                                 "Encountered AVM2 error when broadcasting `ioError` event: {}",
                                 e
                             );
@@ -1316,7 +1316,7 @@ impl<'gc> Loader<'gc> {
                 let open_evt = Avm2EventObject::bare_default_event(&mut activation.context, "open");
 
                 if let Err(e) = Avm2::dispatch_event(uc, open_evt, loader_info) {
-                    log::error!(
+                    tracing::error!(
                         "Encountered AVM2 error when broadcasting `open` event: {}",
                         e
                     );
@@ -1527,7 +1527,7 @@ impl<'gc> Loader<'gc> {
                     .map_err(|e| Error::Avm2Error(e.to_string()))?;
 
                 if let Err(e) = Avm2::dispatch_event(uc, progress_evt, loader_info) {
-                    log::error!(
+                    tracing::error!(
                         "Encountered AVM2 error when broadcasting `progress` event: {}",
                         e
                     );
@@ -1640,7 +1640,7 @@ impl<'gc> Loader<'gc> {
                     .map_err(|e| Error::Avm2Error(e.to_string()))?;
 
                 if let Err(e) = Avm2::dispatch_event(uc, io_error_evt, loader_info) {
-                    log::error!(
+                    tracing::error!(
                         "Encountered AVM2 error when broadcasting `ioError` event: {}",
                         e
                     );

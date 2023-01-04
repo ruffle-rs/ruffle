@@ -36,10 +36,10 @@ pub fn log_warn<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
-        [] => log::warn!("(__ruffle__.log_warn called with no arg)"),
+        [] => tracing::warn!("(__ruffle__.log_warn called with no arg)"),
         [arg] => {
             let msg = arg.coerce_to_string(activation)?;
-            log::warn!("{}", &msg.to_utf8_lossy());
+            tracing::warn!("{}", &msg.to_utf8_lossy());
         }
         args => {
             let strings = args
@@ -47,7 +47,7 @@ pub fn log_warn<'gc>(
                 .map(|a| a.coerce_to_string(activation))
                 .collect::<Result<Vec<_>, _>>()?;
             let msg = crate::string::join(&strings, &WStr::from_units(b" "));
-            log::warn!("{}", &msg.to_utf8_lossy());
+            tracing::warn!("{}", &msg.to_utf8_lossy());
         }
     }
 

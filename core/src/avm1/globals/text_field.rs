@@ -618,7 +618,7 @@ pub fn set_type<'gc>(
     } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
         this.set_editable(false, &mut activation.context)
     } else {
-        log::warn!("Invalid TextField.type: {}", value);
+        tracing::warn!("Invalid TextField.type: {}", value);
     }
 
     Ok(())

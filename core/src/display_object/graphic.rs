@@ -155,7 +155,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 Ok(object) => {
                     self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
                 }
-                Err(e) => log::error!("Got {} when constructing AVM2 side of display object", e),
+                Err(e) => {
+                    tracing::error!("Got {} when constructing AVM2 side of display object", e)
+                }
             }
 
             self.on_construction_complete(context);
@@ -172,7 +174,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         {
             self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
         } else {
-            log::warn!("PlaceObject: expected Graphic at character ID {}", id);
+            tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
     }
 

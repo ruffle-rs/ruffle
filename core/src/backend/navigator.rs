@@ -193,7 +193,7 @@ impl NullSpawner {
         use futures::task::LocalSpawnExt;
         let _ = self.0.spawn_local(async move {
             if let Err(e) = future.await {
-                log::error!("Asynchronous error occurred: {}", e);
+                tracing::error!("Asynchronous error occurred: {}", e);
             }
         });
     }
@@ -223,7 +223,7 @@ impl NullSpawner {
     pub fn spawn_local(&self, future: OwnedFuture<(), Error>) {
         wasm_bindgen_futures::spawn_local(async move {
             if let Err(e) = future.await {
-                log::error!("Asynchronous error occurred: {}", e);
+                tracing::error!("Asynchronous error occurred: {}", e);
             }
         });
     }

@@ -92,7 +92,7 @@ impl<'gc> Timers<'gc> {
                     );
 
                     if let Err(e) = result {
-                        log::error!("Unhandled AVM1 error in timer callback: {}", e);
+                        tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
                     }
 
                     false
@@ -110,7 +110,7 @@ impl<'gc> Timers<'gc> {
                     );
 
                     if let Err(e) = result {
-                        log::error!("Unhandled AVM1 error in timer callback: {}", e);
+                        tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
                     }
 
                     false
@@ -121,7 +121,7 @@ impl<'gc> Timers<'gc> {
                     match closure.call(None, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
-                            log::error!("Unhandled AVM2 error in timer callback: {}", e);
+                            tracing::error!("Unhandled AVM2 error in timer callback: {}", e);
                             false
                         }
                     }

@@ -818,7 +818,7 @@ pub fn set_blend_mode<'gc>(
         if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(activation.context.gc_context, mode);
         } else {
-            log::error!("Unknown blend mode {}", mode);
+            tracing::error!("Unknown blend mode {}", mode);
             return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
         }
     }

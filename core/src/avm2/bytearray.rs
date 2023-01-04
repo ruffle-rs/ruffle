@@ -205,7 +205,7 @@ impl ByteArrayStorage {
         };
         if let Some(error) = error {
             // On error, just return an empty buffer.
-            log::warn!("ByteArray.compress: {}", error);
+            tracing::warn!("ByteArray.compress: {}", error);
             buffer.clear();
         }
         buffer
@@ -231,7 +231,7 @@ impl ByteArrayStorage {
             CompressionAlgorithm::Lzma => Some("Ruffle was not compiled with LZMA support".into()),
         };
         if let Some(error) = error {
-            log::warn!("ByteArray.decompress: {}", error);
+            tracing::warn!("ByteArray.decompress: {}", error);
             None
         } else {
             Some(buffer)

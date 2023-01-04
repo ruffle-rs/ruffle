@@ -78,7 +78,7 @@ pub fn serialize_value<'gc>(
                         }),
                     ))
                 } else {
-                    log::warn!(
+                    tracing::warn!(
                         "Serialization is not implemented for class other than Object: {:?}",
                         o
                     );
@@ -161,7 +161,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Object(elements, class) => {
             if let Some(class) = class {
                 if !class.name.is_empty() && class.name != "Object" {
-                    log::warn!("Deserializing class {:?} is not supported!", class);
+                    tracing::warn!("Deserializing class {:?} is not supported!", class);
                 }
             }
 
@@ -207,7 +207,7 @@ pub fn deserialize_value<'gc>(
         | AmfValue::VectorObject(..)
         | AmfValue::Dictionary(..)
         | AmfValue::Custom(..) => {
-            log::error!("Deserialization not yet implemented: {:?}", val);
+            tracing::error!("Deserialization not yet implemented: {:?}", val);
             Value::Undefined
         }
         AmfValue::AMF3(val) => deserialize_value(activation, val)?,

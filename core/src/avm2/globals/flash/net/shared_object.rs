@@ -25,14 +25,14 @@ pub fn get_local<'gc>(
 
     const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
     if name.contains(|c| INVALID_CHARS.contains(c)) {
-        log::error!("SharedObject::get_local: Invalid character in name");
+        tracing::error!("SharedObject::get_local: Invalid character in name");
         return Ok(Value::Null);
     }
 
     let movie = if let DisplayObject::MovieClip(movie) = activation.context.stage.root_clip() {
         movie
     } else {
-        log::error!("SharedObject::get_local: Movie was None");
+        tracing::error!("SharedObject::get_local: Movie was None");
         return Ok(Value::Null);
     };
 
@@ -40,7 +40,7 @@ pub fn get_local<'gc>(
         if let Ok(url) = url::Url::parse(&url) {
             url
         } else {
-            log::error!("SharedObject::get_local: Unable to parse movie URL");
+            tracing::error!("SharedObject::get_local: Unable to parse movie URL");
             return Ok(Value::Null);
         }
     } else {
@@ -54,7 +54,7 @@ pub fn get_local<'gc>(
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
-        log::warn!(
+        tracing::warn!(
             "SharedObject.get_local: Tried to load a secure shared object from non-HTTPS origin"
         );
         return Ok(Value::Null);
@@ -110,7 +110,7 @@ pub fn get_local<'gc>(
         {
             local_path
         } else {
-            log::warn!("SharedObject.get_local: localPath parameter does not match SWF path");
+            tracing::warn!("SharedObject.get_local: localPath parameter does not match SWF path");
             return Ok(Value::Null);
         }
     } else {
@@ -126,7 +126,7 @@ pub fn get_local<'gc>(
     // Flash will generally fail to save shared objects with a path component starting with `.`,
     // so let's disallow them altogether.
     if full_name.split('/').any(|s| s.starts_with('.')) {
-        log::error!("SharedObject.get_local: Invalid path with .. segments");
+        tracing::error!("SharedObject.get_local: Invalid path with .. segments");
         return Ok(Value::Null);
     }
 
@@ -215,7 +215,7 @@ pub fn close<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.close - not yet implemented");
+    tracing::warn!("SharedObject.close - not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -224,6 +224,6 @@ pub fn clear<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("SharedObject.clear - not yet implemented");
+    tracing::warn!("SharedObject.clear - not yet implemented");
     Ok(Value::Undefined)
 }

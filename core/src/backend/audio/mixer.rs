@@ -287,7 +287,7 @@ impl AudioMixer {
         let decoder: Box<dyn SeekableDecoder> = match format.compression {
             AudioCompression::UncompressedUnknownEndian => {
                 // Cross fingers that it's little endian.
-                log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
+                tracing::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
                 Box::new(PcmDecoder::new(
                     data,
                     format.is_stereo,
@@ -985,7 +985,7 @@ impl dasp::signal::Signal for EnvelopeSignal {
 
             if self.prev_point.sample > self.next_point.sample {
                 self.next_point.sample = self.prev_point.sample;
-                log::error!("Invalid sound envelope; sample indices are out of order");
+                tracing::error!("Invalid sound envelope; sample indices are out of order");
             }
         }
 

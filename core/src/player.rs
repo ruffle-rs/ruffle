@@ -42,7 +42,6 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
-use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
@@ -55,6 +54,7 @@ use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
+use tracing::info;
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -585,7 +585,7 @@ impl Player {
                 crate::avm1::make_context_menu_state(menu_object, &mut activation)
             } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
                 // TODO: send "menuSelect" event
-                log::warn!("AVM2 Context menu callbacks are not implemented");
+                tracing::warn!("AVM2 Context menu callbacks are not implemented");
 
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
@@ -858,7 +858,7 @@ impl Player {
                                 &mut activation,
                             );
                         }
-                        log::info!("Variable dump:\n{}", dumper.output());
+                        tracing::info!("Variable dump:\n{}", dumper.output());
                     });
                 }
                 PlayerEvent::KeyDown {
@@ -869,13 +869,15 @@ impl Player {
                 {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
-                            log::info!(
+                            tracing::info!(
                                 "AVM Debugging turned off! Press CTRL+ALT+D to turn on again."
                             );
                             context.avm1.set_show_debug_output(false);
                             context.avm2.set_show_debug_output(false);
                         } else {
-                            log::info!("AVM Debugging turned on! Press CTRL+ALT+D to turn off.");
+                            tracing::info!(
+                                "AVM Debugging turned on! Press CTRL+ALT+D to turn off."
+                            );
                             context.avm1.set_show_debug_output(true);
                             context.avm2.set_show_debug_output(true);
                         }
@@ -997,7 +999,7 @@ impl Player {
                     if let Err(e) =
                         Avm2::dispatch_event(&mut activation.context, keyboard_event, target)
                     {
-                        log::error!(
+                        tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {}",
                             event_name,
                             e
@@ -1405,7 +1407,7 @@ impl Player {
                         );
 
                         match progress_evt {
-                            Err(e) => log::error!(
+                            Err(e) => tracing::error!(
                                 "Encountered AVM2 error when broadcasting `progress` event: {}",
                                 e
                             ),
@@ -1413,7 +1415,7 @@ impl Player {
                                 if let Err(e) =
                                     Avm2::dispatch_event(context, progress_evt, loader_info)
                                 {
-                                    log::error!(
+                                    tracing::error!(
                                         "Encountered AVM2 error when broadcasting `progress` event: {}",
                                         e
                                     );
@@ -1646,14 +1648,14 @@ impl Player {
                     if let Err(e) =
                         Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
                     {
-                        log::error!("Unhandled AVM2 exception in event handler: {}", e);
+                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
                     }
                 }
 
                 ActionType::Event2 { event_type, target } => {
                     let event = Avm2EventObject::bare_default_event(context, event_type);
                     if let Err(e) = Avm2::dispatch_event(context, event, target) {
-                        log::error!("Unhandled AVM2 exception in event handler: {}", e);
+                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
                     }
                 }
             }
@@ -1815,7 +1817,7 @@ impl Player {
                 Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
             for so in avm1_activation.context.avm1_shared_objects.clone().values() {
                 if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
-                    log::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                    tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
                 }
             }
 
@@ -1827,7 +1829,7 @@ impl Player {
                     Some(*so),
                     &[],
                 ) {
-                    log::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
+                    tracing::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
                 }
             }
         });

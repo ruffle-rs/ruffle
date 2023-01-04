@@ -128,7 +128,7 @@ pub fn get_concatenated_color_transform<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Transform.concatenatedColorTransform: not yet implemented");
+    tracing::warn!("Transform.concatenatedColorTransform: not yet implemented");
     Ok(Value::Undefined)
 }
 

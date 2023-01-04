@@ -216,7 +216,7 @@ impl<'gc> Avm2Button<'gc> {
                         children.push((child, record.depth));
                     }
                     Err(error) => {
-                        log::error!(
+                        tracing::error!(
                             "Button ID {}: could not instantiate child ID {}: {}",
                             static_data.read().id,
                             record.id,
@@ -483,7 +483,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
                 Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
-                Err(e) => log::error!("Got {} when constructing AVM2 side of button", e),
+                Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
             };
 
             self.on_construction_complete(context);
@@ -581,7 +581,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 let result: Result<(), Avm2Error> = constr_thing();
 
                 if let Err(e) = result {
-                    log::error!("Got {} when constructing AVM2 side of button", e);
+                    tracing::error!("Got {} when constructing AVM2 side of button", e);
                 }
             }
         }

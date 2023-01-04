@@ -50,7 +50,7 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
     let decoder: Box<dyn Decoder> = match format.compression {
         AudioCompression::UncompressedUnknownEndian => {
             // Cross fingers that it's little endian.
-            log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
+            tracing::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
             Box::new(PcmDecoder::new(
                 data,
                 format.is_stereo,

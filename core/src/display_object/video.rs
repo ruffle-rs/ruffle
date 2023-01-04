@@ -152,7 +152,7 @@ impl<'gc> Video<'gc> {
                 let subslice = SwfSlice::from(movie.clone()).to_unbounded_subslice(tag.data);
 
                 if frames.contains_key(&tag.frame_num.into()) {
-                    log::warn!("Duplicate frame {}", tag.frame_num);
+                    tracing::warn!("Duplicate frame {}", tag.frame_num);
                 }
 
                 frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
@@ -245,7 +245,7 @@ impl<'gc> Video<'gc> {
         let stream = if let VideoStream::Instantiated(stream) = &read.stream {
             stream
         } else {
-            log::error!("Attempted to seek uninstantiated video stream.");
+            tracing::error!("Attempted to seek uninstantiated video stream.");
             return;
         };
 
@@ -281,7 +281,7 @@ impl<'gc> Video<'gc> {
             Ok(bitmap) => {
                 self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap));
             }
-            Err(e) => log::error!("Got error when seeking to video frame {}: {}", frame_id, e),
+            Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }
 }
@@ -335,7 +335,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     streamdef.deblocking,
                 );
                 if stream.is_err() {
-                    log::error!(
+                    tracing::error!(
                         "Got error when post-instantiating video: {}",
                         stream.unwrap_err()
                     );
@@ -361,7 +361,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                         }
                         Ok(_) => {}
                         Err(e) => {
-                            log::error!("Got error when pre-loading video frame: {}", e);
+                            tracing::error!("Got error when pre-loading video frame: {}", e);
                         }
                     }
                 }
@@ -373,7 +373,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let starting_seek = if let VideoStream::Uninstantiated(seek_to) = write.stream {
             seek_to
         } else {
-            log::warn!("Reinstantiating already-instantiated video stream!");
+            tracing::warn!("Reinstantiating already-instantiated video stream!");
 
             0
         };
@@ -413,7 +413,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                     let object: Avm2Object<'gc> = object.into();
                     self.0.write(context.gc_context).object = Some(object.into())
                 }
-                Err(e) => log::error!("Got {} when constructing AVM2 side of video player", e),
+                Err(e) => tracing::error!("Got {} when constructing AVM2 side of video player", e),
             }
 
             self.on_construction_complete(context);
@@ -480,7 +480,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 .commands
                 .render_bitmap(&bitmap.handle, &transform, smoothing);
         } else {
-            log::warn!("Video has no decoded frame to render.");
+            tracing::warn!("Video has no decoded frame to render.");
         }
 
         context.transform_stack.pop();

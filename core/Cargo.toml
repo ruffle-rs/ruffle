@@ -15,7 +15,7 @@ fnv = "1.0.7"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
 indexmap = "1.9.2"
-log = "0.4"
+tracing = "0.1.37"
 ruffle_render = { path = "../render" }
 ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }

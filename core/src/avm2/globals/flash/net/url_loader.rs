@@ -55,7 +55,7 @@ fn spawn_fetch<'gc>(
         .coerce_to_string(activation)?;
 
     let method = NavigationMethod::from_method_str(&method_str).unwrap_or_else(|| {
-        log::error!("Unknown HTTP method type {:?}", method_str);
+        tracing::error!("Unknown HTTP method type {:?}", method_str);
         NavigationMethod::Get
     });
 

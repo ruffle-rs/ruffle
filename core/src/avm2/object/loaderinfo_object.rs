@@ -219,7 +219,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             let init_evt = EventObject::bare_default_event(context, "init");
 
             if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
-                log::error!(
+                tracing::error!(
                     "Encountered AVM2 error when broadcasting `init` event: {}",
                     e
                 );
@@ -242,7 +242,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 let complete_evt = EventObject::bare_default_event(context, "complete");
 
                 if let Err(e) = Avm2::dispatch_event(context, complete_evt, (*self).into()) {
-                    log::error!(
+                    tracing::error!(
                         "Encountered AVM2 error when broadcasting `complete` event: {}",
                         e
                     );

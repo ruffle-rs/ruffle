@@ -412,7 +412,7 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 Some(unk) => {
-                    log::error!(
+                    tracing::error!(
                         "Symbol {} changed to unexpected type {:?}",
                         cur_preload_symbol,
                         unk
@@ -424,7 +424,7 @@ impl<'gc> MovieClip<'gc> {
                         .cur_preload_symbol = None;
                 }
                 None => {
-                    log::error!(
+                    tracing::error!(
                         "Symbol {} disappeared during preloading",
                         cur_preload_symbol
                     );
@@ -671,7 +671,7 @@ impl<'gc> MovieClip<'gc> {
         tag_len: usize,
     ) -> Result<(), Error> {
         if context.is_action_script_3() {
-            log::warn!("DoInitAction tag in AVM2 movie");
+            tracing::warn!("DoInitAction tag in AVM2 movie");
             return Ok(());
         }
 
@@ -703,7 +703,7 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
         if !context.is_action_script_3() {
-            log::warn!("DoABC tag in AVM1 movie");
+            tracing::warn!("DoABC tag in AVM1 movie");
             return Ok(());
         }
 
@@ -713,7 +713,7 @@ impl<'gc> MovieClip<'gc> {
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
             if let Err(e) = Avm2::do_abc(context, do_abc, domain) {
-                log::warn!("Error loading ABC file: {}", e);
+                tracing::warn!("Error loading ABC file: {}", e);
             }
         }
 
@@ -791,7 +791,7 @@ impl<'gc> MovieClip<'gc> {
                                 );
                             }
                             _ => {
-                                log::warn!(
+                                tracing::warn!(
                                     "Symbol class {} cannot be assigned to invalid character id {}",
                                     class_name,
                                     id
@@ -800,7 +800,7 @@ impl<'gc> MovieClip<'gc> {
                         }
                     }
                 }
-                Err(e) => log::warn!(
+                Err(e) => tracing::warn!(
                     "Got AVM2 error {} when attempting to assign symbol class {}",
                     e,
                     class_name
@@ -1402,7 +1402,7 @@ impl<'gc> MovieClip<'gc> {
             };
 
             if let Err(e) = self.remove_object(context, &mut reader, version) {
-                log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                tracing::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
             }
         }
 
@@ -1502,7 +1502,7 @@ impl<'gc> MovieClip<'gc> {
                 Some(child)
             }
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     "Unable to instantiate display node id {}, reason being: {}",
                     id,
                     e
@@ -1583,7 +1583,7 @@ impl<'gc> MovieClip<'gc> {
         is_implicit: bool,
     ) {
         if cfg!(feature = "timeline_debug") {
-            log::debug!(
+            tracing::debug!(
                 "[{}]: {} from frame {} to frame {}",
                 self.name(),
                 if is_implicit { "looping" } else { "goto" },
@@ -1787,7 +1787,7 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
                 _ => {
-                    log::error!(
+                    tracing::error!(
                         "Unexpected PlaceObject during goto: {:?}",
                         params.place_object
                     )
@@ -2000,7 +2000,7 @@ impl<'gc> MovieClip<'gc> {
         if let Ok(object) = result {
             self.0.write(context.gc_context).object = Some(object.into());
         } else if let Err(e) = result {
-            log::error!("Got {} when allocating AVM2 side of display object", e);
+            tracing::error!("Got {} when allocating AVM2 side of display object", e);
         }
     }
 
@@ -2026,7 +2026,7 @@ impl<'gc> MovieClip<'gc> {
             let result: Result<(), Avm2Error> = constr_thing();
 
             if let Err(e) = result {
-                log::error!(
+                tracing::error!(
                     "Got {} when constructing AVM2 side of movie clip of type {}",
                     e,
                     class_object
@@ -2264,7 +2264,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 };
 
                 if let Err(e) = self.place_object(context, &mut reader, version) {
-                    log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                    tracing::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
                 }
             }
         }
@@ -2358,7 +2358,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                     &[],
                                     context,
                                 ) {
-                                    log::error!(
+                                    tracing::error!(
                                         "Error occured when running AVM2 frame script: {}",
                                         e
                                     );
@@ -3044,13 +3044,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 edit_text.set_render_settings(context.gc_context, settings.into());
             }
             Some(_) => {
-                log::warn!(
+                tracing::warn!(
                     "Tried to apply CSMTextSettings to non-text character ID {}",
                     settings.id
                 );
             }
             None => {
-                log::warn!(
+                tracing::warn!(
                     "Tried to apply CSMTextSettings to unregistered character ID {}",
                     settings.id
                 );
@@ -3223,13 +3223,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
             }
             Some(_) => {
-                log::warn!(
+                tracing::warn!(
                     "DefineButtonCxform: Tried to apply on non-button ID {}",
                     button_colors.id
                 );
             }
             None => {
-                log::warn!(
+                tracing::warn!(
                     "DefineButtonCxform: Character ID {} doesn't exist",
                     button_colors.id
                 );
@@ -3254,13 +3254,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 button.set_sounds(context.gc_context, button_sounds);
             }
             Some(_) => {
-                log::warn!(
+                tracing::warn!(
                     "DefineButtonSound: Tried to apply on non-button ID {}",
                     button_sounds.id
                 );
             }
             None => {
-                log::warn!(
+                tracing::warn!(
                     "DefineButtonSound: Character ID {} doesn't exist",
                     button_sounds.id
                 );
@@ -3375,7 +3375,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        log::warn!("DefineFont4 tag (TLF text) is not implemented");
+        tracing::warn!("DefineFont4 tag (TLF text) is not implemented");
         Ok(())
     }
 
@@ -3392,7 +3392,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 .library_for_movie_mut(self.movie())
                 .register_character(sound.id, Character::Sound(handle));
         } else {
-            log::error!(
+            tracing::error!(
                 "MovieClip::define_sound: Unable to register sound ID {}",
                 sound.id
             );
@@ -3557,7 +3557,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         {
             v.insert(cur_frame);
         } else {
-            log::warn!("Movie clip {}: Duplicated frame label", self.id());
+            tracing::warn!("Movie clip {}: Duplicated frame label", self.id());
         }
         Ok(())
     }
@@ -3624,7 +3624,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         tag_len: usize,
     ) -> Result<(), Error> {
         if context.is_action_script_3() {
-            log::warn!("DoAction tag in AVM2 movie");
+            tracing::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
 

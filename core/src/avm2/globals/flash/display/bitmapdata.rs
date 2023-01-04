@@ -82,7 +82,7 @@ pub fn instance_init<'gc>(
                 if character.is_some() {
                     //TODO: Determine if mismatched symbols will still work as a
                     //regular BitmapData subclass, or if this should throw
-                    log::warn!(
+                    tracing::warn!(
                         "BitmapData subclass {:?} is associated with a non-bitmap symbol",
                         name
                     );
@@ -693,7 +693,7 @@ pub fn lock<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("BitmapData.lock - not yet implemented");
+    tracing::warn!("BitmapData.lock - not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -730,13 +730,13 @@ pub fn draw<'gc>(
             if let Ok(mode) = BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string()) {
                 blend_mode = mode;
             } else {
-                log::error!("Unknown blend mode {:?}", mode);
+                tracing::error!("Unknown blend mode {:?}", mode);
                 return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
             }
         }
 
         if args.get(4).is_some() {
-            log::warn!("BitmapData.draw with clip rect - not implemented")
+            tracing::warn!("BitmapData.draw with clip rect - not implemented")
         }
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
@@ -849,7 +849,7 @@ pub fn apply_filter<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("BitmapData.applyFilter: Not yet implemented");
+    tracing::warn!("BitmapData.applyFilter: Not yet implemented");
     Ok(Value::Undefined)
 }
 

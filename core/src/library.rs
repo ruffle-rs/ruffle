@@ -126,7 +126,7 @@ impl<'gc> MovieLibrary<'gc> {
 
             self.characters.insert(id, character);
         } else {
-            log::error!("Character ID collision: Tried to register ID {} twice", id);
+            tracing::error!("Character ID collision: Tried to register ID {} twice", id);
         }
     }
 
@@ -142,7 +142,7 @@ impl<'gc> MovieLibrary<'gc> {
                 .insert(export_name, character.clone(), false);
             Some(character)
         } else {
-            log::warn!(
+            tracing::warn!(
                 "Can't register export {}: Character ID {} doesn't exist",
                 export_name,
                 id,
@@ -173,7 +173,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some(character) = self.characters.get(&id) {
             self.instantiate_display_object(character, gc_context)
         } else {
-            log::error!("Tried to instantiate non-registered character ID {}", id);
+            tracing::error!("Tried to instantiate non-registered character ID {}", id);
             Err("Character id doesn't exist")
         }
     }
@@ -188,7 +188,7 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some(character) = self.export_characters.get(export_name, false) {
             self.instantiate_display_object(character, gc_context)
         } else {
-            log::error!(
+            tracing::error!(
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
@@ -290,7 +290,7 @@ impl<'gc> MovieLibrary<'gc> {
         if self.jpeg_tables.is_some() {
             // SWF spec says there should only be one JPEGTables tag.
             // TODO: What is the behavior when there are multiples?
-            log::warn!("SWF contains multiple JPEGTables tags");
+            tracing::warn!("SWF contains multiple JPEGTables tags");
             return;
         }
         // Some SWFs have a JPEGTables tag with 0 length; ignore these.

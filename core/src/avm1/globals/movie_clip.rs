@@ -1480,7 +1480,7 @@ fn set_blend_mode<'gc>(
         if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
             this.set_blend_mode(activation.context.gc_context, mode);
         } else {
-            log::error!("Unknown blend mode {}", mode);
+            tracing::error!("Unknown blend mode {}", mode);
         };
     }
     Ok(())
