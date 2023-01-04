@@ -15,6 +15,7 @@ use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
+use std::str::FromStr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "height" => property(height);
@@ -506,9 +507,20 @@ pub fn draw<'gc>(
                 .map(|color_transform| color_transform.read().clone().into())
                 .unwrap_or_default();
 
-            if args.get(3).is_some() {
-                log::warn!("BitmapData.draw with blend mode - not implemented")
+            let mut blend_mode = BlendMode::Normal;
+            if let Some(mode) = args.get(3) {
+                if let Ok(mode) =
+                    BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string())
+                {
+                    blend_mode = mode;
+                } else if let Ok(Some(mode)) = mode.coerce_to_u8(activation).map(BlendMode::from_u8)
+                {
+                    blend_mode = mode;
+                } else {
+                    log::error!("Unknown blend mode {:?}", mode);
+                }
             }
+
             if args.get(4).is_some() {
                 log::warn!("BitmapData.draw with clip rect - not implemented")
             }
@@ -544,7 +556,7 @@ pub fn draw<'gc>(
                     color_transform,
                 },
                 smoothing,
-                BlendMode::Normal,
+                blend_mode,
                 &mut activation.context,
             );
             return Ok(Value::Undefined);
