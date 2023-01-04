@@ -3615,6 +3615,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "thiserror",
+ "tracing",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -3626,7 +3627,7 @@ name = "ruffle_web_common"
 version = "0.1.0"
 dependencies = [
  "js-sys",
- "log",
+ "tracing",
  "wasm-bindgen",
  "web-sys",
 ]
