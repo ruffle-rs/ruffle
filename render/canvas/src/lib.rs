@@ -146,7 +146,7 @@ impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
     <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be BitmapHandleImpl")
+        .expect("Bitmap handle must be a Canvas BitmapData")
 }
 
 impl BitmapData {
