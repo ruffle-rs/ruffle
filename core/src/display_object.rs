@@ -1316,7 +1316,7 @@ pub trait TDisplayObject<'gc>:
                         let name = Avm2Multiname::public(self.name());
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
                         if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
-                            log::error!(
+                            tracing::error!(
                                 "Got error when setting AVM2 child named \"{}\": {}",
                                 &self.name(),
                                 e
@@ -1355,7 +1355,7 @@ pub trait TDisplayObject<'gc>:
         let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr) {
-            log::error!(
+            tracing::error!(
                 "Encountered AVM2 error when broadcasting frameConstructed event: {}",
                 e
             );
@@ -1378,7 +1378,7 @@ pub trait TDisplayObject<'gc>:
         let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, exit_frame_evt, dobject_constr) {
-            log::error!(
+            tracing::error!(
                 "Encountered AVM2 error when broadcasting exitFrame event: {}",
                 e
             );

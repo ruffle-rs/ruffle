@@ -17,7 +17,7 @@ pub fn is_active<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Accessibility.isActive: not yet implemented");
+    tracing::warn!("Accessibility.isActive: not yet implemented");
     Ok(Value::Bool(false))
 }
 
@@ -26,7 +26,7 @@ pub fn send_event<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Accessibility.sendEvent: not yet implemented");
+    tracing::warn!("Accessibility.sendEvent: not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -35,7 +35,7 @@ pub fn update_properties<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Accessibility.updateProperties: not yet implemented");
+    tracing::warn!("Accessibility.updateProperties: not yet implemented");
     Ok(Value::Undefined)
 }
 

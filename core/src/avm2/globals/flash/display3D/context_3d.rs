@@ -206,7 +206,7 @@ pub fn set_culling<'gc>(
         } else if &*culling == b"front_and_back" {
             Context3DTriangleFace::FrontAndBack
         } else {
-            log::error!("Unknown culling {:?}", culling);
+            tracing::error!("Unknown culling {:?}", culling);
             Context3DTriangleFace::None
         };
 

@@ -8,7 +8,7 @@ pub fn get_dynamic_property_writer<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("ObjectEncoding.dynamicPropertyWriter: Not yet implemented");
+    tracing::warn!("ObjectEncoding.dynamicPropertyWriter: Not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -17,6 +17,6 @@ pub fn set_dynamic_property_writer<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("ObjectEncoding.dynamicPropertyWriter: Not yet implemented");
+    tracing::warn!("ObjectEncoding.dynamicPropertyWriter: Not yet implemented");
     Ok(Value::Undefined)
 }

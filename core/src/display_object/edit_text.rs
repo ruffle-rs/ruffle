@@ -1318,7 +1318,7 @@ impl<'gc> EditText<'gc> {
                     // This makes it so that the TextField's handlers are called before other listeners'.
                     listeners.set_element(activation, 0, object.into()).unwrap();
                 } else {
-                    log::warn!("_listeners should be empty");
+                    tracing::warn!("_listeners should be empty");
                 }
             }
         }
@@ -1384,7 +1384,7 @@ impl<'gc> EditText<'gc> {
                 let object: Avm2Object<'gc> = object.into();
                 self.0.write(activation.context.gc_context).object = Some(object.into())
             }
-            Err(e) => log::error!(
+            Err(e) => tracing::error!(
                 "Got {} when constructing AVM2 side of dynamic text field",
                 e
             ),

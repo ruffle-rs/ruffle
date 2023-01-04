@@ -385,7 +385,7 @@ where
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         if tag_len > reader.get_ref().len() {
-            log::error!("Unexpected EOF when reading tag");
+            tracing::error!("Unexpected EOF when reading tag");
             *reader.get_mut() = &reader.get_ref()[reader.get_ref().len()..];
             return Ok(false);
         }
@@ -398,7 +398,7 @@ where
 
             match result {
                 Err(e) => {
-                    log::error!("Error running definition tag: {:?}, got {}", tag, e)
+                    tracing::error!("Error running definition tag: {:?}, got {}", tag, e)
                 }
                 Ok(ControlFlow::Exit) => {
                     *reader.get_mut() = end_slice;
@@ -407,7 +407,7 @@ where
                 Ok(ControlFlow::Continue) => {}
             }
         } else {
-            log::warn!("Unknown tag code: {:?}", tag_code);
+            tracing::warn!("Unknown tag code: {:?}", tag_code);
         }
 
         *reader.get_mut() = end_slice;

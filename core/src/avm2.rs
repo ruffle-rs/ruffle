@@ -16,7 +16,7 @@ use swf::{DoAbc, DoAbcFlag};
 macro_rules! avm_debug {
     ($avm: expr, $($arg:tt)*) => (
         if $avm.show_debug_output() {
-            log::debug!($($arg)*)
+            tracing::debug!($($arg)*)
         }
     )
 }
@@ -348,7 +348,7 @@ impl<'gc> Avm2<'gc> {
     /// Push a value onto the operand stack.
     fn push(&mut self, value: impl Into<Value<'gc>>, depth: usize, max: usize) {
         if self.stack.len() - depth > max {
-            log::warn!("Avm2::push: Stack overflow");
+            tracing::warn!("Avm2::push: Stack overflow");
             return;
         }
         let mut value = value.into();
@@ -366,7 +366,7 @@ impl<'gc> Avm2<'gc> {
     #[allow(clippy::let_and_return)]
     fn pop(&mut self, depth: usize) -> Value<'gc> {
         let value = if self.stack.len() <= depth {
-            log::warn!("Avm2::pop: Stack underflow");
+            tracing::warn!("Avm2::pop: Stack underflow");
             Value::Undefined
         } else {
             self.stack.pop().unwrap_or(Value::Undefined)
@@ -385,7 +385,7 @@ impl<'gc> Avm2<'gc> {
             .get(self.stack.len() - index - 1)
             .copied()
             .unwrap_or_else(|| {
-                log::warn!("Avm1::pop: Stack underflow");
+                tracing::warn!("Avm1::pop: Stack underflow");
                 Value::Undefined
             });
 
@@ -404,7 +404,7 @@ impl<'gc> Avm2<'gc> {
 
     fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
         if self.scope_stack.len() - depth > max {
-            log::warn!("Avm2::push_scope: Scope Stack overflow");
+            tracing::warn!("Avm2::push_scope: Scope Stack overflow");
             return;
         }
 
@@ -413,7 +413,7 @@ impl<'gc> Avm2<'gc> {
 
     fn pop_scope(&mut self, depth: usize) -> Option<Scope<'gc>> {
         if self.scope_stack.len() <= depth {
-            log::warn!("Avm2::pop_scope: Scope Stack underflow");
+            tracing::warn!("Avm2::pop_scope: Scope Stack underflow");
             None
         } else {
             self.scope_stack.pop()

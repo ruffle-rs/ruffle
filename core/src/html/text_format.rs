@@ -618,7 +618,7 @@ impl FormatSpans {
                     let attributes = match attributes {
                         Ok(attributes) => attributes,
                         Err(e) => {
-                            log::warn!("Error while parsing HTML: {}", e);
+                            tracing::warn!("Error while parsing HTML: {}", e);
                             return Default::default();
                         }
                     };
@@ -799,7 +799,7 @@ impl FormatSpans {
                 }
                 Ok(Event::Eof) => break,
                 Err(e) => {
-                    log::warn!("Error while parsing HTML: {}", e);
+                    tracing::warn!("Error while parsing HTML: {}", e);
                     break;
                 }
                 _ => {}

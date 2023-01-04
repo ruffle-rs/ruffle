@@ -268,7 +268,7 @@ impl<'gc> BitmapData<'gc> {
             );
             let bitmap_handle = renderer.register_bitmap(bitmap);
             if let Err(e) = &bitmap_handle {
-                log::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
+                tracing::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
             }
             self.bitmap_handle = bitmap_handle.ok();
         }
@@ -947,7 +947,7 @@ impl<'gc> BitmapData<'gc> {
                 self.height(),
                 self.pixels_rgba(),
             ) {
-                log::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
+                tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
             }
             self.set_dirty(false);
         }
@@ -1087,7 +1087,7 @@ impl<'gc> BitmapData<'gc> {
         match image {
             Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
             Err(ruffle_render::error::Error::Unimplemented) => {
-                log::warn!("BitmapData.draw: Not yet implemented")
+                tracing::warn!("BitmapData.draw: Not yet implemented")
             }
             Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }

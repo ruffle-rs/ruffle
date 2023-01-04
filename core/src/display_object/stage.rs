@@ -618,7 +618,7 @@ impl<'gc> Stage<'gc> {
         } else if let Avm2Value::Object(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
-                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
             }
         }
     }
@@ -650,7 +650,7 @@ impl<'gc> Stage<'gc> {
                 .unwrap(); // we don't expect to break here
 
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, full_screen_event, stage) {
-                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
             }
         }
     }
@@ -711,7 +711,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
                 write.avm2_object = avm2_stage.into();
                 write.stage3ds = vec![stage3d];
             }
-            Err(e) => log::error!("Unable to construct AVM2 Stage: {}", e),
+            Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
         }
     }
 
@@ -766,7 +766,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
-            log::error!(
+            tracing::error!(
                 "Encountered AVM2 error when broadcasting enterFrame event: {}",
                 e
             );

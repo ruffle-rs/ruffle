@@ -46,9 +46,9 @@ pub use value::Value;
 macro_rules! avm_warn {
     ($activation: ident, $($arg:tt)*) => (
         if cfg!(feature = "avm_debug") {
-            log::warn!("{} -- in {}", format!($($arg)*), $activation.id)
+            tracing::warn!("{} -- in {}", format!($($arg)*), $activation.id)
         } else {
-            log::warn!($($arg)*)
+            tracing::warn!($($arg)*)
         }
     )
 }
@@ -57,9 +57,9 @@ macro_rules! avm_warn {
 macro_rules! avm_error {
     ($activation: ident, $($arg:tt)*) => (
         if cfg!(feature = "avm_debug") {
-            log::error!("{} -- in {}", format!($($arg)*), $activation.id)
+            tracing::error!("{} -- in {}", format!($($arg)*), $activation.id)
         } else {
-            log::error!($($arg)*)
+            tracing::error!($($arg)*)
         }
     )
 }

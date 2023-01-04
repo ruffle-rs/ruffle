@@ -49,7 +49,7 @@ pub fn constructor<'gc>(
     if let Some(sound) = this.as_sound_object() {
         sound.set_owner(activation.context.gc_context, owner);
     } else {
-        log::error!("Tried to construct a Sound on a non-SoundObject");
+        tracing::error!("Tried to construct a Sound on a non-SoundObject");
     }
 
     Ok(this.into())

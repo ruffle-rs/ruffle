@@ -103,7 +103,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         {
             self.0.write(context.gc_context).static_data = new_text.0.read().static_data;
         } else {
-            log::warn!("PlaceObject: expected text at character ID {}", id);
+            tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
     }
 
@@ -254,7 +254,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 Ok(object) => {
                     self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
                 }
-                Err(e) => log::error!("Got error when creating AVM2 side of Text: {}", e),
+                Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
             }
 
             self.on_construction_complete(context);

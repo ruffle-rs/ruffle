@@ -42,7 +42,7 @@ impl<'gc> FocusTracker<'gc> {
             new.on_focus_changed(context.gc_context, true);
         }
 
-        log::info!("Focus is now on {:?}", focused_element);
+        tracing::info!("Focus is now on {:?}", focused_element);
 
         let level0 = context.stage.root_clip();
         Avm1::notify_system_listeners(

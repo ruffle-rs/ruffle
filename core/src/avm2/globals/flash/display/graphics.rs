@@ -86,7 +86,7 @@ fn begin_bitmap_fill<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Graphics.beginBitmapFill: not yet implemented");
+    tracing::warn!("Graphics.beginBitmapFill: not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -96,7 +96,7 @@ fn begin_gradient_fill<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("Graphics.beginGradientFill: not yet implemented");
+    tracing::warn!("Graphics.beginGradientFill: not yet implemented");
     Ok(Value::Undefined)
 }
 

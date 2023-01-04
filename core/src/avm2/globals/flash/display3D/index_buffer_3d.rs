@@ -15,7 +15,7 @@ pub fn upload_from_byte_array<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("IndexBuffer3D.uploadFromByteArray - not yet implemented");
+    tracing::warn!("IndexBuffer3D.uploadFromByteArray - not yet implemented");
     Ok(Value::Undefined)
 }
 

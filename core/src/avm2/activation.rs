@@ -931,9 +931,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        log::error!("AVM2 error: {:?}", error);
+        tracing::error!("AVM2 error: {:?}", error);
         if let Some(err) = error.as_object().and_then(|obj| obj.as_error_object()) {
-            log::error!("{}", err.display_full(self)?);
+            tracing::error!("{}", err.display_full(self)?);
         }
         Err(Error::AvmError(error))
     }
@@ -1151,7 +1151,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
             result
         } else if let Err(e) = op {
-            log::error!("Parse error: {:?}", e);
+            tracing::error!("Parse error: {:?}", e);
             Err(Error::RustError(Box::new(e)))
         } else {
             unreachable!();
@@ -1159,7 +1159,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn unknown_op(&mut self, op: swf::avm2::types::Op) -> Result<FrameControl<'gc>, Error<'gc>> {
-        log::error!("Unknown AVM2 opcode: {:?}", op);
+        tracing::error!("Unknown AVM2 opcode: {:?}", op);
         Err("Unknown op".into())
     }
 

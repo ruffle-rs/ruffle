@@ -202,7 +202,7 @@ impl<'gc> Bitmap<'gc> {
         } else if class.has_class_in_chain(context.avm2.classes().bitmapdata) {
             BitmapClass::BitmapData(class)
         } else {
-            return log::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
+            return tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
         };
 
         self.0.write(context.gc_context).avm2_bitmap_class = bitmap_class;
@@ -268,7 +268,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 Ok(object) => {
                     self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
                 }
-                Err(e) => log::error!("Got error when creating AVM2 side of bitmap: {}", e),
+                Err(e) => tracing::error!("Got error when creating AVM2 side of bitmap: {}", e),
             }
 
             self.on_construction_complete(context);

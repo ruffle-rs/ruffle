@@ -31,7 +31,7 @@ use url::form_urlencoded;
 macro_rules! avm_debug {
     ($avm: expr, $($arg:tt)*) => (
         if $avm.show_debug_output() {
-            log::debug!($($arg)*)
+            tracing::debug!($($arg)*)
         }
     )
 }

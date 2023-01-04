@@ -204,7 +204,7 @@ impl Value {
                         .collect();
                     Value::List(values)
                 } else {
-                    log::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
+                    tracing::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
                     Value::Null
                 }
             }
@@ -220,7 +220,7 @@ impl Value {
                 Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(_values) => {
-                log::warn!("into_avm2 needs to be implemented for Value::Object");
+                tracing::warn!("into_avm2 needs to be implemented for Value::Object");
                 Avm2Value::Undefined
             }
             Value::List(values) => {

@@ -90,7 +90,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         {
             self.0.write(context.gc_context).static_data = new_morph_shape.0.read().static_data;
         } else {
-            log::warn!("PlaceObject: expected morph shape at character ID {}", id);
+            tracing::warn!("PlaceObject: expected morph shape at character ID {}", id);
         }
     }
 
@@ -132,7 +132,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                     &local_matrix,
                 );
             } else {
-                log::warn!("Missing ratio for morph shape");
+                tracing::warn!("Missing ratio for morph shape");
             }
         }
 
@@ -434,7 +434,7 @@ fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> sw
         // If you happened to make, say, a solid color-to-radial gradient tween in the IDE, this would get baked down into
         // a radial-to-radial gradient on export.
         _ => {
-            log::warn!(
+            tracing::warn!(
                 "Unexpected morph shape fill style combination: {:#?}, {:#?}",
                 start,
                 end

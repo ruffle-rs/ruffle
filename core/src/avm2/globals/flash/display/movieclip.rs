@@ -53,7 +53,7 @@ pub fn add_frame_script<'gc>(
             mc.register_frame_script(frame_id, callable, &mut activation.context);
         }
     } else {
-        log::error!("Attempted to add frame scripts to non-MovieClip this!");
+        tracing::error!("Attempted to add frame scripts to non-MovieClip this!");
     }
 
     Ok(Value::Undefined)

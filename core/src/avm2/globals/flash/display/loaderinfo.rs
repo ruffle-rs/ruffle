@@ -268,7 +268,7 @@ pub fn parent_allows_child<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("LoaderInfo.parentAllowsChild is a stub");
+    tracing::warn!("LoaderInfo.parentAllowsChild is a stub");
     Ok(false.into())
 }
 

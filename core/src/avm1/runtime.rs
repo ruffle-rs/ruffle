@@ -305,7 +305,7 @@ impl<'gc> Avm1<'gc> {
     pub fn halt(&mut self) {
         if !self.halted {
             self.halted = true;
-            log::error!("No more actions will be executed in this movie.")
+            tracing::error!("No more actions will be executed in this movie.")
         }
     }
 
@@ -321,7 +321,7 @@ impl<'gc> Avm1<'gc> {
     #[allow(clippy::let_and_return)]
     pub fn pop(&mut self) -> Value<'gc> {
         let value = self.stack.pop().unwrap_or_else(|| {
-            log::warn!("Avm1::pop: Stack underflow");
+            tracing::warn!("Avm1::pop: Stack underflow");
             Value::Undefined
         });
 
@@ -495,7 +495,7 @@ impl<'gc> Avm1<'gc> {
 pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     for _ in 0..num_actions_to_skip {
         if let Err(e) = reader.read_action() {
-            log::warn!("Couldn't skip action: {}", e);
+            tracing::warn!("Couldn't skip action: {}", e);
         }
     }
 }
@@ -511,10 +511,10 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: 
             return;
         }
         Error::InvalidSwf(swf_error) => {
-            log::error!("{}: {}", error, swf_error);
+            tracing::error!("{}: {}", error, swf_error);
         }
         _ => {
-            log::error!("{}", error);
+            tracing::error!("{}", error);
         }
     }
     activation.context.avm1.halt();

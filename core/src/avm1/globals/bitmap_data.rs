@@ -72,7 +72,7 @@ pub fn constructor<'gc>(
         .coerce_to_i32(activation)?;
 
     if !is_size_valid(activation.swf_version(), width, height) {
-        log::warn!("Invalid BitmapData size: {}x{}", width, height);
+        tracing::warn!("Invalid BitmapData size: {}x{}", width, height);
         return Ok(Value::Undefined);
     }
 
@@ -517,12 +517,12 @@ pub fn draw<'gc>(
                 {
                     blend_mode = mode;
                 } else {
-                    log::error!("Unknown blend mode {:?}", mode);
+                    tracing::error!("Unknown blend mode {:?}", mode);
                 }
             }
 
             if args.get(4).is_some() {
-                log::warn!("BitmapData.draw with clip rect - not implemented")
+                tracing::warn!("BitmapData.draw with clip rect - not implemented")
             }
             let smoothing = args
                 .get(5)
@@ -571,7 +571,7 @@ pub fn apply_filter<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("BitmapData.applyFilter - not yet implemented");
+    tracing::warn!("BitmapData.applyFilter - not yet implemented");
     Ok((-1).into())
 }
 
@@ -582,7 +582,7 @@ pub fn generate_filter_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.generateFilterRect - not yet implemented");
+            tracing::warn!("BitmapData.generateFilterRect - not yet implemented");
             return Ok(Value::Undefined);
         }
     }
@@ -746,7 +746,7 @@ pub fn hit_test<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.hitTest - not yet implemented");
+            tracing::warn!("BitmapData.hitTest - not yet implemented");
             return Ok(Value::Undefined);
         }
     }
@@ -1079,7 +1079,7 @@ pub fn pixel_dissolve<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.pixelDissolve - not yet implemented");
+            tracing::warn!("BitmapData.pixelDissolve - not yet implemented");
             return Ok(Value::Undefined);
         }
     }
@@ -1122,7 +1122,7 @@ pub fn threshold<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            log::warn!("BitmapData.threshold - not yet implemented");
+            tracing::warn!("BitmapData.threshold - not yet implemented");
             return Ok(Value::Undefined);
         }
     }

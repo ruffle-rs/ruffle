@@ -162,7 +162,7 @@ pub fn tab_enabled<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("InteractiveObject.tabEnabled is a stub");
+    tracing::warn!("InteractiveObject.tabEnabled is a stub");
 
     Ok(false.into())
 }
@@ -173,7 +173,7 @@ pub fn tab_index<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    log::warn!("InteractiveObject.tabIndex is a stub");
+    tracing::warn!("InteractiveObject.tabIndex is a stub");
 
     Ok((-1).into())
 }
@@ -187,7 +187,7 @@ pub fn focus_rect<'gc>(
 
     // let's only warn on true, as games sometimes just set focusRect to false for some reason.
     if matches!(args.get(0), Some(Value::Bool(true))) {
-        log::warn!("InteractiveObject.focusRect is a stub");
+        tracing::warn!("InteractiveObject.focusRect is a stub");
     }
 
     Ok(Value::Null)
