@@ -663,7 +663,7 @@ fn drop_target<'gc>(
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
     this.as_movie_clip()
-        .and_then(|mc| mc.movie())
+        .map(|mc| mc.movie())
         .and_then(|mov| mov.url().map(|url| url.to_string()))
         .map_or_else(
             || "".into(),

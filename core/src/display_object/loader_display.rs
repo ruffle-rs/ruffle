@@ -9,9 +9,11 @@ use crate::prelude::*;
 
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
+use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -31,12 +33,14 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: ChildContainer<'gc>,
     avm2_object: Avm2Object<'gc>,
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
     pub fn new_with_avm2(
         gc_context: MutationContext<'gc, '_>,
         avm2_object: Avm2Object<'gc>,
+        movie: Arc<SwfMovie>,
     ) -> Self {
         LoaderDisplay(GcCell::allocate(
             gc_context,
@@ -44,6 +48,7 @@ impl<'gc> LoaderDisplay<'gc> {
                 base: Default::default(),
                 container: ChildContainer::new(),
                 avm2_object,
+                movie,
             },
         ))
     }
@@ -100,6 +105,10 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
+    }
+
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }
 

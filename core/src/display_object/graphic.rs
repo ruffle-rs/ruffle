@@ -56,7 +56,7 @@ impl<'gc> Graphic<'gc> {
                 },
             )),
             shape: swf_shape,
-            movie: Some(movie),
+            movie,
         };
 
         Graphic(GcCell::allocate(
@@ -91,7 +91,7 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
-            movie: None,
+            movie: context.swf.clone(),
         };
         let drawing = Drawing::new();
 
@@ -167,7 +167,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
             .library
-            .library_for_movie_mut(self.movie().unwrap())
+            .library_for_movie_mut(self.movie())
             .get_graphic(id)
         {
             self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
@@ -238,7 +238,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
+    fn movie(&self) -> Arc<SwfMovie> {
         self.0.read().static_data.movie.clone()
     }
 
@@ -268,5 +268,5 @@ struct GraphicStatic {
     shape: swf::Shape,
     render_handle: Option<ShapeHandle>,
     bounds: BoundingBox,
-    movie: Option<Arc<SwfMovie>>,
+    movie: Arc<SwfMovie>,
 }

@@ -509,7 +509,7 @@ impl<'gc> AudioManager<'gc> {
                     .display_object
                     .and_then(|clip| clip.as_movie_clip())?;
                 let stream_pos = audio.get_sound_position(instance.instance)?;
-                let frame_rate = clip.movie()?.frame_rate().to_f64();
+                let frame_rate = clip.movie().frame_rate().to_f64();
 
                 // Calculate the difference in time between the owning movie clip and its audio track.
                 // If the difference is beyond some threshold, inform the player to adjust playback speed.

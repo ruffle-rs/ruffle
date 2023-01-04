@@ -8,12 +8,14 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapFormat;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
+use std::sync::Arc;
 
 /// The AVM2 class for the Bitmap associated with this object.
 ///
@@ -65,6 +67,7 @@ impl fmt::Debug for Bitmap<'_> {
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     id: CharacterId,
+    movie: Arc<SwfMovie>,
 
     /// The current bitmap data object.
     bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
@@ -108,6 +111,7 @@ impl<'gc> Bitmap<'gc> {
                 smoothing,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
+                movie: context.swf.clone(),
             },
         ))
     }
@@ -321,5 +325,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {
         Some(self)
+    }
+
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }

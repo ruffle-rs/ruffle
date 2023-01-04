@@ -189,9 +189,7 @@ impl<'gc> Avm2Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         swf_state: swf::ButtonState,
     ) -> (DisplayObject<'gc>, bool) {
-        let movie = self
-            .movie()
-            .expect("All SWF-defined buttons should have movies");
+        let movie = self.movie();
         let sprite_class = context.avm2.classes().sprite;
 
         let mut children = Vec::new();
@@ -418,8 +416,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.read().static_data.read().id
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().static_data.read().swf.clone())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().static_data.read().swf.clone()
     }
 
     fn post_instantiation(

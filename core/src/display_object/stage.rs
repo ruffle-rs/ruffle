@@ -20,6 +20,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -28,6 +29,7 @@ use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+use std::sync::Arc;
 
 /// The Stage is the root of the display object hierarchy. It contains all AVM1
 /// levels as well as AVM2 movies.
@@ -117,10 +119,17 @@ pub struct StageData<'gc> {
 
     /// An array of AVM2 'Stage3D' instances
     stage3ds: Vec<Avm2Object<'gc>>,
+
+    /// The swf that registered this stage
+    movie: Arc<SwfMovie>,
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(gc_context: MutationContext<'gc, '_>, fullscreen: bool) -> Stage<'gc> {
+    pub fn empty(
+        gc_context: MutationContext<'gc, '_>,
+        fullscreen: bool,
+        movie: Arc<SwfMovie>,
+    ) -> Stage<'gc> {
         let stage = Self(GcCell::allocate(
             gc_context,
             StageData {
@@ -148,6 +157,7 @@ impl<'gc> Stage<'gc> {
                 avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
                 loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
                 stage3ds: vec![],
+                movie,
             },
         ));
         stage.set_is_root(gc_context, true);
@@ -185,6 +195,10 @@ impl<'gc> Stage<'gc> {
     /// Set the size of the SWF file.
     pub fn set_movie_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
         self.0.write(gc_context).movie_size = (width, height);
+    }
+
+    pub fn set_movie(self, gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) {
+        self.0.write(gc_context).movie = movie;
     }
 
     pub fn set_loader_info(
@@ -771,6 +785,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {
         Some(self.0.read().loader_info)
+    }
+
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie.clone()
     }
 }
 

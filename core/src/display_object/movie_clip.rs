@@ -397,50 +397,43 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(next_preload_chunk);
 
         if let Some(cur_preload_symbol) = preload_symbol {
-            if let Some(movie) = self.movie() {
-                match context
-                    .library
-                    .library_for_movie_mut(movie)
-                    .character_by_id(cur_preload_symbol)
-                {
-                    Some(Character::MovieClip(mc)) => {
-                        let sub_preload_done = mc.preload(context, chunk_limit);
-                        if sub_preload_done {
-                            static_data
-                                .preload_progress
-                                .write(context.gc_context)
-                                .cur_preload_symbol = None;
-                        }
-                    }
-                    Some(unk) => {
-                        log::error!(
-                            "Symbol {} changed to unexpected type {:?}",
-                            cur_preload_symbol,
-                            unk
-                        );
-
-                        static_data
-                            .preload_progress
-                            .write(context.gc_context)
-                            .cur_preload_symbol = None;
-                    }
-                    None => {
-                        log::error!(
-                            "Symbol {} disappeared during preloading",
-                            cur_preload_symbol
-                        );
-
+            match context
+                .library
+                .library_for_movie_mut(self.movie())
+                .character_by_id(cur_preload_symbol)
+            {
+                Some(Character::MovieClip(mc)) => {
+                    let sub_preload_done = mc.preload(context, chunk_limit);
+                    if sub_preload_done {
                         static_data
                             .preload_progress
                             .write(context.gc_context)
                             .cur_preload_symbol = None;
                     }
                 }
-            } else {
-                log::error!(
-                    "Attempted to preload symbol {} in movie clip not associated with movie!",
-                    cur_preload_symbol
-                );
+                Some(unk) => {
+                    log::error!(
+                        "Symbol {} changed to unexpected type {:?}",
+                        cur_preload_symbol,
+                        unk
+                    );
+
+                    static_data
+                        .preload_progress
+                        .write(context.gc_context)
+                        .cur_preload_symbol = None;
+                }
+                None => {
+                    log::error!(
+                        "Symbol {} disappeared during preloading",
+                        cur_preload_symbol
+                    );
+
+                    static_data
+                        .preload_progress
+                        .write(context.gc_context)
+                        .cur_preload_symbol = None;
+                }
             }
         }
 
@@ -716,7 +709,7 @@ impl<'gc> MovieClip<'gc> {
 
         let do_abc = reader.read_do_abc()?;
         if !do_abc.data.is_empty() {
-            let movie = self.movie().unwrap();
+            let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
             if let Err(e) = Avm2::do_abc(context, do_abc, domain) {
@@ -733,7 +726,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
-        let movie = self.movie().ok_or(Error::NoSymbolClasses)?;
+        let movie = self.movie();
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         let num_symbols = reader.read_u16()?;
@@ -1133,9 +1126,7 @@ impl<'gc> MovieClip<'gc> {
         // For a loaded SWF, returns the uncompressed size of the SWF.
         // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
         if self.is_root() {
-            self.movie()
-                .map(|mv| mv.uncompressed_len())
-                .unwrap_or_default()
+            self.movie().uncompressed_len()
         } else {
             self.tag_stream_len() as u32
         }
@@ -1162,15 +1153,12 @@ impl<'gc> MovieClip<'gc> {
     /// down.
     pub fn compressed_total_bytes(self) -> u32 {
         let movie = self.movie();
-        let compressed_movie_size = movie
-            .as_ref()
-            .map(|mv| mv.compressed_len())
-            .unwrap_or_default();
+        let compressed_movie_size = movie.as_ref().compressed_len();
 
         if self.is_root() {
             compressed_movie_size as u32
         } else {
-            let uncompressed_movie_size = movie.map(|mv| mv.data().len()).unwrap_or_default();
+            let uncompressed_movie_size = movie.data().len();
             let uncompressed_clip_size = self.tag_stream_len() as u32;
 
             (uncompressed_clip_size as f64 * compressed_movie_size as f64
@@ -1452,7 +1440,7 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
-        let movie = self.movie().unwrap();
+        let movie = self.movie();
         let library = context.library.library_for_movie_mut(movie.clone());
         match library.instantiate_by_id(id, context.gc_context) {
             Ok(child) => {
@@ -2241,8 +2229,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().id()
     }
 
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().movie())
+    fn movie(&self) -> Arc<SwfMovie> {
+        self.0.read().movie()
     }
 
     fn swf_version(&self) -> u8 {
@@ -3830,7 +3818,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         let start_sound = reader.read_start_sound_1()?;
         if let Some(handle) = context
             .library
-            .library_for_movie_mut(self.movie().unwrap()) // TODO
+            .library_for_movie_mut(self.movie())
             .get_sound(start_sound.id)
         {
             use swf::SoundEvent;

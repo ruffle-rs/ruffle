@@ -334,6 +334,9 @@ impl Player {
                 context.swf.width().to_pixels() as u32,
                 context.swf.height().to_pixels() as u32,
             );
+            context
+                .stage
+                .set_movie(context.gc_context, context.swf.clone());
 
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let global_domain = activation.avm2().global_domain();
@@ -945,6 +948,10 @@ impl Player {
                 if let PlayerEvent::KeyDown { key_code, key_char }
                 | PlayerEvent::KeyUp { key_code, key_char } = event
                 {
+                    let ctrl_key = context.input.is_key_down(KeyCode::Control);
+                    let alt_key = context.input.is_key_down(KeyCode::Alt);
+                    let shift_key = context.input.is_key_down(KeyCode::Shift);
+
                     let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                     let event_name = match event {
@@ -956,15 +963,24 @@ impl Player {
                     let keyboardevent_class = activation.avm2().classes().keyboardevent;
                     let event_name_val: Avm2Value<'_> =
                         AvmString::new_utf8(activation.context.gc_context, event_name).into();
+
+                    // TODO: keyLocation should not be a dummy value.
+                    // ctrlKey and controlKey can be different from each other on Mac.
+                    // commandKey should be supported.
                     let keyboard_event = keyboardevent_class
                         .construct(
                             &mut activation,
                             &[
-                                event_name_val,
+                                event_name_val,                          /* type */
                                 true.into(),                             /* bubbles */
                                 false.into(),                            /* cancelable */
                                 key_char.map_or(0, |c| c as u32).into(), /* charCode */
                                 (key_code as u32).into(),                /* keyCode */
+                                0.into(),                                /* keyLocation */
+                                ctrl_key.into(),                         /* ctrlKey */
+                                alt_key.into(),                          /* altKey */
+                                shift_key.into(),                        /* shiftKey */
+                                ctrl_key.into(),                         /* controlKey */
                             ],
                         )
                         .expect("Failed to construct KeyboardEvent");
@@ -2151,7 +2167,11 @@ impl PlayerBuilder {
                                 mouse_pressed_object: None,
                                 avm1_shared_objects: HashMap::new(),
                                 avm2_shared_objects: HashMap::new(),
-                                stage: Stage::empty(gc_context, self.fullscreen),
+                                stage: Stage::empty(
+                                    gc_context,
+                                    self.fullscreen,
+                                    fake_movie.clone(),
+                                ),
                                 timers: Timers::new(),
                                 unbound_text_fields: Vec::new(),
                             },
