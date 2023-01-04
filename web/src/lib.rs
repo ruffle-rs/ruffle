@@ -19,10 +19,14 @@ use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::str::FromStr;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
+use tracing_subscriber::layer::{Layered, SubscriberExt};
+use tracing_subscriber::registry::Registry;
+use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
     AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
@@ -66,6 +70,7 @@ struct RuffleInstance {
     unload_callback: Option<Closure<dyn FnMut(Event)>>,
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
+    log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
 #[wasm_bindgen]
@@ -115,7 +120,16 @@ struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
-#[derive(Serialize, Deserialize)]
+fn deserialize_log_level<'de, D>(deserializer: D) -> Result<tracing::Level, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+    let value: String = serde::Deserialize::deserialize(deserializer)?;
+    tracing::Level::from_str(&value).map_err(D::Error::custom)
+}
+
+#[derive(Deserialize)]
 struct Config {
     #[serde(rename = "allowScriptAccess")]
     allow_script_access: bool,
@@ -145,8 +159,8 @@ struct Config {
     #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
-    #[serde(rename = "logLevel")]
-    log_level: log::Level,
+    #[serde(rename = "logLevel", deserialize_with = "deserialize_log_level")]
+    log_level: tracing::Level,
 
     #[serde(rename = "maxExecutionDuration")]
     max_execution_duration: Duration,
@@ -454,7 +468,14 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
-        let _ = console_log::init_with_level(config.log_level);
+        let log_subscriber = Arc::new(
+            Registry::default().with(WASMLayer::new(
+                WASMLayerConfigBuilder::new()
+                    .set_max_level(config.log_level)
+                    .build(),
+            )),
+        );
+        let _subscriber = tracing::subscriber::set_default(log_subscriber.clone());
         let allow_script_access = config.allow_script_access;
 
         let window = web_sys::window().ok_or("Expected window")?;
@@ -540,6 +561,7 @@ impl Ruffle {
             timestamp: None,
             has_focus: false,
             trace_observer,
+            log_subscriber,
         };
 
         // Prevent touch-scrolling on canvas.
@@ -822,6 +844,8 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let instance = instance.try_borrow()?;
+                    let _subscriber =
+                        tracing::subscriber::set_default(instance.log_subscriber.clone());
                     Ok(f(&instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
@@ -845,6 +869,8 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let mut instance = instance.try_borrow_mut()?;
+                    let _subscriber =
+                        tracing::subscriber::set_default(instance.log_subscriber.clone());
                     Ok(f(&mut instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
@@ -868,6 +894,8 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let instance = instance.try_borrow()?;
+                    let _subscriber =
+                        tracing::subscriber::set_default(instance.log_subscriber.clone());
                     // This clone lets us drop the instance borrow to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
@@ -897,6 +925,8 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let instance = instance.try_borrow()?;
+                    let _subscriber =
+                        tracing::subscriber::set_default(instance.log_subscriber.clone());
                     // This clone lets us drop the instance to avoid potential double-borrows.
                     let core = instance.core.clone();
                     drop(instance);
