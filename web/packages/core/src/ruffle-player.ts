@@ -1466,34 +1466,32 @@ export class RufflePlayer extends HTMLElement {
 
     displayRootMovieDownloadFailedMessage(): void {
         if (
-            window.location.origin === this.swfUrl!.origin ||
-            !this.isExtension ||
-            !window.location.protocol.includes("http")
+            this.isExtension &&
+            window.location.origin !== this.swfUrl!.origin
         ) {
+            this.hidePreloader();
+            const div = document.createElement("div");
+            div.id = "message_overlay";
+            div.innerHTML = `<div class="message">
+                <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
+                <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
+                <div>
+                    <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
+                </div>
+            </div>`;
+            this.container.prepend(div);
+        } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (
-                window.location.origin !== this.swfUrl!.origin &&
-                !this.isExtension
-            ) {
-                error.ruffleIndexError = PanicError.SwfCors;
-            } else {
+            if (!this.swfUrl!.protocol.includes("http")) {
+                error.ruffleIndexError = PanicError.FileProtocol;
+            } else if (window.location.origin === this.swfUrl!.origin) {
                 error.ruffleIndexError = PanicError.SwfFetchError;
+            } else {
+                // This is a selfhosted build of Ruffle that tried to make a cross-origin request
+                error.ruffleIndexError = PanicError.SwfCors;
             }
             this.panic(error);
-            return;
         }
-
-        this.hidePreloader();
-        const div = document.createElement("div");
-        div.id = "message_overlay";
-        div.innerHTML = `<div class="message">
-            <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
-            <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
-            <div>
-                <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
-            </div>
-        </div>`;
-        this.container.prepend(div);
     }
 
     displayUnsupportedMessage(): void {
