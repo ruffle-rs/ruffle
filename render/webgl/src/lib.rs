@@ -167,7 +167,7 @@ impl BitmapHandleImpl for RegistryData {}
 
 fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
     <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be BitmapHandleImpl")
+        .expect("Bitmap handle must be webgl RegistryData")
 }
 
 const MAX_GRADIENT_COLORS: usize = 15;
