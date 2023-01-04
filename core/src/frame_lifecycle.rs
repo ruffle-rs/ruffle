@@ -13,6 +13,7 @@
 
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
+use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
 ///
@@ -76,6 +77,7 @@ impl Default for FramePhase {
 }
 
 /// Run one frame according to AVM2 frame order.
+#[instrument(level = "debug", skip_all)]
 pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_, '_>) {
     let stage = context.stage;
 

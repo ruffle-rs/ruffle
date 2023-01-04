@@ -15,6 +15,7 @@ use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use swf::avm1::read::Reader;
+use tracing::instrument;
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -388,6 +389,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     // Run a single frame.
+    #[instrument(level = "debug", skip_all)]
     pub fn run_frame(context: &mut UpdateContext<'_, 'gc, '_>) {
         // In AVM1, we only ever execute the update phase, and all the work that
         // would ordinarily be phased is instead run all at once in whatever order
