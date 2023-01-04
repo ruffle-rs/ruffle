@@ -624,16 +624,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "console_log"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "501a375961cef1a0d44767200e66e4a559283097e91d0730b1d75dfb2f8a1494"
-dependencies = [
- "log",
- "web-sys",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2347,7 +2337,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if 1.0.0",
- "serde",
 ]
 
 [[package]]
@@ -3601,11 +3590,9 @@ dependencies = [
  "base64 0.20.0",
  "chrono",
  "console_error_panic_hook",
- "console_log",
  "generational-arena",
  "getrandom",
  "js-sys",
- "log",
  "ruffle_core",
  "ruffle_render_canvas",
  "ruffle_render_webgl",
@@ -3616,6 +3603,8 @@ dependencies = [
  "serde-wasm-bindgen",
  "thiserror",
  "tracing",
+ "tracing-subscriber",
+ "tracing-wasm",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -4445,6 +4434,17 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tracing-wasm"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4575c663a174420fa2d78f4108ff68f65bf2fbb7dd89f33749b6e826b3626e07"
+dependencies = [
+ "tracing",
+ "tracing-subscriber",
+ "wasm-bindgen",
 ]
 
 [[package]]
