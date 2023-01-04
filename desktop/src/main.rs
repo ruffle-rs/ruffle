@@ -840,7 +840,7 @@ fn init() {
         panic_hook();
     }));
 
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 }
 
 fn panic_hook() {
