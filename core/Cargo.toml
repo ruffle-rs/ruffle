@@ -12,7 +12,7 @@ byteorder = "1.4"
 bitstream-io = "1.6.0"
 flate2 = "1.0.25"
 fnv = "1.0.7"
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+gc-arena = { workspace = true }
 generational-arena = "0.2.8"
 indexmap = "1.9.2"
 tracing = "0.1.37"

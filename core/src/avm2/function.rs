@@ -288,7 +288,7 @@ impl<'gc> fmt::Debug for Executable<'gc> {
         match self {
             Self::Action(be) => fmt
                 .debug_struct("Executable::Action")
-                .field("method", &be.method)
+                .field("method", &Gc::as_ptr(be.method))
                 .field("scope", &be.scope)
                 .field("receiver", &be.receiver)
                 .finish(),

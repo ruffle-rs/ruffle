@@ -308,7 +308,10 @@ impl fmt::Debug for Executable<'_> {
                 .debug_tuple("Executable::Native")
                 .field(&format!("{nf:p}"))
                 .finish(),
-            Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
+            Executable::Action(af) => f
+                .debug_tuple("Executable::Action")
+                .field(&Gc::as_ptr(*af))
+                .finish(),
         }
     }
 }

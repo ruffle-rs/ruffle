@@ -11,7 +11,7 @@ use gc_arena::{Collect, Gc, MutationContext};
 use std::ops::Deref;
 
 /// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
-#[derive(Collect, Clone, Copy)]
+#[derive(Collect, Clone, Copy, Debug)]
 #[collect(no_drop)]
 pub struct Scope<'gc> {
     /// The underlying object of this Scope
