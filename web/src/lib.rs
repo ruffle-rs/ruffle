@@ -470,7 +470,7 @@ impl Ruffle {
         if let Ok(audio) = audio::WebAudioBackend::new() {
             builder = builder.with_audio(audio);
         } else {
-            log::error!("Unable to create audio backend. No audio will be played.");
+            tracing::error!("Unable to create audio backend. No audio will be played.");
         }
         builder = builder.with_navigator(navigator::WebNavigatorBackend::new(
             allow_script_access,
@@ -483,7 +483,7 @@ impl Ruffle {
                 builder = builder.with_storage(storage::LocalStorageBackend::new(s));
             }
             err => {
-                log::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
+                tracing::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
             }
         };
 
@@ -830,7 +830,7 @@ impl Ruffle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -853,7 +853,7 @@ impl Ruffle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -882,7 +882,7 @@ impl Ruffle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -911,7 +911,7 @@ impl Ruffle {
             .map_err(RuffleInstanceError::from)
             .and_then(std::convert::identity);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -1027,7 +1027,7 @@ impl RuffleInstance {
             .map(|core| f(&core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -1042,7 +1042,7 @@ impl RuffleInstance {
             .map(|mut core| f(&mut core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
-            log::error!("{}", e);
+            tracing::error!("{}", e);
         }
         ret
     }
@@ -1227,7 +1227,7 @@ async fn create_renderer(
             .and_then(|window| js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu")))
             .unwrap_or_default()
         {
-            log::info!("Creating wgpu webgpu renderer...");
+            tracing::info!("Creating wgpu webgpu renderer...");
             let canvas: HtmlCanvasElement = document
                 .create_element("canvas")
                 .into_js_result()?
@@ -1235,7 +1235,7 @@ async fn create_renderer(
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
             let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-                log::info!("Running on a mobile device; defaulting to no MSAA");
+                tracing::info!("Running on a mobile device; defaulting to no MSAA");
                 1
             } else {
                 4
@@ -1247,13 +1247,13 @@ async fn create_renderer(
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas));
                 }
-                Err(error) => log::error!("Error creating wgpu webgpu renderer: {}", error),
+                Err(error) => tracing::error!("Error creating wgpu webgpu renderer: {}", error),
             }
         }
     }
     #[cfg(all(feature = "wgpu-webgl", target_family = "wasm"))]
     {
-        log::info!("Creating wgpu webgl renderer...");
+        tracing::info!("Creating wgpu webgl renderer...");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
@@ -1261,7 +1261,7 @@ async fn create_renderer(
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
         let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-            log::info!("Running on a mobile device; defaulting to no MSAA");
+            tracing::info!("Running on a mobile device; defaulting to no MSAA");
             1
         } else {
             4
@@ -1273,7 +1273,7 @@ async fn create_renderer(
             Ok(renderer) => {
                 return Ok((builder.with_renderer(renderer), canvas));
             }
-            Err(error) => log::error!("Error creating wgpu webgl renderer: {}", error),
+            Err(error) => tracing::error!("Error creating wgpu webgl renderer: {}", error),
         }
     }
 
@@ -1282,7 +1282,7 @@ async fn create_renderer(
     // with `getContext`.
     #[cfg(feature = "webgl")]
     {
-        log::info!("Creating WebGL renderer...");
+        tracing::info!("Creating WebGL renderer...");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
@@ -1292,13 +1292,13 @@ async fn create_renderer(
             Ok(renderer) => {
                 return Ok((builder.with_renderer(renderer), canvas));
             }
-            Err(error) => log::error!("Error creating WebGL renderer: {}", error),
+            Err(error) => tracing::error!("Error creating WebGL renderer: {}", error),
         }
     }
 
     #[cfg(feature = "canvas")]
     {
-        log::info!("Falling back to Canvas renderer...");
+        tracing::info!("Falling back to Canvas renderer...");
         let canvas: HtmlCanvasElement = document
             .create_element("canvas")
             .into_js_result()?
@@ -1308,7 +1308,7 @@ async fn create_renderer(
             Ok(renderer) => {
                 return Ok((builder.with_renderer(renderer), canvas));
             }
-            Err(error) => log::error!("Error creating canvas renderer: {}", error),
+            Err(error) => tracing::error!("Error creating canvas renderer: {}", error),
         }
     }
 

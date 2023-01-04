@@ -55,7 +55,7 @@ impl WebNavigatorBackend {
         };
 
         if base_url.is_none() {
-            log::error!("Could not get base URL for base directory inference.");
+            tracing::error!("Could not get base URL for base directory inference.");
         }
 
         Self {
@@ -93,7 +93,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
         if let Ok(url) = Url::parse(&url) {
             if !self.allow_script_access && url.scheme() == "javascript" {
-                log::warn!("SWF tried to run a script, but script access is not allowed");
+                tracing::warn!("SWF tried to run a script, but script access is not allowed");
                 return;
             }
         }
@@ -219,14 +219,14 @@ impl NavigatorBackend for WebNavigatorBackend {
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         spawn_local(async move {
             if let Err(e) = future.await {
-                log::error!("Asynchronous error occurred: {}", e);
+                tracing::error!("Asynchronous error occurred: {}", e);
             }
         })
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {
         if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
-            log::error!("Url::set_scheme failed on: {}", url);
+            tracing::error!("Url::set_scheme failed on: {}", url);
         }
         url
     }

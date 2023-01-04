@@ -30,7 +30,7 @@ impl<T> JsResult<T> for Result<T, JsValue> {
     #[inline]
     fn warn_on_error(&self) {
         if let Err(value) = self {
-            log::warn!("Unexpected JavaScript error: {:?}", value);
+            tracing::warn!("Unexpected JavaScript error: {:?}", value);
         }
     }
 
