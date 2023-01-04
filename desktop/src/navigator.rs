@@ -82,7 +82,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         let mut parsed_url = match Url::parse(&url) {
             Ok(parsed_url) => parsed_url,
             Err(e) => {
-                log::error!(
+                tracing::error!(
                     "Could not parse URL because of {}, the corrupt URL was: {}",
                     e,
                     url
@@ -111,7 +111,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         match webbrowser::open(processed_url.as_ref()) {
             Ok(_output) => {}
-            Err(e) => log::error!("Could not open URL {}: {}", processed_url.as_str(), e),
+            Err(e) => tracing::error!("Could not open URL {}: {}", processed_url.as_str(), e),
         };
     }
 
@@ -207,7 +207,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         self.channel.send(future).expect("working channel send");
 
         if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
-            log::warn!(
+            tracing::warn!(
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
         }
@@ -215,7 +215,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
     fn pre_process_url(&self, mut url: Url) -> Url {
         if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
-            log::error!("Url::set_scheme failed on: {}", url);
+            tracing::error!("Url::set_scheme failed on: {}", url);
         }
         url
     }

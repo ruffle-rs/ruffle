@@ -180,7 +180,7 @@ impl GlutinAsyncExecutor {
                     Poll::Pending => {}
                     Poll::Ready(r) => {
                         if let Err(e) = r {
-                            log::error!("Async error: {}", e);
+                            tracing::error!("Async error: {}", e);
                         }
 
                         completed_tasks.push(index);
@@ -202,16 +202,18 @@ impl GlutinAsyncExecutor {
                 if !self.waiting_for_poll {
                     self.waiting_for_poll = true;
                     if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
-                        log::warn!("A task was queued on an event loop that has already ended. It will not be polled.");
+                        tracing::warn!("A task was queued on an event loop that has already ended. It will not be polled.");
                     }
                 } else {
-                    log::info!("Double polling");
+                    tracing::info!("Double polling");
                 }
             } else {
-                log::warn!("A Waker was invoked after the task it was attached to was completed.");
+                tracing::warn!(
+                    "A Waker was invoked after the task it was attached to was completed."
+                );
             }
         } else {
-            log::warn!("Attempted to wake an already-finished task");
+            tracing::warn!("Attempted to wake an already-finished task");
         }
     }
 }

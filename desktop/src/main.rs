@@ -235,7 +235,7 @@ impl App {
         match audio::CpalAudioBackend::new() {
             Ok(audio) => builder = builder.with_audio(audio),
             Err(e) => {
-                log::error!("Unable to create audio device: {}", e);
+                tracing::error!("Unable to create audio device: {}", e);
             }
         };
 
