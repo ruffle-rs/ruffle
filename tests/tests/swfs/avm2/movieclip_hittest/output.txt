@@ -1,0 +1,68 @@
+// Top left just outside of circle. Within BB, but not the actual shape.
+// circle.hitTestPoint(234, 122)
+true
+
+
+// Bottom right just outside of circle. Within BB, but not the actual shape.
+// circle.hitTestPoint(348, 233)
+true
+
+
+// Inside the circle.
+// circle.hitTestPoint(269, 181)
+true
+
+
+// In the gap inside the circle.
+// circle.hitTestPoint(313, 183)
+true
+
+
+// Outside of the circles BB, to the left.
+// circle.hitTestPoint(216, 229)
+false
+
+
+// Outside of the circles BB, to the right.
+// circle.hitTestPoint(377, 131)
+false
+
+
+// Inside the circle within the gap of the big circle.
+// circle.hitTestPoint(340, 184)
+true
+
+
+// Above and to the right of the circle, not overlapping at all.
+// circle.hitTestObject(upper)
+false
+
+// upper.hitTestObject(circle)
+false
+
+
+// Below and to the right of the circle, overlapping only with BB.
+// circle.hitTestObject(lower)
+true
+
+// lower.hitTestObject(circle)
+true
+
+
+// Transforming root
+// Inside upper in stage coordinates, but false because hitTestPoint uses root coordinates.
+// circle.hitTestPoint(335, 290)
+false
+
+// Just above circle, inside now because of _root._rotation.
+// circle.hitTestPoint(234, 105)
+true
+
+// Bottom right just outside of circle. Inside now because of _root._rotation.
+// circle.hitTestPoint(348, 233)
+true
+
+// Above and to the right of the circle, Inside now because of _root._rotation.
+// circle.hitTestObject(upper)
+true
+
