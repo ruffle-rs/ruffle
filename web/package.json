@@ -38,7 +38,7 @@
         "webpack-cli": "^5.0.1"
     },
     "optionalDependencies": {
-        "chromedriver": "^106.0.1"
+        "chromedriver": "^108.0.0"
     },
     "scripts": {
         "build": "npm run build --workspaces",
