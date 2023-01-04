@@ -2,5 +2,15 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchLanguages": ["rust"],
+      "groupName": "Rust dependencies"
+    },
+    {
+      "matchLanguages": ["js"],
+      "groupName": "Node.js dependencies"
+    }
   ]
 }
