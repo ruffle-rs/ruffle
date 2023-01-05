@@ -47,7 +47,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         sample_count: u32,
     ) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL);
-        let surface = instance.create_surface_from_canvas(canvas);
+        let surface = instance.create_surface_from_canvas(canvas)?;
         let descriptors = Self::build_descriptors(
             wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             instance,
