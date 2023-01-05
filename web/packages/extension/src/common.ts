@@ -7,6 +7,7 @@ export interface Options {
     warnOnUnsupportedContent: boolean;
     logLevel: LogLevel;
     showSwfDownload: boolean;
+    autostart: boolean;
 }
 
 interface OptionElement<T> {
