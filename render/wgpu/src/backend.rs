@@ -10,7 +10,6 @@ use crate::{
     Error, RenderTarget, SwapChainTarget, Texture, TextureOffscreen, Transforms,
 };
 use gc_arena::MutationContext;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
@@ -63,7 +62,9 @@ impl WgpuRenderBackend<SwapChainTarget> {
     }
 
     #[cfg(not(target_family = "wasm"))]
-    pub fn for_window<W: HasRawWindowHandle + HasRawDisplayHandle>(
+    pub fn for_window<
+        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+    >(
         window: &W,
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -77,7 +78,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             );
         }
         let instance = wgpu::Instance::new(backend);
-        let surface = unsafe { instance.create_surface(window) };
+        let surface = unsafe { instance.create_surface(window) }?;
         let descriptors = futures::executor::block_on(Self::build_descriptors(
             backend,
             instance,
@@ -624,20 +625,12 @@ async fn request_device(
     limits.max_storage_buffers_per_shader_stage =
         adapter.limits().max_storage_buffers_per_shader_stage;
     limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
-    let mut features = wgpu::Features::DEPTH24PLUS_STENCIL8;
-
-    if adapter
-        .features()
-        .contains(wgpu::Features::VERTEX_WRITABLE_STORAGE)
-    {
-        features |= wgpu::Features::VERTEX_WRITABLE_STORAGE;
-    }
 
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features,
+                features: Default::default(),
                 limits,
             },
             trace_path,
