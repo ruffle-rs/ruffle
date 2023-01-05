@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS: Options = {
     warnOnUnsupportedContent: true,
     logLevel: "error" as LogLevel,
     showSwfDownload: false,
+    autostart: false,
 };
 
 export let i18n: {
