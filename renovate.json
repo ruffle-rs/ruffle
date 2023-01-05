@@ -6,11 +6,18 @@
   "packageRules": [
     {
       "matchLanguages": ["rust"],
-      "groupName": "Rust dependencies"
+      "groupName": "Rust dependencies",
+      "extends": ["schedule:weekly"]
     },
     {
       "matchLanguages": ["js"],
-      "groupName": "Node.js dependencies"
+      "groupName": "Node.js dependencies",
+      "extends": ["schedule:monthly"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "Github Actions dependencies",
+      "extends": ["schedule:monthly"]
     }
   ]
 }
