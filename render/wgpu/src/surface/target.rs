@@ -131,7 +131,7 @@ impl DepthBuffer {
             descriptors,
             size,
             wgpu::TextureUsages::RENDER_ATTACHMENT,
-            wgpu::TextureFormat::Depth24PlusStencil8,
+            wgpu::TextureFormat::Stencil8,
             msaa_sample_count,
         );
 
