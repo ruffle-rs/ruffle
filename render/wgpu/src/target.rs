@@ -65,8 +65,9 @@ impl SwapChainTarget {
         // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
         // Some platforms may only support an sRGB surface, in which case we will draw to an
         // intermediate linear buffer and then copy to the sRGB surface.
-        let formats = surface.get_supported_formats(adapter);
-        let format = formats
+        let capabilities = surface.get_capabilities(adapter);
+        let format = capabilities
+            .formats
             .iter()
             .find(|format| {
                 matches!(
@@ -74,7 +75,7 @@ impl SwapChainTarget {
                     wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Bgra8Unorm
                 )
             })
-            .or_else(|| formats.first())
+            .or_else(|| capabilities.formats.first())
             .copied()
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
@@ -85,7 +86,7 @@ impl SwapChainTarget {
             width,
             height,
             present_mode: wgpu::PresentMode::Fifo,
-            alpha_mode: surface.get_supported_alpha_modes(adapter)[0],
+            alpha_mode: capabilities.alpha_modes[0],
         };
         surface.configure(device, &surface_config);
         Self {
