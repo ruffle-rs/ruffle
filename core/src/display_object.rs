@@ -563,7 +563,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if let Some(rect_mat) = scroll_rect_matrix {
         context.commands.push_mask();
         // The color doesn't matter, as this is a mask.
-        context.commands.draw_rect(Color::BLACK, rect_mat);
+        context.commands.draw_rect(Color::WHITE, rect_mat);
         context.commands.activate_mask();
     }
 
@@ -573,7 +573,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         // Draw the rectangle again after deactivating the mask,
         // to reset the stencil buffer.
         context.commands.deactivate_mask();
-        context.commands.draw_rect(Color::BLACK, rect_mat);
+        context.commands.draw_rect(Color::WHITE, rect_mat);
         context.commands.pop_mask();
     }
 
