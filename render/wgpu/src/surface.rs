@@ -146,7 +146,25 @@ impl Surface {
 
         render_pass.set_pipeline(&pipeline);
         render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-        render_pass.set_bind_group(1, &target.whole_frame_bind_group(descriptors), &[0]);
+
+        if descriptors.limits.max_push_constant_size > 0 {
+            render_pass.set_bind_group(1, &descriptors.empty_bind_group, &[]);
+            render_pass.set_push_constants(
+                wgpu::ShaderStages::VERTEX,
+                0,
+                bytemuck::cast_slice(&[Transforms {
+                    world_matrix: [
+                        [self.size.width as f32, 0.0, 0.0, 0.0],
+                        [0.0, self.size.height as f32, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ],
+                }]),
+            );
+        } else {
+            render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+        }
+
         render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
@@ -336,7 +354,28 @@ impl Surface {
                         );
                     }
 
-                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+                    if descriptors.limits.max_push_constant_size > 0 {
+                        render_pass.set_bind_group(1, &descriptors.empty_bind_group, &[]);
+                        render_pass.set_push_constants(
+                            wgpu::ShaderStages::VERTEX,
+                            0,
+                            bytemuck::cast_slice(&[Transforms {
+                                world_matrix: [
+                                    [self.size.width as f32, 0.0, 0.0, 0.0],
+                                    [0.0, self.size.height as f32, 0.0, 0.0],
+                                    [0.0, 0.0, 1.0, 0.0],
+                                    [0.0, 0.0, 0.0, 1.0],
+                                ],
+                            }]),
+                        );
+                    } else {
+                        render_pass.set_bind_group(
+                            1,
+                            target.whole_frame_bind_group(descriptors),
+                            &[0],
+                        );
+                    }
+
                     render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));

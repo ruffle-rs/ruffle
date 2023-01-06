@@ -40,7 +40,6 @@ struct VertexInput {
 
 /// Common uniform layout shared by all shaders.
 @group(0) @binding(0) var<uniform> globals: Globals;
-@group(1) @binding(0) var<uniform> transforms: Transforms;
 
 /// Converts a color from linear to sRGB color space.
 fn linear_to_srgb(linear_: vec4<f32>) -> vec4<f32> {

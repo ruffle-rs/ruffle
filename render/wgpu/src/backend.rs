@@ -18,6 +18,7 @@ use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
+use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
@@ -635,11 +636,19 @@ async fn request_device(
         adapter.limits().max_storage_buffers_per_shader_stage;
     limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
 
+    let mut features = Default::default();
+    if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
+        && adapter.limits().max_push_constant_size >= mem::size_of::<Transforms>() as u32
+    {
+        limits.max_push_constant_size = mem::size_of::<Transforms>() as u32;
+        features |= wgpu::Features::PUSH_CONSTANTS;
+    }
+
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: Default::default(),
+                features,
                 limits,
             },
             trace_path,

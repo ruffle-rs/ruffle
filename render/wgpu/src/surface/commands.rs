@@ -160,14 +160,24 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             ],
         ];
 
-        self.uniform_buffers.write_uniforms(
-            &self.descriptors.device,
-            &self.descriptors.bind_layouts.transforms,
-            &mut self.uniform_encoder,
-            &mut self.render_pass,
-            1,
-            &Transforms { world_matrix },
-        );
+        if self.descriptors.limits.max_push_constant_size > 0 {
+            self.render_pass
+                .set_bind_group(1, &self.descriptors.empty_bind_group, &[]);
+            self.render_pass.set_push_constants(
+                wgpu::ShaderStages::VERTEX,
+                0,
+                bytemuck::cast_slice(&[Transforms { world_matrix }]),
+            );
+        } else {
+            self.uniform_buffers.write_uniforms(
+                &self.descriptors.device,
+                &self.descriptors.bind_layouts.transforms,
+                &mut self.uniform_encoder,
+                &mut self.render_pass,
+                1,
+                &Transforms { world_matrix },
+            );
+        }
 
         if color_adjustments == &ColorTransform::IDENTITY {
             self.render_pass
@@ -197,15 +207,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
         let texture = as_texture(bitmap);
 
-        self.apply_transform(
-            &(transform.matrix
-                * Matrix {
-                    a: texture.width as f32,
-                    d: texture.height as f32,
-                    ..Default::default()
-                }),
-            &transform.color_transform,
-        );
         let descriptors = self.descriptors;
         let bind = texture.bind_group(
             smoothing,
@@ -215,8 +216,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             bitmap.clone(),
             &descriptors.bitmap_samplers,
         );
-
         self.prep_bitmap(&bind.bind_group, blend_mode);
+        self.apply_transform(
+            &(transform.matrix
+                * Matrix {
+                    a: texture.width as f32,
+                    d: texture.height as f32,
+                    ..Default::default()
+                }),
+            &transform.color_transform,
+        );
 
         self.draw(
             self.descriptors.quad.vertices.slice(..),
@@ -237,8 +246,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("render_texture");
         }
-        self.apply_transform(&transform.matrix, &transform.color_transform);
         self.prep_bitmap(bind_group, blend_mode);
+        self.apply_transform(&transform.matrix, &transform.color_transform);
 
         self.draw(
             self.descriptors.quad.vertices.slice(..),
@@ -255,7 +264,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.render_pass
                 .push_debug_group(&format!("render_shape {}", shape.0));
         }
-        self.apply_transform(&transform.matrix, &transform.color_transform);
 
         let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
@@ -287,6 +295,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal);
                 }
             }
+            self.apply_transform(&transform.matrix, &transform.color_transform);
 
             self.draw(
                 draw.vertex_buffer.slice(..),
@@ -303,6 +312,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("draw_rect");
         }
+        self.prep_color();
 
         if color == &Color::WHITE {
             self.apply_transform(&matrix, &ColorTransform::IDENTITY);
@@ -319,7 +329,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             );
         }
 
-        self.prep_color();
         self.draw(
             self.descriptors.quad.vertices.slice(..),
             self.descriptors.quad.indices.slice(..),
