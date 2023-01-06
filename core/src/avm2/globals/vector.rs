@@ -21,7 +21,7 @@ use std::cmp::{max, min, Ordering};
 
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn instance_init<'gc>(
 }
 
 fn class_call<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -90,7 +90,7 @@ fn class_call<'gc>(
 
 /// Implements `Vector`'s class constructor.
 pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -175,7 +175,7 @@ pub fn class_init<'gc>(
 
 /// Implements `Vector`'s specialized-class constructor.
 pub fn specialized_class_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -236,7 +236,7 @@ pub fn specialized_class_init<'gc>(
 
 /// `Vector.length` getter
 pub fn length<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -251,7 +251,7 @@ pub fn length<'gc>(
 
 /// `Vector.length` setter
 pub fn set_length<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -272,7 +272,7 @@ pub fn set_length<'gc>(
 
 /// `Vector.fixed` getter
 pub fn fixed<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -287,7 +287,7 @@ pub fn fixed<'gc>(
 
 /// `Vector.fixed` setter
 pub fn set_fixed<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -308,7 +308,7 @@ pub fn set_fixed<'gc>(
 
 /// `Vector.concat` impl
 pub fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -374,16 +374,13 @@ pub fn concat<'gc>(
 }
 
 fn join_inner<'gc, 'a, 'ctxt, C>(
-    activation: &mut Activation<'a, 'gc, 'ctxt>,
+    activation: &mut Activation<'a, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
     mut conv: C,
 ) -> Result<Value<'gc>, Error<'gc>>
 where
-    C: for<'b> FnMut(
-        Value<'gc>,
-        &'b mut Activation<'a, 'gc, 'ctxt>,
-    ) -> Result<Value<'gc>, Error<'gc>>,
+    C: for<'b> FnMut(Value<'gc>, &'b mut Activation<'a, 'gc>) -> Result<Value<'gc>, Error<'gc>>,
 {
     let mut separator = args.get(0).cloned().unwrap_or(Value::Undefined);
     if separator == Value::Undefined {
@@ -416,7 +413,7 @@ where
 
 /// Implements `Vector.join`
 pub fn join<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -425,7 +422,7 @@ pub fn join<'gc>(
 
 /// Implements `Vector.toString`
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -434,7 +431,7 @@ pub fn to_string<'gc>(
 
 /// Implements `Vector.toLocaleString`
 pub fn to_locale_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -449,7 +446,7 @@ pub fn to_locale_string<'gc>(
 
 /// Implements `Vector.every`
 pub fn every<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -482,7 +479,7 @@ pub fn every<'gc>(
 
 /// Implements `Vector.some`
 pub fn some<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -515,7 +512,7 @@ pub fn some<'gc>(
 
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -556,7 +553,7 @@ pub fn filter<'gc>(
 
 /// Implements `Vector.forEach`
 pub fn for_each<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -581,7 +578,7 @@ pub fn for_each<'gc>(
 
 /// Implements `Vector.indexOf`
 pub fn index_of<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -618,7 +615,7 @@ pub fn index_of<'gc>(
 
 /// Implements `Vector.lastIndexOf`
 pub fn last_index_of<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -655,7 +652,7 @@ pub fn last_index_of<'gc>(
 
 /// Implements `Vector.map`
 pub fn map<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -693,7 +690,7 @@ pub fn map<'gc>(
 
 /// Implements `Vector.pop`
 pub fn pop<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -708,7 +705,7 @@ pub fn pop<'gc>(
 
 /// Implements `Vector.push`
 pub fn push<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -731,7 +728,7 @@ pub fn push<'gc>(
 
 /// Implements `Vector.shift`
 pub fn shift<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -746,7 +743,7 @@ pub fn shift<'gc>(
 
 /// Implements `Vector.unshift`
 pub fn unshift<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -769,7 +766,7 @@ pub fn unshift<'gc>(
 
 /// Implements `Vector.insertAt`
 pub fn insert_at<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -796,7 +793,7 @@ pub fn insert_at<'gc>(
 
 /// Implements `Vector.removeAt`
 pub fn remove_at<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -817,7 +814,7 @@ pub fn remove_at<'gc>(
 
 /// Implements `Vector.reverse`
 pub fn reverse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -834,7 +831,7 @@ pub fn reverse<'gc>(
 
 /// Implements `Vector.slice`
 pub fn slice<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -874,7 +871,7 @@ pub fn slice<'gc>(
 
 /// Implements `Vector.sort`
 pub fn sort<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -897,7 +894,7 @@ pub fn sort<'gc>(
                 )
             };
 
-            let compare = move |activation: &mut Activation<'_, 'gc, '_>, a, b| {
+            let compare = move |activation: &mut Activation<'_, 'gc>, a, b| {
                 if let Some(compare_fnc) = compare_fnc {
                     let order = compare_fnc
                         .call(Some(this), &[a, b], activation)?
@@ -961,7 +958,7 @@ pub fn sort<'gc>(
 
 /// Implements `Vector.splice`
 pub fn splice<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

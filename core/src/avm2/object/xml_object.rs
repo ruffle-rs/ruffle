@@ -12,7 +12,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 

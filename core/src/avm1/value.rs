@@ -140,7 +140,7 @@ impl<'gc> Value<'gc> {
     /// * In SWF5 and lower, hexadecimal is unsupported.
     /// * In SWF4 and lower, `0.0` is returned rather than `NaN` if a string cannot
     /// be converted to a number.
-    fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
+    fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc>) -> f64 {
         match self {
             Value::Undefined if activation.swf_version() < 7 => 0.0,
             Value::Null if activation.swf_version() < 7 => 0.0,
@@ -156,10 +156,7 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edition s. 9.3 ToNumber
-    pub fn coerce_to_f64(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<f64, Error<'gc>> {
+    pub fn coerce_to_f64(&self, activation: &mut Activation<'_, 'gc>) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Object(_) => self
                 .to_primitive_num(activation)?
@@ -181,7 +178,7 @@ impl<'gc> Value<'gc> {
     ///   return `undefined` rather than yielding a runtime error.
     pub fn to_primitive_num(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) if object.as_display_object().is_none() => {
@@ -204,7 +201,7 @@ impl<'gc> Value<'gc> {
     /// * Date objects coerce to Number in SWFv5.
     pub fn to_primitive(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let result = match self {
             Value::Object(object) => {
@@ -243,7 +240,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_lt(
         &self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
         // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
@@ -279,7 +276,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         self,
         other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         let (a, b) = if activation.swf_version() > 5 {
             (other, self)
@@ -326,7 +323,7 @@ impl<'gc> Value<'gc> {
         Ok(result)
     }
 
-    pub fn coerce_to_u8(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<u8, Error<'gc>> {
+    pub fn coerce_to_u8(&self, activation: &mut Activation<'_, 'gc>) -> Result<u8, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u8)
     }
 
@@ -334,10 +331,7 @@ impl<'gc> Value<'gc> {
     /// The value will be wrapped modulo 2^16.
     /// This will call `valueOf` and do any conversions that are necessary.
     #[allow(dead_code)]
-    pub fn coerce_to_u16(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<u16, Error<'gc>> {
+    pub fn coerce_to_u16(&self, activation: &mut Activation<'_, 'gc>) -> Result<u16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
     }
 
@@ -345,10 +339,7 @@ impl<'gc> Value<'gc> {
     /// The value will be wrapped in the range [-2^15, 2^15).
     /// This will call `valueOf` and do any conversions that are necessary.
     #[allow(dead_code)]
-    pub fn coerce_to_i16(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<i16, Error<'gc>> {
+    pub fn coerce_to_i16(&self, activation: &mut Activation<'_, 'gc>) -> Result<i16, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
     }
 
@@ -357,10 +348,7 @@ impl<'gc> Value<'gc> {
     /// This will call `valueOf` and do any conversions that are necessary.
     /// If you are writing AVM code that accepts an integer, you probably want to use this.
     #[allow(dead_code)]
-    pub fn coerce_to_i32(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<i32, Error<'gc>> {
+    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
     }
 
@@ -368,17 +356,14 @@ impl<'gc> Value<'gc> {
     /// The value will be wrapped in the range [-2^31, 2^31).
     /// This will call `valueOf` and do any conversions that are necessary.
     #[allow(dead_code)]
-    pub fn coerce_to_u32(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<u32, Error<'gc>> {
+    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
         self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
     }
 
     /// Coerce a value to a string.
     pub fn coerce_to_string(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Undefined if activation.swf_version() < 7 => "".into(),
@@ -456,7 +441,7 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         ValueObject::boxed(activation, self.to_owned())
     }
 }
@@ -876,7 +861,7 @@ mod test {
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
             fn value_of_impl<'gc>(
-                _activation: &mut Activation<'_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc>,
                 _: Object<'gc>,
                 _: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {

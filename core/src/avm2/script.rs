@@ -131,7 +131,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         method_index: Index<AbcMethod>,
         is_function: bool,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Method<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
@@ -175,7 +175,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_class(
         self,
         class_index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(class)) = read.classes.get(class_index as usize) {
@@ -198,7 +198,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_script(
         self,
         script_index: u32,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Script<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
@@ -402,7 +402,7 @@ impl<'gc> Script<'gc> {
         script_index: u32,
         globals: Object<'gc>,
         domain: Domain<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = unit.abc();
         let script: Result<&AbcScript, Error<'gc>> = abc
@@ -436,7 +436,7 @@ impl<'gc> Script<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
@@ -486,7 +486,7 @@ impl<'gc> Script<'gc> {
     /// the same stack.
     pub fn globals(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 

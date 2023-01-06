@@ -57,7 +57,7 @@ pub struct BevelFilterObject {
 
 impl BevelFilterObject {
     fn new<'gc>(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let bevel_filter = GcCell::allocate(activation.context.gc_context, Default::default());
@@ -100,7 +100,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_distance(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -108,7 +108,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_angle(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -116,7 +116,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_highlight_color(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -124,7 +124,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_highlight_alpha(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -132,7 +132,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_shadow_color(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -140,7 +140,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_shadow_alpha(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -148,7 +148,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_quality(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -156,7 +156,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_strength(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -164,7 +164,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_knockout(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -172,7 +172,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_blur_x(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -180,7 +180,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_blur_y(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
@@ -188,7 +188,7 @@ trait BevelFilterExt<'gc> {
 
     fn set_type(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>>;
 }
@@ -200,7 +200,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_distance(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -216,7 +216,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_angle(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -232,7 +232,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_highlight_color(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -248,7 +248,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_highlight_alpha(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -264,7 +264,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_shadow_color(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -280,7 +280,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_shadow_alpha(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -296,7 +296,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_quality(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -312,7 +312,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_strength(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -328,7 +328,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_knockout(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -344,7 +344,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_blur_x(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -360,7 +360,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_blur_y(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -376,7 +376,7 @@ impl<'gc> BevelFilterExt<'gc> for GcCell<'gc, BevelFilterObject> {
 
     fn set_type(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -409,7 +409,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,

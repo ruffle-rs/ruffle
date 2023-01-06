@@ -44,7 +44,7 @@ pub enum PropertyClass<'gc> {
 
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         name: Multiname<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
@@ -56,7 +56,7 @@ impl<'gc> PropertyClass<'gc> {
     /// to cache a class resolution, and `false` if it was not modified.
     pub fn coerce(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<(Value<'gc>, bool), Error<'gc>> {
         let (class, changed) = match self {
@@ -142,7 +142,7 @@ enum ResolveOutcome<'gc> {
 fn resolve_class_private<'gc>(
     name: &Multiname<'gc>,
     unit: Option<TranslationUnit<'gc>>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<ResolveOutcome<'gc>, Error<'gc>> {
     // A Property may have a type of '*' (which corresponds to 'Multiname::any()')
     // We don't want to perform any coercions in this case - in particular,

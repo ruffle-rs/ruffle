@@ -119,7 +119,7 @@ impl From<Vec<Value>> for Value {
 
 impl Value {
     pub fn from_avm1<'gc>(
-        activation: &mut Avm1Activation<'_, 'gc, '_>,
+        activation: &mut Avm1Activation<'_, 'gc>,
         value: Avm1Value<'gc>,
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
@@ -150,7 +150,7 @@ impl Value {
         })
     }
 
-    pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc, '_>) -> Avm1Value<'gc> {
+    pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc>) -> Avm1Value<'gc> {
         match self {
             Value::Null => Avm1Value::Null,
             Value::Bool(value) => Avm1Value::Bool(value),
@@ -211,7 +211,7 @@ impl Value {
         }
     }
 
-    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc, '_>) -> Avm2Value<'gc> {
+    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
         match self {
             Value::Null => Avm2Value::Null,
             Value::Bool(value) => Avm2Value::Bool(value),
@@ -250,7 +250,7 @@ pub enum Callback<'gc> {
 impl<'gc> Callback<'gc> {
     pub fn call(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         name: &str,
         args: impl IntoIterator<Item = Value>,
     ) -> Value {
@@ -302,14 +302,14 @@ pub trait ExternalInterfaceProvider {
 }
 
 pub trait ExternalInterfaceMethod {
-    fn call(&self, context: &mut UpdateContext<'_, '_, '_>, args: &[Value]) -> Value;
+    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value;
 }
 
 impl<F> ExternalInterfaceMethod for F
 where
-    F: Fn(&mut UpdateContext<'_, '_, '_>, &[Value]) -> Value,
+    F: Fn(&mut UpdateContext<'_, '_>, &[Value]) -> Value,
 {
-    fn call(&self, context: &mut UpdateContext<'_, '_, '_>, args: &[Value]) -> Value {
+    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value {
         self(context, args)
     }
 }

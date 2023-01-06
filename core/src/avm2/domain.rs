@@ -54,7 +54,7 @@ impl<'gc> Domain<'gc> {
         ))
     }
 
-    pub fn is_avm2_global_domain(&self, activation: &mut Activation<'_, 'gc, '_>) -> bool {
+    pub fn is_avm2_global_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
         activation.avm2().global_domain().0.as_ptr() == self.0.as_ptr()
     }
 
@@ -62,10 +62,7 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(
-        activation: &mut Activation<'_, 'gc, '_>,
-        parent: Domain<'gc>,
-    ) -> Domain<'gc> {
+    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
         let this = Self(GcCell::allocate(
             activation.context.gc_context,
             DomainData {
@@ -127,7 +124,7 @@ impl<'gc> Domain<'gc> {
     /// Retrieve a value from this domain.
     pub fn get_defined_value(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (name, mut script) = match self.get_defining_script(&name.into())? {
@@ -194,7 +191,7 @@ impl<'gc> Domain<'gc> {
     /// domains.
     pub fn init_default_domain_memory(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let bytearray_class = activation.avm2().classes().bytearray;
 

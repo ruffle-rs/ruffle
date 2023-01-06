@@ -14,7 +14,7 @@ use std::fmt::Debug;
 /// A class instance allocator that allocates Stage objects.
 pub fn stage_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -54,7 +54,7 @@ impl<'gc> StageObject<'gc> {
     /// Display objects that do not need to use this flow should use
     /// `for_display_object_childless`.
     pub fn for_display_object(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -76,7 +76,7 @@ impl<'gc> StageObject<'gc> {
     /// This function is intended for display objects that do not have children
     /// and thus do not need to be allocated and initialized in separate phases.
     pub fn for_display_object_childless(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -89,7 +89,7 @@ impl<'gc> StageObject<'gc> {
 
     /// Create a `graphics` object for a given display object.
     pub fn graphics(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().graphics;

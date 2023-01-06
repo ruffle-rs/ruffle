@@ -5,13 +5,13 @@ use crate::avm2::{Error, Object};
 
 pub fn index_buffer_3d_allocator<'gc>(
     _class: ClassObject<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     panic!("This allocator should not be called!")
 }
 
 pub fn upload_from_byte_array<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -20,7 +20,7 @@ pub fn upload_from_byte_array<'gc>(
 }
 
 pub fn upload_from_vector<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

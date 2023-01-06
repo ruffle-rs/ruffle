@@ -24,7 +24,7 @@ use swf::{BlendMode, Rectangle};
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -79,7 +79,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `flash.display.DisplayObject`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -88,7 +88,7 @@ pub fn class_init<'gc>(
 
 /// Implements `alpha`'s getter.
 pub fn alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -101,7 +101,7 @@ pub fn alpha<'gc>(
 
 /// Implements `alpha`'s setter.
 pub fn set_alpha<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -119,7 +119,7 @@ pub fn set_alpha<'gc>(
 
 /// Implements `height`'s getter.
 pub fn height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -132,7 +132,7 @@ pub fn height<'gc>(
 
 /// Implements `height`'s setter.
 pub fn set_height<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -153,7 +153,7 @@ pub fn set_height<'gc>(
 
 /// Implements `scaleY`'s getter.
 pub fn scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -166,7 +166,7 @@ pub fn scale_y<'gc>(
 
 /// Implements `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -184,7 +184,7 @@ pub fn set_scale_y<'gc>(
 
 /// Implements `width`'s getter.
 pub fn width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -197,7 +197,7 @@ pub fn width<'gc>(
 
 /// Implements `width`'s setter.
 pub fn set_width<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -218,7 +218,7 @@ pub fn set_width<'gc>(
 
 /// Implements `scaleX`'s getter.
 pub fn scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -231,7 +231,7 @@ pub fn scale_x<'gc>(
 
 /// Implements `scaleX`'s setter.
 pub fn set_scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -248,7 +248,7 @@ pub fn set_scale_x<'gc>(
 }
 
 pub fn filters<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -259,7 +259,7 @@ pub fn filters<'gc>(
 }
 
 fn build_argument_type_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Err(Error::AvmError(crate::avm2::error::argument_error(
         activation,
@@ -269,7 +269,7 @@ fn build_argument_type_error<'gc>(
 }
 
 pub fn set_filters<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -313,7 +313,7 @@ pub fn set_filters<'gc>(
 
 /// Implements `x`'s getter.
 pub fn x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -326,7 +326,7 @@ pub fn x<'gc>(
 
 /// Implements `x`'s setter.
 pub fn set_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -345,7 +345,7 @@ pub fn set_x<'gc>(
 
 /// Implements `y`'s getter.
 pub fn y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -358,7 +358,7 @@ pub fn y<'gc>(
 
 /// Implements `y`'s setter.
 pub fn set_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -377,7 +377,7 @@ pub fn set_y<'gc>(
 
 /// Stubs `z`'s getter.
 pub fn z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -386,7 +386,7 @@ pub fn z<'gc>(
 
 /// Stubs `z`'s setter.
 pub fn set_z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -395,7 +395,7 @@ pub fn set_z<'gc>(
 
 /// Stubs `rotationX`'s getter.
 pub fn rotation_x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -404,7 +404,7 @@ pub fn rotation_x<'gc>(
 
 /// Stubs `rotationX`'s setter.
 pub fn set_rotation_x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -413,7 +413,7 @@ pub fn set_rotation_x<'gc>(
 
 /// Stubs `rotationY`'s getter.
 pub fn rotation_y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -422,7 +422,7 @@ pub fn rotation_y<'gc>(
 
 /// Stubs `rotationY`'s setter.
 pub fn set_rotation_y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -431,7 +431,7 @@ pub fn set_rotation_y<'gc>(
 
 /// Stubs `rotationZ`'s getter.
 pub fn rotation_z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -440,7 +440,7 @@ pub fn rotation_z<'gc>(
 
 /// Stubs `rotationZ`'s setter.
 pub fn set_rotation_z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -449,7 +449,7 @@ pub fn set_rotation_z<'gc>(
 
 /// Stubs `scaleZ`'s getter.
 pub fn scale_z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -458,7 +458,7 @@ pub fn scale_z<'gc>(
 
 /// Stubs `scaleZ`'s setter.
 pub fn set_scale_z<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -467,7 +467,7 @@ pub fn set_scale_z<'gc>(
 
 /// Implements `rotation`'s getter.
 pub fn rotation<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -487,7 +487,7 @@ pub fn rotation<'gc>(
 
 /// Implements `rotation`'s setter.
 pub fn set_rotation<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -506,7 +506,7 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn name<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -519,7 +519,7 @@ pub fn name<'gc>(
 
 /// Implements `name`'s setter.
 pub fn set_name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -545,7 +545,7 @@ pub fn set_name<'gc>(
 
 /// Implements `parent`.
 pub fn parent<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -561,7 +561,7 @@ pub fn parent<'gc>(
 
 /// Implements `root`.
 pub fn root<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -577,7 +577,7 @@ pub fn root<'gc>(
 
 /// Implements `stage`.
 pub fn stage<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -593,7 +593,7 @@ pub fn stage<'gc>(
 
 /// Implements `visible`'s getter.
 pub fn visible<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -606,7 +606,7 @@ pub fn visible<'gc>(
 
 /// Implements `visible`'s setter.
 pub fn set_visible<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -625,7 +625,7 @@ pub fn set_visible<'gc>(
 
 /// Implements `mouseX`.
 pub fn mouse_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -640,7 +640,7 @@ pub fn mouse_x<'gc>(
 
 /// Implements `mouseY`.
 pub fn mouse_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -655,7 +655,7 @@ pub fn mouse_y<'gc>(
 
 /// Implements `hitTestPoint`.
 pub fn hit_test_point<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -700,7 +700,7 @@ pub fn hit_test_point<'gc>(
 
 /// Implements `hitTestObject`.
 pub fn hit_test_object<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -721,7 +721,7 @@ pub fn hit_test_object<'gc>(
 
 /// Implements `loaderInfo` getter
 pub fn loader_info<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -741,7 +741,7 @@ pub fn loader_info<'gc>(
 }
 
 pub fn transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -757,7 +757,7 @@ pub fn transform<'gc>(
 }
 
 pub fn set_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -790,7 +790,7 @@ pub fn set_transform<'gc>(
 
 /// Implements `DisplayObject.blendMode`'s getter.
 pub fn blend_mode<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -804,7 +804,7 @@ pub fn blend_mode<'gc>(
 
 /// Implements `DisplayObject.blendMode`'s setter.
 pub fn set_blend_mode<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -826,7 +826,7 @@ pub fn set_blend_mode<'gc>(
 }
 
 fn new_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     rectangle: BoundingBox,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
@@ -842,7 +842,7 @@ fn new_rectangle<'gc>(
 }
 
 fn scroll_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -857,7 +857,7 @@ fn scroll_rect<'gc>(
 }
 
 fn object_to_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Rectangle<Twips>, Error<'gc>> {
     const NAMES: &[&str] = &["x", "y", "width", "height"];
@@ -877,7 +877,7 @@ fn object_to_rectangle<'gc>(
 }
 
 fn set_scroll_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -908,7 +908,7 @@ fn set_scroll_rect<'gc>(
 }
 
 fn local_to_global<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -940,7 +940,7 @@ fn local_to_global<'gc>(
 }
 
 fn global_to_local<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -972,7 +972,7 @@ fn global_to_local<'gc>(
 }
 
 fn get_bounds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1006,7 +1006,7 @@ fn get_bounds<'gc>(
 }
 
 fn get_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1016,7 +1016,7 @@ fn get_rect<'gc>(
 }
 
 fn mask<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1027,7 +1027,7 @@ fn mask<'gc>(
 }
 
 fn set_mask<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1052,7 +1052,7 @@ fn set_mask<'gc>(
 }
 
 fn cache_as_bitmap<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1063,7 +1063,7 @@ fn cache_as_bitmap<'gc>(
 }
 
 fn set_cache_as_bitmap<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -21,7 +21,7 @@ use std::ops::{Bound, RangeBounds};
 /// grandchildren, recursively.
 pub fn dispatch_removed_from_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
@@ -42,7 +42,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 /// whilst doing so.
 pub fn dispatch_removed_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
@@ -60,7 +60,7 @@ pub fn dispatch_removed_event<'gc>(
 /// Dispatch the `addedToStage` event on a child, ignoring it's grandchildren.
 pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
@@ -75,7 +75,7 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
 /// recursively.
 pub fn dispatch_added_to_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     dispatch_added_to_stage_event_only(child, context);
 
@@ -90,7 +90,7 @@ pub fn dispatch_added_to_stage_event<'gc>(
 /// doing so.
 pub fn dispatch_added_event_only<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
@@ -111,7 +111,7 @@ pub fn dispatch_added_event<'gc>(
     parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,
     child_was_on_stage: bool,
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
 ) {
     dispatch_added_event_only(child, context);
 
@@ -197,7 +197,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// children it modifies. You must do this yourself.
     fn replace_at_depth(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) -> Option<DisplayObject<'gc>> {
@@ -226,7 +226,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// way as `replace_at_depth`.
     fn swap_at_depth(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
@@ -252,7 +252,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// timeline) produce unusual results.
     fn insert_at_index(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         child: DisplayObject<'gc>,
         index: usize,
     ) {
@@ -290,7 +290,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// No changes to the depth or render lists are made by this function.
     fn swap_at_index(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         index1: usize,
         index2: usize,
     ) {
@@ -299,11 +299,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
-    fn remove_child(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        child: DisplayObject<'gc>,
-    ) {
+    fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
         debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
             (*self).into()
@@ -331,7 +327,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Removes (without unloading) a child display object from this container's depth list.
     fn remove_child_from_depth_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         child: DisplayObject<'gc>,
     ) {
         debug_assert!(DisplayObject::ptr_eq(
@@ -345,7 +341,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
     /// Remove a set of children identified by their render list indicies from
     /// this container's render and depth lists.
-    fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, range: R)
+    fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc>, range: R)
     where
         R: RangeBounds<usize>,
     {
@@ -398,7 +394,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Renders the children of this container in render list order.
-    fn render_children(self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
         let mut clip_depth = 0;
         let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
         for child in self.iter_render_list() {

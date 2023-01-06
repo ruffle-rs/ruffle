@@ -61,14 +61,9 @@ const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("toLocaleDateString", to_date_string),
 ];
 
-struct DateAdjustment<
-    'builder,
-    'activation_a: 'builder,
-    'gc: 'activation_a,
-    'gc_context: 'activation_a,
-    T: TimeZone + 'builder,
-> {
-    activation: &'builder mut Activation<'activation_a, 'gc, 'gc_context>,
+struct DateAdjustment<'builder, 'activation_a: 'builder, 'gc: 'activation_a, T: TimeZone + 'builder>
+{
+    activation: &'builder mut Activation<'activation_a, 'gc>,
     timezone: &'builder T,
     year: Option<Option<f64>>,
     month: Option<Option<f64>>,
@@ -79,11 +74,9 @@ struct DateAdjustment<
     millisecond: Option<Option<f64>>,
 }
 
-impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
-    DateAdjustment<'builder, 'activation_a, 'gc, 'gc_context, T>
-{
+impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activation_a, 'gc, T> {
     fn new(
-        activation: &'builder mut Activation<'activation_a, 'gc, 'gc_context>,
+        activation: &'builder mut Activation<'activation_a, 'gc>,
         timezone: &'builder T,
     ) -> Self {
         Self {
@@ -239,7 +232,7 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
 
 /// Implements `Date`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -302,7 +295,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `Date`'s class constructor.
 pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -333,7 +326,7 @@ pub fn class_init<'gc>(
 
 /// Implements `time` property's getter, and the `getTime` method. This will also be used for `valueOf`.
 pub fn time<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -346,7 +339,7 @@ pub fn time<'gc>(
 
 /// Implements `time` property's setter, and the `setTime` method.
 pub fn set_time<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -373,7 +366,7 @@ pub fn set_time<'gc>(
 
 /// Implements `milliseconds` property's getter, and the `getMilliseconds` method.
 pub fn milliseconds<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -393,7 +386,7 @@ pub fn milliseconds<'gc>(
 
 /// Implements `milliseconds` property's setter, and the `setMilliseconds` method.
 pub fn set_milliseconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -408,7 +401,7 @@ pub fn set_milliseconds<'gc>(
 
 /// Implements `seconds` property's getter, and the `getSeconds` method.
 pub fn seconds<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -428,7 +421,7 @@ pub fn seconds<'gc>(
 
 /// Implements `seconds` property's setter, and the `setSeconds` method.
 pub fn set_seconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -444,7 +437,7 @@ pub fn set_seconds<'gc>(
 
 /// Implements `minutes` property's getter, and the `getMinutes` method.
 pub fn minutes<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -464,7 +457,7 @@ pub fn minutes<'gc>(
 
 /// Implements `minutes` property's setter, and the `setMinutes` method.
 pub fn set_minutes<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -481,7 +474,7 @@ pub fn set_minutes<'gc>(
 
 /// Implements `hour` property's getter, and the `getHours` method.
 pub fn hours<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -501,7 +494,7 @@ pub fn hours<'gc>(
 
 /// Implements `hours` property's setter, and the `setHours` method.
 pub fn set_hours<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -519,7 +512,7 @@ pub fn set_hours<'gc>(
 
 /// Implements `date` property's getter, and the `getDate` method.
 pub fn date<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -539,7 +532,7 @@ pub fn date<'gc>(
 
 /// Implements `date` property's setter, and the `setDate` method.
 pub fn set_date<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -554,7 +547,7 @@ pub fn set_date<'gc>(
 
 /// Implements `month` property's getter, and the `getMonth` method.
 pub fn month<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -574,7 +567,7 @@ pub fn month<'gc>(
 
 /// Implements `month` property's setter, and the `setMonth` method.
 pub fn set_month<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -590,7 +583,7 @@ pub fn set_month<'gc>(
 
 /// Implements `fullYear` property's getter, and the `getFullYear` method.
 pub fn full_year<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -610,7 +603,7 @@ pub fn full_year<'gc>(
 
 /// Implements `fullYear` property's setter, and the `setFullYear` method.
 pub fn set_full_year<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -627,7 +620,7 @@ pub fn set_full_year<'gc>(
 
 /// Implements `day` property's getter, and the `getDay` method.
 pub fn day<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -647,7 +640,7 @@ pub fn day<'gc>(
 
 /// Implements `millisecondsUTC` property's getter, and the `getUTCMilliseconds` method.
 pub fn milliseconds_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -664,7 +657,7 @@ pub fn milliseconds_utc<'gc>(
 
 /// Implements `millisecondsUTC` property's setter, and the `setUTCMilliseconds` method.
 pub fn set_milliseconds_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -679,7 +672,7 @@ pub fn set_milliseconds_utc<'gc>(
 
 /// Implements `secondsUTC` property's getter, and the `getUTCSeconds` method.
 pub fn seconds_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -696,7 +689,7 @@ pub fn seconds_utc<'gc>(
 
 /// Implements `secondsUTC` property's setter, and the `setUTCSeconds` method.
 pub fn set_seconds_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -712,7 +705,7 @@ pub fn set_seconds_utc<'gc>(
 
 /// Implements `minutesUTC` property's getter, and the `getUTCMinutes` method.
 pub fn minutes_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -729,7 +722,7 @@ pub fn minutes_utc<'gc>(
 
 /// Implements `minutesUTC` property's setter, and the `setUTCMinutes` method.
 pub fn set_minutes_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -746,7 +739,7 @@ pub fn set_minutes_utc<'gc>(
 
 /// Implements `hourUTC` property's getter, and the `getUTCHours` method.
 pub fn hours_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -763,7 +756,7 @@ pub fn hours_utc<'gc>(
 
 /// Implements `hoursUTC` property's setter, and the `setUTCHours` method.
 pub fn set_hours_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -781,7 +774,7 @@ pub fn set_hours_utc<'gc>(
 
 /// Implements `dateUTC` property's getter, and the `getUTCDate` method.
 pub fn date_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -798,7 +791,7 @@ pub fn date_utc<'gc>(
 
 /// Implements `dateUTC` property's setter, and the `setUTCDate` method.
 pub fn set_date_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -813,7 +806,7 @@ pub fn set_date_utc<'gc>(
 
 /// Implements `monthUTC` property's getter, and the `getUTCMonth` method.
 pub fn month_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -830,7 +823,7 @@ pub fn month_utc<'gc>(
 
 /// Implements `monthUTC` property's setter, and the `setUTCMonth` method.
 pub fn set_month_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -846,7 +839,7 @@ pub fn set_month_utc<'gc>(
 
 /// Implements `fullYearUTC` property's getter, and the `getUTCFullYear` method.
 pub fn full_year_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -863,7 +856,7 @@ pub fn full_year_utc<'gc>(
 
 /// Implements `fullYearUTC` property's setter, and the `setUTCFullYear` method.
 pub fn set_full_year_utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -880,7 +873,7 @@ pub fn set_full_year_utc<'gc>(
 
 /// Implements `dayUTC` property's getter, and the `getUTCDay` method.
 pub fn day_utc<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -897,7 +890,7 @@ pub fn day_utc<'gc>(
 
 /// Implements `timezoneOffset` property's getter, and the `getTimezoneOffset` method.
 pub fn timezone_offset<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -918,7 +911,7 @@ pub fn timezone_offset<'gc>(
 
 /// Implements the `UTC` class method.
 pub fn utc<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -947,7 +940,7 @@ pub fn utc<'gc>(
 
 /// Implements the `toString` method.
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -971,7 +964,7 @@ pub fn to_string<'gc>(
 
 /// Implements the `toUTCString` method.
 pub fn to_utc_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -992,7 +985,7 @@ pub fn to_utc_string<'gc>(
 
 /// Implements the `toLocaleString` method.
 pub fn to_locale_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1016,7 +1009,7 @@ pub fn to_locale_string<'gc>(
 
 /// Implements the `toTimeString` method.
 pub fn to_time_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1040,7 +1033,7 @@ pub fn to_time_string<'gc>(
 
 /// Implements the `toLocaleTimeString` method.
 pub fn to_locale_time_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1064,7 +1057,7 @@ pub fn to_locale_time_string<'gc>(
 
 /// Implements the `toDateString` & `toLocaleDateString` method.
 pub fn to_date_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1185,7 +1178,7 @@ fn parse_hms(item: &WStr) -> Option<(u32, u32, u32)> {
 }
 
 pub fn parse_full_date<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     date: AvmString<'gc>,
 ) -> Option<f64> {
     const DAYS: [&[u8]; 7] = [b"Sun", b"Mon", b"Tue", b"Wed", b"Thu", b"Fri", b"Sat"];
@@ -1297,7 +1290,7 @@ pub fn parse_full_date<'gc>(
 /// Implements the `parse` class method.
 #[allow(clippy::question_mark)]
 pub fn parse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

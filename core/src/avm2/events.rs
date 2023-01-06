@@ -369,7 +369,7 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// event's phase to match what targets you are dispatching to, or you will
 /// call the wrong handlers.
 pub fn dispatch_event_to_target<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
     target: Object<'gc>,
     event: Object<'gc>,
@@ -432,7 +432,7 @@ pub fn dispatch_event_to_target<'gc>(
 }
 
 pub fn dispatch_event<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     event: Object<'gc>,
 ) -> Result<bool, Error<'gc>> {

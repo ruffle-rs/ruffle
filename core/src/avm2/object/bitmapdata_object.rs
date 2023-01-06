@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmapdata_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -50,7 +50,7 @@ pub struct BitmapDataObjectData<'gc> {
 
 impl<'gc> BitmapDataObject<'gc> {
     pub fn from_bitmap_data(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         bitmap_data: GcCell<'gc, BitmapData<'gc>>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {

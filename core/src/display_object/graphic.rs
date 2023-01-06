@@ -40,7 +40,7 @@ pub struct GraphicData<'gc> {
 impl<'gc> Graphic<'gc> {
     /// Construct a `Graphic` from it's associated `Shape` tag.
     pub fn from_swf_tag(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         swf_shape: swf::Shape,
         movie: Arc<SwfMovie>,
     ) -> Self {
@@ -72,7 +72,7 @@ impl<'gc> Graphic<'gc> {
 
     /// Construct an empty `Graphic`.
     pub fn new_with_avm2(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         avm2_object: Avm2Object<'gc>,
     ) -> Self {
         let static_data = GraphicStatic {
@@ -142,7 +142,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let shape_constr = context.avm2.classes().shape;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -164,7 +164,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
@@ -199,7 +199,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         _options: HitTestOptions,
     ) -> bool {
@@ -222,7 +222,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,

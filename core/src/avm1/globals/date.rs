@@ -354,7 +354,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 /// ECMA-262 Date
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[f64],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -386,7 +386,7 @@ fn constructor<'gc>(
 
 /// `Date()` invoked without `new` returns current date and time as a string, as defined in ECMA-262.
 fn function<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -414,7 +414,7 @@ fn utc<'gc>(args: &[f64]) -> Result<Value<'gc>, Error<'gc>> {
 }
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     mut index: u16,

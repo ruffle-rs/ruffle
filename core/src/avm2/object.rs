@@ -142,7 +142,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().get_property_local(name, activation)
     }
@@ -158,7 +158,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property(
         mut self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -197,7 +197,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.set_property_local(name, value, activation)
@@ -214,7 +214,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) => {
@@ -252,7 +252,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.init_property_local(name, value, activation)
@@ -267,7 +267,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -302,7 +302,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Note: normally this would just call into ScriptObjectData::call_property_local
         // but because calling into ScriptObjectData borrows it for entire duration,
@@ -325,7 +325,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mut self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -425,7 +425,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mut self,
         id: u32,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.get_bound_method(id).is_none() {
             if let Some(vtable) = self.vtable() {
@@ -449,7 +449,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// other object types to change the behavior of the `in` operator only.
     fn has_property_via_in(
         self,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         Ok(self.has_property(name))
@@ -485,7 +485,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// methods.
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
@@ -498,7 +498,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Returns false if the property cannot be deleted.
     fn delete_property(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
@@ -553,7 +553,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         let base = self.base();
 
@@ -569,7 +569,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let base = self.base();
 
@@ -583,7 +583,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let name = self
             .get_enumerant_name(index, activation)?
@@ -641,7 +641,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
-    fn install_instance_slots(&mut self, activation: &mut Activation<'_, 'gc, '_>) {
+    fn install_instance_slots(&mut self, activation: &mut Activation<'_, 'gc>) {
         self.base_mut(activation.context.gc_context)
             .install_instance_slots();
     }
@@ -651,7 +651,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Err("Object is not callable".into())
     }
@@ -674,7 +674,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// ignored.)
     fn construct(
         self,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Err("Object is not constructable".into())
@@ -687,7 +687,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         multiname: &Multiname<'gc>,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let ctor = self.get_property(multiname, activation)?.as_callable(
             activation,
@@ -715,7 +715,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// parameters.
     fn apply(
         &self,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
         _params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         Err("Not a parameterized type".into())
@@ -739,10 +739,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_of_class_definition()
             .map(|c| c.read().name().local_name())
@@ -765,7 +762,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// of the class that created this object).
     fn to_locale_string(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_of_class_definition()
@@ -797,7 +794,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// searched in the prototype chain of this object.
     fn is_instance_of(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         class: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let type_proto = class
@@ -841,7 +838,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn is_of_type(
         &self,
         test_class: ClassObject<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> bool {
         let my_class = self.instance_of();
 

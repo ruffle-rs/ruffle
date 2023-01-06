@@ -31,7 +31,7 @@ use swf::avm2::types::{
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeMethodImpl = for<'gc> fn(
-    &mut Activation<'_, 'gc, '_>,
+    &mut Activation<'_, 'gc>,
     Option<Object<'gc>>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
@@ -54,7 +54,7 @@ impl<'gc> ParamConfig<'gc> {
     fn from_abc_param(
         config: &AbcMethodParam,
         txunit: TranslationUnit<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
             txunit.pool_string(name.0, activation.context.gc_context)?
@@ -136,7 +136,7 @@ impl<'gc> BytecodeMethod<'gc> {
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
         is_function: bool,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
         let mut signature = Vec::new();

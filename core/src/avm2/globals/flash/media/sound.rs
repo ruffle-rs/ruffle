@@ -17,7 +17,7 @@ use swf::{SoundEvent, SoundInfo};
 
 /// Implements `flash.media.Sound`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -54,7 +54,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.media.Sound`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -63,7 +63,7 @@ pub fn class_init<'gc>(
 
 /// Implements `Sound.bytesTotal`
 pub fn bytes_total<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -78,7 +78,7 @@ pub fn bytes_total<'gc>(
 
 /// Implements `Sound.isBuffering`
 pub fn is_buffering<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -88,7 +88,7 @@ pub fn is_buffering<'gc>(
 
 /// Implements `Sound.url`
 pub fn url<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn url<'gc>(
 
 /// Implements `Sound.length`
 pub fn length<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -113,7 +113,7 @@ pub fn length<'gc>(
 
 /// Implements `Sound.play`
 pub fn play<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -174,7 +174,7 @@ pub fn play<'gc>(
 
 /// Stubs `Sound.extract`
 pub fn extract<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -183,7 +183,7 @@ pub fn extract<'gc>(
 
 /// Stubs `Sound.close`
 pub fn close<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -192,7 +192,7 @@ pub fn close<'gc>(
 
 /// Stubs `Sound.load`
 pub fn load<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -223,7 +223,7 @@ pub fn load<'gc>(
 
 /// Stubs `Sound.loadCompressedDataFromByteArray`
 pub fn load_compressed_data_from_byte_array<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -232,7 +232,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
 /// Stubs `Sound.loadPCMFromByteArray`
 pub fn load_pcm_from_byte_array<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

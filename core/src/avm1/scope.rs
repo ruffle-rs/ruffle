@@ -123,7 +123,7 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
             return self
@@ -148,7 +148,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
             // Value found on this object, so overwrite it.
@@ -175,7 +175,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.locals().set(name, value, activation)
     }
@@ -195,7 +195,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope.
-    pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
+    pub fn delete(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         if self.locals().has_property(activation, name) {
             return self.locals().delete(activation, name);
         }

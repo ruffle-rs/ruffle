@@ -208,7 +208,7 @@ impl<'gc> RegExp<'gc> {
     /// a function.
     pub fn replace_fn(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         f: &FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
@@ -233,7 +233,7 @@ impl<'gc> RegExp<'gc> {
     /// a string with $-sequences.
     pub fn replace_string(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
@@ -247,13 +247,13 @@ impl<'gc> RegExp<'gc> {
     // Replaces occurrences of regex with results of f(activation, &text, &match)
     fn replace_with_fn<F>(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         text: &AvmString<'gc>,
         mut f: F,
     ) -> Result<AvmString<'gc>, Error<'gc>>
     where
         F: FnMut(
-            &mut Activation<'_, 'gc, '_>,
+            &mut Activation<'_, 'gc>,
             &AvmString<'gc>,
             &regress::Match,
         ) -> Result<WString, Error<'gc>>,
@@ -285,7 +285,7 @@ impl<'gc> RegExp<'gc> {
 
     pub fn split(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         limit: usize,
     ) -> Result<Object<'gc>, Error<'gc>> {

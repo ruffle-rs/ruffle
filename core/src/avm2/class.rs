@@ -51,7 +51,7 @@ bitflags! {
 ///  read for traits).
 ///  * `activation` - The current AVM2 activation.
 pub type AllocatorFn =
-    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error<'gc>>;
+    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>>;
 
 #[derive(Clone, Collect)]
 #[collect(require_static)]
@@ -232,7 +232,7 @@ impl<'gc> Class<'gc> {
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let abc = unit.abc();
         let abc_class: Result<&AbcClass, Error<'gc>> = abc
@@ -348,7 +348,7 @@ impl<'gc> Class<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.traits_loaded {
             return Ok(());
@@ -452,7 +452,7 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn for_activation(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
         body: &AbcMethodBody,

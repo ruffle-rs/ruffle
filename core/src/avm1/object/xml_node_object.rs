@@ -55,7 +55,7 @@ impl<'gc> TObject<'gc> for XmlNodeObject<'gc> {
 
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(Self::from_xml_node(

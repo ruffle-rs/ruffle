@@ -70,7 +70,7 @@ enum FrameControl<'gc> {
 }
 
 /// Represents a single activation of a given AVM2 function or keyframe.
-pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
+pub struct Activation<'a, 'gc: 'a> {
     /// The immutable value of `this`.
     #[allow(dead_code)]
     this: Option<Object<'gc>>,
@@ -149,10 +149,10 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Maximum size for the scope frame.
     max_scope_size: usize,
 
-    pub context: UpdateContext<'a, 'gc, 'gc_context>,
+    pub context: UpdateContext<'a, 'gc>,
 }
 
-impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
+impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an activation that does not represent any particular scope.
     ///
     /// This exists primarily for non-AVM2 related manipulations of the
@@ -161,7 +161,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// It is a logic error to attempt to run AVM2 code in a nothing
     /// `Activation`.
-    pub fn from_nothing(context: UpdateContext<'a, 'gc, 'gc_context>) -> Self {
+    pub fn from_nothing(context: UpdateContext<'a, 'gc>) -> Self {
         let local_registers = RegisterSet::new(0);
 
         Self {
@@ -186,7 +186,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc>,
         script: Script<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
@@ -389,7 +389,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Construct an activation for the execution of a particular bytecode
     /// method.
     pub fn from_method(
-        mut context: UpdateContext<'a, 'gc, 'gc_context>,
+        mut context: UpdateContext<'a, 'gc>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
         this: Option<Object<'gc>>,
@@ -521,7 +521,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// function to construct a new activation for the builtin so that it can
     /// properly supercall.
     pub fn from_builtin(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc>,
         this: Option<Object<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,

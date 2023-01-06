@@ -423,10 +423,7 @@ impl<'gc> LoadManager<'gc> {
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
-    pub fn preload_tick(
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        limit: &mut ExecutionLimit,
-    ) -> bool {
+    pub fn preload_tick(context: &mut UpdateContext<'_, 'gc>, limit: &mut ExecutionLimit) -> bool {
         let mut did_finish = true;
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
 
@@ -585,7 +582,7 @@ impl<'gc> Loader<'gc> {
     /// Returns any AVM errors encountered while sending events to user code.
     fn preload_tick(
         handle: Handle,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         limit: &mut ExecutionLimit,
     ) -> Result<bool, Error> {
         let (mc, event_handler, movie) = match context.load_manager.get_loader_mut(handle) {
@@ -1028,9 +1025,9 @@ impl<'gc> Loader<'gc> {
 
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
 
-                fn set_data<'a, 'gc: 'a, 'gc_context: 'a>(
+                fn set_data<'a, 'gc: 'a>(
                     body: Vec<u8>,
-                    activation: &mut Avm2Activation<'a, 'gc, 'gc_context>,
+                    activation: &mut Avm2Activation<'a, 'gc>,
                     mut target: Avm2Object<'gc>,
                     data_format: DataFormat,
                 ) {
@@ -1284,7 +1281,7 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader start event to script code.
-    fn movie_loader_start(handle: Index, uc: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn movie_loader_start(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
         let me = uc.load_manager.get_loader_mut(handle);
         if me.is_none() {
             return Err(Error::Cancelled);
@@ -1472,7 +1469,7 @@ impl<'gc> Loader<'gc> {
     /// The current and total length are always reported as compressed lengths.
     fn movie_loader_progress(
         handle: Index,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        uc: &mut UpdateContext<'_, 'gc>,
         cur_len: usize,
         total_len: usize,
     ) -> Result<(), Error> {
@@ -1540,10 +1537,7 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader completion to script code.
-    fn movie_loader_complete(
-        handle: Index,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    fn movie_loader_complete(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
         let (clip, event_handler) = match uc.load_manager.get_loader_mut(handle) {
             Some(Loader::Movie {
                 target_clip,
@@ -1591,7 +1585,7 @@ impl<'gc> Loader<'gc> {
     ///
     /// This is an associated function because we cannot borrow both the update
     /// context and one of it's loaders.
-    fn movie_loader_error(handle: Index, uc: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+    fn movie_loader_error(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
         //TODO: Inspect the fetch error.
         //This requires cooperation from the backend to send abstract
         //error types we can actually inspect.

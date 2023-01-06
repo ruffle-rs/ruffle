@@ -8,7 +8,7 @@ use swf::Twips;
 
 /// Implements `stageX`'s getter.
 pub fn get_stage_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -36,7 +36,7 @@ pub fn get_stage_x<'gc>(
 
 /// Implements `stageY`'s getter.
 pub fn get_stage_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

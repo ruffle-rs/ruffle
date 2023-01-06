@@ -27,7 +27,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,
@@ -85,7 +85,7 @@ fn method<'gc>(
 }
 
 fn set_blur_x<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     blur_filter: GcCell<'gc, BlurFilterObject>,
     value: Option<&Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
@@ -97,7 +97,7 @@ fn set_blur_x<'gc>(
 }
 
 fn set_blur_y<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     blur_filter: GcCell<'gc, BlurFilterObject>,
     value: Option<&Value<'gc>>,
 ) -> Result<(), Error<'gc>> {
@@ -109,7 +109,7 @@ fn set_blur_y<'gc>(
 }
 
 fn set_quality<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     blur_filter: GcCell<'gc, BlurFilterObject>,
     value: Option<&Value<'gc>>,
 ) -> Result<(), Error<'gc>> {

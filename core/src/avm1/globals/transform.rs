@@ -44,7 +44,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -74,7 +74,7 @@ pub fn create_proto<'gc>(
 }
 
 fn concatenated_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Walk through parents to get combined color transform.
@@ -88,7 +88,7 @@ fn concatenated_color_transform<'gc>(
 }
 
 fn concatenated_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Testing shows that 'concatenatedMatrix' does *not* include the 'scrollRect' translation
@@ -101,14 +101,14 @@ fn concatenated_matrix<'gc>(
 }
 
 fn color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     ColorTransformObject::construct(activation, *clip.base().color_transform())
 }
 
 fn set_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -125,7 +125,7 @@ fn set_color_transform<'gc>(
 }
 
 fn matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = matrix_to_object(*clip.base().matrix(), activation)?;
@@ -133,7 +133,7 @@ fn matrix<'gc>(
 }
 
 fn set_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -152,7 +152,7 @@ fn set_matrix<'gc>(
 }
 
 fn pixel_bounds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // This is equivalent to `clip.getBounds()`.

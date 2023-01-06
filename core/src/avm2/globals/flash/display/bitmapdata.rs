@@ -24,7 +24,7 @@ use std::str::FromStr;
 /// `bd` is assumed to be an uninstantiated library symbol, associated with the
 /// class named by `name`.
 pub fn fill_bitmap_data_from_symbol<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     bd: Bitmap<'gc>,
     new_bitmap_data: GcCell<'gc, BitmapData<'gc>>,
     pixels: Vec<i32>,
@@ -41,7 +41,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
 
 /// Implements `flash.display.BitmapData`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -127,7 +127,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.BitmapData`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,7 +136,7 @@ pub fn class_init<'gc>(
 
 /// Implements `BitmapData.width`'s getter.
 pub fn width<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,7 +150,7 @@ pub fn width<'gc>(
 
 /// Implements `BitmapData.height`'s getter.
 pub fn height<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -164,7 +164,7 @@ pub fn height<'gc>(
 
 /// Implements `BitmapData.transparent`'s getter.
 pub fn transparent<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -178,7 +178,7 @@ pub fn transparent<'gc>(
 
 /// Implements `BitmapData.scroll`.
 pub fn scroll<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -203,7 +203,7 @@ pub fn scroll<'gc>(
 
 /// Implements `BitmapData.copyPixels`.
 pub fn copy_pixels<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -323,7 +323,7 @@ pub fn copy_pixels<'gc>(
 
 /// Implements `BitmapData.getPixel`.
 pub fn get_pixel<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -345,7 +345,7 @@ pub fn get_pixel<'gc>(
 
 /// Implements `BitmapData.getPixel32`.
 pub fn get_pixel32<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -367,7 +367,7 @@ pub fn get_pixel32<'gc>(
 
 /// Implements `BitmapData.setPixel`.
 pub fn set_pixel<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -394,7 +394,7 @@ pub fn set_pixel<'gc>(
 
 /// Implements `BitmapData.setPixel32`.
 pub fn set_pixel32<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -421,7 +421,7 @@ pub fn set_pixel32<'gc>(
 
 /// Implements `BitmapData.setPixels`.
 pub fn set_pixels<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -477,7 +477,7 @@ pub fn set_pixels<'gc>(
 
 /// Implements `BitmapData.copyChannel`.
 pub fn copy_channel<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -558,7 +558,7 @@ pub fn copy_channel<'gc>(
 }
 
 pub fn flood_fill<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -584,7 +584,7 @@ pub fn flood_fill<'gc>(
 }
 
 pub fn noise<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -616,7 +616,7 @@ pub fn noise<'gc>(
 }
 
 pub fn color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -659,7 +659,7 @@ pub fn color_transform<'gc>(
 }
 
 pub fn get_color_bounds_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -689,7 +689,7 @@ pub fn get_color_bounds_rect<'gc>(
 }
 
 pub fn lock<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -699,7 +699,7 @@ pub fn lock<'gc>(
 
 /// Implements `BitmapData.draw`
 pub fn draw<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -769,7 +769,7 @@ pub fn draw<'gc>(
 
 /// Implement `BitmapData.fillRect`
 pub fn fill_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -810,7 +810,7 @@ pub fn fill_rect<'gc>(
 
 /// Implements `BitmapData.dispose`
 pub fn dispose<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -824,7 +824,7 @@ pub fn dispose<'gc>(
 
 /// Implement `BitmapData.rect`
 pub fn rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -845,7 +845,7 @@ pub fn rect<'gc>(
 
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -855,7 +855,7 @@ pub fn apply_filter<'gc>(
 
 /// Implement `BitmapData.clone`
 pub fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -884,7 +884,7 @@ pub fn clone<'gc>(
 
 /// Implement `BitmapData.perlinNoise`
 pub fn perlin_noise<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

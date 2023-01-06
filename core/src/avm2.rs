@@ -130,7 +130,7 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
         globals::load_player_globals(&mut activation, globals)
@@ -146,7 +146,7 @@ impl<'gc> Avm2<'gc> {
     /// Run a script's initializer method.
     pub fn run_script_initializer(
         script: Script<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
@@ -188,7 +188,7 @@ impl<'gc> Avm2<'gc> {
     ///
     /// The `bool` parameter reads true if the event was cancelled.
     pub fn dispatch_event(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         target: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
@@ -207,7 +207,7 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to register the same listener for the same event will also do
     /// nothing.
     pub fn register_broadcast_listener(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         object: Object<'gc>,
         event_name: AvmString<'gc>,
     ) {
@@ -237,7 +237,7 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to broadcast a non-broadcast event will do nothing. To add a
     /// new broadcast type, you must add it to the `BROADCAST_WHITELIST` first.
     pub fn broadcast_event(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         on_type: ClassObject<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -283,7 +283,7 @@ impl<'gc> Avm2<'gc> {
         callable: Object<'gc>,
         reciever: Option<Object<'gc>>,
         args: &[Value<'gc>],
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut evt_activation = Activation::from_nothing(context.reborrow());
         callable.call(reciever, args, &mut evt_activation)?;
@@ -293,7 +293,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Load an ABC file embedded in a `DoAbc` tag.
     pub fn do_abc(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         do_abc: DoAbc,
         domain: Domain<'gc>,
     ) -> Result<(), Error<'gc>> {

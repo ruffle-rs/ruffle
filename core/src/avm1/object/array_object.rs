@@ -18,7 +18,7 @@ impl fmt::Debug for ArrayObject<'_> {
 }
 
 impl<'gc> ArrayObject<'gc> {
-    pub fn empty(activation: &Activation<'_, 'gc, '_>) -> Self {
+    pub fn empty(activation: &Activation<'_, 'gc>) -> Self {
         Self::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
@@ -82,7 +82,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         if &name == b"length" {
@@ -100,7 +100,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(Self::empty_with_proto(activation.context.gc_context, this).into())
@@ -112,7 +112,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn set_length(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
         if let Value::Number(old_length) = self.0.get_data("length".into(), activation) {
@@ -125,7 +125,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn set_element(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         index: i32,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {

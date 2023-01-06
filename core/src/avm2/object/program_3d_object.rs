@@ -18,7 +18,7 @@ pub struct Program3DObject<'gc>(GcCell<'gc, Program3DObjectData<'gc>>);
 
 impl<'gc> Program3DObject<'gc> {
     pub fn from_context(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().program3d;

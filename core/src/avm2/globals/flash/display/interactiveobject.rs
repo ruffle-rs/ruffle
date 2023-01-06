@@ -14,7 +14,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.InteractiveObject`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.InteractiveObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -36,7 +36,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `flash.display.InteractiveObject`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -45,7 +45,7 @@ pub fn class_init<'gc>(
 
 /// Implements `InteractiveObject.mouseEnabled`'s getter.
 pub fn mouse_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -61,7 +61,7 @@ pub fn mouse_enabled<'gc>(
 
 /// Implements `InteractiveObject.mouseEnabled`'s setter.
 pub fn set_mouse_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ pub fn set_mouse_enabled<'gc>(
 
 /// Implements `InteractiveObject.doubleClickEnabled`'s getter.
 pub fn double_click_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn double_click_enabled<'gc>(
 
 /// Implements `InteractiveObject.doubleClickEnabled`'s setter.
 pub fn set_double_click_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -119,7 +119,7 @@ pub fn set_double_click_enabled<'gc>(
 
 /// Implements `InteractiveObject.contextMenu`'s getter.
 fn context_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -135,7 +135,7 @@ fn context_menu<'gc>(
 
 /// Implements `InteractiveObject.contextMenu`'s setter.
 fn set_context_menu<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -158,7 +158,7 @@ fn set_context_menu<'gc>(
 
 /// Stub getter & setter for `tabEnabled`.
 pub fn tab_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -169,7 +169,7 @@ pub fn tab_enabled<'gc>(
 
 /// Stub getter & setter for `tabIndex`.
 pub fn tab_index<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -179,7 +179,7 @@ pub fn tab_index<'gc>(
 }
 
 pub fn focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

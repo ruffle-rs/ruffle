@@ -23,7 +23,7 @@ pub fn parse(url: &WStr) -> Option<&WStr> {
 pub fn handle<'gc>(
     command: &WStr,
     args: &WStr,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
     let command = command.to_utf8_lossy();
     let args = args.to_utf8_lossy();

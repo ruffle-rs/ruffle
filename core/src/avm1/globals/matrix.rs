@@ -28,7 +28,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
         .coerce_to_object(activation)
@@ -64,7 +64,7 @@ pub fn value_to_matrix<'gc>(
 
 pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     if &object
         .get("matrixType", activation)?
@@ -91,7 +91,7 @@ pub fn gradient_object_to_matrix<'gc>(
 
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object.get("a", activation)?.coerce_to_f64(activation)? as f32;
     let b = object.get("b", activation)?.coerce_to_f64(activation)? as f32;
@@ -108,7 +108,7 @@ pub fn object_to_matrix<'gc>(
 /// Returns the identity matrix if any of the `a`, `b`, `c`, `d`, or `tx` properties do not exist.
 pub fn object_to_matrix_or_default<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     // These lookups do not search the prototype chain and ignore virtual properties.
     let a = object
@@ -144,7 +144,7 @@ pub fn object_to_matrix_or_default<'gc>(
 
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         matrix.a.into(),
@@ -162,7 +162,7 @@ pub fn matrix_to_object<'gc>(
 pub fn apply_matrix_to_object<'gc>(
     matrix: Matrix,
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
     object.set("a", matrix.a.into(), activation)?;
     object.set("b", matrix.b.into(), activation)?;
@@ -174,7 +174,7 @@ pub fn apply_matrix_to_object<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -205,7 +205,7 @@ fn constructor<'gc>(
 }
 
 fn identity<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -214,7 +214,7 @@ fn identity<'gc>(
 }
 
 fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -232,7 +232,7 @@ fn clone<'gc>(
 }
 
 fn scale<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -252,7 +252,7 @@ fn scale<'gc>(
 }
 
 fn rotate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -268,7 +268,7 @@ fn rotate<'gc>(
 }
 
 fn translate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -291,7 +291,7 @@ fn translate<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -304,7 +304,7 @@ fn concat<'gc>(
 }
 
 fn invert<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -316,7 +316,7 @@ fn invert<'gc>(
 }
 
 fn create_box<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -357,7 +357,7 @@ fn create_box<'gc>(
 }
 
 fn create_gradient_box<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -398,7 +398,7 @@ fn create_gradient_box<'gc>(
 }
 
 fn transform_point<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -415,7 +415,7 @@ fn transform_point<'gc>(
 }
 
 fn delta_transform_point<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -432,7 +432,7 @@ fn delta_transform_point<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

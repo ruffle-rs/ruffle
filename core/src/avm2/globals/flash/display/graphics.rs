@@ -19,7 +19,7 @@ use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twip
 
 /// Implements `flash.display.Graphics`'s instance constructor.
 fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -28,7 +28,7 @@ fn instance_init<'gc>(
 
 /// Implements `flash.display.Graphics`'s native instance constructor.
 fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -41,7 +41,7 @@ fn native_instance_init<'gc>(
 
 /// Implements `flash.display.Graphics`'s class constructor.
 fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +56,7 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 
 /// Implements `Graphics.beginFill`.
 fn begin_fill<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ fn begin_fill<'gc>(
 
 /// Implements `Graphics.beginBitmapFill`.
 fn begin_bitmap_fill<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -92,7 +92,7 @@ fn begin_bitmap_fill<'gc>(
 
 /// Implements `Graphics.beginGradientFill`.
 fn begin_gradient_fill<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -102,7 +102,7 @@ fn begin_gradient_fill<'gc>(
 
 /// Implements `Graphics.clear`
 fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -117,7 +117,7 @@ fn clear<'gc>(
 
 /// Implements `Graphics.curveTo`.
 fn curve_to<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ fn curve_to<'gc>(
 
 /// Implements `Graphics.endFill`.
 fn end_fill<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -171,7 +171,7 @@ fn end_fill<'gc>(
 }
 
 fn caps_to_cap_style<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     caps: Value<'gc>,
 ) -> Result<LineCapStyle, Error<'gc>> {
     if let Value::Null = caps {
@@ -189,7 +189,7 @@ fn caps_to_cap_style<'gc>(
 }
 
 fn joints_to_join_style<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     joints: Value<'gc>,
     miter_limit: f64,
 ) -> Result<LineJoinStyle, Error<'gc>> {
@@ -221,7 +221,7 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 
 /// Implements `Graphics.lineStyle`.
 fn line_style<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -292,7 +292,7 @@ fn line_style<'gc>(
 
 /// Implements `Graphics.lineTo`.
 fn line_to<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -320,7 +320,7 @@ fn line_to<'gc>(
 
 /// Implements `Graphics.moveTo`.
 fn move_to<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -348,7 +348,7 @@ fn move_to<'gc>(
 
 /// Implements `Graphics.drawRect`.
 fn draw_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -659,7 +659,7 @@ fn draw_round_rect_internal(
 
 /// Implements `Graphics.drawRoundRect`.
 fn draw_round_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -713,7 +713,7 @@ fn draw_round_rect<'gc>(
 
 /// Implements `Graphics.drawCircle`.
 fn draw_circle<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -752,7 +752,7 @@ fn draw_circle<'gc>(
 
 /// Implements `Graphics.drawEllipse`.
 fn draw_ellipse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

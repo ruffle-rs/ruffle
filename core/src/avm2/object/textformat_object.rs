@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates TextFormat objects.
 pub fn textformat_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -50,7 +50,7 @@ pub struct TextFormatObjectData<'gc> {
 
 impl<'gc> TextFormatObject<'gc> {
     pub fn from_text_format(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         text_format: TextFormat,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().textformat;

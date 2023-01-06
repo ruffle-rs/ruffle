@@ -49,7 +49,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn atan2<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ fn atan2<'gc>(
 }
 
 fn pow<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -84,7 +84,7 @@ fn pow<'gc>(
 }
 
 fn round<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -99,7 +99,7 @@ fn round<'gc>(
 }
 
 fn max<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -124,7 +124,7 @@ fn max<'gc>(
 }
 
 fn min<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -149,7 +149,7 @@ fn min<'gc>(
 }
 
 pub fn random<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -171,7 +171,7 @@ mod tests {
     use super::*;
     use crate::avm1::test_utils::with_avm;
 
-    fn setup<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         create(
             activation.context.gc_context,
             activation.context.avm1.prototypes().object,

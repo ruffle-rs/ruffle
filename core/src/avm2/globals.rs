@@ -206,7 +206,7 @@ impl<'gc> SystemClasses<'gc> {
 
 /// Add a free-function builtin to the global scope.
 fn function<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     package: impl Into<AvmString<'gc>>,
     name: &'static str,
     nf: NativeMethodImpl,
@@ -248,7 +248,7 @@ fn dynamic_class<'gc>(
 /// This function returns the class object and class prototype as a class, which
 /// may be stored in `SystemClasses`
 fn class<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     class_def: GcCell<'gc, Class<'gc>>,
     script: Script<'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ macro_rules! avm2_system_class {
 /// stored on the AVM. All relevant declarations will also be attached to the
 /// given domain.
 pub fn load_player_globals<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {
     let mc = activation.context.gc_context;
@@ -591,7 +591,7 @@ mod native {
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
 fn load_playerglobal<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;

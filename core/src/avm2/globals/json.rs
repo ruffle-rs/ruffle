@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::ops::Deref;
 
 fn deserialize_json_inner<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
     reviver: Option<Object<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ fn deserialize_json_inner<'gc>(
 }
 
 fn deserialize_json<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
     reviver: Option<Object<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -110,7 +110,7 @@ impl<'gc> AvmSerializer<'gc> {
     /// only used if either the `toJSON` step or replacer function step happens, so we only need to evaluate the key there.
     fn map_value(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         key: impl Fn() -> AvmString<'gc>,
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -142,7 +142,7 @@ impl<'gc> AvmSerializer<'gc> {
 
     fn serialize_object(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         obj: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
         let mut js_obj = JsonObject::new();
@@ -187,7 +187,7 @@ impl<'gc> AvmSerializer<'gc> {
     /// Note that this doesn't actually check if the object passed can be iterated using ArrayIter, it just assumes it can.
     fn serialize_iterable(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         iterable: Object<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
         let mut js_arr = Vec::new();
@@ -204,7 +204,7 @@ impl<'gc> AvmSerializer<'gc> {
 
     fn serialize_value(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
         Ok(match value {
@@ -240,7 +240,7 @@ impl<'gc> AvmSerializer<'gc> {
     /// Same thing as serialize_value, but maps the value before calling it.
     fn serialize(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
         let mapped = self.map_value(activation, || "".into(), value)?;
@@ -250,7 +250,7 @@ impl<'gc> AvmSerializer<'gc> {
 
 /// Implements `JSON.parse`.
 pub fn parse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -266,7 +266,7 @@ pub fn parse<'gc>(
 
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

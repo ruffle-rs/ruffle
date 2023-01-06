@@ -130,7 +130,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn find(
         &self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // First search our scopes
         if let Some(scopes) = self.scopes {
@@ -161,7 +161,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn resolve(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         if let Some(object) = self.find(name, activation)? {
             Ok(Some(object.get_property(name, activation)?))

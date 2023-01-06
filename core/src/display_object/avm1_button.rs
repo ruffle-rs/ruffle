@@ -136,7 +136,7 @@ impl<'gc> Avm1Button<'gc> {
     /// the caller is holding a write lock on the button data.
     fn set_state(
         mut self,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
+        context: &mut crate::context::UpdateContext<'_, 'gc>,
         state: ButtonState,
     ) {
         let mut removed_depths: fnv::FnvHashSet<_> =
@@ -209,7 +209,7 @@ impl<'gc> Avm1Button<'gc> {
         self.0.read().enabled
     }
 
-    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc, '_>, enabled: bool) {
+    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
         self.0.write(context.gc_context).enabled = enabled;
         if !enabled {
             self.set_state(context, ButtonState::Up);
@@ -220,11 +220,7 @@ impl<'gc> Avm1Button<'gc> {
         self.0.read().use_hand_cursor
     }
 
-    pub fn set_use_hand_cursor(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        use_hand_cursor: bool,
-    ) {
+    pub fn set_use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>, use_hand_cursor: bool) {
         self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
     }
 }
@@ -256,7 +252,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -286,7 +282,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         let self_display_object = (*self).into();
         let initialized = self.0.read().initialized;
 
@@ -336,7 +332,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
@@ -347,7 +343,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
     fn hit_test_shape(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         options: HitTestOptions,
     ) -> bool {
@@ -392,7 +388,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.write(gc_context).has_focus = focused;
     }
 
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         let had_focus = self.0.read().has_focus;
         if had_focus {
             let tracker = context.focus_tracker;
@@ -450,7 +446,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
     fn event_dispatch(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent,
     ) -> ClipEventResult {
         let self_display_object = self.into();
@@ -534,7 +530,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
     fn mouse_pick(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
@@ -558,7 +554,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         None
     }
 
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
         if self.use_hand_cursor() && self.enabled() {
             MouseCursor::Hand
         } else {
@@ -568,11 +564,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> Avm1ButtonData<'gc> {
-    fn play_sound(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        sound: Option<&swf::ButtonSound>,
-    ) {
+    fn play_sound(&self, context: &mut UpdateContext<'_, 'gc>, sound: Option<&swf::ButtonSound>) {
         if let Some((id, sound_info)) = sound {
             if let Some(sound_handle) = context
                 .library
@@ -585,7 +577,7 @@ impl<'gc> Avm1ButtonData<'gc> {
     }
     fn run_actions(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         condition: swf::ButtonActionCondition,
         key_code: Option<ButtonKeyCode>,
     ) -> ClipEventResult {

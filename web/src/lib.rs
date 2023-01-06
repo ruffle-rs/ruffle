@@ -41,7 +41,7 @@ thread_local! {
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
 
-    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static, 'static>>> = RefCell::new(None);
+    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = RefCell::new(None);
 }
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
@@ -1098,17 +1098,12 @@ struct JavascriptMethod {
 }
 
 impl ExternalInterfaceMethod for JavascriptMethod {
-    fn call(
-        &self,
-        context: &mut UpdateContext<'_, '_, '_>,
-        args: &[ExternalValue],
-    ) -> ExternalValue {
+    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
         let old_context = CURRENT_CONTEXT.with(|v| {
             v.replace(Some(unsafe {
-                std::mem::transmute::<
-                    &mut UpdateContext,
-                    &mut UpdateContext<'static, 'static, 'static>,
-                >(context)
+                std::mem::transmute::<&mut UpdateContext, &mut UpdateContext<'static, 'static>>(
+                    context,
+                )
             } as *mut UpdateContext))
         });
         let result = if let Some(function) = self.function.dyn_ref::<Function>() {

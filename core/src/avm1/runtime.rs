@@ -109,7 +109,7 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         name: S,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -155,11 +155,11 @@ impl<'gc> Avm1<'gc> {
     /// This creates a new frame stack.
     pub fn run_with_stack_frame_for_display_object<'a, F, R>(
         active_clip: DisplayObject<'gc>,
-        action_context: &mut UpdateContext<'_, 'gc, '_>,
+        action_context: &mut UpdateContext<'_, 'gc>,
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut Activation<'b, 'gc, '_>) -> R,
+        for<'b> F: FnOnce(&mut Activation<'b, 'gc>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -193,7 +193,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_init_action(
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -242,7 +242,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_method<'a, 'b>(
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
-        context: &'a mut UpdateContext<'b, 'gc, '_>,
+        context: &'a mut UpdateContext<'b, 'gc>,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
@@ -262,7 +262,7 @@ impl<'gc> Avm1<'gc> {
 
     pub fn notify_system_listeners(
         active_clip: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         broadcaster_name: AvmString<'gc>,
         method: AvmString<'gc>,
         args: &[Value<'gc>],
@@ -390,7 +390,7 @@ impl<'gc> Avm1<'gc> {
 
     // Run a single frame.
     #[instrument(level = "debug", skip_all)]
-    pub fn run_frame(context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn run_frame(context: &mut UpdateContext<'_, 'gc>) {
         // In AVM1, we only ever execute the update phase, and all the work that
         // would ordinarily be phased is instead run all at once in whatever order
         // the SWF requests it.
@@ -502,7 +502,7 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     }
 }
 
-pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
+pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
     match &error {
         Error::ThrownValue(value) => {
             let message = value

@@ -27,7 +27,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [point.0.into(), point.1.into()];
     construct_new_point(&args, activation)
@@ -35,7 +35,7 @@ pub fn point_to_object<'gc>(
 
 pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.context.avm1.prototypes().point_constructor;
     let object = constructor.construct(activation, args)?;
@@ -44,7 +44,7 @@ pub fn construct_new_point<'gc>(
 
 pub fn value_to_point<'gc>(
     value: Value<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = value
         .coerce_to_object(activation)
@@ -59,7 +59,7 @@ pub fn value_to_point<'gc>(
 
 pub fn object_to_point<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = object.get("x", activation)?.coerce_to_f64(activation)?;
     let y = object.get("y", activation)?.coerce_to_f64(activation)?;
@@ -67,7 +67,7 @@ pub fn object_to_point<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -91,7 +91,7 @@ fn constructor<'gc>(
 }
 
 fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -103,7 +103,7 @@ fn clone<'gc>(
 }
 
 fn equals<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -120,7 +120,7 @@ fn equals<'gc>(
 }
 
 fn add<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -135,7 +135,7 @@ fn add<'gc>(
 }
 
 fn subtract<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,7 +150,7 @@ fn subtract<'gc>(
 }
 
 fn distance<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -173,7 +173,7 @@ fn distance<'gc>(
 }
 
 fn polar<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -190,7 +190,7 @@ fn polar<'gc>(
 }
 
 fn interpolate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -206,7 +206,7 @@ fn interpolate<'gc>(
 }
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -225,7 +225,7 @@ fn to_string<'gc>(
 }
 
 fn length<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -235,7 +235,7 @@ fn length<'gc>(
 }
 
 fn normalize<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -263,7 +263,7 @@ fn normalize<'gc>(
 }
 
 fn offset<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
