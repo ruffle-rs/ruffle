@@ -25,6 +25,7 @@ isahc = "1.7.2"
 rfd = "0.10.0"
 anyhow = "1.0"
 bytemuck = "1.12.3"
+tracing-tracy = { version = "0.10.1", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
@@ -39,6 +40,7 @@ default = ["software_video"]
 avm_debug = ["ruffle_core/avm_debug"]
 lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
+tracy = ["tracing-tracy"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
