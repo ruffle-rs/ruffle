@@ -3227,6 +3227,20 @@ name = "profiling"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74605f360ce573babfe43964cbe520294dcb081afbf8c108fc6e23036b4da2df"
+dependencies = [
+ "profiling-procmacros",
+ "tracy-client",
+]
+
+[[package]]
+name = "profiling-procmacros"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a1e2417ef905b8ad94215f8a607bd2d0f5d13d416d18dca4a530811e8a0674c"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "quick-xml"
@@ -3586,13 +3600,14 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
- "log",
  "naga-agal",
  "once_cell",
  "ouroboros",
+ "profiling",
  "raw-window-handle 0.5.0",
  "ruffle_render",
  "swf",
+ "tracing",
  "typed-arena",
  "web-sys",
  "wgpu",
@@ -4505,9 +4520,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-tracy"
-version = "0.10.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74513033e242c0109c2ba9cb6d94117a53dbd6511eb135f5512143136eeba311"
+checksum = "ed3ebef1f9f0d00aaa29239537effef65b82c56040c680f540fc6cedfac7b230"
 dependencies = [
  "tracing-core",
  "tracing-subscriber",
@@ -4527,9 +4542,9 @@ dependencies = [
 
 [[package]]
 name = "tracy-client"
-version = "0.15.0"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c615e58172e788a208faee61b74988cd9c4778bc782384bed540b3fa4e5d4436"
+checksum = "8b3b9ab635a5b91dd66b7a1591a89f7d52423e6a9143b230bb4c503f41296c0c"
 dependencies = [
  "loom",
  "once_cell",

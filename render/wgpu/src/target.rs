@@ -3,6 +3,7 @@ use crate::Error;
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 use std::sync::Arc;
+use tracing::instrument;
 
 pub trait RenderTargetFrame: Debug {
     fn into_view(self) -> wgpu::TextureView;
@@ -123,6 +124,7 @@ impl RenderTarget for SwapChainTarget {
         Ok(SwapChainTargetFrame { texture, view })
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         _device: &wgpu::Device,
@@ -209,6 +211,7 @@ impl TextureTarget {
 
     /// Captures the current contents of our texture buffer
     /// as an `RgbaImage`
+    #[instrument(level = "debug", skip_all)]
     pub fn capture(
         &self,
         device: &wgpu::Device,
@@ -251,7 +254,7 @@ impl TextureTarget {
                 image
             }
             Err(e) => {
-                log::error!("Unknown error reading capture buffer: {:?}", e);
+                tracing::error!("Unknown error reading capture buffer: {:?}", e);
                 None
             }
         }
@@ -284,6 +287,7 @@ impl RenderTarget for TextureTarget {
         ))
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         device: &wgpu::Device,
