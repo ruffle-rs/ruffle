@@ -44,6 +44,11 @@ thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
 }
 
+#[cfg(feature = "tracy")]
+#[global_allocator]
+static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
+    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 100);
+
 #[derive(Parser, Debug)]
 #[clap(
     name = "Ruffle",
@@ -385,6 +390,10 @@ impl App {
                         // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                         if !minimized {
                             self.player.lock().unwrap().render();
+                            #[cfg(feature = "tracy")]
+                            tracing_tracy::client::Client::running()
+                                .expect("tracy client must be running")
+                                .frame_mark();
                         }
                     }
 
@@ -840,7 +849,16 @@ fn init() {
         panic_hook();
     }));
 
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .finish();
+    #[cfg(feature = "tracy")]
+    let subscriber = {
+        use tracing_subscriber::layer::SubscriberExt;
+        let tracy_subscriber = tracing_tracy::TracyLayer::new();
+        subscriber.with(tracy_subscriber)
+    };
+    tracing::subscriber::set_global_default(subscriber).expect("Couldn't set up global subscriber");
 }
 
 fn panic_hook() {
