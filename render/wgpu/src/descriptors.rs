@@ -2,10 +2,11 @@ use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
 use crate::shaders::Shaders;
 use crate::{
-    create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Vertex,
+    create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Transforms, Vertex,
     DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
+use std::mem;
 use std::sync::{Arc, Mutex};
 
 pub struct Descriptors {
@@ -21,6 +22,7 @@ pub struct Descriptors {
     shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
+    pub empty_bind_group: wgpu::BindGroup,
 }
 
 impl Descriptors {
@@ -28,7 +30,7 @@ impl Descriptors {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
         let bitmap_samplers = BitmapSamplers::new(&device);
-        let shaders = Shaders::new(&device);
+        let shaders = Shaders::new(&device, limits.max_push_constant_size > 0);
         let quad = Quad::new(&device);
         let default_color_transform = create_buffer_with_data(
             &device,
@@ -45,6 +47,12 @@ impl Descriptors {
             }],
         });
 
+        let empty_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_layouts.transforms,
+            entries: &[],
+        });
+
         Self {
             adapter,
             device,
@@ -58,6 +66,7 @@ impl Descriptors {
             shaders,
             pipelines: Default::default(),
             default_color_bind_group,
+            empty_bind_group,
         }
     }
 
@@ -79,7 +88,15 @@ impl Descriptors {
                                 &self.bind_layouts.transforms,
                                 &self.bind_layouts.bitmap,
                             ],
-                            push_constant_ranges: &[],
+                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
+                            {
+                                &[wgpu::PushConstantRange {
+                                    stages: wgpu::ShaderStages::VERTEX,
+                                    range: 0..(mem::size_of::<Transforms>() as u32),
+                                }]
+                            } else {
+                                &[]
+                            },
                         });
                 Arc::new(
                     self.device
@@ -140,7 +157,15 @@ impl Descriptors {
                                 &self.bind_layouts.transforms,
                                 &self.bind_layouts.bitmap,
                             ],
-                            push_constant_ranges: &[],
+                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
+                            {
+                                &[wgpu::PushConstantRange {
+                                    stages: wgpu::ShaderStages::VERTEX,
+                                    range: 0..(mem::size_of::<Transforms>() as u32),
+                                }]
+                            } else {
+                                &[]
+                            },
                         });
                 Arc::new(
                     self.device

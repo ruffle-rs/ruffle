@@ -1,9 +1,10 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, Vertex};
+use crate::{MaskState, Transforms, Vertex};
 use enum_map::{enum_map, Enum, EnumMap};
 use ruffle_render::tessellator::GradientType;
+use std::mem;
 use swf::GradientSpread;
 use wgpu::vertex_attr_array;
 
@@ -212,7 +213,14 @@ fn create_shape_pipeline(
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
         bind_group_layouts,
-        push_constant_ranges: &[],
+        push_constant_ranges: if device.limits().max_push_constant_size > 0 {
+            &[wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::VERTEX,
+                range: 0..(mem::size_of::<Transforms>() as u32),
+            }]
+        } else {
+            &[]
+        },
     });
 
     let mask_render_state = |mask_name, stencil_state, write_mask| {
