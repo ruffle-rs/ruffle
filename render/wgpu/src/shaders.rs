@@ -1,6 +1,11 @@
 use crate::blend::ComplexBlend;
 use enum_map::{enum_map, EnumMap};
+use naga_oil::compose::{
+    ComposableModuleDescriptor, Composer, ComposerError, NagaModuleDescriptor, ShaderDefValue,
+};
 use ruffle_render::tessellator::GradientType;
+use std::borrow::Cow;
+use std::collections::HashMap;
 use swf::GradientSpread;
 
 #[derive(Debug)]
@@ -14,58 +19,63 @@ pub struct Shaders {
 }
 
 impl Shaders {
-    pub fn new(device: &wgpu::Device, push_constants: bool) -> Self {
-        let color_shader = create_shader(
-            device,
-            push_constants,
-            "color",
+    pub fn new(device: &wgpu::Device) -> Self {
+        let mut composer = composer().expect("Couldn't create shader composer");
+        let mut shader_defs = HashMap::new();
+        shader_defs.insert(
+            "use_push_constants".to_owned(),
+            ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
+        );
+        shader_defs.insert(
+            "use_storage_buffers".to_owned(),
+            ShaderDefValue::Bool(device.limits().max_storage_buffers_per_shader_stage > 0),
+        );
+        let color_shader = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "color.wgsl",
             include_str!("../shaders/color.wgsl"),
         );
-        let bitmap_shader = create_shader(
-            device,
-            push_constants,
-            "bitmap",
+        let bitmap_shader = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
         );
-        let copy_srgb_shader = create_shader(
-            device,
-            push_constants,
-            "copy sRGB",
+        let copy_srgb_shader = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "copy_srgb.wgsl",
             include_str!("../shaders/copy_srgb.wgsl"),
         );
-        let copy_shader = create_shader(
-            device,
-            push_constants,
-            "copy",
+        let copy_shader = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "copy.wgsl",
             include_str!("../shaders/copy.wgsl"),
         );
 
         let blend_shaders = enum_map! {
-            ComplexBlend::Multiply => create_shader(device, push_constants, "blend - multiply", include_str!("../shaders/blend/multiply.wgsl")),
-            ComplexBlend::Screen => create_shader(device, push_constants, "blend - screen", include_str!("../shaders/blend/screen.wgsl")),
-            ComplexBlend::Lighten => create_shader(device, push_constants, "blend - lighten", include_str!("../shaders/blend/lighten.wgsl")),
-            ComplexBlend::Darken => create_shader(device, push_constants, "blend - darken", include_str!("../shaders/blend/darken.wgsl")),
-            ComplexBlend::Difference => create_shader(device, push_constants, "blend - difference", include_str!("../shaders/blend/difference.wgsl")),
-            ComplexBlend::Invert => create_shader(device, push_constants, "blend - invert", include_str!("../shaders/blend/invert.wgsl")),
-            ComplexBlend::Alpha => create_shader(device, push_constants, "blend - alpha", include_str!("../shaders/blend/alpha.wgsl")),
-            ComplexBlend::Erase => create_shader(device, push_constants, "blend - erase", include_str!("../shaders/blend/erase.wgsl")),
-            ComplexBlend::Overlay => create_shader(device, push_constants, "blend - overlay", include_str!("../shaders/blend/overlay.wgsl")),
-            ComplexBlend::HardLight => create_shader(device, push_constants, "blend - hardlight", include_str!("../shaders/blend/hardlight.wgsl")),
+            ComplexBlend::Multiply => make_shader(device, &mut composer, &shader_defs, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
+            ComplexBlend::Screen => make_shader(device, &mut composer, &shader_defs, "blend/screen.wgsl", include_str!("../shaders/blend/screen.wgsl")),
+            ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
+            ComplexBlend::Darken => make_shader(device, &mut composer, &shader_defs, "blend/darken.wgsl", include_str!("../shaders/blend/darken.wgsl")),
+            ComplexBlend::Difference => make_shader(device, &mut composer, &shader_defs, "blend/difference.wgsl", include_str!("../shaders/blend/difference.wgsl")),
+            ComplexBlend::Invert => make_shader(device, &mut composer, &shader_defs, "blend/invert.wgsl", include_str!("../shaders/blend/invert.wgsl")),
+            ComplexBlend::Alpha => make_shader(device, &mut composer, &shader_defs, "blend/alpha.wgsl", include_str!("../shaders/blend/alpha.wgsl")),
+            ComplexBlend::Erase => make_shader(device, &mut composer, &shader_defs, "blend/erase.wgsl", include_str!("../shaders/blend/erase.wgsl")),
+            ComplexBlend::Overlay => make_shader(device, &mut composer, &shader_defs, "blend/overlay.wgsl", include_str!("../shaders/blend/overlay.wgsl")),
+            ComplexBlend::HardLight => make_shader(device, &mut composer, &shader_defs, "blend/hardlight.wgsl", include_str!("../shaders/blend/hardlight.wgsl")),
         };
-
-        let gradient_shader = if device.limits().max_storage_buffers_per_shader_stage > 0 {
-            include_str!("../shaders/gradient_storage.wgsl")
-        } else {
-            include_str!("../shaders/gradient_uniform.wgsl")
-        };
-        let type_focal = include_str!("../shaders/gradient/mode/focal.wgsl");
-        let type_linear = include_str!("../shaders/gradient/mode/linear.wgsl");
-        let type_radial = include_str!("../shaders/gradient/mode/radial.wgsl");
 
         let gradient_shaders = enum_map! {
-            GradientType::Focal => create_gradient_shaders(device, push_constants, "focal", type_focal, gradient_shader),
-            GradientType::Linear => create_gradient_shaders(device, push_constants, "linear", type_linear, gradient_shader),
-            GradientType::Radial => create_gradient_shaders(device, push_constants, "radial", type_radial, gradient_shader),
+            GradientType::Focal => create_gradient_shaders(device, &mut composer, &shader_defs, "focal", include_str!("../shaders/gradient/mode/focal.wgsl")),
+            GradientType::Linear => create_gradient_shaders(device, &mut composer, &shader_defs, "linear", include_str!("../shaders/gradient/mode/linear.wgsl")),
+            GradientType::Radial => create_gradient_shaders(device, &mut composer, &shader_defs, "radial", include_str!("../shaders/gradient/mode/radial.wgsl")),
         };
 
         Self {
@@ -79,48 +89,68 @@ impl Shaders {
     }
 }
 
-/// Builds a `wgpu::ShaderModule` the given WGSL source in `src`.
-///
-/// The source is prepended with common code in `common.wgsl`, simulating a `#include` preprocessor.
-/// We could possibly does this as an offline build step instead.
-fn create_shader(
+fn composer() -> Result<Composer, ComposerError> {
+    let mut composer = Composer::default();
+    // [NA] Hack to get all capabilities since nobody exposes this type easily
+    let capabilities = composer.capabilities;
+    composer = composer.with_capabilities(!capabilities);
+    composer.add_composable_module(ComposableModuleDescriptor {
+        source: include_str!("../shaders/common.wgsl"),
+        file_path: "common.wgsl",
+        ..Default::default()
+    })?;
+    composer.add_composable_module(ComposableModuleDescriptor {
+        source: include_str!("../shaders/gradient/common.wgsl"),
+        file_path: "gradient/common.wgsl",
+        ..Default::default()
+    })?;
+    Ok(composer)
+}
+
+fn make_shader(
     device: &wgpu::Device,
-    push_constants: bool,
+    composer: &mut Composer,
+    shader_defs: &HashMap<String, ShaderDefValue>,
     name: &str,
-    src: &str,
+    source: &'static str,
 ) -> wgpu::ShaderModule {
-    const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
-    const UNIFORMS_PC_SRC: &str = include_str!("../shaders/common_push_constants.wgsl");
-    const UNIFORMS_NO_PC_SRC: &str = include_str!("../shaders/common_no_push_constants.wgsl");
-    let uniforms = if push_constants {
-        UNIFORMS_PC_SRC
-    } else {
-        UNIFORMS_NO_PC_SRC
-    };
-    let src = [COMMON_SRC, uniforms, src].concat();
-    let label = create_debug_label!("Shader {}", name);
-    let desc = wgpu::ShaderModuleDescriptor {
-        label: label.as_deref(),
-        source: wgpu::ShaderSource::Wgsl(src.into()),
-    };
-    device.create_shader_module(desc)
+    device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: create_debug_label!("Shader {}", name).as_deref(),
+        source: wgpu::ShaderSource::Naga(Cow::Owned(
+            composer
+                .make_naga_module(NagaModuleDescriptor {
+                    source,
+                    file_path: name,
+                    shader_defs: shader_defs.clone(),
+                    ..Default::default()
+                })
+                .unwrap_or_else(|_| panic!("{name} failed to compile")),
+        )),
+    })
 }
 
 fn create_gradient_shaders(
     device: &wgpu::Device,
-    push_constants: bool,
-    name: &str,
-    mode: &str,
-    special: &str,
+    composer: &mut Composer,
+    shader_defs: &HashMap<String, ShaderDefValue>,
+    name: &'static str,
+    source: &'static str,
 ) -> EnumMap<GradientSpread, wgpu::ShaderModule> {
-    const COMMON_SRC: &str = include_str!("../shaders/gradient/common.wgsl");
-    const SPREAD_REFLECT: &str = include_str!("../shaders/gradient/repeat/mirror.wgsl");
-    const SPREAD_REPEAT: &str = include_str!("../shaders/gradient/repeat/repeat.wgsl");
-    const SPREAD_PAD: &str = include_str!("../shaders/gradient/repeat/clamp.wgsl");
-
     enum_map! {
-        GradientSpread::Reflect => create_shader(device, push_constants, &format!("gradient - {name} reflect"), &[mode, SPREAD_REFLECT, special, COMMON_SRC].concat()),
-        GradientSpread::Repeat => create_shader(device,push_constants, &format!("gradient - {name} repeat"), &[mode, SPREAD_REPEAT, special, COMMON_SRC].concat()),
-        GradientSpread::Pad => create_shader(device, push_constants,&format!("gradient - {name} pad"), &[mode, SPREAD_PAD, special, COMMON_SRC].concat()),
+        GradientSpread::Reflect => {
+            let mut temporary_defs = shader_defs.clone();
+            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(1));
+            make_shader(device, composer, &temporary_defs, &format!("gradient/{name}.wgsl with reflect"), source)
+        },
+        GradientSpread::Repeat => {
+            let mut temporary_defs = shader_defs.clone();
+            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(2));
+            make_shader(device, composer, &temporary_defs, &format!("gradient/{name}.wgsl with repeat"), source)
+        },
+        GradientSpread::Pad => {
+            let mut temporary_defs = shader_defs.clone();
+            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(3));
+            make_shader(device, composer, &temporary_defs,&format!("gradient/{name}.wgsl with pad"), source)
+        },
     }
 }

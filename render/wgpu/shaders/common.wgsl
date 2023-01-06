@@ -1,3 +1,5 @@
+#define_import_path common
+
 /// Common WGSL shared among all Ruffle shaders.
 /// Ruffle prepends this file onto every shader at runtime.
 
