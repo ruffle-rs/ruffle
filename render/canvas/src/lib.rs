@@ -506,7 +506,7 @@ impl RenderBackend for WebCanvasRenderBackend {
 }
 
 impl CommandHandler for WebCanvasRenderBackend {
-    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
         if self.mask_state == MaskState::ClearMask {
             return;
         }
@@ -514,15 +514,15 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.context.set_image_smoothing_enabled(smoothing);
 
         self.set_transform(&transform.matrix);
-        self.set_color_filter(transform);
-        let bitmap = as_bitmap_data(bitmap);
+        self.set_color_filter(&transform);
+        let bitmap = as_bitmap_data(&bitmap);
         let _ = self
             .context
             .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
         self.clear_color_filter();
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         match &self.mask_state {
             MaskState::DrawContent => {
                 let mut line_scale = LineScales::new(&transform.matrix);
@@ -554,7 +554,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                                         );
                                     }
                                     CanvasFillStyle::Gradient(gradient) => {
-                                        self.set_color_filter(transform);
+                                        self.set_color_filter(&transform);
                                         self.context.set_fill_style(&gradient.gradient);
 
                                         if let Some(gradient_transform) = &gradient.transform {
@@ -586,7 +586,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                                         self.clear_color_filter();
                                     }
                                     CanvasFillStyle::Bitmap(bitmap) => {
-                                        self.set_color_filter(transform);
+                                        self.set_color_filter(&transform);
                                         self.context.set_image_smoothing_enabled(bitmap.smoothed);
                                         self.context.set_fill_style(&bitmap.pattern);
                                         self.context.fill_with_path_2d_and_winding(
@@ -656,7 +656,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                                             ),
                                         };
                                         if let Ok(gradient) = gradient {
-                                            self.set_color_filter(transform);
+                                            self.set_color_filter(&transform);
                                             self.context.set_stroke_style(&gradient.gradient);
                                             self.context.stroke_with_path(&transformed_path);
                                             self.clear_color_filter();
@@ -670,7 +670,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                                         bitmap.pattern.set_transform(
                                             bitmap_matrix.to_dom_matrix().unchecked_ref(),
                                         );
-                                        self.set_color_filter(transform);
+                                        self.set_color_filter(&transform);
                                         self.context.set_image_smoothing_enabled(bitmap.smoothed);
                                         self.context.set_stroke_style(&bitmap.pattern);
                                         self.context.stroke_with_path(&transformed_path);
@@ -703,10 +703,10 @@ impl CommandHandler for WebCanvasRenderBackend {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: Matrix) {
         match &self.mask_state {
             MaskState::DrawContent => {
-                self.set_transform(matrix);
+                self.set_transform(&matrix);
                 self.clear_color_filter();
                 self.context.set_fill_style(
                     &format!(
@@ -771,7 +771,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         }
     }
 
-    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: CommandList, blend: BlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();

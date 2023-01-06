@@ -537,7 +537,7 @@ impl<'gc> Stage<'gc> {
             if margin_top > 0.0 {
                 context.commands.draw_rect(
                     Color::BLACK,
-                    &Matrix::create_box(
+                    Matrix::create_box(
                         viewport_width,
                         margin_top,
                         0.0,
@@ -549,7 +549,7 @@ impl<'gc> Stage<'gc> {
             if margin_bottom > 0.0 {
                 context.commands.draw_rect(
                     Color::BLACK,
-                    &Matrix::create_box(
+                    Matrix::create_box(
                         viewport_width,
                         margin_bottom,
                         0.0,
@@ -563,7 +563,7 @@ impl<'gc> Stage<'gc> {
             if margin_left > 0.0 {
                 context.commands.draw_rect(
                     Color::BLACK,
-                    &Matrix::create_box(
+                    Matrix::create_box(
                         margin_left,
                         viewport_height,
                         0.0,
@@ -575,7 +575,7 @@ impl<'gc> Stage<'gc> {
             if margin_right > 0.0 {
                 context.commands.draw_rect(
                     Color::BLACK,
-                    &Matrix::create_box(
+                    Matrix::create_box(
                         margin_right,
                         viewport_height,
                         0.0,

@@ -450,7 +450,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let read = self.0.read();
 
         if let Some((_frame_id, ref bitmap)) = read.decoded_frame {
-            let mut transform = context.transform_stack.transform().clone();
+            let mut transform = context.transform_stack.transform();
             let bounds = self.self_bounds();
 
             // The actual decoded frames might be different in size than the declared
@@ -478,7 +478,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
             context
                 .commands
-                .render_bitmap(&bitmap.handle, &transform, smoothing);
+                .render_bitmap(bitmap.handle.clone(), transform, smoothing);
         } else {
             tracing::warn!("Video has no decoded frame to render.");
         }

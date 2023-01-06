@@ -1123,9 +1123,9 @@ impl RenderBackend for WebGlRenderBackend {
 }
 
 impl CommandHandler for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: &BitmapHandle, transform: &Transform, smoothing: bool) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
         self.set_stencil_state();
-        let entry = as_registry_data(bitmap);
+        let entry = as_registry_data(&bitmap);
         // Adjust the quad draw to use the target bitmap.
         let mesh = &self.meshes[self.bitmap_quad_shape.0];
         let draw = &mesh.draws[0];
@@ -1213,7 +1213,7 @@ impl CommandHandler for WebGlRenderBackend {
             .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
@@ -1355,7 +1355,7 @@ impl CommandHandler for WebGlRenderBackend {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &ruffle_render::matrix::Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: ruffle_render::matrix::Matrix) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -1449,7 +1449,7 @@ impl CommandHandler for WebGlRenderBackend {
         self.mask_state_dirty = true;
     }
 
-    fn blend(&mut self, commands: &CommandList, blend: BlendMode) {
+    fn blend(&mut self, commands: CommandList, blend: BlendMode) {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();

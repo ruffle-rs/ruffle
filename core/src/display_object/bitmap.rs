@@ -302,7 +302,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 .expect("Missing bitmap handle");
 
             context.commands.render_bitmap(
-                &handle,
+                handle,
                 context.transform_stack.transform(),
                 bitmap_data.smoothing,
             );
