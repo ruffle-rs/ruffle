@@ -225,7 +225,7 @@ impl WgpuContext3D {
                     mask,
                 } => {
                     if *mask != COLOR_MASK | DEPTH_MASK | STENCIL_MASK {
-                        log::warn!(
+                        tracing::warn!(
                             "Context3D::present: Clear command with mask {:x} not implemeneted",
                             mask
                         );
@@ -253,12 +253,14 @@ impl WgpuContext3D {
                     wants_best_resolution_on_browser_zoom: _,
                 } => {
                     if *anti_alias != 1 {
-                        log::warn!(
+                        tracing::warn!(
                             "configureBackBuffer: anti_alias={anti_alias} is not yet implemented"
                         );
                     }
                     if *depth_and_stencil {
-                        log::warn!("configureBackBuffer: depth_and_stencil is not yet implemented");
+                        tracing::warn!(
+                            "configureBackBuffer: depth_and_stencil is not yet implemented"
+                        );
                     }
 
                     let texture_label = create_debug_label!("Render target texture");
@@ -358,7 +360,7 @@ impl WgpuContext3D {
                     );
 
                     if !seen_clear_command {
-                        log::warn!("Context3D::present: drawTriangles called without first calling clear()");
+                        tracing::warn!("Context3D::present: drawTriangles called without first calling clear()");
                     }
 
                     if new_pipeline.is_some() || render_pass.is_none() {

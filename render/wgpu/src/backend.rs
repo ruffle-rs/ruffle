@@ -22,6 +22,7 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
+use tracing::instrument;
 use wgpu::Extent3d;
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
@@ -72,7 +73,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
-            log::warn!(
+            tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
             );
@@ -100,7 +101,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
         if wgpu::Backends::SECONDARY.contains(backend) {
-            log::warn!(
+            tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
             );
@@ -298,6 +299,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         )))
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn context3d_present<'gc>(
         &mut self,
         context: &mut dyn Context3D,
@@ -346,6 +348,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn register_shape(
         &mut self,
         shape: DistilledShape,
@@ -357,6 +360,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         handle
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
@@ -367,6 +371,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.meshes[handle.0] = mesh;
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
@@ -378,11 +383,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         handle
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
             Err(e) => {
-                log::warn!("Couldn't begin new render frame: {}", e);
+                tracing::warn!("Couldn't begin new render frame: {}", e);
                 // Attempt to recreate the swap chain in this case.
                 self.target.resize(
                     &self.descriptors.device,
@@ -420,6 +426,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.offscreen_texture_pool = TexturePool::new();
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         if bitmap.width() > self.descriptors.limits.max_texture_dimension_2d
             || bitmap.height() > self.descriptors.limits.max_texture_dimension_2d
@@ -479,6 +486,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(handle)
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
@@ -513,6 +521,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(())
     }
 
+    #[instrument(level = "debug", skip_all)]
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,

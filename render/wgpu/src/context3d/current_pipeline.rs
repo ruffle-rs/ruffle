@@ -174,7 +174,7 @@ impl CurrentPipeline {
             Context3DTriangleFace::Back => Some(wgpu::Face::Back),
             Context3DTriangleFace::Front => Some(wgpu::Face::Front),
             Context3DTriangleFace::FrontAndBack => {
-                log::error!("FrontAndBack culling not supported!");
+                tracing::error!("FrontAndBack culling not supported!");
                 None
             }
             Context3DTriangleFace::None => None,

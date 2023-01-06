@@ -11,6 +11,7 @@ use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, Uni
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
 use target::CommandTarget;
+use tracing::instrument;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -47,6 +48,7 @@ impl Surface {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_to(
         &mut self,
         frame_view: &wgpu::TextureView,
@@ -165,6 +167,7 @@ impl Surface {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
         clear_color: wgpu::Color,
