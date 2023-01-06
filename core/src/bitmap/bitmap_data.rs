@@ -230,7 +230,7 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn check_valid(
         &self,
-        activation: &mut crate::avm2::Activation<'_, 'gc, '_>,
+        activation: &mut crate::avm2::Activation<'_, 'gc>,
     ) -> Result<(), crate::avm2::Error<'gc>> {
         if self.disposed() {
             return Err(crate::avm2::Error::AvmError(
@@ -1023,7 +1023,7 @@ impl<'gc> BitmapData<'gc> {
         transform: Transform,
         smoothing: bool,
         blend_mode: BlendMode,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) {
         let bitmapdata_width = self.width();
         let bitmapdata_height = self.height();

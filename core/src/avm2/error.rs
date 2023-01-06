@@ -34,7 +34,7 @@ static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 32]);
 #[inline(never)]
 #[cold]
 pub fn range_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -45,7 +45,7 @@ pub fn range_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn argument_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +56,7 @@ pub fn argument_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn type_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ pub fn type_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn reference_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -78,7 +78,7 @@ pub fn reference_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn verify_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -89,7 +89,7 @@ pub fn verify_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn io_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -100,7 +100,7 @@ pub fn io_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn eof_error<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -109,7 +109,7 @@ pub fn eof_error<'gc>(
 }
 
 fn error_constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     class: ClassObject<'gc>,
     message: &str,
     code: u32,

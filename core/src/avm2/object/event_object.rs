@@ -18,7 +18,7 @@ use std::fmt::Debug;
 /// A class instance allocator that allocates Event objects.
 pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -51,10 +51,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event_type: S,
-    ) -> Object<'gc>
+    pub fn bare_default_event<S>(context: &mut UpdateContext<'_, 'gc>, event_type: S) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -65,7 +62,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// Note that if you need an Event subclass, you need to construct it via .construct().
     pub fn bare_event<S>(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event_type: S,
         bubbles: bool,
         cancelable: bool,
@@ -93,7 +90,7 @@ impl<'gc> EventObject<'gc> {
     }
 
     pub fn mouse_event<S>(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         event_type: S,
         target: DisplayObject<'gc>,
         related_object: Option<InteractiveObject<'gc>>,

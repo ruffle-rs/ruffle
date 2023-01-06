@@ -6,7 +6,7 @@ use crate::avm2::Error;
 use crate::context_menu;
 
 pub fn hide_built_in_items<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -39,7 +39,7 @@ pub fn hide_built_in_items<'gc>(
 
 pub fn make_context_menu_state<'gc>(
     menu: Option<Object<'gc>>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> context_menu::ContextMenuState<'gc> {
     let mut result = context_menu::ContextMenuState::new();
 

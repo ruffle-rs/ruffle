@@ -75,7 +75,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         u16::MAX
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
@@ -95,13 +95,13 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         Some(self.into())
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
             child.enter_frame(context);
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
@@ -133,7 +133,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     }
     fn event_dispatch(
         self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
@@ -141,7 +141,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
 
     fn mouse_pick(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         pos: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {

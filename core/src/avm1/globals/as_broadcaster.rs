@@ -61,7 +61,7 @@ impl<'gc> BroadcasterFunctions<'gc> {
 }
 
 pub fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -85,7 +85,7 @@ pub fn add_listener<'gc>(
 }
 
 pub fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -111,7 +111,7 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -126,7 +126,7 @@ pub fn broadcast_message<'gc>(
 }
 
 pub fn broadcast_internal<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: AvmString<'gc>,
@@ -155,7 +155,7 @@ pub fn broadcast_internal<'gc>(
 }
 
 pub fn initialize<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

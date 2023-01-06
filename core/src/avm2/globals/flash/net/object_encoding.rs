@@ -4,7 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 pub fn get_dynamic_property_writer<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -13,7 +13,7 @@ pub fn get_dynamic_property_writer<'gc>(
 }
 
 pub fn set_dynamic_property_writer<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

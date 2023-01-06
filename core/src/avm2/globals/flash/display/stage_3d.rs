@@ -7,7 +7,7 @@ use crate::avm2::{Activation, Error, Object, Value};
 pub use crate::avm2::object::stage_3d_allocator;
 
 pub fn request_context3d_internal<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -37,7 +37,7 @@ pub fn request_context3d_internal<'gc>(
 }
 
 pub fn get_context_3d<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

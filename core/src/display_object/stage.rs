@@ -272,11 +272,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Set the stage scale mode.
-    pub fn set_scale_mode(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        scale_mode: StageScaleMode,
-    ) {
+    pub fn set_scale_mode(self, context: &mut UpdateContext<'_, 'gc>, scale_mode: StageScaleMode) {
         self.0.write(context.gc_context).scale_mode = scale_mode;
         self.build_matrices(context);
     }
@@ -299,7 +295,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Toggles display state between fullscreen and normal
-    pub fn toggle_display_state(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn toggle_display_state(self, context: &mut UpdateContext<'_, 'gc>) {
         if self.is_fullscreen() {
             self.set_display_state(context, StageDisplayState::Normal);
         } else {
@@ -310,7 +306,7 @@ impl<'gc> Stage<'gc> {
     /// Set the stage display state.
     pub fn set_display_state(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         display_state: StageDisplayState,
     ) {
         if display_state == self.display_state()
@@ -340,7 +336,7 @@ impl<'gc> Stage<'gc> {
 
     /// Set the stage alignment.
     /// This only has an effect if the scale mode is not `StageScaleMode::ExactFit`.
-    pub fn set_align(self, context: &mut UpdateContext<'_, 'gc, '_>, align: StageAlign) {
+    pub fn set_align(self, context: &mut UpdateContext<'_, 'gc>, align: StageAlign) {
         self.0.write(context.gc_context).align = align;
         self.build_matrices(context);
     }
@@ -365,11 +361,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Sets the window mode.
-    pub fn set_window_mode(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        window_mode: WindowMode,
-    ) {
+    pub fn set_window_mode(self, context: &mut UpdateContext<'_, 'gc>, window_mode: WindowMode) {
         self.0.write(context.gc_context).window_mode = window_mode;
     }
 
@@ -381,7 +373,7 @@ impl<'gc> Stage<'gc> {
         self.0.read().show_menu
     }
 
-    pub fn set_show_menu(self, context: &mut UpdateContext<'_, 'gc, '_>, show_menu: bool) {
+    pub fn set_show_menu(self, context: &mut UpdateContext<'_, 'gc>, show_menu: bool) {
         let mut write = self.0.write(context.gc_context);
         write.show_menu = show_menu;
     }
@@ -400,7 +392,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Update the stage's transform matrix in response to a root movie change.
-    pub fn build_matrices(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn build_matrices(self, context: &mut UpdateContext<'_, 'gc>) {
         let mut stage = self.0.write(context.gc_context);
         let scale_mode = stage.scale_mode;
         let align = stage.align;
@@ -518,7 +510,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Draw the stage's letterbox.
-    fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
         let ViewportDimensions {
             width: viewport_width,
             height: viewport_height,
@@ -604,7 +596,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Fires `Stage.onResize` in AVM1 or `Event.RESIZE` in AVM2.
-    fn fire_resize_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn fire_resize_event(self, context: &mut UpdateContext<'_, 'gc>) {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
         if !context.is_action_script_3() {
@@ -624,7 +616,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
-    pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc>) {
         if !context.is_action_script_3() {
             crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
@@ -680,7 +672,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         _run_frame: bool,
@@ -735,11 +727,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(*self)
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
     }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         // All of our Stage3D instances get rendered *underneath* the main stage.
         // Note that the stage background color is actually the lowest possible layer,
         // and get applied when we start the frame (before `render` is called).
@@ -756,7 +748,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
             child.enter_frame(context);
         }
@@ -773,7 +765,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
@@ -827,7 +819,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
     fn event_dispatch(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         self.event_dispatch_to_avm2(context, event);

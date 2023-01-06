@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates SoundChannel objects.
 pub fn soundchannel_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -57,7 +57,7 @@ pub struct SoundChannelObjectData<'gc> {
 impl<'gc> SoundChannelObject<'gc> {
     /// Convert a bare sound instance into it's object representation.
     pub fn from_sound_instance(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         sound: SoundInstanceHandle,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().soundchannel;

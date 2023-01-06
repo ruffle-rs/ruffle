@@ -37,13 +37,13 @@ use std::time::Duration;
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
-pub struct UpdateContext<'a, 'gc, 'gc_context> {
+pub struct UpdateContext<'a, 'gc> {
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'a mut ActionQueue<'gc>,
 
     /// The mutation context to allocate and mutate `GcCell` types.
-    pub gc_context: MutationContext<'gc, 'gc_context>,
+    pub gc_context: MutationContext<'gc, 'a>,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
@@ -182,7 +182,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 }
 
 /// Convenience methods for controlling audio.
-impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+impl<'a, 'gc> UpdateContext<'a, 'gc> {
     pub fn update_sounds(&mut self) {
         self.audio_manager.update_sounds(
             self.audio,
@@ -285,7 +285,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 }
 
-impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
+impl<'a, 'gc> UpdateContext<'a, 'gc> {
     /// Transform a borrowed update context into an owned update context with
     /// a shorter internal lifetime.
     ///
@@ -293,7 +293,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     /// update context without adding further lifetimes for its borrowing.
     /// Please note that you will not be able to use the original update
     /// context until this reborrowed copy has fallen out of scope.
-    pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc, 'gc_context>
+    pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc>
     where
         'a: 'b,
     {
@@ -421,7 +421,7 @@ impl<'gc> Default for ActionQueue<'gc> {
 
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
-pub struct RenderContext<'a, 'gc, 'gc_context> {
+pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
@@ -430,7 +430,7 @@ pub struct RenderContext<'a, 'gc, 'gc_context> {
 
     /// The GC MutationContext, used to perform any GcCell writes
     /// that must occur during rendering.
-    pub gc_context: MutationContext<'gc, 'gc_context>,
+    pub gc_context: MutationContext<'gc, 'a>,
 
     /// The UI backend, used to detect user interactions.
     pub ui: &'a mut dyn UiBackend,

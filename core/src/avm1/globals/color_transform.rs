@@ -34,7 +34,7 @@ impl<'gc> ColorTransformObject {
     };
 
     pub fn construct(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         color_transform: ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
@@ -95,7 +95,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -138,7 +138,7 @@ pub fn constructor<'gc>(
 }
 
 fn get_rgb<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ fn get_rgb<'gc>(
 }
 
 fn set_rgb<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -179,7 +179,7 @@ macro_rules! color_transform_value_accessor {
     ($([$field: ident, $getter: ident, $setter: ident],)*) => {
         $(
             fn $getter<'gc>(
-                _activation: &mut Activation<'_, 'gc, '_>,
+                _activation: &mut Activation<'_, 'gc>,
                 this: Object<'gc>,
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -191,7 +191,7 @@ macro_rules! color_transform_value_accessor {
             }
 
             fn $setter<'gc>(
-                activation: &mut Activation<'_, 'gc, '_>,
+                activation: &mut Activation<'_, 'gc>,
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -219,7 +219,7 @@ color_transform_value_accessor!(
 );
 
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -238,7 +238,7 @@ fn to_string<'gc>(
 }
 
 fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

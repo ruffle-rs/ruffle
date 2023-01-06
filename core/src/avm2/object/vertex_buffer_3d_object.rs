@@ -18,7 +18,7 @@ pub struct VertexBuffer3DObject<'gc>(GcCell<'gc, VertexBuffer3DObjectData<'gc>>)
 
 impl<'gc> VertexBuffer3DObject<'gc> {
     pub fn from_handle(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn VertexBuffer>,
         data_per_vertex: usize,

@@ -82,7 +82,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Some(*self)
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -118,7 +118,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         _options: HitTestOptions,
     ) -> bool {
@@ -189,7 +189,7 @@ impl MorphShapeStatic {
     /// Lazily intializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
-        context: &mut RenderContext<'_, 'gc, '_>,
+        context: &mut RenderContext<'_, 'gc>,
         library: &Library<'gc>,
         ratio: u16,
     ) -> ShapeHandle {

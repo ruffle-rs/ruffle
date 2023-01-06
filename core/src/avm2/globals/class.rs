@@ -16,7 +16,7 @@ use gc_arena::{GcCell, MutationContext};
 /// Notably, you cannot construct new classes this way, so this returns an
 /// error.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -25,7 +25,7 @@ pub fn instance_init<'gc>(
 
 /// Implement's `Class`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ pub fn class_init<'gc>(
 }
 
 fn prototype<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

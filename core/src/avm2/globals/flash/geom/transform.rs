@@ -8,7 +8,7 @@ use swf::Fixed8;
 
 fn get_display_object<'gc>(
     this: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
         .get_property(
@@ -22,7 +22,7 @@ fn get_display_object<'gc>(
 }
 
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -35,7 +35,7 @@ pub fn init<'gc>(
 }
 
 pub fn get_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -47,7 +47,7 @@ pub fn get_color_transform<'gc>(
 }
 
 pub fn set_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -60,7 +60,7 @@ pub fn set_color_transform<'gc>(
 }
 
 pub fn get_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -70,7 +70,7 @@ pub fn get_matrix<'gc>(
 }
 
 pub fn set_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +83,7 @@ pub fn set_matrix<'gc>(
 }
 
 pub fn get_concatenated_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -124,7 +124,7 @@ pub fn get_concatenated_matrix<'gc>(
 }
 
 pub fn get_concatenated_color_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,7 +136,7 @@ pub fn get_concatenated_color_transform<'gc>(
 // is that what we should be doing?
 pub fn object_to_color_transform<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
         .get_property(&Multiname::public("redMultiplier"), activation)?
@@ -176,7 +176,7 @@ pub fn object_to_color_transform<'gc>(
 
 pub fn color_transform_to_object<'gc>(
     color_transform: &ColorTransform,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         color_transform.r_mult.to_f64().into(),
@@ -195,7 +195,7 @@ pub fn color_transform_to_object<'gc>(
 
 pub fn matrix_to_object<'gc>(
     matrix: Matrix,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
         matrix.a.into(),
@@ -215,7 +215,7 @@ pub fn matrix_to_object<'gc>(
 
 pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object
         .get_property(&Multiname::public("a"), activation)?

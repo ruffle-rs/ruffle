@@ -94,7 +94,7 @@ impl<'gc> Bitmap<'gc> {
     /// list. If no data is provided then you are free to add whatever handle
     /// you like.
     pub fn new_with_bitmap_data(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         id: CharacterId,
         bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
         smoothing: bool,
@@ -118,7 +118,7 @@ impl<'gc> Bitmap<'gc> {
 
     /// Create a `Bitmap` with static bitmap data only.
     pub fn new(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
     ) -> Result<Self, ruffle_render::error::Error> {
@@ -172,7 +172,7 @@ impl<'gc> Bitmap<'gc> {
     /// if that has not already been done.
     pub fn set_bitmap_data(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
     ) {
         self.0.write(context.gc_context).bitmap_data = bitmap_data;
@@ -194,7 +194,7 @@ impl<'gc> Bitmap<'gc> {
 
     pub fn set_avm2_bitmapdata_class(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         class: Avm2ClassObject<'gc>,
     ) {
         let bitmap_class = if class.has_class_in_chain(context.avm2.classes().bitmap) {
@@ -250,7 +250,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -283,7 +283,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;

@@ -29,7 +29,7 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc, '_>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'_, 'gc>, dt: f64) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time

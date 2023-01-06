@@ -110,7 +110,7 @@ impl<'gc> VTable<'gc> {
         &self,
         slot_id: u32,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
         let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
@@ -162,7 +162,7 @@ impl<'gc> VTable<'gc> {
         traits: &[Trait<'gc>],
         scope: ScopeChain<'gc>,
         superclass_vtable: Option<Self>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
@@ -405,7 +405,7 @@ impl<'gc> VTable<'gc> {
     /// fail.
     pub fn make_bound_method(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
@@ -470,7 +470,7 @@ impl<'gc> VTable<'gc> {
 fn trait_to_default_value<'gc>(
     scope: ScopeChain<'gc>,
     trait_data: &Trait<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Value<'gc> {
     match trait_data.kind() {
         TraitKind::Slot { default_value, .. } => *default_value,

@@ -14,7 +14,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -110,7 +110,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         let read = self.0.read();
         let num_enumerants = read.base.num_enumerants();
@@ -126,7 +126,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
         let object_space_len = read.object_space.keys().len() as u32;
@@ -147,7 +147,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let name_value = self.get_enumerant_name(index, activation)?;
         if !name_value.is_primitive() {

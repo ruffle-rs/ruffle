@@ -16,7 +16,7 @@ use std::fmt::Debug;
 /// A class instance allocator that allocates `ScriptObject`s.
 pub fn scriptobject_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -144,7 +144,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_property_local(
         &self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
             return Err(format!(
@@ -219,7 +219,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if self
             .instance_of()
@@ -271,7 +271,7 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.set_property_local(multiname, value, activation)
     }

@@ -9,7 +9,7 @@ use gc_arena::MutationContext;
 
 /// Implements `Video`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

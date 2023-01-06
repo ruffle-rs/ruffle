@@ -175,7 +175,7 @@ pub trait TInteractiveObject<'gc>:
     /// terminate, including the event default.
     fn propagate_to_children(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if event.propagates() {
@@ -202,7 +202,7 @@ pub trait TInteractiveObject<'gc>:
     /// if the event will be passed onto siblings and parents.
     fn event_dispatch(
         self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult;
 
@@ -214,7 +214,7 @@ pub trait TInteractiveObject<'gc>:
     /// event types should dispatch them in `event_dispatch`.
     fn event_dispatch_to_avm2(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
@@ -454,7 +454,7 @@ pub trait TInteractiveObject<'gc>:
     /// by its parent, and so forth.
     fn handle_clip_event(
         self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if !self.mouse_enabled() {
@@ -481,7 +481,7 @@ pub trait TInteractiveObject<'gc>:
     /// an `InteractiveObject`.
     fn mouse_pick(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _context: &mut UpdateContext<'_, 'gc>,
         _pos: (Twips, Twips),
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
@@ -489,7 +489,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// The cursor to use when this object is the hovered element under a mouse.
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
         MouseCursor::Hand
     }
 }

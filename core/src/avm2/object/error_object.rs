@@ -17,7 +17,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -57,7 +57,7 @@ pub struct ErrorObjectData<'gc> {
 impl<'gc> ErrorObject<'gc> {
     pub fn display(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         let name = self
             .get_property(&Multiname::public("name"), activation)?
@@ -78,7 +78,7 @@ impl<'gc> ErrorObject<'gc> {
     #[cfg(feature = "avm_debug")]
     pub fn display_full(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         let mut output = WString::new();
         output.push_str(&self.display(activation)?);
@@ -89,7 +89,7 @@ impl<'gc> ErrorObject<'gc> {
     #[cfg(not(feature = "avm_debug"))]
     pub fn display_full(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.display(activation)
     }
@@ -117,10 +117,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn to_string(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(self.display(activation)?.into())
     }
 

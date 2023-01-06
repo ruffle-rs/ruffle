@@ -58,7 +58,7 @@ impl<'gc> BitmapDataObject<'gc> {
         self.bitmap_data().read().disposed()
     }
 
-    pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc>) {
         self.bitmap_data().write(context.gc_context).dispose();
     }
 }

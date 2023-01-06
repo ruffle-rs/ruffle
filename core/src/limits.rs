@@ -73,7 +73,7 @@ impl ExecutionLimit {
     /// starting maximum.
     pub fn did_ops_breach_limit(
         &mut self,
-        context: &mut UpdateContext<'_, '_, '_>,
+        context: &mut UpdateContext<'_, '_>,
         ops: usize,
     ) -> bool {
         if let Some(oplimit) = &mut self.current_oplimit {

@@ -136,7 +136,7 @@ impl<'gc> Video<'gc> {
     ///
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
-    pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'_, 'gc, '_>) {
+    pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'_, 'gc>) {
         match (*self
             .0
             .write(context.gc_context)
@@ -167,7 +167,7 @@ impl<'gc> Video<'gc> {
     /// snapping it to the last independently seekable frame. Then, all frames
     /// from that keyframe up to the (wrapped) requested frame are decoded in
     /// order. This matches Flash Player behavior.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
+    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, mut frame_id: u32) {
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
@@ -239,7 +239,7 @@ impl<'gc> Video<'gc> {
     /// This function makes no attempt to ensure that the proposed seek is
     /// valid, hence the fact that it's not `pub`. To do a seek that accounts
     /// for keyframes, see `Video.seek`.
-    fn seek_internal(self, context: &mut UpdateContext<'_, 'gc, '_>, frame_id: u32) {
+    fn seek_internal(self, context: &mut UpdateContext<'_, 'gc>, frame_id: u32) {
         let read = self.0.read();
         let source = read.source;
         let stream = if let VideoStream::Instantiated(stream) = &read.stream {
@@ -309,7 +309,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -400,7 +400,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());

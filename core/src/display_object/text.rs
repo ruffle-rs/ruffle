@@ -37,7 +37,7 @@ pub struct TextData<'gc> {
 
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         swf: Arc<SwfMovie>,
         tag: &swf::Text,
     ) -> Self {
@@ -95,7 +95,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.0.read().static_data.swf.clone()
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
         if let Some(new_text) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -169,7 +169,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn hit_test_shape(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         mut point: (Twips, Twips),
         _options: HitTestOptions,
     ) -> bool {
@@ -238,7 +238,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<crate::avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
         _run_frame: bool,

@@ -17,7 +17,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.EventDispatcher`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -42,7 +42,7 @@ pub fn instance_init<'gc>(
 
 /// Get an object's dispatch list, lazily initializing it if necessary.
 fn dispatch_list<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     mut this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
@@ -65,7 +65,7 @@ fn dispatch_list<'gc>(
 
 /// Implements `EventDispatcher.addEventListener`.
 pub fn add_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -106,7 +106,7 @@ pub fn add_event_listener<'gc>(
 
 /// Implements `EventDispatcher.removeEventListener`.
 pub fn remove_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,7 +139,7 @@ pub fn remove_event_listener<'gc>(
 
 /// Implements `EventDispatcher.hasEventListener`.
 pub fn has_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +163,7 @@ pub fn has_event_listener<'gc>(
 
 /// Implements `EventDispatcher.willTrigger`.
 pub fn will_trigger<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -201,7 +201,7 @@ pub fn will_trigger<'gc>(
 
 /// Implements `EventDispatcher.dispatchEvent`.
 pub fn dispatch_event<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,7 +220,7 @@ pub fn dispatch_event<'gc>(
 
 /// Implements `flash.events.EventDispatcher`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -232,7 +232,7 @@ pub fn class_init<'gc>(
 /// This is an undocumented function, but MX will VerifyError if this isn't
 /// present.
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

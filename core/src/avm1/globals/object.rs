@@ -28,7 +28,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 /// Implements `Object` constructor
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -41,7 +41,7 @@ pub fn constructor<'gc>(
 
 /// Implements `Object` function
 pub fn object_function<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +56,7 @@ pub fn object_function<'gc>(
 
 /// Implements `Object.prototype.addProperty`
 pub fn add_property<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -97,7 +97,7 @@ pub fn add_property<'gc>(
 
 /// Implements `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -111,7 +111,7 @@ pub fn has_own_property<'gc>(
 
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -124,7 +124,7 @@ fn to_string<'gc>(
 
 /// Implements `Object.prototype.isPropertyEnumerable`
 fn is_property_enumerable<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,7 +139,7 @@ fn is_property_enumerable<'gc>(
 
 /// Implements `Object.prototype.isPrototypeOf`
 fn is_prototype_of<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ fn is_prototype_of<'gc>(
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +163,7 @@ fn value_of<'gc>(
 
 /// Implements `Object.registerClass`
 pub fn register_class<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -190,7 +190,7 @@ pub fn register_class<'gc>(
 
 /// Implements `Object.prototype.watch`
 fn watch<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -215,7 +215,7 @@ fn watch<'gc>(
 
 /// Implements `Object.prototype.unmwatch`
 fn unwatch<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -254,7 +254,7 @@ pub fn fill_proto<'gc>(
 /// declare the property flags of a given property. It's not part of
 /// `Object.prototype`, and I suspect that's a deliberate omission.
 pub fn as_set_prop_flags<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

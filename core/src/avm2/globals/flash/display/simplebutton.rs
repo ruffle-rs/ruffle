@@ -17,7 +17,7 @@ use swf::ButtonState;
 
 /// Implements `flash.display.SimpleButton`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -70,7 +70,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.SimpleButton`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -79,7 +79,7 @@ pub fn class_init<'gc>(
 
 /// Implements `downState`'s getter.
 pub fn down_state<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn down_state<'gc>(
 
 /// Implements `downState`'s setter.
 pub fn set_down_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,7 +121,7 @@ pub fn set_down_state<'gc>(
 
 /// Implements `overState`'s getter.
 pub fn over_state<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -140,7 +140,7 @@ pub fn over_state<'gc>(
 
 /// Implements `overState`'s setter.
 pub fn set_over_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +163,7 @@ pub fn set_over_state<'gc>(
 
 /// Implements `hitTestState`'s getter.
 pub fn hit_test_state<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -182,7 +182,7 @@ pub fn hit_test_state<'gc>(
 
 /// Implements `hitTestState`'s setter.
 pub fn set_hit_test_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -205,7 +205,7 @@ pub fn set_hit_test_state<'gc>(
 
 /// Implements `upState`'s getter.
 pub fn up_state<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -224,7 +224,7 @@ pub fn up_state<'gc>(
 
 /// Implements `upState`'s setter.
 pub fn set_up_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -247,7 +247,7 @@ pub fn set_up_state<'gc>(
 
 /// Implements `trackAsMenu`'s getter
 pub fn track_as_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -263,7 +263,7 @@ pub fn track_as_menu<'gc>(
 
 /// Implements `trackAsMenu`'s setter
 pub fn set_track_as_menu<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -287,7 +287,7 @@ pub fn set_track_as_menu<'gc>(
 
 /// Implements `enabled`'s getter
 pub fn enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -303,7 +303,7 @@ pub fn enabled<'gc>(
 
 /// Implements `enabled`'s setter
 pub fn set_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -325,7 +325,7 @@ pub fn set_enabled<'gc>(
 
 /// Implements `useHandCursor`'s getter
 pub fn use_hand_cursor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -341,7 +341,7 @@ pub fn use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

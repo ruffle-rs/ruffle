@@ -18,7 +18,7 @@ use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -27,7 +27,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.Stage`'s native instance constructor.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -40,7 +40,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `flash.display.Stage`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn class_init<'gc>(
 
 /// Overrides `accessibilityProperties`'s setter.
 pub fn set_accessibility_properties<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -58,7 +58,7 @@ pub fn set_accessibility_properties<'gc>(
 
 /// Overrides `alpha`'s setter.
 pub fn set_alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ pub fn set_alpha<'gc>(
 
 /// Overrides `blendMode`'s setter.
 pub fn set_blend_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -76,7 +76,7 @@ pub fn set_blend_mode<'gc>(
 
 /// Overrides `cacheAsBitmap`'s setter.
 pub fn set_cache_as_bitmap<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -85,7 +85,7 @@ pub fn set_cache_as_bitmap<'gc>(
 
 /// Overrides `contextMenu`'s setter.
 pub fn set_context_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -94,7 +94,7 @@ pub fn set_context_menu<'gc>(
 
 /// Overrides `filters`'s setter.
 pub fn set_filters<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -103,7 +103,7 @@ pub fn set_filters<'gc>(
 
 /// Overrides `focusRect`'s setter.
 pub fn set_focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -112,7 +112,7 @@ pub fn set_focus_rect<'gc>(
 
 /// Overrides `loaderInfo`'s setter.
 pub fn set_loader_info<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,7 +121,7 @@ pub fn set_loader_info<'gc>(
 
 /// Overrides `mask`'s setter.
 pub fn set_mask<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,7 +130,7 @@ pub fn set_mask<'gc>(
 
 /// Overrides `mouseEnabled`'s setter.
 pub fn set_mouse_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,7 +139,7 @@ pub fn set_mouse_enabled<'gc>(
 
 /// Overrides `name`'s getter.
 pub fn name<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -148,7 +148,7 @@ pub fn name<'gc>(
 
 /// Overrides `name`'s setter.
 pub fn set_name<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ pub fn set_name<'gc>(
 
 /// Overrides `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -166,7 +166,7 @@ pub fn set_opaque_background<'gc>(
 
 /// Overrides `rotation`'s setter.
 pub fn set_rotation<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -175,7 +175,7 @@ pub fn set_rotation<'gc>(
 
 /// Overrides `scale9Grid`'s setter.
 pub fn set_scale_nine_grid<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -184,7 +184,7 @@ pub fn set_scale_nine_grid<'gc>(
 
 /// Overrides `scaleX`'s setter.
 pub fn set_scale_x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -193,7 +193,7 @@ pub fn set_scale_x<'gc>(
 
 /// Overrides `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -202,7 +202,7 @@ pub fn set_scale_y<'gc>(
 
 /// Overrides `scrollRect`'s setter.
 pub fn set_scroll_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -211,7 +211,7 @@ pub fn set_scroll_rect<'gc>(
 
 /// Overrides `tabEnabled`'s setter.
 pub fn set_tab_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,7 +220,7 @@ pub fn set_tab_enabled<'gc>(
 
 /// Overrides `tabIndex`'s setter.
 pub fn set_tab_index<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -229,7 +229,7 @@ pub fn set_tab_index<'gc>(
 
 /// Overrides `transform`'s setter.
 pub fn set_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -238,7 +238,7 @@ pub fn set_transform<'gc>(
 
 /// Overrides `visible`'s setter.
 pub fn set_visible<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -247,7 +247,7 @@ pub fn set_visible<'gc>(
 
 /// Overrides `x`'s setter.
 pub fn set_x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -256,7 +256,7 @@ pub fn set_x<'gc>(
 
 /// Overrides `y`'s setter.
 pub fn set_y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -265,7 +265,7 @@ pub fn set_y<'gc>(
 
 /// Implement `align`'s getter
 pub fn align<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -294,7 +294,7 @@ pub fn align<'gc>(
 
 /// Implement `align`'s setter
 pub fn set_align<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -313,7 +313,7 @@ pub fn set_align<'gc>(
 
 /// Implement `browserZoomFactor`'s getter
 pub fn browser_zoom_factor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -335,7 +335,7 @@ pub fn browser_zoom_factor<'gc>(
 
 /// Implement `color`'s getter
 pub fn color<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -352,7 +352,7 @@ pub fn color<'gc>(
 
 /// Implement `color`'s setter
 pub fn set_color<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -375,7 +375,7 @@ pub fn set_color<'gc>(
 
 /// Implement `contentsScaleFactor`'s getter
 pub fn contents_scale_factor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -397,7 +397,7 @@ pub fn contents_scale_factor<'gc>(
 
 /// Implement `displayState`'s getter
 pub fn display_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -410,7 +410,7 @@ pub fn display_state<'gc>(
 
 /// Implement `displayState`'s setter
 pub fn set_display_state<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -440,7 +440,7 @@ pub fn set_display_state<'gc>(
 
 /// Implement `focus`'s getter
 pub fn focus<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -455,7 +455,7 @@ pub fn focus<'gc>(
 
 /// Implement `focus`'s setter
 pub fn set_focus<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -476,7 +476,7 @@ pub fn set_focus<'gc>(
 
 /// Implement `frameRate`'s getter
 pub fn frame_rate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -485,7 +485,7 @@ pub fn frame_rate<'gc>(
 
 /// Implement `frameRate`'s setter
 pub fn set_frame_rate<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -500,7 +500,7 @@ pub fn set_frame_rate<'gc>(
 }
 
 pub fn show_default_context_menu<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -508,7 +508,7 @@ pub fn show_default_context_menu<'gc>(
 }
 
 pub fn set_show_default_context_menu<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -522,7 +522,7 @@ pub fn set_show_default_context_menu<'gc>(
 
 /// Implement `scaleMode`'s getter
 pub fn scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -535,7 +535,7 @@ pub fn scale_mode<'gc>(
 
 /// Implement `scaleMode`'s setter
 pub fn set_scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -562,7 +562,7 @@ pub fn set_scale_mode<'gc>(
 ///
 /// This setting is currently ignored in Ruffle.
 pub fn stage_focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -580,7 +580,7 @@ pub fn stage_focus_rect<'gc>(
 ///
 /// This setting is currently ignored in Ruffle.
 pub fn set_stage_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -597,7 +597,7 @@ pub fn set_stage_focus_rect<'gc>(
 
 /// Implement `stageWidth`'s getter
 pub fn stage_width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -613,7 +613,7 @@ pub fn stage_width<'gc>(
 
 /// Implement `stageWidth`'s setter
 pub fn set_stage_width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -623,7 +623,7 @@ pub fn set_stage_width<'gc>(
 
 /// Implement `stageHeight`'s getter
 pub fn stage_height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -639,7 +639,7 @@ pub fn stage_height<'gc>(
 
 /// Implement `stageHeight`'s setter
 pub fn set_stage_height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -651,7 +651,7 @@ pub fn set_stage_height<'gc>(
 ///
 /// TODO: This is a stub.
 pub fn allows_full_screen<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -662,7 +662,7 @@ pub fn allows_full_screen<'gc>(
 ///
 /// TODO: This is a stub.
 pub fn allows_full_screen_interactive<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -671,7 +671,7 @@ pub fn allows_full_screen_interactive<'gc>(
 
 /// Implement `quality`'s getter
 pub fn quality<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -681,7 +681,7 @@ pub fn quality<'gc>(
 
 /// Implement `quality`'s setter
 pub fn set_quality<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -702,7 +702,7 @@ pub fn set_quality<'gc>(
 
 /// Implement `stage3Ds`'s getter
 pub fn stage3ds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

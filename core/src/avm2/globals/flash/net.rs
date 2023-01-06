@@ -9,7 +9,7 @@ pub mod url_loader;
 
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

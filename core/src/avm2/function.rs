@@ -106,7 +106,7 @@ impl<'gc> Executable<'gc> {
         &self,
         unbound_receiver: Option<Object<'gc>>,
         mut arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let ret = match self {

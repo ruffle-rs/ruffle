@@ -5,7 +5,7 @@ use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 
 pub fn upload<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

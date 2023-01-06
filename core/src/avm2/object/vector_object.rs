@@ -15,7 +15,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Vector objects.
 pub fn vector_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -64,7 +64,7 @@ impl<'gc> VectorObject<'gc> {
     /// Wrap an existing vector in an object.
     pub fn from_vector(
         vector: VectorStorage<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().vector;
@@ -102,7 +102,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
 
@@ -124,7 +124,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -155,7 +155,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -184,7 +184,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         if name.contains_public_namespace()
@@ -216,7 +216,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         if last_index < self.0.read().vector.length() as u32 {
             Ok(Some(last_index.saturating_add(1)))
@@ -228,7 +228,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if self.0.read().vector.length() as u32 >= index {
             Ok(index
@@ -246,10 +246,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             .unwrap_or(false)
     }
 
-    fn to_string(
-        &self,
-        _activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(&self, _activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Object::from(*self)))
     }
 

@@ -171,7 +171,7 @@ impl<'a> ActivationIdentifier<'a> {
     }
 }
 
-pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
+pub struct Activation<'a, 'gc: 'a> {
     /// Represents the SWF version of a given function.
     ///
     /// Certain AVM1 operations change behavior based on the version of the SWF
@@ -224,7 +224,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
-    pub context: UpdateContext<'a, 'gc, 'gc_context>,
+    pub context: UpdateContext<'a, 'gc>,
 
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
@@ -232,16 +232,16 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     pub id: ActivationIdentifier<'a>,
 }
 
-impl Drop for Activation<'_, '_, '_> {
+impl Drop for Activation<'_, '_> {
     fn drop(&mut self) {
         avm_debug!(self.context.avm1, "END {}", self.id);
     }
 }
 
-impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
+impl<'a, 'gc> Activation<'a, 'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: Gc<'gc, Scope<'gc>>,
@@ -271,7 +271,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &'b mut self,
         name: S,
         scope: Gc<'gc, Scope<'gc>>,
-    ) -> Activation<'b, 'gc, 'gc_context> {
+    ) -> Activation<'b, 'gc> {
         let id = self.id.child(name);
         avm_debug!(self.context.avm1, "START {id}");
         Activation {
@@ -297,7 +297,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Note: using the returned `Activation` directly to execute arbitrary bytecode and/or
     /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
+        context: UpdateContext<'a, 'gc>,
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
@@ -320,10 +320,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
-    pub fn from_stub(
-        context: UpdateContext<'a, 'gc, 'gc_context>,
-        id: ActivationIdentifier<'a>,
-    ) -> Self {
+    pub fn from_stub(context: UpdateContext<'a, 'gc>, id: ActivationIdentifier<'a>) -> Self {
         let level0 = context.stage.root_clip();
         Self::from_nothing(context, id, level0)
     }
@@ -375,7 +372,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         function: F,
     ) -> R
     where
-        for<'c> F: FnOnce(&mut Activation<'c, 'gc, '_>) -> R,
+        for<'c> F: FnOnce(&mut Activation<'c, 'gc>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -2929,7 +2926,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     display_object: DisplayObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) {
     let lock_center = args

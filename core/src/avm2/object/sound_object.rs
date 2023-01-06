@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Sound objects.
 pub fn sound_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -54,7 +54,7 @@ impl<'gc> SoundObject<'gc> {
     /// result, this needs to take the subclass so that the returned object is
     /// an instance of the correct class.
     pub fn from_sound(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         class: ClassObject<'gc>,
         sound: SoundHandle,
     ) -> Result<Object<'gc>, Error<'gc>> {

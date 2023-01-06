@@ -6,7 +6,7 @@ use crate::avm2::Error;
 
 #[cfg(feature = "avm_debug")]
 pub fn get_stack_trace<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -19,7 +19,7 @@ pub fn get_stack_trace<'gc>(
 
 #[cfg(not(feature = "avm_debug"))]
 pub fn get_stack_trace<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

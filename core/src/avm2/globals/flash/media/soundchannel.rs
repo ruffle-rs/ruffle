@@ -14,7 +14,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.media.SoundChannel`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -27,7 +27,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.media.SoundChannel`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -36,7 +36,7 @@ pub fn class_init<'gc>(
 
 /// Implements `SoundChannel.leftPeak`
 pub fn left_peak<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -54,7 +54,7 @@ pub fn left_peak<'gc>(
 
 /// Implements `SoundChannel.rightPeak`
 pub fn right_peak<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -72,7 +72,7 @@ pub fn right_peak<'gc>(
 
 /// Impl `SoundChannel.position`
 pub fn position<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -84,7 +84,7 @@ pub fn position<'gc>(
 
 /// Implements `soundTransform`'s getter
 pub fn sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -104,7 +104,7 @@ pub fn sound_transform<'gc>(
 
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -129,7 +129,7 @@ pub fn set_sound_transform<'gc>(
 
 /// Impl `SoundChannel.stop`
 pub fn stop<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

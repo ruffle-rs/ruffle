@@ -78,7 +78,7 @@ impl Default for FramePhase {
 
 /// Run one frame according to AVM2 frame order.
 #[instrument(level = "debug", skip_all)]
-pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_, '_>) {
+pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     let stage = context.stage;
 
     *context.frame_phase = FramePhase::Enter;
@@ -105,7 +105,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_, '_>) {
 ///
 /// This is a no-op on AVM1, which has it's own catch-up logic.
 pub fn catchup_display_object_to_frame<'gc>(
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
     dobj: DisplayObject<'gc>,
 ) {
     if !context.is_action_script_3() {

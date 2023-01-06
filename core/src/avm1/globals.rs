@@ -81,7 +81,7 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn trace<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -97,7 +97,7 @@ pub fn trace<'gc>(
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -109,7 +109,7 @@ pub fn is_finite<'gc>(
 }
 
 pub fn is_nan<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,7 +121,7 @@ pub fn is_nan<'gc>(
 }
 
 pub fn parse_int<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -231,7 +231,7 @@ pub fn parse_int<'gc>(
 }
 
 pub fn get_infinity<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -243,7 +243,7 @@ pub fn get_infinity<'gc>(
 }
 
 pub fn get_nan<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -255,7 +255,7 @@ pub fn get_nan<'gc>(
 }
 
 pub fn parse_float<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -268,7 +268,7 @@ pub fn parse_float<'gc>(
 }
 
 pub fn set_interval<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -276,7 +276,7 @@ pub fn set_interval<'gc>(
 }
 
 pub fn set_timeout<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -284,7 +284,7 @@ pub fn set_timeout<'gc>(
 }
 
 pub fn create_timer<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
     is_timeout: bool,
@@ -332,7 +332,7 @@ pub fn create_timer<'gc>(
 }
 
 pub fn clear_interval<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -348,7 +348,7 @@ pub fn clear_interval<'gc>(
 }
 
 pub fn clear_timeout<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -364,7 +364,7 @@ pub fn clear_timeout<'gc>(
 }
 
 pub fn update_after_event<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -374,7 +374,7 @@ pub fn update_after_event<'gc>(
 }
 
 pub fn escape<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -405,7 +405,7 @@ pub fn escape<'gc>(
 }
 
 pub fn unescape<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1179,7 +1179,7 @@ const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 
 fn get_depth<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1192,10 +1192,7 @@ fn get_depth<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn remove_display_object<'gc>(
-    this: DisplayObject<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-) {
+pub fn remove_display_object<'gc>(this: DisplayObject<'gc>, activation: &mut Activation<'_, 'gc>) {
     let depth = this.depth().wrapping_sub(0);
     // Can only remove positive depths (when offset by the AVM depth bias).
     // Generally this prevents you from removing non-dynamically created clips,
@@ -1214,7 +1211,7 @@ pub fn remove_display_object<'gc>(
 mod tests {
     use super::*;
 
-    fn setup<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         create_globals(activation.context.gc_context).1
     }
 

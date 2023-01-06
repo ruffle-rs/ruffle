@@ -24,7 +24,7 @@ pub struct Context3DObject<'gc>(GcCell<'gc, Context3DData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         context: Box<dyn Context3D>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().context3d;
@@ -49,7 +49,7 @@ impl<'gc> Context3DObject<'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn configure_back_buffer(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         width: u32,
         height: u32,
         anti_alias: u32,
@@ -72,7 +72,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn create_index_buffer(
         &self,
         num_indices: u32,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let index_buffer = self
             .0
@@ -94,7 +94,7 @@ impl<'gc> Context3DObject<'gc> {
         num_vertices: u32,
         data_per_vertex: u32,
         usage: BufferUsage,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let handle = self
             .0
@@ -117,7 +117,7 @@ impl<'gc> Context3DObject<'gc> {
         data: Vec<u8>,
         start_vertex: usize,
         data_per_vertex: usize,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         self.0.write(activation.context.gc_context).commands.push(
             Context3DCommand::UploadToVertexBuffer {
@@ -134,7 +134,7 @@ impl<'gc> Context3DObject<'gc> {
         buffer: IndexBuffer3DObject<'gc>,
         data: Vec<u8>,
         start_offset: usize,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         self.0.write(activation.context.gc_context).commands.push(
             Context3DCommand::UploadToIndexBuffer {
@@ -151,7 +151,7 @@ impl<'gc> Context3DObject<'gc> {
         buffer: VertexBuffer3DObject<'gc>,
         buffer_offset: u32,
         buffer_format: Context3DVertexBufferFormat,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         self.0.write(activation.context.gc_context).commands.push(
             Context3DCommand::SetVertexBufferAt {
@@ -165,7 +165,7 @@ impl<'gc> Context3DObject<'gc> {
 
     pub fn create_program(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Program3DObject::from_context(
             activation, *self,
@@ -174,7 +174,7 @@ impl<'gc> Context3DObject<'gc> {
 
     pub fn upload_shaders(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         program: Program3DObject<'gc>,
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
@@ -189,11 +189,7 @@ impl<'gc> Context3DObject<'gc> {
         );
     }
 
-    pub fn set_program(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        program: Program3DObject<'gc>,
-    ) {
+    pub fn set_program(&self, activation: &mut Activation<'_, 'gc>, program: Program3DObject<'gc>) {
         self.0
             .write(activation.context.gc_context)
             .commands
@@ -205,7 +201,7 @@ impl<'gc> Context3DObject<'gc> {
 
     pub fn draw_triangles(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         index_buffer: IndexBuffer3DObject<'gc>,
         first_index: u32,
         mut num_triangles: i32,
@@ -226,7 +222,7 @@ impl<'gc> Context3DObject<'gc> {
 
     pub fn set_program_constants_from_matrix(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         program_type: ProgramType,
         first_register: u32,
         matrix_raw_data_column_major: Vec<f32>,
@@ -240,18 +236,14 @@ impl<'gc> Context3DObject<'gc> {
         );
     }
 
-    pub fn set_culling(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        face: Context3DTriangleFace,
-    ) {
+    pub fn set_culling(&self, activation: &mut Activation<'_, 'gc>, face: Context3DTriangleFace) {
         self.0
             .write(activation.context.gc_context)
             .commands
             .push(Context3DCommand::SetCulling { face });
     }
 
-    pub fn present(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error<'gc>> {
+    pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let commands = std::mem::take(&mut write.commands);
 
@@ -266,7 +258,7 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     // Renders our finalized frame to the screen, as part of the Ruffle rendering process.
-    pub fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+    pub fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         let context3d = self.0.read();
         let context3d = context3d.render_context.as_ref().unwrap();
 
@@ -284,7 +276,7 @@ impl<'gc> Context3DObject<'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn set_clear(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         red: f64,
         green: f64,
         blue: f64,

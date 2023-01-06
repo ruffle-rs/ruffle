@@ -18,7 +18,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.media.SoundMixer`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,7 +31,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.media.SoundMixer`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -43,7 +43,7 @@ pub fn class_init<'gc>(
 /// This also implements `SimpleButton`'s `soundTransform` property, as per
 /// Flash Player behavior.
 pub fn sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -57,7 +57,7 @@ pub fn sound_transform<'gc>(
 /// This also implements `SimpleButton`'s `soundTransform` property, as per
 /// Flash Player behavior.
 pub fn set_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,7 +75,7 @@ pub fn set_sound_transform<'gc>(
 
 /// Implements `SoundMixer.stopAll`
 pub fn stop_all<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -86,7 +86,7 @@ pub fn stop_all<'gc>(
 
 /// Implements `bufferTime`'s getter
 pub fn buffer_time<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ pub fn buffer_time<'gc>(
 
 /// Implements `bufferTime`'s setter
 pub fn set_buffer_time<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -115,7 +115,7 @@ pub fn set_buffer_time<'gc>(
 
 /// Stub `SoundMixer.areSoundsInaccessible`
 pub fn are_sounds_inaccessible<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -124,7 +124,7 @@ pub fn are_sounds_inaccessible<'gc>(
 
 /// Implements `SoundMixer.computeSpectrum`
 pub fn compute_spectrum<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

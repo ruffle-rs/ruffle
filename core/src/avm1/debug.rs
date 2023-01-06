@@ -25,7 +25,7 @@ impl<'a> VariableDumper<'a> {
     pub fn dump<'gc>(
         value: &Value<'gc>,
         indent: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> String {
         let mut dumper = VariableDumper::new(indent);
         dumper.print_value(value, activation);
@@ -84,7 +84,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_object<'gc>(
         &mut self,
         object: &Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         let (id, new) = self.object_id(object);
         self.output.push_str("[object #");
@@ -100,7 +100,7 @@ impl<'a> VariableDumper<'a> {
         &mut self,
         object: &Object<'gc>,
         key: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         match object.get(key, activation) {
             Ok(value) => {
@@ -117,7 +117,7 @@ impl<'a> VariableDumper<'a> {
     pub fn print_properties<'gc>(
         &mut self,
         object: &Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         let keys = object.get_keys(activation);
         if keys.is_empty() {
@@ -140,11 +140,7 @@ impl<'a> VariableDumper<'a> {
         }
     }
 
-    pub fn print_value<'gc>(
-        &mut self,
-        value: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) {
+    pub fn print_value<'gc>(&mut self, value: &Value<'gc>, activation: &mut Activation<'_, 'gc>) {
         match value {
             Value::Undefined => self.output.push_str("undefined"),
             Value::Null => self.output.push_str("null"),
@@ -164,7 +160,7 @@ impl<'a> VariableDumper<'a> {
         header: &str,
         name: &str,
         object: &Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) {
         let keys = object.get_keys(activation);
         if keys.is_empty() {

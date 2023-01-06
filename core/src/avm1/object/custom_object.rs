@@ -11,7 +11,7 @@ macro_rules! impl_custom_object {
 
         fn create_bare_object(
             &self,
-            activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
+            activation: &mut $crate::avm1::Activation<'_, 'gc>,
             this: $crate::avm1::Object<'gc>,
         ) -> Result<$crate::avm1::Object<'gc>, $crate::avm1::Error<'gc>> {
             Ok($obj_type::$new(activation.context.gc_context, this).into())

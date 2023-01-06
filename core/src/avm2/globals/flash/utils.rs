@@ -18,7 +18,7 @@ pub const NS_FLASH_PROXY: &str = "http://www.adobe.com/2006/actionscript/flash/p
 
 /// Implements `flash.utils.getTimer`
 pub fn get_timer<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -30,7 +30,7 @@ pub fn get_timer<'gc>(
 
 /// Implements `flash.utils.setInterval`
 pub fn set_interval<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -59,7 +59,7 @@ pub fn set_interval<'gc>(
 
 /// Implements `flash.utils.clearInterval`
 pub fn clear_interval<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -73,7 +73,7 @@ pub fn clear_interval<'gc>(
 
 /// Implements `flash.utils.setTimeout`
 pub fn set_timeout<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -102,7 +102,7 @@ pub fn set_timeout<'gc>(
 
 /// Implements `flash.utils.clearTimeout`
 pub fn clear_timeout<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -116,7 +116,7 @@ pub fn clear_timeout<'gc>(
 
 /// Implements `flash.utils.escapeMultiByte`
 pub fn escape_multi_byte<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,7 +150,7 @@ where
 
 /// Implements `flash.utils.unescapeMultiByte`
 pub fn unescape_multi_byte<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -189,7 +189,7 @@ pub fn unescape_multi_byte<'gc>(
 
 /// Implements `flash.utils.getQualifiedClassName`
 pub fn get_qualified_class_name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,7 +220,7 @@ pub fn get_qualified_class_name<'gc>(
 
 /// Implements `flash.utils.getQualifiedSuperclassName`
 pub fn get_qualified_superclass_name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -251,7 +251,7 @@ pub fn get_qualified_superclass_name<'gc>(
 
 /// Implements native method `flash.utils.getDefinitionByName`
 pub fn get_definition_by_name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

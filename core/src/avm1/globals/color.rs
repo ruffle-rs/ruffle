@@ -20,7 +20,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -48,7 +48,7 @@ pub fn create_proto<'gc>(
 
 /// Gets the target display object of this color transform.
 fn target<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
 ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
     // The target path resolves based on the active tellTarget clip of the stack frame.
@@ -65,7 +65,7 @@ fn target<'gc>(
 }
 
 fn get_rgb<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ fn get_rgb<'gc>(
 }
 
 fn get_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -124,7 +124,7 @@ fn get_transform<'gc>(
 }
 
 fn set_rgb<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,12 +150,12 @@ fn set_rgb<'gc>(
 }
 
 fn set_transform<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     fn set_color_mult<'gc>(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         transform: Object<'gc>,
         property: &'static str,
         out: &mut Fixed8,
@@ -173,7 +173,7 @@ fn set_transform<'gc>(
     }
 
     fn set_color_add<'gc>(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         transform: Object<'gc>,
         property: &'static str,
         out: &mut i16,

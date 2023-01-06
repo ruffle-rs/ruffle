@@ -12,7 +12,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Emulates attempts to execute bodiless methods.
 pub fn bodiless_method<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -21,7 +21,7 @@ pub fn bodiless_method<'gc>(
 
 /// Implements `flash.display.IBitmapDrawable`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

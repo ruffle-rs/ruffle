@@ -18,7 +18,7 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.Bitmap`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -128,7 +128,7 @@ pub fn instance_init<'gc>(
 
 /// Implements `flash.display.Bitmap`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -137,7 +137,7 @@ pub fn class_init<'gc>(
 
 /// Implements `Bitmap.bitmapData`'s getter.
 pub fn bitmap_data<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -159,7 +159,7 @@ pub fn bitmap_data<'gc>(
 
 /// Implements `Bitmap.bitmapData`'s setter.
 pub fn set_bitmap_data<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -184,7 +184,7 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -193,7 +193,7 @@ pub fn pixel_snapping<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -202,7 +202,7 @@ pub fn set_pixel_snapping<'gc>(
 
 /// Implement `Bitmap.smoothing`'s getter
 pub fn smoothing<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -218,7 +218,7 @@ pub fn smoothing<'gc>(
 
 /// Implement `Bitmap.smoothing`'s setter
 pub fn set_smoothing<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

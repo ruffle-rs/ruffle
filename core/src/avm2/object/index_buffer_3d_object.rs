@@ -18,7 +18,7 @@ pub struct IndexBuffer3DObject<'gc>(GcCell<'gc, IndexBuffer3DObjectData<'gc>>);
 
 impl<'gc> IndexBuffer3DObject<'gc> {
     pub fn from_handle(
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn IndexBuffer>,
     ) -> Result<Object<'gc>, Error<'gc>> {

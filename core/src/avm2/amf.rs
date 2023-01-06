@@ -11,7 +11,7 @@ use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     elem: Value<'gc>,
     amf_version: AMFVersion,
 ) -> Option<AmfValue> {
@@ -91,7 +91,7 @@ pub fn serialize_value<'gc>(
 
 /// Serialize an Object and any children to a AMF object
 pub fn recursive_serialize<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     obj: Object<'gc>,
     elements: &mut Vec<Element>,
     amf_version: AMFVersion,
@@ -113,7 +113,7 @@ pub fn recursive_serialize<'gc>(
 
 /// Deserialize a AmfValue to a Value
 pub fn deserialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match val {
@@ -217,7 +217,7 @@ pub fn deserialize_value<'gc>(
 
 /// Deserializes a Lso into an object containing the properties stored
 pub fn deserialize_lso<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let mut obj = activation

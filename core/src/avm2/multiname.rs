@@ -226,7 +226,7 @@ impl<'gc> Multiname<'gc> {
     pub fn try_replace_with_qname(
         &self,
         obj: Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Option<Self> {
         if let Object::QNameObject(qname_object) = obj {
             if self.has_lazy_ns() {
@@ -240,7 +240,7 @@ impl<'gc> Multiname<'gc> {
 
     pub fn fill_with_runtime_params(
         &self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let name = if self.has_lazy_name() {
             let name_value = activation.pop_stack();

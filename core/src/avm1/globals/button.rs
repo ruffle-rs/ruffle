@@ -56,7 +56,7 @@ pub fn create_proto<'gc>(
 
 /// Implements `Button` constructor.
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -65,14 +65,14 @@ pub fn constructor<'gc>(
 
 fn enabled<'gc>(
     this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.enabled().into())
 }
 
 fn set_enabled<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let enabled = value.as_bool(activation.swf_version());
@@ -82,14 +82,14 @@ fn set_enabled<'gc>(
 
 fn use_hand_cursor<'gc>(
     this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.use_hand_cursor().into())
 }
 
 fn set_use_hand_cursor<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let use_hand_cursor = value.as_bool(activation.swf_version());
@@ -99,7 +99,7 @@ fn set_use_hand_cursor<'gc>(
 
 fn blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
     Ok(mode.into())
@@ -107,7 +107,7 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a string.
