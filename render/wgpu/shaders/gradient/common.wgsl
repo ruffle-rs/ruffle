@@ -1,17 +1,62 @@
+#define_import_path gradient
+#import common
+
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) uv: vec2<f32>,
 };
 
-@group(2) @binding(0) var<uniform> colorTransforms: ColorTransforms;
+#if use_push_constants == true
+    var<push_constant> transforms: common::Transforms;
+#else
+    @group(1) @binding(0) var<uniform> transforms: common::Transforms;
+#endif
 
-@group(3) @binding(0) var<uniform> textureTransforms: TextureTransforms;
+@group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
+
+@group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+
+#if use_storage_buffers == true
+    struct Gradient {
+        colors: array<vec4<f32>,16u>,
+        ratios: array<f32,16u>,
+        gradient_type: i32,
+        num_colors: u32,
+        interpolation: i32,
+        focal_point: f32,
+    };
+
+    @group(3) @binding(1) var<storage> gradient: Gradient;
+
+    fn ratio(i: u32) -> f32 {
+        return gradient.ratios[i];
+    }
+#else
+    struct Gradient {
+        colors: array<vec4<f32>, 16>,
+        ratios: array<vec4<f32>, 4u>, // secretly array<f32; 16> but this let's us squeeze it into alignment
+        gradient_type: i32,
+        num_colors: u32,
+        interpolation: i32,
+        focal_point: f32,
+    };
+
+    @group(3) @binding(1) var<uniform> gradient: Gradient;
+
+    fn ratio(i: u32) -> f32 {
+        return gradient.ratios[i / 4u][i % 4u];
+    }
+#endif
+
+fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
+    return 0.0;
+}
 
 @vertex
-fn main_vertex(in: VertexInput) -> VertexOutput {
+fn main_vertex(in: common::VertexInput) -> VertexOutput {
     let matrix_ = textureTransforms.matrix_;
     let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
-    let pos = globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, uv);
 }
 
@@ -21,7 +66,27 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
     var t: f32 = find_t(gradient.focal_point, in.uv);
-    t = normalize_t(t);
+
+    #if gradient_repeat_mode == 1
+        // Mirror
+        if( t < 0.0 ) {
+            t = -t;
+        }
+        if ( (i32(t) & 1) == 0 ) {
+            t = fract(t);
+        } else {
+            t = 1.0 - fract(t);
+        }
+    #endif
+    #if gradient_repeat_mode == 2
+        // Repeat
+        t = fract(t);
+    #endif
+    #if gradient_repeat_mode == 3
+        // Clamp
+        t = clamp(t, 0.0, 1.0);
+    #endif
+
     t = clamp(t, ratio(0u), ratio(last));
 
     // Find the two gradient colors bordering our position.
@@ -35,7 +100,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let a = (t - ratio(i)) / (ratio(j) - ratio(i));
     var color: vec4<f32> = mix(gradient.colors[i], gradient.colors[j], a);
     if( gradient.interpolation != 0 ) {
-        color = linear_to_srgb(color);
+        color = common::linear_to_srgb(color);
     }
     let out = color * colorTransforms.mult_color + colorTransforms.add_color;
     let alpha = clamp(out.a, 0.0, 1.0);

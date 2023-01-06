@@ -30,7 +30,7 @@ impl Descriptors {
         let limits = device.limits();
         let bind_layouts = BindLayouts::new(&device);
         let bitmap_samplers = BitmapSamplers::new(&device);
-        let shaders = Shaders::new(&device, limits.max_push_constant_size > 0);
+        let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
         let default_color_transform = create_buffer_with_data(
             &device,
