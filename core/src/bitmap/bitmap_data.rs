@@ -1065,7 +1065,7 @@ impl<'gc> BitmapData<'gc> {
             // The color doesn't matter, as this is a mask.
             render_context
                 .commands
-                .draw_rect(swf::Color::BLACK, &clip_mat);
+                .draw_rect(swf::Color::BLACK, clip_mat);
             render_context.commands.activate_mask();
 
             clip_mat
@@ -1079,7 +1079,7 @@ impl<'gc> BitmapData<'gc> {
                     bitmap_data.update_dirty_texture(&mut render_context);
                     let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
                     render_context.commands.render_bitmap(
-                        &bitmap_handle,
+                        bitmap_handle,
                         render_context.transform_stack.transform(),
                         smoothing,
                     );
@@ -1098,7 +1098,7 @@ impl<'gc> BitmapData<'gc> {
             render_context.commands.deactivate_mask();
             render_context
                 .commands
-                .draw_rect(swf::Color::BLACK, &clip_mat);
+                .draw_rect(swf::Color::BLACK, clip_mat);
             render_context.commands.pop_mask();
         }
 
@@ -1108,7 +1108,7 @@ impl<'gc> BitmapData<'gc> {
             render_context.commands
         } else {
             let mut commands = CommandList::new();
-            commands.blend(&render_context.commands, blend_mode);
+            commands.blend(render_context.commands, blend_mode);
             commands
         };
 
