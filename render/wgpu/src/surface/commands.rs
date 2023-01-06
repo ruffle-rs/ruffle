@@ -303,16 +303,21 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("draw_rect");
         }
-        self.apply_transform(
-            &matrix,
-            &ColorTransform {
-                r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
-                g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
-                b_mult: Fixed8::from_f32(f32::from(color.b) / 255.0),
-                a_mult: Fixed8::from_f32(f32::from(color.a) / 255.0),
-                ..Default::default()
-            },
-        );
+
+        if color == &Color::WHITE {
+            self.apply_transform(&matrix, &ColorTransform::IDENTITY);
+        } else {
+            self.apply_transform(
+                &matrix,
+                &ColorTransform {
+                    r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
+                    g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
+                    b_mult: Fixed8::from_f32(f32::from(color.b) / 255.0),
+                    a_mult: Fixed8::from_f32(f32::from(color.a) / 255.0),
+                    ..Default::default()
+                },
+            );
+        }
 
         self.prep_color();
         self.draw(
