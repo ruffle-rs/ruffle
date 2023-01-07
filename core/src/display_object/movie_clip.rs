@@ -2343,16 +2343,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     let is_fresh_frame =
                         write.queued_script_frame != write.last_queued_script_frame;
 
-                    write.last_queued_script_frame = Some(frame_id);
-                    write.queued_script_frame = None;
-                    write
-                        .flags
-                        .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
-
                     if is_fresh_frame {
                         while let Some(fs) = write.frame_scripts.get(index) {
                             if fs.frame_id == frame_id {
                                 let callable = fs.callable;
+
+                                write.last_queued_script_frame = Some(frame_id);
+                                write.queued_script_frame = None;
+                                write
+                                    .flags
+                                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+
                                 drop(write);
                                 if let Err(e) = Avm2::run_stack_frame_for_callable(
                                     callable,
@@ -2366,15 +2367,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                     );
                                 }
                                 write = self.0.write(context.gc_context);
+
+                                write
+                                    .flags
+                                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                             }
 
                             index += 1;
                         }
                     }
-
-                    write
-                        .flags
-                        .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                 }
             }
         }
