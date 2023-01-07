@@ -25,15 +25,10 @@ fn main_vertex(in: common::VertexInput) -> VertexOutput {
 
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    var color = in.color;
     #if use_push_constants == true
         var colorTransforms = pc.colorTransforms;
     #endif
-    if( color.a > 0.0 ) {
-        color = vec4<f32>(color.rgb / color.a, color.a);
-        color = color * colorTransforms.mult_color + colorTransforms.add_color;
-        let alpha = clamp(color.a, 0.0, 1.0);
-        color = vec4<f32>(color.rgb * alpha, alpha);
-    }
-    return color;
+    let color = in.color * colorTransforms.mult_color + colorTransforms.add_color;
+    let alpha = clamp(color.a, 0.0, 1.0);
+    return vec4<f32>(color.rgb * alpha, alpha);
 }
