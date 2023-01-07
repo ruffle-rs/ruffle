@@ -16,6 +16,7 @@ use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
 use swf::{BlendMode, Rectangle, Twips};
+use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
 /// Uses the fixed parameters m = 2,147,483,647 and a = 16,807
@@ -1215,12 +1216,10 @@ impl<'gc> BitmapData<'gc> {
             commands
         };
 
-        let image = context.renderer.render_offscreen(
-            handle,
-            bitmapdata_width,
-            bitmapdata_height,
-            commands,
-        );
+        let image = context
+            .renderer
+            .render_offscreen(handle, bitmapdata_width, bitmapdata_height, commands)
+            .and_then(|sync| context.renderer.retrieve_offscreen_texture(sync));
 
         match image {
             Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
@@ -1237,6 +1236,7 @@ pub enum IBitmapDrawable<'gc> {
     DisplayObject(DisplayObject<'gc>),
 }
 
+#[instrument(level = "debug", skip_all)]
 fn copy_pixels_to_bitmapdata(write: &mut BitmapData, bytes: &[u8]) {
     let height = write.height();
     let width = write.width();

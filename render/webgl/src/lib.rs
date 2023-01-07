@@ -9,7 +9,9 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource};
+use ruffle_render::bitmap::{
+    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
+};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
@@ -941,6 +943,13 @@ impl RenderBackend for WebGlRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
+    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
+        Err(ruffle_render::error::Error::Unimplemented)
+    }
+
+    fn retrieve_offscreen_texture(
+        &self,
+        _sync: Box<dyn SyncHandle>,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
         Err(ruffle_render::error::Error::Unimplemented)
     }

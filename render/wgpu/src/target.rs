@@ -1,6 +1,5 @@
 use crate::utils::BufferDimensions;
 use crate::Error;
-use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 use std::sync::Arc;
 use tracing::instrument;
@@ -143,8 +142,7 @@ pub struct TextureTarget {
     pub size: wgpu::Extent3d,
     pub texture: Arc<wgpu::Texture>,
     pub format: wgpu::TextureFormat,
-    pub buffer: Arc<wgpu::Buffer>,
-    pub buffer_dimensions: BufferDimensions,
+    pub buffer: Option<(Arc<wgpu::Buffer>, BufferDimensions)>,
 }
 
 #[derive(Debug)]
@@ -204,60 +202,8 @@ impl TextureTarget {
             size,
             texture: Arc::new(texture),
             format,
-            buffer: Arc::new(buffer),
-            buffer_dimensions,
+            buffer: Some((Arc::new(buffer), buffer_dimensions)),
         })
-    }
-
-    /// Captures the current contents of our texture buffer
-    /// as an `RgbaImage`
-    #[instrument(level = "debug", skip_all)]
-    pub fn capture(
-        &self,
-        device: &wgpu::Device,
-        premultiplied_alpha: bool,
-        index: Option<wgpu::SubmissionIndex>,
-    ) -> Option<image::RgbaImage> {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let buffer_slice = self.buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-            sender.send(result).unwrap();
-        });
-        device.poll(
-            index
-                .map(wgpu::Maintain::WaitForSubmissionIndex)
-                .unwrap_or(wgpu::Maintain::Wait),
-        );
-        let result = receiver.recv().unwrap();
-        match result {
-            Ok(()) => {
-                let map = buffer_slice.get_mapped_range();
-                let mut buffer = Vec::with_capacity(
-                    self.buffer_dimensions.height * self.buffer_dimensions.unpadded_bytes_per_row,
-                );
-
-                for chunk in map.chunks(self.buffer_dimensions.padded_bytes_per_row.get() as usize)
-                {
-                    buffer
-                        .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
-                }
-
-                // The image copied from the GPU uses premultiplied alpha, so
-                // convert to straight alpha if requested by the user.
-                if !premultiplied_alpha {
-                    unmultiply_alpha_rgba(&mut buffer);
-                }
-
-                let image = image::RgbaImage::from_raw(self.size.width, self.size.height, buffer);
-                drop(map);
-                self.buffer.unmap();
-                image
-            }
-            Err(e) => {
-                tracing::error!("Unknown error reading capture buffer: {:?}", e);
-                None
-            }
-        }
     }
 }
 
@@ -295,27 +241,31 @@ impl RenderTarget for TextureTarget {
         command_buffers: I,
         _frame: Self::Frame,
     ) -> wgpu::SubmissionIndex {
-        let label = create_debug_label!("Render target transfer encoder");
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: label.as_deref(),
-        });
-        encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
-                texture: &self.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::ImageCopyBuffer {
-                buffer: &self.buffer,
-                layout: wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(self.buffer_dimensions.padded_bytes_per_row),
-                    rows_per_image: None,
+        if let Some((buffer, dimensions)) = &self.buffer {
+            let label = create_debug_label!("Render target transfer encoder");
+            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: label.as_deref(),
+            });
+            encoder.copy_texture_to_buffer(
+                wgpu::ImageCopyTexture {
+                    texture: &self.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
                 },
-            },
-            self.size,
-        );
-        queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())))
+                wgpu::ImageCopyBuffer {
+                    buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(dimensions.padded_bytes_per_row),
+                        rows_per_image: None,
+                    },
+                },
+                self.size,
+            );
+            queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())))
+        } else {
+            queue.submit(command_buffers)
+        }
     }
 }

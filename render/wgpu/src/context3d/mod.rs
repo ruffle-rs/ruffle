@@ -3,6 +3,7 @@ use ruffle_render::backend::{
     ShaderModule, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
+use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
 use wgpu::{
@@ -295,6 +296,7 @@ impl WgpuContext3D {
                         texture_offscreen: Default::default(),
                         width: *width,
                         height: *height,
+                        copy_count: Cell::new(0),
                     }));
                 }
                 Context3DCommand::UploadToIndexBuffer {
