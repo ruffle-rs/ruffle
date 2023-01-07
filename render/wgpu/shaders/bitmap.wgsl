@@ -8,19 +8,23 @@ struct VertexOutput {
 };
 
 #if use_push_constants == true
-    var<push_constant> transforms: common::Transforms;
+    var<push_constant> pc: common::PushConstants;
+    @group(1) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+    @group(1) @binding(1) var texture: texture_2d<f32>;
+    @group(1) @binding(2) var texture_sampler: sampler;
 #else
     @group(1) @binding(0) var<uniform> transforms: common::Transforms;
+    @group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
+    @group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+    @group(3) @binding(1) var texture: texture_2d<f32>;
+    @group(3) @binding(2) var texture_sampler: sampler;
 #endif
-
-@group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
-
-@group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
-@group(3) @binding(1) var texture: texture_2d<f32>;
-@group(3) @binding(2) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: common::VertexInput) -> VertexOutput {
+    #if use_push_constants == true
+        var transforms = pc.transforms;
+    #endif
     let matrix_ = textureTransforms.matrix_;
     let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
@@ -30,6 +34,9 @@ fn main_vertex(in: common::VertexInput) -> VertexOutput {
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var color: vec4<f32> = textureSample(texture, texture_sampler, in.uv);
+    #if use_push_constants == true
+        var colorTransforms = pc.colorTransforms;
+    #endif
     // Texture is premultiplied by alpha.
     // Unmultiply alpha, apply color transform, remultiply alpha.
     if( color.a > 0.0 ) {

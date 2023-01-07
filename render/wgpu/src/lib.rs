@@ -54,6 +54,13 @@ pub enum MaskState {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct PushConstants {
+    transforms: Transforms,
+    colors: ColorAdjustments,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
 }

@@ -2601,8 +2601,7 @@ dependencies = [
 [[package]]
 name = "naga_oil"
 version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb65345f4889a991907548157b1861ec9fd5e5a696b1043d8999854e86e4c7d0"
+source = "git+https://github.com/Dinnerbone/naga_oil?rev=c073f6fdf0560a74480140abc50295f9e0d9aa57#c073f6fdf0560a74480140abc50295f9e0d9aa57"
 dependencies = [
  "bit-set",
  "codespan-reporting",

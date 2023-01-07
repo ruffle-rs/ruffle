@@ -5,7 +5,8 @@ use crate::mesh::{DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
-    as_texture, ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer,
+    as_texture, ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, Transforms,
+    UniformBuffer,
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
@@ -119,7 +120,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.gradients[mode][spread].depthless_pipeline());
         }
 
-        self.render_pass.set_bind_group(3, bind_group, &[]);
+        self.render_pass.set_bind_group(
+            if self.descriptors.limits.max_push_constant_size > 0 {
+                1
+            } else {
+                3
+            },
+            bind_group,
+            &[],
+        );
     }
 
     pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup, blend_mode: TrivialBlend) {
@@ -131,7 +140,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
         }
 
-        self.render_pass.set_bind_group(3, bind_group, &[]);
+        self.render_pass.set_bind_group(
+            if self.descriptors.limits.max_push_constant_size > 0 {
+                1
+            } else {
+                3
+            },
+            bind_group,
+            &[],
+        );
     }
 
     pub fn draw(
@@ -161,12 +178,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         ];
 
         if self.descriptors.limits.max_push_constant_size > 0 {
-            self.render_pass
-                .set_bind_group(1, &self.descriptors.empty_bind_group, &[]);
             self.render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX,
+                wgpu::ShaderStages::VERTEX_FRAGMENT,
                 0,
-                bytemuck::cast_slice(&[Transforms { world_matrix }]),
+                bytemuck::cast_slice(&[PushConstants {
+                    transforms: Transforms { world_matrix },
+                    colors: ColorAdjustments::from(*color_adjustments),
+                }]),
             );
         } else {
             self.uniform_buffers.write_uniforms(
@@ -177,20 +195,23 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 1,
                 &Transforms { world_matrix },
             );
-        }
 
-        if color_adjustments == &ColorTransform::IDENTITY {
-            self.render_pass
-                .set_bind_group(2, &self.descriptors.default_color_bind_group, &[0]);
-        } else {
-            self.color_buffers.write_uniforms(
-                &self.descriptors.device,
-                &self.descriptors.bind_layouts.color_transforms,
-                &mut self.uniform_encoder,
-                &mut self.render_pass,
-                2,
-                &ColorAdjustments::from(*color_adjustments),
-            );
+            if color_adjustments == &ColorTransform::IDENTITY {
+                self.render_pass.set_bind_group(
+                    2,
+                    &self.descriptors.default_color_bind_group,
+                    &[0],
+                );
+            } else {
+                self.color_buffers.write_uniforms(
+                    &self.descriptors.device,
+                    &self.descriptors.bind_layouts.color_transforms,
+                    &mut self.uniform_encoder,
+                    &mut self.render_pass,
+                    2,
+                    &ColorAdjustments::from(*color_adjustments),
+                );
+            }
         }
     }
 

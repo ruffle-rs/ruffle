@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, Transforms, Vertex};
+use crate::{MaskState, PushConstants, Transforms, Vertex};
 use enum_map::{enum_map, Enum, EnumMap};
 use ruffle_render::tessellator::GradientType;
 use std::mem;
@@ -70,6 +70,34 @@ impl Pipelines {
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
     ) -> Self {
+        let colort_bindings = if device.limits().max_push_constant_size > 0 {
+            vec![&bind_layouts.globals]
+        } else {
+            vec![
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.color_transforms,
+            ]
+        };
+
+        let full_push_constants = &if device.limits().max_push_constant_size > 0 {
+            vec![wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                range: 0..mem::size_of::<PushConstants>() as u32,
+            }]
+        } else {
+            vec![]
+        };
+
+        let partial_push_constants = &if device.limits().max_push_constant_size > 0 {
+            vec![wgpu::PushConstantRange {
+                stages: wgpu::ShaderStages::VERTEX,
+                range: 0..(mem::size_of::<Transforms>() as u32),
+            }]
+        } else {
+            vec![]
+        };
+
         let color_pipelines = create_shape_pipeline(
             "Color",
             device,
@@ -77,13 +105,21 @@ impl Pipelines {
             &shaders.color_shader,
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION,
-            &[
+            &colort_bindings,
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+            &full_push_constants,
+        );
+
+        let gradient_bindings = if device.limits().max_push_constant_size > 0 {
+            vec![&bind_layouts.globals, &bind_layouts.gradient]
+        } else {
+            vec![
                 &bind_layouts.globals,
                 &bind_layouts.transforms,
                 &bind_layouts.color_transforms,
-            ],
-            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-        );
+                &bind_layouts.gradient,
+            ]
+        };
 
         let gradient_pipelines = enum_map! {
             mode => enum_map! {
@@ -94,15 +130,21 @@ impl Pipelines {
                     &shaders.gradient_shaders[mode][spread],
                     msaa_sample_count,
                     &VERTEX_BUFFERS_DESCRIPTION,
-                    &[
-                        &bind_layouts.globals,
-                        &bind_layouts.transforms,
-                        &bind_layouts.color_transforms,
-                        &bind_layouts.gradient,
-                    ],
+                    &gradient_bindings,
                     wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                    &full_push_constants,
                 )
             }
+        };
+
+        let complex_blend_bindings = if device.limits().max_push_constant_size > 0 {
+            vec![&bind_layouts.globals, &bind_layouts.blend]
+        } else {
+            vec![
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.blend,
+            ]
         };
 
         let complex_blend_pipelines = enum_map! {
@@ -113,13 +155,21 @@ impl Pipelines {
                 &shaders.blend_shaders[blend],
                 msaa_sample_count,
                 &VERTEX_BUFFERS_DESCRIPTION,
-                &[
-                    &bind_layouts.globals,
-                    &bind_layouts.transforms,
-                    &bind_layouts.blend,
-                ],
+                &complex_blend_bindings,
                 wgpu::BlendState::REPLACE,
+                &partial_push_constants,
             )
+        };
+
+        let bitmap_blend_bindings = if device.limits().max_push_constant_size > 0 {
+            vec![&bind_layouts.globals, &bind_layouts.bitmap]
+        } else {
+            vec![
+                &bind_layouts.globals,
+                &bind_layouts.transforms,
+                &bind_layouts.color_transforms,
+                &bind_layouts.bitmap,
+            ]
         };
 
         let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
@@ -133,13 +183,9 @@ impl Pipelines {
                     &shaders.bitmap_shader,
                     msaa_sample_count,
                     &VERTEX_BUFFERS_DESCRIPTION,
-                    &[
-                        &bind_layouts.globals,
-                        &bind_layouts.transforms,
-                        &bind_layouts.color_transforms,
-                        &bind_layouts.bitmap,
-                    ],
+                    &bitmap_blend_bindings,
                     blend.blend_state(),
+                    &full_push_constants,
                 )
             })
             .collect::<Vec<_>>()
@@ -208,19 +254,13 @@ fn create_shape_pipeline(
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
     blend: wgpu::BlendState,
+    push_constant_ranges: &[wgpu::PushConstantRange],
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
         bind_group_layouts,
-        push_constant_ranges: if device.limits().max_push_constant_size > 0 {
-            &[wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..(mem::size_of::<Transforms>() as u32),
-            }]
-        } else {
-            &[]
-        },
+        push_constant_ranges,
     });
 
     let mask_render_state = |mask_name, stencil_state, write_mask| {
