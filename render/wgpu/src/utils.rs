@@ -1,3 +1,4 @@
+use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::borrow::Cow;
 use std::mem::size_of;
 use std::num::NonZeroU32;
@@ -114,4 +115,43 @@ impl BufferDimensions {
             padded_bytes_per_row,
         }
     }
+}
+
+pub fn buffer_to_image(
+    device: &wgpu::Device,
+    buffer: &wgpu::Buffer,
+    dimensions: &BufferDimensions,
+    index: Option<wgpu::SubmissionIndex>,
+    size: wgpu::Extent3d,
+    premultiplied_alpha: bool,
+) -> image::RgbaImage {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let buffer_slice = buffer.slice(..);
+    buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+        sender.send(result).unwrap();
+    });
+    device.poll(
+        index
+            .map(wgpu::Maintain::WaitForSubmissionIndex)
+            .unwrap_or(wgpu::Maintain::Wait),
+    );
+    let _ = receiver.recv().expect("MPSC channel must not fail");
+    let map = buffer_slice.get_mapped_range();
+    let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
+
+    for chunk in map.chunks(dimensions.padded_bytes_per_row.get() as usize) {
+        bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
+    }
+
+    // The image copied from the GPU uses premultiplied alpha, so
+    // convert to straight alpha if requested by the user.
+    if !premultiplied_alpha {
+        unmultiply_alpha_rgba(&mut bytes);
+    }
+
+    let image = image::RgbaImage::from_raw(size.width, size.height, bytes)
+        .expect("Retrieved texture buffer must be a valid RgbaImage");
+    drop(map);
+    buffer.unmap();
+    image
 }

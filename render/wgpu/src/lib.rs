@@ -4,14 +4,17 @@ use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
-use crate::utils::{create_buffer_with_data, format_list, get_backend_names, BufferDimensions};
+use crate::utils::{
+    buffer_to_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
+};
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl};
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
+use std::cell::Cell;
 use std::sync::Arc;
 pub use wgpu;
 
@@ -187,11 +190,92 @@ impl From<TessGradient> for GradientStorage {
 }
 
 #[derive(Debug)]
+pub enum QueueSyncHandle {
+    AlreadyCopied {
+        index: wgpu::SubmissionIndex,
+        buffer: Arc<wgpu::Buffer>,
+        buffer_dimensions: BufferDimensions,
+        size: wgpu::Extent3d,
+    },
+    NotCopied {
+        handle: BitmapHandle,
+        size: wgpu::Extent3d,
+    },
+}
+
+impl SyncHandle for QueueSyncHandle {}
+
+impl QueueSyncHandle {
+    pub fn capture(self, device: &wgpu::Device, queue: &wgpu::Queue) -> image::RgbaImage {
+        match self {
+            QueueSyncHandle::AlreadyCopied {
+                index,
+                buffer,
+                buffer_dimensions,
+                size,
+            } => buffer_to_image(device, &buffer, &buffer_dimensions, Some(index), size, true),
+            QueueSyncHandle::NotCopied { handle, size } => {
+                let texture = as_texture(&handle);
+
+                let buffer_label = create_debug_label!("Render target buffer");
+                let buffer_dimensions =
+                    BufferDimensions::new(size.width as usize, size.height as usize);
+                let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                    label: buffer_label.as_deref(),
+                    size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                        * buffer_dimensions.height as u64),
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
+                });
+                let label = create_debug_label!("Render target transfer encoder");
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+                encoder.copy_texture_to_buffer(
+                    wgpu::ImageCopyTexture {
+                        texture: &texture.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    wgpu::ImageCopyBuffer {
+                        buffer: &buffer,
+                        layout: wgpu::ImageDataLayout {
+                            offset: 0,
+                            bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
+                            rows_per_image: None,
+                        },
+                    },
+                    size,
+                );
+                let index = queue.submit(Some(encoder.finish()));
+
+                let image =
+                    buffer_to_image(device, &buffer, &buffer_dimensions, Some(index), size, true);
+
+                // After we've read pixels from a texture enough times, we'll store this buffer so that
+                // future reads will be faster (it'll copy as part of the draw process instead)
+                texture.copy_count.set(texture.copy_count.get() + 1);
+                if texture.copy_count.get() >= 2 {
+                    let _ = texture.texture_offscreen.set(TextureOffscreen {
+                        buffer: Arc::new(buffer),
+                        buffer_dimensions,
+                    });
+                }
+
+                image
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Texture {
     texture: Arc<wgpu::Texture>,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
     texture_offscreen: OnceCell<TextureOffscreen>,
+    copy_count: Cell<u8>,
     width: u32,
     height: u32,
 }
