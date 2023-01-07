@@ -22,7 +22,6 @@ pub struct Descriptors {
     shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
-    pub empty_bind_group: wgpu::BindGroup,
 }
 
 impl Descriptors {
@@ -47,12 +46,6 @@ impl Descriptors {
             }],
         });
 
-        let empty_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &bind_layouts.transforms,
-            entries: &[],
-        });
-
         Self {
             adapter,
             device,
@@ -66,7 +59,6 @@ impl Descriptors {
             shaders,
             pipelines: Default::default(),
             default_color_bind_group,
-            empty_bind_group,
         }
     }
 
@@ -83,11 +75,15 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
-                            bind_group_layouts: &[
-                                &self.bind_layouts.globals,
-                                &self.bind_layouts.transforms,
-                                &self.bind_layouts.bitmap,
-                            ],
+                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
+                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
+                            } else {
+                                vec![
+                                    &self.bind_layouts.globals,
+                                    &self.bind_layouts.transforms,
+                                    &self.bind_layouts.bitmap,
+                                ]
+                            },
                             push_constant_ranges: if self.device.limits().max_push_constant_size > 0
                             {
                                 &[wgpu::PushConstantRange {
@@ -152,11 +148,15 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
-                            bind_group_layouts: &[
-                                &self.bind_layouts.globals,
-                                &self.bind_layouts.transforms,
-                                &self.bind_layouts.bitmap,
-                            ],
+                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
+                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
+                            } else {
+                                vec![
+                                    &self.bind_layouts.globals,
+                                    &self.bind_layouts.transforms,
+                                    &self.bind_layouts.bitmap,
+                                ]
+                            },
                             push_constant_ranges: if self.device.limits().max_push_constant_size > 0
                             {
                                 &[wgpu::PushConstantRange {

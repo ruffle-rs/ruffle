@@ -31,6 +31,11 @@ struct TextureTransforms {
     matrix_: mat4x4<f32>,
 };
 
+struct PushConstants {
+    transforms: Transforms,
+    colorTransforms: ColorTransforms,
+}
+
 /// The vertex format shared among all shaders.
 struct VertexInput {
     /// The position of the vertex in object space.

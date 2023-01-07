@@ -637,10 +637,11 @@ async fn request_device(
     limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
 
     let mut features = Default::default();
+    let needed_size = (mem::size_of::<Transforms>() + mem::size_of::<ColorAdjustments>()) as u32;
     if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
-        && adapter.limits().max_push_constant_size >= mem::size_of::<Transforms>() as u32
+        && adapter.limits().max_push_constant_size >= needed_size
     {
-        limits.max_push_constant_size = mem::size_of::<Transforms>() as u32;
+        limits.max_push_constant_size = needed_size;
         features |= wgpu::Features::PUSH_CONSTANTS;
     }
 

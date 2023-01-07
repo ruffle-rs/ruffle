@@ -7,14 +7,13 @@ struct VertexOutput {
 };
 
 #if use_push_constants == true
-    var<push_constant> transforms: common::Transforms;
+    var<push_constant> pc: common::PushConstants;
+    @group(1) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
 #else
     @group(1) @binding(0) var<uniform> transforms: common::Transforms;
+    @group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
+    @group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
 #endif
-
-@group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
-
-@group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
 
 #if use_storage_buffers == true
     struct Gradient {
@@ -26,7 +25,11 @@ struct VertexOutput {
         focal_point: f32,
     };
 
-    @group(3) @binding(1) var<storage> gradient: Gradient;
+    #if use_push_constants == true
+        @group(1) @binding(1) var<storage> gradient: Gradient;
+    #else
+        @group(3) @binding(1) var<storage> gradient: Gradient;
+    #endif
 
     fn ratio(i: u32) -> f32 {
         return gradient.ratios[i];
@@ -41,7 +44,11 @@ struct VertexOutput {
         focal_point: f32,
     };
 
-    @group(3) @binding(1) var<uniform> gradient: Gradient;
+    #if use_push_constants == true
+        @group(1) @binding(1) var<uniform> gradient: Gradient;
+    #else
+        @group(3) @binding(1) var<uniform> gradient: Gradient;
+    #endif
 
     fn ratio(i: u32) -> f32 {
         return gradient.ratios[i / 4u][i % 4u];
@@ -54,6 +61,9 @@ fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
 
 @vertex
 fn main_vertex(in: common::VertexInput) -> VertexOutput {
+    #if use_push_constants == true
+        var transforms = pc.transforms;
+    #endif
     let matrix_ = textureTransforms.matrix_;
     let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
@@ -62,6 +72,9 @@ fn main_vertex(in: common::VertexInput) -> VertexOutput {
 
 @fragment
 fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
+    #if use_push_constants == true
+        var colorTransforms = pc.colorTransforms;
+    #endif
     let last = gradient.num_colors - 1u;
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.

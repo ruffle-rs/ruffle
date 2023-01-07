@@ -14,33 +14,26 @@ pub struct BindLayouts {
 impl BindLayouts {
     pub fn new(device: &wgpu::Device) -> Self {
         let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
-        let transforms = if device.limits().max_storage_buffers_per_shader_stage > 0 {
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[],
-                label: uniform_buffer_layout_label.as_deref(),
-            })
-        } else {
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: true,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<Transforms>() as u64
-                        ),
-                    },
-                    count: None,
-                }],
-                label: uniform_buffer_layout_label.as_deref(),
-            })
-        };
+        let transforms = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: true,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<Transforms>() as u64
+                    ),
+                },
+                count: None,
+            }],
+            label: uniform_buffer_layout_label.as_deref(),
+        });
 
         let color_transforms = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: true,

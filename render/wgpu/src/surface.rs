@@ -148,7 +148,6 @@ impl Surface {
         render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
 
         if descriptors.limits.max_push_constant_size > 0 {
-            render_pass.set_bind_group(1, &descriptors.empty_bind_group, &[]);
             render_pass.set_push_constants(
                 wgpu::ShaderStages::VERTEX,
                 0,
@@ -161,11 +160,11 @@ impl Surface {
                     ],
                 }]),
             );
+            render_pass.set_bind_group(1, &copy_bind_group, &[]);
         } else {
             render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+            render_pass.set_bind_group(2, &copy_bind_group, &[]);
         }
-
-        render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
         render_pass.set_index_buffer(
@@ -355,7 +354,6 @@ impl Surface {
                     }
 
                     if descriptors.limits.max_push_constant_size > 0 {
-                        render_pass.set_bind_group(1, &descriptors.empty_bind_group, &[]);
                         render_pass.set_push_constants(
                             wgpu::ShaderStages::VERTEX,
                             0,
@@ -368,15 +366,15 @@ impl Surface {
                                 ],
                             }]),
                         );
+                        render_pass.set_bind_group(1, &blend_bind_group, &[]);
                     } else {
                         render_pass.set_bind_group(
                             1,
                             target.whole_frame_bind_group(descriptors),
                             &[0],
                         );
+                        render_pass.set_bind_group(2, &blend_bind_group, &[]);
                     }
-
-                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
                     render_pass.set_index_buffer(

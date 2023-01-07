@@ -9,13 +9,15 @@ struct VertexOutput {
 
 #if use_push_constants == true
     var<push_constant> transforms: common::Transforms;
+    @group(1) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+    @group(1) @binding(1) var texture: texture_2d<f32>;
+    @group(1) @binding(2) var texture_sampler: sampler;
 #else
     @group(1) @binding(0) var<uniform> transforms: common::Transforms;
+    @group(2) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+    @group(2) @binding(1) var texture: texture_2d<f32>;
+    @group(2) @binding(2) var texture_sampler: sampler;
 #endif
-
-@group(2) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
-@group(2) @binding(1) var texture: texture_2d<f32>;
-@group(2) @binding(2) var texture_sampler: sampler;
 
 @vertex
 fn main_vertex(in: common::VertexInput) -> VertexOutput {
