@@ -121,6 +121,12 @@ pub struct EditTextData<'gc> {
     bound_stage_object: Option<Avm1StageObject<'gc>>,
 
     /// The selected portion of the text, or None if the text is not selected.
+    /// Note: Selections work differently in AVM1, AVM2, and Ruffle.
+    ///
+    /// In AVM1, there is one global optional selection. If present, it applies to whatever text field is focused.
+    /// In AVM2, every text field has its own mandatory selection.
+    /// In Ruffle, every text field has its own optional selection. This hybrid approach means manually maintaining
+    /// the invariants that selection is always None for an unfocused AVM1 field, and never None for an AVM2 field.
     selection: Option<TextSelection>,
 
     /// Which rendering engine this text field will use.
@@ -249,6 +255,13 @@ impl<'gc> EditText<'gc> {
             flags.contains(EditTextFlag::BORDER),
         );
 
+        // Selections are mandatory in AS3.
+        let selection = if swf_movie.is_action_script_3() {
+            Some(TextSelection::for_position(0))
+        } else {
+            None
+        };
+
         let et = EditText(GcCell::allocate(
             context.gc_context,
             EditTextData {
@@ -277,7 +290,7 @@ impl<'gc> EditText<'gc> {
                 autosize,
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
-                selection: None,
+                selection,
                 render_settings: Default::default(),
                 hscroll: 0.0,
                 line_data,
@@ -836,17 +849,22 @@ impl<'gc> EditText<'gc> {
         });
 
         let edit_text = self.0.read();
-        let selection = edit_text.selection;
+
+        let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
+            edit_text.selection
+        } else {
+            None
+        };
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
-            if let Some(selection) = selection {
-                if selection.is_caret()
+            if let Some(visible_selection) = visible_selection {
+                if visible_selection.is_caret()
                     && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
-                    && selection.start() >= *start
-                    && selection.end() <= *end
+                    && visible_selection.start() >= *start
+                    && visible_selection.end() <= *end
                     && Utc::now().timestamp_subsec_millis() / 500 == 0
                 {
-                    Some((selection.start() - start, end - start))
+                    Some((visible_selection.start() - start, end - start))
                 } else {
                     None
                 }
@@ -878,8 +896,8 @@ impl<'gc> EditText<'gc> {
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     // If it's highlighted, override the color.
-                    match selection {
-                        Some(selection) if selection.contains(start + pos) => {
+                    match visible_selection {
+                        Some(visible_selection) if visible_selection.contains(start + pos) => {
                             // Draw black selection rect
                             let selection_box = context.transform_stack.transform().matrix
                                 * Matrix::create_box(
@@ -1692,10 +1710,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         });
 
         if edit_text.layout.is_empty() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
-            let selection = edit_text.selection;
-            if let Some(selection) = selection {
-                if selection.is_caret()
-                    && selection.start() == 0
+            let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
+                edit_text.selection
+            } else {
+                None
+            };
+            if let Some(visible_selection) = visible_selection {
+                if visible_selection.is_caret()
+                    && visible_selection.start() == 0
                     && Utc::now().timestamp_subsec_millis() / 500 == 0
                 {
                     let caret = context.transform_stack.transform().matrix
@@ -1768,10 +1790,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_avm1_removed(context.gc_context, true);
     }
 
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
-        let mut text = self.0.write(gc_context);
+    fn on_focus_changed(&self, context: &UpdateContext<'_, 'gc>, focused: bool) {
+        let mut text = self.0.write(context.gc_context);
         text.flags.set(EditTextFlag::HAS_FOCUS, focused);
-        if !focused {
+        if !focused && !context.is_action_script_3() {
             text.selection = None;
         }
     }
