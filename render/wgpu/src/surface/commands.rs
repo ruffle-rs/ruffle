@@ -1,7 +1,7 @@
 use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::{PoolEntry, TexturePool};
-use crate::mesh::{BitmapBinds, DrawType, Mesh};
+use crate::mesh::{DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
@@ -368,7 +368,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
 pub enum Chunk {
     Draw(Vec<DrawCommand>, bool),
-    Blend(PoolEntry<wgpu::Texture>, ComplexBlend, bool),
+    Blend(
+        PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
+        ComplexBlend,
+        bool,
+    ),
 }
 
 #[derive(Debug)]
@@ -380,7 +384,7 @@ pub enum DrawCommand {
         blend_mode: TrivialBlend,
     },
     RenderTexture {
-        _texture: PoolEntry<wgpu::Texture>,
+        _texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
         binds: wgpu::BindGroup,
         transform: Transform,
         blend_mode: TrivialBlend,
@@ -457,17 +461,39 @@ pub fn chunk_blends<'a>(
                             color_transform: Default::default(),
                         };
                         let texture = target.take_color_texture();
-                        let binds = BitmapBinds::new(
-                            &descriptors.device,
-                            &descriptors.bind_layouts.bitmap,
-                            descriptors.bitmap_samplers.get_sampler(false, false),
-                            &descriptors.quad.texture_transforms,
-                            texture.create_view(&Default::default()),
-                            None,
-                        );
+                        let bind_group =
+                            descriptors
+                                .device
+                                .create_bind_group(&wgpu::BindGroupDescriptor {
+                                    layout: &&descriptors.bind_layouts.bitmap,
+                                    entries: &[
+                                        wgpu::BindGroupEntry {
+                                            binding: 0,
+                                            resource: descriptors
+                                                .quad
+                                                .texture_transforms
+                                                .as_entire_binding(),
+                                        },
+                                        wgpu::BindGroupEntry {
+                                            binding: 1,
+                                            resource: wgpu::BindingResource::TextureView(
+                                                &texture.1,
+                                            ),
+                                        },
+                                        wgpu::BindGroupEntry {
+                                            binding: 2,
+                                            resource: wgpu::BindingResource::Sampler(
+                                                descriptors
+                                                    .bitmap_samplers
+                                                    .get_sampler(false, false),
+                                            ),
+                                        },
+                                    ],
+                                    label: None,
+                                });
                         current.push(DrawCommand::RenderTexture {
                             _texture: texture,
-                            binds: binds.bind_group,
+                            binds: bind_group,
                             transform,
                             blend_mode,
                         })
