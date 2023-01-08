@@ -9,8 +9,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct ResolveBuffer {
-    texture: PoolEntry<wgpu::Texture>,
-    view: wgpu::TextureView,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
 }
 
 impl ResolveBuffer {
@@ -22,29 +21,25 @@ impl ResolveBuffer {
         pool: &mut TexturePool,
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, 1);
-
-        let view = texture.create_view(&Default::default());
-
-        Self { texture, view }
+        Self { texture }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.view
+        &self.texture.1
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        &self.texture
+        &self.texture.0
     }
 
-    pub fn take_texture(self) -> PoolEntry<wgpu::Texture> {
+    pub fn take_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
         self.texture
     }
 }
 
 #[derive(Debug)]
 pub struct FrameBuffer {
-    texture: PoolEntry<wgpu::Texture>,
-    view: wgpu::TextureView,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
     size: wgpu::Extent3d,
 }
 
@@ -59,24 +54,18 @@ impl FrameBuffer {
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, sample_count);
 
-        let view = texture.create_view(&Default::default());
-
-        Self {
-            texture,
-            view,
-            size,
-        }
+        Self { texture, size }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.view
+        &self.texture.1
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        &self.texture
+        &self.texture.0
     }
 
-    pub fn take_texture(self) -> PoolEntry<wgpu::Texture> {
+    pub fn take_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
         self.texture
     }
 
@@ -87,8 +76,7 @@ impl FrameBuffer {
 
 #[derive(Debug)]
 pub struct BlendBuffer {
-    texture: PoolEntry<wgpu::Texture>,
-    view: wgpu::TextureView,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
 }
 
 impl BlendBuffer {
@@ -100,24 +88,22 @@ impl BlendBuffer {
         pool: &mut TexturePool,
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, 1);
-        let view = texture.create_view(&Default::default());
 
-        Self { texture, view }
+        Self { texture }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.view
+        &self.texture.1
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        &self.texture
+        &self.texture.0
     }
 }
 
 #[derive(Debug)]
 pub struct DepthBuffer {
-    _texture: PoolEntry<wgpu::Texture>,
-    view: wgpu::TextureView,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
 }
 
 impl DepthBuffer {
@@ -135,15 +121,11 @@ impl DepthBuffer {
             msaa_sample_count,
         );
 
-        let view = texture.create_view(&Default::default());
-        Self {
-            _texture: texture,
-            view,
-        }
+        Self { texture }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.view
+        &self.texture.1
     }
 }
 
@@ -236,7 +218,7 @@ impl CommandTarget {
         });
     }
 
-    pub fn take_color_texture(self) -> PoolEntry<wgpu::Texture> {
+    pub fn take_color_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
         self.resolve_buffer
             .map(|b| b.take_texture())
             .unwrap_or_else(|| self.frame_buffer.take_texture())

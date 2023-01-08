@@ -10,7 +10,7 @@ type Constructor<T> = Box<dyn Fn(&Descriptors) -> T>;
 
 #[derive(Debug)]
 pub struct TexturePool {
-    pools: FnvHashMap<TextureKey, BufferPool<wgpu::Texture>>,
+    pools: FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView)>>,
     globals_cache: FnvHashMap<GlobalsKey, Weak<Globals>>,
 }
 
@@ -29,7 +29,7 @@ impl TexturePool {
         usage: wgpu::TextureUsages,
         format: wgpu::TextureFormat,
         sample_count: u32,
-    ) -> PoolEntry<wgpu::Texture> {
+    ) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
         let key = TextureKey {
             size,
             usage,
@@ -46,7 +46,7 @@ impl TexturePool {
                 None
             };
             BufferPool::new(Box::new(move |descriptors| {
-                descriptors.device.create_texture(&wgpu::TextureDescriptor {
+                let texture = descriptors.device.create_texture(&wgpu::TextureDescriptor {
                     label: label.as_deref(),
                     size,
                     mip_level_count: 1,
@@ -54,7 +54,9 @@ impl TexturePool {
                     dimension: wgpu::TextureDimension::D2,
                     format,
                     usage,
-                })
+                });
+                let view = texture.create_view(&Default::default());
+                (texture, view)
             }))
         });
         pool.take(&descriptors)

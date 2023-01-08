@@ -258,7 +258,6 @@ impl Surface {
                     let parent_blend_buffer =
                         parent.update_blend_buffer(&descriptors, texture_pool, draw_encoder);
 
-                    let texture_view = texture.create_view(&Default::default());
                     let blend_bind_group =
                         descriptors
                             .device
@@ -283,7 +282,7 @@ impl Surface {
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 1,
-                                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                                        resource: wgpu::BindingResource::TextureView(&texture.1),
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 2,
