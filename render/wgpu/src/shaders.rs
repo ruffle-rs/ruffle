@@ -61,7 +61,6 @@ impl Shaders {
 
         let blend_shaders = enum_map! {
             ComplexBlend::Multiply => make_shader(device, &mut composer, &shader_defs, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
-            ComplexBlend::Screen => make_shader(device, &mut composer, &shader_defs, "blend/screen.wgsl", include_str!("../shaders/blend/screen.wgsl")),
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
             ComplexBlend::Darken => make_shader(device, &mut composer, &shader_defs, "blend/darken.wgsl", include_str!("../shaders/blend/darken.wgsl")),
             ComplexBlend::Difference => make_shader(device, &mut composer, &shader_defs, "blend/difference.wgsl", include_str!("../shaders/blend/difference.wgsl")),
