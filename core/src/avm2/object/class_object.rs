@@ -868,10 +868,12 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         };
         let object_param = match object_param {
             None => None,
-            Some(cls) => Some(cls.as_class_object().ok_or(format!(
-                "Cannot apply class {:?} with non-class parameter",
-                self_class.read().name()
-            ))?),
+            Some(cls) => Some(cls.as_class_object().ok_or_else(|| {
+                format!(
+                    "Cannot apply class {:?} with non-class parameter",
+                    self_class.read().name()
+                )
+            })?),
         };
 
         if let Some(application) = self.0.read().applications.get(&object_param) {
