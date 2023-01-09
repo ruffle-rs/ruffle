@@ -151,6 +151,11 @@ export class RufflePlayer extends HTMLElement {
     private isExtension = false;
 
     /**
+     * List of resolve functions for onMoviePlaying event promises
+     */
+    private onMoviePlayingPromises: Array<() => void> = [];
+
+    /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
      *
      * @event RufflePlayer#loadedmetadata
@@ -641,6 +646,8 @@ export class RufflePlayer extends HTMLElement {
                     sanitizeParameters(options.parameters)
                 );
             }
+
+            await this.waitForMovieToPlay();
         } catch (err) {
             console.error(`Serious error occurred loading SWF file: ${err}`);
             throw err;
@@ -1560,6 +1567,20 @@ export class RufflePlayer extends HTMLElement {
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
+    }
+
+    private onMoviePlaying() {
+        for (let i = 0; i < this.onMoviePlayingPromises.length; i += 1) {
+            this.onMoviePlayingPromises[i]();
+        }
+
+        this.onMoviePlayingPromises = [];
+    }
+
+    private waitForMovieToPlay(): Promise<void> {
+        return new Promise((resolve, _reject) => {
+            this.onMoviePlayingPromises.push(resolve);
+        });
     }
 
     setIsExtension(isExtension: boolean): void {

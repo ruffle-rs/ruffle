@@ -287,6 +287,9 @@ pub struct Player {
     /// The root SWF URL provided to ActionScript. If None,
     /// the actual loaded url will be used
     spoofed_url: Option<String>,
+
+    /// Function to be called when the root movie loads enough to start playing.
+    on_movie_playing: Option<Box<dyn FnOnce()>>,
 }
 
 impl Player {
@@ -299,7 +302,9 @@ impl Player {
         movie_url: String,
         parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
+        on_movie_playing: Box<dyn FnOnce()>,
     ) {
+        self.on_movie_playing = Some(on_movie_playing);
         self.mutate_with_update_context(|context| {
             let future = context.load_manager.load_root_movie(
                 context.player.clone(),
@@ -1384,12 +1389,15 @@ impl Player {
     /// simulate a particular load condition or stress chunked loading may use
     /// this in lieu of an unlimited execution limit.
     pub fn preload(&mut self, limit: &mut ExecutionLimit) -> bool {
-        self.mutate_with_update_context(|context| {
-            let mut did_finish = true;
+        let mut did_finish = true;
+        let mut root_movie_playing = false;
 
+        self.mutate_with_update_context(|context| {
             if let Some(root) = context.stage.root_clip().as_movie_clip() {
                 let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
                 did_finish = root.preload(context, limit);
+
+                root_movie_playing = root.frames_loaded() >= 1;
 
                 if !was_root_movie_loaded {
                     if let Some(loader_info) = root.loader_info() {
@@ -1429,9 +1437,15 @@ impl Player {
             if did_finish {
                 did_finish = LoadManager::preload_tick(context, limit);
             }
+        });
 
-            did_finish
-        })
+        if root_movie_playing {
+            if let Some(movie_playing) = self.on_movie_playing.take() {
+                movie_playing();
+            }
+        }
+
+        did_finish
     }
 
     #[instrument(level = "debug", skip_all)]
@@ -2148,6 +2162,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
+                on_movie_playing: None,
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(

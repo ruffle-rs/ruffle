@@ -114,6 +114,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "setMetadata")]
     fn set_metadata(this: &JavascriptPlayer, metadata: JsValue);
+
+    #[wasm_bindgen(method, js_name = "onMoviePlaying")]
+    fn on_movie_playing(this: &JavascriptPlayer);
 }
 
 struct JavascriptInterface {
@@ -226,8 +229,18 @@ impl Ruffle {
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
                 ruffle.on_metadata(swf_header);
             };
+            let on_movie_playing = move || {
+                let _ = ruffle.with_instance(|instance| {
+                    instance.js_player.on_movie_playing();
+                });
+            };
 
-            core.fetch_root_movie(movie_url, parameters_to_load, Box::new(on_metadata));
+            core.fetch_root_movie(
+                movie_url,
+                parameters_to_load,
+                Box::new(on_metadata),
+                Box::new(on_movie_playing),
+            );
         });
         Ok(())
     }
