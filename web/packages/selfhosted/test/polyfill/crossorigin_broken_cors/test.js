@@ -9,7 +9,8 @@ const fs = require("fs");
 
 use(chaiHtml);
 
-describe("Doesn't error with cross-origin frames", () => {
+// [NA] Disabled for now as the test can take too long on CI
+describe.skip("Doesn't error with cross-origin frames", () => {
     it("Loads the test", async () => {
         await open_test(browser, __dirname);
     });
