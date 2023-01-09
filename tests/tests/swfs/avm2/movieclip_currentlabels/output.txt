@@ -3,6 +3,16 @@
 frame1
 3
 frame3
+4
+CaseSensitive
+5
+CASEsensitive
+//(contents of this.currentLabel)
+frame1
+
 //(contents of this.currentLabels in scene 2)
 1
-frame4
+Frame4
+//(contents of this.currentLabel)
+Frame4
+

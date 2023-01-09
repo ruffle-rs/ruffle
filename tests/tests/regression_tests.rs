@@ -405,7 +405,7 @@ swf_tests! {
     (as3_mouseevent_valueof_tostring, "avm2/mouseevent_valueof_tostring", 1),
     (as3_movieclip_child_property, "avm2/movieclip_child_property", 1),
     (as3_movieclip_constr, "avm2/movieclip_constr", 1),
-    (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 5),
+    (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 7),
     (as3_movieclip_currentscene, "avm2/movieclip_currentscene", 5),
     (as3_movieclip_dispatchevent_cancel, "avm2/movieclip_dispatchevent_cancel", 1),
     (as3_movieclip_dispatchevent_handlerorder, "avm2/movieclip_dispatchevent_handlerorder", 1),
