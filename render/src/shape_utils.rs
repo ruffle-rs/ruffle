@@ -195,7 +195,7 @@ impl PathSegment {
     fn to_draw_commands(&self) -> impl '_ + Iterator<Item = DrawCommand> {
         assert!(!self.is_empty());
         let mut i = self.points.iter();
-        let first = i.next().expect("Points isn't empty");
+        let first = i.next().expect("Points should not be empty");
         std::iter::once(DrawCommand::MoveTo {
             x: first.x,
             y: first.y,
