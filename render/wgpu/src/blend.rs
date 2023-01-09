@@ -5,7 +5,6 @@ use swf::BlendMode;
 #[derive(Enum, Debug, Copy, Clone)]
 pub enum ComplexBlend {
     Multiply,   // Can't be trivial, 0 alpha is special case
-    Screen,     // Can't be trivial. (dst + src) - (dst * src)
     Lighten,    // Might be trivial but I can't reproduce the right colors
     Darken,     // Might be trivial but I can't reproduce the right colors
     Difference, // Can't be trivial, relies on abs operation
@@ -31,7 +30,7 @@ impl BlendType {
             BlendMode::Normal => BlendType::Trivial(TrivialBlend::Normal),
             BlendMode::Layer => BlendType::Trivial(TrivialBlend::Normal),
             BlendMode::Multiply => BlendType::Complex(ComplexBlend::Multiply),
-            BlendMode::Screen => BlendType::Complex(ComplexBlend::Screen),
+            BlendMode::Screen => BlendType::Trivial(TrivialBlend::Screen),
             BlendMode::Lighten => BlendType::Complex(ComplexBlend::Lighten),
             BlendMode::Darken => BlendType::Complex(ComplexBlend::Darken),
             BlendMode::Difference => BlendType::Complex(ComplexBlend::Difference),
@@ -55,6 +54,7 @@ pub enum TrivialBlend {
     Normal,
     Add,
     Subtract,
+    Screen,
 }
 
 impl TrivialBlend {
@@ -66,6 +66,14 @@ impl TrivialBlend {
                 color: wgpu::BlendComponent {
                     src_factor: wgpu::BlendFactor::One,
                     dst_factor: wgpu::BlendFactor::One,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            },
+            TrivialBlend::Screen => wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrc,
                     operation: wgpu::BlendOperation::Add,
                 },
                 alpha: wgpu::BlendComponent::OVER,
