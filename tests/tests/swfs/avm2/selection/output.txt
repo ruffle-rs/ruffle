@@ -1,0 +1,240 @@
+null
+Input text
+0
+0
+0
+Selectable text
+0
+0
+0
+
+null
+Input text 1 no selection
+0
+0
+0
+Selectable text
+0
+0
+0
+
+text_input
+Input text 1 no selection
+0
+0
+0
+Selectable text
+0
+0
+0
+
+text_input
+AAAInput text 1 no selection
+4
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 2 ltr
+4
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 2 ltr
+4
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 2 ltr
+2
+5
+5
+Selectable text
+0
+0
+0
+
+text_input
+InPUTT text 2 ltr
+3
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 3 rtl
+3
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 3 rtl
+3
+4
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 3 rtl
+2
+2
+5
+Selectable text
+0
+0
+0
+
+text_input
+InPUTT text 3 rtl
+3
+3
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 4 ltr focus change
+3
+3
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 4 ltr focus change
+3
+3
+4
+Selectable text
+0
+0
+0
+
+text_input
+Input text 4 ltr focus change
+2
+5
+5
+Selectable text
+0
+0
+0
+
+text_selectable
+Input text 4 ltr focus change
+2
+5
+5
+Selectable text
+0
+0
+0
+
+text_selectable
+Input text 4 ltr focus change
+2
+5
+5
+Selectable text
+3
+6
+6
+
+text_selectable
+InPUTT text 4 ltr focus change
+2
+5
+5
+Selectable text
+3
+6
+6
+
+text_selectable
+Input text 5 rtl focus change
+29
+29
+29
+Selectable text
+3
+6
+6
+
+text_input
+Input text 5 rtl focus change
+29
+29
+29
+Selectable text
+3
+6
+6
+
+text_input
+Input text 5 rtl focus change
+2
+2
+5
+Selectable text
+3
+6
+6
+
+text_selectable
+Input text 5 rtl focus change
+2
+2
+5
+Selectable text
+3
+6
+6
+
+text_selectable
+Input text 5 rtl focus change
+2
+2
+5
+Selectable text
+3
+3
+6
+
+text_selectable
+InPUTT text 5 rtl focus change
+2
+2
+5
+Selectable text
+3
+3
+6
+
