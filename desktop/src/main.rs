@@ -115,7 +115,7 @@ struct Opt {
     spoof_url: Option<Url>,
 
     /// The version of the player to emulate
-    #[clap(long, short)]
+    #[clap(long)]
     player_version: Option<u8>,
 }
 
