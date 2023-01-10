@@ -194,12 +194,24 @@ pub fn start_drag<'gc>(
                 .get_property(&Multiname::public("height"), activation)?
                 .coerce_to_number(activation)?;
 
+            // Normalize the bounds.
+            let mut x_min = Twips::from_pixels(x);
+            let mut y_min = Twips::from_pixels(y);
+            let mut x_max = Twips::from_pixels(x + width);
+            let mut y_max = Twips::from_pixels(y + height);
+            if x_max.get() < x_min.get() {
+                std::mem::swap(&mut x_min, &mut x_max);
+            }
+            if y_max.get() < y_min.get() {
+                std::mem::swap(&mut y_min, &mut y_max);
+            }
+
             BoundingBox {
                 valid: true,
-                x_min: Twips::from_pixels(x),
-                y_min: Twips::from_pixels(y),
-                x_max: Twips::from_pixels(x + width),
-                y_max: Twips::from_pixels(y + height),
+                x_min,
+                y_min,
+                x_max,
+                y_max,
             }
         } else {
             // No constraints.
