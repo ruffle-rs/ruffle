@@ -18,6 +18,10 @@
       "matchManagers": ["github-actions"],
       "groupName": "Github Actions dependencies",
       "extends": ["schedule:monthly"]
+    },
+    {
+      "matchPackageNames": ["tracing-tracy"],
+      "enabled": false
     }
   ]
 }
