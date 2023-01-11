@@ -1,5 +1,6 @@
 # run this file from ruffle root dir (not the docker dir) like 
 # docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
+# rm -rf web/docker/docker_builds/*
 # docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive 
@@ -9,7 +10,7 @@ RUN apt-get install -y wget
 RUN wget 'https://deb.nodesource.com/setup_lts.x' --quiet -O- | bash
 RUN apt-get update
 RUN apt-get install -y \
- git pkg-config openssl libssl-dev gcc \
+ pkg-config openssl libssl-dev gcc \
  default-jdk default-jre \
   nodejs binaryen
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
@@ -22,4 +23,4 @@ RUN cargo install wasm-bindgen-cli --version 0.2.83
 COPY . ruffle
 WORKDIR ruffle/web
 RUN npm install
-RUN npm run build
+RUN npm run build:dual-wasm
