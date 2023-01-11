@@ -1,6 +1,6 @@
 # run this file from ruffle root dir (not the docker dir) like 
-# docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
 # rm -rf web/docker/docker_builds/*
+# docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
 # docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive 
