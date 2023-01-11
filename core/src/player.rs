@@ -63,8 +63,8 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRoot<'gc> {
-    callstack: GcCell<'gc, GcCallstack<'gc>>,
-    data: GcCell<'gc, GcRootData<'gc>>,
+    callstack: GcCallstack<'gc>,
+    data: GcRootData<'gc>,
 }
 
 #[derive(Collect, Default)]
@@ -83,8 +83,7 @@ impl StaticCallstack {
         if let Some(arena) = self.arena.upgrade() {
             if let Ok(arena) = arena.try_borrow() {
                 arena.mutate(|_, root| {
-                    let callstack = root.callstack.read();
-                    if let Some(callstack) = callstack.avm2 {
+                    if let Some(callstack) = root.callstack.avm2 {
                         f(&callstack.read())
                     }
                 })
@@ -610,9 +609,8 @@ impl Player {
     }
 
     pub fn clear_custom_menu_items(&mut self) {
-        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.write(gc_context);
-            root_data.current_context_menu = None;
+        self.gc_arena.borrow_mut().mutate_root(|_, gc_root| {
+            gc_root.data.current_context_menu = None;
         });
     }
 
@@ -1473,15 +1471,14 @@ impl Player {
         let mut background_color = Color::WHITE;
 
         let commands = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let root_data = gc_root.data.read();
-            let stage = root_data.stage;
+            let stage = gc_root.data.stage;
 
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
                 commands: CommandList::new(),
                 gc_context,
                 ui: ui.deref_mut(),
-                library: &root_data.library,
+                library: &gc_root.data.library,
                 transform_stack,
                 is_offscreen: false,
                 stage,
@@ -1674,99 +1671,101 @@ impl Player {
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
     {
-        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.write(gc_context);
-            let mouse_hovered_object = root_data.mouse_hovered_object;
-            let mouse_pressed_object = root_data.mouse_pressed_object;
-            let focus_tracker = root_data.focus_tracker;
-            let (
-                stage,
-                library,
-                action_queue,
-                avm1,
-                avm2,
-                drag_object,
-                load_manager,
-                avm1_shared_objects,
-                avm2_shared_objects,
-                unbound_text_fields,
-                timers,
-                current_context_menu,
-                external_interface,
-                audio_manager,
-            ) = root_data.update_context_params();
+        self.gc_arena
+            .borrow_mut()
+            .mutate_root(|gc_context, gc_root| {
+                let root_data = &mut gc_root.data;
+                let mouse_hovered_object = root_data.mouse_hovered_object;
+                let mouse_pressed_object = root_data.mouse_pressed_object;
+                let focus_tracker = root_data.focus_tracker;
+                let (
+                    stage,
+                    library,
+                    action_queue,
+                    avm1,
+                    avm2,
+                    drag_object,
+                    load_manager,
+                    avm1_shared_objects,
+                    avm2_shared_objects,
+                    unbound_text_fields,
+                    timers,
+                    current_context_menu,
+                    external_interface,
+                    audio_manager,
+                ) = root_data.update_context_params();
 
-            let mut update_context = UpdateContext {
-                player_version: self.player_version,
-                swf: &self.swf,
-                library,
-                rng: &mut self.rng,
-                renderer: self.renderer.deref_mut(),
-                audio: self.audio.deref_mut(),
-                navigator: self.navigator.deref_mut(),
-                ui: self.ui.deref_mut(),
-                action_queue,
-                gc_context,
-                stage,
-                mouse_over_object: mouse_hovered_object,
-                mouse_down_object: mouse_pressed_object,
-                input: &self.input,
-                mouse_position: &self.mouse_pos,
-                drag_object,
-                player: self.self_reference.clone(),
-                load_manager,
-                system: &mut self.system,
-                instance_counter: &mut self.instance_counter,
-                storage: self.storage.deref_mut(),
-                log: self.log.deref_mut(),
-                video: self.video.deref_mut(),
-                avm1_shared_objects,
-                avm2_shared_objects,
-                unbound_text_fields,
-                timers,
-                current_context_menu,
-                needs_render: &mut self.needs_render,
-                avm1,
-                avm2,
-                external_interface,
-                start_time: self.start_time,
-                update_start: Instant::now(),
-                max_execution_duration: self.max_execution_duration,
-                focus_tracker,
-                times_get_time_called: 0,
-                time_offset: &mut self.time_offset,
-                audio_manager,
-                frame_rate: &mut self.frame_rate,
-                actions_since_timeout_check: &mut self.actions_since_timeout_check,
-                frame_phase: &mut self.frame_phase,
-            };
+                let mut update_context = UpdateContext {
+                    player_version: self.player_version,
+                    swf: &self.swf,
+                    library,
+                    rng: &mut self.rng,
+                    renderer: self.renderer.deref_mut(),
+                    audio: self.audio.deref_mut(),
+                    navigator: self.navigator.deref_mut(),
+                    ui: self.ui.deref_mut(),
+                    action_queue,
+                    gc_context,
+                    stage,
+                    mouse_over_object: mouse_hovered_object,
+                    mouse_down_object: mouse_pressed_object,
+                    input: &self.input,
+                    mouse_position: &self.mouse_pos,
+                    drag_object,
+                    player: self.self_reference.clone(),
+                    load_manager,
+                    system: &mut self.system,
+                    instance_counter: &mut self.instance_counter,
+                    storage: self.storage.deref_mut(),
+                    log: self.log.deref_mut(),
+                    video: self.video.deref_mut(),
+                    avm1_shared_objects,
+                    avm2_shared_objects,
+                    unbound_text_fields,
+                    timers,
+                    current_context_menu,
+                    needs_render: &mut self.needs_render,
+                    avm1,
+                    avm2,
+                    external_interface,
+                    start_time: self.start_time,
+                    update_start: Instant::now(),
+                    max_execution_duration: self.max_execution_duration,
+                    focus_tracker,
+                    times_get_time_called: 0,
+                    time_offset: &mut self.time_offset,
+                    audio_manager,
+                    frame_rate: &mut self.frame_rate,
+                    actions_since_timeout_check: &mut self.actions_since_timeout_check,
+                    frame_phase: &mut self.frame_phase,
+                };
 
-            let old_frame_rate = *update_context.frame_rate;
+                let old_frame_rate = *update_context.frame_rate;
 
-            let ret = f(&mut update_context);
+                let ret = f(&mut update_context);
 
-            let new_frame_rate = *update_context.frame_rate;
+                let new_frame_rate = *update_context.frame_rate;
 
-            // If we changed the framerate, let the audio handler now.
-            #[allow(clippy::float_cmp)]
-            if old_frame_rate != new_frame_rate {
-                update_context.audio.set_frame_rate(new_frame_rate);
-            }
+                // If we changed the framerate, let the audio handler now.
+                #[allow(clippy::float_cmp)]
+                if old_frame_rate != new_frame_rate {
+                    update_context.audio.set_frame_rate(new_frame_rate);
+                }
 
-            self.current_frame = update_context
-                .stage
-                .root_clip()
-                .as_movie_clip()
-                .map(|clip| clip.current_frame());
+                self.current_frame = update_context
+                    .stage
+                    .root_clip()
+                    .as_movie_clip()
+                    .map(|clip| clip.current_frame());
 
-            // Hovered object may have been updated; copy it back to the GC root.
-            let mouse_hovered_object = update_context.mouse_over_object;
-            let mouse_pressed_object = update_context.mouse_down_object;
-            root_data.mouse_hovered_object = mouse_hovered_object;
-            root_data.mouse_pressed_object = mouse_pressed_object;
+                // Hovered object may have been updated; copy it back to the GC root.
+                let mouse_hovered_object = update_context.mouse_over_object;
+                let mouse_pressed_object = update_context.mouse_down_object;
+                root_data.mouse_hovered_object = mouse_hovered_object;
+                root_data.mouse_pressed_object = mouse_pressed_object;
 
-            ret
-        })
+                ret
+            })
     }
 
     pub fn load_device_font<'gc>(
@@ -2167,33 +2166,26 @@ impl PlayerBuilder {
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
                     ArenaParameters::default(),
                     |gc_context| GcRoot {
-                        callstack: GcCell::allocate(gc_context, GcCallstack::default()),
-                        data: GcCell::allocate(
-                            gc_context,
-                            GcRootData {
-                                audio_manager: AudioManager::new(),
-                                action_queue: ActionQueue::new(),
-                                avm1: Avm1::new(gc_context, player_version),
-                                avm2: Avm2::new(gc_context),
-                                current_context_menu: None,
-                                drag_object: None,
-                                external_interface: ExternalInterface::new(),
-                                focus_tracker: FocusTracker::new(gc_context),
-                                library: Library::empty(),
-                                load_manager: LoadManager::new(),
-                                mouse_hovered_object: None,
-                                mouse_pressed_object: None,
-                                avm1_shared_objects: HashMap::new(),
-                                avm2_shared_objects: HashMap::new(),
-                                stage: Stage::empty(
-                                    gc_context,
-                                    self.fullscreen,
-                                    fake_movie.clone(),
-                                ),
-                                timers: Timers::new(),
-                                unbound_text_fields: Vec::new(),
-                            },
-                        ),
+                        callstack: GcCallstack::default(),
+                        data: GcRootData {
+                            audio_manager: AudioManager::new(),
+                            action_queue: ActionQueue::new(),
+                            avm1: Avm1::new(gc_context, player_version),
+                            avm2: Avm2::new(gc_context),
+                            current_context_menu: None,
+                            drag_object: None,
+                            external_interface: ExternalInterface::new(),
+                            focus_tracker: FocusTracker::new(gc_context),
+                            library: Library::empty(),
+                            load_manager: LoadManager::new(),
+                            mouse_hovered_object: None,
+                            mouse_pressed_object: None,
+                            avm1_shared_objects: HashMap::new(),
+                            avm2_shared_objects: HashMap::new(),
+                            stage: Stage::empty(gc_context, self.fullscreen, fake_movie.clone()),
+                            timers: Timers::new(),
+                            unbound_text_fields: Vec::new(),
+                        },
                     },
                 ))),
             })
@@ -2211,9 +2203,9 @@ impl PlayerBuilder {
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
         });
-        player_lock.gc_arena.borrow().mutate(|context, root| {
-            let call_stack = root.data.read().avm2.call_stack();
-            root.callstack.write(context).avm2 = Some(call_stack);
+        player_lock.gc_arena.borrow_mut().mutate_root(|_, root| {
+            let call_stack = root.data.avm2.call_stack();
+            root.callstack.avm2 = Some(call_stack);
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
