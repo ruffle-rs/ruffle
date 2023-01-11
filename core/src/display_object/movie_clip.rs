@@ -3255,6 +3255,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
             Some(Character::Avm1Button(button)) => {
                 button.set_sounds(context.gc_context, button_sounds);
             }
+            Some(Character::Avm2Button(button)) => {
+                button.set_sounds(context.gc_context, button_sounds);
+            }
             Some(_) => {
                 tracing::warn!(
                     "DefineButtonSound: Tried to apply on non-button ID {}",
