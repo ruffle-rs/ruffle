@@ -22,7 +22,7 @@ use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
-    PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
+    PlayerEvent, StageDisplayState, ViewportDimensions,
 };
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -30,7 +30,7 @@ use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Instant;
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -42,7 +42,7 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
-    static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
+    static INSTANCE: RefCell<Option<Weak<Mutex<Player>>>> = RefCell::default();
 }
 
 #[cfg(feature = "tracy")]
@@ -301,8 +301,8 @@ impl App {
             Box::new(on_metadata),
         );
 
-        CALLSTACK.with(|callstack| {
-            *callstack.borrow_mut() = Some(player.lock().expect("Cannot reenter").callstack());
+        INSTANCE.with(|instance| {
+            *instance.borrow_mut() = Some(Arc::downgrade(&player));
         });
 
         Ok(Self {
@@ -868,10 +868,18 @@ fn init() {
 }
 
 fn panic_hook() {
-    CALLSTACK.with(|callstack| {
-        if let Some(callstack) = &*callstack.borrow() {
-            callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
-        }
+    let _: Option<()> = INSTANCE.with(|instance| {
+        let callstack = instance
+            .try_borrow()
+            .ok()?
+            .as_ref()?
+            .upgrade()?
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .avm2_callstack()?;
+
+        println!("AVM2 stack trace: {}", callstack);
+        Some(())
     });
 }
 

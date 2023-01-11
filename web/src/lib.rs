@@ -16,7 +16,7 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
@@ -50,7 +50,6 @@ type AnimationHandler = Closure<dyn FnMut(f64)>;
 
 struct RuffleInstance {
     core: Arc<Mutex<Player>>,
-    callstack: Option<StaticCallstack>,
     js_player: JavascriptPlayer,
     canvas: HtmlCanvasElement,
     canvas_width: i32,
@@ -524,7 +523,6 @@ impl Ruffle {
             .with_player_version(config.plaver_version)
             .build();
 
-        let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
             if let Some(color) = config.background_color.and_then(parse_html_color) {
@@ -540,13 +538,11 @@ impl Ruffle {
             if allow_script_access {
                 core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
             }
-            callstack = Some(core.callstack());
         }
 
         // Create instance.
         let instance = RuffleInstance {
             core,
-            callstack,
             js_player: js_player.clone(),
             canvas: canvas.clone(),
             canvas_width: 0, // Initialize canvas width and height to 0 to force an initial canvas resize.
@@ -1360,26 +1356,23 @@ pub fn set_panic_handler() {
                     // longer than we need to.
                     // We grab all of the JsPlayers out from the list and release our hold, as they
                     // may call back to destroy() - which will mutably borrow instances.
-
                     if let Ok(instances) = instances.try_borrow() {
-                        for (_, instance) in instances.iter() {
-                            if let Ok((player, Some(callstack))) = instance
-                                .try_borrow()
-                                .map(|i| (i.js_player.clone(), i.callstack.clone()))
-                            {
-                                players.push((player, callstack));
-                            }
+                        let instances = instances.iter().filter_map(|(_, i)| i.try_borrow().ok());
+                        for instance in instances {
+                            let core = instance.core.lock().unwrap_or_else(|e| e.into_inner());
+                            players.push((instance.js_player.clone(), core.avm2_callstack()));
                         }
                     }
+
                     for (player, callstack) in players {
                         let error = JsError::new(&info.to_string());
-                        callstack.avm2(|callstack| {
+                        if let Some(callstack) = callstack {
                             let _ = js_sys::Reflect::set(
                                 &error,
                                 &"avmStack".into(),
                                 &callstack.to_string().into(),
                             );
-                        });
+                        }
                         player.panic(&error);
                     }
                 });
