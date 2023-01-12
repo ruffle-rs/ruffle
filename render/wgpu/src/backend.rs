@@ -5,6 +5,7 @@ use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
 use crate::uniform_buffer::BufferStorage;
+use crate::utils::detect_buffer_bug;
 use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
@@ -208,6 +209,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             })?;
 
         let (device, queue) = request_device(&adapter, trace_path).await?;
+
+        if cfg!(target_arch = "wasm") {
+            detect_buffer_bug(&device, &queue)?;
+        }
 
         Ok(Descriptors::new(adapter, device, queue))
     }
