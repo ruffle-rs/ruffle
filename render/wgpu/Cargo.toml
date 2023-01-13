@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "630c12fe47a7bc0dc9ec6217f3903ec6fd6e3fac", features = ["naga"] }
+wgpu = { git = "https://github.com/Dinnerbone/wgpu", rev = "f1fdd1ceb1b4518b627e70b682e6695448d625d7", features = ["naga"] }
 tracing = "0.1.37"
 ruffle_render = { path = "..", features = ["tessellator"] }
 bytemuck = { version = "1.12.3", features = ["derive"] }
