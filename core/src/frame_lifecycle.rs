@@ -20,7 +20,7 @@ use tracing::instrument;
 /// AVM2 frames exist in one of five phases: `Enter`, `Construct`, `Update`,
 /// `FrameScripts`, or `Exit`. An additional `Idle` phase covers rendering and
 /// event processing.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub enum FramePhase {
     /// We're entering the next frame.
     ///
@@ -67,13 +67,8 @@ pub enum FramePhase {
     ///
     /// At this point in time, event handlers are expected to run. No frame
     /// catch-up work should execute.
+    #[default]
     Idle,
-}
-
-impl Default for FramePhase {
-    fn default() -> Self {
-        FramePhase::Idle
-    }
 }
 
 /// Run one frame according to AVM2 frame order.
