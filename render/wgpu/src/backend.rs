@@ -210,7 +210,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (device, queue) = request_device(&adapter, trace_path).await?;
 
-        if cfg!(target_arch = "wasm") {
+        if cfg!(target_arch = "wasm") && device.limits().max_push_constant_size == 0 {
             detect_buffer_bug(&device, &queue)?;
         }
 
