@@ -91,7 +91,7 @@ impl VideoBackend for SoftwareVideoBackend {
                 frame.width.into(),
                 frame.height.into(),
                 BitmapFormat::Rgba,
-                frame.rgba.clone(),
+                frame.rgba,
             );
             renderer.register_bitmap(bitmap)?
         };
