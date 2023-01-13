@@ -204,10 +204,7 @@ impl<'gc> MovieLibrary<'gc> {
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
         match character {
-            Character::Bitmap {
-                bitmap,
-                initial_data: _,
-            } => Ok(bitmap.instantiate(gc_context)),
+            Character::Bitmap { bitmap } => Ok(bitmap.instantiate(gc_context)),
             Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
             Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
             Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),

@@ -2969,18 +2969,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
         let bitmap = ruffle_render::utils::decode_define_bits_lossless(&define_bits_lossless)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, define_bits_lossless.id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                define_bits_lossless.id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(define_bits_lossless.id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3093,18 +3086,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .jpeg_tables();
         let jpeg_data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(&jpeg_data, None)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3117,18 +3103,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, None)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3147,18 +3126,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let jpeg_data = reader.read_slice(jpeg_len)?;
         let alpha_data = reader.read_slice_to_end();
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
