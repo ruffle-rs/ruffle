@@ -87,9 +87,9 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
     const SOI: u8 = 0xD8; // Start of image
     const EOI: u8 = 0xD9; // End of image
 
-    let mut data: Cow<[u8]> = if data.starts_with(&[0xFF, EOI, 0xFF, SOI]) {
+    let mut data: Cow<[u8]> = if let Some(stripped) = data.strip_prefix(&[0xFF, EOI, 0xFF, SOI]) {
         // Common case: usually the sequence is at the beginning as the spec says, so adjust the slice to avoid a copy.
-        data[4..].into()
+        stripped.into()
     } else {
         // Parse the JPEG markers searching for the 0xFFD9FFD8 marker sequence to splice out.
         // We only have to search up to the SOF0 marker.
