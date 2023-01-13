@@ -11,7 +11,7 @@ type Constructor<T> = Box<dyn Fn(&Descriptors) -> T>;
 #[derive(Debug)]
 pub struct TexturePool {
     pools: FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView)>>,
-    globals_cache: FnvHashMap<GlobalsKey, Weak<Globals>>,
+    globals_cache: FnvHashMap<GlobalsKey, Arc<Globals>>,
 }
 
 impl TexturePool {
@@ -68,26 +68,20 @@ impl TexturePool {
         viewport_width: u32,
         viewport_height: u32,
     ) -> Arc<Globals> {
-        let globals = self
-            .globals_cache
+        self.globals_cache
             .entry(GlobalsKey {
                 viewport_width,
                 viewport_height,
             })
-            .or_default();
-        match globals.upgrade() {
-            None => {
-                let replacement = Arc::new(Globals::new(
+            .or_insert_with(|| {
+                Arc::new(Globals::new(
                     &descriptors.device,
                     &descriptors.bind_layouts.globals,
                     viewport_width,
                     viewport_height,
-                ));
-                *globals = Arc::downgrade(&replacement);
-                replacement
-            }
-            Some(globals) => globals,
-        }
+                ))
+            })
+            .clone()
     }
 }
 
