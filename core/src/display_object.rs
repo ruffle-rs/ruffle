@@ -1431,12 +1431,13 @@ pub trait TDisplayObject<'gc>:
         let v = self.visible();
 
         println!(
-            "{} rel({},{}) abs({},{}) path({}) vis({}) {} {} {}",
+            "{} rel({},{}) abs({},{}) depth({}), path({}) vis({}) {} {} {}",
             " ".repeat(depth),
             self.x(),
             self.y(),
             bounds.x_min.to_pixels(),
             bounds.y_min.to_pixels(),
+            self.depth(),
             path,
             v,
             classname,

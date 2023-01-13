@@ -3245,12 +3245,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_bkpt_line(&mut self, _line_num: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
 
-        self.context.ui.submit_debug_message(crate::player::DebugMessageOut::BreakpointHit {
+        self.context.ui.submit_debug_message(crate::debugable::DebugMessageOut::BreakpointHit {
             name: format!("line {}", _line_num),
         });
 
         // Check for any debug events before executing the next
-        use crate::player::{DebugMessageIn};
+        use crate::debugable::{DebugMessageIn};
         println!("Waiting for end of bp");
         'check_msg: loop {
             while let Some(dbg_in) = self.context.ui.get_debug_event() {
@@ -3276,9 +3276,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             }
                         }
 
-                        self.context.ui.submit_debug_message(crate::player::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
+                        self.context.ui.submit_debug_message(crate::debugable::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
                     },
-                    DebugMessageIn::GetCurrentFrame => {},
+                    DebugMessageIn::Targeted {path, msg} => {},
                 }
             }
         }

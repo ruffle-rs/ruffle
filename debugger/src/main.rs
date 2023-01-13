@@ -5,20 +5,50 @@ use std::net::{TcpListener, TcpStream, Shutdown};
 use std::io::{Read, Write};
 use std::time::Duration;
 
-use ruffle_core::player::{DebugMessageOut, DebugMessageIn};
+use ruffle_core::debugable::{DebugMessageOut, DebugMessageIn, TargetedMsg};
 
+/// Commands that the debugger client can send the the current debuggee
 #[derive(Debug, Clone)]
 pub enum Command {
+    /// Pause at the start of the next frame
     Pause,
+
+    /// Resume execution of the next frame
     Play,
+
+    /// Reconnect client
     Reconnect,
+
+    /// Get a var at the given `path`
     GetVar { path: String },
-    CurrentFrame,
+
+    /// Get information about the display object at the given path
+    Info { path: String },
+
+    /// Get the children of the display object at the given depth
+    GetChildren { path: String },
+
+    /// Get the properties on this object
+    GetProps { path: String },
+
+    /// Get the value of a property
+    GetPropValue { path: String, name: String },
+
+    /// Set the value of a property
+    SetPropValue { path: String, name: String, value: String },
 }
 
-fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>) -> thread::JoinHandle<()> {
+#[derive(Debug, Default)]
+struct DebuggerState {
+    /// The last command that was executed
+    last_cmd: Option<Command>,
+
+    /// The current targeted object
+    target: Option<String>,
+}
+
+fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>, state: Arc<RwLock<DebuggerState>>) -> thread::JoinHandle<()> {
     std::thread::spawn(move || {
-        let mut last_cmd: Option<Command> = None;
 
         while flag.load(Ordering::SeqCst) {
             let mut buf = [0u8; 4096];
@@ -41,16 +71,51 @@ fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>) -> thre
                     cmd = Some(Command::Play);
                 } else if s.starts_with("reconnect") || s == "rc\n" {
                     cmd = Some(Command::Reconnect);
-                } else if s.starts_with("current_frame") || s == "cf\n" {
-                    cmd = Some(Command::CurrentFrame)
+                } else if s.starts_with("get_info") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                        state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                    });
+                    cmd = Some(Command::Info { path: var_name });
+                } else if s.starts_with("get_children") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                        state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                    });
+                    cmd = Some(Command::GetChildren { path: var_name });
+                } else if s.starts_with("get_props") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                        state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                    });
+                    cmd = Some(Command::GetProps { path: var_name });
+                } else if s.starts_with("get_prop") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                        state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                    });
+
+                    let arg_name = s.strip_suffix("\n").unwrap().split(" ").skip(2).next().map(|x| x.to_string()).unwrap();
+
+                    cmd = Some(Command::GetPropValue { path: var_name, name: arg_name  });
+                } else if s.starts_with("set_prop") {
+                            let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                                state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                            });
+
+                            let arg_name = s.strip_suffix("\n").unwrap().split(" ").skip(2).next().map(|x| x.to_string()).unwrap();
+
+                            let new_value = s.strip_suffix("\n").unwrap().split(" ").skip(3).next().map(|x| x.to_string()).unwrap();
+
+
+                            cmd = Some(Command::SetPropValue { path: var_name, name: arg_name, value: new_value  });
+                } else if s.starts_with("select") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().unwrap();
+                    state.write().unwrap().target = Some(var_name.to_string());
                 } else if s == "\n" {
-                    cmd = last_cmd.take();
+                    cmd = state.write().unwrap().last_cmd.take();
                 }
 
                 if let Some(cmd) = cmd {
                     println!("Got cmd {:?}", cmd);
                     queue.write().unwrap().push(cmd.clone());
-                    last_cmd = Some(cmd);
+                    state.write().unwrap().last_cmd = Some(cmd);
                 }
             }
         }
@@ -61,7 +126,8 @@ fn handle_client(mut stream: TcpStream) {
     stream.set_read_timeout(Some(Duration::from_millis(100))).unwrap();
     let queue = Arc::new(RwLock::new(Vec::new()));
     let flag = Arc::new(AtomicBool::new(true));
-    let input_thread = stdin_thread(Arc::clone(&queue), Arc::clone(&flag));
+    let state = Arc::new(RwLock::new(DebuggerState::default()));
+    let input_thread = stdin_thread(Arc::clone(&queue), Arc::clone(&flag), Arc::clone(&state));
 
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
@@ -78,9 +144,22 @@ fn handle_client(mut stream: TcpStream) {
                 Command::GetVar { path } => {
                     stream.write(serde_json::to_string(&DebugMessageIn::GetVar { path: path }).unwrap().as_bytes()).unwrap();
                 }
-                Command::CurrentFrame => {
-                    stream.write(serde_json::to_string(&DebugMessageIn::GetCurrentFrame).unwrap().as_bytes()).unwrap();
+                Command::Info { path } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::GetInfo }).unwrap().as_bytes()).unwrap();
                 }
+                Command::GetChildren { path } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::GetChildren }).unwrap().as_bytes()).unwrap();
+                }
+                Command::GetProps { path } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::GetProps }).unwrap().as_bytes()).unwrap();
+                }
+                Command::GetPropValue { path, name } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::GetPropValue { name } }).unwrap().as_bytes()).unwrap();
+                }
+                Command::SetPropValue { path, name, value } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::SetPropValue { name, value } }).unwrap().as_bytes()).unwrap();
+                }
+                _ => {}
             }
         }
 
@@ -107,8 +186,8 @@ fn handle_client(mut stream: TcpStream) {
                         DebugMessageOut::GetVarResult { value } => {
                             println!("Result: {:?}", value);
                         }
-                        DebugMessageOut::CurrentFrame { num } => {
-                            println!("cf = {}", num);
+                        DebugMessageOut::DisplayObjectInfo(i) => {
+                            println!("Info = {:#?}", i);
                         }
                     }
                 }

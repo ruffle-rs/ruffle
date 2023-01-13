@@ -60,26 +60,6 @@ use tracing::{info, instrument};
 /// `player_version`.
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
-use serde::{Serialize, Deserialize};
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum DebugMessageIn {
-    Pause,
-    Play,
-    /// Get a variable, path is a AVM1 style target e.g. "this.foo"
-    GetVar { path: String},
-    GetCurrentFrame,
-}
-
-#[derive(Clone,  Serialize, Deserialize, Debug)]
-pub enum DebugMessageOut {
-    State {
-        playing: bool,
-    },
-    BreakpointHit { name: String },
-    GetVarResult { value: String },
-    CurrentFrame { num: u16 },
-}
-
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRoot<'gc> {
@@ -487,6 +467,34 @@ impl Player {
             return;
         }
 
+        /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
+        fn walk_depthpath<'gc>(context: &mut UpdateContext<'_, 'gc, '_>, path: &[Depth]) -> Option<DisplayObject<'gc>> {
+            let mut root = context.stage.root_clip();
+
+            // Walk the path
+            for depth in path.iter().copied() {
+                // If we have a container
+                //TODO: this wont work with buttons for now
+                if let Some(cont) = root.as_container() {
+                    // Get the child at that depth
+                    if let Some(depth_child) = cont.child_by_depth(depth) {
+                        root = depth_child;
+                    } else {
+                        println!("no child");
+                        // No child at that depth, exit
+                        return None;
+                    }
+                } else {
+                    print!("Not cont");
+                    // Not a container, can't get a depth-child
+                    return None;
+                }
+            }
+
+            Some(root)
+        }
+
+        use crate::debugable::{DebugMessageIn, DebugMessageOut};
         // Check for any debug events before executing the next frame
         while let Some(dbg_in) = self.ui_mut().get_debug_event() {
             match dbg_in {
@@ -503,13 +511,23 @@ impl Player {
                 },
                 // Ignore here
                 DebugMessageIn::GetVar { path: _ } => {},
-                DebugMessageIn::GetCurrentFrame => {
-                    use crate::debugable::DebugProvider;
+                DebugMessageIn::Targeted { path, msg } => {
                     self.mutate_with_update_context(|context| {
-                        let evt = context.stage.root_clip().as_debuggable().unwrap().dispatch(DebugMessageIn::GetCurrentFrame);
+                        use crate::debugable::DebugProvider;
+
+                        let d_o = if path == "/" {
+                            context.stage.root_clip()
+                        }  else {
+                            let dp = path.split("/").map(|x| Depth::from_str(x).unwrap()).collect::<Vec<_>>();
+                            let d_o = walk_depthpath(context, &dp);
+                            d_o.unwrap()
+                        };
+
+                        let evt = d_o.as_debuggable().unwrap().dispatch(msg, context);
                         if let Some(evt) = evt {
                             context.ui.submit_debug_message(evt);
                         }
+
                     });
                 }
             }

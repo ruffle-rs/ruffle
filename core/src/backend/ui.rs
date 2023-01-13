@@ -32,12 +32,12 @@ pub trait UiBackend {
     /// Poll a single debug event
     /// This wil be invoked before each frame and may or may not block until a message is available
     /// The recommendation is to pull events from an internal queue
-    fn get_debug_event(&mut self) -> Option<crate::player::DebugMessageIn> {
-        Some(crate::player::DebugMessageIn::Pause)
+    fn get_debug_event(&mut self) -> Option<crate::debugable::DebugMessageIn> {
+        None
     }
 
     /// Enqueue a debug message to be sent to the attached debugger if it exists
-    fn submit_debug_message(&mut self, _evt: crate::player::DebugMessageOut) {
+    fn submit_debug_message(&mut self, _evt: crate::debugable::DebugMessageOut) {
         //NOOP
     }
 
