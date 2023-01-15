@@ -161,10 +161,11 @@ pub fn buffer_to_image(
 #[allow(dead_code)]
 // https://github.com/gfx-rs/wgpu/issues/3371
 pub fn detect_buffer_bug(device: &wgpu::Device, queue: &wgpu::Queue) -> Result<(), Error> {
-    let expected_color: [f32; 4] = [1.0, 0.5, 0.25, 1.0];
+    let expected_rgba = image::Rgba([50, 100, 200, 255]);
+    let expected_color: [f32; 4] = expected_rgba.0.map(|c| (c as f32) / 255.0);
     let size = wgpu::Extent3d {
-        width: 32,
-        height: 32,
+        width: 8,
+        height: 8,
         depth_or_array_layers: 1,
     };
     let format = wgpu::TextureFormat::Rgba8Unorm;
@@ -210,75 +211,78 @@ pub fn detect_buffer_bug(device: &wgpu::Device, queue: &wgpu::Queue) -> Result<(
         }),
         multiview: None,
     });
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
-        label: None,
-        size,
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-    });
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(&expected_color),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: None,
-        layout: &bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: uniform_buffer.as_entire_binding(),
-        }],
-    });
-    let result = device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-            * buffer_dimensions.height as u64),
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-    let mut encoder = device.create_command_encoder(&Default::default());
-    {
-        let view = texture.create_view(&Default::default());
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    for i in 0..size.width {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         });
-        render_pass.set_pipeline(&pipeline);
-        render_pass.set_bind_group(0, &bind_group, &[]);
-        render_pass.draw(0..4, 0..1);
-    }
-    encoder.copy_texture_to_buffer(
-        texture.as_image_copy(),
-        wgpu::ImageCopyBuffer {
-            buffer: &result,
-            layout: wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
-                rows_per_image: None,
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&expected_color),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+        let result = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
+                * buffer_dimensions.height as u64),
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = device.create_command_encoder(&Default::default());
+        {
+            let view = texture.create_view(&Default::default());
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+            render_pass.set_pipeline(&pipeline);
+            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.draw(0..4, 0..1);
+        }
+        encoder.copy_texture_to_buffer(
+            texture.as_image_copy(),
+            wgpu::ImageCopyBuffer {
+                buffer: &result,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
+                    rows_per_image: None,
+                },
             },
-        },
-        size,
-    );
-    let index = queue.submit(Some(encoder.finish()));
-    let image = buffer_to_image(device, &result, &buffer_dimensions, Some(index), size, true);
-    let expected_rgba = image::Rgba(expected_color.map(|c| (c * 256.0) as u8));
-    if image.get_pixel(0, 0) != &expected_rgba {
-        tracing::error!(
-            "Buffer test failed, expected {expected_rgba:?} but found {:?}",
-            image.get_pixel(0, 0)
+            size,
         );
-        return Err("Buffer test failed".to_string().into());
+        let index = queue.submit(Some(encoder.finish()));
+        let image = buffer_to_image(device, &result, &buffer_dimensions, Some(index), size, true);
+        if image.get_pixel(i, i) != &expected_rgba {
+            tracing::error!(
+                "Buffer test failed on pass {i}, expected {expected_rgba:?} but found {:?}",
+                image.get_pixel(i, i)
+            );
+            return Err("Buffer test failed".to_string().into());
+        } else {
+            tracing::info!("Buffer test success on pass {i}");
+        }
     }
     Ok(())
 }
