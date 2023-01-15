@@ -52,6 +52,9 @@ pub enum TargetedMsg {
     /// Set the value of the given prop
     SetPropValue { name: String, value: String},
 
+    /// Stop this clip
+    /// TODO: this only works on clips, should we have a custom(str) msg that allows do-specific behaviour, or should they all be in this enum with a msg that allows getting which ones are available
+    Stop,
 }
 
 #[derive(Clone,  Serialize, Deserialize, Debug)]
@@ -62,6 +65,8 @@ pub enum DebugMessageOut {
     BreakpointHit { name: String },
     GetVarResult { value: String },
     DisplayObjectInfo(crate::debugable::DisplayObjectInfo),
+    GetPropsResult { keys: Vec<String> },
+    GenericResult { success: bool },
 }
 
 #[derive(Clone,  Serialize, Deserialize, Debug)]
@@ -96,6 +101,10 @@ impl<'gc> MovieClipDebugger<'gc> {
 impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
     fn dispatch(&mut self, evt: TargetedMsg, context: &mut UpdateContext<'_, 'gc, '_>) -> Option<DebugMessageOut> {
         match evt {
+            TargetedMsg::Stop => {
+                self.tgt.stop(context);
+                Some(DebugMessageOut::GenericResult{ success: true})
+            }
             TargetedMsg::GetInfo => {
                 {
                     let mut activation = Activation::from_stub(
@@ -123,7 +132,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                 for x in self.tgt.as_container().unwrap().iter_render_list() {
                     println!("{:?}", x.name())
                 }
-                None
+                Some(DebugMessageOut::GenericResult{ success: true})
             }
             TargetedMsg::GetProps => {
                 let mut activation = Activation::from_stub(
@@ -136,7 +145,12 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                 let keys = obj.get_keys(&mut activation);
                 println!("keys = {:?}", keys);
 
-                None
+                let mut out_keys: Vec<String> = Vec::new();
+                for key in &keys {
+                    out_keys.push(key.to_utf8_lossy().to_string() );
+                }
+
+                Some(DebugMessageOut::GetPropsResult { keys: out_keys })
             }
             TargetedMsg::GetPropValue { name } => {
                 let mut activation = Activation::from_stub(
@@ -149,7 +163,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                 let val = obj.get(AvmString::new_utf8(activation.context.gc_context, name), &mut activation);
                 println!("keys = {:?}", val);
 
-                None
+                Some(DebugMessageOut::GenericResult{ success: true})
             }
             TargetedMsg::SetPropValue { name, value } => {
                 let mut activation = Activation::from_stub(
@@ -163,9 +177,11 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                         AvmString::new_utf8(activation.context.gc_context, name),
                         AvmString::new_utf8(activation.context.gc_context, value).into(),
                 &mut activation).unwrap();
-                None
+                Some(DebugMessageOut::GenericResult{ success: true})
             }
-            _ => None,
+            _ => {
+                Some(DebugMessageOut::GenericResult{ success: false})
+            },
         }
     }
 }

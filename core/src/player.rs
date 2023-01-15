@@ -494,6 +494,33 @@ impl Player {
             Some(root)
         }
 
+        /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
+        fn walk_path<'gc>(context: &mut UpdateContext<'_, 'gc, '_>, path: &[&str]) -> Option<DisplayObject<'gc>> {
+            let mut root = context.stage.root_clip();
+
+            // Walk the path
+            for depth in path.iter() {
+                // If we have a container
+                //TODO: this wont work with buttons for now
+                if let Some(cont) = root.as_container() {
+                    // Get the child at that depth
+                    if let Some(child) = cont.child_by_name(ruffle_wstr::WStr::from_units(depth.as_bytes()), true) {
+                        root = child;
+                    } else {
+                        println!("no child");
+                        // No child at that depth, exit
+                        return None;
+                    }
+                } else {
+                    print!("Not cont");
+                    // Not a container, can't get a depth-child
+                    return None;
+                }
+            }
+
+            Some(root)
+        }
+
         use crate::debugable::{DebugMessageIn, DebugMessageOut};
         // Check for any debug events before executing the next frame
         while let Some(dbg_in) = self.ui_mut().get_debug_event() {
@@ -518,8 +545,11 @@ impl Player {
                         let d_o = if path == "/" {
                             context.stage.root_clip()
                         }  else {
-                            let dp = path.split("/").map(|x| Depth::from_str(x).unwrap()).collect::<Vec<_>>();
-                            let d_o = walk_depthpath(context, &dp);
+                            //let dp = path.split("/").map(|x| Depth::from_str(x).unwrap()).collect::<Vec<_>>();
+                            //let d_o = walk_depthpath(context, &dp);
+                            let dp = path.split("/").collect::<Vec<_>>();
+                            println!("path = {:?}", dp);
+                            let d_o = walk_path(context, &dp);
                             d_o.unwrap()
                         };
 

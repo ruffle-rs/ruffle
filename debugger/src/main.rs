@@ -36,6 +36,9 @@ pub enum Command {
 
     /// Set the value of a property
     SetPropValue { path: String, name: String, value: String },
+
+    /// Stop the current display object
+    StopDO { path: String},
 }
 
 #[derive(Debug, Default)]
@@ -47,10 +50,24 @@ struct DebuggerState {
     target: Option<String>,
 }
 
-fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>, state: Arc<RwLock<DebuggerState>>) -> thread::JoinHandle<()> {
+fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>, state: Arc<RwLock<DebuggerState>>, input_block: Arc<AtomicBool>) -> thread::JoinHandle<()> {
     std::thread::spawn(move || {
 
         while flag.load(Ordering::SeqCst) {
+            // Don't allow input while it's blocked
+            if input_block.load(Ordering::SeqCst) {
+                continue;
+            }
+
+            let mut out = std::io::stdout();
+            if let Some(select) = &state.read().unwrap().target {
+                out.write(b"[");
+                out.write(select.as_bytes());
+                out.write(b"]");
+            }
+            out.write(b"> ");
+            out.flush();
+
             let mut buf = [0u8; 4096];
             if let Ok(len) = std::io::stdin().read(&mut buf) {
                 if len == 0 {
@@ -86,6 +103,11 @@ fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>, state: 
                         state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
                     });
                     cmd = Some(Command::GetProps { path: var_name });
+                } else if s.starts_with("stop_do") {
+                    let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
+                        state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
+                    });
+                    cmd = Some(Command::StopDO { path: var_name });
                 } else if s.starts_with("get_prop") {
                     let var_name = s.strip_suffix("\n").unwrap().split(" ").skip(1).next().map(|x| x.to_string()).unwrap_or_else(|| {
                         state.read().unwrap().target.as_ref().map(|x| x.to_string()).unwrap_or_else(|| "".to_string())
@@ -110,12 +132,15 @@ fn stdin_thread(queue: Arc<RwLock<Vec<Command>>>, flag: Arc<AtomicBool>, state: 
                     state.write().unwrap().target = Some(var_name.to_string());
                 } else if s == "\n" {
                     cmd = state.write().unwrap().last_cmd.take();
+                } else {
+                    println!("Unknown command");
                 }
 
                 if let Some(cmd) = cmd {
                     println!("Got cmd {:?}", cmd);
                     queue.write().unwrap().push(cmd.clone());
                     state.write().unwrap().last_cmd = Some(cmd);
+                    input_block.store(true, Ordering::SeqCst);
                 }
             }
         }
@@ -127,7 +152,8 @@ fn handle_client(mut stream: TcpStream) {
     let queue = Arc::new(RwLock::new(Vec::new()));
     let flag = Arc::new(AtomicBool::new(true));
     let state = Arc::new(RwLock::new(DebuggerState::default()));
-    let input_thread = stdin_thread(Arc::clone(&queue), Arc::clone(&flag), Arc::clone(&state));
+    let input_block = Arc::new(AtomicBool::new(false));
+    let input_thread = stdin_thread(Arc::clone(&queue), Arc::clone(&flag), Arc::clone(&state), Arc::clone(&input_block));
 
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
@@ -159,6 +185,9 @@ fn handle_client(mut stream: TcpStream) {
                 Command::SetPropValue { path, name, value } => {
                     stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::SetPropValue { name, value } }).unwrap().as_bytes()).unwrap();
                 }
+                Command::StopDO { path } => {
+                    stream.write(serde_json::to_string(&DebugMessageIn::Targeted { path, msg: TargetedMsg::Stop }).unwrap().as_bytes()).unwrap();
+                }
                 _ => {}
             }
         }
@@ -189,8 +218,21 @@ fn handle_client(mut stream: TcpStream) {
                         DebugMessageOut::DisplayObjectInfo(i) => {
                             println!("Info = {:#?}", i);
                         }
+                        DebugMessageOut::GetPropsResult { keys } => {
+                            for key in &keys {
+                                println!("\"{}\"", key);
+                            }
+                        }
+                        DebugMessageOut::GenericResult { success } => {
+                            if success {
+                                println!("success");
+                            } else {
+                                println!("fail");
+                            }
+                        }
                     }
                 }
+                input_block.store(false, Ordering::SeqCst);
             }
         }
     }
