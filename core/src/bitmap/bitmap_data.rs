@@ -316,12 +316,13 @@ impl<'gc> BitmapData<'gc> {
 
     #[instrument(level = "debug", skip_all)]
     pub fn ensure_updated(&mut self, render: &dyn RenderBackend) {
-        if let Some(image) = self
-            .pixels
-            .sync_handle
-            .take()
-            .and_then(|sync| render.retrieve_offscreen_texture(sync).ok())
-        {
+        if let Some(sync_handle) = self.pixels.sync_handle.take() {
+            if self.dirty {
+                panic!("SyncHandle was present while BitmapData is dirty - a sync should have occured before any CPU-side modifications");
+            }
+            let image = render
+                .retrieve_offscreen_texture(sync_handle)
+                .expect("Failed to sync BitmapData");
             copy_pixels_to_bitmapdata(self, image.data());
         }
     }
