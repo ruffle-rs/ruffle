@@ -160,7 +160,8 @@ fn parse_parameters(opt: &Opt) -> impl '_ + Iterator<Item = (String, String)> {
 
 fn pick_file() -> Option<PathBuf> {
     FileDialog::new()
-        .add_filter(".swf", &["swf"])
+        .add_filter("Flash Files", &["swf", "spl"])
+        .add_filter("All Files", &["*"])
         .set_title("Load a Flash File")
         .pick_file()
 }
