@@ -10,7 +10,7 @@ RUN apt-get install -y wget
 RUN wget 'https://deb.nodesource.com/setup_lts.x' --quiet -O- | bash
 RUN apt-get update
 RUN apt-get install -y \
- pkg-config openssl libssl-dev gcc \
+ git pkg-config openssl libssl-dev gcc \
  default-jdk default-jre \
   nodejs binaryen
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
