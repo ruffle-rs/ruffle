@@ -1,10 +1,9 @@
-use crate::add_field_accessors;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::context::UpdateContext;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use std::fmt;
 
 /// A BitmapData
@@ -17,24 +16,21 @@ pub struct BitmapDataObject<'gc>(GcCell<'gc, BitmapDataData<'gc>>);
 pub struct BitmapDataData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
-    data: GcCell<'gc, BitmapData<'gc>>,
+    data: BitmapDataWrapper<'gc>,
 }
 
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let this = self.0.read();
-        let data = this.data.read();
         f.debug_struct("BitmapData")
             .field("ptr", &self.0.as_ptr())
-            .field("data", &data)
             .finish()
     }
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    add_field_accessors!(
-        [data, GcCell<'gc, BitmapData<'gc>>, set => set_bitmap_data, get => bitmap_data],
-    );
+    pub fn bitmap_data(&self) -> GcCell<'gc, BitmapData<'gc>> {
+        self.0.read().data.sync()
+    }
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         Self::with_bitmap_data(gc_context, proto, Default::default())
@@ -49,13 +45,25 @@ impl<'gc> BitmapDataObject<'gc> {
             gc_context,
             BitmapDataData {
                 base: ScriptObject::new(gc_context, Some(proto)),
-                data: GcCell::allocate(gc_context, bitmap_data),
+                data: BitmapDataWrapper::new(GcCell::allocate(gc_context, bitmap_data)),
             },
         ))
     }
 
+    pub fn width(&self) -> u32 {
+        self.0.read().data.width()
+    }
+
+    pub fn height(&self) -> u32 {
+        self.0.read().data.height()
+    }
+
+    pub fn transparency(&self) -> bool {
+        self.0.read().data.transparency()
+    }
+
     pub fn disposed(&self) -> bool {
-        self.bitmap_data().read().disposed()
+        self.0.read().data.disposed()
     }
 
     pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc>) {

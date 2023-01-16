@@ -597,28 +597,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 size: target.size,
                 buffer: texture_offscreen.buffer.clone(),
                 buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
+                descriptors: self.descriptors.clone(),
             })),
             None => Ok(Box::new(QueueSyncHandle::NotCopied {
                 handle: handle.clone(),
                 size: target.size,
+                descriptors: self.descriptors.clone(),
             })),
         }
-    }
-
-    fn retrieve_offscreen_texture(
-        &self,
-        sync: Box<dyn SyncHandle>,
-    ) -> Result<Bitmap, ruffle_render::error::Error> {
-        let sync = sync
-            .downcast::<QueueSyncHandle>()
-            .expect("Sync handle must be a wgpu backend QueueSyncHandle");
-        let image = sync.capture(&self.descriptors.device, &self.descriptors.queue);
-        Ok(Bitmap::new(
-            image.dimensions().0,
-            image.dimensions().1,
-            ruffle_render::bitmap::BitmapFormat::Rgba,
-            image.into_raw(),
-        ))
     }
 }
 

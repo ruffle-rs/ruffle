@@ -947,13 +947,6 @@ impl RenderBackend for WebGlRenderBackend {
         Err(ruffle_render::error::Error::Unimplemented)
     }
 
-    fn retrieve_offscreen_texture(
-        &self,
-        _sync: Box<dyn SyncHandle>,
-    ) -> Result<Bitmap, ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented)
-    }
-
     fn viewport_dimensions(&self) -> ViewportDimensions {
         ViewportDimensions {
             width: self.renderbuffer_width as u32,

@@ -8,7 +8,7 @@ use bitflags::bitflags;
 use core::fmt;
 use gc_arena::{Collect, GcCell};
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::matrix::Matrix;
@@ -175,6 +175,9 @@ pub struct BitmapData<'gc> {
     // so we need a separate 'disposed' flag.
     disposed: bool,
 
+    #[collect(require_static)]
+    sync_handle: Option<Box<dyn SyncHandle>>,
+
     /// The bitmap handle for this data.
     ///
     /// This is lazily initialized; a value of `None` indicates that
@@ -188,6 +191,99 @@ pub struct BitmapData<'gc> {
     /// this does not need to hold an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
 }
+
+mod wrapper {
+    use crate::context::RenderContext;
+    use gc_arena::{Collect, GcCell};
+    use ruffle_render::commands::CommandHandler;
+
+    use super::{copy_pixels_to_bitmapdata, BitmapData};
+
+    #[derive(Collect, Copy, Clone)]
+    #[collect(no_drop)]
+    /// A wrapper type that ensures that we always wait for a pending
+    /// GPU -> CPU sync to complete (using `sync_handle`) before accessing
+    /// the CPU-side pixels.
+    ///
+    /// This is overly conservative - we perform a sync before allowing any access
+    /// to the underlying `BitmapData`, even if we wouldn't be accessing the pixels.
+    /// Implementing more fine-grained tracking turned out to be extremely invasive,
+    /// and made the code much less readable. This should be enough for the simple
+    /// case where ActionScript calls `BitmapData.draw`, and then doesn't interact
+    /// with the Bitmap/BitmapData object at all for some time.
+    pub struct BitmapDataWrapper<'gc>(GcCell<'gc, BitmapData<'gc>>);
+
+    impl<'gc> BitmapDataWrapper<'gc> {
+        pub fn new(data: GcCell<'gc, BitmapData<'gc>>) -> Self {
+            BitmapDataWrapper(data)
+        }
+
+        // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
+        // is in progress, waits for it to complete
+        pub fn sync(&self) -> GcCell<'gc, BitmapData<'gc>> {
+            // SAFETY: The only field that can store gc pointers is `avm2_object`,
+            // which we don't update here. Ideally, we would refactor this so that
+            // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
+            // `RefCell` instead of a `GcCell`.
+            let mut write = unsafe { self.0.borrow_mut() };
+            if let Some(sync_handle) = write.sync_handle.take() {
+                if write.dirty {
+                    panic!("SyncHandle was present while BitmapData is dirty - a sync should have occurred before any CPU-side modifications");
+                }
+                let image = sync_handle
+                    .retrieve_offscreen_texture()
+                    .expect("Failed to sync BitmapData");
+                copy_pixels_to_bitmapdata(&mut write, image.data());
+            }
+            self.0
+        }
+
+        // These methods do not require a sync to complete, as they do not depend on the
+        // CPU-side pixels. They are implemented directly on `BitmapDataWrapper`, allowing
+        // callers to avoid calling sync()
+
+        pub fn height(&self) -> u32 {
+            self.0.read().height
+        }
+
+        pub fn width(&self) -> u32 {
+            self.0.read().width
+        }
+
+        pub fn disposed(&self) -> bool {
+            self.0.read().disposed
+        }
+
+        pub fn transparency(&self) -> bool {
+            self.0.read().transparency
+        }
+
+        pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
+            if let Ok(mut inner_bitmap_data) = self.0.try_write(context.gc_context) {
+                if inner_bitmap_data.disposed() {
+                    return;
+                }
+
+                // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
+                // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
+                inner_bitmap_data.update_dirty_texture(context);
+                let handle = inner_bitmap_data
+                    .bitmap_handle(context.renderer)
+                    .expect("Missing bitmap handle");
+
+                context.commands.render_bitmap(
+                    handle,
+                    context.transform_stack.transform(),
+                    smoothing,
+                );
+            } else {
+                //this is caused by recursive render attempt. TODO: support this.
+            }
+        }
+    }
+}
+
+pub use wrapper::BitmapDataWrapper;
 
 impl fmt::Debug for BitmapData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -216,6 +312,7 @@ impl<'gc> BitmapData<'gc> {
             transparency: false,
             disposed: true,
             bitmap_handle: None,
+            sync_handle: None,
             avm2_object: None,
         }
     }
@@ -256,6 +353,7 @@ impl<'gc> BitmapData<'gc> {
         self.height = 0;
         self.pixels.clear();
         self.bitmap_handle = None;
+        self.sync_handle = None;
         // There's no longer a handle to update
         self.dirty = false;
         self.disposed = true;
@@ -1104,6 +1202,7 @@ impl<'gc> BitmapData<'gc> {
                 height: bitmap.height,
                 transparency: true,
                 bitmap_handle: None,
+                sync_handle: None,
                 avm2_object: None,
                 disposed: false,
             })
@@ -1207,6 +1306,9 @@ impl<'gc> BitmapData<'gc> {
         }
 
         self.update_dirty_texture(&mut render_context);
+        // The results of any pending GPU -> CPU sync would get overwritten
+        // by this new draw, so just discard the old handle
+        self.sync_handle = None;
 
         let commands = if blend_mode == BlendMode::Normal {
             render_context.commands
@@ -1216,13 +1318,15 @@ impl<'gc> BitmapData<'gc> {
             commands
         };
 
-        let image = context
-            .renderer
-            .render_offscreen(handle, bitmapdata_width, bitmapdata_height, commands)
-            .and_then(|sync| context.renderer.retrieve_offscreen_texture(sync));
+        let image = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            commands,
+        );
 
         match image {
-            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+            Ok(sync_handle) => self.sync_handle = Some(sync_handle),
             Err(ruffle_render::error::Error::Unimplemented) => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }

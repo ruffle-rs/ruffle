@@ -70,10 +70,6 @@ impl RenderBackend for NullRenderer {
         Err(Error::Unimplemented)
     }
 
-    fn retrieve_offscreen_texture(&self, _sync: Box<dyn SyncHandle>) -> Result<Bitmap, Error> {
-        Err(Error::Unimplemented)
-    }
-
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
