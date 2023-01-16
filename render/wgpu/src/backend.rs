@@ -345,12 +345,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let enabled_features = self.descriptors.device.features();
         let available_features = self.descriptors.adapter.features() - enabled_features;
         let current_limits = &self.descriptors.limits;
-        let available_limits = &self.descriptors.limits;
 
         result.push(format!("Enabled features: {enabled_features:?}"));
         result.push(format!("Available features: {available_features:?}"));
         result.push(format!("Current limits: {current_limits:?}"));
-        result.push(format!("Available limits: {available_limits:?}"));
         result.push(format!("Surface samples: {}", self.surface.sample_count()));
         result.push(format!("Surface size: {:?}", self.surface.size()));
 
