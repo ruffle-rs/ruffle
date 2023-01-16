@@ -164,7 +164,7 @@ bitflags! {
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
-    pixels: Vec<Color>,
+    pixels: PixelsWrapper,
     dirty: bool,
     width: u32,
     height: u32,
@@ -189,6 +189,72 @@ pub struct BitmapData<'gc> {
     avm2_object: Option<Avm2Object<'gc>>,
 }
 
+mod wrapper {
+    use std::ops::{Deref, DerefMut};
+
+    use gc_arena::Collect;
+    use ruffle_render::bitmap::SyncHandle;
+
+    use super::Color;
+
+    #[derive(Collect, Default)]
+    #[collect(no_drop)]
+    /// A wrapper to catch misuses of pixels.
+    /// Before accessing `colors`, you must process `sync_handle`, either by
+    /// `ensure_updated` to sync changes back from the render backend to `colors`,
+    /// or by explicitly setting `sync_handle` to `None` to indicate that you will
+    /// overwriting the entire `colors` array (removing the need for a sync from the render backend)
+    pub struct PixelsWrapper {
+        colors: Vec<Color>,
+        #[collect(require_static)]
+        pub sync_handle: Option<Box<dyn SyncHandle>>,
+    }
+
+    impl PixelsWrapper {
+        pub fn new(colors: Vec<Color>) -> PixelsWrapper {
+            PixelsWrapper {
+                colors,
+                sync_handle: None,
+            }
+        }
+    }
+
+    impl Deref for PixelsWrapper {
+        type Target = Vec<Color>;
+        #[track_caller]
+        fn deref(&self) -> &Self::Target {
+            if self.sync_handle.is_some() {
+                panic!("PixelsWrapper: tried to access pixels without first syncing!")
+            }
+            &self.colors
+        }
+    }
+
+    impl DerefMut for PixelsWrapper {
+        #[track_caller]
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            if self.sync_handle.is_some() {
+                panic!("PixelsWrapper: Tried to mutably access pixels without first syncing!")
+            }
+            &mut self.colors
+        }
+    }
+
+    impl Clone for PixelsWrapper {
+        fn clone(&self) -> PixelsWrapper {
+            if self.sync_handle.is_some() {
+                panic!("PixelsWrapper: Tried to clone without first syncing!")
+            }
+            Self {
+                colors: self.colors.clone(),
+                sync_handle: None,
+            }
+        }
+    }
+}
+
+use wrapper::PixelsWrapper;
+
 impl fmt::Debug for BitmapData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BitmapData")
@@ -209,7 +275,7 @@ impl<'gc> BitmapData<'gc> {
     // be inaccessible to AS3 code.
     pub fn dummy() -> Self {
         BitmapData {
-            pixels: Vec::new(),
+            pixels: Default::default(),
             dirty: false,
             width: 0,
             height: 0,
@@ -224,7 +290,8 @@ impl<'gc> BitmapData<'gc> {
         self.width = width;
         self.height = height;
         self.transparency = transparency;
-        self.pixels = vec![
+        self.pixels.sync_handle = None;
+        *self.pixels = vec![
             Color(fill_color).to_premultiplied_alpha(self.transparency());
             width as usize * height as usize
         ];
@@ -247,6 +314,18 @@ impl<'gc> BitmapData<'gc> {
         Ok(())
     }
 
+    #[instrument(level = "debug", skip_all)]
+    pub fn ensure_updated(&mut self, render: &dyn RenderBackend) {
+        if let Some(image) = self
+            .pixels
+            .sync_handle
+            .take()
+            .and_then(|sync| render.retrieve_offscreen_texture(sync).ok())
+        {
+            copy_pixels_to_bitmapdata(self, image.data());
+        }
+    }
+
     pub fn disposed(&self) -> bool {
         self.disposed
     }
@@ -254,6 +333,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn dispose(&mut self) {
         self.width = 0;
         self.height = 0;
+        self.pixels.sync_handle = None;
         self.pixels.clear();
         self.bitmap_handle = None;
         // There's no longer a handle to update
@@ -303,7 +383,7 @@ impl<'gc> BitmapData<'gc> {
         self.width = width;
         self.height = height;
         self.transparency = transparency;
-        self.pixels = pixels;
+        *self.pixels = pixels;
         self.dirty = true;
     }
 
@@ -319,7 +399,7 @@ impl<'gc> BitmapData<'gc> {
         // `Vec::with_capacity` manually to avoid unnecessary re-allocations.
 
         let mut output = Vec::with_capacity(self.pixels.len() * 4);
-        for p in &self.pixels {
+        for p in self.pixels.iter() {
             output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
         }
         output
@@ -1055,6 +1135,8 @@ impl<'gc> BitmapData<'gc> {
                 tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
             }
             self.set_dirty(false);
+            // We just wrote to the GPU, so there's no need to sync back.
+            self.pixels.sync_handle = None;
         }
     }
 
@@ -1070,7 +1152,7 @@ impl<'gc> BitmapData<'gc> {
         let pixels = bitmap
             .pixels
             .iter()
-            .zip(&other.pixels)
+            .zip(other.pixels.iter())
             .map(|(bitmap_pixel, other_pixel)| {
                 let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
                 let other_pixel = other_pixel.to_un_multiplied_alpha();
@@ -1098,7 +1180,7 @@ impl<'gc> BitmapData<'gc> {
 
         if different {
             Some(Self {
-                pixels,
+                pixels: PixelsWrapper::new(pixels),
                 dirty: false,
                 width: bitmap.width,
                 height: bitmap.height,
@@ -1216,13 +1298,15 @@ impl<'gc> BitmapData<'gc> {
             commands
         };
 
-        let image = context
-            .renderer
-            .render_offscreen(handle, bitmapdata_width, bitmapdata_height, commands)
-            .and_then(|sync| context.renderer.retrieve_offscreen_texture(sync));
+        let sync = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            commands,
+        );
 
-        match image {
-            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+        match sync {
+            Ok(sync) => self.pixels.sync_handle = Some(sync),
             Err(ruffle_render::error::Error::Unimplemented) => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }

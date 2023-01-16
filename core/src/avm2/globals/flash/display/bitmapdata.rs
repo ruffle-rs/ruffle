@@ -179,6 +179,9 @@ pub fn scroll<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -204,6 +207,9 @@ pub fn copy_pixels<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let source_bitmap = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -241,6 +247,9 @@ pub fn copy_pixels<'gc>(
 
         if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
             src_bitmap.read().check_valid(activation)?;
+            src_bitmap
+                .write(activation.context.gc_context)
+                .ensure_updated(activation.context.renderer);
             // dealing with object aliasing...
             let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
             let src_bitmap_data_cell = src_bitmap;
@@ -324,6 +333,9 @@ pub fn get_pixel<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -345,6 +357,9 @@ pub fn get_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -367,6 +382,9 @@ pub fn set_pixel<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -394,6 +412,9 @@ pub fn set_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -430,6 +451,9 @@ pub fn set_pixels<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = rectangle
             .get_property(&Multiname::public("x"), activation)?
             .coerce_to_u32(activation)?;
@@ -478,6 +502,9 @@ pub fn copy_channel<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let source_bitmap = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -511,6 +538,9 @@ pub fn copy_channel<'gc>(
             .coerce_to_i32(activation)?;
 
         if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
+            source_bitmap
+                .write(activation.context.gc_context)
+                .ensure_updated(activation.context.renderer);
             //TODO: what if source is disposed
             let src_min_x = source_rect
                 .get_property(&Multiname::public("x"), activation)?
@@ -558,6 +588,9 @@ pub fn flood_fill<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
             if let (Some(x_val), Some(y_val), Some(color_val)) =
@@ -599,6 +632,9 @@ pub fn noise<'gc>(
     let gray_scale = args.get(4).unwrap_or(&false.into()).coerce_to_boolean();
 
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
@@ -616,6 +652,9 @@ pub fn color_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
             if let [rectangle, color_transform, ..] = args {
@@ -659,6 +698,9 @@ pub fn get_color_bounds_rect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let bitmap_data = bitmap_data.read();
         if !bitmap_data.disposed() {
             let find_color = args.get(2).unwrap_or(&true.into()).coerce_to_boolean();
@@ -787,6 +829,9 @@ pub fn fill_rect<'gc>(
         .coerce_to_u32(activation)? as i32;
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        bitmap_data
+            .write(activation.context.gc_context)
+            .ensure_updated(activation.context.renderer);
         let x = rectangle
             .get_property(&Multiname::public("x"), activation)?
             .coerce_to_u32(activation)?;
@@ -864,6 +909,9 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         if !bitmap_data.read().disposed() {
+            bitmap_data
+                .write(activation.context.gc_context)
+                .ensure_updated(activation.context.renderer);
             let new_bitmap_data =
                 GcCell::allocate(activation.context.gc_context, BitmapData::default());
             new_bitmap_data
@@ -893,6 +941,9 @@ pub fn perlin_noise<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         if !bitmap_data.read().disposed() {
+            bitmap_data
+                .write(activation.context.gc_context)
+                .ensure_updated(activation.context.renderer);
             let base_x = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
