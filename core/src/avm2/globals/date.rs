@@ -251,7 +251,7 @@ pub fn instance_init<'gc>(
                             timezone
                                 .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
                                 .single()
-                                .expect("Unambiguous epoch time when constructing Date")
+                                .expect("Found ambiguous epoch time when constructing Date")
                                 .into(),
                         ),
                     );
@@ -348,7 +348,7 @@ pub fn set_time<'gc>(
             let time = Utc
                 .timestamp_millis_opt(new_time as i64)
                 .single()
-                .expect("Unambiguous timestamp for current time zone");
+                .expect("Found ambiguous timestamp for current time zone");
             this.set_date_time(activation.context.gc_context, Some(time));
             return Ok((time.timestamp_millis() as f64).into());
         } else {
@@ -612,7 +612,7 @@ pub fn set_full_year<'gc>(
                     timezone
                         .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
                         .single()
-                        .expect("Unambiguous epoch time when constructing Date")
+                        .expect("Found ambiguous epoch time when constructing Date")
                         .into(),
                 ),
             );
@@ -876,7 +876,7 @@ pub fn set_full_year_utc<'gc>(
                 Some(
                     Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
                         .single()
-                        .expect("Unambiguous epoch time when constructing Date"),
+                        .expect("Found ambiguous epoch time when constructing Date"),
                 ),
             );
         }
@@ -946,7 +946,7 @@ pub fn utc<'gc>(
         .calculate(
             Utc.with_ymd_and_hms(0, 1, 1, 0, 0, 0)
                 .single()
-                .expect("Unambiguous UTC time conversions"),
+                .expect("Found ambiguous UTC time conversions"),
         );
     let millis = if let Some(date) = date {
         date.timestamp_millis() as f64
@@ -1298,7 +1298,9 @@ pub fn parse_full_date<'gc>(
             .unwrap_or(timezone)
             .with_ymd_and_hms(0, 1, 1, 0, 0, 0)
             .single()
-            .expect("Unambiguous starting time when converting parsed dates into local timezone"),
+            .expect(
+                "Found ambiguous starting time when converting parsed dates into local timezone",
+            ),
     ) {
         Some(timestamp.timestamp_millis() as f64)
     } else {
