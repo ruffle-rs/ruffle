@@ -1536,7 +1536,7 @@ export class RufflePlayer extends HTMLElement {
 
     protected debugPlayerInfo(): string {
         let result = `Allows script access: ${this.loadedConfig.allowScriptAccess}\n`;
-        let renderInfo = this._cachedDebugInfo;
+        let renderInfo = `(Cached) ${this._cachedDebugInfo}`;
         if (this.instance) {
             try {
                 renderInfo = this.instance.renderer_debug_info();
