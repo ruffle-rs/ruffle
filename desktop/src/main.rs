@@ -297,6 +297,7 @@ impl App {
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(opt.player_version);
+            .with_debugger(ruffle_core::backend::debug::WebsocketDebugBackend::new());
 
         let player = builder.build();
 

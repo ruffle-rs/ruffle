@@ -3244,16 +3244,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_bkpt_line(&mut self, _line_num: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-
-        self.context.ui.submit_debug_message(crate::debugable::DebugMessageOut::BreakpointHit {
-            name: format!("line {}", _line_num),
-        });
+        self.context.debugger.submit_debug_message(
+            crate::debugable::DebugMessageOut::BreakpointHit {
+                name: format!("line {}", _line_num),
+            },
+        );
 
         // Check for any debug events before executing the next
-        use crate::debugable::{DebugMessageIn};
+        /*use crate::debugable::{DebugMessageIn};
         println!("Waiting for end of bp");
         'check_msg: loop {
-            while let Some(dbg_in) = self.context.ui.get_debug_event() {
+            while let Some(dbg_in) = self.context.debugger.get_debug_event() {
                 match dbg_in {
                     DebugMessageIn::Pause => {},
                     DebugMessageIn::Play => {
@@ -3276,12 +3277,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             }
                         }
 
-                        self.context.ui.submit_debug_message(crate::debugable::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
+                        self.context.debugger.submit_debug_message(crate::debugable::DebugMessageOut::GetVarResult { value: format!("{:?}", current) });
                     },
                     DebugMessageIn::Targeted {path, msg} => {},
+                    _ => {},
                 }
             }
-        }
+        }*/
 
         // while a debugger is not attached, this is a no-op
         Ok(FrameControl::Continue)

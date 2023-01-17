@@ -6,6 +6,7 @@ use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    debug::DebuggerBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -87,6 +88,9 @@ pub struct UpdateContext<'a, 'gc> {
 
     /// The video backend, used for video decoding
     pub video: &'a mut dyn VideoBackend,
+
+    /// The debugger backend
+    pub debugger: &'a mut dyn DebuggerBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode,  `Math.random(),` and `random()`.
     pub rng: &'a mut SmallRng,
@@ -311,6 +315,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             log: self.log,
             ui: self.ui,
             video: self.video,
+            debugger: self.debugger,
             storage: self.storage,
             rng: self.rng,
             stage: self.stage,

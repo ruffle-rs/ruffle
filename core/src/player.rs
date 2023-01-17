@@ -11,6 +11,7 @@ use crate::avm2::{
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    debug::DebuggerBackend,
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
@@ -200,6 +201,7 @@ type Storage = Box<dyn StorageBackend>;
 type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
 type Video = Box<dyn VideoBackend>;
+type Debugger = Box<dyn DebuggerBackend>;
 
 pub struct Player {
     /// The version of the player we're emulating.
@@ -228,6 +230,7 @@ pub struct Player {
     log: Log,
     ui: Ui,
     video: Video,
+    debugger: Debugger,
 
     transform_stack: TransformStack,
 
@@ -422,7 +425,7 @@ impl Player {
         }
 
         // Connect a debugger if one exists
-        self.ui_mut().connect_debugger();
+        self.debugger_mut().connect_debugger();
 
         self.audio.set_frame_rate(self.frame_rate);
     }
@@ -467,101 +470,11 @@ impl Player {
             return;
         }
 
-        /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
-        fn walk_depthpath<'gc>(context: &mut UpdateContext<'_, 'gc, '_>, path: &[Depth]) -> Option<DisplayObject<'gc>> {
-            let mut root = context.stage.root_clip();
-
-            // Walk the path
-            for depth in path.iter().copied() {
-                // If we have a container
-                //TODO: this wont work with buttons for now
-                if let Some(cont) = root.as_container() {
-                    // Get the child at that depth
-                    if let Some(depth_child) = cont.child_by_depth(depth) {
-                        root = depth_child;
-                    } else {
-                        println!("no child");
-                        // No child at that depth, exit
-                        return None;
-                    }
-                } else {
-                    print!("Not cont");
-                    // Not a container, can't get a depth-child
-                    return None;
-                }
-            }
-
-            Some(root)
-        }
-
-        /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
-        fn walk_path<'gc>(context: &mut UpdateContext<'_, 'gc, '_>, path: &[&str]) -> Option<DisplayObject<'gc>> {
-            let mut root = context.stage.root_clip();
-
-            // Walk the path
-            for depth in path.iter() {
-                // If we have a container
-                //TODO: this wont work with buttons for now
-                if let Some(cont) = root.as_container() {
-                    // Get the child at that depth
-                    if let Some(child) = cont.child_by_name(ruffle_wstr::WStr::from_units(depth.as_bytes()), true) {
-                        root = child;
-                    } else {
-                        println!("no child");
-                        // No child at that depth, exit
-                        return None;
-                    }
-                } else {
-                    print!("Not cont");
-                    // Not a container, can't get a depth-child
-                    return None;
-                }
-            }
-
-            Some(root)
-        }
-
-        use crate::debugable::{DebugMessageIn, DebugMessageOut};
-        // Check for any debug events before executing the next frame
-        while let Some(dbg_in) = self.ui_mut().get_debug_event() {
-            match dbg_in {
-                DebugMessageIn::Pause => {
-                    self.set_is_playing(false);
-                    let msg = DebugMessageOut::State { playing: self.is_playing() };
-                    self.ui_mut().submit_debug_message(msg);
-                },
-                DebugMessageIn::Play => {
-                    println!("Handling play");
-                    self.set_is_playing(true);
-                    let msg = DebugMessageOut::State { playing: self.is_playing() };
-                    self.ui_mut().submit_debug_message(msg);
-                },
-                // Ignore here
-                DebugMessageIn::GetVar { path: _ } => {},
-                DebugMessageIn::Targeted { path, msg } => {
-                    self.mutate_with_update_context(|context| {
-                        use crate::debugable::DebugProvider;
-
-                        let d_o = if path == "/" {
-                            context.stage.root_clip()
-                        }  else {
-                            //let dp = path.split("/").map(|x| Depth::from_str(x).unwrap()).collect::<Vec<_>>();
-                            //let d_o = walk_depthpath(context, &dp);
-                            let dp = path.split("/").collect::<Vec<_>>();
-                            println!("path = {:?}", dp);
-                            let d_o = walk_path(context, &dp);
-                            d_o.unwrap()
-                        };
-
-                        let evt = d_o.as_debuggable().unwrap().dispatch(msg, context);
-                        if let Some(evt) = evt {
-                            context.ui.submit_debug_message(evt);
-                        }
-
-                    });
-                }
-            }
-        }
+        // Process player and targeted debug events
+        self.mutate_with_update_context(|context| {
+            crate::debugable::handle_player_debug_events(context);
+            crate::debugable::handle_targeted_debug_events(context);
+        });
 
         if self.is_playing() {
             self.frame_accumulator += dt;
@@ -1659,6 +1572,14 @@ impl Player {
         &mut self.ui
     }
 
+    pub fn debugger(&self) -> &Debugger {
+        &self.debugger
+    }
+
+    pub fn debugger_mut(&mut self) -> &mut Debugger {
+        &mut self.debugger
+    }
+
     pub fn run_actions(context: &mut UpdateContext<'_, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
@@ -1822,6 +1743,7 @@ impl Player {
                 storage: self.storage.deref_mut(),
                 log: self.log.deref_mut(),
                 video: self.video.deref_mut(),
+                debugger: self.debugger.deref_mut(),
                 avm1_shared_objects,
                 avm2_shared_objects,
                 unbound_text_fields,
@@ -2011,6 +1933,7 @@ pub struct PlayerBuilder {
     storage: Option<Storage>,
     ui: Option<Ui>,
     video: Option<Video>,
+    debugger: Option<Debugger>,
 
     // Misc. player configuration
     autoplay: bool,
@@ -2043,6 +1966,7 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+            debugger: None,
 
             autoplay: false,
             fullscreen: false,
@@ -2182,6 +2106,11 @@ impl PlayerBuilder {
     // Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
+    }
+
+    /// Sets the debugger
+    pub fn with_debugger(mut self, debugger: impl 'static + DebuggerBackend) -> Self {
+        self.debugger = Some(Box::new(debugger));
         self
     }
 
@@ -2214,6 +2143,9 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
+        let debugger = self
+            .debugger
+            .unwrap_or_else(|| Box::new(debug::NullDebuggerBackend::new()));
 
         let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
 
@@ -2230,6 +2162,7 @@ impl PlayerBuilder {
                 storage,
                 ui,
                 video,
+                debugger,
 
                 // SWF info
                 swf: fake_movie.clone(),

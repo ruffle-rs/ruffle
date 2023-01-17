@@ -1508,7 +1508,6 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
-
     fn as_debuggable(self) -> Option<crate::debugable::Debuggable<'gc>> {
         None
     }

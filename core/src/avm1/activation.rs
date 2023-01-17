@@ -432,6 +432,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(FrameControl::Return(ReturnType::Implicit))
         } else {
             let action = reader.read_action()?;
+
+            // Keep processing events while we are in a breakpoint
+            loop {
+                crate::debugable::handle_avm1_debug_events(&mut self.context);
+
+                if !unsafe { crate::debugable::AVM1_DBG_STATE.pause_execution()} {
+                    break;
+                }
+            }
+
+            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(/*action*/)};
+
+            println!("act = {:?}", action);
+
             avm_debug!(
                 self.context.avm1,
                 "({}) Action: {action:?}",
