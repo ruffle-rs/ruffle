@@ -209,9 +209,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (device, queue) = request_device(&adapter, trace_path).await?;
 
-        #[cfg(target_family = "wasm")]
-        crate::utils::detect_buffer_bug(&device, &queue)?;
-
         Ok(Descriptors::new(adapter, device, queue))
     }
 
