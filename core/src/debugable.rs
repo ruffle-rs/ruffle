@@ -75,6 +75,9 @@ pub enum Avm1Msg {
 
     /// Get the current state of the constant pool
     GetConstantPool,
+
+    /// Break on calling the given function
+    BreakFunction { name: String },
 }
 
 /// Debug messages that are handled in the player
@@ -355,23 +358,29 @@ pub fn handle_targeted_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_
     }
 }
 
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Avm1ExecutionState {
     Running,
     Paused,
     StepInto,
 }
+use swf::avm1::types::Action;
 
 pub struct Avm1Debugger {
     /// What is the current execution state
     execution_state: Avm1ExecutionState,
+
+    /// The current list of pending breakpoints
+    ///
+    /// When a function that is in this list is called, `execution_state` will move to `Paused`
+    pending_breakpoints: Vec<String>,
 }
 
 impl Avm1Debugger {
     pub const fn new() -> Self {
         Self {
             execution_state: Avm1ExecutionState::Running,
+            pending_breakpoints: Vec::new(),
         }
     }
 
@@ -381,8 +390,17 @@ impl Avm1Debugger {
     }
 
     /// Update the current debugger state based on the action to be executed
-    pub fn preprocess_action(&mut self/*, _act: Action*/) {
+    pub fn preprocess_action(&mut self, act: Action) {
         if self.execution_state == Avm1ExecutionState::StepInto {
+            println!("Executed {:?}", act);
+            self.execution_state = Avm1ExecutionState::Paused;
+        }
+    }
+
+    /// Preprocess a given function call to update debugger state
+    pub fn preprocess_call(&mut self, name: String) {
+        //println!("call = {}, bps = {:?}", name, self.pending_breakpoints); 
+        if self.pending_breakpoints.contains(&name) || name == "_debugbreak" {
             self.execution_state = Avm1ExecutionState::Paused;
         }
     }
@@ -408,6 +426,16 @@ pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
             }
             Avm1Msg::GetStack => {
                 println!("stack = {:?}", context.avm1.stack());
+                let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::BreakFunction { name } => {
+                dbg.pending_breakpoints.push(name);
+                let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::Continue => {
+                dbg.execution_state = Avm1ExecutionState::Running;
                 let msg = DebugMessageOut::GenericResult { success: true };
                 context.debugger.submit_debug_message(msg);
             }

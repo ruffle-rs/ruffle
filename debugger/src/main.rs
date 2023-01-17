@@ -44,6 +44,8 @@ pub enum Command {
     Avm1Break,
     Avm1Stack,
     Avm1StepInto,
+    Avm1FunctionBreak { name: String },
+    Avm1Continue,
 }
 
 #[derive(Debug, Default)]
@@ -253,6 +255,17 @@ fn stdin_thread(
                     cmd = Some(Command::Avm1Stack);
                 } else if s.starts_with("avm1_step") {
                     cmd = Some(Command::Avm1StepInto);
+                } else if s.starts_with("avm1_cont") {
+                    cmd = Some(Command::Avm1Continue);
+                } else if s.starts_with("avm1_bfunc") {
+                    let name = s
+                        .strip_suffix("\n")
+                        .unwrap()
+                        .split(" ")
+                        .skip(1)
+                        .next()
+                        .unwrap();
+                    cmd = Some(Command::Avm1FunctionBreak { name: name.to_string() });
                 } else if s == "\n" {
                     cmd = state.write().unwrap().last_cmd.take();
                 } else {
@@ -288,6 +301,26 @@ fn handle_client(mut stream: TcpStream) {
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
+                Command::Avm1Continue => {
+                    stream
+                        .write(
+                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::Continue})
+                                .unwrap()
+                                .as_bytes(),
+                        )
+                        .unwrap();
+                    
+                }
+                Command::Avm1FunctionBreak { name }  => {
+                    stream
+                        .write(
+                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunction {name}})
+                                .unwrap()
+                                .as_bytes(),
+                        )
+                        .unwrap();
+                    
+                }
                 Command::Avm1StepInto => {
                     stream
                         .write(

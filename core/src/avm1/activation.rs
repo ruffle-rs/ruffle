@@ -442,9 +442,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
             }
 
-            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(/*action*/)};
-
-            println!("act = {:?}", action);
+            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone())};
 
             avm_debug!(
                 self.context.avm1,
@@ -752,6 +750,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
         }
+
+        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(fn_name.to_utf8_lossy().to_string())};
 
         let variable = self.get_variable(fn_name)?;
 
