@@ -285,14 +285,14 @@ export interface BaseLoadOptions {
     wmode?: WindowMode;
 
     /**
-     * The emulated version of the player
+     * The emulated version of the player.
      *
-     * This controls the version that is reported to the movie
-     * null means latest version
+     * This controls the version that is reported to the movie.
+     * null means latest version.
      *
      * @default null
      */
-    playerVerion?: number | null;
+    playerVersion?: number | null;
 }
 
 /**

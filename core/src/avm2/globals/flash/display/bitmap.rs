@@ -61,10 +61,7 @@ pub fn instance_init<'gc>(
                     .avm2_class_registry()
                     .class_symbol(b_class)
                 {
-                    if let Some(Character::Bitmap {
-                        bitmap,
-                        initial_data,
-                    }) = activation
+                    if let Some(Character::Bitmap { bitmap }) = activation
                         .context
                         .library
                         .library_for_movie_mut(movie)
@@ -74,12 +71,7 @@ pub fn instance_init<'gc>(
                         let new_bitmap_data =
                             GcCell::allocate(activation.context.gc_context, BitmapData::default());
 
-                        fill_bitmap_data_from_symbol(
-                            activation,
-                            bitmap,
-                            new_bitmap_data,
-                            initial_data,
-                        );
+                        fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
                         BitmapDataObject::from_bitmap_data(
                             activation,
                             new_bitmap_data,

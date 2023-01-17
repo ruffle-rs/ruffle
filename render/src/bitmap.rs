@@ -34,6 +34,9 @@ pub trait BitmapSource {
     fn bitmap_handle(&self, id: u16, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle>;
 }
 
+pub trait SyncHandle: Downcast + Debug {}
+impl_downcast!(SyncHandle);
+
 /// Decoded bitmap data from an SWF tag.
 #[derive(Clone, Debug)]
 pub struct Bitmap {

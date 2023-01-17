@@ -147,6 +147,7 @@ export class RufflePlayer extends HTMLElement {
     private _readyState: ReadyState;
 
     private panicked = false;
+    private _cachedDebugInfo: string | null = null;
 
     private isExtension = false;
 
@@ -443,6 +444,7 @@ export class RufflePlayer extends HTMLElement {
             this,
             this.loadedConfig
         );
+        this._cachedDebugInfo = this.instance!.renderer_debug_info();
         console.log(
             "New Ruffle instance created (WebAssembly extensions: " +
                 (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
@@ -1534,8 +1536,16 @@ export class RufflePlayer extends HTMLElement {
 
     protected debugPlayerInfo(): string {
         let result = `Allows script access: ${this.loadedConfig.allowScriptAccess}\n`;
+        let renderInfo = `(Cached) ${this._cachedDebugInfo}`;
         if (this.instance) {
-            result += `${this.instance.renderer_debug_info()}\n`;
+            try {
+                renderInfo = this.instance.renderer_debug_info();
+            } catch {
+                // ignored
+            }
+        }
+        if (renderInfo) {
+            result += `${renderInfo}\n`;
         }
         return result;
     }

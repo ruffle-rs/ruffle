@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
@@ -43,7 +43,10 @@ pub trait RenderBackend: Downcast {
         width: u32,
         height: u32,
         commands: CommandList,
-    ) -> Result<Bitmap, Error>;
+    ) -> Result<Box<dyn SyncHandle>, Error>;
+
+    /// Retrieves the rendered pixels from a previous `render_offscreen` call
+    fn retrieve_offscreen_texture(&self, sync: Box<dyn SyncHandle>) -> Result<Bitmap, Error>;
 
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 

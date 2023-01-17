@@ -2343,16 +2343,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     let is_fresh_frame =
                         write.queued_script_frame != write.last_queued_script_frame;
 
-                    write.last_queued_script_frame = Some(frame_id);
-                    write.queued_script_frame = None;
-                    write
-                        .flags
-                        .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
-
                     if is_fresh_frame {
                         while let Some(fs) = write.frame_scripts.get(index) {
                             if fs.frame_id == frame_id {
                                 let callable = fs.callable;
+
+                                write.last_queued_script_frame = Some(frame_id);
+                                write.queued_script_frame = None;
+                                write
+                                    .flags
+                                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+
                                 drop(write);
                                 if let Err(e) = Avm2::run_stack_frame_for_callable(
                                     callable,
@@ -2366,15 +2367,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                     );
                                 }
                                 write = self.0.write(context.gc_context);
+
+                                write
+                                    .flags
+                                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                             }
 
                             index += 1;
                         }
                     }
-
-                    write
-                        .flags
-                        .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                 }
             }
         }
@@ -2969,18 +2970,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
         let bitmap = ruffle_render::utils::decode_define_bits_lossless(&define_bits_lossless)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, define_bits_lossless.id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                define_bits_lossless.id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(define_bits_lossless.id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3093,18 +3087,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .jpeg_tables();
         let jpeg_data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(&jpeg_data, None)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3117,18 +3104,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, None)?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3147,18 +3127,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let jpeg_data = reader.read_slice(jpeg_len)?;
         let alpha_data = reader.read_slice_to_end();
         let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        let initial_data: Vec<i32> = bitmap.as_colors().collect();
         let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(
-                id,
-                Character::Bitmap {
-                    bitmap,
-                    initial_data,
-                },
-            );
+            .register_character(id, Character::Bitmap { bitmap });
         Ok(())
     }
 
@@ -3253,6 +3226,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .character_by_id(button_sounds.id)
         {
             Some(Character::Avm1Button(button)) => {
+                button.set_sounds(context.gc_context, button_sounds);
+            }
+            Some(Character::Avm2Button(button)) => {
                 button.set_sounds(context.gc_context, button_sounds);
             }
             Some(_) => {

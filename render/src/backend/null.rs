@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
@@ -66,7 +66,11 @@ impl RenderBackend for NullRenderer {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-    ) -> Result<Bitmap, Error> {
+    ) -> Result<Box<dyn SyncHandle>, Error> {
+        Err(Error::Unimplemented)
+    }
+
+    fn retrieve_offscreen_texture(&self, _sync: Box<dyn SyncHandle>) -> Result<Bitmap, Error> {
         Err(Error::Unimplemented)
     }
 

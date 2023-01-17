@@ -1309,7 +1309,6 @@ pub fn load_bitmap<'gc>(
 
     if let Some(Character::Bitmap {
         bitmap: bitmap_object,
-        initial_data,
     }) = character
     {
         let new_bitmap_data = BitmapDataObject::empty_object(
@@ -1319,17 +1318,15 @@ pub fn load_bitmap<'gc>(
 
         let width = bitmap_object.width() as u32;
         let height = bitmap_object.height() as u32;
+
+        let pixels: Vec<_> = bitmap_object.bitmap_data().read().pixels().to_vec();
+
         new_bitmap_data
             .as_bitmap_data_object()
             .unwrap()
             .bitmap_data()
             .write(activation.context.gc_context)
-            .set_pixels(
-                width,
-                height,
-                true,
-                initial_data.iter().map(|p| (*p).into()).collect(),
-            );
+            .set_pixels(width, height, true, pixels);
 
         return Ok(new_bitmap_data.into());
     }

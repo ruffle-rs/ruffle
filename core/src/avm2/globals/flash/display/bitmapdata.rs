@@ -27,7 +27,6 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: Bitmap<'gc>,
     new_bitmap_data: GcCell<'gc, BitmapData<'gc>>,
-    pixels: Vec<i32>,
 ) {
     new_bitmap_data
         .write(activation.context.gc_context)
@@ -35,7 +34,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
             bd.width().into(),
             bd.height().into(),
             true,
-            pixels.into_iter().map(|p| p.into()).collect(),
+            bd.bitmap_data().read().pixels().to_vec(),
         );
 }
 
@@ -71,13 +70,9 @@ pub fn instance_init<'gc>(
             let new_bitmap_data =
                 GcCell::allocate(activation.context.gc_context, BitmapData::default());
 
-            if let Some(Character::Bitmap {
-                bitmap,
-                initial_data,
-            }) = character
-            {
+            if let Some(Character::Bitmap { bitmap }) = character {
                 // Instantiating BitmapData from an Animate-style bitmap asset
-                fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data, initial_data);
+                fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
             } else {
                 if character.is_some() {
                     //TODO: Determine if mismatched symbols will still work as a

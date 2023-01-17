@@ -342,9 +342,9 @@ pub trait TInteractiveObject<'gc>:
                         .unwrap_or_else(|| activation.context.stage.into()),
                 );
 
-                let mut rollover_target = Some(self.as_displayobject());
-                while let Some(tgt) = rollover_target {
-                    if DisplayObject::option_ptr_eq(rollover_target, lca) {
+                let mut rollout_target = Some(self.as_displayobject());
+                while let Some(tgt) = rollout_target {
+                    if DisplayObject::option_ptr_eq(rollout_target, lca) {
                         break;
                     }
 
@@ -363,7 +363,7 @@ pub trait TInteractiveObject<'gc>:
                         }
                     }
 
-                    rollover_target = tgt.parent();
+                    rollout_target = tgt.parent();
                 }
 
                 self.raw_interactive_mut(context.gc_context).last_click = None;
@@ -384,7 +384,7 @@ pub trait TInteractiveObject<'gc>:
                     }
 
                     let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "mouseOut", tgt, from, 0);
+                        Avm2EventObject::mouse_event(&mut activation, "rollOver", tgt, from, 0);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
                         if let Err(e) =

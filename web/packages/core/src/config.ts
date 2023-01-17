@@ -53,5 +53,5 @@ export const DEFAULT_CONFIG: Required<Config> = {
     wmode: WindowMode.Opaque,
     publicPath: null,
     polyfills: true,
-    playerVerion: null,
+    playerVersion: null,
 };
