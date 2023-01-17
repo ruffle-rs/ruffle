@@ -10,9 +10,11 @@ RUN apt-get install -y wget
 RUN wget 'https://deb.nodesource.com/setup_lts.x' --quiet -O- | bash
 RUN apt-get update
 RUN apt-get install -y \
- git pkg-config openssl libssl-dev gcc \
+ git pkg-config openssl libssl-dev gcc gzip tar \
  default-jdk default-jre \
-  nodejs binaryen
+  nodejs
+RUN wget 'https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz' --quiet -O- | tar xfvz -
+RUN cp -rf binaryen-version_111/* /usr/local/
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
 # RUN source "$HOME/.cargo/env"
 # source to modify env doesn't work with docker it seems :( so add cargo to PATH manually:
