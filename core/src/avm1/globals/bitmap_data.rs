@@ -536,7 +536,7 @@ pub fn draw<'gc>(
             let source = if let Some(source_object) = source.as_display_object() {
                 IBitmapDrawable::DisplayObject(source_object)
             } else if let Some(source_bitmap) = source.as_bitmap_data_object() {
-                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data())
+                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data_wrapper())
             } else {
                 avm_error!(
                     activation,
@@ -547,7 +547,7 @@ pub fn draw<'gc>(
                 return Ok(Value::Undefined);
             };
 
-            let bmd = bitmap_data.bitmap_data();
+            let bmd = bitmap_data.bitmap_data_wrapper().overwrite_cpu_pixels();
             let mut write = bmd.write(activation.context.gc_context);
             write.draw(
                 source,

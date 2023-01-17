@@ -32,6 +32,10 @@ impl<'gc> BitmapDataObject<'gc> {
         self.0.read().data.sync()
     }
 
+    pub fn bitmap_data_wrapper(&self) -> BitmapDataWrapper<'gc> {
+        self.0.read().data
+    }
+
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         Self::with_bitmap_data(gc_context, proto, Default::default())
     }

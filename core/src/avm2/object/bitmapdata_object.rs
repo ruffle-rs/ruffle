@@ -94,6 +94,10 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         self.0.read().bitmap_data.map(|wrapper| wrapper.sync())
     }
 
+    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
+        self.0.read().bitmap_data
+    }
+
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
     fn init_bitmap_data(

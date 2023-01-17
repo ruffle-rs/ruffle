@@ -6,7 +6,7 @@ use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::{Collect, GcCell};
+use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
@@ -211,6 +211,19 @@ mod wrapper {
     /// and made the code much less readable. This should be enough for the simple
     /// case where ActionScript calls `BitmapData.draw`, and then doesn't interact
     /// with the Bitmap/BitmapData object at all for some time.
+    ///
+    /// There are three ways that this type gets used:
+    /// 1. Blocking on the current GPU->CPU sync via the `sync` method,
+    ///    and obtainng a `GcCell<'gc, BitmapData<'gc>>` (or implicily through `as_bitmap_data`).
+    ///    This is done for the vast majority of BitmapData AS2/AS3 methods, as they need to access CPU-side pixels.
+    /// 2. Ignoring the current GPU->CPU sync state. This is done by the `render` method defined on this type,
+    ///    since rendering only uses GPU-side data, and ignores CPU-side pixels entirely.
+    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels`. This is
+    ///    currently only used by `BitmapData.draw`, since the new rendering result will completely
+    ///    replace the current CPU-side pixels. In the future, we could explore using this in additional
+    ///    cases where we know that the entire CPU-side pixel array will be overwritten without being read
+    ///    (e.g. `BitmapData.fillRect` with a rectangle covering the entire bitmap). However, `overwrite_cpu_pixels`
+    ///    is always a performance optimization, and can always be safely replaced with `sync` (at the cost of worse performance)
     pub struct BitmapDataWrapper<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
     impl<'gc> BitmapDataWrapper<'gc> {
@@ -235,6 +248,20 @@ mod wrapper {
                     .expect("Failed to sync BitmapData");
                 copy_pixels_to_bitmapdata(&mut write, image.data());
             }
+            self.0
+        }
+
+        // Provides access to the underlying `BitmapData`.
+        // This should only be used when you will be overwriting the entire
+        // `pixels` vec without reading from it.
+        // Cancels any in-progress GPU -> CPU sync
+        pub fn overwrite_cpu_pixels(&self) -> GcCell<'gc, BitmapData<'gc>> {
+            // SAFETY: The only field that can store gc pointers is `avm2_object`,
+            // which we don't update here. Ideally, we would refactor this so that
+            // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
+            // `RefCell` instead of a `GcCell`.
+            let mut write = unsafe { self.0.borrow_mut() };
+            write.sync_handle = None;
             self.0
         }
 
@@ -1276,17 +1303,7 @@ impl<'gc> BitmapData<'gc> {
 
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
-                // if try_write fails,
-                // this is caused by recursive render attempt. TODO: support this.
-                if let Ok(mut bitmap_data) = data.try_write(context.gc_context) {
-                    bitmap_data.update_dirty_texture(&mut render_context);
-                    let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
-                    render_context.commands.render_bitmap(
-                        bitmap_handle,
-                        render_context.transform_stack.transform(),
-                        smoothing,
-                    );
-                }
+                data.render(smoothing, &mut render_context);
             }
             IBitmapDrawable::DisplayObject(object) => {
                 // Note that we do *not* use `render_base`,
@@ -1306,9 +1323,6 @@ impl<'gc> BitmapData<'gc> {
         }
 
         self.update_dirty_texture(&mut render_context);
-        // The results of any pending GPU -> CPU sync would get overwritten
-        // by this new draw, so just discard the old handle
-        self.sync_handle = None;
 
         let commands = if blend_mode == BlendMode::Normal {
             render_context.commands
@@ -1336,7 +1350,7 @@ impl<'gc> BitmapData<'gc> {
 }
 
 pub enum IBitmapDrawable<'gc> {
-    BitmapData(GcCell<'gc, BitmapData<'gc>>),
+    BitmapData(BitmapDataWrapper<'gc>),
     DisplayObject(DisplayObject<'gc>),
 }
 
