@@ -4917,7 +4917,7 @@ dependencies = [
 [[package]]
 name = "wgpu"
 version = "0.14.0"
-source = "git+https://github.com/Dinnerbone/wgpu?rev=f1fdd1ceb1b4518b627e70b682e6695448d625d7#f1fdd1ceb1b4518b627e70b682e6695448d625d7"
+source = "git+https://github.com/Dinnerbone/wgpu?rev=a154700447338d7333f1a226e3699d0f72e684e4#a154700447338d7333f1a226e3699d0f72e684e4"
 dependencies = [
  "arrayvec 0.7.2",
  "cfg-if 1.0.0",
@@ -4940,7 +4940,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "0.14.0"
-source = "git+https://github.com/Dinnerbone/wgpu?rev=f1fdd1ceb1b4518b627e70b682e6695448d625d7#f1fdd1ceb1b4518b627e70b682e6695448d625d7"
+source = "git+https://github.com/Dinnerbone/wgpu?rev=a154700447338d7333f1a226e3699d0f72e684e4#a154700447338d7333f1a226e3699d0f72e684e4"
 dependencies = [
  "arrayvec 0.7.2",
  "bit-vec",
@@ -4964,7 +4964,7 @@ dependencies = [
 [[package]]
 name = "wgpu-hal"
 version = "0.14.0"
-source = "git+https://github.com/Dinnerbone/wgpu?rev=f1fdd1ceb1b4518b627e70b682e6695448d625d7#f1fdd1ceb1b4518b627e70b682e6695448d625d7"
+source = "git+https://github.com/Dinnerbone/wgpu?rev=a154700447338d7333f1a226e3699d0f72e684e4#a154700447338d7333f1a226e3699d0f72e684e4"
 dependencies = [
  "android_system_properties",
  "arrayvec 0.7.2",
@@ -5004,7 +5004,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "0.14.0"
-source = "git+https://github.com/Dinnerbone/wgpu?rev=f1fdd1ceb1b4518b627e70b682e6695448d625d7#f1fdd1ceb1b4518b627e70b682e6695448d625d7"
+source = "git+https://github.com/Dinnerbone/wgpu?rev=a154700447338d7333f1a226e3699d0f72e684e4#a154700447338d7333f1a226e3699d0f72e684e4"
 dependencies = [
  "bitflags",
  "serde",
