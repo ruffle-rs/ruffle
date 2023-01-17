@@ -225,7 +225,9 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
             let draw_id = draws.len();
-            draws.push(Draw::new(self, bitmap_source, draw, shape_id, draw_id));
+            if let Some(draw) = Draw::new(self, bitmap_source, draw, shape_id, draw_id) {
+                draws.push(draw);
+            }
         }
 
         Mesh { draws }
