@@ -13,7 +13,8 @@ jobs:
     name: Create Nightly Release
     runs-on: ubuntu-22.04
     outputs:
-      activity_check: ${{ env.GHA_REPO_ALIVE }}
+      # Use != "false" when testing this, as it'll be skipped if this was manually triggered
+      is_active: ${{ steps.check_activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -22,32 +23,13 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle'
 
     steps:
-      - name: Activity check
-        run: |
-          :
-          # Based off https://github.community/t/trigger-workflow-if-there-is-commit-in-last-24-hours/17074/3
-          curl -sL https://api.github.com/repos/$GITHUB_REPOSITORY/commits | jq -r '[.[]][0]' > $HOME/commit.json
-          date="$(jq -r '.commit.committer.date' $HOME/commit.json)"
-          timestamp=$(date --utc -d "$date" +%s)
-          days=$(( ( $(date --utc +%s) - $timestamp ) / 86400 ))
-          author="$(jq -r '.commit.committer.name' $HOME/commit.json)"
-          url="$(jq -r '.html_url' $HOME/commit.json)"
-          rm -f $HOME/commit.json
-          echo "Repository activity: $timestamp $author $url"
-          alive=0
-          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "[WARNING] Ignoring activity check: workflow triggered manually."
-            alive=1
-          elif [[ $days < 1 ]]; then
-            echo Repository active
-            alive=1
-          else
-            echo "[WARNING] Repository not updated: event ${{ github.event_name }} not allowed to modify stale repository."
-          fi
-          if [[ $alive == 1 ]]; then
-            echo "GHA_REPO_ALIVE=true" >> $GITHUB_ENV
-          fi
-        shell: bash
+      - uses: actions/checkout@v2
+
+      - id: check_activity
+        continue-on-error: true
+        name: Check for repo activity
+        if: ${{ github.event_name == 'schedule' }}
+        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "::set-output name=is_active::false"
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.0.2
@@ -75,7 +57,7 @@ jobs:
   build:
     name: Build ${{ matrix.build_name }}
     needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.activity_check == 'true'
+    if: needs.create-nightly-release.outputs.is_active != 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -287,7 +269,7 @@ jobs:
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.activity_check == 'true'
+    if: needs.create-nightly-release.outputs.is_active != 'false'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -305,7 +287,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "19"
           registry-url: https://registry.npmjs.org
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
