@@ -1,6 +1,6 @@
 name: "\U0001f4A5 Crash report"
 description: File a crash report.
-labels: ["bug", "panic", "desktop"]
+labels: ["bug", "panic"]
 body:
   - type: markdown
     attributes:
@@ -33,6 +33,18 @@ body:
     attributes:
       value: |
         # Device information
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Affected platform
+      description: Is the problem with the Ruffle desktop app, online demo, browser's extension, or self-hosted version?
+      options:
+        - Desktop app
+        - Online demo
+        - Browser's extension
+        - Self-hosted version
+    validations:
+      required: true
   - type: input
     id: operating_system
     attributes:
