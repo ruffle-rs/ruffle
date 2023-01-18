@@ -751,7 +751,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             args.push(self.context.avm1.pop());
         }
 
-        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(fn_name.to_utf8_lossy().to_string())};
+        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string())};
 
         let variable = self.get_variable(fn_name)?;
 
@@ -791,6 +791,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             method_name.coerce_to_string(self)?
         };
+
+        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string())};
 
         let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.

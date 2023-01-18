@@ -7,6 +7,31 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 
+/// A value that can be recieved as part of a debug command
+/// This is separate from the AVM* values as it cannot hold a Gc ptr and must be serializable
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub enum DValue {
+    String(String),
+    Int(i32),
+    Number(f64),
+    Null,
+    Undefined,
+}
+
+use crate::avm1::Value as Avm1Value;
+
+impl DValue {
+    fn as_avm1<'gc>(&self) -> Avm1Value<'gc> {
+        match self {
+            Self::Null => Avm1Value::Null,
+            Self::Undefined => Avm1Value::Undefined,
+            Self::Int(v) => Avm1Value::Number(*v as f64),
+            Self::Number(v) => Avm1Value::Number(*v),
+            Self::String(s) => panic!(),
+        }
+    }
+}
+
 pub trait DebugProvider<'gc> {
     /// Dispatch a debugging event to this type
     fn dispatch(
@@ -78,6 +103,15 @@ pub enum Avm1Msg {
 
     /// Break on calling the given function
     BreakFunction { name: String },
+
+    /// Remove the function breakpoint with the given name
+    BreakFunctionDelete { name: String },
+
+    /// Push a value onto the stack
+    Push { val: DValue },
+
+    /// Pop the top value off of the stack
+    Pop,
 }
 
 /// Debug messages that are handled in the player
@@ -398,10 +432,13 @@ impl Avm1Debugger {
     }
 
     /// Preprocess a given function call to update debugger state
-    pub fn preprocess_call(&mut self, name: String) {
+    pub fn preprocess_call<'gc>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, name: String) {
         //println!("call = {}, bps = {:?}", name, self.pending_breakpoints); 
         if self.pending_breakpoints.contains(&name) || name == "_debugbreak" {
             self.execution_state = Avm1ExecutionState::Paused;
+
+            let msg = DebugMessageOut::BreakpointHit { name: name.clone() };
+            context.debugger.submit_debug_message(msg);
         }
     }
 }
@@ -434,8 +471,25 @@ pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
                 let msg = DebugMessageOut::GenericResult { success: true };
                 context.debugger.submit_debug_message(msg);
             }
+            Avm1Msg::BreakFunctionDelete { name } => {
+                if let Some(pos) = dbg.pending_breakpoints.iter().position(|p| p == &name) {
+                    dbg.pending_breakpoints.remove(pos);
+                }
+                let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
             Avm1Msg::Continue => {
                 dbg.execution_state = Avm1ExecutionState::Running;
+                let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::Push { val } => {
+                context.avm1.push(val.as_avm1());
+                let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::Pop => {
+                context.avm1.pop();
                 let msg = DebugMessageOut::GenericResult { success: true };
                 context.debugger.submit_debug_message(msg);
             }

@@ -164,3 +164,4 @@ impl DebuggerBackend for WebsocketDebugBackend {
 //TODO: procotol name: ridp?
 //TODO: feature flag all debug changes
 //TODO: websocket
+//TODO: support do commands in avm1
