@@ -1241,6 +1241,41 @@ pub fn set_scroll_h<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn max_chars<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.max_chars().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_max_chars<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_edit_text())
+    {
+        let input = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_i32(activation)?;
+        this.set_max_chars(input, &mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1288,6 +1323,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("length", Some(length), None),
         ("maxScrollH", Some(max_scroll_h), None),
         ("maxScrollV", Some(max_scroll_v), None),
+        ("maxChars", Some(max_chars), Some(set_max_chars)),
         ("multiline", Some(multiline), Some(set_multiline)),
         ("scrollH", Some(scroll_h), Some(set_scroll_h)),
         ("scrollV", Some(scroll_v), Some(set_scroll_v)),
