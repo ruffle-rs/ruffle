@@ -907,11 +907,12 @@ fn panic_hook(info: &PanicInfo) {
         .set_buttons(rfd::MessageButtons::YesNo)
         .show()
     {
-        let mut params = vec![];
-        params.push(("panic_text", info.to_string()));
-        params.push(("platform", "Desktop app".to_string()));
-        params.push(("operating_system", os_info::get().to_string()));
-        params.push(("ruffle_version", RUFFLE_VERSION.to_string()));
+        let mut params = vec![
+            ("panic_text", info.to_string()),
+            ("platform", "Desktop app".to_string()),
+            ("operating_system", os_info::get().to_string()),
+            ("ruffle_version", RUFFLE_VERSION.to_string()),
+        ];
         let mut extra_info = vec![];
         RENDER_INFO.with(|i| {
             if let Some(render_info) = i.take() {
@@ -933,7 +934,7 @@ fn panic_hook(info: &PanicInfo) {
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
-        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+        if let Ok(url) = Url::parse_with_params("https://github.com/dinnerbone/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
             let _ = webbrowser::open(url.as_str());
         }
     }
