@@ -914,27 +914,28 @@ fn panic_hook(info: &PanicInfo) {
             ("ruffle_version", RUFFLE_VERSION.to_string()),
         ];
         let mut extra_info = vec![];
+        CALLSTACK.with(|callstack| {
+            if let Some(callstack) = &*callstack.borrow() {
+                callstack.avm2(|callstack| {
+                    extra_info.push(format!("# AVM2 Callstack\n```{callstack}\n```\n"));
+                });
+            }
+        });
         RENDER_INFO.with(|i| {
             if let Some(render_info) = i.take() {
-                extra_info.push(render_info);
+                extra_info.push(format!("# Render Info\n{render_info}\n"));
             }
         });
         SWF_INFO.with(|i| {
             if let Some(swf_name) = i.take() {
-                extra_info.push(format!("SWF: {swf_name}"));
-            }
-        });
-        CALLSTACK.with(|callstack| {
-            if let Some(callstack) = &*callstack.borrow() {
-                callstack.avm2(|callstack| {
-                    extra_info.push(format!("AVM2 Callstack:\n```{callstack}\n```"));
-                });
+                extra_info.push(format!("# SWF\nFilename: {swf_name}\n"));
+                params.push(("title", format!("Crash on {swf_name}")));
             }
         });
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
-        if let Ok(url) = Url::parse_with_params("https://github.com/dinnerbone/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
             let _ = webbrowser::open(url.as_str());
         }
     }
