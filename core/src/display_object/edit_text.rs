@@ -133,6 +133,10 @@ pub struct EditTextData<'gc> {
     /// How many lines down the text is offset by. 1-based index.
     scroll: usize,
 
+    /// The limit of characters that can be manually input by the user.
+    /// Doesn't affect script-triggered modifications.
+    max_chars: i32,
+
     /// Flags indicating the text field's settings.
     flags: EditTextFlag,
 }
@@ -278,6 +282,7 @@ impl<'gc> EditText<'gc> {
                 hscroll: 0.0,
                 line_data,
                 scroll: 1,
+                max_chars: 0,
             },
         ));
 
@@ -1122,6 +1127,14 @@ impl<'gc> EditText<'gc> {
         self.0.write(context.gc_context).scroll = clamped;
     }
 
+    pub fn max_chars(self) -> i32 {
+        self.0.read().max_chars
+    }
+
+    pub fn set_max_chars(self, value: i32, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).max_chars = value;
+    }
+
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
         let text = self.0.read();
         let position = self.global_to_local(position);
@@ -1212,18 +1225,30 @@ impl<'gc> EditText<'gc> {
                     }
                 }
                 code if !(code as char).is_control() => {
-                    self.replace_text(
-                        selection.start(),
-                        selection.end(),
-                        &WString::from_char(character),
-                        context,
-                    );
-                    let new_start = selection.start() + character.len_utf8();
-                    self.set_selection(
-                        Some(TextSelection::for_position(new_start)),
-                        context.gc_context,
-                    );
-                    changed = true;
+                    let can_insert = {
+                        let read = self.0.read();
+                        let max_chars = read.max_chars;
+                        if max_chars == 0 {
+                            true
+                        } else {
+                            let text_len = read.text_spans.text().len();
+                            text_len < max_chars.max(0) as usize
+                        }
+                    };
+                    if can_insert {
+                        self.replace_text(
+                            selection.start(),
+                            selection.end(),
+                            &WString::from_char(character),
+                            context,
+                        );
+                        let new_start = selection.start() + character.len_utf8();
+                        self.set_selection(
+                            Some(TextSelection::for_position(new_start)),
+                            context.gc_context,
+                        );
+                        changed = true;
+                    }
                 }
                 _ => {}
             }
