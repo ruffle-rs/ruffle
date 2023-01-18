@@ -47,7 +47,7 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         println!("");
         println!("Commands:");
         println!("avm1 break - Break execution at the next instruction");
-        //println!("avm1 breakpoint list - List active breakpoints");
+        println!("avm1 breakpoint list - List active breakpoints");
        println!("avm1 breakpoint add \"function_name\" - Break execution when \"function_name\" is called");
         println!("avm1 breakpoint remove \"function_name\" - Remove a breakpoint");
         println!("");
@@ -68,6 +68,8 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
             return Some(Command::Avm1FunctionBreak { name: name.to_string() });
         } else if let Some(name) = smatch(bp, "remove") {
             return Some(Command::Avm1FunctionBreakDelete { name: name.to_string() });
+        } else if let Some(_) = smatch(bp, "list") {
+            return Some(Command::Avm1BreakpointsGet);
         }    
     } else if let Some(bp) = smatch(cmd, "break") {
             return Some(Command::Avm1Break);
@@ -200,14 +202,32 @@ pub enum Command {
     /// Stop the current display object
     StopDO { path: String },
 
+    /// Break the execution of AVM1
     Avm1Break,
+
+    /// Get the state of the AVM1 stack
     Avm1Stack,
+
+    /// Execute the next instruction, stepping into function calls
     Avm1StepInto,
+    
+    /// Add a breakpoint that will break when `name` is called, either as a function or a method
     Avm1FunctionBreak { name: String },
+
+    /// Remove any breakpoint on `name`
     Avm1FunctionBreakDelete { name: String},
+
+    /// Continue execution
     Avm1Continue,
+
+    /// Push a value onto the stack
     Avm1Push { val: DValue },
+
+    /// Pop a value from the stack
     Avm1Pop,
+
+    /// Get all the current breakpoints
+    Avm1BreakpointsGet,
 }
 
 #[derive(Debug, Default)]
@@ -339,28 +359,27 @@ fn handle_client(mut stream: TcpStream) {
         Arc::clone(&input_block),
     );
 
+    fn send_msg(stream: &mut TcpStream, msg: DebugMessageIn) {
+                    stream
+                        .write(
+                            serde_json::to_string(&msg)
+                                .unwrap()
+                                .as_bytes(),
+                        )
+                        .unwrap();
+    }
+
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
+                Command::Avm1BreakpointsGet => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBreakpoints });
+                }
                 Command::Avm1Pop => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::Pop})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Pop});
                 }
                 Command::Avm1Push { val } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::Push { val }})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Push {val }});
                 }
                 Command::Avm1Continue => {
                     stream
@@ -555,6 +574,12 @@ fn handle_client(mut stream: TcpStream) {
                                 println!("success");
                             } else {
                                 println!("fail");
+                            }
+                        }
+                        DebugMessageOut::BreakpointList {bps} => {
+                            println!("Breakpoints:");
+                            for bp in &bps {
+                                println!("{}", bp);
                             }
                         }
                     }

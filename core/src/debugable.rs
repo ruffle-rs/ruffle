@@ -37,7 +37,7 @@ pub trait DebugProvider<'gc> {
     fn dispatch(
         &mut self,
         evt: TargetedMsg,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<DebugMessageOut>;
 }
 
@@ -49,7 +49,7 @@ impl<'gc> DebugProvider<'gc> for Debuggable<'gc> {
     fn dispatch(
         &mut self,
         evt: TargetedMsg,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<DebugMessageOut> {
         match self {
             Self::MovieClip(x) => x.dispatch(evt, context),
@@ -107,6 +107,9 @@ pub enum Avm1Msg {
     /// Remove the function breakpoint with the given name
     BreakFunctionDelete { name: String },
 
+    /// Get all the breakpoints
+    GetBreakpoints,
+
     /// Push a value onto the stack
     Push { val: DValue },
 
@@ -156,6 +159,7 @@ pub enum DebugMessageOut {
     DisplayObjectInfo(crate::debugable::DisplayObjectInfo),
     GetPropsResult { keys: Vec<String> },
     GenericResult { success: bool },
+    BreakpointList { bps: Vec<String> },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -189,7 +193,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
     fn dispatch(
         &mut self,
         evt: TargetedMsg,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<DebugMessageOut> {
         match evt {
             TargetedMsg::Stop => {
@@ -280,7 +284,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
 }
 
 /// Process pending player debug events
-pub fn handle_player_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+pub fn handle_player_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc>) {
     while let Some(dbg_in) = context.debugger.get_debug_event_player() {
         match dbg_in {
             PlayerMsg::Pause => {
@@ -312,7 +316,7 @@ pub fn handle_player_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>)
 
 /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
 fn walk_depthpath<'gc>(
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
     path: &[Depth],
 ) -> Option<DisplayObject<'gc>> {
     let mut root = context.stage.root_clip();
@@ -342,7 +346,7 @@ fn walk_depthpath<'gc>(
 
 /// Walk a depth-path, returning the dispaly object at that point in the depth-tree, if it exists
 fn walk_path<'gc>(
-    context: &mut UpdateContext<'_, 'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
     path: &[&str],
 ) -> Option<DisplayObject<'gc>> {
     let mut root = context.stage.root_clip();
@@ -372,7 +376,7 @@ fn walk_path<'gc>(
     Some(root)
 }
 
-pub fn handle_targeted_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+pub fn handle_targeted_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc>) {
     while let Some((path, msg)) = context.debugger.get_debug_event_targeted() {
         let d_o = if path == "/" {
             context.stage.root_clip()
@@ -432,7 +436,7 @@ impl Avm1Debugger {
     }
 
     /// Preprocess a given function call to update debugger state
-    pub fn preprocess_call<'gc>(&mut self, context: &mut UpdateContext<'_, 'gc, '_>, name: String) {
+    pub fn preprocess_call<'gc>(&mut self, context: &mut UpdateContext<'_, 'gc>, name: String) {
         //println!("call = {}, bps = {:?}", name, self.pending_breakpoints); 
         if self.pending_breakpoints.contains(&name) || name == "_debugbreak" {
             self.execution_state = Avm1ExecutionState::Paused;
@@ -446,7 +450,7 @@ impl Avm1Debugger {
 //TODO: add this to activation
 pub static mut AVM1_DBG_STATE: Avm1Debugger = Avm1Debugger::new();
 
-pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc>) {
     let dbg = unsafe { &mut AVM1_DBG_STATE };
 
     while let Some(msg) = context.debugger.get_debug_event_avm1() {
@@ -491,6 +495,10 @@ pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
             Avm1Msg::Pop => {
                 context.avm1.pop();
                 let msg = DebugMessageOut::GenericResult { success: true };
+                context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::GetBreakpoints => {
+                let msg = DebugMessageOut::BreakpointList { bps: dbg.pending_breakpoints.clone() };
                 context.debugger.submit_debug_message(msg);
             }
             _ => {},

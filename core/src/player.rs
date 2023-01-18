@@ -2106,6 +2106,7 @@ impl PlayerBuilder {
     // Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
+        self
     }
 
     /// Sets the debugger
