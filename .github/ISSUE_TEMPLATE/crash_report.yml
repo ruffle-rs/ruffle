@@ -33,6 +33,13 @@ body:
     attributes:
       value: |
         # Device information
+  - type: input
+    id: ruffle_version
+    attributes:
+      label: Ruffle Version
+      description: What version of Ruffle did this crash occur in?
+    validations:
+      required: true
   - type: dropdown
     id: platform
     attributes:

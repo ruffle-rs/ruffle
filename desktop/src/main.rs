@@ -54,11 +54,13 @@ thread_local! {
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
     tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 100);
 
+static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
+
 #[derive(Parser, Debug)]
 #[clap(
     name = "Ruffle",
     author,
-    version = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt")),
+    version = RUFFLE_VERSION,
 )]
 struct Opt {
     /// Path to a Flash movie (SWF) to play.
@@ -909,6 +911,7 @@ fn panic_hook(info: &PanicInfo) {
         params.push(("panic_text", info.to_string()));
         params.push(("platform", "Desktop app".to_string()));
         params.push(("operating_system", os_info::get().to_string()));
+        params.push(("ruffle_version", RUFFLE_VERSION.to_string()));
         let mut extra_info = vec![];
         RENDER_INFO.with(|i| {
             if let Some(render_info) = i.take() {
