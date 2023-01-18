@@ -914,22 +914,22 @@ fn panic_hook(info: &PanicInfo) {
             ("ruffle_version", RUFFLE_VERSION.to_string()),
         ];
         let mut extra_info = vec![];
+        SWF_INFO.with(|i| {
+            if let Some(swf_name) = i.take() {
+                extra_info.push(format!("Filename: {swf_name}\n"));
+                params.push(("title", format!("Crash on {swf_name}")));
+            }
+        });
         CALLSTACK.with(|callstack| {
             if let Some(callstack) = &*callstack.borrow() {
                 callstack.avm2(|callstack| {
-                    extra_info.push(format!("# AVM2 Callstack\n```{callstack}\n```\n"));
+                    extra_info.push(format!("### AVM2 Callstack\n```{callstack}\n```\n"));
                 });
             }
         });
         RENDER_INFO.with(|i| {
             if let Some(render_info) = i.take() {
-                extra_info.push(format!("# Render Info\n{render_info}\n"));
-            }
-        });
-        SWF_INFO.with(|i| {
-            if let Some(swf_name) = i.take() {
-                extra_info.push(format!("# SWF\nFilename: {swf_name}\n"));
-                params.push(("title", format!("Crash on {swf_name}")));
+                extra_info.push(format!("### Render Info\n{render_info}\n"));
             }
         });
         if !extra_info.is_empty() {
