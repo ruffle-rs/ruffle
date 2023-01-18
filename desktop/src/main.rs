@@ -907,6 +907,7 @@ fn panic_hook(info: &PanicInfo) {
     {
         let mut params = vec![];
         params.push(("panic_text", info.to_string()));
+        params.push(("platform", "Desktop app".to_string()));
         params.push(("operating_system", os_info::get().to_string()));
         let mut extra_info = vec![];
         RENDER_INFO.with(|i| {
