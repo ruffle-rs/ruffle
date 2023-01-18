@@ -24,10 +24,12 @@ use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
     PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
 };
+use ruffle_render::backend::RenderBackend;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::cell::RefCell;
 use std::io::Read;
+use std::panic::PanicInfo;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -43,6 +45,8 @@ use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
+    static RENDER_INFO: RefCell<Option<String>> = RefCell::default();
+    static SWF_INFO: RefCell<Option<String>> = RefCell::default();
 }
 
 #[cfg(feature = "tracy")]
@@ -232,6 +236,7 @@ impl App {
             .and_then(|segments| segments.last())
             .unwrap_or_else(|| movie_url.as_str());
         let title = format!("Ruffle - {filename}");
+        SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -268,6 +273,7 @@ impl App {
         )
         .map_err(|e| anyhow!(e.to_string()))
         .context("Couldn't create wgpu rendering backend")?;
+        RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
         let window = Rc::new(window);
 
@@ -853,7 +859,7 @@ fn init() {
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         prev_hook(info);
-        panic_hook();
+        panic_hook(info);
     }));
 
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
@@ -868,12 +874,58 @@ fn init() {
     tracing::subscriber::set_global_default(subscriber).expect("Couldn't set up global subscriber");
 }
 
-fn panic_hook() {
+fn panic_hook(info: &PanicInfo) {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
             callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
         }
     });
+
+    // [NA] Let me just point out that PanicInfo::message() exists but isn't stable and that sucks.
+    let panic_text = info.to_string();
+    let message = if let Some(text) = panic_text.strip_prefix("panicked at '") {
+        let location = info.location().map(|l| l.to_string()).unwrap_or_default();
+        if let Some(text) = text.strip_suffix(&format!("', {location}")) {
+            text.trim()
+        } else {
+            text.trim()
+        }
+    } else {
+        panic_text.trim()
+    };
+    if rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Error)
+        .set_title("Ruffle")
+        .set_description(&format!(
+            "Ruffle has encountered a fatal error, this is a bug.\n\n\
+            {message}\n\n\
+            Please report this to us so that we can fix it. Thank you!\n\
+            Pressing Yes will open a browser window."
+        ))
+        .set_buttons(rfd::MessageButtons::YesNo)
+        .show()
+    {
+        let mut params = vec![];
+        params.push(("panic_text", info.to_string()));
+        params.push(("operating_system", os_info::get().to_string()));
+        let mut extra_info = vec![];
+        RENDER_INFO.with(|i| {
+            if let Some(render_info) = i.take() {
+                extra_info.push(render_info);
+            }
+        });
+        SWF_INFO.with(|i| {
+            if let Some(swf_name) = i.take() {
+                extra_info.push(format!("SWF: {swf_name}"));
+            }
+        });
+        if !extra_info.is_empty() {
+            params.push(("extra_info", extra_info.join("\n")));
+        }
+        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+            let _ = webbrowser::open(url.as_str());
+        }
+    }
 }
 
 fn shutdown() {
