@@ -13,7 +13,16 @@ RUN apt-get install -y \
  git pkg-config openssl libssl-dev gcc gzip tar \
  default-jdk default-jre \
   nodejs
-RUN wget 'https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz' --quiet -O- | tar xfvz -
+# ... sometimes github.com returns 404 for this one? so.. hacky-try again a few times. ref https://github.com/ruffle-rs/ruffle/pull/9121#issuecomment-1386209670
+RUN bash -c ' \
+for i in {1..10}; \
+do \
+wget 'https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz'; \
+if [ $? -eq 0 ]; then break; fi; \
+done; \
+if [ $? -ne 0 ]; then echo FAILED to download binaryen \$i times 1>&2; exit 1; fi; \
+tar xfvz binaryen-version_111-x86_64-linux.tar.gz; \
+'
 RUN cp -rf binaryen-version_111/* /usr/local/
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
 # RUN source "$HOME/.cargo/env"
