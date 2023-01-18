@@ -41,6 +41,10 @@ impl<'gc> CallStack<'gc> {
             }
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
 }
 
 impl<'gc> Default for CallStack<'gc> {
