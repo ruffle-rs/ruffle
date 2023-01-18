@@ -920,6 +920,13 @@ fn panic_hook(info: &PanicInfo) {
                 extra_info.push(format!("SWF: {swf_name}"));
             }
         });
+        CALLSTACK.with(|callstack| {
+            if let Some(callstack) = &*callstack.borrow() {
+                callstack.avm2(|callstack| {
+                    extra_info.push(format!("AVM2 Callstack:\n```{callstack}\n```"));
+                });
+            }
+        });
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
