@@ -13,8 +13,7 @@ jobs:
     name: Create Nightly Release
     runs-on: ubuntu-22.04
     outputs:
-      # Use != "false" when testing this, as it'll be skipped if this was manually triggered
-      is_active: ${{ steps.check_activity.outputs.is_active }}
+      is_active: ${{ env.GHA_REPO_ALIVE }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -29,7 +28,7 @@ jobs:
         continue-on-error: true
         name: Check for repo activity
         if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "::set-output name=is_active::false"
+        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "GHA_REPO_ALIVE=true" >> $GITHUB_ENV
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.0.2
