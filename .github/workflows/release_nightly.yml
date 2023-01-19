@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
         name: Check for repo activity
         if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "IS_ACTIVE=false" >> $GITHUB_ENV
+        run: test -z "$(git rev-list --after="24 hours" --date=local ${{ github.sha }})" && echo "IS_ACTIVE=false" >> $GITHUB_ENV
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.0.2
