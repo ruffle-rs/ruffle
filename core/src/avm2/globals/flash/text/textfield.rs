@@ -1282,7 +1282,7 @@ pub fn restrict<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     tracing::warn!("TextField.restrict - not yet implemented");
-    Ok(Value::Undefined)
+    Ok(Value::Null)
 }
 
 pub fn set_restrict<'gc>(
