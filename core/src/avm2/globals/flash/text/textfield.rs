@@ -1276,6 +1276,24 @@ pub fn set_max_chars<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn restrict<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    tracing::warn!("TextField.restrict - not yet implemented");
+    Ok(Value::Undefined)
+}
+
+pub fn set_restrict<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    tracing::warn!("TextField.restrict - not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1325,6 +1343,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("maxScrollV", Some(max_scroll_v), None),
         ("maxChars", Some(max_chars), Some(set_max_chars)),
         ("multiline", Some(multiline), Some(set_multiline)),
+        ("restrict", Some(restrict), Some(set_restrict)),
         ("scrollH", Some(scroll_h), Some(set_scroll_h)),
         ("scrollV", Some(scroll_v), Some(set_scroll_v)),
         ("selectable", Some(selectable), Some(set_selectable)),
