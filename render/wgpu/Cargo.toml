@@ -18,7 +18,7 @@ enum-map = "2.4.2"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.24.5", default-features = false }
-naga_oil = { git = "https://github.com/Dinnerbone/naga_oil", rev = "c073f6fdf0560a74480140abc50295f9e0d9aa57" }
+naga_oil = { git = "https://github.com/robtfm/naga_oil", rev = "7976b701fdf4069802f380f0f58acb99abc167ec", features = ["override_any"] }
 ouroboros = "0.15.5"
 typed-arena = "2.0.2"
 once_cell = "1.17.0"
