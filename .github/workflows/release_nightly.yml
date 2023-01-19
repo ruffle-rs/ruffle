@@ -1,8 +1,5 @@
 name: Release Nightly
 
-env:
-  IS_ACTIVE: 'true'
-
 on:
   # Run nightly
   schedule:
@@ -16,6 +13,8 @@ jobs:
     name: Create Nightly Release
     runs-on: ubuntu-22.04
     outputs:
+      # Use != "false" when testing this, as it'll be skipped if this was manually triggered
+      is_active: ${{ steps.check_activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -30,7 +29,7 @@ jobs:
         continue-on-error: true
         name: Check for repo activity
         if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "IS_ACTIVE=false" >> $GITHUB_ENV
+        run: test -z $(git rev-list --after="24 hours" --date=local ${{ github.sha }}) && echo "::set-output name=is_active::false"
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.0.2
@@ -45,7 +44,7 @@ jobs:
           format: YYYY_MM_DD
 
       - name: Create release
-        if: env.IS_ACTIVE == 'true'
+        if: env.GHA_REPO_ALIVE == 'true'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -58,7 +57,7 @@ jobs:
   build:
     name: Build ${{ matrix.build_name }}
     needs: create-nightly-release
-    if: env.IS_ACTIVE == 'true'
+    if: needs.create-nightly-release.outputs.is_active != 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -270,7 +269,7 @@ jobs:
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
-    if: env.IS_ACTIVE == 'true'
+    if: needs.create-nightly-release.outputs.is_active != 'false'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
