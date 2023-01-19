@@ -12,6 +12,9 @@ jobs:
   create-nightly-release:
     name: Create Nightly Release
     runs-on: ubuntu-22.04
+    env:
+      GHA_REPO_ALIVE: "true"
+      
     outputs:
       is_active: ${{ env.GHA_REPO_ALIVE }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
