@@ -85,7 +85,10 @@ impl StaticCallstack {
                 arena.mutate(|_, root| {
                     let callstack = root.callstack.read();
                     if let Some(callstack) = callstack.avm2 {
-                        f(&callstack.read())
+                        let stack = callstack.read();
+                        if !stack.is_empty() {
+                            f(&stack)
+                        }
                     }
                 })
             }
