@@ -2621,14 +2621,16 @@ dependencies = [
 [[package]]
 name = "naga_oil"
 version = "0.4.2"
-source = "git+https://github.com/Dinnerbone/naga_oil?rev=c073f6fdf0560a74480140abc50295f9e0d9aa57#c073f6fdf0560a74480140abc50295f9e0d9aa57"
+source = "git+https://github.com/robtfm/naga_oil?rev=7976b701fdf4069802f380f0f58acb99abc167ec#7976b701fdf4069802f380f0f58acb99abc167ec"
 dependencies = [
  "bit-set",
  "codespan-reporting",
  "data-encoding",
  "naga",
+ "once_cell",
  "regex",
  "regex-syntax",
+ "rustc-hash",
  "thiserror",
  "tracing",
 ]

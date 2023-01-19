@@ -28,7 +28,7 @@ struct ColorTransforms {
 struct TextureTransforms {
     /// The transform matrix of the gradient or texture.
     /// Transforms from object space to UV space.
-    matrix_: mat4x4<f32>,
+    texture_matrix: mat4x4<f32>,
 };
 
 struct PushConstants {
