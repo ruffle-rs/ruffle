@@ -1423,7 +1423,10 @@ fn run_swf(
     if check_img {
         const BACKEND: wgpu::Backends = wgpu::Backends::PRIMARY;
 
-        let instance = wgpu::Instance::new(BACKEND);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: BACKEND,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
 
         let descriptors =
             futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(

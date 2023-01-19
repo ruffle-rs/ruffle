@@ -80,7 +80,10 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(backend);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: backend,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
         let surface = unsafe { instance.create_surface(window) }?;
         let descriptors = futures::executor::block_on(Self::build_descriptors(
             backend,
@@ -108,7 +111,10 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(backend);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: backend,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
         let descriptors = futures::executor::block_on(Self::build_descriptors(
             backend,
             instance,
@@ -297,6 +303,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format,
+                view_formats: &[format],
                 usage: wgpu::TextureUsages::COPY_SRC,
             });
 
@@ -466,6 +473,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8Unorm,
+                view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                 usage: wgpu::TextureUsages::TEXTURE_BINDING
                     | wgpu::TextureUsages::COPY_DST
                     | wgpu::TextureUsages::RENDER_ATTACHMENT
