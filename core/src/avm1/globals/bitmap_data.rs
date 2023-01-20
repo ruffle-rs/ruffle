@@ -547,7 +547,9 @@ pub fn draw<'gc>(
                 return Ok(Value::Undefined);
             };
 
-            let bmd = bitmap_data.bitmap_data_wrapper().overwrite_cpu_pixels();
+            let bmd = bitmap_data
+                .bitmap_data_wrapper()
+                .overwrite_cpu_pixels(activation.context.gc_context);
             let mut write = bmd.write(activation.context.gc_context);
             write.draw(
                 source,

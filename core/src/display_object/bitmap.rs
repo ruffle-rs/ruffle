@@ -157,6 +157,10 @@ impl<'gc> Bitmap<'gc> {
         self.0.read().bitmap_data.height() as u16
     }
 
+    pub fn bitmap_data_wrapper(self) -> BitmapDataWrapper<'gc> {
+        self.0.read().bitmap_data
+    }
+
     /// Retrieve the bitmap data associated with this `Bitmap`.
     pub fn bitmap_data(self) -> GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>> {
         self.0.read().bitmap_data.sync()

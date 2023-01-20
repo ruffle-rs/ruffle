@@ -700,7 +700,7 @@ pub fn draw<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels();
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels(activation.context.gc_context);
         bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
