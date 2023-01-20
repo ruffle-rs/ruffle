@@ -59,8 +59,20 @@ fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
     return 0.0;
 }
 
+/// FIXME: We should import VertexInput from 'common', but a naga_oil bug prevents
+/// us from importing 'common' in both this file and the invidual gradient shaders (like 'linear.wgsl')
+/// Currently, importing 'common' in that way will cause all of the definitions from 'common' to be duplicated,
+/// result in a WGSL parse error.
+struct GradientVertexInput {
+    /// The position of the vertex in object space.
+    @location(0) position: vec2<f32>,
+
+    /// The color of this vertex (only used by the color shader).
+    @location(1) color: vec4<f32>,
+};
+
 @vertex
-fn main_vertex(in: common::VertexInput) -> VertexOutput {
+fn main_vertex(in: GradientVertexInput) -> VertexOutput {
     #if use_push_constants == true
         var transforms = pc.transforms;
     #endif
