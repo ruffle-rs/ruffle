@@ -72,4 +72,4 @@ inherits = "release"
 inherits = "release"
 
 [patch.crates-io]
-naga = { git = "https://github.com/gfx-rs/naga", rev = "e98bd92" }
+naga = { git = "https://github.com/gfx-rs/naga", rev = "1be8024" }
