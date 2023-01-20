@@ -7,11 +7,16 @@ use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::remove_srgb;
-use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
+use crate::{
+    ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, Texture, TextureTransforms,
+    Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
+};
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
+use swf::{ColorMatrixFilter, Filter};
 use target::CommandTarget;
 use tracing::instrument;
+use wgpu::util::DeviceExt;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -60,8 +65,6 @@ impl Surface {
         commands: CommandList,
         texture_pool: &mut TexturePool,
     ) -> Vec<wgpu::CommandBuffer> {
-        uniform_buffers_storage.recall();
-        color_buffers_storage.recall();
         let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
         let mut uniform_buffer = UniformBuffer::new(uniform_buffers_storage);
         let mut color_buffer = UniformBuffer::new(color_buffers_storage);
@@ -398,5 +401,190 @@ impl Surface {
 
     pub fn size(&self) -> wgpu::Extent3d {
         self.size
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_filter(
+        &self,
+        descriptors: &Descriptors,
+        draw_encoder: &mut wgpu::CommandEncoder,
+        texture_pool: &mut TexturePool,
+        source_texture: &Texture,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        dest_texture: &Texture,
+        dest_point: (u32, u32),
+        filter: Filter,
+    ) {
+        let target = match filter {
+            Filter::ColorMatrixFilter(filter) => self.apply_color_matrix(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                source_texture,
+                source_point,
+                source_size,
+                &filter,
+            ),
+            _ => {
+                tracing::warn!("Unsupported filter {filter:?}");
+                return;
+            }
+        };
+
+        draw_encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTexture {
+                texture: target.color_texture(),
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                aspect: Default::default(),
+            },
+            wgpu::ImageCopyTexture {
+                texture: &dest_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x: dest_point.0,
+                    y: dest_point.1,
+                    z: 0,
+                },
+                aspect: Default::default(),
+            },
+            wgpu::Extent3d {
+                width: target.width(),
+                height: target.height(),
+                depth_or_array_layers: 1,
+            },
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_color_matrix(
+        &self,
+        descriptors: &Descriptors,
+        texture_pool: &mut TexturePool,
+        draw_encoder: &mut wgpu::CommandEncoder,
+        source_texture: &Texture,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        filter: &ColorMatrixFilter,
+    ) -> CommandTarget {
+        let target = CommandTarget::new(
+            &descriptors,
+            texture_pool,
+            wgpu::Extent3d {
+                width: source_size.0,
+                height: source_size.1,
+                depth_or_array_layers: 1,
+            },
+            self.format,
+            self.sample_count,
+            wgpu::Color::TRANSPARENT,
+        );
+        let texture_transform =
+            descriptors
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: None,
+                    contents: bytemuck::cast_slice(&[TextureTransforms {
+                        u_matrix: [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                (source_point.0 as f32 / source_size.0 as f32),
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                (source_point.1 as f32 / source_size.1 as f32),
+                            ],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    }]),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+        let source_view = source_texture.texture.create_view(&Default::default());
+        let bitmap_group = descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: create_debug_label!("Bitmap copy group").as_deref(),
+                layout: &descriptors.bind_layouts.bitmap,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: texture_transform.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&source_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(
+                            &descriptors.bitmap_samplers.get_sampler(false, false),
+                        ),
+                    },
+                ],
+            });
+        let buffer = descriptors
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: create_debug_label!("Filter arguments").as_deref(),
+                contents: &bytemuck::cast_slice(&filter.matrix.map(|f| f.to_f32())),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+        let filter_group = descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: create_debug_label!("Filter group").as_deref(),
+                layout: &descriptors.bind_layouts.color_matrix_filter,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+            });
+        let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: create_debug_label!("Color matrix filter").as_deref(),
+            color_attachments: &[target.color_attachments()],
+            depth_stencil_attachment: None,
+        });
+        render_pass.set_pipeline(&self.pipelines.color_matrix_filter);
+
+        render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
+        if descriptors.limits.max_push_constant_size > 0 {
+            render_pass.set_push_constants(
+                wgpu::ShaderStages::VERTEX_FRAGMENT,
+                0,
+                bytemuck::cast_slice(&[PushConstants {
+                    transforms: Transforms {
+                        world_matrix: [
+                            [self.size.width as f32, 0.0, 0.0, 0.0],
+                            [0.0, self.size.height as f32, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    },
+                    colors: DEFAULT_COLOR_ADJUSTMENTS,
+                }]),
+            );
+            render_pass.set_bind_group(1, &bitmap_group, &[]);
+            render_pass.set_bind_group(2, &filter_group, &[]);
+        } else {
+            render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+            render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
+            render_pass.set_bind_group(3, &bitmap_group, &[]);
+            render_pass.set_bind_group(4, &filter_group, &[]);
+        }
+
+        render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+        render_pass.set_index_buffer(
+            descriptors.quad.indices.slice(..),
+            wgpu::IndexFormat::Uint32,
+        );
+        render_pass.draw_indexed(0..6, 0, 0..1);
+        drop(render_pass);
+        target
     }
 }

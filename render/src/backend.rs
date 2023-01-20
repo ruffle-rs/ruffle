@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::rc::Rc;
 use swf;
+use swf::Filter;
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
@@ -45,6 +46,24 @@ pub trait RenderBackend: Downcast {
         height: u32,
         commands: CommandList,
     ) -> Result<Box<dyn SyncHandle>, Error>;
+
+    /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
+    /// The `destination_rect` must be calculated by the caller and is assumed to be correct.
+    /// Both `source_rect` and `destination_rect` must be valid (`BoundingBox::valid`).
+    /// `source` may equal `destination`, in which case a temporary buffer is used internally.
+    ///
+    /// Returns None if the backend does not support this filter.
+    fn apply_filter(
+        &mut self,
+        _source: BitmapHandle,
+        _source_point: (u32, u32),
+        _source_size: (u32, u32),
+        _destination: BitmapHandle,
+        _dest_point: (u32, u32),
+        _filter: Filter,
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
+    }
 
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 

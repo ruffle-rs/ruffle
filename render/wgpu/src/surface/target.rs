@@ -351,4 +351,11 @@ impl CommandTarget {
             .map(|b| b.view())
             .unwrap_or_else(|| self.frame_buffer.view())
     }
+
+    pub fn color_texture(&self) -> &wgpu::Texture {
+        self.resolve_buffer
+            .as_ref()
+            .map(|b| b.texture())
+            .unwrap_or_else(|| self.frame_buffer.texture())
+    }
 }

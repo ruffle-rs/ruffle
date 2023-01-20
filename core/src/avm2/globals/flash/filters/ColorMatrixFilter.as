@@ -3,6 +3,14 @@
 		private var _matrix: Array;
 
 		public function ColorMatrixFilter(matrix: Array = null) {
+			if (matrix == null) {
+				matrix = [
+					1, 0, 0, 0, 0,
+					0, 1, 0, 0, 0,
+					0, 0, 1, 0, 0,
+					0, 0, 0, 1, 0
+				];
+			}
 			this.matrix = matrix;
 		}
 
