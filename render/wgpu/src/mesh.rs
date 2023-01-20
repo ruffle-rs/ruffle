@@ -32,7 +32,7 @@ impl Draw {
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
-    ) -> Self {
+    ) -> Option<Self> {
         let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
         let descriptors = backend.descriptors().clone();
         let vertex_buffer = create_buffer_with_data(
@@ -50,7 +50,7 @@ impl Draw {
         );
 
         let index_count = draw.indices.len() as u32;
-        match draw.draw_type {
+        Some(match draw.draw_type {
             TessDrawType::Color => Draw {
                 draw_type: DrawType::color(),
                 vertex_buffer,
@@ -73,13 +73,13 @@ impl Draw {
                     draw_id,
                     source,
                     backend,
-                ),
+                )?,
                 vertex_buffer,
                 index_buffer,
                 num_indices: index_count,
                 num_mask_indices: draw.mask_index_count,
             },
-        }
+        })
     }
 }
 
@@ -182,8 +182,8 @@ impl DrawType {
         draw_id: usize,
         source: &dyn BitmapSource,
         backend: &mut dyn RenderBackend,
-    ) -> Self {
-        let handle = source.bitmap_handle(bitmap.bitmap_id, backend).unwrap();
+    ) -> Option<Self> {
+        let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
         let texture = as_texture(&handle);
         let texture_view = texture.texture.create_view(&Default::default());
         let texture_transforms = create_texture_transforms(
@@ -209,10 +209,10 @@ impl DrawType {
             bind_group_label,
         );
 
-        DrawType::Bitmap {
+        Some(DrawType::Bitmap {
             texture_transforms,
             binds,
-        }
+        })
     }
 }
 
