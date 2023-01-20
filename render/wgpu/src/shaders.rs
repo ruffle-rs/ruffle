@@ -16,6 +16,7 @@ pub struct Shaders {
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
+    pub color_matrix_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -54,6 +55,13 @@ impl Shaders {
             "copy.wgsl",
             include_str!("../shaders/copy.wgsl"),
         );
+        let color_matrix_filter = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "filter/color_matrix.wgsl",
+            include_str!("../shaders/filter/color_matrix.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
@@ -79,6 +87,7 @@ impl Shaders {
             copy_srgb_shader,
             copy_shader,
             blend_shaders,
+            color_matrix_filter,
         }
     }
 }
@@ -96,6 +105,11 @@ fn composer() -> Result<Composer, ComposerError> {
     composer.add_composable_module(ComposableModuleDescriptor {
         source: include_str!("../shaders/gradient/common.wgsl"),
         file_path: "gradient/common.wgsl",
+        ..Default::default()
+    })?;
+    composer.add_composable_module(ComposableModuleDescriptor {
+        source: include_str!("../shaders/filter/common.wgsl"),
+        file_path: "filter/common.wgsl",
         ..Default::default()
     })?;
     Ok(composer)

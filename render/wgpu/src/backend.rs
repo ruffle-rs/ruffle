@@ -24,7 +24,7 @@ use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
-use swf::Color;
+use swf::{Color, Filter};
 use tracing::instrument;
 use wgpu::Extent3d;
 
@@ -654,6 +654,82 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             })),
             None => Ok(Box::new(QueueSyncHandle::NotCopied {
                 handle: handle.clone(),
+                size: target.size,
+                descriptors: self.descriptors.clone(),
+            })),
+        }
+    }
+
+    fn apply_filter(
+        &mut self,
+        source: BitmapHandle,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        destination: BitmapHandle,
+        dest_point: (u32, u32),
+        filter: Filter,
+    ) -> Option<Box<dyn SyncHandle>> {
+        let source_texture = as_texture(&source);
+        let dest_texture = as_texture(&destination);
+
+        let mut target = TextureTarget {
+            size: wgpu::Extent3d {
+                width: dest_texture.width,
+                height: dest_texture.height,
+                depth_or_array_layers: 1,
+            },
+            texture: dest_texture.texture.clone(),
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            buffer: dest_texture
+                .texture_offscreen
+                .get()
+                .map(|t| (t.buffer.clone(), t.buffer_dimensions.clone())),
+        };
+        let texture_offscreen = dest_texture.texture_offscreen.get();
+        let frame_output = target
+            .get_next_texture()
+            .expect("TextureTargetFrame.get_next_texture is infallible");
+        let surface = Surface::new(
+            &self.descriptors,
+            self.preferred_sample_count,
+            dest_texture.width,
+            dest_texture.height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+        surface.apply_filter(
+            &self.descriptors,
+            &mut draw_encoder,
+            &mut self.offscreen_texture_pool,
+            source_texture,
+            source_point,
+            source_size,
+            dest_texture,
+            dest_point,
+            filter,
+        );
+        let index = target.submit(
+            &self.descriptors.device,
+            &self.descriptors.queue,
+            Some(draw_encoder.finish()),
+            frame_output,
+        );
+        match texture_offscreen {
+            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
+                index,
+                size: target.size,
+                buffer: texture_offscreen.buffer.clone(),
+                buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
+                descriptors: self.descriptors.clone(),
+            })),
+            None => Some(Box::new(QueueSyncHandle::NotCopied {
+                handle: destination.clone(),
                 size: target.size,
                 descriptors: self.descriptors.clone(),
             })),
