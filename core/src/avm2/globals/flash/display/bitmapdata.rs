@@ -19,7 +19,7 @@ use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
-use swf::{ColorMatrixFilter, Filter, Fixed16};
+use swf::{BlurFilter, ColorMatrixFilter, Filter, Fixed16};
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -917,11 +917,15 @@ pub fn apply_filter<'gc>(
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
             })?;
 
-        let class_matrix_filter = activation.resolve_class(&Multiname::new(
+        let color_matrix_filter = activation.resolve_class(&Multiname::new(
             Namespace::package("flash.filters"),
             "ColorMatrixFilter",
         ))?;
-        let filter = if filter.is_of_type(class_matrix_filter, activation) {
+        let blur_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "BlurFilter",
+        ))?;
+        let filter = if filter.is_of_type(color_matrix_filter, activation) {
             let mut matrix = [Fixed16::default(); 20];
             if let Some(object) = filter
                 .get_property(&Multiname::public("matrix"), activation)?
@@ -939,6 +943,21 @@ pub fn apply_filter<'gc>(
                 }
             }
             Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix }))
+        } else if filter.is_of_type(blur_filter, activation) {
+            let blur_x = filter
+                .get_property(&Multiname::public("blurX"), activation)?
+                .coerce_to_number(activation)?;
+            let blur_y = filter
+                .get_property(&Multiname::public("blurY"), activation)?
+                .coerce_to_number(activation)?;
+            let quality = filter
+                .get_property(&Multiname::public("quality"), activation)?
+                .coerce_to_u32(activation)?;
+            Filter::BlurFilter(Box::new(BlurFilter {
+                blur_x: Fixed16::from_f64(blur_x),
+                blur_y: Fixed16::from_f64(blur_y),
+                num_passes: quality.clamp(1, 15) as u8,
+            }))
         } else {
             tracing::warn!(
                 "BitmapData.applyFilter: Not yet implemented for {}",

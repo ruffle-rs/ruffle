@@ -17,6 +17,7 @@ pub struct Shaders {
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
+    pub blur_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -62,6 +63,13 @@ impl Shaders {
             "filter/color_matrix.wgsl",
             include_str!("../shaders/filter/color_matrix.wgsl"),
         );
+        let blur_filter = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "filter/blur.wgsl",
+            include_str!("../shaders/filter/blur.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
@@ -88,6 +96,7 @@ impl Shaders {
             copy_shader,
             blend_shaders,
             color_matrix_filter,
+            blur_filter,
         }
     }
 }
