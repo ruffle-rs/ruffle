@@ -13,7 +13,7 @@ use crate::{
 };
 use ruffle_render::commands::CommandList;
 use std::sync::Arc;
-use swf::{ColorMatrixFilter, Filter};
+use swf::{BlurFilter, ColorMatrixFilter, Filter};
 use target::CommandTarget;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
@@ -426,6 +426,15 @@ impl Surface {
                 source_size,
                 &filter,
             ),
+            Filter::BlurFilter(filter) => self.apply_blur(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                source_texture,
+                source_point,
+                source_size,
+                &filter,
+            ),
             _ => {
                 tracing::warn!("Unsupported filter {filter:?}");
                 return;
@@ -450,8 +459,8 @@ impl Surface {
                 aspect: Default::default(),
             },
             wgpu::Extent3d {
-                width: target.width(),
-                height: target.height(),
+                width: (target.width()).min(dest_texture.width - dest_point.0),
+                height: (target.height()).min(dest_texture.height - dest_point.1),
                 depth_or_array_layers: 1,
             },
         )
@@ -586,5 +595,178 @@ impl Surface {
         render_pass.draw_indexed(0..6, 0, 0..1);
         drop(render_pass);
         target
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_blur(
+        &self,
+        descriptors: &Descriptors,
+        texture_pool: &mut TexturePool,
+        draw_encoder: &mut wgpu::CommandEncoder,
+        source_texture: &Texture,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        filter: &BlurFilter,
+    ) -> CommandTarget {
+        let targets = [
+            CommandTarget::new(
+                &descriptors,
+                texture_pool,
+                wgpu::Extent3d {
+                    width: source_size.0,
+                    height: source_size.1,
+                    depth_or_array_layers: 1,
+                },
+                self.format,
+                self.sample_count,
+                wgpu::Color::TRANSPARENT,
+            ),
+            CommandTarget::new(
+                &descriptors,
+                texture_pool,
+                wgpu::Extent3d {
+                    width: source_size.0,
+                    height: source_size.1,
+                    depth_or_array_layers: 1,
+                },
+                self.format,
+                self.sample_count,
+                wgpu::Color::TRANSPARENT,
+            ),
+        ];
+        let texture_transform =
+            descriptors
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: None,
+                    contents: bytemuck::cast_slice(&[TextureTransforms {
+                        u_matrix: [
+                            [
+                                1.0,
+                                0.0,
+                                0.0,
+                                (source_point.0 as f32 / source_size.0 as f32),
+                            ],
+                            [
+                                0.0,
+                                1.0,
+                                0.0,
+                                (source_point.1 as f32 / source_size.1 as f32),
+                            ],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    }]),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+        let source_view = source_texture.texture.create_view(&Default::default());
+        for i in 0..2 {
+            let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
+            let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
+            let current = &targets[i % 2];
+            let (previous_view, previous_transform, previous_width, previous_height) = if i == 0 {
+                (
+                    &source_view,
+                    texture_transform.as_entire_binding(),
+                    source_texture.width as f32,
+                    source_texture.height as f32,
+                )
+            } else {
+                let previous = &targets[(i - 1) % 2];
+                (
+                    previous.color_view(),
+                    descriptors.quad.texture_transforms.as_entire_binding(),
+                    previous.width() as f32,
+                    previous.height() as f32,
+                )
+            };
+            let bitmap_group = descriptors
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: create_debug_label!("Bitmap copy group").as_deref(),
+                    layout: &descriptors.bind_layouts.bitmap,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: previous_transform,
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(previous_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(
+                                &descriptors.bitmap_samplers.get_sampler(false, true),
+                            ),
+                        },
+                    ],
+                });
+            let buffer = descriptors
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: create_debug_label!("Filter arguments").as_deref(),
+                    contents: &bytemuck::cast_slice(&[
+                        blur_x * ((i as u32) % 2) as f32,
+                        blur_y * (((i as u32) % 2) + 1) as f32,
+                        previous_width,
+                        previous_height,
+                    ]),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+            let filter_group = descriptors
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: create_debug_label!("Filter group").as_deref(),
+                    layout: &descriptors.bind_layouts.blur_filter,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: buffer.as_entire_binding(),
+                    }],
+                });
+            let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Color matrix filter").as_deref(),
+                color_attachments: &[current.color_attachments()],
+                depth_stencil_attachment: None,
+            });
+            render_pass.set_pipeline(&self.pipelines.blur_filter);
+
+            render_pass.set_bind_group(0, current.globals().bind_group(), &[]);
+            if descriptors.limits.max_push_constant_size > 0 {
+                render_pass.set_push_constants(
+                    wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    0,
+                    bytemuck::cast_slice(&[PushConstants {
+                        transforms: Transforms {
+                            world_matrix: [
+                                [current.width() as f32, 0.0, 0.0, 0.0],
+                                [0.0, current.height() as f32, 0.0, 0.0],
+                                [0.0, 0.0, 1.0, 0.0],
+                                [0.0, 0.0, 0.0, 1.0],
+                            ],
+                        },
+                        colors: DEFAULT_COLOR_ADJUSTMENTS,
+                    }]),
+                );
+                render_pass.set_bind_group(1, &bitmap_group, &[]);
+                render_pass.set_bind_group(2, &filter_group, &[]);
+            } else {
+                render_pass.set_bind_group(1, current.whole_frame_bind_group(descriptors), &[0]);
+                render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
+                render_pass.set_bind_group(3, &bitmap_group, &[]);
+                render_pass.set_bind_group(4, &filter_group, &[]);
+            }
+
+            render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
+            render_pass.set_index_buffer(
+                descriptors.quad.indices.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            render_pass.draw_indexed(0..6, 0, 0..1);
+        }
+        targets
+            .into_iter()
+            .last()
+            .expect("Targets should not be empty")
     }
 }
