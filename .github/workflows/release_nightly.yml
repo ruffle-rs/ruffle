@@ -318,7 +318,7 @@ jobs:
         shell: bash -l {0}
         run: |
           npm ci
-          npm run build:dual-wasm
+          npm run build:repro
           npm run docs
 
       - name: Publish Firefox extension
