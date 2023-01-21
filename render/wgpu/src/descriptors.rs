@@ -6,6 +6,7 @@ use crate::{
     DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
+use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
@@ -22,6 +23,12 @@ pub struct Descriptors {
     shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
+}
+
+impl Debug for Descriptors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Descriptors")
+    }
 }
 
 impl Descriptors {

@@ -141,8 +141,8 @@ pub fn get_rectangle<'gc>(
                 &[
                     0.into(),
                     0.into(),
-                    bitmap_data.bitmap_data().read().width().into(),
-                    bitmap_data.bitmap_data().read().height().into(),
+                    bitmap_data.width().into(),
+                    bitmap_data.height().into(),
                 ],
             )?;
             return Ok(rect);
@@ -390,9 +390,9 @@ pub fn clone<'gc>(
                 .bitmap_data()
                 .write(activation.context.gc_context)
                 .set_pixels(
-                    bitmap_data.bitmap_data().read().width(),
-                    bitmap_data.bitmap_data().read().height(),
-                    bitmap_data.bitmap_data().read().transparency(),
+                    bitmap_data.width(),
+                    bitmap_data.height(),
+                    bitmap_data.transparency(),
                     bitmap_data.bitmap_data().read().pixels().to_vec(),
                 );
 
@@ -536,7 +536,7 @@ pub fn draw<'gc>(
             let source = if let Some(source_object) = source.as_display_object() {
                 IBitmapDrawable::DisplayObject(source_object)
             } else if let Some(source_bitmap) = source.as_bitmap_data_object() {
-                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data())
+                IBitmapDrawable::BitmapData(source_bitmap.bitmap_data_wrapper())
             } else {
                 avm_error!(
                     activation,
@@ -547,7 +547,9 @@ pub fn draw<'gc>(
                 return Ok(Value::Undefined);
             };
 
-            let bmd = bitmap_data.bitmap_data();
+            let bmd = bitmap_data
+                .bitmap_data_wrapper()
+                .overwrite_cpu_pixels(activation.context.gc_context);
             let mut write = bmd.write(activation.context.gc_context);
             write.draw(
                 source,

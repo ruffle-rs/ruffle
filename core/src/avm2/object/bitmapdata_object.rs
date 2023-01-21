@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -45,7 +45,7 @@ pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    bitmap_data: Option<GcCell<'gc, BitmapData<'gc>>>,
+    bitmap_data: Option<BitmapDataWrapper<'gc>>,
 }
 
 impl<'gc> BitmapDataObject<'gc> {
@@ -58,7 +58,7 @@ impl<'gc> BitmapDataObject<'gc> {
             activation.context.gc_context,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
-                bitmap_data: Some(bitmap_data),
+                bitmap_data: Some(BitmapDataWrapper::new(bitmap_data)),
             },
         ));
 
@@ -91,6 +91,10 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
 
     /// Unwrap this object's bitmap data
     fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
+        self.0.read().bitmap_data.map(|wrapper| wrapper.sync())
+    }
+
+    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
         self.0.read().bitmap_data
     }
 
@@ -101,6 +105,6 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         mc: MutationContext<'gc, '_>,
         new_bitmap: GcCell<'gc, BitmapData<'gc>>,
     ) {
-        self.0.write(mc).bitmap_data = Some(new_bitmap)
+        self.0.write(mc).bitmap_data = Some(BitmapDataWrapper::new(new_bitmap))
     }
 }
