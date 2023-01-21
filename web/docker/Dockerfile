@@ -10,17 +10,10 @@ RUN apt-get install -y apt-utils
 RUN apt-get install -y wget git openssl libssl-dev gcc gzip tar default-jdk default-jre pkg-config
 RUN wget 'https://deb.nodesource.com/setup_lts.x' --quiet -O- | bash
 RUN apt-get install -y nodejs
-# ... sometimes github.com returns 404 for this one? so.. hacky-try again a few times. ref https://github.com/ruffle-rs/ruffle/pull/9121#issuecomment-1386209670
-RUN bash -c ' \
-for i in {1..10}; \
-do \
-wget '\''https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz'\''; \
-if [ $? -eq 0 ]; then break; fi; \
-done; \
-if [ $? -ne 0 ]; then echo FAILED to download binaryen \$i times, aborting! 1>&2; exit 1; fi; \
-tar xfvz binaryen-version_111-x86_64-linux.tar.gz; \
-'
-RUN cp -rf binaryen-version_111/* /usr/local/
+RUN wget 'https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh';
+RUN bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda;
+ENV PATH="/miniconda/bin:$PATH"
+RUN conda install -y -c conda-forge binaryen
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y
 # RUN source "$HOME/.cargo/env"
 # source to modify env doesn't work with docker it seems :( so add cargo to PATH manually:
