@@ -144,7 +144,7 @@ async function loadFile(file) {
     }
     hideSample();
     const data = await new Response(file).arrayBuffer();
-    load({ data, ...defaultConfig });
+    load({ data: data, swfFileName: file.name, ...defaultConfig });
 }
 
 function loadSample() {

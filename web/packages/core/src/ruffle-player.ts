@@ -640,7 +640,8 @@ export class RufflePlayer extends HTMLElement {
                 console.log("Loading SWF data");
                 this.instance!.load_data(
                     new Uint8Array(options.data),
-                    sanitizeParameters(options.parameters)
+                    sanitizeParameters(options.parameters),
+                    options.swfFileName || "movie.swf"
                 );
             }
         } catch (err) {
