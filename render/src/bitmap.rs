@@ -34,8 +34,17 @@ pub trait BitmapSource {
     fn bitmap_handle(&self, id: u16, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle>;
 }
 
-pub trait SyncHandle: Downcast + Debug {}
+pub trait SyncHandle: Downcast + Debug {
+    /// Retrieves the rendered pixels from a previous `render_offscreen` call
+    fn retrieve_offscreen_texture(self: Box<Self>) -> Result<Bitmap, crate::error::Error>;
+}
 impl_downcast!(SyncHandle);
+
+impl Clone for Box<dyn SyncHandle> {
+    fn clone(&self) -> Box<dyn SyncHandle> {
+        panic!("SyncHandle should have been consumed before clone() is called!")
+    }
+}
 
 /// Decoded bitmap data from an SWF tag.
 #[derive(Clone, Debug)]

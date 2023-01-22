@@ -41,7 +41,7 @@
         "chromedriver": "^108.0.0"
     },
     "scripts": {
-        "build": "npm run build --workspaces",
+        "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
         "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm_debug npm run build",
         "build:dual-wasm": "cross-env ENABLE_WASM_EXTENSIONS=true npm run build",
         "demo": "npm start --workspace ruffle-demo",

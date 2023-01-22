@@ -5,6 +5,7 @@ use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
 };
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
@@ -13,7 +14,6 @@ use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapFormat;
-use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -70,7 +70,7 @@ pub struct BitmapData<'gc> {
     movie: Arc<SwfMovie>,
 
     /// The current bitmap data object.
-    bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
+    bitmap_data: BitmapDataWrapper<'gc>,
 
     /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
@@ -107,7 +107,7 @@ impl<'gc> Bitmap<'gc> {
             BitmapData {
                 base: Default::default(),
                 id,
-                bitmap_data,
+                bitmap_data: BitmapDataWrapper::new(bitmap_data),
                 smoothing,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
@@ -150,16 +150,20 @@ impl<'gc> Bitmap<'gc> {
     }
 
     pub fn width(self) -> u16 {
-        self.0.read().bitmap_data.read().width() as u16
+        self.0.read().bitmap_data.width() as u16
     }
 
     pub fn height(self) -> u16 {
-        self.0.read().bitmap_data.read().height() as u16
+        self.0.read().bitmap_data.height() as u16
+    }
+
+    pub fn bitmap_data_wrapper(self) -> BitmapDataWrapper<'gc> {
+        self.0.read().bitmap_data
     }
 
     /// Retrieve the bitmap data associated with this `Bitmap`.
     pub fn bitmap_data(self) -> GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>> {
-        self.0.read().bitmap_data
+        self.0.read().bitmap_data.sync()
     }
 
     /// Associate this `Bitmap` with new `BitmapData`.
@@ -175,7 +179,7 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
     ) {
-        self.0.write(context.gc_context).bitmap_data = bitmap_data;
+        self.0.write(context.gc_context).bitmap_data = BitmapDataWrapper::new(bitmap_data);
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
@@ -290,25 +294,9 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
 
         let bitmap_data = self.0.read();
-        let inner_bitmap_data = bitmap_data.bitmap_data.try_write(context.gc_context);
-        if let Ok(mut inner_bitmap_data) = inner_bitmap_data {
-            if inner_bitmap_data.disposed() {
-                return;
-            }
-
-            inner_bitmap_data.update_dirty_texture(context);
-            let handle = inner_bitmap_data
-                .bitmap_handle(context.renderer)
-                .expect("Missing bitmap handle");
-
-            context.commands.render_bitmap(
-                handle,
-                context.transform_stack.transform(),
-                bitmap_data.smoothing,
-            );
-        } else {
-            //this is caused by recursive render attempt. TODO: support this.
-        }
+        bitmap_data
+            .bitmap_data
+            .render(bitmap_data.smoothing, context);
     }
 
     fn object2(&self) -> Avm2Value<'gc> {

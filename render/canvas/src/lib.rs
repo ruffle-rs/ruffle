@@ -469,13 +469,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         Err(Error::Unimplemented)
     }
 
-    fn retrieve_offscreen_texture(
-        &self,
-        _sync: Box<dyn SyncHandle>,
-    ) -> Result<Bitmap, ruffle_render::error::Error> {
-        Err(Error::Unimplemented)
-    }
-
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
         self.begin_frame(clear);
         commands.execute(self);

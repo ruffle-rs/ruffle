@@ -137,7 +137,7 @@ pub fn bitmap_data<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
     {
-        let mut value = bitmap.bitmap_data().read().object2();
+        let mut value = bitmap.bitmap_data_wrapper().object2();
 
         // AS3 expects an unset BitmapData to be null, not 'undefined'
         if matches!(value, Value::Undefined) {

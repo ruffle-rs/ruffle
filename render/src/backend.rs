@@ -45,9 +45,6 @@ pub trait RenderBackend: Downcast {
         commands: CommandList,
     ) -> Result<Box<dyn SyncHandle>, Error>;
 
-    /// Retrieves the rendered pixels from a previous `render_offscreen` call
-    fn retrieve_offscreen_texture(&self, sync: Box<dyn SyncHandle>) -> Result<Bitmap, Error>;
-
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
