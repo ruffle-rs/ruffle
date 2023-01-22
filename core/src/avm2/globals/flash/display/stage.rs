@@ -831,7 +831,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("displayState", Some(display_state), Some(set_display_state)),
         ("focus", Some(focus), Some(set_focus)),
         ("frameRate", Some(frame_rate), Some(set_frame_rate)),
-        ("fullScreenSourceRect", Some(full_screen_source_rect), Some(set_full_screen_source_rect)),
+        (
+            "fullScreenSourceRect",
+            Some(full_screen_source_rect),
+            Some(set_full_screen_source_rect),
+        ),
         ("scaleMode", Some(scale_mode), Some(set_scale_mode)),
         (
             "showDefaultContextMenu",
