@@ -2,7 +2,6 @@
 
 use crate::cli_options::AnalyzeOpt;
 use crate::file_results::{FileResults, Step};
-use std::cmp::max;
 use std::fs::File;
 
 /// Generate and print statistics related to a scan's results
