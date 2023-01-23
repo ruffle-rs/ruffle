@@ -6,9 +6,9 @@ use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::{Collect, GcCell};
+use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::matrix::Matrix;
@@ -165,7 +165,6 @@ bitflags! {
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
     pixels: Vec<Color>,
-    dirty: bool,
     width: u32,
     height: u32,
     transparency: bool,
@@ -187,12 +186,159 @@ pub struct BitmapData<'gc> {
     /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
     /// this does not need to hold an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
+
+    dirty_state: DirtyState,
 }
+
+#[derive(Clone, Collect, Default, Debug)]
+#[collect(require_static)]
+enum DirtyState {
+    // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
+    #[default]
+    Clean,
+    // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
+    CpuModified,
+    // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
+    GpuModified(Box<dyn SyncHandle>),
+}
+
+mod wrapper {
+    use crate::avm2::Value as Avm2Value;
+    use crate::context::RenderContext;
+    use gc_arena::{Collect, GcCell, MutationContext};
+    use ruffle_render::commands::CommandHandler;
+
+    use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
+
+    #[derive(Collect, Copy, Clone)]
+    #[collect(no_drop)]
+    /// A wrapper type that ensures that we always wait for a pending
+    /// GPU -> CPU sync to complete (using `sync_handle`) before accessing
+    /// the CPU-side pixels.
+    ///
+    /// This is overly conservative - we perform a sync before allowing any access
+    /// to the underlying `BitmapData`, even if we wouldn't be accessing the pixels.
+    /// Implementing more fine-grained tracking turned out to be extremely invasive,
+    /// and made the code much less readable. This should be enough for the simple
+    /// case where ActionScript calls `BitmapData.draw`, and then doesn't interact
+    /// with the Bitmap/BitmapData object at all for some time.
+    ///
+    /// There are three ways that this type gets used:
+    /// 1. Blocking on the current GPU->CPU sync via the `sync` method,
+    ///    and obtainng a `GcCell<'gc, BitmapData<'gc>>` (or implicily through `as_bitmap_data`).
+    ///    This is done for the vast majority of BitmapData AS2/AS3 methods, as they need to access CPU-side pixels.
+    /// 2. Ignoring the current GPU->CPU sync state. This is done by the `render` method defined on this type,
+    ///    since rendering only uses GPU-side data, and ignores CPU-side pixels entirely.
+    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels`. This is
+    ///    currently only used by `BitmapData.draw`, since the new rendering result will completely
+    ///    replace the current CPU-side pixels. In the future, we could explore using this in additional
+    ///    cases where we know that the entire CPU-side pixel array will be overwritten without being read
+    ///    (e.g. `BitmapData.fillRect` with a rectangle covering the entire bitmap). However, `overwrite_cpu_pixels`
+    ///    is always a performance optimization, and can always be safely replaced with `sync` (at the cost of worse performance)
+    ///
+    /// Note that we also perform CPU-GPU syncs from `BitmapData.update_dirty_texture` when `dirty` is set.
+    /// `sync_handle` and `dirty` can never be set at the same time - we can only have one of them set, or none of them set.
+    ///
+    pub struct BitmapDataWrapper<'gc>(GcCell<'gc, BitmapData<'gc>>);
+
+    impl<'gc> BitmapDataWrapper<'gc> {
+        pub fn new(data: GcCell<'gc, BitmapData<'gc>>) -> Self {
+            BitmapDataWrapper(data)
+        }
+
+        // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
+        // is in progress, waits for it to complete
+        pub fn sync(&self) -> GcCell<'gc, BitmapData<'gc>> {
+            // SAFETY: The only field that can store gc pointers is `avm2_object`,
+            // which we don't update here. Ideally, we would refactor this so that
+            // `BitmapData` doesn't contain any gc pointers, allowing us to use a normal
+            // `RefCell` instead of a `GcCell`.
+            let mut write = unsafe { self.0.borrow_mut() };
+            match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
+                DirtyState::GpuModified(sync_handle) => {
+                    let image = sync_handle
+                        .retrieve_offscreen_texture()
+                        .expect("Failed to sync BitmapData");
+                    copy_pixels_to_bitmapdata(&mut write, image.data());
+                    write.dirty_state = DirtyState::Clean
+                }
+                old_state => write.dirty_state = old_state,
+            }
+            self.0
+        }
+
+        // Provides access to the underlying `BitmapData`.
+        // This should only be used when you will be overwriting the entire
+        // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
+        pub fn overwrite_cpu_pixels(
+            &self,
+            mc: MutationContext<'gc, '_>,
+        ) -> GcCell<'gc, BitmapData<'gc>> {
+            let mut write = self.0.write(mc);
+            match write.dirty_state {
+                DirtyState::GpuModified(_) => write.dirty_state = DirtyState::Clean,
+                DirtyState::CpuModified | DirtyState::Clean => {}
+            }
+            self.0
+        }
+
+        // These methods do not require a sync to complete, as they do not depend on the
+        // CPU-side pixels. They are implemented directly on `BitmapDataWrapper`, allowing
+        // callers to avoid calling sync()
+
+        pub fn height(&self) -> u32 {
+            self.0.read().height
+        }
+
+        pub fn width(&self) -> u32 {
+            self.0.read().width
+        }
+
+        pub fn object2(&self) -> Avm2Value<'gc> {
+            self.0.read().object2()
+        }
+
+        pub fn disposed(&self) -> bool {
+            self.0.read().disposed
+        }
+
+        pub fn transparency(&self) -> bool {
+            self.0.read().transparency
+        }
+
+        pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
+            // if try_write fails,
+            // this is caused by recursive render attempt. TODO: support this.
+            if let Ok(mut inner_bitmap_data) = self.0.try_write(context.gc_context) {
+                if inner_bitmap_data.disposed() {
+                    return;
+                }
+
+                // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
+                // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
+                inner_bitmap_data.update_dirty_texture(context);
+                let handle = inner_bitmap_data
+                    .bitmap_handle(context.renderer)
+                    .expect("Missing bitmap handle");
+
+                context.commands.render_bitmap(
+                    handle,
+                    context.transform_stack.transform(),
+                    smoothing,
+                );
+            } else {
+                //this is caused by recursive render attempt. TODO: support this.
+            }
+        }
+    }
+}
+
+pub use wrapper::BitmapDataWrapper;
 
 impl fmt::Debug for BitmapData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BitmapData")
-            .field("dirty", &self.dirty)
+            .field("dirty_state", &self.dirty_state)
             .field("width", &self.width)
             .field("height", &self.height)
             .field("transparency", &self.transparency)
@@ -210,13 +356,13 @@ impl<'gc> BitmapData<'gc> {
     pub fn dummy() -> Self {
         BitmapData {
             pixels: Vec::new(),
-            dirty: false,
             width: 0,
             height: 0,
             transparency: false,
             disposed: true,
             bitmap_handle: None,
             avm2_object: None,
+            dirty_state: DirtyState::Clean,
         }
     }
 
@@ -228,7 +374,7 @@ impl<'gc> BitmapData<'gc> {
             Color(fill_color).to_premultiplied_alpha(self.transparency());
             width as usize * height as usize
         ];
-        self.dirty = true;
+        self.set_cpu_dirty(true);
     }
 
     pub fn check_valid(
@@ -257,7 +403,7 @@ impl<'gc> BitmapData<'gc> {
         self.pixels.clear();
         self.bitmap_handle = None;
         // There's no longer a handle to update
-        self.dirty = false;
+        self.dirty_state = DirtyState::Clean;
         self.disposed = true;
     }
 
@@ -287,12 +433,18 @@ impl<'gc> BitmapData<'gc> {
         self.transparency = transparency;
     }
 
-    pub fn dirty(&self) -> bool {
-        self.dirty
-    }
-
-    pub fn set_dirty(&mut self, dirty: bool) {
-        self.dirty = dirty;
+    pub fn set_cpu_dirty(&mut self, dirty: bool) {
+        let new_state = if dirty {
+            DirtyState::CpuModified
+        } else {
+            DirtyState::Clean
+        };
+        match self.dirty_state {
+            DirtyState::CpuModified | DirtyState::Clean => self.dirty_state = new_state,
+            DirtyState::GpuModified(_) => {
+                panic!("Attempted to modify CPU dirty state while GPU sync is in progress!")
+            }
+        }
     }
 
     pub fn pixels(&self) -> &[Color] {
@@ -304,7 +456,7 @@ impl<'gc> BitmapData<'gc> {
         self.height = height;
         self.transparency = transparency;
         self.pixels = pixels;
-        self.dirty = true;
+        self.set_cpu_dirty(true);
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {
@@ -366,7 +518,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
         let width = self.width();
         self.pixels[(x + y * width) as usize] = color;
-        self.dirty = true;
+        self.set_cpu_dirty(true);
     }
 
     pub fn set_pixel32(&mut self, x: i32, y: i32, color: Color) {
@@ -1045,16 +1197,19 @@ impl<'gc> BitmapData<'gc> {
     // is dirty
     pub fn update_dirty_texture(&mut self, context: &mut RenderContext) {
         let handle = self.bitmap_handle(context.renderer).unwrap();
-        if self.dirty() {
-            if let Err(e) = context.renderer.update_texture(
-                &handle,
-                self.width(),
-                self.height(),
-                self.pixels_rgba(),
-            ) {
-                tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
+        match &self.dirty_state {
+            DirtyState::CpuModified => {
+                if let Err(e) = context.renderer.update_texture(
+                    &handle,
+                    self.width(),
+                    self.height(),
+                    self.pixels_rgba(),
+                ) {
+                    tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
+                }
+                self.set_cpu_dirty(false);
             }
-            self.set_dirty(false);
+            DirtyState::Clean | DirtyState::GpuModified(_) => {}
         }
     }
 
@@ -1099,13 +1254,13 @@ impl<'gc> BitmapData<'gc> {
         if different {
             Some(Self {
                 pixels,
-                dirty: false,
                 width: bitmap.width,
                 height: bitmap.height,
                 transparency: true,
                 bitmap_handle: None,
                 avm2_object: None,
                 disposed: false,
+                dirty_state: DirtyState::Clean,
             })
         } else {
             None
@@ -1177,17 +1332,7 @@ impl<'gc> BitmapData<'gc> {
 
         match &mut source {
             IBitmapDrawable::BitmapData(data) => {
-                // if try_write fails,
-                // this is caused by recursive render attempt. TODO: support this.
-                if let Ok(mut bitmap_data) = data.try_write(context.gc_context) {
-                    bitmap_data.update_dirty_texture(&mut render_context);
-                    let bitmap_handle = bitmap_data.bitmap_handle(render_context.renderer).unwrap();
-                    render_context.commands.render_bitmap(
-                        bitmap_handle,
-                        render_context.transform_stack.transform(),
-                        smoothing,
-                    );
-                }
+                data.render(smoothing, &mut render_context);
             }
             IBitmapDrawable::DisplayObject(object) => {
                 // Note that we do *not* use `render_base`,
@@ -1216,13 +1361,21 @@ impl<'gc> BitmapData<'gc> {
             commands
         };
 
-        let image = context
-            .renderer
-            .render_offscreen(handle, bitmapdata_width, bitmapdata_height, commands)
-            .and_then(|sync| context.renderer.retrieve_offscreen_texture(sync));
+        let image = context.renderer.render_offscreen(
+            handle,
+            bitmapdata_width,
+            bitmapdata_height,
+            commands,
+        );
 
         match image {
-            Ok(image) => copy_pixels_to_bitmapdata(self, image.data()),
+            Ok(sync_handle) => match self.dirty_state {
+                DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
+                DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                    "Called BitmapData.render while already dirty: {:?}",
+                    self.dirty_state
+                ),
+            },
             Err(ruffle_render::error::Error::Unimplemented) => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }
@@ -1232,7 +1385,7 @@ impl<'gc> BitmapData<'gc> {
 }
 
 pub enum IBitmapDrawable<'gc> {
-    BitmapData(GcCell<'gc, BitmapData<'gc>>),
+    BitmapData(BitmapDataWrapper<'gc>),
     DisplayObject(DisplayObject<'gc>),
 }
 

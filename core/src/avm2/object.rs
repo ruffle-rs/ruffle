@@ -17,7 +17,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -1065,6 +1065,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object's bitmap data
     fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
+        None
+    }
+
+    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
         None
     }
 

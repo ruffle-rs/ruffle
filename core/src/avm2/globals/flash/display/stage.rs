@@ -723,6 +723,26 @@ pub fn stage3ds<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stage.fullScreenSourceRect Stub
+pub fn full_screen_source_rect<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    Ok(Value::Undefined)
+}
+
+/// Stage.fullScreenSourceRect Stub
+pub fn set_full_screen_source_rect<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `Stage`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -811,6 +831,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("displayState", Some(display_state), Some(set_display_state)),
         ("focus", Some(focus), Some(set_focus)),
         ("frameRate", Some(frame_rate), Some(set_frame_rate)),
+        (
+            "fullScreenSourceRect",
+            Some(full_screen_source_rect),
+            Some(set_full_screen_source_rect),
+        ),
         ("scaleMode", Some(scale_mode), Some(set_scale_mode)),
         (
             "showDefaultContextMenu",

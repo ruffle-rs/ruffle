@@ -698,7 +698,9 @@ pub fn draw<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels(activation.context.gc_context);
         bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -752,7 +754,7 @@ pub fn draw<'gc>(
 
         let source = if let Some(source_object) = source.as_display_object() {
             IBitmapDrawable::DisplayObject(source_object)
-        } else if let Some(source_bitmap) = source.as_bitmap_data() {
+        } else if let Some(source_bitmap) = source.as_bitmap_data_wrapper() {
             IBitmapDrawable::BitmapData(source_bitmap)
         } else {
             return Err(format!("BitmapData.draw: unexpected source {source:?}").into());

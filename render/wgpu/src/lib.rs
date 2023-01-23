@@ -11,7 +11,7 @@ use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, SyncHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
 use std::cell::Cell;
@@ -196,31 +196,57 @@ pub enum QueueSyncHandle {
         buffer: Arc<wgpu::Buffer>,
         buffer_dimensions: BufferDimensions,
         size: wgpu::Extent3d,
+        descriptors: Arc<Descriptors>,
     },
     NotCopied {
         handle: BitmapHandle,
         size: wgpu::Extent3d,
+        descriptors: Arc<Descriptors>,
     },
 }
 
-impl SyncHandle for QueueSyncHandle {}
+impl SyncHandle for QueueSyncHandle {
+    fn retrieve_offscreen_texture(
+        self: Box<Self>,
+    ) -> Result<ruffle_render::bitmap::Bitmap, ruffle_render::error::Error> {
+        let image = self.capture();
+        Ok(Bitmap::new(
+            image.dimensions().0,
+            image.dimensions().1,
+            ruffle_render::bitmap::BitmapFormat::Rgba,
+            image.into_raw(),
+        ))
+    }
+}
 
 impl QueueSyncHandle {
-    pub fn capture(self, device: &wgpu::Device, queue: &wgpu::Queue) -> image::RgbaImage {
+    pub fn capture(self) -> image::RgbaImage {
         match self {
             QueueSyncHandle::AlreadyCopied {
                 index,
                 buffer,
                 buffer_dimensions,
                 size,
-            } => buffer_to_image(device, &buffer, &buffer_dimensions, Some(index), size, true),
-            QueueSyncHandle::NotCopied { handle, size } => {
+                descriptors,
+            } => buffer_to_image(
+                &descriptors.device,
+                &buffer,
+                &buffer_dimensions,
+                Some(index),
+                size,
+                true,
+            ),
+            QueueSyncHandle::NotCopied {
+                handle,
+                size,
+                descriptors,
+            } => {
                 let texture = as_texture(&handle);
 
                 let buffer_label = create_debug_label!("Render target buffer");
                 let buffer_dimensions =
                     BufferDimensions::new(size.width as usize, size.height as usize);
-                let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
                     label: buffer_label.as_deref(),
                     size: (buffer_dimensions.padded_bytes_per_row.get() as u64
                         * buffer_dimensions.height as u64),
@@ -228,9 +254,12 @@ impl QueueSyncHandle {
                     mapped_at_creation: false,
                 });
                 let label = create_debug_label!("Render target transfer encoder");
-                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: label.as_deref(),
-                });
+                let mut encoder =
+                    descriptors
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: label.as_deref(),
+                        });
                 encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
                         texture: &texture.texture,
@@ -248,10 +277,16 @@ impl QueueSyncHandle {
                     },
                     size,
                 );
-                let index = queue.submit(Some(encoder.finish()));
+                let index = descriptors.queue.submit(Some(encoder.finish()));
 
-                let image =
-                    buffer_to_image(device, &buffer, &buffer_dimensions, Some(index), size, true);
+                let image = buffer_to_image(
+                    &descriptors.device,
+                    &buffer,
+                    &buffer_dimensions,
+                    Some(index),
+                    size,
+                    true,
+                );
 
                 // After we've read pixels from a texture enough times, we'll store this buffer so that
                 // future reads will be faster (it'll copy as part of the draw process instead)
