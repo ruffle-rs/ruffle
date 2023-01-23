@@ -116,7 +116,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Find the two gradient colors bordering our position.
     var j: u32;
-    for( j = 1u; t > ratio(j); j = j + 1u) {
+    for( j = 1u; j < 16u && t > ratio(j); j = j + 1u) {
         // Noop
     }
     let i = j - 1u;
