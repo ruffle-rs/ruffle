@@ -51,6 +51,23 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `dropTarget`'s getter
+pub fn drop_target<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_movie_clip())
+        .and_then(|o| o.drop_target())
+    {
+        return Ok(mc.object2());
+    }
+
+    Ok(Value::Null)
+}
+
 /// Implements `graphics`.
 pub fn graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -305,6 +322,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Option<NativeMethodImpl>,
     )] = &[
         ("graphics", Some(graphics), None),
+        ("dropTarget", Some(drop_target), None),
         (
             "soundTransform",
             Some(sound_transform),
