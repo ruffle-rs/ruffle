@@ -6,7 +6,7 @@ use symphonia::{
         formats::{self, FormatReader},
         io,
     },
-    default::formats::Mp3Reader as SymphoniaMp3Reader,
+    default::formats::MpaReader as SymphoniaMpaReader,
 };
 use thiserror::Error;
 
@@ -26,7 +26,7 @@ pub enum Error {
 }
 
 pub struct Mp3Decoder {
-    reader: SymphoniaMp3Reader,
+    reader: SymphoniaMpaReader,
     decoder: Box<dyn codecs::Decoder>,
     sample_buf: audio::SampleBuffer<i16>,
     cur_sample: usize,
@@ -42,7 +42,7 @@ impl Mp3Decoder {
     pub fn new<R: 'static + Read + Send + Sync>(reader: R) -> Result<Self, Error> {
         let source = Box::new(io::ReadOnlySource::new(reader)) as Box<dyn io::MediaSource>;
         let source = io::MediaSourceStream::new(source, Default::default());
-        let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
+        let reader = SymphoniaMpaReader::try_new(source, &Default::default())?;
         let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
         let codec_params = track.codec_params.clone();
         let decoder = symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
@@ -67,7 +67,7 @@ impl Mp3Decoder {
     ) -> Result<Self, Error> {
         let source = Box::new(reader) as Box<dyn io::MediaSource>;
         let source = io::MediaSourceStream::new(source, Default::default());
-        let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
+        let reader = SymphoniaMpaReader::try_new(source, &Default::default())?;
         let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
         let codec_params = track.codec_params.clone();
         let decoder = symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
@@ -187,7 +187,7 @@ impl Decoder for Mp3Decoder {
 pub fn mp3_metadata(data: &std::sync::Arc<[u8]>) -> Result<Mp3Metadata, Error> {
     let source =
         io::MediaSourceStream::new(Box::new(Cursor::new(data.clone())), Default::default());
-    let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
+    let reader = SymphoniaMpaReader::try_new(source, &Default::default())?;
     let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
     let num_sample_frames = track.codec_params.n_frames.unwrap_or_default() as u32;
     let sample_rate = track
