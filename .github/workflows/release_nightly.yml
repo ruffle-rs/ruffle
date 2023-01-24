@@ -308,6 +308,12 @@ jobs:
         shell: bash -l {0}
         run: conda install -c conda-forge binaryen
       
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+      
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
@@ -336,7 +342,6 @@ jobs:
         working-directory: web
         shell: bash -l {0}
         run: |
-          npm ci
           npm run build:repro
           npm run docs
 
