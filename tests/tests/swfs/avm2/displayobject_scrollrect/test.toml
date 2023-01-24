@@ -1,0 +1,6 @@
+num_frames = 100
+image = true
+
+[approximations]
+number_patterns = ["\\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\\)"]
+max_relative = 0.00000011920928955078125

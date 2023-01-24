@@ -1,0 +1,5 @@
+num_frames = 1
+
+[approximations]
+# TODO: Flash Player breaks single words that are longer than the line, but we don't.
+epsilon = 30.0

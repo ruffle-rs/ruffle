@@ -1,0 +1,2 @@
+num_frames = 1
+ignore = true # Ignored because Flash Player has a print routine that adds extraneous zeros to things

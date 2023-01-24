@@ -6,6 +6,7 @@ use crate::error::Error;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::rc::Rc;
 use swf;
@@ -205,7 +206,7 @@ pub enum Context3DCommand<'gc> {
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct ViewportDimensions {
     /// The dimensions of the stage's containing viewport.
     pub width: u32,
