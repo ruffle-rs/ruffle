@@ -204,6 +204,7 @@ impl Surface {
             self.size,
             self.format,
             self.sample_count,
+            clear_color,
         );
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
@@ -236,7 +237,7 @@ impl Surface {
                                 }
                             )
                             .as_deref(),
-                            color_attachments: &[target.color_attachments(clear_color)],
+                            color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_depth {
                                 target.depth_attachment(&descriptors, texture_pool)
                             } else {
@@ -322,7 +323,7 @@ impl Surface {
                                 }
                             )
                             .as_deref(),
-                            color_attachments: &[target.color_attachments(clear_color)],
+                            color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_depth {
                                 target.depth_attachment(&descriptors, texture_pool)
                             } else {

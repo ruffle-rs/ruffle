@@ -140,6 +140,7 @@ pub struct CommandTarget {
     sample_count: u32,
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
     color_needs_clear: OnceBool,
+    clear_color: wgpu::Color,
 }
 
 impl CommandTarget {
@@ -149,6 +150,7 @@ impl CommandTarget {
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         sample_count: u32,
+        clear_color: wgpu::Color,
     ) -> Self {
         let frame_buffer = FrameBuffer::new(
             &descriptors,
@@ -192,6 +194,7 @@ impl CommandTarget {
             sample_count,
             whole_frame_bind_group: OnceCell::new(),
             color_needs_clear: OnceBool::new(),
+            clear_color,
         }
     }
 
@@ -207,13 +210,13 @@ impl CommandTarget {
         self.sample_count
     }
 
-    pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder, clear_color: wgpu::Color) {
+    pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder) {
         if self.color_needs_clear.get().is_some() {
             return;
         }
         encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: create_debug_label!("Clearing command target").as_deref(),
-            color_attachments: &[self.color_attachments(clear_color)],
+            color_attachments: &[self.color_attachments()],
             depth_stencil_attachment: None,
         });
     }
@@ -263,16 +266,13 @@ impl CommandTarget {
             .1
     }
 
-    pub fn color_attachments(
-        &self,
-        clear_color: wgpu::Color,
-    ) -> Option<wgpu::RenderPassColorAttachment> {
+    pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
         Some(wgpu::RenderPassColorAttachment {
             view: &self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
             ops: wgpu::Operations {
                 load: if self.color_needs_clear.set(false).is_ok() {
-                    wgpu::LoadOp::Clear(clear_color)
+                    wgpu::LoadOp::Clear(self.clear_color)
                 } else {
                     wgpu::LoadOp::Load
                 },
@@ -322,6 +322,7 @@ impl CommandTarget {
                 pool,
             )
         });
+        self.ensure_cleared(encoder);
         encoder.copy_texture_to_texture(
             wgpu::ImageCopyTextureBase {
                 texture: self
