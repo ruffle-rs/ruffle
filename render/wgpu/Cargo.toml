@@ -11,9 +11,9 @@ version.workspace = true
 wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "c5851275c59b1d5d949b142d6aa973d0bb638181", features = ["naga"] }
 tracing = "0.1.37"
 ruffle_render = { path = "..", features = ["tessellator"] }
-bytemuck = { version = "1.12.3", features = ["derive"] }
+bytemuck = { version = "1.13.0", features = ["derive"] }
 raw-window-handle = "0.5"
-clap = { version = "4.0.32", features = ["derive"], optional = true }
+clap = { version = "4.1.4", features = ["derive"], optional = true }
 enum-map = "2.4.2"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
