@@ -1,5 +1,4 @@
 #import gradient
-#import common
 
 override fn gradient::find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
     let uv = uv * 2.0 - 1.0;
@@ -10,7 +9,7 @@ override fn gradient::find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
 }
 
 @vertex
-fn main_vertex(in: common::VertexInput) -> gradient::VertexOutput {
+fn main_vertex(in: gradient::GradientVertexInput) -> gradient::VertexOutput {
     return gradient::main_vertex(in);
 }
 

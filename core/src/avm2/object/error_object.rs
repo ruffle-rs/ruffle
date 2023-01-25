@@ -13,6 +13,7 @@ use crate::string::WString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::fmt::Debug;
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -39,6 +40,7 @@ pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ErrorObject")
+            .field("class", &self.debug_class_name())
             .field("ptr", &self.0.as_ptr())
             .finish()
     }
@@ -97,6 +99,18 @@ impl<'gc> ErrorObject<'gc> {
     #[cfg(feature = "avm_debug")]
     fn call_stack(&self) -> Ref<CallStack<'gc>> {
         Ref::map(self.0.read(), |r| &r.call_stack)
+    }
+
+    fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
+        self.0
+            .try_read()
+            .map(|obj| {
+                obj.base
+                    .instance_of()
+                    .map(|cls| cls.debug_class_name())
+                    .unwrap_or_else(|| Box::new("None"))
+            })
+            .unwrap_or_else(|err| Box::new(err))
     }
 }
 

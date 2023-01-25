@@ -2,7 +2,6 @@
 
 use crate::cli_options::AnalyzeOpt;
 use crate::file_results::{FileResults, Step};
-use std::cmp::max;
 use std::fs::File;
 
 /// Generate and print statistics related to a scan's results
@@ -30,22 +29,12 @@ pub fn analyze(results: impl Iterator<Item = FileResults>) {
 
     println!("Scanned {total} swf files.");
 
-    let digits = max(
-        (start as f64).log10().ceil() as usize,
-        max(
-            (read as f64).log10().ceil() as usize,
-            max(
-                (decompress as f64).log10().ceil() as usize,
-                max(
-                    (parse as f64).log10().ceil() as usize,
-                    max(
-                        (execute as f64).log10().ceil() as usize,
-                        (complete as f64).log10().ceil() as usize,
-                    ),
-                ),
-            ),
-        ),
-    ) + 4;
+    let digits = [start, read, decompress, parse, execute, complete]
+        .iter()
+        .map(|x| (*x as f64).log10().ceil() as usize)
+        .max()
+        .unwrap()
+        + 4;
 
     println!();
 

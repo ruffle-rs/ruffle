@@ -9,10 +9,10 @@ version.workspace = true
 
 [dependencies]
 bitflags = "1.3.2"
-naga = { git = "https://github.com/gfx-rs/naga", rev = "e7fc8e6" }
+naga = { git = "https://github.com/gfx-rs/naga", rev = "1be8024" }
 num-derive = "0.3.3"
 num-traits = "0.2.15"
 
 [dev-dependencies]
 insta = "1.26.0"
-naga = { git = "https://github.com/gfx-rs/naga", rev = "e7fc8e6", features = ["wgsl-out", "validate"] }
+naga = { git = "https://github.com/gfx-rs/naga", rev = "1be8024", features = ["wgsl-out", "validate"] }
