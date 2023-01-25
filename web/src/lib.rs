@@ -1503,6 +1503,7 @@ fn web_to_ruffle_key_code(key_code: &str) -> KeyCode {
         "NumpadSubtract" => KeyCode::NumpadMinus,
         "NumpadDecimal" => KeyCode::NumpadPeriod,
         "NumpadDivide" => KeyCode::NumpadSlash,
+        "NumpadEnter" => KeyCode::Return,
         "PageUp" => KeyCode::PgUp,
         "PageDown" => KeyCode::PgDown,
         "End" => KeyCode::End,
