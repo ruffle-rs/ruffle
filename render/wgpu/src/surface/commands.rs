@@ -487,7 +487,7 @@ pub fn chunk_blends<'a>(
                     },
                     texture_pool,
                 );
-                target.ensure_cleared(draw_encoder, clear_color);
+                target.ensure_cleared(draw_encoder);
 
                 match BlendType::from(blend_mode) {
                     BlendType::Trivial(blend_mode) => {
