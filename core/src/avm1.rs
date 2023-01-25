@@ -12,7 +12,7 @@ mod callable_value;
 mod debug;
 mod error;
 mod fscommand;
-mod globals;
+pub(crate) mod globals;
 mod object;
 mod property;
 mod property_map;
