@@ -177,10 +177,17 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        // When defininging a local in a with scope, the value should be defined in the first non-with parent scope
-        // This will carry up the scope chain till we find one
+        // When defining a local in a with scope, we first need to check if that local already exists on the with target
+        // If it does, then the property of the target itself should be modified
+        // If it doesn't, then the property should be defined in the first non-with parent scope
         if let (ScopeClass::With, Some(parent)) = (self.class, self.parent) {
-            parent.define_local(name, value, activation)
+            // Does this property already exist on the target?
+            if self.locals().has_own_property(activation, name) {
+                self.locals().set(name, value, activation)
+            } else {
+                // Otherwise, carry up the scope chain
+                parent.define_local(name, value, activation)
+            }
         } else {
             self.locals().set(name, value, activation)
         }
