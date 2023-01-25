@@ -1,5 +1,6 @@
 ﻿package {
     import flash.display.MovieClip;
+	import flash.system.fscommand;
     public class Test extends MovieClip {
         public function Test() {
 	trace("// Trying to raise and catch an error")
@@ -49,6 +50,7 @@ function try_passing() {
 
 trace("// Errors propagate through the stack");
 try_passing();
+fscommand("quit");
 
 }}}
 

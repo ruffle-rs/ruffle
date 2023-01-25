@@ -17,6 +17,7 @@ pub struct TestOptions {
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparison: Option<ImageComparison>,
     pub ignore: bool,
+    pub fpcompare: bool,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
 }
@@ -29,6 +30,7 @@ impl Default for TestOptions {
             sleep_to_meet_frame_rate: false,
             image_comparison: None,
             ignore: false,
+            fpcompare: true,
             approximations: None,
             player_options: PlayerOptions::default(),
         }

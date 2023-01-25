@@ -14,12 +14,16 @@ ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_input_format = { path = "input-format" }
 image = { version = "0.24.5", default-features = false, features = ["png"] }
 regex = "1.7.1"
+tempfile = "3.3.0"
+notify = "5.0.0"
+anyhow = "1.0.68"
 
 [features]
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
 imgtests = []
+fpcompare = []
 
 [dev-dependencies]
 approx = "0.5.1"

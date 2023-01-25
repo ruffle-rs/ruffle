@@ -137,6 +137,123 @@ impl Test {
             );
         }
 
+        #[cfg(feature = "fpcompare")]
+        run_flash_player(&swf_path, &expected_output, options);
+
         Ok(())
     }
+}
+
+
+#[allow(dead_code)]
+fn run_flash_player(swf_path: &str, expected_output: &str, options: &TestOptions) {
+    if !options.fpcompare {
+        return;
+    }
+
+    let dir = TempDir::new().unwrap();
+    let agent_script_path = PathBuf::new()
+        .join(env!("CARGO_MANIFEST_DIR"))
+        .join("fprunner")
+        .join("agent.js");
+
+    let mm_cfg_path = PathBuf::new()
+        .join(env!("CARGO_MANIFEST_DIR"))
+        .join("fprunner")
+        .join("mm.cfg")
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    let frida_globals = format!("{{\"MM_CFG_PATH\": \"{mm_cfg_path}\"}}");
+
+    let abs_swf_path = std::fs::canonicalize(swf_path).unwrap();
+
+    let fp_path = if let Ok(path) = std::env::var("FLASH_PLAYER_DEBUGGER") {
+        path
+    } else {
+        PathBuf::new()
+            .join(env!("CARGO_MANIFEST_DIR"))
+            .join("fprunner")
+            .join("download")
+            .join("flashplayerdebugger")
+            .to_str()
+            .unwrap()
+            .to_string()
+    };
+
+    let frida_out_path = dir.path().join("frida_stdout.log");
+    let frida_out = File::create(&frida_out_path).unwrap();
+
+    let flash_log_path = dir.path().join("flash_log.txt");
+    // Create it in advance so that the `notify` crate can watch it
+    File::create(&flash_log_path).unwrap();
+
+    struct FlashPlayerKiller {
+        pid_location: PathBuf,
+    }
+
+    impl Drop for FlashPlayerKiller {
+        fn drop(&mut self) {
+            if let Ok(pid) = std::fs::read_to_string(&self.pid_location) {
+                let pid = pid.trim().parse::<u32>().unwrap();
+                let status = std::process::Command::new("kill")
+                    .arg(pid.to_string())
+                    .status()
+                    .unwrap_or_else(|e| {
+                        panic!("Failed to spawn `kill` for flash player with pid {pid}: {e}",)
+                    });
+                if !status.success() {
+                    eprintln!("Failed to kill flash player with pid {pid}");
+                }
+            }
+        }
+    }
+
+    let _killer = FlashPlayerKiller {
+        pid_location: dir.path().join("flashplayer_pid"),
+    };
+
+    let _child = Command::new("frida")
+        .args(&[
+            "-l",
+            agent_script_path.to_str().unwrap(),
+            "--parameters",
+            &frida_globals,
+            "-f",
+            &fp_path,
+            abs_swf_path.to_str().unwrap(),
+        ])
+        .current_dir(&dir)
+        .stdin(Stdio::piped())
+        .stdout(frida_out.try_clone().unwrap())
+        .stderr(frida_out.try_clone().unwrap())
+        .spawn()
+        .unwrap();
+
+    let mut fp_output = match tail_lines(
+        &flash_log_path,
+        Duration::new(5, 0),
+        Duration::new(5, 0),
+        expected_output.lines().count(),
+    ) {
+        Ok(fp_output) => fp_output,
+        Err(e) => {
+            eprintln!(
+                "Failed to get output from Flash Player. Frida logs: {}",
+                std::fs::read_to_string(frida_out_path).unwrap()
+            );
+            panic!("Failed to get output: {e:?}");
+        }
+    };
+
+    // Normalize this in the same way that we normalize our own trace output.
+    fp_output = fp_output.replace('\r', "\n");
+
+    assert_eq!(
+        fp_output,
+        expected_output,
+        "Real Flash Player output does not match expected output\n\nFrida output:\n```\n{}```\n",
+        std::fs::read_to_string(&frida_out_path).unwrap(),
+    );
 }

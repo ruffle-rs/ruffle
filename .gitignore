@@ -10,3 +10,6 @@ target/
 
 # Flash recovery files
 RECOVER_*.fla
+
+# Downloaded flashplayer
+tests/fprunner/download
