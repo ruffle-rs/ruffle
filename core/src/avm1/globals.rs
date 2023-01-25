@@ -1168,7 +1168,7 @@ pub fn create_globals<'gc>(
 /// The depth of objects placed on the timeline in the Flash IDE start from 0 in the SWF,
 /// but are negative when queried from MovieClip.getDepth().
 /// Add this to convert from AS -> SWF depth.
-const AVM_DEPTH_BIAS: i32 = 16384;
+pub const AVM_DEPTH_BIAS: i32 = 16384;
 
 /// The maximum depth that the AVM will allow you to swap or attach clips to.
 /// What is the derivation of this number...?
