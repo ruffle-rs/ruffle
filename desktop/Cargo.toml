@@ -18,7 +18,7 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 generational-arena = "0.2.8"
 tracing = "0.1.37"
 winit = "0.27.5"
-webbrowser = "0.8.5"
+webbrowser = "0.8.6"
 url = "2.3.1"
 arboard = "3.2.0"
 dirs = "4.0"
