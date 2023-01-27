@@ -1,8 +1,12 @@
+use crate::assert_eq;
 use crate::set_logger;
 use crate::util::options::TestOptions;
-use crate::util::runner::{test_swf_approx, test_swf_with_hooks, RUN_IMG_TESTS};
+use crate::util::runner::{run_swf, RUN_IMG_TESTS};
 use anyhow::{Context, Result};
+use ruffle_core::Player;
+use ruffle_input_format::InputInjector;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 pub struct Test {
     pub options: TestOptions,
@@ -41,29 +45,20 @@ impl Test {
         )
     }
 
-    pub fn run(self) -> Result<(), libtest_mimic::Failed> {
+    pub fn run(
+        self,
+        before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+        before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
+    ) -> std::result::Result<(), libtest_mimic::Failed> {
         set_logger();
-
-        if let Some(approximations) = &self.options.approximations {
-            test_swf_approx(
-                &self,
-                &approximations.number_patterns(),
-                |actual, expected| approximations.compare(actual, expected),
-            )
-            .map_err(|e| e.to_string().into())
+        let injector = if self.input_path.is_file() {
+            InputInjector::from_file(&self.input_path)?
         } else {
-            test_swf_with_hooks(
-                &self,
-                |player| {
-                    if let Some(player_options) = &self.options.player_options {
-                        player_options.setup(player);
-                    }
-                    Ok(())
-                },
-                |_| Ok(()),
-            )
-            .map_err(|e| e.to_string().into())
-        }
+            InputInjector::empty()
+        };
+        let output = run_swf(&self, injector, before_start, before_end)?;
+        self.compare_output(&output)?;
+        Ok(())
     }
 
     pub fn should_run(&self) -> bool {
@@ -74,5 +69,87 @@ impl Test {
             return false;
         }
         return true;
+    }
+
+    pub fn compare_output(&self, actual_output: &str) -> Result<()> {
+        let mut expected_output = std::fs::read_to_string(&self.output_path)?.replace("\r\n", "\n");
+
+        // Strip a trailing newline if it has one.
+        if expected_output.ends_with('\n') {
+            expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
+        }
+
+        if let Some(approximations) = &self.options.approximations {
+            std::assert_eq!(
+                actual_output.lines().count(),
+                expected_output.lines().count(),
+                "# of lines of output didn't match"
+            );
+
+            for (actual, expected) in actual_output.lines().zip(expected_output.lines()) {
+                // If these are numbers, compare using approx_eq.
+                if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>())
+                {
+                    // NaNs should be able to pass in an approx test.
+                    if actual.is_nan() && expected.is_nan() {
+                        continue;
+                    }
+
+                    approximations.compare(actual, expected);
+                } else {
+                    let mut found = false;
+
+                    // Check each of the user-provided regexes for a match
+                    for pattern in approximations.number_patterns() {
+                        if let (Some(actual_captures), Some(expected_captures)) =
+                            (pattern.captures(actual), pattern.captures(expected))
+                        {
+                            found = true;
+                            std::assert_eq!(
+                                actual_captures.len(),
+                                expected_captures.len(),
+                                "Differing numbers of regex captures"
+                            );
+
+                            // Each capture group (other than group 0, which is always the entire regex
+                            // match) represents a floating-point value
+                            for (actual_val, expected_val) in actual_captures
+                                .iter()
+                                .skip(1)
+                                .zip(expected_captures.iter().skip(1))
+                            {
+                                let actual_num = actual_val
+                                    .expect("Missing capture group value for 'actual'")
+                                    .as_str()
+                                    .parse::<f64>()
+                                    .expect("Failed to parse 'actual' capture group as float");
+                                let expected_num = expected_val
+                                    .expect("Missing capture group value for 'expected'")
+                                    .as_str()
+                                    .parse::<f64>()
+                                    .expect("Failed to parse 'expected' capture group as float");
+                                approximations.compare(actual_num, expected_num);
+                            }
+                            let modified_actual = pattern.replace(actual, "");
+                            let modified_expected = pattern.replace(expected, "");
+
+                            assert_eq!(modified_actual, modified_expected);
+                            break;
+                        }
+                    }
+
+                    if !found {
+                        assert_eq!(actual, expected);
+                    }
+                }
+            }
+        } else {
+            assert_eq!(
+                actual_output, expected_output,
+                "ruffle output != flash player output"
+            );
+        }
+
+        Ok(())
     }
 }

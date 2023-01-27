@@ -85,7 +85,7 @@ pub struct PlayerOptions {
 }
 
 impl PlayerOptions {
-    pub fn setup(&self, player: Arc<Mutex<Player>>) {
+    pub fn setup(&self, player: &Arc<Mutex<Player>>) {
         if let Some(max_execution_duration) = self.max_execution_duration {
             player
                 .lock()

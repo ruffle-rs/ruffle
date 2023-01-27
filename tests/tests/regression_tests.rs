@@ -34,7 +34,7 @@ fn main() {
                 .context("Couldn't create test")
                 .unwrap();
             let ignore = !test.should_run();
-            let mut trial = Trial::test(test.name.to_string(), || test.run());
+            let mut trial = Trial::test(test.name.to_string(), || test.run(|_| Ok(()), |_| Ok(())));
             if ignore {
                 trial = trial.with_ignored_flag(true);
             }
@@ -43,17 +43,13 @@ fn main() {
         .collect();
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    tests.push(Trial::test("shared_object_avm1", || {
-        shared_object_avm1().map_err(|e| e.to_string().into())
-    }));
-    tests.push(Trial::test("shared_object_avm2", || {
-        shared_object_avm2().map_err(|e| e.to_string().into())
-    }));
+    tests.push(Trial::test("shared_object_avm1", || shared_object_avm1()));
+    tests.push(Trial::test("shared_object_avm2", || shared_object_avm2()));
     tests.push(Trial::test("external_interface_avm1", || {
-        external_interface_avm1().map_err(|e| e.to_string().into())
+        external_interface_avm1()
     }));
     tests.push(Trial::test("external_interface_avm2", || {
-        external_interface_avm2().map_err(|e| e.to_string().into())
+        external_interface_avm2()
     }));
 
     tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
