@@ -1,7 +1,10 @@
+use anyhow::Result;
 use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::{Player, ViewportDimensions};
 use serde::Deserialize;
+use std::fs;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -26,6 +29,12 @@ impl Default for TestOptions {
             approximations: None,
             player_options: None,
         }
+    }
+}
+
+impl TestOptions {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self> {
+        Ok(toml::from_str(&fs::read_to_string(path)?)?)
     }
 }
 

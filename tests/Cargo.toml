@@ -29,6 +29,7 @@ serde = "1.0"
 toml = "0.5.10"
 libtest-mimic = "0.6.0"
 walkdir = "2.3.2"
+anyhow = "1.0"
 
 [[test]]
 name = "tests"
