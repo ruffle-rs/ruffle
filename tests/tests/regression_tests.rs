@@ -30,7 +30,7 @@ fn main() {
         .map(Result::unwrap)
         .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
         .map(|file| {
-            let test = Test::from_options(file.path(), root)
+            let test = Test::from_options_file(file.path(), root)
                 .context("Couldn't create test")
                 .unwrap();
             let ignore = !test.should_run();
