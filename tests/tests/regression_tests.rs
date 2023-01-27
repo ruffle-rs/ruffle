@@ -25,7 +25,6 @@ use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::{target::TextureTarget, wgpu};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -701,8 +700,7 @@ fn main() {
         .map(Result::unwrap)
         .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
         .map(|file| {
-            let options: TestOptions =
-                toml::from_str(&fs::read_to_string(&file.path()).unwrap()).unwrap();
+            let options = TestOptions::read(file.path()).unwrap();
             let test_dir = file.path().parent().unwrap().to_owned();
             let name = test_dir
                 .strip_prefix(root)
