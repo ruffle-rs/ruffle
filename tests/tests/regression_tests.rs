@@ -2,7 +2,6 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
 
-use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::backend::{
     log::LogBackend,
@@ -15,15 +14,15 @@ use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
+use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 
 use libtest_mimic::{Arguments, Trial};
+use options::TestOptions;
 #[cfg(feature = "imgtests")]
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 #[cfg(feature = "imgtests")]
 use ruffle_render_wgpu::{target::TextureTarget, wgpu};
-use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fs;
@@ -32,79 +31,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-#[derive(Deserialize)]
-#[serde(default)]
-struct TestOptions {
-    num_frames: u32,
-    sleep_to_meet_frame_rate: bool,
-    image: bool,
-    ignore: bool,
-    approximations: Option<Approximations>,
-    player_options: Option<PlayerOptions>,
-}
-
-impl Default for TestOptions {
-    fn default() -> Self {
-        Self {
-            num_frames: 1,
-            sleep_to_meet_frame_rate: false,
-            image: false,
-            ignore: false,
-            approximations: None,
-            player_options: None,
-        }
-    }
-}
-
-#[derive(Deserialize, Default)]
-#[serde(default)]
-struct Approximations {
-    number_patterns: Vec<String>,
-    epsilon: Option<f64>,
-    max_relative: Option<f64>,
-}
-
-impl Approximations {
-    pub fn compare(&self, actual: f64, expected: f64) {
-        match (self.epsilon, self.max_relative) {
-            (Some(epsilon), Some(max_relative)) => assert_relative_eq!(
-                actual,
-                expected,
-                epsilon = epsilon,
-                max_relative = max_relative
-            ),
-            (Some(epsilon), None) => assert_relative_eq!(actual, expected, epsilon = epsilon),
-            (None, Some(max_relative)) => {
-                assert_relative_eq!(actual, expected, max_relative = max_relative)
-            }
-            (None, None) => assert_relative_eq!(actual, expected),
-        }
-    }
-}
-
-#[derive(Deserialize, Default)]
-#[serde(default)]
-struct PlayerOptions {
-    max_execution_duration: Option<Duration>,
-    viewport_dimensions: Option<ViewportDimensions>,
-}
-
-impl PlayerOptions {
-    pub fn setup(&self, player: Arc<Mutex<Player>>) {
-        if let Some(max_execution_duration) = self.max_execution_duration {
-            player
-                .lock()
-                .unwrap()
-                .set_max_execution_duration(max_execution_duration);
-        }
-        if let Some(viewport_dimensions) = self.viewport_dimensions {
-            player
-                .lock()
-                .unwrap()
-                .set_viewport_dimensions(viewport_dimensions);
-        }
-    }
-}
+mod options;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
@@ -735,17 +662,12 @@ fn run_test(options: TestOptions, root: &Path) -> Result<(), libtest_mimic::Fail
     set_logger();
 
     if let Some(approximations) = &options.approximations {
-        let num_patterns: Vec<Regex> = approximations
-            .number_patterns
-            .iter()
-            .map(|p| Regex::new(&p).unwrap())
-            .collect();
         test_swf_approx(
             root.join("test.swf").to_str().unwrap(),
             options.num_frames,
             root.join("input.json").to_str().unwrap(),
             root.join("output.txt").to_str().unwrap(),
-            &num_patterns,
+            &approximations.number_patterns(),
             options.image,
             |actual, expected| approximations.compare(actual, expected),
         )
