@@ -2,19 +2,14 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
 
-use ruffle_core::backend::{
-    log::LogBackend,
-    storage::{MemoryStorageBackend, StorageBackend},
-};
+use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 
 use crate::external_interface::tests::{external_interface_avm1, external_interface_avm2};
 use crate::util::runner::test_swf_with_hooks;
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
-use std::cell::RefCell;
 use std::path::Path;
-use std::rc::Rc;
 use util::test::Test;
 
 mod external_interface;
@@ -133,22 +128,6 @@ fn shared_object_avm2() -> Result<()> {
     )?;
 
     Ok(())
-}
-
-struct TestLogBackend {
-    trace_output: Rc<RefCell<Vec<String>>>,
-}
-
-impl TestLogBackend {
-    pub fn new(trace_output: Rc<RefCell<Vec<String>>>) -> Self {
-        Self { trace_output }
-    }
-}
-
-impl LogBackend for TestLogBackend {
-    fn avm_trace(&self, message: &str) {
-        self.trace_output.borrow_mut().push(message.to_string());
-    }
 }
 
 fn main() {

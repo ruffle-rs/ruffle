@@ -1,6 +1,7 @@
-use crate::{TestLogBackend, RUN_IMG_TESTS};
+use crate::RUN_IMG_TESTS;
 use anyhow::{anyhow, Result};
 use regex::Regex;
+use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::limits::ExecutionLimit;
@@ -16,6 +17,22 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+struct TestLogBackend {
+    trace_output: Rc<RefCell<Vec<String>>>,
+}
+
+impl TestLogBackend {
+    pub fn new(trace_output: Rc<RefCell<Vec<String>>>) -> Self {
+        Self { trace_output }
+    }
+}
+
+impl LogBackend for TestLogBackend {
+    fn avm_trace(&self, message: &str) {
+        self.trace_output.borrow_mut().push(message.to_string());
+    }
+}
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
