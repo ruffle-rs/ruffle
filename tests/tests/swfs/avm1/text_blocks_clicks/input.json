@@ -24,31 +24,5 @@
   },
   {
     "type": "Wait"
-  },
-
-  {
-    "type": "MouseMove",
-    "pos": [247, 249]
-  },
-  {
-    "type": "Wait"
-  },
-
-  {
-    "type": "MouseDown",
-    "pos": [247, 249],
-    "btn": "Left"
-  },
-  {
-    "type": "Wait"
-  },
-
-  {
-    "type": "MouseUp",
-    "pos": [247, 249],
-    "btn": "Left"
-  },
-  {
-    "type": "Wait"
   }
 ]
