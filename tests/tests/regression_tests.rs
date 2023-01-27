@@ -47,10 +47,10 @@ type Error = Box<dyn std::error::Error>;
 fn external_interface_avm1() -> Result<(), Error> {
     set_logger();
     test_swf_with_hooks(
-        "tests/swfs/avm1/external_interface/test.swf",
+        Path::new("tests/swfs/avm1/external_interface/test.swf"),
         1,
-        "tests/swfs/avm1/external_interface/input.json",
-        "tests/swfs/avm1/external_interface/output.txt",
+        Path::new("tests/swfs/avm1/external_interface/input.json"),
+        Path::new("tests/swfs/avm1/external_interface/output.txt"),
         |player| {
             player
                 .lock()
@@ -101,10 +101,10 @@ fn external_interface_avm1() -> Result<(), Error> {
 fn external_interface_avm2() -> Result<(), Error> {
     set_logger();
     test_swf_with_hooks(
-        "tests/swfs/avm2/external_interface/test.swf",
+        Path::new("tests/swfs/avm2/external_interface/test.swf"),
         1,
-        "tests/swfs/avm2/external_interface/input.json",
-        "tests/swfs/avm2/external_interface/output.txt",
+        Path::new("tests/swfs/avm2/external_interface/input.json"),
+        Path::new("tests/swfs/avm2/external_interface/output.txt"),
         |player| {
             player
                 .lock()
@@ -152,10 +152,10 @@ fn shared_object_avm1() -> Result<(), Error> {
 
     // Initial run; no shared object data.
     test_swf_with_hooks(
-        "tests/swfs/avm1/shared_object/test.swf",
+        Path::new("tests/swfs/avm1/shared_object/test.swf"),
         1,
-        "tests/swfs/avm1/shared_object/input1.json",
-        "tests/swfs/avm1/shared_object/output1.txt",
+        Path::new("tests/swfs/avm1/shared_object/input1.json"),
+        Path::new("tests/swfs/avm1/shared_object/output1.txt"),
         |_player| Ok(()),
         |player| {
             // Save the storage backend for next run.
@@ -178,10 +178,10 @@ fn shared_object_avm1() -> Result<(), Error> {
 
     // Re-run the SWF, verifying that the shared object persists.
     test_swf_with_hooks(
-        "tests/swfs/avm1/shared_object/test.swf",
+        Path::new("tests/swfs/avm1/shared_object/test.swf"),
         1,
-        "tests/swfs/avm1/shared_object/input2.json",
-        "tests/swfs/avm1/shared_object/output2.txt",
+        Path::new("tests/swfs/avm1/shared_object/input2.json"),
+        Path::new("tests/swfs/avm1/shared_object/output2.txt"),
         |player| {
             // Swap in the previous storage backend.
             let mut player = player.lock().unwrap();
@@ -205,10 +205,10 @@ fn shared_object_avm2() -> Result<(), Error> {
 
     // Initial run; no shared object data.
     test_swf_with_hooks(
-        "tests/swfs/avm2/shared_object/test.swf",
+        Path::new("tests/swfs/avm2/shared_object/test.swf"),
         1,
-        "tests/swfs/avm2/shared_object/input1.json",
-        "tests/swfs/avm2/shared_object/output1.txt",
+        Path::new("tests/swfs/avm2/shared_object/input1.json"),
+        Path::new("tests/swfs/avm2/shared_object/output1.txt"),
         |_player| Ok(()),
         |player| {
             // Save the storage backend for next run.
@@ -231,10 +231,10 @@ fn shared_object_avm2() -> Result<(), Error> {
 
     // Re-run the SWF, verifying that the shared object persists.
     test_swf_with_hooks(
-        "tests/swfs/avm2/shared_object/test.swf",
+        Path::new("tests/swfs/avm2/shared_object/test.swf"),
         1,
-        "tests/swfs/avm2/shared_object/input2.json",
-        "tests/swfs/avm2/shared_object/output2.txt",
+        Path::new("tests/swfs/avm2/shared_object/input2.json"),
+        Path::new("tests/swfs/avm2/shared_object/output2.txt"),
         |player| {
             // Swap in the previous storage backend.
             let mut player = player.lock().unwrap();
@@ -281,10 +281,10 @@ macro_rules! assert_eq {
 /// Tests that the trace output matches the given expected output.
 #[allow(clippy::too_many_arguments)]
 fn test_swf_with_hooks(
-    swf_path: &str,
+    swf_path: &Path,
     num_frames: u32,
-    simulated_input_path: &str,
-    expected_output_path: &str,
+    simulated_input_path: &Path,
+    expected_output_path: &Path,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     check_img: bool,
@@ -320,10 +320,10 @@ fn test_swf_with_hooks(
 /// Tests that the trace output matches the given expected output.
 /// If a line has a floating point value, it will be compared approxinmately using the given epsilon.
 fn test_swf_approx(
-    swf_path: &str,
+    swf_path: &Path,
     num_frames: u32,
-    simulated_input_path: &str,
-    expected_output_path: &str,
+    simulated_input_path: &Path,
+    expected_output_path: &Path,
     num_patterns: &[Regex],
     check_img: bool,
     approx_assert_fn: impl Fn(f64, f64),
@@ -422,7 +422,7 @@ fn test_swf_approx(
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
 fn run_swf(
-    swf_path: &str,
+    swf_path: &Path,
     num_frames: u32,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     mut injector: InputInjector,
@@ -663,10 +663,10 @@ fn run_test(test: Test) -> Result<(), libtest_mimic::Failed> {
 
     if let Some(approximations) = &test.options.approximations {
         test_swf_approx(
-            test.swf_path.to_str().unwrap(),
+            &test.swf_path,
             test.options.num_frames,
-            test.input_path.to_str().unwrap(),
-            test.output_path.to_str().unwrap(),
+            &test.input_path,
+            &test.output_path,
             &approximations.number_patterns(),
             test.options.image,
             |actual, expected| approximations.compare(actual, expected),
@@ -674,10 +674,10 @@ fn run_test(test: Test) -> Result<(), libtest_mimic::Failed> {
         .map_err(|e| e.to_string().into())
     } else {
         test_swf_with_hooks(
-            test.swf_path.to_str().unwrap(),
+            &test.swf_path,
             test.options.num_frames,
-            test.input_path.to_str().unwrap(),
-            test.output_path.to_str().unwrap(),
+            &test.input_path,
+            &test.output_path,
             |player| {
                 if let Some(player_options) = &test.options.player_options {
                     player_options.setup(player);
