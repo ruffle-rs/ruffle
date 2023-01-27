@@ -19,7 +19,10 @@ regex = "1.7.1"
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = ["ruffle_render_wgpu"]
+imgtests = ["render"]
+
+# Enable running render based tests.
+render = ["ruffle_render_wgpu"]
 
 [dev-dependencies]
 approx = "0.5.1"

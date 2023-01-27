@@ -7,10 +7,6 @@ use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
-#[cfg(feature = "imgtests")]
-use ruffle_render_wgpu::backend::WgpuRenderBackend;
-#[cfg(feature = "imgtests")]
-use ruffle_render_wgpu::{target::TextureTarget, wgpu};
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
@@ -50,43 +46,7 @@ pub fn run_swf(
     let frame_time_duration = Duration::from_millis(frame_time as u64);
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
-    #[allow(unused_mut)]
-    let mut builder = PlayerBuilder::new();
-
-    #[cfg(feature = "imgtests")]
-    if test.options.image {
-        const BACKEND: wgpu::Backends = wgpu::Backends::PRIMARY;
-
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: BACKEND,
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
-        });
-
-        let descriptors =
-            futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
-                BACKEND,
-                instance,
-                None,
-                Default::default(),
-                None,
-            ))
-            .map_err(|e| anyhow!(e.to_string()))?;
-
-        let width = movie.width().to_pixels() as u32;
-        let height = movie.height().to_pixels() as u32;
-
-        let target = TextureTarget::new(&descriptors.device, (width, height))
-            .map_err(|e| anyhow!(e.to_string()))?;
-
-        builder = builder
-            .with_renderer(
-                WgpuRenderBackend::new(Arc::new(descriptors), target, 4)
-                    .map_err(|e| anyhow!(e.to_string()))?,
-            )
-            .with_viewport_dimensions(width, height, 1.0);
-    };
-
-    builder = builder
+    let builder = PlayerBuilder::new()
         .with_log(TestLogBackend::new(trace_output.clone()))
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor)?)
         .with_max_execution_duration(Duration::from_secs(300))
@@ -94,11 +54,15 @@ pub fn run_swf(
             movie.width().to_pixels() as u32,
             movie.height().to_pixels() as u32,
             1.0,
-        )
-        .with_movie(movie);
+        );
 
     // Test player options may override anything set above
-    let player = test.options.player_options.setup(builder).build();
+    let player = test
+        .options
+        .player_options
+        .setup(builder, &movie)?
+        .with_movie(movie)
+        .build();
 
     before_start(player.clone())?;
 
@@ -162,6 +126,9 @@ pub fn run_swf(
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
     if test.options.image {
+        use ruffle_render_wgpu::backend::WgpuRenderBackend;
+        use ruffle_render_wgpu::target::TextureTarget;
+
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
         let renderer = player_lock
@@ -196,7 +163,7 @@ pub fn run_swf(
         if !matches {
             let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
-            panic!("Test output does not match expected image - saved actual image to {actual_image_path:?}");
+            return Err(anyhow!("Test output does not match expected image - saved actual image to {actual_image_path:?}"));
         }
     }
 
