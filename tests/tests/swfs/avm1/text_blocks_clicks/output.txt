@@ -2,7 +2,3 @@ click_mc.onMouseDown at 234, 197
 click_mc.onPress at 234, 197
 // dragger._droptarget
 /texts
-click_mc.onMouseDown at 247, 249
-click_mc.onPress at 247, 249
-// dragger._droptarget
-/texts/instance1
