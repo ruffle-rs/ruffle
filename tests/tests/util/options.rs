@@ -1,11 +1,10 @@
 use anyhow::Result;
 use approx::assert_relative_eq;
 use regex::Regex;
-use ruffle_core::{Player, ViewportDimensions};
+use ruffle_core::{PlayerBuilder, ViewportDimensions};
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[derive(Deserialize)]
@@ -17,7 +16,7 @@ pub struct TestOptions {
     pub image: bool,
     pub ignore: bool,
     pub approximations: Option<Approximations>,
-    pub player_options: Option<PlayerOptions>,
+    pub player_options: PlayerOptions,
 }
 
 impl Default for TestOptions {
@@ -29,7 +28,7 @@ impl Default for TestOptions {
             image: false,
             ignore: false,
             approximations: None,
-            player_options: None,
+            player_options: PlayerOptions::default(),
         }
     }
 }
@@ -85,18 +84,17 @@ pub struct PlayerOptions {
 }
 
 impl PlayerOptions {
-    pub fn setup(&self, player: &Arc<Mutex<Player>>) {
+    pub fn setup(&self, mut player_builder: PlayerBuilder) -> PlayerBuilder {
         if let Some(max_execution_duration) = self.max_execution_duration {
-            player
-                .lock()
-                .unwrap()
-                .set_max_execution_duration(max_execution_duration);
+            player_builder = player_builder.with_max_execution_duration(max_execution_duration);
         }
         if let Some(viewport_dimensions) = self.viewport_dimensions {
-            player
-                .lock()
-                .unwrap()
-                .set_viewport_dimensions(viewport_dimensions);
+            player_builder = player_builder.with_viewport_dimensions(
+                viewport_dimensions.width,
+                viewport_dimensions.height,
+                viewport_dimensions.scale_factor,
+            );
         }
+        player_builder
     }
 }

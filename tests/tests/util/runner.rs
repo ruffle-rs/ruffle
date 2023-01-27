@@ -86,7 +86,7 @@ pub fn run_swf(
             .with_viewport_dimensions(width, height, 1.0);
     };
 
-    let player = builder
+    builder = builder
         .with_log(TestLogBackend::new(trace_output.clone()))
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor)?)
         .with_max_execution_duration(Duration::from_secs(300))
@@ -95,12 +95,10 @@ pub fn run_swf(
             movie.height().to_pixels() as u32,
             1.0,
         )
-        .with_movie(movie)
-        .build();
+        .with_movie(movie);
 
-    if let Some(options) = &test.options.player_options {
-        options.setup(&player);
-    }
+    // Test player options may override anything set above
+    let player = test.options.player_options.setup(builder).build();
 
     before_start(player.clone())?;
 
