@@ -1,3 +1,4 @@
+use crate::assert_eq;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use regex::Regex;

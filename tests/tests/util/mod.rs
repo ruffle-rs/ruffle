@@ -21,7 +21,7 @@ impl<'a> std::fmt::Debug for PrettyString<'a> {
 }
 
 #[macro_export]
-macro_rules! assert_eq_pretty {
+macro_rules! assert_eq {
     ($left:expr, $right:expr) => {
         pretty_assertions::assert_eq!(
             $crate::util::PrettyString($left.as_ref()),
