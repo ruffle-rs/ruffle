@@ -68,7 +68,7 @@ impl Test {
         if self.options.image && !RUN_IMG_TESTS {
             return false;
         }
-        return true;
+        self.options.player_options.can_run()
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {
