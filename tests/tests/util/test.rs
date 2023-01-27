@@ -1,6 +1,6 @@
 use crate::set_logger;
 use crate::util::options::TestOptions;
-use crate::util::runner::{test_swf_approx, test_swf_with_hooks};
+use crate::util::runner::{test_swf_approx, test_swf_with_hooks, RUN_IMG_TESTS};
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
@@ -67,5 +67,15 @@ impl Test {
             )
             .map_err(|e| e.to_string().into())
         }
+    }
+
+    pub fn should_run(&self) -> bool {
+        if self.options.ignore {
+            return false;
+        }
+        if self.options.image && !RUN_IMG_TESTS {
+            return false;
+        }
+        return true;
     }
 }

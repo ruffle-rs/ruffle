@@ -14,8 +14,6 @@ mod external_interface;
 mod shared_object;
 mod util;
 
-const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
-
 fn set_logger() {
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp(None)
@@ -35,7 +33,7 @@ fn main() {
             let test = Test::from_options(file.path(), root)
                 .context("Couldn't create test")
                 .unwrap();
-            let ignore = test.options.ignore || (test.options.image && !RUN_IMG_TESTS);
+            let ignore = !test.should_run();
             let mut trial = Trial::test(test.name.to_string(), || test.run());
             if ignore {
                 trial = trial.with_ignored_flag(true);
