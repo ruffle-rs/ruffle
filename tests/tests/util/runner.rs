@@ -1,7 +1,5 @@
-use crate::assert_eq;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
-use regex::Regex;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::events::MouseButton as RuffleMouseButton;
@@ -41,8 +39,8 @@ impl LogBackend for TestLogBackend {
 /// Tests that the trace output matches the given expected output.
 pub fn run_swf(
     test: &Test,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     mut injector: InputInjector,
+    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
 ) -> Result<String> {
     let base_path = Path::new(&test.output_path).parent().unwrap();
@@ -99,6 +97,10 @@ pub fn run_swf(
         )
         .with_movie(movie)
         .build();
+
+    if let Some(options) = &test.options.player_options {
+        options.setup(&player);
+    }
 
     before_start(player.clone())?;
 
@@ -206,121 +208,4 @@ pub fn run_swf(
 
     let trace = trace_output.borrow().join("\n");
     Ok(trace)
-}
-
-/// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
-/// If a line has a floating point value, it will be compared approxinmately using the given epsilon.
-pub fn test_swf_approx(
-    test: &Test,
-    num_patterns: &[Regex],
-    approx_assert_fn: impl Fn(f64, f64),
-) -> Result<()> {
-    let injector =
-        InputInjector::from_file(&test.input_path).unwrap_or_else(|_| InputInjector::empty());
-    let trace_log = run_swf(&test, |_| Ok(()), injector, |_| Ok(()))?;
-    let mut expected_data = std::fs::read_to_string(&test.output_path)?;
-
-    // Strip a trailing newline if it has one.
-    if expected_data.ends_with('\n') {
-        expected_data = expected_data[0..expected_data.len() - "\n".len()].to_string();
-    }
-
-    std::assert_eq!(
-        trace_log.lines().count(),
-        expected_data.lines().count(),
-        "# of lines of output didn't match"
-    );
-
-    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
-        // If these are numbers, compare using approx_eq.
-        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
-            // NaNs should be able to pass in an approx test.
-            if actual.is_nan() && expected.is_nan() {
-                continue;
-            }
-
-            // TODO: Lower this epsilon as the accuracy of the properties improves.
-            // if let Some(relative_epsilon) = relative_epsilon {
-            //     assert_relative_eq!(
-            //         actual,
-            //         expected,
-            //         epsilon = absolute_epsilon,
-            //         max_relative = relative_epsilon
-            //     );
-            // } else {
-            //     assert_abs_diff_eq!(actual, expected, epsilon = absolute_epsilon);
-            // }
-            approx_assert_fn(actual, expected);
-        } else {
-            let mut found = false;
-            // Check each of the user-provided regexes for a match
-            for pattern in num_patterns {
-                if let (Some(actual_captures), Some(expected_captures)) =
-                    (pattern.captures(actual), pattern.captures(expected))
-                {
-                    found = true;
-                    std::assert_eq!(
-                        actual_captures.len(),
-                        expected_captures.len(),
-                        "Differing numbers of regex captures"
-                    );
-
-                    // Each capture group (other than group 0, which is always the entire regex
-                    // match) represents a floating-point value
-                    for (actual_val, expected_val) in actual_captures
-                        .iter()
-                        .skip(1)
-                        .zip(expected_captures.iter().skip(1))
-                    {
-                        let actual_num = actual_val
-                            .expect("Missing capture gruop value for 'actual'")
-                            .as_str()
-                            .parse::<f64>()
-                            .expect("Failed to parse 'actual' capture group as float");
-                        let expected_num = expected_val
-                            .expect("Missing capture gruop value for 'expected'")
-                            .as_str()
-                            .parse::<f64>()
-                            .expect("Failed to parse 'expected' capture group as float");
-                        approx_assert_fn(actual_num, expected_num);
-                    }
-                    let modified_actual = pattern.replace(actual, "");
-                    let modified_expected = pattern.replace(expected, "");
-                    assert_eq!(modified_actual, modified_expected);
-                    break;
-                }
-            }
-            if !found {
-                assert_eq!(actual, expected);
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
-#[allow(clippy::too_many_arguments)]
-pub fn test_swf_with_hooks(
-    test: &Test,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-) -> Result<()> {
-    let injector =
-        InputInjector::from_file(&test.input_path).unwrap_or_else(|_| InputInjector::empty());
-    let mut expected_output = std::fs::read_to_string(&test.output_path)?.replace("\r\n", "\n");
-
-    // Strip a trailing newline if it has one.
-    if expected_output.ends_with('\n') {
-        expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
-    }
-
-    let trace_log = run_swf(&test, before_start, injector, before_end)?;
-    assert_eq!(
-        trace_log, expected_output,
-        "ruffle output != flash player output"
-    );
-
-    Ok(())
 }

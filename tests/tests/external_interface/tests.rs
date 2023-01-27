@@ -1,25 +1,22 @@
 use crate::external_interface::ExternalInterfaceTestProvider;
 use crate::set_logger;
 use crate::util::options::TestOptions;
-use crate::util::runner::test_swf_with_hooks;
 use crate::util::test::Test;
-use anyhow::Result;
 use ruffle_core::external::Value as ExternalValue;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub fn external_interface_avm1() -> Result<()> {
+pub fn external_interface_avm1() -> Result<(), libtest_mimic::Failed> {
     set_logger();
-    let test = Test::from_options(
+    Test::from_options(
         TestOptions {
             num_frames: 1,
             ..Default::default()
         },
         Path::new("tests/swfs/avm1/external_interface/"),
         Path::new("tests/swfs"),
-    )?;
-    test_swf_with_hooks(
-        &test,
+    )?
+    .run(
         |player| {
             player
                 .lock()
@@ -65,18 +62,17 @@ pub fn external_interface_avm1() -> Result<()> {
     )
 }
 
-pub fn external_interface_avm2() -> Result<()> {
+pub fn external_interface_avm2() -> Result<(), libtest_mimic::Failed> {
     set_logger();
-    let test = Test::from_options(
+    Test::from_options(
         TestOptions {
             num_frames: 1,
             ..Default::default()
         },
         Path::new("tests/swfs/avm2/external_interface/"),
         Path::new("tests/swfs"),
-    )?;
-    test_swf_with_hooks(
-        &test,
+    )?
+    .run(
         |player| {
             player
                 .lock()
