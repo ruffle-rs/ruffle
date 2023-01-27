@@ -1,6 +1,8 @@
 use crate::external_interface::ExternalInterfaceTestProvider;
 use crate::set_logger;
+use crate::util::options::TestOptions;
 use crate::util::runner::test_swf_with_hooks;
+use crate::util::test::Test;
 use anyhow::Result;
 use ruffle_core::external::Value as ExternalValue;
 use std::collections::BTreeMap;
@@ -8,11 +10,16 @@ use std::path::Path;
 
 pub fn external_interface_avm1() -> Result<()> {
     set_logger();
+    let test = Test::from_options(
+        TestOptions {
+            num_frames: 1,
+            ..Default::default()
+        },
+        Path::new("tests/swfs/avm1/external_interface/"),
+        Path::new("tests/swfs"),
+    )?;
     test_swf_with_hooks(
-        Path::new("tests/swfs/avm1/external_interface/test.swf"),
-        1,
-        Path::new("tests/swfs/avm1/external_interface/input.json"),
-        Path::new("tests/swfs/avm1/external_interface/output.txt"),
+        &test,
         |player| {
             player
                 .lock()
@@ -55,18 +62,21 @@ pub fn external_interface_avm1() -> Result<()> {
             ));
             Ok(())
         },
-        false,
-        false,
     )
 }
 
 pub fn external_interface_avm2() -> Result<()> {
     set_logger();
+    let test = Test::from_options(
+        TestOptions {
+            num_frames: 1,
+            ..Default::default()
+        },
+        Path::new("tests/swfs/avm2/external_interface/"),
+        Path::new("tests/swfs"),
+    )?;
     test_swf_with_hooks(
-        Path::new("tests/swfs/avm2/external_interface/test.swf"),
-        1,
-        Path::new("tests/swfs/avm2/external_interface/input.json"),
-        Path::new("tests/swfs/avm2/external_interface/output.txt"),
+        &test,
         |player| {
             player
                 .lock()
@@ -100,7 +110,5 @@ pub fn external_interface_avm2() -> Result<()> {
             ));
             Ok(())
         },
-        false,
-        false,
     )
 }

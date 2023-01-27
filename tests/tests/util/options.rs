@@ -4,7 +4,7 @@ use regex::Regex;
 use ruffle_core::{Player, ViewportDimensions};
 use serde::Deserialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -12,6 +12,7 @@ use std::time::Duration;
 #[serde(default)]
 pub struct TestOptions {
     pub num_frames: u32,
+    pub output_path: PathBuf,
     pub sleep_to_meet_frame_rate: bool,
     pub image: bool,
     pub ignore: bool,
@@ -23,6 +24,7 @@ impl Default for TestOptions {
     fn default() -> Self {
         Self {
             num_frames: 1,
+            output_path: PathBuf::from("output.txt"),
             sleep_to_meet_frame_rate: false,
             image: false,
             ignore: false,
@@ -35,6 +37,10 @@ impl Default for TestOptions {
 impl TestOptions {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<Self> {
         Ok(toml::from_str(&fs::read_to_string(path)?)?)
+    }
+
+    pub fn output_path(&self, test_directory: &Path) -> PathBuf {
+        test_directory.join(&self.output_path)
     }
 }
 

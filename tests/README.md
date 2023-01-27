@@ -21,6 +21,7 @@ num_frames = 1 # The amount of frames of the swf to run
 sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
 image = false # If true, capture a screenshot of the movie and compare it against a "known good" image
 ignore = false # If true, ignore this test. Please comment why, ideally link to an issue, so we know what's up
+output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 
 # Sometimes floating point math doesn't exactly 100% match between flash and rust.
 # If you encounter this in a test, the following section will change the output testing from "exact" to "approximate"

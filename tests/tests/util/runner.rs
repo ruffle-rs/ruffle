@@ -1,3 +1,4 @@
+use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use ruffle_core::backend::log::LogBackend;
@@ -38,22 +39,14 @@ impl LogBackend for TestLogBackend {
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
 pub fn run_swf(
-    swf_path: &Path,
-    num_frames: u32,
+    test: &Test,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     mut injector: InputInjector,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    #[allow(unused)] mut check_img: bool,
-    frame_time_sleep: bool,
 ) -> Result<String> {
-    #[allow(unused_assignments)]
-    {
-        check_img &= RUN_IMG_TESTS;
-    }
-
-    let base_path = Path::new(swf_path).parent().unwrap();
+    let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
-    let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+    let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let frame_time_duration = Duration::from_millis(frame_time as u64);
     let trace_output = Rc::new(RefCell::new(Vec::new()));
@@ -62,7 +55,7 @@ pub fn run_swf(
     let mut builder = PlayerBuilder::new();
 
     #[cfg(feature = "imgtests")]
-    if check_img {
+    if test.options.image {
         const BACKEND: wgpu::Backends = wgpu::Backends::PRIMARY;
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -77,15 +70,20 @@ pub fn run_swf(
                 None,
                 Default::default(),
                 None,
-            ))?;
+            ))
+            .map_err(|e| anyhow!(e.to_string()))?;
 
         let width = movie.width().to_pixels() as u32;
         let height = movie.height().to_pixels() as u32;
 
-        let target = TextureTarget::new(&descriptors.device, (width, height))?;
+        let target = TextureTarget::new(&descriptors.device, (width, height))
+            .map_err(|e| anyhow!(e.to_string()))?;
 
         builder = builder
-            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target, 4)?)
+            .with_renderer(
+                WgpuRenderBackend::new(Arc::new(descriptors), target, 4)
+                    .map_err(|e| anyhow!(e.to_string()))?,
+            )
             .with_viewport_dimensions(width, height, 1.0);
     };
 
@@ -103,7 +101,7 @@ pub fn run_swf(
 
     before_start(player.clone())?;
 
-    for _ in 0..num_frames {
+    for _ in 0..test.options.num_frames {
         // If requested, ensure that the 'expected' amount of
         // time actually elapses between frames. This is useful for
         // tests that call 'flash.utils.getTimer()' and use
@@ -117,7 +115,7 @@ pub fn run_swf(
         // we ensure that the result of 'flash.utils.getTimer()' is consistent
         // with timer execution (timers will see an elapsed time of *at least*
         // the requested timer interval).
-        if frame_time_sleep {
+        if test.options.sleep_to_meet_frame_rate {
             std::thread::sleep(frame_time_duration);
         }
 
@@ -162,7 +160,7 @@ pub fn run_swf(
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
-    if check_img {
+    if test.options.image {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
         let renderer = player_lock
@@ -213,26 +211,14 @@ pub fn run_swf(
 /// Tests that the trace output matches the given expected output.
 /// If a line has a floating point value, it will be compared approxinmately using the given epsilon.
 pub fn test_swf_approx(
-    swf_path: &Path,
-    num_frames: u32,
-    simulated_input_path: &Path,
-    expected_output_path: &Path,
+    test: &Test,
     num_patterns: &[Regex],
-    check_img: bool,
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<()> {
     let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        |_| Ok(()),
-        injector,
-        |_| Ok(()),
-        check_img,
-        false,
-    )?;
-    let mut expected_data = std::fs::read_to_string(expected_output_path)?;
+        InputInjector::from_file(&test.input_path).unwrap_or_else(|_| InputInjector::empty());
+    let trace_log = run_swf(&test, |_| Ok(()), injector, |_| Ok(()))?;
+    let mut expected_data = std::fs::read_to_string(&test.output_path)?;
 
     // Strip a trailing newline if it has one.
     if expected_data.ends_with('\n') {
@@ -316,33 +302,20 @@ pub fn test_swf_approx(
 /// Tests that the trace output matches the given expected output.
 #[allow(clippy::too_many_arguments)]
 pub fn test_swf_with_hooks(
-    swf_path: &Path,
-    num_frames: u32,
-    simulated_input_path: &Path,
-    expected_output_path: &Path,
+    test: &Test,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    check_img: bool,
-    frame_time_sleep: bool,
 ) -> Result<()> {
     let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+        InputInjector::from_file(&test.input_path).unwrap_or_else(|_| InputInjector::empty());
+    let mut expected_output = std::fs::read_to_string(&test.output_path)?.replace("\r\n", "\n");
 
     // Strip a trailing newline if it has one.
     if expected_output.ends_with('\n') {
         expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
     }
 
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        before_start,
-        injector,
-        before_end,
-        check_img,
-        frame_time_sleep,
-    )?;
+    let trace_log = run_swf(&test, before_start, injector, before_end)?;
     assert_eq!(
         trace_log, expected_output,
         "ruffle output != flash player output"
