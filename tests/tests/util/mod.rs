@@ -2,6 +2,7 @@
 // https://doc.rust-lang.org/book/ch11-03-test-organization.html
 
 pub mod options;
+pub mod runner;
 pub mod test;
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
