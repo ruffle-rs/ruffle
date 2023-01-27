@@ -11,7 +11,7 @@ use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::Player;
 
-use crate::util::runner::test_swf_approx;
+use crate::util::runner::{test_swf_approx, test_swf_with_hooks};
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
@@ -240,45 +240,6 @@ fn shared_object_avm2() -> Result<()> {
         false,
         false,
     )?;
-
-    Ok(())
-}
-
-/// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
-#[allow(clippy::too_many_arguments)]
-fn test_swf_with_hooks(
-    swf_path: &Path,
-    num_frames: u32,
-    simulated_input_path: &Path,
-    expected_output_path: &Path,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<()>,
-    check_img: bool,
-    frame_time_sleep: bool,
-) -> Result<()> {
-    let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
-
-    // Strip a trailing newline if it has one.
-    if expected_output.ends_with('\n') {
-        expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
-    }
-
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        before_start,
-        injector,
-        before_end,
-        check_img,
-        frame_time_sleep,
-    )?;
-    assert_eq!(
-        trace_log, expected_output,
-        "ruffle output != flash player output"
-    );
 
     Ok(())
 }
