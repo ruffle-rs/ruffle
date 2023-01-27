@@ -2352,6 +2352,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libtest-mimic"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7b603516767d1ab23d0de09d023e62966c3322f7148297c35cf3d97aa8b37fa"
+dependencies = [
+ "clap",
+ "termcolor",
+ "threadpool",
+]
+
+[[package]]
 name = "libz-sys"
 version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3620,6 +3631,7 @@ dependencies = [
  "log",
  "lyon",
  "png",
+ "serde",
  "smallvec",
  "swf",
  "thiserror",
@@ -4375,11 +4387,15 @@ dependencies = [
  "env_logger",
  "futures",
  "image",
+ "libtest-mimic",
  "pretty_assertions",
  "regex",
  "ruffle_core",
  "ruffle_input_format",
  "ruffle_render_wgpu",
+ "serde",
+ "toml",
+ "walkdir",
 ]
 
 [[package]]
@@ -4941,9 +4957,9 @@ dependencies = [
 
 [[package]]
 name = "webbrowser"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec1eb1958002617e0247ccae4fd0ec7fb5fbb566a28e93ede1ea73fac578a0e"
+checksum = "769f1a8831de12cad7bd6f9693b15b1432d93a151557810f617f626af823acae"
 dependencies = [
  "core-foundation",
  "dirs",
