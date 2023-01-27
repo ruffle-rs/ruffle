@@ -2,7 +2,6 @@
 //!
 //! Trace output can be compared with correct output from the official Flash Player.
 
-use regex::Regex;
 use ruffle_core::backend::{
     log::LogBackend,
     storage::{MemoryStorageBackend, StorageBackend},
@@ -12,6 +11,7 @@ use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::Player;
 
+use crate::util::runner::test_swf_approx;
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
@@ -280,109 +280,6 @@ fn test_swf_with_hooks(
         "ruffle output != flash player output"
     );
 
-    Ok(())
-}
-
-/// Loads an SWF and runs it through the Ruffle core for a number of frames.
-/// Tests that the trace output matches the given expected output.
-/// If a line has a floating point value, it will be compared approxinmately using the given epsilon.
-fn test_swf_approx(
-    swf_path: &Path,
-    num_frames: u32,
-    simulated_input_path: &Path,
-    expected_output_path: &Path,
-    num_patterns: &[Regex],
-    check_img: bool,
-    approx_assert_fn: impl Fn(f64, f64),
-) -> Result<()> {
-    let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        |_| Ok(()),
-        injector,
-        |_| Ok(()),
-        check_img,
-        false,
-    )?;
-    let mut expected_data = std::fs::read_to_string(expected_output_path)?;
-
-    // Strip a trailing newline if it has one.
-    if expected_data.ends_with('\n') {
-        expected_data = expected_data[0..expected_data.len() - "\n".len()].to_string();
-    }
-
-    std::assert_eq!(
-        trace_log.lines().count(),
-        expected_data.lines().count(),
-        "# of lines of output didn't match"
-    );
-
-    for (actual, expected) in trace_log.lines().zip(expected_data.lines()) {
-        // If these are numbers, compare using approx_eq.
-        if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
-            // NaNs should be able to pass in an approx test.
-            if actual.is_nan() && expected.is_nan() {
-                continue;
-            }
-
-            // TODO: Lower this epsilon as the accuracy of the properties improves.
-            // if let Some(relative_epsilon) = relative_epsilon {
-            //     assert_relative_eq!(
-            //         actual,
-            //         expected,
-            //         epsilon = absolute_epsilon,
-            //         max_relative = relative_epsilon
-            //     );
-            // } else {
-            //     assert_abs_diff_eq!(actual, expected, epsilon = absolute_epsilon);
-            // }
-            approx_assert_fn(actual, expected);
-        } else {
-            let mut found = false;
-            // Check each of the user-provided regexes for a match
-            for pattern in num_patterns {
-                if let (Some(actual_captures), Some(expected_captures)) =
-                    (pattern.captures(actual), pattern.captures(expected))
-                {
-                    found = true;
-                    std::assert_eq!(
-                        actual_captures.len(),
-                        expected_captures.len(),
-                        "Differing numbers of regex captures"
-                    );
-
-                    // Each capture group (other than group 0, which is always the entire regex
-                    // match) represents a floating-point value
-                    for (actual_val, expected_val) in actual_captures
-                        .iter()
-                        .skip(1)
-                        .zip(expected_captures.iter().skip(1))
-                    {
-                        let actual_num = actual_val
-                            .expect("Missing capture gruop value for 'actual'")
-                            .as_str()
-                            .parse::<f64>()
-                            .expect("Failed to parse 'actual' capture group as float");
-                        let expected_num = expected_val
-                            .expect("Missing capture gruop value for 'expected'")
-                            .as_str()
-                            .parse::<f64>()
-                            .expect("Failed to parse 'expected' capture group as float");
-                        approx_assert_fn(actual_num, expected_num);
-                    }
-                    let modified_actual = pattern.replace(actual, "");
-                    let modified_expected = pattern.replace(expected, "");
-                    assert_eq!(modified_actual, modified_expected);
-                    break;
-                }
-            }
-            if !found {
-                assert_eq!(actual, expected);
-            }
-        }
-    }
     Ok(())
 }
 
