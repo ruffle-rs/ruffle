@@ -17,8 +17,8 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 
+use anyhow::Context;
 use libtest_mimic::{Arguments, Trial};
-use options::TestOptions;
 #[cfg(feature = "imgtests")]
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 #[cfg(feature = "imgtests")]
@@ -29,8 +29,9 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use util::test::Test;
 
-mod options;
+mod util;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
@@ -657,35 +658,35 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
     }
 }
 
-fn run_test(options: TestOptions, root: &Path) -> Result<(), libtest_mimic::Failed> {
+fn run_test(test: Test) -> Result<(), libtest_mimic::Failed> {
     set_logger();
 
-    if let Some(approximations) = &options.approximations {
+    if let Some(approximations) = &test.options.approximations {
         test_swf_approx(
-            root.join("test.swf").to_str().unwrap(),
-            options.num_frames,
-            root.join("input.json").to_str().unwrap(),
-            root.join("output.txt").to_str().unwrap(),
+            test.swf_path.to_str().unwrap(),
+            test.options.num_frames,
+            test.input_path.to_str().unwrap(),
+            test.output_path.to_str().unwrap(),
             &approximations.number_patterns(),
-            options.image,
+            test.options.image,
             |actual, expected| approximations.compare(actual, expected),
         )
         .map_err(|e| e.to_string().into())
     } else {
         test_swf_with_hooks(
-            root.join("test.swf").to_str().unwrap(),
-            options.num_frames,
-            root.join("input.json").to_str().unwrap(),
-            root.join("output.txt").to_str().unwrap(),
+            test.swf_path.to_str().unwrap(),
+            test.options.num_frames,
+            test.input_path.to_str().unwrap(),
+            test.output_path.to_str().unwrap(),
             |player| {
-                if let Some(player_options) = &options.player_options {
+                if let Some(player_options) = &test.options.player_options {
                     player_options.setup(player);
                 }
                 Ok(())
             },
             |_| Ok(()),
-            options.image,
-            options.sleep_to_meet_frame_rate,
+            test.options.image,
+            test.options.sleep_to_meet_frame_rate,
         )
         .map_err(|e| e.to_string().into())
     }
@@ -700,19 +701,15 @@ fn main() {
         .map(Result::unwrap)
         .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
         .map(|file| {
-            let options = TestOptions::read(file.path()).unwrap();
-            let test_dir = file.path().parent().unwrap().to_owned();
-            let name = test_dir
-                .strip_prefix(root)
-                .unwrap()
-                .to_string_lossy()
-                .replace('\\', "/");
-            let ignore = options.ignore || (options.image && !RUN_IMG_TESTS);
-            let mut test = Trial::test(name, move || run_test(options, &test_dir));
+            let test = Test::from_options(file.path(), root)
+                .context("Couldn't create test")
+                .unwrap();
+            let ignore = test.options.ignore || (test.options.image && !RUN_IMG_TESTS);
+            let mut trial = Trial::test(test.name.to_string(), move || run_test(test));
             if ignore {
-                test = test.with_ignored_flag(true);
+                trial = trial.with_ignored_flag(true);
             }
-            test
+            trial
         })
         .collect();
 
