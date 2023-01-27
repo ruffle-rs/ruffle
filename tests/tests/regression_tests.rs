@@ -9,13 +9,11 @@ use ruffle_core::backend::{
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
-use ruffle_core::Player;
 
-use crate::util::runner::{test_swf_approx, test_swf_with_hooks};
+use crate::util::runner::test_swf_with_hooks;
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
-use ruffle_input_format::InputInjector;
 #[cfg(feature = "imgtests")]
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 #[cfg(feature = "imgtests")]
@@ -24,8 +22,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use util::runner::run_swf;
 use util::test::Test;
 
 mod util;
@@ -309,40 +305,6 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
     }
 }
 
-fn run_test(test: Test) -> Result<(), libtest_mimic::Failed> {
-    set_logger();
-
-    if let Some(approximations) = &test.options.approximations {
-        test_swf_approx(
-            &test.swf_path,
-            test.options.num_frames,
-            &test.input_path,
-            &test.output_path,
-            &approximations.number_patterns(),
-            test.options.image,
-            |actual, expected| approximations.compare(actual, expected),
-        )
-        .map_err(|e| e.to_string().into())
-    } else {
-        test_swf_with_hooks(
-            &test.swf_path,
-            test.options.num_frames,
-            &test.input_path,
-            &test.output_path,
-            |player| {
-                if let Some(player_options) = &test.options.player_options {
-                    player_options.setup(player);
-                }
-                Ok(())
-            },
-            |_| Ok(()),
-            test.options.image,
-            test.options.sleep_to_meet_frame_rate,
-        )
-        .map_err(|e| e.to_string().into())
-    }
-}
-
 fn main() {
     let args = Arguments::from_args();
 
@@ -356,7 +318,7 @@ fn main() {
                 .context("Couldn't create test")
                 .unwrap();
             let ignore = test.options.ignore || (test.options.image && !RUN_IMG_TESTS);
-            let mut trial = Trial::test(test.name.to_string(), move || run_test(test));
+            let mut trial = Trial::test(test.name.to_string(), || test.run());
             if ignore {
                 trial = trial.with_ignored_flag(true);
             }
