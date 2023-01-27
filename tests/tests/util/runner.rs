@@ -1,4 +1,3 @@
-use crate::RUN_IMG_TESTS;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 use ruffle_core::backend::log::LogBackend;
@@ -17,6 +16,8 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+pub const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
 struct TestLogBackend {
     trace_output: Rc<RefCell<Vec<String>>>,
