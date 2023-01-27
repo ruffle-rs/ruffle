@@ -2,6 +2,8 @@ use ruffle_core::context::UpdateContext;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 
+pub mod tests;
+
 #[derive(Default)]
 pub struct ExternalInterfaceTestProvider {}
 
