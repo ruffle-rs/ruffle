@@ -169,7 +169,7 @@ fn shared_object_avm1() -> Result<(), Error> {
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm1/shared_object/RuffleTest.sol")?;
-    assert_eq!(
+    std::assert_eq!(
         expected,
         memory_storage_backend
             .get("localhost//RuffleTest")
@@ -222,7 +222,7 @@ fn shared_object_avm2() -> Result<(), Error> {
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm2/shared_object/RuffleTest.sol")?;
-    assert_eq!(
+    std::assert_eq!(
         expected,
         memory_storage_backend
             .get("localhost//RuffleTest")
@@ -247,34 +247,6 @@ fn shared_object_avm2() -> Result<(), Error> {
     )?;
 
     Ok(())
-}
-
-/// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
-/// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
-/// test failures to show nice diffs.
-/// Courtesy of https://github.com/colin-kiegel/rust-pretty-assertions/issues/24
-#[derive(PartialEq, Eq)]
-#[doc(hidden)]
-pub struct PrettyString<'a>(pub &'a str);
-
-/// Make diff to display string as multi-line string
-impl<'a> std::fmt::Debug for PrettyString<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(self.0)
-    }
-}
-
-macro_rules! assert_eq {
-    ($left:expr, $right:expr) => {
-        pretty_assertions::assert_eq!(PrettyString($left.as_ref()), PrettyString($right.as_ref()));
-    };
-    ($left:expr, $right:expr, $message:expr) => {
-        pretty_assertions::assert_eq!(
-            PrettyString($left.as_ref()),
-            PrettyString($right.as_ref()),
-            $message
-        );
-    };
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
