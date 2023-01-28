@@ -14,18 +14,19 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 struct TestLogBackend {
-    trace_output: Rc<RefCell<Vec<String>>>,
+    trace_output: Rc<RefCell<String>>,
 }
 
 impl TestLogBackend {
-    pub fn new(trace_output: Rc<RefCell<Vec<String>>>) -> Self {
+    pub fn new(trace_output: Rc<RefCell<String>>) -> Self {
         Self { trace_output }
     }
 }
 
 impl LogBackend for TestLogBackend {
     fn avm_trace(&self, message: &str) {
-        self.trace_output.borrow_mut().push(message.to_string());
+        self.trace_output.borrow_mut().push_str(message);
+        self.trace_output.borrow_mut().push('\n');
     }
 }
 
@@ -42,7 +43,7 @@ pub fn run_swf(
     let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let frame_time_duration = Duration::from_millis(frame_time as u64);
-    let trace_output = Rc::new(RefCell::new(Vec::new()));
+    let trace_output = Rc::new(RefCell::new(String::new()));
 
     let builder = PlayerBuilder::new()
         .with_log(TestLogBackend::new(trace_output.clone()))
@@ -163,6 +164,6 @@ pub fn run_swf(
 
     executor.run();
 
-    let trace = trace_output.borrow().join("\n");
+    let trace = trace_output.borrow().clone();
     Ok(trace)
 }

@@ -64,12 +64,7 @@ impl Test {
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {
-        let mut expected_output = std::fs::read_to_string(&self.output_path)?.replace("\r\n", "\n");
-
-        // Strip a trailing newline if it has one.
-        if expected_output.ends_with('\n') {
-            expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
-        }
+        let expected_output = std::fs::read_to_string(&self.output_path)?.replace("\r\n", "\n");
 
         if let Some(approximations) = &self.options.approximations {
             std::assert_eq!(
