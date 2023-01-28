@@ -1,3 +1,4 @@
+use crate::util::environment::WGPU;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::log::LogBackend;
@@ -123,7 +124,7 @@ pub fn run_swf(
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
-    if test.options.image && wgpu_descriptors.is_some() {
+    if test.options.image && WGPU.is_some() {
         use ruffle_render_wgpu::backend::WgpuRenderBackend;
         use ruffle_render_wgpu::target::TextureTarget;
 
