@@ -31,6 +31,8 @@ jobs:
     if: needs.changes.outputs.src == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      XVFB_WRAPPER: ''
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
     strategy:
       fail-fast: false
@@ -63,6 +65,7 @@ jobs:
         run: |
           bash ./tests/fprunner/install.sh
           echo 'EXTRA_FEATURES=fpcompare' >> $GITHUB_ENV
+          echo 'XVFB_WRAPPER=xvfb-run' >> $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
@@ -85,7 +88,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        run: cargo test --locked --features imgtests,$EXTRA_FEATURES
+        run: $XVFB_WRAPPER cargo test --locked --features imgtests,$EXTRA_FEATURES
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
