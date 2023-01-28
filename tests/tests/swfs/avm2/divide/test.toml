@@ -1,6 +1,6 @@
 num_frames = 1
+fpcompare = false
 
 [approximations]
 # TODO: Discrepancy in float formatting.
 epsilon = 0.0
-fpcompare = false

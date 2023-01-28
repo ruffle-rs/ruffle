@@ -1,6 +1,6 @@
 num_frames = 1
+fpcompare = false
 
 [approximations]
 number_patterns = ["\\(a=(.+?), b=(.+?), c=(.+?), d=(.+?), tx=(.+?), ty=(.+?)\\)"]
 max_relative = 0.00000011920928955078125
-fpcompare = false

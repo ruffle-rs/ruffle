@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[derive(Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     pub num_frames: u32,
     pub output_path: PathBuf,
@@ -48,7 +48,7 @@ impl TestOptions {
 }
 
 #[derive(Deserialize, Default)]
-#[serde(default)]
+#[serde(default, /*deny_unknown_fields*/)]
 pub struct Approximations {
     number_patterns: Vec<String>,
     epsilon: Option<f64>,
@@ -144,7 +144,7 @@ impl PlayerOptions {
 }
 
 #[derive(Deserialize, Default)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct ImageComparison {
     tolerance: u8,
     max_outliers: usize,
@@ -228,7 +228,7 @@ impl ImageComparison {
 }
 
 #[derive(Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,
     sample_count: u32,

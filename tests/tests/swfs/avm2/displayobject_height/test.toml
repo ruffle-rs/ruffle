@@ -1,6 +1,6 @@
 num_frames = 7
+fpcompare = false
 
 [approximations]
 # TODO: height/width appears to be off by 1 twip sometimes
 epsilon = 0.06
-fpcompare = false

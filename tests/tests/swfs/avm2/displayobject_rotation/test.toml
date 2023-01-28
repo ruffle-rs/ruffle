@@ -1,5 +1,5 @@
 num_frames = 1
+fpcompare = false
 
 [approximations]
 epsilon = 0.0000000001
-fpcompare = false

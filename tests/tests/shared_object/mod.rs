@@ -15,6 +15,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
     Test::from_options(
         TestOptions {
             num_frames: 1,
+            fpcompare: false,
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -44,6 +45,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
     Test::from_options(
         TestOptions {
             num_frames: 1,
+            fpcompare: false,
             output_path: "output2.txt".into(),
             ..Default::default()
         },
@@ -74,6 +76,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
     Test::from_options(
         TestOptions {
             num_frames: 1,
+            fpcompare: false,
             output_path: "output1.txt".into(),
             ..Default::default()
         },
@@ -103,6 +106,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
     Test::from_options(
         TestOptions {
             num_frames: 1,
+            fpcompare: false,
             output_path: "output2.txt".into(),
             ..Default::default()
         },

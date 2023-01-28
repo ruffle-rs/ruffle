@@ -1,5 +1,5 @@
 num_frames = 1
+fpcompare = false
 
 [approximations]
 max_relative = 0.001
-fpcompare = false
