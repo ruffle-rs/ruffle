@@ -92,26 +92,6 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
     var t: f32 = find_t(gradient.focal_point, in.uv);
 
-    #if gradient_repeat_mode == 1
-        // Mirror
-        if( t < 0.0 ) {
-            t = -t;
-        }
-        if ( (i32(t) & 1) == 0 ) {
-            t = fract(t);
-        } else {
-            t = 1.0 - fract(t);
-        }
-    #endif
-    #if gradient_repeat_mode == 2
-        // Repeat
-        t = fract(t);
-    #endif
-    #if gradient_repeat_mode == 3
-        // Clamp
-        t = clamp(t, 0.0, 1.0);
-    #endif
-
     t = clamp(t, ratio(0u), ratio(last));
 
     // Find the two gradient colors bordering our position.
