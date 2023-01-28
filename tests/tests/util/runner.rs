@@ -1,5 +1,11 @@
+use crate::util::options::TestOptions;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
+use notify::event::ModifyKind;
+use notify::Config;
+use notify::EventKind;
+use notify::RecursiveMode;
+use notify::Watcher;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::events::MouseButton as RuffleMouseButton;
@@ -8,10 +14,17 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use std::cell::RefCell;
+use std::fs::File;
+use std::io::Read;
 use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::time::Instant;
+use tempfile::TempDir;
 
 struct TestLogBackend {
     trace_output: Rc<RefCell<String>>,
@@ -165,5 +178,164 @@ pub fn run_swf(
     executor.run();
 
     let trace = trace_output.borrow().clone();
+
+    #[cfg(feature = "fpcompare")]
+    run_flash_player(&test.swf_path, &trace, &test.options);
+
     Ok(trace)
+}
+
+#[allow(dead_code)]
+fn run_flash_player(swf_path: &Path, expected_output: &str, options: &TestOptions) {
+    if !options.fpcompare {
+        return;
+    }
+
+    let dir = TempDir::new().unwrap();
+    let agent_script_path = PathBuf::new()
+        .join(env!("CARGO_MANIFEST_DIR"))
+        .join("fprunner")
+        .join("agent.js");
+
+    let mm_cfg_path = PathBuf::new()
+        .join(env!("CARGO_MANIFEST_DIR"))
+        .join("fprunner")
+        .join("mm.cfg")
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    let frida_globals = format!("{{\"MM_CFG_PATH\": \"{mm_cfg_path}\"}}");
+
+    let abs_swf_path = std::fs::canonicalize(swf_path).unwrap();
+
+    let fp_path = if let Ok(path) = std::env::var("FLASH_PLAYER_DEBUGGER") {
+        path
+    } else {
+        PathBuf::new()
+            .join(env!("CARGO_MANIFEST_DIR"))
+            .join("fprunner")
+            .join("download")
+            .join("flashplayerdebugger")
+            .to_str()
+            .unwrap()
+            .to_string()
+    };
+
+    let frida_out_path = dir.path().join("frida_stdout.log");
+    let frida_out = File::create(&frida_out_path).unwrap();
+
+    let flash_log_path = dir.path().join("flash_log.txt");
+    // Create it in advance so that the `notify` crate can watch it
+    File::create(&flash_log_path).unwrap();
+
+    struct FlashPlayerKiller {
+        pid_location: PathBuf,
+    }
+
+    impl Drop for FlashPlayerKiller {
+        fn drop(&mut self) {
+            if let Ok(pid) = std::fs::read_to_string(&self.pid_location) {
+                let pid = pid.trim().parse::<u32>().unwrap();
+                let status = std::process::Command::new("kill")
+                    .arg(pid.to_string())
+                    .status()
+                    .unwrap_or_else(|e| {
+                        panic!("Failed to spawn `kill` for flash player with pid {pid}: {e}",)
+                    });
+                if !status.success() {
+                    eprintln!("Failed to kill flash player with pid {pid}");
+                }
+            }
+        }
+    }
+
+    let _killer = FlashPlayerKiller {
+        pid_location: dir.path().join("flashplayer_pid"),
+    };
+
+    let _child = Command::new("frida")
+        .args(&[
+            "-l",
+            agent_script_path.to_str().unwrap(),
+            "--parameters",
+            &frida_globals,
+            "-f",
+            &fp_path,
+            abs_swf_path.to_str().unwrap(),
+        ])
+        .current_dir(&dir)
+        .stdin(Stdio::piped())
+        .stdout(frida_out.try_clone().unwrap())
+        .stderr(frida_out.try_clone().unwrap())
+        .spawn()
+        .unwrap();
+
+    let mut fp_output = match tail_lines(
+        &flash_log_path,
+        Duration::new(5, 0),
+        Duration::new(5, 0),
+        expected_output.lines().count(),
+    ) {
+        Ok(fp_output) => fp_output,
+        Err(e) => {
+            eprintln!(
+                "Failed to get output from Flash Player. Frida logs: {}",
+                std::fs::read_to_string(frida_out_path).unwrap()
+            );
+            panic!("Failed to get output: {e:?}");
+        }
+    };
+
+    // Normalize this in the same way that we normalize our own trace output.
+    fp_output = fp_output.replace('\r', "\n");
+
+    assert_eq!(
+        fp_output,
+        expected_output,
+        "Real Flash Player output does not match expected output\n\nFrida output:\n```\n{}```\n",
+        std::fs::read_to_string(&frida_out_path).unwrap(),
+    );
+}
+
+fn tail_lines(
+    path: &Path,
+    write_wait_timeout: Duration,
+    overall_timeout: Duration,
+    expected_lines: usize,
+) -> Result<String, anyhow::Error> {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let mut watcher = notify::recommended_watcher(move |res| {
+        let _ = sender.send(res);
+    })?;
+
+    watcher.configure(Config::default().with_poll_interval(Duration::from_secs(1)))?;
+
+    watcher.watch(path, RecursiveMode::NonRecursive)?;
+
+    let mut file = std::fs::File::open(path)?;
+    let mut data = String::new();
+    let mut found_lines = 0;
+
+    let start = Instant::now();
+
+    while Instant::now() - start < overall_timeout {
+        match receiver.recv_timeout(write_wait_timeout)? {
+            Ok(event) if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) => {
+                let mut new_data = String::new();
+                file.read_to_string(&mut new_data)?;
+                found_lines += new_data
+                    .chars()
+                    .filter(|c| *c == '\r' || *c == '\n')
+                    .count();
+                data += &new_data;
+                if found_lines >= expected_lines {
+                    return Ok(data);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Err(anyhow!("Timed out waiting for all lines to be read"))
 }
