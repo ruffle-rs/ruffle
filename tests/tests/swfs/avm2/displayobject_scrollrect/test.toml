@@ -4,3 +4,6 @@ image = true
 [approximations]
 number_patterns = ["\\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\\)"]
 max_relative = 0.00000011920928955078125
+
+[player_options]
+with_renderer = { optional = true }

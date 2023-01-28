@@ -1,2 +1,5 @@
 num_frames = 2
 image = true
+
+[player_options]
+with_renderer = { optional = true }

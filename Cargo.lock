@@ -4389,6 +4389,7 @@ dependencies = [
  "futures",
  "image",
  "libtest-mimic",
+ "once_cell",
  "pretty_assertions",
  "regex",
  "ruffle_core",

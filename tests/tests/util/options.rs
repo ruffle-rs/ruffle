@@ -1,3 +1,4 @@
+use crate::util::environment::WGPU;
 use anyhow::Result;
 use approx::assert_relative_eq;
 use regex::Regex;
@@ -36,14 +37,7 @@ impl Default for TestOptions {
 
 impl TestOptions {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let mut options: TestOptions = toml::from_str(&fs::read_to_string(path)?)?;
-
-        // Use this opportunity to handle any implicit requirements
-        if options.image {
-            options.player_options.with_renderer = true;
-        }
-
-        Ok(options)
+        Ok(toml::from_str(&fs::read_to_string(path)?)?)
     }
 
     pub fn output_path(&self, test_directory: &Path) -> PathBuf {
@@ -89,7 +83,7 @@ impl Approximations {
 pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
     viewport_dimensions: Option<ViewportDimensions>,
-    with_renderer: bool,
+    with_renderer: Option<RenderOptions>,
 }
 
 impl PlayerOptions {
@@ -102,7 +96,6 @@ impl PlayerOptions {
             player_builder = player_builder.with_max_execution_duration(max_execution_duration);
         }
 
-        #[cfg_attr(not(feature = "render"), allow(unused))]
         let (width, height) = if let Some(viewport_dimensions) = self.viewport_dimensions {
             player_builder = player_builder.with_viewport_dimensions(
                 viewport_dimensions.width,
@@ -117,41 +110,40 @@ impl PlayerOptions {
             )
         };
 
-        #[cfg(feature = "render")]
-        if self.with_renderer {
+        if self.with_renderer.is_some() {
             use anyhow::anyhow;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
-            use ruffle_render_wgpu::{target::TextureTarget, wgpu};
-            use std::sync::Arc;
+            use ruffle_render_wgpu::target::TextureTarget;
 
-            let instance = wgpu::Instance::new(Default::default());
+            if let Some(descriptors) = WGPU.clone() {
+                let target = TextureTarget::new(&descriptors.device, (width, height))
+                    .map_err(|e| anyhow!(e.to_string()))?;
 
-            let descriptors =
-                futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
-                    wgpu::Backends::all(),
-                    instance,
-                    None,
-                    Default::default(),
-                    None,
-                ))
-                .map_err(|e| anyhow!(e.to_string()))?;
-
-            let target = TextureTarget::new(&descriptors.device, (width, height))
-                .map_err(|e| anyhow!(e.to_string()))?;
-
-            player_builder = player_builder.with_renderer(
-                WgpuRenderBackend::new(Arc::new(descriptors), target, 4)
-                    .map_err(|e| anyhow!(e.to_string()))?,
-            );
+                player_builder = player_builder.with_renderer(
+                    WgpuRenderBackend::new(descriptors, target, 4)
+                        .map_err(|e| anyhow!(e.to_string()))?,
+                );
+            }
         }
 
         Ok(player_builder)
     }
 
-    pub fn can_run(&self) -> bool {
-        if self.with_renderer && !cfg!(feature = "render") {
-            return false;
+    pub fn can_run(&self, check_renderer: bool) -> bool {
+        if let Some(render) = &self.with_renderer {
+            // If we don't actually want to check the renderer (ie we're just listing potential tests),
+            // don't spend the cost to create it
+            let has_renderer = !check_renderer || WGPU.is_some();
+            if !render.optional && !has_renderer {
+                return false;
+            }
         }
         true
     }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct RenderOptions {
+    optional: bool,
 }
