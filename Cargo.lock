@@ -4383,11 +4383,13 @@ dependencies = [
 name = "tests"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "approx",
  "env_logger",
  "futures",
  "image",
  "libtest-mimic",
+ "once_cell",
  "pretty_assertions",
  "regex",
  "ruffle_core",
