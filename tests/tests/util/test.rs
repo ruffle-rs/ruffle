@@ -2,15 +2,15 @@ use crate::assert_eq;
 use crate::set_logger;
 use crate::util::options::TestOptions;
 use crate::util::runner::run_swf;
+use anyhow::anyhow;
 use anyhow::{Context, Result};
+use notify::event::ModifyKind;
 use notify::Config;
 use notify::EventKind;
 use notify::RecursiveMode;
 use notify::Watcher;
-use notify::event::ModifyKind;
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
-use tempfile::TempDir;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -19,7 +19,7 @@ use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::time::Instant;
-use anyhow::anyhow;
+use tempfile::TempDir;
 
 pub struct Test {
     pub options: TestOptions,
