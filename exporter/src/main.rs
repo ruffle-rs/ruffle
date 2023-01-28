@@ -385,8 +385,8 @@ fn main() -> Result<()> {
         backends: opt.graphics.into(),
         dx12_shader_compiler: wgpu::Dx12Compiler::default(),
     });
-    let descriptors =
-        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
+    let (adapter, device, queue) =
+        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::request_device(
             opt.graphics.into(),
             instance,
             None,
@@ -395,7 +395,7 @@ fn main() -> Result<()> {
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
 
-    let descriptors = Arc::new(descriptors);
+    let descriptors = Arc::new(Descriptors::new(adapter, device, queue));
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

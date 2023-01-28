@@ -110,6 +110,7 @@ struct Opt {
     #[clap(long, action)]
     timedemo: bool,
 
+    /// Start application without ActionScript 3 warning.
     #[clap(long, action)]
     dont_warn_on_unsupported_content: bool,
 
