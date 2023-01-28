@@ -160,6 +160,7 @@ impl ImageComparison {
         actual_image: image::RgbaImage,
         expected_image: image::RgbaImage,
         test_path: &Path,
+        adapter_info: ruffle_render_wgpu::wgpu::AdapterInfo,
     ) -> Result<()> {
         use anyhow::Context;
 
@@ -196,16 +197,18 @@ impl ImageComparison {
             .unwrap();
 
         if outliers > self.max_outliers {
+            let suffix = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
+
             image::RgbaImage::from_raw(
                 expected_image.width(),
                 expected_image.height(),
                 difference_data,
             )
             .context("Couldn't create difference image")?
-            .save(test_path.join("difference.png"))
+            .save(test_path.join(format!("difference-{suffix}.png")))
             .context("Couldn't save difference image")?;
             actual_image
-                .save(test_path.join("actual.png"))
+                .save(test_path.join(format!("actual-{suffix}.png")))
                 .context("Couldn't save actual image")?;
 
             return Err(anyhow!(

@@ -147,7 +147,12 @@ pub fn run_swf(
                     .context("Failed to open expected image")?
                     .into_rgba8();
 
-                image_comparison.test(actual_image, expected_image, base_path)?;
+                image_comparison.test(
+                    actual_image,
+                    expected_image,
+                    base_path,
+                    renderer.descriptors().adapter.get_info(),
+                )?;
             } else {
                 actual_image.save(expected_image_path)?;
             }
