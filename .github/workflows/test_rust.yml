@@ -94,8 +94,8 @@ jobs:
         with:
           name: swf_images
           path: |
-            tests*/**/actual.png
-            tests*/**/difference.png
+            tests*/**/actual*.png
+            tests*/**/difference*.png
 
   check-required:
     needs: changes
