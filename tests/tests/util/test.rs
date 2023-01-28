@@ -3,10 +3,23 @@ use crate::set_logger;
 use crate::util::options::TestOptions;
 use crate::util::runner::run_swf;
 use anyhow::{Context, Result};
+use notify::Config;
+use notify::EventKind;
+use notify::RecursiveMode;
+use notify::Watcher;
+use notify::event::ModifyKind;
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
+use tempfile::TempDir;
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::time::Instant;
+use anyhow::anyhow;
 
 pub struct Test {
     pub options: TestOptions,
@@ -144,7 +157,6 @@ impl Test {
     }
 }
 
-
 #[allow(dead_code)]
 fn run_flash_player(swf_path: &str, expected_output: &str, options: &TestOptions) {
     if !options.fpcompare {
@@ -256,4 +268,46 @@ fn run_flash_player(swf_path: &str, expected_output: &str, options: &TestOptions
         "Real Flash Player output does not match expected output\n\nFrida output:\n```\n{}```\n",
         std::fs::read_to_string(&frida_out_path).unwrap(),
     );
+}
+
+fn tail_lines(
+    path: &Path,
+    write_wait_timeout: Duration,
+    overall_timeout: Duration,
+    expected_lines: usize,
+) -> Result<String, anyhow::Error> {
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let mut watcher = notify::recommended_watcher(move |res| {
+        let _ = sender.send(res);
+    })?;
+
+    watcher.configure(Config::default().with_poll_interval(Duration::from_secs(1)))?;
+
+    watcher.watch(path, RecursiveMode::NonRecursive)?;
+
+    let mut file = std::fs::File::open(path)?;
+    let mut data = String::new();
+    let mut found_lines = 0;
+
+    let start = Instant::now();
+
+    while Instant::now() - start < overall_timeout {
+        match receiver.recv_timeout(write_wait_timeout)? {
+            Ok(event) if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) => {
+                let mut new_data = String::new();
+                file.read_to_string(&mut new_data)?;
+                found_lines += new_data
+                    .chars()
+                    .filter(|c| *c == '\r' || *c == '\n')
+                    .count();
+                data += &new_data;
+                if found_lines >= expected_lines {
+                    return Ok(data);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Err(anyhow!("Timed out waiting for all lines to be read"))
 }

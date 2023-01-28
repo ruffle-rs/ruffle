@@ -43,47 +43,8 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
     true
 }
 
-fn tail_lines(
-    path: &Path,
-    write_wait_timeout: Duration,
-    overall_timeout: Duration,
-    expected_lines: usize,
-) -> Result<String, anyhow::Error> {
-    let (sender, receiver) = std::sync::mpsc::channel();
-    let mut watcher = notify::recommended_watcher(move |res| {
-        let _ = sender.send(res);
-    })?;
-
-    watcher.configure(Config::default().with_poll_interval(Duration::from_secs(1)))?;
-
-    watcher.watch(path, RecursiveMode::NonRecursive)?;
-
-    let mut file = std::fs::File::open(path)?;
-    let mut data = String::new();
-    let mut found_lines = 0;
-
-    let start = Instant::now();
-
-    while Instant::now() - start < overall_timeout {
-        match receiver.recv_timeout(write_wait_timeout)? {
-            Ok(event) if matches!(event.kind, EventKind::Modify(ModifyKind::Data(_))) => {
-                let mut new_data = String::new();
-                file.read_to_string(&mut new_data)?;
-                found_lines += new_data
-                    .chars()
-                    .filter(|c| *c == '\r' || *c == '\n')
-                    .count();
-                data += &new_data;
-                if found_lines >= expected_lines {
-                    return Ok(data);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    Err(anyhow!("Timed out waiting for all lines to be read"))
-}
+const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
+const RUN_FP_COMPARE: bool = cfg!(feature = "fpcompare");
 
 fn main() {
     let args = Arguments::from_args();

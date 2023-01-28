@@ -29,11 +29,12 @@ macro_rules! assert_eq {
             $crate::util::PrettyString($right.as_ref())
         );
     };
-    ($left:expr, $right:expr, $message:expr) => {
+    ($left:expr, $right:expr, $message:expr  $(, $($arg:tt)* )? ) => {
         pretty_assertions::assert_eq!(
             $crate::util::PrettyString($left.as_ref()),
             $crate::util::PrettyString($right.as_ref()),
-            $message
+            $message,
+            $( $($arg)* )*
         );
     };
 }
