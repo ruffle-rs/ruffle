@@ -15,10 +15,12 @@ mod shared_object;
 mod util;
 
 fn set_logger() {
-    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp(None)
-        .is_test(true)
-        .try_init();
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info,ruffle_render_wgpu=warn"),
+    )
+    .format_timestamp(None)
+    .is_test(true)
+    .try_init();
 }
 
 fn is_candidate(args: &Arguments, test_name: &str) -> bool {
