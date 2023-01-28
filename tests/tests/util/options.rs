@@ -1,5 +1,5 @@
 use crate::util::environment::WGPU;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
@@ -15,7 +15,7 @@ pub struct TestOptions {
     pub num_frames: u32,
     pub output_path: PathBuf,
     pub sleep_to_meet_frame_rate: bool,
-    pub image: bool,
+    pub image_comparison: Option<ImageComparison>,
     pub ignore: bool,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
@@ -27,7 +27,7 @@ impl Default for TestOptions {
             num_frames: 1,
             output_path: PathBuf::from("output.txt"),
             sleep_to_meet_frame_rate: false,
-            image: false,
+            image_comparison: None,
             ignore: false,
             approximations: None,
             player_options: PlayerOptions::default(),
@@ -111,7 +111,6 @@ impl PlayerOptions {
         };
 
         if let Some(render_options) = &self.with_renderer {
-            use anyhow::anyhow;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
 
@@ -139,6 +138,90 @@ impl PlayerOptions {
             }
         }
         true
+    }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct ImageComparison {
+    tolerance: u8,
+    max_outliers: usize,
+}
+
+#[cfg(feature = "imgtests")]
+fn calc_difference(lhs: u8, rhs: u8) -> u8 {
+    (lhs as i16 - rhs as i16).unsigned_abs() as u8
+}
+
+impl ImageComparison {
+    #[cfg(feature = "imgtests")]
+    pub fn test(
+        &self,
+        actual_image: image::RgbaImage,
+        expected_image: image::RgbaImage,
+        test_path: &Path,
+    ) -> Result<()> {
+        use anyhow::Context;
+
+        assert_eq!(expected_image.len(), actual_image.len());
+
+        let difference_data: Vec<u8> = expected_image
+            .as_raw()
+            .chunks_exact(4)
+            .zip(actual_image.as_raw().chunks_exact(4))
+            .flat_map(|(cmp_chunk, data_chunk)| {
+                [
+                    calc_difference(cmp_chunk[0], data_chunk[0]),
+                    calc_difference(cmp_chunk[1], data_chunk[1]),
+                    calc_difference(cmp_chunk[2], data_chunk[2]),
+                    calc_difference(cmp_chunk[3], data_chunk[3]),
+                ]
+            })
+            .collect();
+
+        let outliers: usize = difference_data
+            .chunks_exact(4)
+            .map(|colors| {
+                (colors[0] > self.tolerance) as usize
+                    + (colors[1] > self.tolerance) as usize
+                    + (colors[2] > self.tolerance) as usize
+                    + (colors[3] > self.tolerance) as usize
+            })
+            .sum();
+
+        let max_difference = difference_data
+            .chunks_exact(4)
+            .map(|colors| colors[0].max(colors[1]).max(colors[2]).max(colors[3]))
+            .max()
+            .unwrap();
+
+        if outliers > self.max_outliers {
+            image::RgbaImage::from_raw(
+                expected_image.width(),
+                expected_image.height(),
+                difference_data,
+            )
+            .context("Couldn't create difference image")?
+            .save(test_path.join("difference.png"))
+            .context("Couldn't save difference image")?;
+            actual_image
+                .save(test_path.join("actual.png"))
+                .context("Couldn't save actual image")?;
+
+            return Err(anyhow!(
+                "Number of outliers ({}) is bigger than allowed limit of {}. Max difference is {}",
+                outliers,
+                self.max_outliers,
+                max_difference
+            ));
+        } else {
+            println!(
+                "{} outliers found, max difference {}",
+                outliers, max_difference
+            );
+        }
+
+        Ok(())
     }
 }
 

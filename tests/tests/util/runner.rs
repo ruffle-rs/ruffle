@@ -1,4 +1,3 @@
-use crate::util::environment::WGPU;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::log::LogBackend;
@@ -124,45 +123,34 @@ pub fn run_swf(
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
-    if test.options.image && WGPU.is_some() {
-        use ruffle_render_wgpu::backend::WgpuRenderBackend;
-        use ruffle_render_wgpu::target::TextureTarget;
+    if let Some(image_comparison) = &test.options.image_comparison {
+        if crate::util::environment::WGPU.is_some() {
+            use anyhow::Context;
+            use ruffle_render_wgpu::backend::WgpuRenderBackend;
+            use ruffle_render_wgpu::target::TextureTarget;
 
-        let mut player_lock = player.lock().unwrap();
-        player_lock.render();
-        let renderer = player_lock
-            .renderer_mut()
-            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-            .unwrap();
+            let mut player_lock = player.lock().unwrap();
+            player_lock.render();
+            let renderer = player_lock
+                .renderer_mut()
+                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                .unwrap();
 
-        // Use straight alpha, since we want to save this as a PNG
-        let actual_image = renderer
-            .capture_frame(false)
-            .expect("Failed to capture image");
+            // Use straight alpha, since we want to save this as a PNG
+            let actual_image = renderer
+                .capture_frame(false)
+                .expect("Failed to capture image");
 
-        let info = renderer.descriptors().adapter.get_info();
-        let suffix = format!("{}-{:?}", std::env::consts::OS, info.backend);
+            let expected_image_path = base_path.join("expected.png");
+            if expected_image_path.is_file() {
+                let expected_image = image::open(&expected_image_path)
+                    .context("Failed to open expected image")?
+                    .into_rgba8();
 
-        let expected_image_path = base_path.join(format!("expected-{}.png", &suffix));
-        let expected_image = image::open(&expected_image_path);
-
-        let matches = match expected_image {
-            Ok(img) => {
-                img.as_rgba8().expect("Expected 8-bit RGBA image").as_raw() == actual_image.as_raw()
+                image_comparison.test(actual_image, expected_image, base_path)?;
+            } else {
+                actual_image.save(expected_image_path)?;
             }
-            Err(e) => {
-                eprintln!(
-                    "Failed to open expected image {:?}: {e:?}",
-                    &expected_image_path
-                );
-                false
-            }
-        };
-
-        if !matches {
-            let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
-            actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
-            return Err(anyhow!("Test output does not match expected image - saved actual image to {actual_image_path:?}"));
         }
     }
 

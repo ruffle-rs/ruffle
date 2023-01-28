@@ -93,7 +93,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: swf_images
-          path: tests*/**/actual*.png
+          path: |
+            tests*/**/actual.png
+            tests*/**/difference.png
 
   check-required:
     needs: changes
