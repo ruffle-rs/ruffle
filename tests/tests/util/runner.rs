@@ -288,9 +288,12 @@ fn run_flash_player(swf_path: &Path, expected_output: &str, options: &TestOption
         Ok(fp_output) => fp_output,
         Err(e) => {
             eprintln!(
-                "Failed to get output from Flash Player. Frida logs: {}",
+                "Failed to get output from Flash Player. Temp dir: `{:?}` Frida logs: {}",
+                dir.path(),
                 std::fs::read_to_string(frida_out_path).unwrap()
             );
+            // Don't clean up the temp dir, so that we can debug.
+            std::mem::forget(dir);
             panic!("Failed to get output: {e:?}");
         }
     };

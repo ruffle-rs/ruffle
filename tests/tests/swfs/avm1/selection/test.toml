@@ -1,1 +1,4 @@
 num_frames = 1
+# FIXME - non-determinism was observed. `_level0.text_non_selectable` and `_level0.text_input` were
+# both `false` when they should have been `true`.
+fpcompare = false
