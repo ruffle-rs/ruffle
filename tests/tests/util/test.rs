@@ -2,10 +2,14 @@ use crate::assert_eq;
 use crate::set_logger;
 use crate::util::options::TestOptions;
 use crate::util::runner::run_swf;
+
 use anyhow::{Context, Result};
+
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
+
 use std::path::{Path, PathBuf};
+
 use std::sync::{Arc, Mutex};
 
 pub struct Test {
@@ -53,6 +57,7 @@ impl Test {
         };
         let output = run_swf(&self, injector, before_start, before_end)?;
         self.compare_output(&output)?;
+
         Ok(())
     }
 

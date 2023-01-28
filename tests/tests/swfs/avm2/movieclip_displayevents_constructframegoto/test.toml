@@ -1,1 +1,4 @@
 num_frames = 12
+# I observed some non-determinism `// symbol_a frame 1` was printed in different locations.
+# TODO - investigate the cause of this.
+fpcompare = false

@@ -43,6 +43,9 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
     true
 }
 
+const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
+const RUN_FP_COMPARE: bool = cfg!(feature = "fpcompare");
+
 fn main() {
     let args = Arguments::from_args();
 
@@ -61,8 +64,8 @@ fn main() {
                 .to_string_lossy()
                 .replace('\\', "/");
             if is_candidate(&args, &name) {
-                let test = Test::from_options_file(file.path(), name)
-                    .context("Couldn't create test")
+                let test = Test::from_options_file(file.path(), name.clone())
+                    .context(format!("Couldn't create test for {name}"))
                     .unwrap();
                 let ignore = !test.should_run(!args.list);
                 let mut trial =
@@ -90,6 +93,10 @@ fn main() {
     ));
 
     tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
+
+    println!(
+        "Running SWF tests with features: imgtests={RUN_IMG_TESTS}, fpcompare={RUN_FP_COMPARE}"
+    );
 
     libtest_mimic::run(&args, tests).exit()
 }

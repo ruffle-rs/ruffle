@@ -207,6 +207,7 @@ pub enum Context3DCommand<'gc> {
 pub struct ShapeHandle(pub usize);
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ViewportDimensions {
     /// The dimensions of the stage's containing viewport.
     pub width: u32,
