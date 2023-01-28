@@ -21,6 +21,26 @@ fn set_logger() {
         .try_init();
 }
 
+fn is_candidate(args: &Arguments, test_name: &str) -> bool {
+    if let Some(filter) = &args.filter {
+        match args.exact {
+            true if test_name != filter => return false,
+            false if !test_name.contains(filter) => return false,
+            _ => {}
+        };
+    }
+
+    for skip_filter in &args.skip {
+        match args.exact {
+            true if test_name == skip_filter => return false,
+            false if test_name.contains(skip_filter) => return false,
+            _ => {}
+        }
+    }
+
+    true
+}
+
 fn main() {
     let args = Arguments::from_args();
 
@@ -29,16 +49,29 @@ fn main() {
         .into_iter()
         .map(Result::unwrap)
         .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
-        .map(|file| {
-            let test = Test::from_options_file(file.path(), root)
-                .context("Couldn't create test")
-                .unwrap();
-            let ignore = !test.should_run(!args.list);
-            let mut trial = Trial::test(test.name.to_string(), || test.run(|_| Ok(()), |_| Ok(())));
-            if ignore {
-                trial = trial.with_ignored_flag(true);
+        .filter_map(|file| {
+            let name = file
+                .path()
+                .parent()?
+                .strip_prefix(root)
+                .context("Couldn't strip root prefix from test dir")
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            if is_candidate(&args, &name) {
+                let test = Test::from_options_file(file.path(), name)
+                    .context("Couldn't create test")
+                    .unwrap();
+                let ignore = !test.should_run(!args.list);
+                let mut trial =
+                    Trial::test(test.name.to_string(), || test.run(|_| Ok(()), |_| Ok(())));
+                if ignore {
+                    trial = trial.with_ignored_flag(true);
+                }
+                Some(trial)
+            } else {
+                None
             }
-            trial
         })
         .collect();
 

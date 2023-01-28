@@ -17,15 +17,10 @@ pub struct Test {
 }
 
 impl Test {
-    pub fn from_options(options: TestOptions, test_dir: &Path, root_dir: &Path) -> Result<Self> {
+    pub fn from_options(options: TestOptions, test_dir: &Path, name: String) -> Result<Self> {
         let swf_path = test_dir.join("test.swf");
         let input_path = test_dir.join("input.json");
         let output_path = options.output_path(test_dir);
-        let name = test_dir
-            .strip_prefix(root_dir)
-            .context("Couldn't strip root prefix from test dir")?
-            .to_string_lossy()
-            .replace('\\', "/");
         Ok(Self {
             options,
             swf_path,
@@ -35,13 +30,13 @@ impl Test {
         })
     }
 
-    pub fn from_options_file(options_path: &Path, root_dir: &Path) -> Result<Self> {
+    pub fn from_options_file(options_path: &Path, name: String) -> Result<Self> {
         Self::from_options(
             TestOptions::read(options_path).context("Couldn't load test options")?,
             options_path
                 .parent()
                 .context("Couldn't get test directory")?,
-            root_dir,
+            name,
         )
     }
 
