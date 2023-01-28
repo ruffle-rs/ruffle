@@ -2,4 +2,4 @@ num_frames = 2
 image = true
 
 [player_options]
-with_renderer = { optional = true }
+with_renderer = { optional = true, sample_count = 4 }
