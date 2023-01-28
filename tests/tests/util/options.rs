@@ -110,7 +110,7 @@ impl PlayerOptions {
             )
         };
 
-        if self.with_renderer.is_some() {
+        if let Some(render_options) = &self.with_renderer {
             use anyhow::anyhow;
             use ruffle_render_wgpu::backend::WgpuRenderBackend;
             use ruffle_render_wgpu::target::TextureTarget;
@@ -120,7 +120,7 @@ impl PlayerOptions {
                     .map_err(|e| anyhow!(e.to_string()))?;
 
                 player_builder = player_builder.with_renderer(
-                    WgpuRenderBackend::new(descriptors, target, 4)
+                    WgpuRenderBackend::new(descriptors, target, render_options.sample_count)
                         .map_err(|e| anyhow!(e.to_string()))?,
                 );
             }
@@ -142,8 +142,18 @@ impl PlayerOptions {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize)]
 #[serde(default)]
 pub struct RenderOptions {
     optional: bool,
+    sample_count: u32,
+}
+
+impl Default for RenderOptions {
+    fn default() -> Self {
+        Self {
+            optional: false,
+            sample_count: 1,
+        }
+    }
 }
