@@ -1,0 +1,2 @@
+num_frames = 1
+ignore = true # Ignored because Flash Player adds extra x, W, and/or ° symbols randomly

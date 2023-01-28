@@ -1,0 +1,4 @@
+num_frames = 1
+
+[approximations]
+max_relative = 0.001

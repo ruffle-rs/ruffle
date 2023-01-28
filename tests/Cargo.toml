@@ -25,3 +25,12 @@ imgtests = ["ruffle_render_wgpu"]
 approx = "0.5.1"
 pretty_assertions = "1.3.0"
 env_logger = "0.10.0"
+serde = "1.0"
+toml = "0.5.10"
+libtest-mimic = "0.6.0"
+walkdir = "2.3.2"
+
+[[test]]
+name = "tests"
+harness = false
+path = "tests/regression_tests.rs"
