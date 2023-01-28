@@ -1423,7 +1423,17 @@ impl<'a> FormatState<'a> {
             }
             let encoded = text.to_utf8_lossy();
             let escaped = escape(encoded.as_bytes());
-            self.result.push_str(WStr::from_units(&*escaped));
+
+            if let Cow::Borrowed(_) = &encoded {
+                // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
+                // escaping special characters cannot insert new non-ASCII characters, so we can
+                // simply append the bytes directly without converting from UTF8.
+                self.result.push_str(WStr::from_units(&*escaped));
+            } else {
+                // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
+                let escaped = std::str::from_utf8(&escaped).expect("escaped text should be utf8");
+                self.result.push_utf8(escaped);
+            }
         }
     }
 }
