@@ -14,7 +14,7 @@ pub fn external_interface_avm1() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm1/external_interface/"),
-        Path::new("tests/swfs"),
+        "external_interface_avm1".to_string(),
     )?
     .run(
         |player| {
@@ -70,7 +70,7 @@ pub fn external_interface_avm2() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm2/external_interface/"),
-        Path::new("tests/swfs"),
+        "external_interface_avm2".to_string(),
     )?
     .run(
         |player| {

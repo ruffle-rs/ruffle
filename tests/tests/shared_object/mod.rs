@@ -19,7 +19,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm1/shared_object/"),
-        Path::new("tests/swfs"),
+        "shared_object_avm1".to_string(),
     )?
     .run(
         |_| Ok(()),
@@ -48,7 +48,7 @@ pub fn shared_object_avm1() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm1/shared_object/"),
-        Path::new("tests/swfs"),
+        "shared_object_avm1".to_string(),
     )?
     .run(
         |player| {
@@ -78,7 +78,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm2/shared_object/"),
-        Path::new("tests/swfs"),
+        "shared_object_avm2".to_string(),
     )?
     .run(
         |_player| Ok(()),
@@ -107,7 +107,7 @@ pub fn shared_object_avm2() -> Result<(), libtest_mimic::Failed> {
             ..Default::default()
         },
         Path::new("tests/swfs/avm2/shared_object/"),
-        Path::new("tests/swfs"),
+        "shared_object_avm2".to_string(),
     )?
     .run(
         |player| {
