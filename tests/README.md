@@ -19,7 +19,7 @@ Except for `num_frames`, every other field and section is optional.
 ```toml
 num_frames = 1 # The amount of frames of the swf to run
 sleep_to_meet_frame_rate = false # If true, slow the tick rate to match the movies requested fps rate
-image = false # If true, capture a screenshot of the movie and compare it against a "known good" image
+image = false # If true, capture a screenshot of the movie and compare it against a "known good" image. Only does the comparison when `imgtests` feature is enabled.
 ignore = false # If true, ignore this test. Please comment why, ideally link to an issue, so we know what's up
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 
@@ -35,5 +35,5 @@ max_relative = 0.0 # The default relative tolerance for testing values that are 
 [player_options]
 max_execution_duration = { secs = 15, nanos = 0} # How long can actionscript execute for before being forcefully stopped
 viewport_dimensions = { width = 100, height = 100, scale_factor = 1 } # The size of the player. Defaults to the swfs stage size
-with_renderer = false # If this test requires a renderer to run. Implied when `image = true`
+with_renderer = { optional = false } # If this test requires a renderer to run. Optional will enable the renderer where available.
 ```

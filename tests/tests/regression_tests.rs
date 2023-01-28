@@ -33,7 +33,7 @@ fn main() {
             let test = Test::from_options_file(file.path(), root)
                 .context("Couldn't create test")
                 .unwrap();
-            let ignore = !test.should_run();
+            let ignore = !test.should_run(!args.list);
             let mut trial = Trial::test(test.name.to_string(), || test.run(|_| Ok(()), |_| Ok(())));
             if ignore {
                 trial = trial.with_ignored_flag(true);

@@ -13,8 +13,6 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-pub const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
-
 struct TestLogBackend {
     trace_output: Rc<RefCell<Vec<String>>>,
 }
@@ -125,7 +123,7 @@ pub fn run_swf(
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
     #[cfg(feature = "imgtests")]
-    if test.options.image {
+    if test.options.image && wgpu_descriptors.is_some() {
         use ruffle_render_wgpu::backend::WgpuRenderBackend;
         use ruffle_render_wgpu::target::TextureTarget;
 

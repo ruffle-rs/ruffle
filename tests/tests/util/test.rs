@@ -1,7 +1,7 @@
 use crate::assert_eq;
 use crate::set_logger;
 use crate::util::options::TestOptions;
-use crate::util::runner::{run_swf, RUN_IMG_TESTS};
+use crate::util::runner::run_swf;
 use anyhow::{Context, Result};
 use ruffle_core::Player;
 use ruffle_input_format::InputInjector;
@@ -61,14 +61,11 @@ impl Test {
         Ok(())
     }
 
-    pub fn should_run(&self) -> bool {
+    pub fn should_run(&self, check_renderer: bool) -> bool {
         if self.options.ignore {
             return false;
         }
-        if self.options.image && !RUN_IMG_TESTS {
-            return false;
-        }
-        self.options.player_options.can_run()
+        self.options.player_options.can_run(check_renderer)
     }
 
     pub fn compare_output(&self, actual_output: &str) -> Result<()> {
