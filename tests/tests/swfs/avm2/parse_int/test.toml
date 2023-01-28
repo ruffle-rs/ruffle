@@ -1,1 +1,5 @@
 num_frames = 1
+# FIXME - flashplayer prints 'TypeError: Error #2023: Class Test$ must inherit from Sprite to link to the root.'
+# because the SWF was complied by mxmlc in a weird way. We should either implement this error in Ruffle,
+# or fix the SWF so that it doesn't trigger it.
+fpcompare = false

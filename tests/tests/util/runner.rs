@@ -1,5 +1,6 @@
 use crate::util::options::TestOptions;
 use crate::util::test::Test;
+use crate::assert_eq;
 use anyhow::{anyhow, Result};
 use notify::event::ModifyKind;
 use notify::Config;
@@ -280,8 +281,8 @@ fn run_flash_player(swf_path: &Path, expected_output: &str, options: &TestOption
 
     let mut fp_output = match tail_lines(
         &flash_log_path,
-        Duration::new(5, 0),
-        Duration::new(5, 0),
+        Duration::new(15, 0),
+        Duration::new(20, 0),
         expected_output.lines().count(),
     ) {
         Ok(fp_output) => fp_output,
@@ -313,7 +314,9 @@ fn tail_lines(
 ) -> Result<String, anyhow::Error> {
     let (sender, receiver) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |res| {
-        let _ = sender.send(res);
+        if let Err(e) = sender.send(res) {
+            eprintln!("Failed to send notify event: {e}")
+        }
     })?;
 
     watcher.configure(Config::default().with_poll_interval(Duration::from_secs(1)))?;
