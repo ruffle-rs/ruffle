@@ -318,7 +318,7 @@ fn tail_lines(
     let (sender, receiver) = std::sync::mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |res| {
         if let Err(e) = sender.send(res) {
-            eprintln!("Failed to send notify event: {e}")
+            println!("Failed to send notify event: {e}")
         }
     })?;
 
