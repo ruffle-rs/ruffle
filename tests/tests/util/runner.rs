@@ -1,6 +1,6 @@
+use crate::assert_eq;
 use crate::util::options::TestOptions;
 use crate::util::test::Test;
-use crate::assert_eq;
 use anyhow::{anyhow, Result};
 use notify::event::ModifyKind;
 use notify::Config;
