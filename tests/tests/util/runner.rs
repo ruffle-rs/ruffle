@@ -191,6 +191,13 @@ fn run_flash_player(swf_path: &Path, expected_output: &str, options: &TestOption
         return;
     }
 
+    // FIXME - we currently lack the ability to detect if Flash Player would
+    // have output nothing, since we exit as soon as we see the expected
+    // number of lines.
+    if expected_output.is_empty() {
+        return;
+    }
+
     let dir = TempDir::new().unwrap();
     let agent_script_path = PathBuf::new()
         .join(env!("CARGO_MANIFEST_DIR"))

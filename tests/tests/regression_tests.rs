@@ -64,8 +64,8 @@ fn main() {
                 .to_string_lossy()
                 .replace('\\', "/");
             if is_candidate(&args, &name) {
-                let test = Test::from_options_file(file.path(), name)
-                    .context("Couldn't create test")
+                let test = Test::from_options_file(file.path(), name.clone())
+                    .context(format!("Couldn't create test for {name}"))
                     .unwrap();
                 let ignore = !test.should_run(!args.list);
                 let mut trial =

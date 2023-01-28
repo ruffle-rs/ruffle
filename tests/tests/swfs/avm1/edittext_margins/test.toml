@@ -3,3 +3,4 @@ num_frames = 1
 [approximations]
 # TODO: Discrepancy in wrapping.
 epsilon = 5.0
+fpcompare = false
