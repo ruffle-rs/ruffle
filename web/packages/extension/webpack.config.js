@@ -3,20 +3,42 @@
 const path = require("path");
 const json5 = require("json5");
 const CopyPlugin = require("copy-webpack-plugin");
+const fs = require("fs");
 
 function transformManifest(content, env) {
     const manifest = json5.parse(content);
 
-    const packageVersion = process.env.npm_package_version;
+    let packageVersion = process.env.npm_package_version;
+    let versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
+    let buildDate = new Date().toISOString().substring(0, 10);
+    let build_id = process.env.BUILD_ID;
 
-    const versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
+    if (process.env.ENABLE_VERSION_SEAL === "true") {
+        if (fs.existsSync("../../version_seal.json")) {
+            const version_seal = JSON.parse(
+                fs.readFileSync("../../version_seal.json")
+            );
 
-    const buildDate = new Date().toISOString().substring(0, 10);
+            packageVersion = version_seal.version_number;
+            versionChannel = version_seal.version_channel;
+            buildDate = version_seal.build_date.substring(0, 10);
+            build_id = version_seal.build_id;
+        } else {
+            throw new Error(
+                "Version seal requested but not found. Please run web/packages/core/tools/set_version.js with ENABLE_VERSION_SEAL to generate it."
+            );
+        }
+    }
+
+    // At this point all code below needs to be deterministic. If you want other
+    // information to be included here you must store it in the version seal
+    // when it gets generated in web/packages/core/tools/set_version.js and then
+    // load it in the code above.
 
     // The extension marketplaces require the version to monotonically increase,
     // so append the build number onto the end of the manifest version.
-    manifest.version = process.env.BUILD_ID
-        ? `${packageVersion}.${process.env.BUILD_ID}`
+    manifest.version = build_id
+        ? `${packageVersion}.${build_id}`
         : packageVersion;
 
     if (env.firefox) {
