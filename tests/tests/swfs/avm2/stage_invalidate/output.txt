@@ -1,0 +1,38 @@
+FRAME_CONSTRUCTED ( test_stage =  0  )
+EXIT_FRAME ( test_stage =  1  )
+ENTER_FRAME ( test_stage =  2  )
+Invalidate called inside enterFrameListener
+FRAME_CONSTRUCTED ( test_stage =  3  )
+EXIT_FRAME ( test_stage =  4  )
+RENDER ( test_stage =  5  )
+ENTER_FRAME ( test_stage =  5  )
+FRAME_CONSTRUCTED ( test_stage =  6  )
+Invalidate called inside frameConstructedListener
+EXIT_FRAME ( test_stage =  7  )
+RENDER ( test_stage =  8  )
+ENTER_FRAME ( test_stage =  8  )
+FRAME_CONSTRUCTED ( test_stage =  9  )
+EXIT_FRAME ( test_stage =  10  )
+Invalidate called inside exitFrameListener
+RENDER ( test_stage =  11  )
+ENTER_FRAME ( test_stage =  11  )
+FRAME_CONSTRUCTED ( test_stage =  12  )
+Invalidate called inside frameConstructedListener
+EXIT_FRAME ( test_stage =  13  )
+Invalidate called inside exitFrameListener
+RENDER ( test_stage =  14  )
+ENTER_FRAME ( test_stage =  14  )
+Invalidate called inside enterFrameListener
+FRAME_CONSTRUCTED ( test_stage =  15  )
+Invalidate called inside frameConstructedListener
+EXIT_FRAME ( test_stage =  16  )
+RENDER ( test_stage =  17  )
+ENTER_FRAME ( test_stage =  17  )
+Invalidate called inside enterFrameListener
+FRAME_CONSTRUCTED ( test_stage =  18  )
+EXIT_FRAME ( test_stage =  19  )
+Invalidate called inside exitFrameListener
+RENDER ( test_stage =  20  )
+ENTER_FRAME ( test_stage =  20  )
+FRAME_CONSTRUCTED ( test_stage =  0  )
+EXIT_FRAME ( test_stage =  1  )

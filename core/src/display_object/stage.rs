@@ -90,6 +90,9 @@ pub struct StageData<'gc> {
     /// The alignment of the stage.
     align: StageAlign,
 
+    /// Whether or not a RENDER event should be dispatched on the next render
+    invalidated: bool,
+
     /// Whether to use high quality downsampling for bitmaps.
     ///
     /// This is usally implied by `quality` being `Best` or higher, but the AVM1
@@ -149,6 +152,7 @@ impl<'gc> Stage<'gc> {
                 } else {
                     StageDisplayState::Normal
                 },
+                invalidated: false,
                 align: Default::default(),
                 use_bitmap_downsampling: false,
                 view_bounds: Default::default(),
@@ -208,6 +212,16 @@ impl<'gc> Stage<'gc> {
         loader_info: Avm2Object<'gc>,
     ) {
         self.0.write(gc_context).loader_info = loader_info;
+    }
+
+    // Get the invalidation state
+    pub fn invalidated(self) -> bool {
+        self.0.read().invalidated
+    }
+
+    // Set the invalidation state
+    pub fn set_invalidated(self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.0.write(gc_context).invalidated = value;
     }
 
     /// Returns the quality setting of the stage.
@@ -615,6 +629,25 @@ impl<'gc> Stage<'gc> {
                 tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
             }
         }
+    }
+
+    /// Broadcast the 'render' event
+    ///
+    /// TODO: Need additional check as Flash Player does not
+    /// broadcast the 'render' event on the first render
+    pub fn broadcast_render(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let render_evt = Avm2EventObject::bare_default_event(context, "render");
+
+        let dobject_constr = context.avm2.classes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, render_evt, dobject_constr) {
+            tracing::error!(
+                "Encountered AVM2 error when broadcasting render event: {}",
+                e
+            );
+        }
+
+        self.set_invalidated(context.gc_context, false);
     }
 
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.

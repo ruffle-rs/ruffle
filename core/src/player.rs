@@ -1481,6 +1481,17 @@ impl Player {
 
     #[instrument(level = "debug", skip_all)]
     pub fn render(&mut self) {
+        let invalidated = self
+            .gc_arena
+            .borrow()
+            .mutate(|_, gc_root| gc_root.data.read().stage.invalidated());
+        if invalidated {
+            self.update(|context| {
+                let stage = context.stage;
+                stage.broadcast_render(context);
+            });
+        }
+
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
         let mut background_color = Color::WHITE;
