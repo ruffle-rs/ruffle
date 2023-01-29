@@ -1913,7 +1913,7 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=023e14c73e565c4c778d41f66cfbac5ece6419b2#023e14c73e565c4c778d41f66cfbac5ece6419b2"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=f0083f5933f173798dd308d1678f06d181a99975#f0083f5933f173798dd308d1678f06d181a99975"
 dependencies = [
  "bitflags",
  "lazy_static",
@@ -1924,7 +1924,7 @@ dependencies = [
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=023e14c73e565c4c778d41f66cfbac5ece6419b2#023e14c73e565c4c778d41f66cfbac5ece6419b2"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=f0083f5933f173798dd308d1678f06d181a99975#f0083f5933f173798dd308d1678f06d181a99975"
 dependencies = [
  "bytemuck",
  "wide",
