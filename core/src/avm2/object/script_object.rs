@@ -1,6 +1,7 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::reference_error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
@@ -147,42 +148,26 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
-            let message = AvmString::new_utf8(
-                activation.context.gc_context,
+            return Err(Error::AvmError(reference_error(
+                activation,
                 &format!(
-                    "Error #2000: Non-public property {} not found on Object.",
+                    "Error #2000: Non-public property {} not found on Object",
                     multiname.to_qualified_name(activation.context.gc_context)
                 ),
-            );
-
-            return Err(Error::AvmError(
-                activation
-                    .avm2()
-                    .classes()
-                    .referenceerror
-                    .construct(activation, &[message.into(), 2000.into()])?
-                    .into(),
-            ));
+                2000,
+            )?));
         }
 
         let local_name = match multiname.local_name() {
             None => {
-                let message = AvmString::new_utf8(
-                    activation.context.gc_context,
+                return Err(Error::AvmError(reference_error(
+                    activation,
                     &format!(
                         "Error #2000: Unnamed property {} not found on Object",
                         multiname.to_qualified_name(activation.context.gc_context)
                     ),
-                );
-
-                return Err(Error::AvmError(
-                    activation
-                        .avm2()
-                        .classes()
-                        .referenceerror
-                        .construct(activation, &[message.into(), 2000.into()])?
-                        .into(),
-                ));
+                    2000,
+                )?));
             }
             Some(name) => name,
         };
@@ -221,17 +206,13 @@ impl<'gc> ScriptObjectData<'gc> {
                 })
                 .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
 
-            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                "Error #1069: Property {local_name} not found on {class_name} and there is no default value.",
-            ));
-            Err(Error::AvmError(
-                activation
-                    .avm2()
-                    .classes()
-                    .referenceerror
-                    .construct(activation, &[message.into(), 1069.into()])?
-                    .into(),
-            ))
+            Err(Error::AvmError(reference_error(
+                activation,
+                &format!(
+                    "Error #1069: Property {local_name} not found on {class_name} and there is no default value.",
+                ),
+                1069,
+            )?))
         } else {
             Ok(Value::Undefined)
         }
@@ -248,63 +229,39 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            let message = AvmString::new_utf8(
-                activation.context.gc_context,
+            return Err(Error::AvmError(reference_error(
+                activation,
                 &format!(
                     "Error #2000: Cannot set undefined property {} on {:?}",
                     multiname.to_qualified_name(activation.context.gc_context),
                     self.instance_of()
                         .map(|cls| cls.inner_class_definition().read().name()),
                 ),
-            );
-
-            return Err(Error::AvmError(
-                activation
-                    .avm2()
-                    .classes()
-                    .referenceerror
-                    .construct(activation, &[message.into(), 2000.into()])?
-                    .into(),
-            ));
+                2000,
+            )?));
         }
 
         if !multiname.contains_public_namespace() {
-            let message = AvmString::new_utf8(
-                activation.context.gc_context,
+            return Err(Error::AvmError(reference_error(
+                activation,
                 &format!(
                     "Error #2000: Non-public property {} not found on Object.",
                     multiname.to_qualified_name(activation.context.gc_context)
                 ),
-            );
-
-            return Err(Error::AvmError(
-                activation
-                    .avm2()
-                    .classes()
-                    .referenceerror
-                    .construct(activation, &[message.into(), 2000.into()])?
-                    .into(),
-            ));
+                2000,
+            )?));
         }
 
         let local_name = match multiname.local_name() {
             None => {
-                let message = AvmString::new_utf8(
-                    activation.context.gc_context,
+                return Err(Error::AvmError(reference_error(
+                    activation,
                     &format!(
                         "Error #2000: Unnamed property {} not found on Object",
                         multiname.to_qualified_name(activation.context.gc_context)
                     ),
-                );
-
-                return Err(Error::AvmError(
-                    activation
-                        .avm2()
-                        .classes()
-                        .referenceerror
-                        .construct(activation, &[message.into(), 2000.into()])?
-                        .into(),
-                ));
+                    2000,
+                )?));
             }
             Some(name) => name,
         };
