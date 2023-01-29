@@ -147,11 +147,14 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
-            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                "Error #2000: Non-public property {} not found on Object.",
-                multiname.to_qualified_name(activation.context.gc_context)
-            ));
-            
+            let message = AvmString::new_utf8(
+                activation.context.gc_context,
+                &format!(
+                    "Error #2000: Non-public property {} not found on Object.",
+                    multiname.to_qualified_name(activation.context.gc_context)
+                ),
+            );
+
             return Err(Error::AvmError(
                 activation
                     .avm2()
@@ -164,11 +167,14 @@ impl<'gc> ScriptObjectData<'gc> {
 
         let local_name = match multiname.local_name() {
             None => {
-                let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                    "Error #2000: Unnamed property {} not found on Object",
-                    multiname.to_qualified_name(activation.context.gc_context)
-                ));
-                
+                let message = AvmString::new_utf8(
+                    activation.context.gc_context,
+                    &format!(
+                        "Error #2000: Unnamed property {} not found on Object",
+                        multiname.to_qualified_name(activation.context.gc_context)
+                    ),
+                );
+
                 return Err(Error::AvmError(
                     activation
                         .avm2()
@@ -242,13 +248,16 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                "Error #2000: Cannot set undefined property {} on {:?}",
-                multiname.to_qualified_name(activation.context.gc_context),
-                self.instance_of()
-                    .map(|cls| cls.inner_class_definition().read().name()),
-            ));
-            
+            let message = AvmString::new_utf8(
+                activation.context.gc_context,
+                &format!(
+                    "Error #2000: Cannot set undefined property {} on {:?}",
+                    multiname.to_qualified_name(activation.context.gc_context),
+                    self.instance_of()
+                        .map(|cls| cls.inner_class_definition().read().name()),
+                ),
+            );
+
             return Err(Error::AvmError(
                 activation
                     .avm2()
@@ -260,11 +269,14 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !multiname.contains_public_namespace() {
-            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                "Error #2000: Non-public property {} not found on Object.",
-                multiname.to_qualified_name(activation.context.gc_context)
-            ));
-            
+            let message = AvmString::new_utf8(
+                activation.context.gc_context,
+                &format!(
+                    "Error #2000: Non-public property {} not found on Object.",
+                    multiname.to_qualified_name(activation.context.gc_context)
+                ),
+            );
+
             return Err(Error::AvmError(
                 activation
                     .avm2()
@@ -277,11 +289,14 @@ impl<'gc> ScriptObjectData<'gc> {
 
         let local_name = match multiname.local_name() {
             None => {
-                let message = AvmString::new_utf8(activation.context.gc_context, &format!(
-                    "Error #2000: Unnamed property {} not found on Object",
-                    multiname.to_qualified_name(activation.context.gc_context)
-                ));
-                
+                let message = AvmString::new_utf8(
+                    activation.context.gc_context,
+                    &format!(
+                        "Error #2000: Unnamed property {} not found on Object",
+                        multiname.to_qualified_name(activation.context.gc_context)
+                    ),
+                );
+
                 return Err(Error::AvmError(
                     activation
                         .avm2()
