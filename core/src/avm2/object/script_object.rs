@@ -147,20 +147,36 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if !multiname.contains_public_namespace() {
-            return Err(format!(
-                "Non-public property {} not found on Object",
+            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                "Error #2000: Non-public property {} not found on Object.",
                 multiname.to_qualified_name(activation.context.gc_context)
-            )
-            .into());
+            ));
+            
+            return Err(Error::AvmError(
+                activation
+                    .avm2()
+                    .classes()
+                    .referenceerror
+                    .construct(activation, &[message.into(), 2000.into()])?
+                    .into(),
+            ));
         }
 
         let local_name = match multiname.local_name() {
             None => {
-                return Err(format!(
-                    "Unnamed property {} not found on Object",
+                let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                    "Error #2000: Unnamed property {} not found on Object",
                     multiname.to_qualified_name(activation.context.gc_context)
-                )
-                .into())
+                ));
+                
+                return Err(Error::AvmError(
+                    activation
+                        .avm2()
+                        .classes()
+                        .referenceerror
+                        .construct(activation, &[message.into(), 2000.into()])?
+                        .into(),
+                ));
             }
             Some(name) => name,
         };
@@ -226,30 +242,54 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            return Err(format!(
-                "Cannot set undefined property {} on {:?}",
+            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                "Error #2000: Cannot set undefined property {} on {:?}",
                 multiname.to_qualified_name(activation.context.gc_context),
                 self.instance_of()
                     .map(|cls| cls.inner_class_definition().read().name()),
-            )
-            .into());
+            ));
+            
+            return Err(Error::AvmError(
+                activation
+                    .avm2()
+                    .classes()
+                    .referenceerror
+                    .construct(activation, &[message.into(), 2000.into()])?
+                    .into(),
+            ));
         }
 
         if !multiname.contains_public_namespace() {
-            return Err(format!(
-                "Non-public property {} not found on Object",
+            let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                "Error #2000: Non-public property {} not found on Object.",
                 multiname.to_qualified_name(activation.context.gc_context)
-            )
-            .into());
+            ));
+            
+            return Err(Error::AvmError(
+                activation
+                    .avm2()
+                    .classes()
+                    .referenceerror
+                    .construct(activation, &[message.into(), 2000.into()])?
+                    .into(),
+            ));
         }
 
         let local_name = match multiname.local_name() {
             None => {
-                return Err(format!(
-                    "Unnamed property {} not found on Object",
+                let message = AvmString::new_utf8(activation.context.gc_context, &format!(
+                    "Error #2000: Unnamed property {} not found on Object",
                     multiname.to_qualified_name(activation.context.gc_context)
-                )
-                .into())
+                ));
+                
+                return Err(Error::AvmError(
+                    activation
+                        .avm2()
+                        .classes()
+                        .referenceerror
+                        .construct(activation, &[message.into(), 2000.into()])?
+                        .into(),
+                ));
             }
             Some(name) => name,
         };
