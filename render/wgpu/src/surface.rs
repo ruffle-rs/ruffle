@@ -12,8 +12,8 @@ use crate::{
     Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use ruffle_render::commands::CommandList;
+use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
 use std::sync::Arc;
-use swf::{BlurFilter, ColorMatrixFilter, Filter};
 use target::CommandTarget;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
@@ -435,10 +435,6 @@ impl Surface {
                 source_size,
                 &filter,
             ),
-            _ => {
-                tracing::warn!("Unsupported filter {filter:?}");
-                return;
-            }
         };
 
         draw_encoder.copy_texture_to_texture(
@@ -541,7 +537,7 @@ impl Surface {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: create_debug_label!("Filter arguments").as_deref(),
-                contents: &bytemuck::cast_slice(&filter.matrix.map(|f| f.to_f32())),
+                contents: &bytemuck::cast_slice(&filter.matrix),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
         let filter_group = descriptors
@@ -661,8 +657,8 @@ impl Surface {
                 });
         let source_view = source_texture.texture.create_view(&Default::default());
         for i in 0..2 {
-            let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
-            let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
+            let blur_x = (filter.blur_x - 1.0).max(0.0);
+            let blur_y = (filter.blur_y - 1.0).max(0.0);
             let current = &targets[i % 2];
             let (previous_view, previous_transform, previous_width, previous_height) = if i == 0 {
                 (
