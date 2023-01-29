@@ -1464,9 +1464,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let receiver = self
-            .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+        let receiver = self.pop_stack();
+
+        if matches!(receiver, Value::Null) || matches!(receiver, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1006: Call attempted on an object that is not a function.", // TODO: confirm that this is error 1006
+                1006,
+            )?));
+        }
+
+        let receiver = receiver.coerce_to_object(self)?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1495,7 +1503,24 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+
+            if matches!(object, Value::Null) {
+                return Err(Error::AvmError(type_error(
+                    self,
+                    "Error #1009: null has no properties.",
+                    1009,
+                )?));
+            }
+            if matches!(object, Value::Undefined) {
+                return Err(Error::AvmError(type_error(
+                    self,
+                    "Error #1010: undefined has no properties.",
+                    1010,
+                )?));
+            }
+
+            let object = object.coerce_to_object(self)?;
+            
             let value = object.get_property(&multiname, self)?;
             self.push_stack(value);
             return Ok(FrameControl::Continue);
@@ -1510,7 +1535,23 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                if matches!(object, Value::Null) {
+                    return Err(Error::AvmError(type_error(
+                        self,
+                        "Error #1009: null has no properties.",
+                        1009,
+                    )?));
+                }
+                if matches!(object, Value::Undefined) {
+                    return Err(Error::AvmError(type_error(
+                        self,
+                        "Error #1010: undefined has no properties.",
+                        1010,
+                    )?));
+                }
+
+                let object = object.coerce_to_object(self)?;
+                
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1525,7 +1566,24 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let object = object.coerce_to_receiver(self, Some(&multiname))?;
+
+        if matches!(object, Value::Null) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1009: null has no properties.",
+                1009,
+            )?));
+        }
+        if matches!(object, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1010: undefined has no properties.",
+                1010,
+            )?));
+        }
+
+        let object = object.coerce_to_object(self)?;
+        
         let value = object.get_property(&multiname, self)?;
         self.push_stack(value);
 
@@ -1558,6 +1616,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
                 let object = object.coerce_to_receiver(self, None)?;
+                
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
