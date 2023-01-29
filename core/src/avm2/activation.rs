@@ -1370,7 +1370,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let receiver = receiver.coerce_to_object(self)?;
-        
+
         let function = receiver.get_property(&multiname, self)?.as_callable(
             self,
             Some(&multiname),
@@ -1520,7 +1520,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
 
             let object = object.coerce_to_object(self)?;
-            
+
             let value = object.get_property(&multiname, self)?;
             self.push_stack(value);
             return Ok(FrameControl::Continue);
@@ -1551,7 +1551,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
 
                 let object = object.coerce_to_object(self)?;
-                
+
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1583,7 +1583,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let object = object.coerce_to_object(self)?;
-        
+
         let value = object.get_property(&multiname, self)?;
         self.push_stack(value);
 
@@ -1616,7 +1616,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
                 let object = object.coerce_to_receiver(self, None)?;
-                
+
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
