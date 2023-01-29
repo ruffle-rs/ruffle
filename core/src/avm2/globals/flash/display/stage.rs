@@ -726,6 +726,21 @@ pub fn stage3ds<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `invalidate`
+pub fn invalidate<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(stage) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        stage.set_invalidated(activation.context.gc_context, true);
+    }
+    Ok(Value::Undefined)
+}
+
 /// Stage.fullScreenSourceRect's getter
 pub fn full_screen_source_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -862,6 +877,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("stage3Ds", Some(stage3ds), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("invalidate", invalidate)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

@@ -66,7 +66,7 @@ pub use crate::avm2::value::Value;
 
 use self::scope::Scope;
 
-const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
+const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
