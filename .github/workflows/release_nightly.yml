@@ -319,6 +319,7 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
+          BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
         run: node packages/core/tools/set_version.js
       
