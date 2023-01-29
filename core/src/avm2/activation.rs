@@ -1332,9 +1332,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let receiver = self
-            .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+        let receiver = self.pop_stack();
+
+        if matches!(receiver, Value::Null) || matches!(receiver, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1006: Call attempted on an object that is not a function.",
+                1006,
+            )?));
+        }
+
+        let receiver = receiver.coerce_to_object(self)?;
 
         let value = receiver.call_property(&multiname, &args, self)?;
 
@@ -1351,9 +1359,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let receiver = self
-            .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+        let receiver = self.pop_stack();
+
+        if matches!(receiver, Value::Null) || matches!(receiver, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1006: Call attempted on an object that is not a function.",
+                1006,
+            )?));
+        }
+
+        let receiver = receiver.coerce_to_object(self)?;
+        
         let function = receiver.get_property(&multiname, self)?.as_callable(
             self,
             Some(&multiname),
@@ -1374,9 +1391,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let receiver = self
-            .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+        let receiver = self.pop_stack();
+
+        if matches!(receiver, Value::Null) || matches!(receiver, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1006: Call attempted on an object that is not a function.",
+                1006,
+            )?));
+        }
+
+        let receiver = receiver.coerce_to_object(self)?;
 
         receiver.call_property(&multiname, &args, self)?;
 
@@ -1410,9 +1435,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let multiname = self.pool_multiname_and_initialize(method, index)?;
-        let receiver = self
-            .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+        let receiver = self.pop_stack();
+
+        if matches!(receiver, Value::Null) || matches!(receiver, Value::Undefined) {
+            return Err(Error::AvmError(type_error(
+                self,
+                "Error #1006: Call attempted on an object that is not a function.", // TODO: confirm that this is error 1006
+                1006,
+            )?));
+        }
+
+        let receiver = receiver.coerce_to_object(self)?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
