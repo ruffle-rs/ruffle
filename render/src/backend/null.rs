@@ -66,8 +66,8 @@ impl RenderBackend for NullRenderer {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, Error> {
-        Err(Error::Unimplemented)
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
     }
 
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}

@@ -596,7 +596,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
+    ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
         let extent = wgpu::Extent3d {
@@ -645,14 +645,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.color_buffers_storage.recall();
 
         match texture_offscreen {
-            Some(texture_offscreen) => Ok(Box::new(QueueSyncHandle::AlreadyCopied {
+            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
                 index,
                 size: target.size,
                 buffer: texture_offscreen.buffer.clone(),
                 buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
                 descriptors: self.descriptors.clone(),
             })),
-            None => Ok(Box::new(QueueSyncHandle::NotCopied {
+            None => Some(Box::new(QueueSyncHandle::NotCopied {
                 handle: handle.clone(),
                 size: target.size,
                 descriptors: self.descriptors.clone(),

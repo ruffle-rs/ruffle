@@ -465,8 +465,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
-        Err(Error::Unimplemented)
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
     }
 
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {

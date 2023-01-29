@@ -1403,17 +1403,16 @@ impl<'gc> BitmapData<'gc> {
         );
 
         match image {
-            Ok(sync_handle) => match self.dirty_state {
+            Some(sync_handle) => match self.dirty_state {
                 DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
                 DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
                     self.dirty_state
                 ),
             },
-            Err(ruffle_render::error::Error::Unimplemented) => {
+            None => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }
-            Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }
     }
 }

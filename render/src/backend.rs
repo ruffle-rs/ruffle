@@ -45,7 +45,7 @@ pub trait RenderBackend: Downcast {
         width: u32,
         height: u32,
         commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, Error>;
+    ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
     /// The `destination_rect` must be calculated by the caller and is assumed to be correct.
