@@ -3,6 +3,7 @@ pub mod null;
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::filters::Filter;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -10,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::rc::Rc;
 use swf;
-use swf::Filter;
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;

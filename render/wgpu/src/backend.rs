@@ -16,6 +16,7 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::filters::Filter;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
@@ -24,7 +25,7 @@ use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
-use swf::{Color, Filter};
+use swf::Color;
 use tracing::instrument;
 use wgpu::Extent3d;
 

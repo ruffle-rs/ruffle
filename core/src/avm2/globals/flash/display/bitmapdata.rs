@@ -17,9 +17,9 @@ use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
-use swf::{BlurFilter, ColorMatrixFilter, Filter, Fixed16};
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -926,23 +926,22 @@ pub fn apply_filter<'gc>(
             "BlurFilter",
         ))?;
         let filter = if filter.is_of_type(color_matrix_filter, activation) {
-            let mut matrix = [Fixed16::default(); 20];
+            let mut matrix = [0.0; 20];
             if let Some(object) = filter
                 .get_property(&Multiname::public("matrix"), activation)?
                 .as_object()
             {
                 if let Some(array) = object.as_array_storage() {
                     for i in 0..matrix.len().min(array.length()) {
-                        matrix[i] = Fixed16::from_f64(
-                            array
-                                .get(i)
-                                .expect("Length was already checked at this point")
-                                .coerce_to_number(activation)?,
-                        );
+                        matrix[i] = array
+                            .get(i)
+                            .expect("Length was already checked at this point")
+                            .coerce_to_number(activation)?
+                            as f32;
                     }
                 }
             }
-            Filter::ColorMatrixFilter(Box::new(ColorMatrixFilter { matrix }))
+            Filter::ColorMatrixFilter(ColorMatrixFilter { matrix })
         } else if filter.is_of_type(blur_filter, activation) {
             let blur_x = filter
                 .get_property(&Multiname::public("blurX"), activation)?
@@ -953,18 +952,18 @@ pub fn apply_filter<'gc>(
             let quality = filter
                 .get_property(&Multiname::public("quality"), activation)?
                 .coerce_to_u32(activation)?;
-            Filter::BlurFilter(Box::new(BlurFilter {
-                blur_x: Fixed16::from_f64(blur_x),
-                blur_y: Fixed16::from_f64(blur_y),
-                num_passes: quality.clamp(1, 15) as u8,
-            }))
+            Filter::BlurFilter(BlurFilter {
+                blur_x: blur_x as f32,
+                blur_y: blur_y as f32,
+                quality: quality.clamp(1, 15) as u8,
+            })
         } else {
             tracing::warn!(
                 "BitmapData.applyFilter: Not yet implemented for {}",
                 filter.instance_of_class_name(activation.context.gc_context)
             );
             // Treat unimplemented ones as a default ColorMatrixFilter, as that's basically just blit
-            Filter::ColorMatrixFilter(Box::default())
+            Filter::default()
         };
         dest_bitmap
             .write(activation.context.gc_context)

@@ -11,11 +11,12 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
-use swf::{BlendMode, Filter, Rectangle, Twips};
+use swf::{BlendMode, Rectangle, Twips};
 use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
