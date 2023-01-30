@@ -166,7 +166,7 @@ impl Surface {
             render_pass.set_bind_group(2, &copy_bind_group, &[]);
         }
 
-        render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
+        render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
         render_pass.set_index_buffer(
             descriptors.quad.indices.slice(..),
             wgpu::IndexFormat::Uint32,
@@ -377,7 +377,7 @@ impl Surface {
                         render_pass.set_bind_group(2, &blend_bind_group, &[]);
                     }
 
-                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices.slice(..));
+                    render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
                     render_pass.set_index_buffer(
                         descriptors.quad.indices.slice(..),
                         wgpu::IndexFormat::Uint32,

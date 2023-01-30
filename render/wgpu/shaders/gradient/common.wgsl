@@ -66,9 +66,6 @@ fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
 struct GradientVertexInput {
     /// The position of the vertex in object space.
     @location(0) position: vec2<f32>,
-
-    /// The color of this vertex (only used by the color shader).
-    @location(1) color: vec4<f32>,
 };
 
 @vertex

@@ -36,13 +36,10 @@ struct PushConstants {
     colorTransforms: ColorTransforms,
 }
 
-/// The vertex format shared among all shaders.
+/// The vertex format shared among most shaders.
 struct VertexInput {
     /// The position of the vertex in object space.
     @location(0) position: vec2<f32>,
-
-    /// The color of this vertex (only used by the color shader).
-    @location(1) color: vec4<f32>,
 };
 
 /// Common uniform layout shared by all shaders.

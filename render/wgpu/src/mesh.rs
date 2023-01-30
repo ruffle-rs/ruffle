@@ -1,7 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms, Vertex,
+    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms,
+    PosColorVertex, PosVertex,
 };
 
 use ruffle_render::backend::RenderBackend;
@@ -33,14 +34,29 @@ impl Draw {
         shape_id: CharacterId,
         draw_id: usize,
     ) -> Option<Self> {
-        let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
         let descriptors = backend.descriptors().clone();
-        let vertex_buffer = create_buffer_with_data(
-            &descriptors.device,
-            bytemuck::cast_slice(&vertices),
-            wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
-        );
+
+        let vertex_buffer = if matches!(draw.draw_type, TessDrawType::Color) {
+            let vertices: Vec<_> = draw
+                .vertices
+                .into_iter()
+                .map(PosColorVertex::from)
+                .collect();
+            create_buffer_with_data(
+                &descriptors.device,
+                bytemuck::cast_slice(&vertices),
+                wgpu::BufferUsages::VERTEX,
+                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
+            )
+        } else {
+            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+            create_buffer_with_data(
+                &descriptors.device,
+                bytemuck::cast_slice(&vertices),
+                wgpu::BufferUsages::VERTEX,
+                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
+            )
+        };
 
         let index_buffer = create_buffer_with_data(
             &descriptors.device,
