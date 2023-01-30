@@ -249,7 +249,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -271,7 +271,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.apply_transform(&transform.matrix, &transform.color_transform);
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -351,7 +351,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos_color.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );

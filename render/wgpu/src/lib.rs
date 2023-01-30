@@ -101,12 +101,26 @@ impl From<ColorTransform> for ColorAdjustments {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
+struct PosVertex {
+    position: [f32; 2],
+}
+
+impl From<TessVertex> for PosVertex {
+    fn from(vertex: TessVertex) -> Self {
+        Self {
+            position: [vertex.x, vertex.y],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct PosColorVertex {
     position: [f32; 2],
     color: [f32; 4],
 }
 
-impl From<TessVertex> for Vertex {
+impl From<TessVertex> for PosColorVertex {
     fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],

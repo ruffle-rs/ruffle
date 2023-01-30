@@ -1,21 +1,31 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PushConstants, Transforms, Vertex};
+use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
 use ruffle_render::tessellator::GradientType;
 use std::mem;
 use swf::GradientSpread;
 use wgpu::vertex_attr_array;
 
-pub const VERTEX_BUFFERS_DESCRIPTION: [wgpu::VertexBufferLayout; 1] = [wgpu::VertexBufferLayout {
-    array_stride: std::mem::size_of::<Vertex>() as u64,
-    step_mode: wgpu::VertexStepMode::Vertex,
-    attributes: &vertex_attr_array![
-        0 => Float32x2,
-        1 => Float32x4,
-    ],
-}];
+pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+        ],
+    }];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosColorVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x4,
+        ],
+    }];
 
 #[derive(Debug)]
 pub struct ShapePipeline {
@@ -104,7 +114,7 @@ impl Pipelines {
             format,
             &shaders.color_shader,
             msaa_sample_count,
-            &VERTEX_BUFFERS_DESCRIPTION,
+            &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
             &full_push_constants,
@@ -129,7 +139,7 @@ impl Pipelines {
                     format,
                     &shaders.gradient_shaders[mode][spread],
                     msaa_sample_count,
-                    &VERTEX_BUFFERS_DESCRIPTION,
+                    &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &gradient_bindings,
                     wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
                     &full_push_constants,
@@ -154,7 +164,7 @@ impl Pipelines {
                 format,
                 &shaders.blend_shaders[blend],
                 msaa_sample_count,
-                &VERTEX_BUFFERS_DESCRIPTION,
+                &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 wgpu::BlendState::REPLACE,
                 &partial_push_constants,
@@ -182,7 +192,7 @@ impl Pipelines {
                     format,
                     &shaders.bitmap_shader,
                     msaa_sample_count,
-                    &VERTEX_BUFFERS_DESCRIPTION,
+                    &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
                     blend.blend_state(),
                     &full_push_constants,
