@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use crate::avm1::Activation;
 use crate::avm1::ActivationIdentifier;
+use crate::avm1::TObject;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
@@ -14,8 +15,10 @@ pub enum DValue {
     String(String),
     Int(i32),
     Number(f64),
+    Bool(bool),
     Null,
     Undefined,
+    Object { kind: String },
 }
 
 use crate::avm1::Value as Avm1Value;
@@ -23,11 +26,34 @@ use crate::avm1::Value as Avm1Value;
 impl DValue {
     fn as_avm1<'gc>(&self) -> Avm1Value<'gc> {
         match self {
-            Self::Null => Avm1Value::Null,
+            // Objects can only be sent for now, not recieved
+            Self::Null | Self::Object { .. } => Avm1Value::Null,
             Self::Undefined => Avm1Value::Undefined,
             Self::Int(v) => Avm1Value::Number(*v as f64),
             Self::Number(v) => Avm1Value::Number(*v),
+            Self::Bool(b) => Avm1Value::Bool(*b),
             Self::String(s) => panic!(),
+        }
+    }
+}
+
+impl<'gc> From<Avm1Value<'gc>> for DValue {
+    fn from(value: Avm1Value<'gc>) -> Self {
+        match value {
+            Avm1Value::Undefined => Self::Undefined,
+            Avm1Value::Null => Self::Null,
+            Avm1Value::Bool(b) => Self::Bool(b),
+            Avm1Value::Number(n) => {
+                if let Ok(i) = i32::from_str_radix(&n.to_string(), 10) {
+                    Self::Int(i)
+                } else {
+                    Self::Number(n)
+                }
+            },
+            //TODO: send wstrs
+            Avm1Value::String(s) => Self::String(s.to_utf8_lossy().to_string()),
+
+            Avm1Value::Object(o) => Self::Object { kind: format!("{:?}", o) },
         }
     }
 }
@@ -115,6 +141,15 @@ pub enum Avm1Msg {
 
     /// Pop the top value off of the stack
     Pop,
+
+    /// Get the value at the given path
+    GetVariable { path: String },
+
+    /// Set the value at the given path
+    SetVariable { path: String, value: DValue },
+
+    /// Get the sub-properties of the value the given path
+    GetSubprops { path: String },
 }
 
 /// Debug messages that are handled in the player
@@ -153,12 +188,20 @@ pub enum TargetedMsg {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DebugMessageOut {
+    /// A generic success / fail message
+    GenericResult { success: bool },
+
+    /// Result sent when a value is retrieved
+    GetValueResult { path: String, value: DValue },
+
+    /// Result sent when requesing sub-properties of an object
+    GetSubpropsResult { path: String, props: Vec<String> },
+
     State { playing: bool },
     BreakpointHit { name: String },
     GetVarResult { value: String },
     DisplayObjectInfo(crate::debugable::DisplayObjectInfo),
     GetPropsResult { keys: Vec<String> },
-    GenericResult { success: bool },
     BreakpointList { bps: Vec<String> },
 }
 
@@ -450,56 +493,91 @@ impl Avm1Debugger {
 //TODO: add this to activation
 pub static mut AVM1_DBG_STATE: Avm1Debugger = Avm1Debugger::new();
 
-pub fn handle_avm1_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc>) {
+pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
     let dbg = unsafe { &mut AVM1_DBG_STATE };
 
-    while let Some(msg) = context.debugger.get_debug_event_avm1() {
+    while let Some(msg) = activation.context.debugger.get_debug_event_avm1() {
         match msg {
             Avm1Msg::StepInto => {
                 dbg.execution_state = Avm1ExecutionState::StepInto;
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::Break => {
                 dbg.execution_state = Avm1ExecutionState::Paused;
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::GetStack => {
-                println!("stack = {:?}", context.avm1.stack());
+                //TODO: resp for this
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::BreakFunction { name } => {
                 dbg.pending_breakpoints.push(name);
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::BreakFunctionDelete { name } => {
                 if let Some(pos) = dbg.pending_breakpoints.iter().position(|p| p == &name) {
                     dbg.pending_breakpoints.remove(pos);
                 }
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::Continue => {
                 dbg.execution_state = Avm1ExecutionState::Running;
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::Push { val } => {
-                context.avm1.push(val.as_avm1());
+                activation.context.avm1.push(val.as_avm1());
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::Pop => {
-                context.avm1.pop();
+                activation.context.avm1.pop();
                 let msg = DebugMessageOut::GenericResult { success: true };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::GetBreakpoints => {
                 let msg = DebugMessageOut::BreakpointList { bps: dbg.pending_breakpoints.clone() };
-                context.debugger.submit_debug_message(msg);
+                activation.context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::GetVariable { path } => {
+                let res = activation.get_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()));
+                if let Ok(res) = res {
+                    let val: Avm1Value<'gc> = res.into();
+                    println!("val = {:?}", val);
+
+                    activation.context.debugger.submit_debug_message(DebugMessageOut::GetValueResult { path, value: val.into() });
+                } else {
+                    activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: false });
+                }
+            }
+            Avm1Msg::SetVariable { path, value } => {
+                let res = activation.set_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()), value.as_avm1());
+                activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: res.is_ok() });
+            }
+            Avm1Msg::GetSubprops { path } => {
+                let res = activation.get_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()));
+                if let Ok(res) = res {
+                    let res: Avm1Value<'gc> = res.into();
+
+                    if let Avm1Value::Object(o) = res {
+                        let mut props = Vec::new();
+
+                        for child in o.get_keys(activation) {
+                            props.push(child.to_utf8_lossy().to_string());
+                        }
+
+                        activation.context.debugger.submit_debug_message(DebugMessageOut::GetSubpropsResult { path, props });
+                    } else {
+                        activation.context.debugger.submit_debug_message(DebugMessageOut::GetSubpropsResult { path, props: vec![] });
+                    }
+                } else {
+                    activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: false });
+                }
             }
             _ => {},
         }

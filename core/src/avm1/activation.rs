@@ -435,7 +435,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             // Keep processing events while we are in a breakpoint
             loop {
-                crate::debugable::handle_avm1_debug_events(&mut self.context);
+                crate::debugable::handle_avm1_debug_events(self);
 
                 if !unsafe { crate::debugable::AVM1_DBG_STATE.pause_execution()} {
                     break;

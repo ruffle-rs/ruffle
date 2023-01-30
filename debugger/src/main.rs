@@ -48,7 +48,7 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         println!("Commands:");
         println!("avm1 break - Break execution at the next instruction");
         println!("avm1 breakpoint list - List active breakpoints");
-       println!("avm1 breakpoint add \"function_name\" - Break execution when \"function_name\" is called");
+        println!("avm1 breakpoint add \"function_name\" - Break execution when \"function_name\" is called");
         println!("avm1 breakpoint remove \"function_name\" - Remove a breakpoint");
         println!("");
         println!("Only available when in a breakpoint:");
@@ -60,9 +60,27 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         println!("avm1 stack push <Value>");
         println!("avm1 stack pop");
         println!("");
+        println!("avm1 get <path> - Get the value of the variable at <path>");
+        println!("avm1 set <path> <value> - Set the value of the variable at <path> to <value>");
+        println!("avm1 props <path> - Get the sub-properties of the variable at <path>");
+        println!();
         println!("avm1 continue");
         println!("");
         println!("avm1 help - View this message");
+    } else if let Some(path) = smatch(cmd, "set") {
+        let mut parts = path.split(" ");
+        let path = parts.next().unwrap();
+        let value = parts.next().unwrap();
+
+        if let Some(value) = parse_value(value) {
+            return Some(Command::Avm1VariableSet { path: path.to_string(), value, });
+        } else {
+            return None;
+        }
+    } else if let Some(path) = smatch(cmd, "props") {
+        return Some(Command::Avm1SubpropGet { path: path.to_string() });
+    } else if let Some(path) = smatch(cmd, "get") {
+        return Some(Command::Avm1VariableGet { path: path.to_string() });
     } else if let Some(bp) = smatch(cmd, "breakpoint") {
         if let Some(name) = smatch(bp, "add") {
             return Some(Command::Avm1FunctionBreak { name: name.to_string() });
@@ -228,6 +246,15 @@ pub enum Command {
 
     /// Get all the current breakpoints
     Avm1BreakpointsGet,
+
+    /// Get the value of a avm1 variable
+    Avm1VariableGet { path: String },
+
+    /// Set the value of a avm1 variable
+    Avm1VariableSet { path: String, value: DValue },
+
+    /// Get the sub-properties of an avm1 variable
+    Avm1SubpropGet { path: String },
 }
 
 #[derive(Debug, Default)]
@@ -254,12 +281,12 @@ fn stdin_thread(
 
             let mut out = std::io::stdout();
             if let Some(select) = &state.read().unwrap().target {
-                out.write(b"[");
-                out.write(select.as_bytes());
-                out.write(b"]");
+                out.write(b"[").unwrap();
+                out.write(select.as_bytes()).unwrap();
+                out.write(b"]").unwrap();
             }
-            out.write(b"> ");
-            out.flush();
+            out.write(b"> ").unwrap();
+            out.flush().unwrap();
 
             let mut buf = [0u8; 4096];
             if let Ok(len) = std::io::stdin().read(&mut buf) {
@@ -372,6 +399,15 @@ fn handle_client(mut stream: TcpStream) {
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
+                Command::Avm1SubpropGet { path } => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetSubprops { path } });
+                }
+                Command::Avm1VariableSet { path, value } => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::SetVariable { path, value } });
+                }
+                Command::Avm1VariableGet { path } => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetVariable { path } });
+                }
                 Command::Avm1BreakpointsGet => {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBreakpoints });
                 }
@@ -382,82 +418,28 @@ fn handle_client(mut stream: TcpStream) {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Push {val }});
                 }
                 Command::Avm1Continue => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::Continue})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Continue});
                 }
                 Command::Avm1FunctionBreakDelete { name }  => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunctionDelete {name}})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunctionDelete {name}});
                 }
                 Command::Avm1FunctionBreak { name }  => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunction {name}})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunction {name}});
                 }
                 Command::Avm1StepInto => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::StepInto})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::StepInto});
                 }
                 Command::Avm1Stack => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::GetStack})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetStack});
                 }
                 Command::Avm1Break => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Avm1 { msg: Avm1Msg::Break})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
-                    
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Break});
                 }
                 Command::Pause => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Player { msg: PlayerMsg::Pause})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Player { msg: PlayerMsg::Pause});
                 }
                 Command::Play => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Player { msg: PlayerMsg::Play})
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Player { msg: PlayerMsg::Play});
                 }
                 Command::Reconnect => {
                     break;
@@ -582,6 +564,16 @@ fn handle_client(mut stream: TcpStream) {
                                 println!("{}", bp);
                             }
                         }
+                        DebugMessageOut::GetValueResult { path, value } => {
+                            println!("{} = {:?}", path, value);
+                        }
+                        DebugMessageOut::GetSubpropsResult { path, props } => {
+                            println!("{} = {{", path);
+                            for p in &props {
+                                println!("    {},", p);
+                            }
+                            println!("}}");
+                        }
                     }
                 }
                 input_block.store(false, Ordering::SeqCst);
@@ -606,3 +598,5 @@ fn main() {
     // close the socket server
     drop(listener);
 }
+
+//TODO: avm1 ops should be disabled unless in a bp context
