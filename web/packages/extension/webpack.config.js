@@ -34,12 +34,12 @@ function transformManifest(content, env) {
         // Add `wasm-eval` to the `script-src` directive in the Content Security Policy.
         // This setting is required by Chrome to allow Wasm in the extension.
         // Eventually this may change to `wasm-unsafe-eval`, and we may need this for all browsers.
-        manifest.content_security_policy =
-            manifest.content_security_policy.replace(
+        /*manifest.content_security_policy.extension_pages =
+            manifest.content_security_policy.extension_pages.replace(
                 /(script-src\s+[^;]*)(;|$)/i,
                 "$1 'wasm-eval'$2"
             );
-
+        */
         // Chrome runs the extension in a single shared process by default,
         // which prevents extension pages from loading in Incognito tabs
         manifest.incognito = "split";

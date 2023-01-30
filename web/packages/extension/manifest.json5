@@ -1,18 +1,19 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "Ruffle",
     "version": null, // Filled by Webpack.
     "default_locale": "en",
     "description": "__MSG_description__",
     "homepage_url": "https://ruffle.rs/",
 
-    "browser_action": {
+    "action": {
         "default_popup": "popup.html",
         "browser_style": true,
     },
     "background": {
         "scripts": ["dist/background.js"],
-        "persistent": true,
+        //"service_worker": "dist/background.js",
+        //"persistent": true,
     },
     "content_scripts": [
         {
@@ -29,7 +30,10 @@
     ],
 
     // 'wasm-eval' added by Webpack for Chrome extension.
-    "content_security_policy": "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src *; img-src data:;",
+    "content_security_policy": {
+      "extension_pages": "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src *; img-src data:;",
+    },
+    "host_permissions": ["<all_urls>"],
 
     "icons": {
         "16": "images/icon16.png",
@@ -38,15 +42,19 @@
         "128": "images/icon128.png",
         "180": "images/icon180.png",
     },
+	"minimum_chrome_version": "93",
     "options_ui": {
         "page": "options.html",
         "open_in_tab": true,
     },
     "permissions": [
         "storage",
-        "<all_urls>",
         "webRequest",
+        //"declarativeNetRequest",
         "webRequestBlocking",
     ],
-    "web_accessible_resources": ["*"],
+    "web_accessible_resources": [{
+        "resources": ["*"],
+        "matches": ["<all_urls>"],
+    }],
 }
