@@ -16,11 +16,14 @@ pub enum Stub {
     },
     Avm2Getter {
         class: &'static str,
-        field: &'static str,
+        property: &'static str,
     },
     Avm2Setter {
         class: &'static str,
-        field: &'static str,
+        property: &'static str,
+    },
+    Avm2Constructor {
+        class: &'static str,
     },
     Other(Cow<'static, str>),
 }
@@ -42,11 +45,20 @@ impl Display for Stub {
             } => {
                 write!(f, "AVM1 {class}.{method}() {specifics}")
             }
-            Stub::Avm2Getter { class, field } => {
+            Stub::Avm2Getter {
+                class,
+                property: field,
+            } => {
                 write!(f, "AVM2 {class}.{field} getter")
             }
-            Stub::Avm2Setter { class, field } => {
+            Stub::Avm2Setter {
+                class,
+                property: field,
+            } => {
                 write!(f, "AVM2 {class}.{field} setter")
+            }
+            Stub::Avm2Constructor { class } => {
+                write!(f, "AVM2 {class} constructor")
             }
             Stub::Other(text) => write!(f, "{text}"),
         }
