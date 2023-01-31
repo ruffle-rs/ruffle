@@ -1077,7 +1077,7 @@ fn set_cache_as_bitmap<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `opaqueBackground`'s getter.
+/// Stubs `opaqueBackground`'s getter.
 pub fn opaque_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -1086,7 +1086,7 @@ pub fn opaque_background<'gc>(
     Ok(Value::Null)
 }
 
-/// Implements `opaqueBackground`'s setter.
+/// Stubs `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -1153,7 +1153,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("transform", Some(transform), Some(set_transform)),
         ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
         ("mask", Some(mask), Some(set_mask)),
-        ("opaqueBackground", Some(opaque_background), Some(set_opaque_background)),
+        (
+            "opaqueBackground",
+            Some(opaque_background),
+            Some(set_opaque_background),
+        ),
         (
             "cacheAsBitmap",
             Some(cache_as_bitmap),
