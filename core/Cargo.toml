@@ -49,7 +49,7 @@ rustversion = "1.0.11"
 bytemuck = "1.13.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.25"
+version = "0.3.26"
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
 version = "0.4.33"

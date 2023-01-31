@@ -29,7 +29,7 @@ profiling = { version = "1.0", default-features = false, optional = true }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.25"
+version = "0.3.26"
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
