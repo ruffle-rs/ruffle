@@ -2,6 +2,7 @@
 
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, TObject, Value};
+use crate::avm2_stub_getter;
 use crate::display_object::{StageQuality, TDisplayObject};
 use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
 use swf::Fixed8;
@@ -124,11 +125,15 @@ pub fn get_concatenated_matrix<'gc>(
 }
 
 pub fn get_concatenated_color_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("Transform.concatenatedColorTransform: not yet implemented");
+    avm2_stub_getter!(
+        activation,
+        "flash.geom.Transform",
+        "concatenatedColorTransform"
+    );
     Ok(Value::Undefined)
 }
 
