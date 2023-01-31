@@ -45,6 +45,7 @@ mod xml;
 pub mod backend;
 pub mod config;
 pub mod external;
+pub mod stub;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;

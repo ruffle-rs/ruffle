@@ -37,6 +37,7 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
 use crate::string::AvmString;
+use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
@@ -239,6 +240,8 @@ pub struct Player {
     actions_since_timeout_check: u16,
 
     frame_phase: FramePhase,
+
+    stub_tracker: StubCollection,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -1742,6 +1745,7 @@ impl Player {
                 frame_rate: &mut self.frame_rate,
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
+                stub_tracker: &mut self.stub_tracker,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -2165,6 +2169,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
+                stub_tracker: StubCollection::new(),
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
