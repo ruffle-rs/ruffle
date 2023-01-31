@@ -1,4 +1,5 @@
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2_stub_getter;
 
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -13,11 +14,10 @@ pub fn native_instance_init<'gc>(
 }
 /// Implements `StaticText.text`
 pub fn get_text<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::RustError(
-        "StaticText.text: not yet implemented".into(),
-    ))
+    avm2_stub_getter!(activation, "flash.text.StaticText", "text");
+    Ok(Value::Undefined)
 }
