@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::WStr;
@@ -82,21 +83,21 @@ fn begin_fill<'gc>(
 
 /// Implements `Graphics.beginBitmapFill`.
 fn begin_bitmap_fill<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("Graphics.beginBitmapFill: not yet implemented");
+    avm2_stub_method!(activation, "flash.display.Graphics", "beginBitmapFill");
     Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.beginGradientFill`.
 fn begin_gradient_fill<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("Graphics.beginGradientFill: not yet implemented");
+    avm2_stub_method!(activation, "flash.display.Graphics", "beginGradientFill");
     Ok(Value::Undefined)
 }
 
