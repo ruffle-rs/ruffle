@@ -40,6 +40,7 @@ use url::form_urlencoded;
 pub type Handle = Index;
 
 /// How Ruffle should load movies.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Clone, Copy)]
 pub enum LoadBehavior {
     /// Allow movies to execute before they have finished loading.
