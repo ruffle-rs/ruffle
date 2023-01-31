@@ -13,6 +13,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
 use gc_arena::{GcCell, MutationContext};
 
@@ -113,13 +114,18 @@ pub fn set_buffer_time<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stub `SoundMixer.areSoundsInaccessible`
+/// `SoundMixer.areSoundsInaccessible`
 pub fn are_sounds_inaccessible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("SoundMixer.areSoundsInaccessible is a stub".into())
+    avm2_stub_getter!(
+        activation,
+        "flash.media.SoundMixer",
+        "areSoundsInaccessible"
+    );
+    Ok(Value::Undefined)
 }
 
 /// Implements `SoundMixer.computeSpectrum`
