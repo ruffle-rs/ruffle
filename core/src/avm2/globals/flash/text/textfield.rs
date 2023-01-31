@@ -13,6 +13,7 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelectio
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
 use swf::Color;
@@ -1277,20 +1278,20 @@ pub fn set_max_chars<'gc>(
 }
 
 pub fn restrict<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("TextField.restrict - not yet implemented");
+    avm2_stub_getter!(activation, "flash.text.TextField", "restrict");
     Ok(Value::Null)
 }
 
 pub fn set_restrict<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("TextField.restrict - not yet implemented");
+    avm2_stub_setter!(activation, "flash.text.TextField", "restrict");
     Ok(Value::Undefined)
 }
 
