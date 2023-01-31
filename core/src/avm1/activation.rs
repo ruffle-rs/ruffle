@@ -20,7 +20,7 @@ use instant::Instant;
 use rand::Rng;
 use ruffle_render::bounding_box::BoundingBox;
 use smallvec::SmallVec;
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::cmp::min;
 use std::fmt;
 use swf::avm1::read::Reader;
@@ -97,7 +97,7 @@ enum FrameControl<'gc> {
 
 #[derive(Clone)]
 pub struct ActivationIdentifier<'a> {
-    parent: Option<&'a ActivationIdentifier<'a>>,
+    pub parent: Option<&'a ActivationIdentifier<'a>>,
     name: Cow<'static, str>,
     depth: u16,
     function_count: u16,
@@ -169,6 +169,8 @@ impl<'a> ActivationIdentifier<'a> {
     pub fn depth(&self) -> u16 {
         self.depth
     }
+
+    pub fn name(&self) -> &str { self.name.borrow() }
 }
 
 pub struct Activation<'a, 'gc: 'a> {
@@ -211,7 +213,7 @@ pub struct Activation<'a, 'gc: 'a> {
     ///
     /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
     /// same register set.
-    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+    pub local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.

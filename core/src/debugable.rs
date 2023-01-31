@@ -106,6 +106,12 @@ pub enum DebugMessageIn {
 /// Debug messages that are handled by the AVM1 VM
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Avm1Msg {
+    /// Get the current registers
+    GetRegisters,
+
+    /// Get the current backtrace
+    GetBacktrace,
+
     /// Execute until the end of the current scope
     StepOut,
 
@@ -197,8 +203,14 @@ pub enum DebugMessageOut {
     /// Result sent when a value is retrieved
     GetValueResult { path: String, value: DValue },
 
-    /// Result sent when requesing sub-properties of an object
+    /// Result sent when requesting sub-properties of an object
     GetSubpropsResult { path: String, props: Vec<String> },
+
+    /// Result sent when requesting a backtrace
+    GetBacktraceResult { backtrace: Vec<String> },
+
+    /// Result send when requesting registers
+    GetRegisterResult { regs: Vec<DValue> },
 
     State { playing: bool },
     BreakpointHit { name: String },
@@ -586,6 +598,28 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 } else {
                     activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: false });
                 }
+            }
+            Avm1Msg::GetBacktrace => {
+                let mut bt = Vec::new();
+
+                let mut id = Some(&activation.id);
+                while let Some(p) = id {
+                    bt.push(p.name().to_string());
+                    id = p.parent;
+                }
+                activation.context.debugger.submit_debug_message(DebugMessageOut::GetBacktraceResult { backtrace: bt });
+            }
+            Avm1Msg::GetRegisters => {
+                let mut regs = Vec::<DValue>::new();
+
+                if let Some(r) = &activation.local_registers {
+                    let r = r.read();
+                    for i in 0..r.len() {
+                        regs.push(DValue::from(*r.get(i).unwrap()));
+                    }
+                }
+
+                activation.context.debugger.submit_debug_message(DebugMessageOut::GetRegisterResult { regs });
             }
             _ => {},
         }

@@ -33,16 +33,15 @@ fn parse_value(s: &str) -> Option<DValue> {
     }
 }
 
-// avm1 get
-// avm1 set
-// for basic dot paths, no last res, stack or registers
-// avm1 children "foo" -> "foo.<a, b, c>"
-// backtrace
+
+
 // list current function args
 // list all functions
 // list locals
 // all global vars?
 // forward traces
+// actually handle short form
+// prevent using some commands when not in a breakpoint
 
 
 
@@ -50,36 +49,40 @@ fn parse_value(s: &str) -> Option<DValue> {
 fn parse_avm1_command(cmd: &str) -> Option<Command> {
     if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (AVM1)");
-        println!("");
+        println!();
         println!("() = Short form");
-        println!("");
+        println!();
         println!("Values:");
         println!("null - Null");
         println!("undefined - Undefined");
         println!("123.4 - Number");
         println!("123 - Int");
         println!("\"Foo\" - String");
-        println!("");
+        println!();
         println!("Commands:");
         println!("avm1 break - Break execution at the next instruction");
         println!("avm1 breakpoint list - List active breakpoints");
         println!("avm1 breakpoint add \"function_name\" - Break execution when \"function_name\" is called");
         println!("avm1 breakpoint remove \"function_name\" - Remove a breakpoint");
-        println!("");
+        println!();
         println!("Only available when in a breakpoint:");
         println!("avm1 (si)/step - Execute next instruction");
         println!("avm1 (sr)/step_out - Continue execution, until returning");
-        println!("");
-        println!("avm1 stack show");
-        println!("avm1 stack push <Value>");
-        println!("avm1 stack pop");
-        println!("");
+        println!();
+        println!("avm1 stack show - Show the current state of the stack");
+        println!("avm1 stack push <Value> - Push a value onto the stack");
+        println!("avm1 stack pop - Remove the top value from the stack");
+        println!();
+        println!("avm1 registers show - Show the current state of the registers");
+        println!();
+        println!("avm1 backtrace - Show the call stack");
+        println!();
         println!("avm1 get <path> - Get the value of the variable at <path>");
         println!("avm1 set <path> <value> - Set the value of the variable at <path> to <value>");
         println!("avm1 props <path> - Get the sub-properties of the variable at <path>");
         println!();
         println!("avm1 continue");
-        println!("");
+        println!();
         println!("avm1 help - View this message");
     } else if let Some(path) = smatch(cmd, "set") {
         let mut parts = path.split(" ");
@@ -109,6 +112,10 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         return Some(Command::Avm1StepOut);
     } else if let Some(_) = smatch(cmd, "step") {
         return Some(Command::Avm1StepInto);
+    } else if let Some(_) = smatch(cmd, "registers show") {
+        return Some(Command::Avm1Registers);
+    } else if let Some(_) = smatch(cmd, "backtrace") {
+        return Some(Command::Avm1Backtrace);
     } else if let Some(stack) = smatch(cmd, "stack") {
         if let Some(_) = smatch(stack, "show") {
             return Some(Command::Avm1Stack);
@@ -129,11 +136,11 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
 fn parse_player_command(cmd: &str) -> Option<Command> {
     if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (Player)");
-        println!("");
+        println!();
         println!("Commands:");
         println!("player pause");
         println!("player resume");
-        println!("");
+        println!();
         println!("player help - View this message");
     } else if let Some(_) = smatch(cmd, "pause") {
         return Some(Command::Pause);
@@ -147,16 +154,16 @@ fn parse_player_command(cmd: &str) -> Option<Command> {
 fn parse_do_command(cmd: &str) -> Option<Command> {
     if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (Display Object)");
-        println!("");
+        println!();
         println!("() = Short form");
-        println!("");
+        println!();
         println!("Commands:");
         println!("do info <path>");
         println!("do children <path>");
         println!("do props <path>");
         println!("do stop <path>");
         println!("do prop get <path> <prop_name>");
-        println!("");
+        println!();
         println!("do help - View this message");
     } else if let Some(path) = smatch(cmd, "info") {
         return Some(Command::Info { path: path.to_string()});
@@ -190,14 +197,14 @@ fn parse_command(cmd: &str) -> Option<Command> {
         std::process::exit(0);
     } else if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (Top level)");
-        println!("");
+        println!();
         println!("Commands:");
         println!("avm1 - Query the state of the AVM1 interpreter");
         println!("do - Query a display object");
         println!("player - Control the state of the player");
         println!("help - View this message");
         println!("quit - Exit the debugger");
-        println!("");
+        println!();
         println!("Try \"<command> help\" for more details");
         None
     } else {
@@ -277,6 +284,12 @@ pub enum Command {
 
     /// Get the sub-properties of an avm1 variable
     Avm1SubpropGet { path: String },
+
+    /// Get the avm1 backtrace
+    Avm1Backtrace,
+
+    /// Get the avm1 registers
+    Avm1Registers,
 }
 
 #[derive(Debug, Default)]
@@ -405,17 +418,21 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
     );
 
     fn send_msg(stream: &mut WebSocket<TcpStream>, msg: DebugMessageIn) {
-        stream.write_message(Message::text(serde_json::to_string(&msg).unwrap())).unwrap();
-        stream.write_pending().unwrap();
+        let _ = stream.write_message(Message::text(serde_json::to_string(&msg).unwrap()));
+        let _ = stream.write_pending();
     }
 
     let mut last_ping = Instant::now();
 
-    let mut closed = false;
-
-    while !closed {
+    loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
+                Command::Avm1Backtrace => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBacktrace });
+                }
+                Command::Avm1Registers => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetRegisters });
+                }
                 Command::Avm1SubpropGet { path } => {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetSubprops { path } });
                 }
@@ -505,7 +522,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
 
         if let Ok(msg) = stream.read_message() {
             if msg.is_close() {
-                closed = true;
+                println!("Closed");
                 break;
             }
 
@@ -557,6 +574,16 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                             }
                             println!("}}");
                         }
+                        DebugMessageOut::GetRegisterResult { regs } => {
+                            for (i, r) in regs.iter().enumerate() {
+                                println!("register{} => {:?}", i+1, r);
+                            }
+                        }
+                        DebugMessageOut::GetBacktraceResult { backtrace } => {
+                            for b in backtrace {
+                                println!("{}", b);
+                            }
+                        }
                     }
                 }
                 input_block.store(false, Ordering::SeqCst);
@@ -566,10 +593,12 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
         // We send a ping at least once every 500ms so that the client won't get stuck waiting for incomming data when using a blocking tcp channel
         // This is needed as async tcp without a standard async runtime (such as Ruffle desktop) is quite difficult
         // This won't really be needed on web, but shouldn't hurt either
-        if Instant::now().duration_since(last_ping) > Duration::from_millis(500) {
+        if Instant::now().duration_since(last_ping) > Duration::from_millis(200) {
             if stream.can_write() {
                 stream.write_message(Message::Ping(Vec::new())).unwrap();
                 stream.write_pending().unwrap();
+            } else {
+                break;
             }
             last_ping = Instant::now();
         }
@@ -591,5 +620,3 @@ fn main() {
         println!("client d/c");
     }
 }
-
-//TODO: avm1 ops should be disabled unless in a bp context
