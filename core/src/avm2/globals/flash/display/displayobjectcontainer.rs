@@ -11,6 +11,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::min;
 
@@ -558,49 +559,82 @@ pub fn stop_all_movie_clips<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stubs `DisplayObjectContainer.getObjectsUnderPoint`
 pub fn get_objects_under_point<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("DisplayObjectContainer.getObjectsUnderPoint not yet implemented".into())
+    avm2_stub_method!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "getObjectsUnderPoint"
+    );
+    Ok(Value::Undefined)
 }
 
-/// Stubs `DisplayObjectContainer.areInaccessibleObjectsUnderPoint`
 pub fn are_inaccessible_objects_under_point<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("DisplayObjectContainer.areInaccessibleObjectsUnderPoint not yet implemented".into())
+    avm2_stub_method!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "areInaccessibleObjectsUnderPoint"
+    );
+    Ok(Value::Undefined)
 }
 
 pub fn mouse_children<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("DisplayObjectContainer.mouseChildren getter: not yet implemented");
+    avm2_stub_setter!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "mouseChildren"
+    );
     Ok(Value::Undefined)
 }
 
 pub fn set_mouse_children<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("DisplayObjectContainer.mouseChildren setter: not yet implemented");
+    avm2_stub_setter!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "mouseChildren"
+    );
     Ok(Value::Undefined)
 }
 
-/// Stub getter & setter for `tabChildren`.
 pub fn tab_children<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("DisplayObjectContainer.tabChildren is a stub");
+    avm2_stub_getter!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "areInaccessibleObjectsUnderPoint"
+    );
+
+    Ok(true.into())
+}
+
+pub fn set_tab_children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(
+        activation,
+        "flash.display.DisplayObjectContainer",
+        "areInaccessibleObjectsUnderPoint"
+    );
 
     Ok(true.into())
 }
@@ -644,7 +678,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(mouse_children),
             Some(set_mouse_children),
         ),
-        ("tabChildren", Some(tab_children), Some(tab_children)),
+        ("tabChildren", Some(tab_children), Some(set_tab_children)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
