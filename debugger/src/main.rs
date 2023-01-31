@@ -6,7 +6,11 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::command::Command;
-use ruffle_core::debugable::{Avm1Msg, DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg};
+use ruffle_core::debug::avm1_message::Avm1Msg;
+use ruffle_core::debug::debug_message_in::DebugMessageIn;
+use ruffle_core::debug::debug_message_out::DebugMessageOut;
+use ruffle_core::debug::player_message::PlayerMsg;
+use ruffle_core::debug::targeted_message::TargetedMsg;
 use tungstenite::{Message, WebSocket};
 
 pub mod command;

@@ -1,9 +1,13 @@
-use std::sync::{Arc, RwLock};
-use std::time::Duration;
 use ruffle_core::backend::debug::DebuggerBackend;
 use ruffle_core::backend::navigator::OwnedFuture;
-use ruffle_core::debugable::{Avm1Msg, DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg};
+use ruffle_core::debug::avm1_message::Avm1Msg;
+use ruffle_core::debug::debug_message_in::DebugMessageIn;
+use ruffle_core::debug::debug_message_out::DebugMessageOut;
+use ruffle_core::debug::player_message::PlayerMsg;
+use ruffle_core::debug::targeted_message::TargetedMsg;
 use ruffle_core::loader::Error as LoaderError;
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
 /// An implementation of a debugger backend using websockets and RIDP via tungstenite
 #[derive(Default)]
@@ -71,7 +75,6 @@ impl DebuggerBackend for WebsocketDebugBackend {
 
                 if let Ok(txt) = msg.to_text() {
                     if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
-
                         match msg {
                             DebugMessageIn::Player { msg } => {
                                 queue_local_player.write().unwrap().push(msg);

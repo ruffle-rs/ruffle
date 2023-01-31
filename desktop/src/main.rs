@@ -8,14 +8,15 @@
 
 mod audio;
 mod custom_event;
+mod debug;
 mod executor;
 mod navigator;
 mod storage;
 mod task;
 mod ui;
-mod debug;
 
 use crate::custom_event::RuffleEvent;
+use crate::debug::WebsocketDebugBackend;
 use crate::executor::GlutinAsyncExecutor;
 use anyhow::{anyhow, Context, Error};
 use clap::Parser;
@@ -43,7 +44,6 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
-use crate::debug::WebsocketDebugBackend;
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();

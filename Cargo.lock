@@ -3557,7 +3557,6 @@ dependencies = [
  "ruffle_render",
  "ruffle_render_wgpu",
  "ruffle_video_software",
- "serde",
  "serde_json",
  "tracing",
  "tracing-subscriber",

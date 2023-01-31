@@ -2493,9 +2493,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.drawing(gc_context))
     }
 
-    fn as_debuggable(self) -> Option<crate::debugable::Debuggable<'gc>> {
-        use crate::debugable::Debuggable;
-        use crate::debugable::MovieClipDebugger;
+    fn as_debuggable(self) -> Option<crate::debug::debuggable::Debuggable<'gc>> {
+        use crate::debug::debuggable::Debuggable;
+        use crate::debug::movie_clip_debugger::MovieClipDebugger;
         Some(Debuggable::MovieClip(MovieClipDebugger::with(self)))
     }
 

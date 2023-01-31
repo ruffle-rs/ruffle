@@ -1,6 +1,6 @@
 //! Definition of commands
 
-use ruffle_core::debugable::DValue;
+use ruffle_core::debug::debug_value::DValue;
 
 /// Commands that the debugger client can send the the current debuggee
 #[derive(Debug, Clone)]

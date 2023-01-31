@@ -8,6 +8,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
+use crate::debug::avm1_debugger::Avm1Debugger;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
 use crate::string::{AvmString, WStr, WString};
@@ -97,7 +98,7 @@ enum FrameControl<'gc> {
 
 #[derive(Clone)]
 pub struct ActivationIdentifier<'a> {
-    pub parent: Option<&'a ActivationIdentifier<'a>>,
+    parent: Option<&'a ActivationIdentifier<'a>>,
     name: Cow<'static, str>,
     depth: u16,
     function_count: u16,
@@ -173,6 +174,10 @@ impl<'a> ActivationIdentifier<'a> {
     pub fn name(&self) -> &str {
         self.name.borrow()
     }
+
+    pub fn parent(&self) -> Option<&'a ActivationIdentifier<'a>> {
+        self.parent
+    }
 }
 
 pub struct Activation<'a, 'gc: 'a> {
@@ -215,7 +220,7 @@ pub struct Activation<'a, 'gc: 'a> {
     ///
     /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
     /// same register set.
-    pub local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.
@@ -227,6 +232,9 @@ pub struct Activation<'a, 'gc: 'a> {
 
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
+
+    /// The state of the debugger
+    debug_state: Avm1Debugger,
 
     pub context: UpdateContext<'a, 'gc>,
 
@@ -267,6 +275,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             this,
             callee,
             local_registers: None,
+            debug_state: Avm1Debugger::new(),
         }
     }
 
@@ -290,6 +299,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             this: self.this,
             callee: self.callee,
             local_registers: self.local_registers,
+            debug_state: self.debug_state.clone(),
         }
     }
 
@@ -319,6 +329,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             callee: None,
             local_registers: None,
             context,
+            debug_state: Avm1Debugger::new(),
         }
     }
 
@@ -437,13 +448,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let action = reader.read_action()?;
 
-            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone()) };
+            self.debug_state.preprocess_action(action.clone());
 
             // Keep processing events while we are in a breakpoint
             loop {
-                crate::debugable::handle_avm1_debug_events(self);
+                crate::debug::avm1_debugger::handle_avm1_debug_events(self);
 
-                if !unsafe { crate::debugable::AVM1_DBG_STATE.pause_execution() } {
+                if self.debug_state.pause_execution() {
                     break;
                 }
             }
@@ -755,10 +766,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             args.push(self.context.avm1.pop());
         }
 
-        unsafe {
-            crate::debugable::AVM1_DBG_STATE
-                .preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string())
-        };
+        self.debug_state
+            .preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string());
 
         let variable = self.get_variable(fn_name)?;
 
@@ -799,10 +808,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             method_name.coerce_to_string(self)?
         };
 
-        unsafe {
-            crate::debugable::AVM1_DBG_STATE
-                .preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string())
-        };
+        self.debug_state
+            .preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string());
 
         let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.
@@ -2840,6 +2847,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Returns value of `this` as a reference.
     pub fn this_cell(&self) -> Value<'gc> {
         self.this
+    }
+
+    /// Returns the avm1 debugger state
+    pub fn debug_state_mut(&mut self) -> &mut Avm1Debugger {
+        &mut self.debug_state
+    }
+
+    /// Returns the local registers
+    pub fn local_registers(&self) -> Option<GcCell<'gc, RegisterSet<'gc>>> {
+        self.local_registers
     }
 
     /// Returns true if this activation has a given local register ID.

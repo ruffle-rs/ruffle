@@ -55,4 +55,4 @@ pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
 
-pub mod debugable;
+pub mod debug;

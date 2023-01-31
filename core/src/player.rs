@@ -474,8 +474,8 @@ impl Player {
 
         // Process player and targeted debug events
         self.mutate_with_update_context(|context| {
-            crate::debugable::handle_player_debug_events(context);
-            crate::debugable::handle_targeted_debug_events(context);
+            crate::debug::handle_player_debug_events(context);
+            crate::debug::handle_targeted_debug_events(context);
         });
 
         if self.is_playing() {

@@ -1,5 +1,5 @@
 use crate::command::Command;
-use ruffle_core::debugable::DValue;
+use ruffle_core::debug::debug_value::DValue;
 
 /// Strip and match
 /// Checks if `s` starts with `t`, stripping surrounding whitespace

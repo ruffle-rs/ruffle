@@ -1,7 +1,10 @@
 //! Backend for handling debugger communication
 
 use crate::backend::navigator::OwnedFuture;
-use crate::debugable::{Avm1Msg, DebugMessageOut, PlayerMsg, TargetedMsg};
+use crate::debug::avm1_message::Avm1Msg;
+use crate::debug::debug_message_out::DebugMessageOut;
+use crate::debug::player_message::PlayerMsg;
+use crate::debug::targeted_message::TargetedMsg;
 use crate::loader::Error as LoaderError;
 
 /// A trait that defines the async interactions between a connected debugger and the player
