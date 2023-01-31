@@ -320,7 +320,7 @@ jobs:
         env:
           BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
-        run: node packages/core/tools/set_version.js
+        run: npm run version-seal
       
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}

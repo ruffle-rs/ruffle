@@ -49,6 +49,7 @@
         "test": "npm test --workspaces --if-present",
         "docs": "npm run docs --workspaces --if-present",
         "lint": "eslint . && stylelint **.css",
-        "format": "eslint . --fix && stylelint --fix **.css"
+        "format": "eslint . --fix && stylelint --fix **.css",
+        "version-seal": "cross-env ENABLE_VERSION_SEAL=true node packages/core/tools/set_version.js"
     }
 }
