@@ -47,7 +47,6 @@ enumset = "1.0.12"
 static_assertions = "1.1.0"
 rustversion = "1.0.11"
 bytemuck = "1.13.0"
-tungstenite = { version = "*"}
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.25"
