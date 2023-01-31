@@ -27,15 +27,27 @@ macro_rules! avm2_stub_method {
 }
 
 #[macro_export]
+macro_rules! avm2_stub_constructor {
+    ($activation: ident, $class: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Constructor { class: $class };
+        $activation.context.stub_tracker.encounter(&STUB);
+    };
+}
+
+#[macro_export]
 macro_rules! avm2_stub_getter {
-    ($activation: ident, $class: literal, $method: literal) => {
+    ($activation: ident, $class: literal, $property: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Getter {
             class: $class,
-            field: $method,
+            property: $property,
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };
@@ -43,14 +55,14 @@ macro_rules! avm2_stub_getter {
 
 #[macro_export]
 macro_rules! avm2_stub_setter {
-    ($activation: ident, $class: literal, $method: literal) => {
+    ($activation: ident, $class: literal, $property: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Setter {
             class: $class,
-            field: $method,
+            property: $property,
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };
