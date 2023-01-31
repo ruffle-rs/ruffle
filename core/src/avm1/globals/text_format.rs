@@ -3,7 +3,7 @@
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
@@ -414,7 +414,7 @@ fn set_bullet<'gc>(
 }
 
 fn display<'gc>(activation: &mut Activation<'_, 'gc>, _text_format: &TextFormat) -> Value<'gc> {
-    avm_warn!(activation, "TextFormat.display: Unimplemented");
+    avm1_stub!(activation, "TextFormat", "display");
     Value::Null
 }
 
@@ -423,7 +423,7 @@ fn set_display<'gc>(
     _text_format: &mut TextFormat,
     _value: &Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "TextFormat.display: Unimplemented");
+    avm1_stub!(activation, "TextFormat", "display");
     Ok(())
 }
 

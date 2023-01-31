@@ -5,10 +5,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
-use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
+use crate::{avm1_stub, avm_warn};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -135,7 +135,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
-        avm_warn!(activation, "Sound.getBytesLoaded: Unimplemented");
+        avm1_stub!(activation, "Sound", "getBytesLoaded");
         Ok(1.into())
     } else {
         Ok(Value::Undefined)
@@ -148,7 +148,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
-        avm_warn!(activation, "Sound.getBytesTotal: Unimplemented");
+        avm1_stub!(activation, "Sound", "getBytesTotal");
         Ok(1.into())
     } else {
         Ok(Value::Undefined)
@@ -227,7 +227,7 @@ fn id3<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
-        avm_warn!(activation, "Sound.id3: Unimplemented");
+        avm1_stub!(activation, "Sound", "id3");
     }
     Ok(Value::Undefined)
 }

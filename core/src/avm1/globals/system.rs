@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::MutationContext;
@@ -449,13 +449,9 @@ pub fn show_settings<'gc>(
         .unwrap_or(&last_panel_pos.into())
         .coerce_to_i32(activation)?;
 
-    let panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
+    let _panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
-    avm_warn!(
-        activation,
-        "System.showSettings({:?}) not not implemented",
-        panel
-    );
+    avm1_stub!(activation, "System", "showSettings");
     Ok(Value::Undefined)
 }
 
@@ -512,7 +508,7 @@ pub fn on_status<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "System.onStatus() not implemented");
+    avm1_stub!(activation, "System", "onStatus");
     Ok(Value::Undefined)
 }
 

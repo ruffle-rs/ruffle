@@ -6,7 +6,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
@@ -41,7 +41,7 @@ pub fn delete_all<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.deleteAll() not implemented");
+    avm1_stub!(activation, "SharedObject", "deleteAll");
     Ok(Value::Undefined)
 }
 
@@ -50,7 +50,7 @@ pub fn get_disk_usage<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.getDiskUsage() not implemented");
+    avm1_stub!(activation, "SharedObject", "getDiskUsage");
     Ok(Value::Undefined)
 }
 
@@ -388,7 +388,7 @@ pub fn get_remote<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.getRemote() not implemented");
+    avm1_stub!(activation, "SharedObject", "getRemote");
     Ok(Value::Undefined)
 }
 
@@ -397,7 +397,7 @@ pub fn get_max_size<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.getMaxSize() not implemented");
+    avm1_stub!(activation, "SharedObject", "getMaxSize");
     Ok(Value::Undefined)
 }
 
@@ -406,7 +406,7 @@ pub fn add_listener<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.addListener() not implemented");
+    avm1_stub!(activation, "SharedObject", "addListener");
     Ok(Value::Undefined)
 }
 
@@ -415,7 +415,7 @@ pub fn remove_listener<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.removeListener() not implemented");
+    avm1_stub!(activation, "SharedObject", "removeListener");
     Ok(Value::Undefined)
 }
 
@@ -460,7 +460,7 @@ pub fn close<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.close() not implemented");
+    avm1_stub!(activation, "SharedObject", "close");
     Ok(Value::Undefined)
 }
 
@@ -469,7 +469,7 @@ pub fn connect<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.connect() not implemented");
+    avm1_stub!(activation, "SharedObject", "connect");
     Ok(Value::Undefined)
 }
 
@@ -505,7 +505,7 @@ pub fn get_size<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.getSize() not implemented");
+    avm1_stub!(activation, "SharedObject", "getSize");
     Ok(Value::Undefined)
 }
 
@@ -514,7 +514,7 @@ pub fn send<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.send() not implemented");
+    avm1_stub!(activation, "SharedObject", "send");
     Ok(Value::Undefined)
 }
 
@@ -523,7 +523,7 @@ pub fn set_fps<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.setFps() not implemented");
+    avm1_stub!(activation, "SharedObject", "setFps");
     Ok(Value::Undefined)
 }
 
@@ -532,7 +532,7 @@ pub fn on_status<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.onStatus() not implemented");
+    avm1_stub!(activation, "SharedObject", "onStatus");
     Ok(Value::Undefined)
 }
 
@@ -541,7 +541,7 @@ pub fn on_sync<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "SharedObject.onSync() not implemented");
+    avm1_stub!(activation, "SharedObject", "onSync");
     Ok(Value::Undefined)
 }
 
