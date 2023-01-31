@@ -4,9 +4,10 @@ use crate::avm1::Avm1;
 use crate::avm1::SystemProperties;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
+#[cfg(feature = "debugger")]
+use crate::backend::debug::DebuggerBackend;
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
-    debug::DebuggerBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -89,6 +90,7 @@ pub struct UpdateContext<'a, 'gc> {
     /// The video backend, used for video decoding
     pub video: &'a mut dyn VideoBackend,
 
+    #[cfg(feature = "debugger")]
     /// The debugger backend
     pub debugger: &'a mut dyn DebuggerBackend,
 
@@ -315,6 +317,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             log: self.log,
             ui: self.ui,
             video: self.video,
+            #[cfg(feature = "debugger")]
             debugger: self.debugger,
             storage: self.storage,
             rng: self.rng,
@@ -353,8 +356,8 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     }
 
     pub fn avm_trace(&self, message: &str) {
-        let dbg = &self.debugger;
-        dbg.submit_debug_message(crate::debug::debug_message_out::DebugMessageOut::LogTrace(
+        #[cfg(feature = "debugger")]
+        self.debugger.submit_debug_message(crate::debug::debug_message_out::DebugMessageOut::LogTrace(
             message.to_string(),
         ));
         self.log.avm_trace(&message.replace('\r', "\n"));

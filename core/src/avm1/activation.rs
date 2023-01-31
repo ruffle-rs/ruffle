@@ -8,6 +8,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
+#[cfg(feature = "debugger")]
 use crate::debug::avm1_debugger::Avm1Debugger;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
@@ -233,6 +234,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
+    #[cfg(feature = "debugger")]
     /// The state of the debugger
     debug_state: Avm1Debugger,
 
@@ -275,6 +277,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             this,
             callee,
             local_registers: None,
+            #[cfg(feature = "debugger")]
             debug_state: Avm1Debugger::new(),
         }
     }
@@ -299,6 +302,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             this: self.this,
             callee: self.callee,
             local_registers: self.local_registers,
+            #[cfg(feature = "debugger")]
             debug_state: self.debug_state.clone(),
         }
     }
@@ -329,6 +333,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             callee: None,
             local_registers: None,
             context,
+            #[cfg(feature = "debugger")]
             debug_state: Avm1Debugger::new(),
         }
     }
@@ -448,8 +453,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let action = reader.read_action()?;
 
+            #[cfg(feature = "debugger")]
             self.debug_state.preprocess_action(action.clone());
 
+            #[cfg(feature = "debugger")]
             // Keep processing events while we are in a breakpoint
             loop {
                 crate::debug::avm1_debugger::handle_avm1_debug_events(self);
@@ -766,6 +773,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             args.push(self.context.avm1.pop());
         }
 
+        #[cfg(feature = "debugger")]
         self.debug_state
             .preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string());
 
@@ -808,6 +816,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             method_name.coerce_to_string(self)?
         };
 
+        #[cfg(feature = "debugger")]
         self.debug_state
             .preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string());
 
@@ -2849,6 +2858,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.this
     }
 
+    #[cfg(feature = "debugger")]
     /// Returns the avm1 debugger state
     pub fn debug_state_mut(&mut self) -> &mut Avm1Debugger {
         &mut self.debug_state

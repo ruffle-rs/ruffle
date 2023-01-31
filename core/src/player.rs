@@ -9,9 +9,10 @@ use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
     Domain as Avm2Domain, EventObject as Avm2EventObject, Object as Avm2Object,
 };
+#[cfg(feature = "debugger")]
+use crate::backend::debug::DebuggerBackend;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
-    debug::DebuggerBackend,
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
@@ -201,6 +202,7 @@ type Storage = Box<dyn StorageBackend>;
 type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
 type Video = Box<dyn VideoBackend>;
+#[cfg(feature = "debugger")]
 type Debugger = Box<dyn DebuggerBackend>;
 
 pub struct Player {
@@ -230,6 +232,7 @@ pub struct Player {
     log: Log,
     ui: Ui,
     video: Video,
+    #[cfg(feature = "debugger")]
     debugger: Debugger,
 
     transform_stack: TransformStack,
@@ -424,6 +427,7 @@ impl Player {
             self.ui.display_unsupported_message();
         }
 
+        #[cfg(feature = "debugger")]
         // Connect a debugger if one exists
         if let Some(dbg_future) = self.debugger_mut().connect_debugger() {
             self.navigator.spawn_future(dbg_future);
@@ -472,6 +476,7 @@ impl Player {
             return;
         }
 
+        #[cfg(feature = "debugger")]
         // Process player and targeted debug events
         self.mutate_with_update_context(|context| {
             crate::debug::handle_player_debug_events(context);
@@ -1574,10 +1579,12 @@ impl Player {
         &mut self.ui
     }
 
+    #[cfg(feature = "debugger")]
     pub fn debugger(&self) -> &Debugger {
         &self.debugger
     }
 
+    #[cfg(feature = "debugger")]
     pub fn debugger_mut(&mut self) -> &mut Debugger {
         &mut self.debugger
     }
@@ -1745,6 +1752,7 @@ impl Player {
                 storage: self.storage.deref_mut(),
                 log: self.log.deref_mut(),
                 video: self.video.deref_mut(),
+                #[cfg(feature = "debugger")]
                 debugger: self.debugger.deref_mut(),
                 avm1_shared_objects,
                 avm2_shared_objects,
@@ -1935,6 +1943,7 @@ pub struct PlayerBuilder {
     storage: Option<Storage>,
     ui: Option<Ui>,
     video: Option<Video>,
+    #[cfg(feature = "debugger")]
     debugger: Option<Debugger>,
 
     // Misc. player configuration
@@ -1968,6 +1977,7 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+            #[cfg(feature = "debugger")]
             debugger: None,
 
             autoplay: false,
@@ -2111,6 +2121,7 @@ impl PlayerBuilder {
         self
     }
 
+    #[cfg(feature = "debugger")]
     /// Sets the debugger
     pub fn with_debugger(mut self, debugger: impl 'static + DebuggerBackend) -> Self {
         self.debugger = Some(Box::new(debugger));
@@ -2146,6 +2157,7 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
+        #[cfg(feature = "debugger")]
         let debugger = self
             .debugger
             .unwrap_or_else(|| Box::new(debug::NullDebuggerBackend::new()));
@@ -2165,6 +2177,7 @@ impl PlayerBuilder {
                 storage,
                 ui,
                 video,
+                #[cfg(feature = "debugger")]
                 debugger,
 
                 // SWF info

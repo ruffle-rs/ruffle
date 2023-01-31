@@ -1502,6 +1502,7 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
+    #[cfg(feature = "debugger")]
     fn as_debuggable(self) -> Option<crate::debug::debuggable::Debuggable<'gc>> {
         None
     }

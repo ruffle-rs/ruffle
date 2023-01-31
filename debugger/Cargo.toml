@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ruffle_core = { path = "../core" }
+ruffle_core = { path = "../core", features = ["debugger"] }
 serde = { version = "1.0.150", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 tungstenite = "0.18.0"

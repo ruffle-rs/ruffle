@@ -8,6 +8,7 @@
 
 mod audio;
 mod custom_event;
+#[cfg(feature = "debugger")]
 mod debug;
 mod executor;
 mod navigator;
@@ -16,6 +17,7 @@ mod task;
 mod ui;
 
 use crate::custom_event::RuffleEvent;
+#[cfg(feature = "debugger")]
 use crate::debug::WebsocketDebugBackend;
 use crate::executor::GlutinAsyncExecutor;
 use anyhow::{anyhow, Context, Error};
@@ -298,8 +300,12 @@ impl App {
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(opt.player_version)
-            .with_debugger(WebsocketDebugBackend::new());
+            .with_player_version(opt.player_version);
+
+        #[cfg(feature = "debugger")]
+        {
+            builder = builder.with_debugger(WebsocketDebugBackend::new());
+        }
 
         let player = builder.build();
 

@@ -55,4 +55,5 @@ pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
 
+#[cfg(feature = "debugger")]
 pub mod debug;

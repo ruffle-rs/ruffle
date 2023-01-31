@@ -64,6 +64,7 @@ timeline_debug = []
 mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
+debugger = []
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

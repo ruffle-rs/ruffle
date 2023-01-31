@@ -54,3 +54,5 @@ render_trace = ["ruffle_render_wgpu/render_trace"]
 
 # sandboxing
 sandbox = []
+
+debugger = ["ruffle_core/debugger"]
