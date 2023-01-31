@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use crate::string::AvmString;
 use gc_arena::MutationContext;
 
@@ -22,7 +22,7 @@ fn allow_domain<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "System.security.allowDomain() not implemented");
+    avm1_stub!(activation, "System.security", "allowDomain");
     Ok(Value::Undefined)
 }
 
@@ -31,10 +31,7 @@ fn allow_insecure_domain<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(
-        activation,
-        "System.security.allowInsecureDomain() not implemented"
-    );
+    avm1_stub!(activation, "System.security", "allowInsecureDomain");
     Ok(Value::Undefined)
 }
 
@@ -43,10 +40,7 @@ fn load_policy_file<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(
-        activation,
-        "System.security.loadPolicyFile() not implemented"
-    );
+    avm1_stub!(activation, "System.security", "loadPolicyFile");
     Ok(Value::Undefined)
 }
 
@@ -55,7 +49,7 @@ fn escape_domain<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "System.security.escapeDomain() not implemented");
+    avm1_stub!(activation, "System.security", "escapeDomain");
     Ok(Value::Undefined)
 }
 
@@ -76,10 +70,7 @@ fn get_choose_local_swf_path<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(
-        activation,
-        "System.security.chooseLocalSwfPath() not implemented"
-    );
+    avm1_stub!(activation, "System.security", "chooseLocalSwfPath");
     Ok(Value::Undefined)
 }
 
@@ -88,10 +79,7 @@ fn policy_file_resolver<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(
-        activation,
-        "System.security.chooseLocalSwfPath() not implemented"
-    );
+    avm1_stub!(activation, "System.security", "chooseLocalSwfPath");
     Ok(Value::Undefined)
 }
 

@@ -86,7 +86,7 @@ macro_rules! avm1_stub {
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Method {
             class: $class,
             method: $method,
-            specifics: Some(Cow::Borrowed($specifics)),
+            specifics: Some($specifics),
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };

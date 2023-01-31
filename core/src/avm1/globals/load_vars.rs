@@ -7,7 +7,7 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::string::AvmString;
 use gc_arena::MutationContext;
@@ -51,7 +51,7 @@ fn add_request_header<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "LoadVars.addRequestHeader: Unimplemented");
+    avm1_stub!(activation, "LoadVars", "addRequestHeader");
     Ok(Value::Undefined)
 }
 
