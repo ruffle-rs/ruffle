@@ -106,6 +106,9 @@ pub enum DebugMessageIn {
 /// Debug messages that are handled by the AVM1 VM
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum Avm1Msg {
+    /// Execute until the end of the current scope
+    StepOut,
+
     /// Execute a single avm1 opcode, following calls
     StepInto,
 
@@ -440,6 +443,7 @@ pub enum Avm1ExecutionState {
     Running,
     Paused,
     StepInto,
+    StepOut,
 }
 use swf::avm1::types::Action;
 
@@ -471,7 +475,10 @@ impl Avm1Debugger {
         if self.execution_state == Avm1ExecutionState::StepInto {
             println!("Executed {:?}", act);
             self.execution_state = Avm1ExecutionState::Paused;
+        } else if self.execution_state == Avm1ExecutionState::StepOut && act == Action::Return {
+            self.execution_state = Avm1ExecutionState::Paused;
         }
+        //TODO: send msg for this
     }
 
     /// Preprocess a given function call to update debugger state
@@ -496,6 +503,11 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
         match msg {
             Avm1Msg::StepInto => {
                 dbg.execution_state = Avm1ExecutionState::StepInto;
+                let msg = DebugMessageOut::GenericResult { success: true };
+                activation.context.debugger.submit_debug_message(msg);
+            }
+            Avm1Msg::StepOut => {
+                dbg.execution_state = Avm1ExecutionState::StepOut;
                 let msg = DebugMessageOut::GenericResult { success: true };
                 activation.context.debugger.submit_debug_message(msg);
             }

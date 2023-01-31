@@ -433,6 +433,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let action = reader.read_action()?;
 
+            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone())};
+
             // Keep processing events while we are in a breakpoint
             loop {
                 crate::debugable::handle_avm1_debug_events(self);
@@ -441,8 +443,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     break;
                 }
             }
-
-            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone())};
 
             avm_debug!(
                 self.context.avm1,

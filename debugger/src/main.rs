@@ -1,5 +1,5 @@
 use std::io::{Read, Write};
-use std::net::{Shutdown, TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -33,6 +33,20 @@ fn parse_value(s: &str) -> Option<DValue> {
     }
 }
 
+// avm1 get
+// avm1 set
+// for basic dot paths, no last res, stack or registers
+// avm1 children "foo" -> "foo.<a, b, c>"
+// backtrace
+// list current function args
+// list all functions
+// list locals
+// all global vars?
+// forward traces
+
+
+
+
 fn parse_avm1_command(cmd: &str) -> Option<Command> {
     if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (AVM1)");
@@ -54,8 +68,7 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         println!("");
         println!("Only available when in a breakpoint:");
         println!("avm1 (si)/step - Execute next instruction");
-        //println!("avm1 (so)/step_over - Execute next instruction, without following calls");
-        //println!("avm1 (sr)/step_out - Continue execution, until returning");
+        println!("avm1 (sr)/step_out - Continue execution, until returning");
         println!("");
         println!("avm1 stack show");
         println!("avm1 stack push <Value>");
@@ -90,8 +103,10 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         } else if let Some(_) = smatch(bp, "list") {
             return Some(Command::Avm1BreakpointsGet);
         }    
-    } else if let Some(bp) = smatch(cmd, "break") {
+    } else if let Some(_) = smatch(cmd, "break") {
             return Some(Command::Avm1Break);
+    } else if let Some(_) = smatch(cmd, "step_out") {
+        return Some(Command::Avm1StepOut);
     } else if let Some(_) = smatch(cmd, "step") {
         return Some(Command::Avm1StepInto);
     } else if let Some(stack) = smatch(cmd, "stack") {
@@ -171,6 +186,8 @@ fn parse_command(cmd: &str) -> Option<Command> {
         parse_do_command(do_cmd)
     } else if let Some(player_cmd) = smatch(cmd, "player") {
         parse_player_command(player_cmd)
+    } else if let Some(_) = smatch(cmd, "quit") {
+        std::process::exit(0);
     } else if let Some(_) = smatch(cmd, "help") {
         println!("Ruffle Debugger Help (Top level)");
         println!("");
@@ -179,6 +196,7 @@ fn parse_command(cmd: &str) -> Option<Command> {
         println!("do - Query a display object");
         println!("player - Control the state of the player");
         println!("help - View this message");
+        println!("quit - Exit the debugger");
         println!("");
         println!("Try \"<command> help\" for more details");
         None
@@ -230,6 +248,9 @@ pub enum Command {
     /// Execute the next instruction, stepping into function calls
     Avm1StepInto,
     
+    /// Execute until the current scope returns
+    Avm1StepOut,
+
     /// Add a breakpoint that will break when `name` is called, either as a function or a method
     Avm1FunctionBreak { name: String },
 
@@ -298,8 +319,7 @@ fn stdin_thread(
                 let buf = &buf[..len];
                 let s = String::from_utf8(buf.to_vec()).unwrap();
 
-                let mut cmd = None;
-                cmd = parse_command(&s.strip_suffix("\n").unwrap());
+                let mut cmd = parse_command(&s.strip_suffix("\n").unwrap());
 
                 if cmd.is_none() {
                 if s.starts_with("reconnect") || s == "rc\n" {
@@ -378,7 +398,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
     let state = Arc::new(RwLock::new(DebuggerState::default()));
     let input_block = Arc::new(AtomicBool::new(false));
     let input_thread = stdin_thread(
-        Arc::clone(&queue),
+            Arc::clone(&queue),
         Arc::clone(&flag),
         Arc::clone(&state),
         Arc::clone(&input_block),
@@ -391,7 +411,9 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
 
     let mut last_ping = Instant::now();
 
-    loop {
+    let mut closed = false;
+
+    while !closed {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
                 Command::Avm1SubpropGet { path } => {
@@ -424,6 +446,9 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                 Command::Avm1StepInto => {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::StepInto});
                 }
+                Command::Avm1StepOut => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::StepOut});
+                }
                 Command::Avm1Stack => {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetStack});
                 }
@@ -441,8 +466,8 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                 }
                 Command::Info { path } => {
                     send_msg(&mut stream, DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::GetInfo,
+                        path,
+                        msg: TargetedMsg::GetInfo,
                     });
                 }
                 Command::GetChildren { path } => {
@@ -475,68 +500,66 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                         msg: TargetedMsg::Stop
                     });
                 }
-                _ => {}
             }
         }
 
-        {
-            if let Ok(msg) = stream.read_message() {
-                if msg.is_close() {
-                    break;
-                }
+        if let Ok(msg) = stream.read_message() {
+            if msg.is_close() {
+                closed = true;
+                break;
+            }
 
-                if msg.is_ping() || msg.is_pong() {
+            if msg.is_ping() || msg.is_pong() {
 
-                } else if let Ok(txt) = msg.to_text() {
-                    println!("Got incomming {:?}", txt);
+            } else if let Ok(txt) = msg.to_text() {
+                println!("Got incomming {:?}", txt);
 
-                    if let Ok(msg) = serde_json::from_str::<DebugMessageOut>(txt) {
-                        match msg {
-                            DebugMessageOut::State { playing } => {
-                                println!("Playing: {}", playing);
-                            }
-                            DebugMessageOut::BreakpointHit { name } => {
-                                println!("Hit BP {}", name);
-                                //stream.write(serde_json::to_string(&DebugMessageIn::Pause).unwrap().as_bytes()).unwrap();
-                            }
-                            DebugMessageOut::GetVarResult { value } => {
-                                println!("Result: {:?}", value);
-                            }
-                            DebugMessageOut::DisplayObjectInfo(i) => {
-                                println!("Info = {:#?}", i);
-                            }
-                            DebugMessageOut::GetPropsResult { keys } => {
-                                for key in &keys {
-                                    println!("\"{}\"", key);
-                                }
-                            }
-                            DebugMessageOut::GenericResult { success } => {
-                                if success {
-                                    println!("success");
-                                } else {
-                                    println!("fail");
-                                }
-                            }
-                            DebugMessageOut::BreakpointList {bps} => {
-                                println!("Breakpoints:");
-                                for bp in &bps {
-                                    println!("{}", bp);
-                                }
-                            }
-                            DebugMessageOut::GetValueResult { path, value } => {
-                                println!("{} = {:?}", path, value);
-                            }
-                            DebugMessageOut::GetSubpropsResult { path, props } => {
-                                println!("{} = {{", path);
-                                for p in &props {
-                                    println!("    {},", p);
-                                }
-                                println!("}}");
+                if let Ok(msg) = serde_json::from_str::<DebugMessageOut>(txt) {
+                    match msg {
+                        DebugMessageOut::State { playing } => {
+                            println!("Playing: {}", playing);
+                        }
+                        DebugMessageOut::BreakpointHit { name } => {
+                            println!("Hit BP {}", name);
+                            //stream.write(serde_json::to_string(&DebugMessageIn::Pause).unwrap().as_bytes()).unwrap();
+                        }
+                        DebugMessageOut::GetVarResult { value } => {
+                            println!("Result: {:?}", value);
+                        }
+                        DebugMessageOut::DisplayObjectInfo(i) => {
+                            println!("Info = {:#?}", i);
+                        }
+                        DebugMessageOut::GetPropsResult { keys } => {
+                            for key in &keys {
+                                println!("\"{}\"", key);
                             }
                         }
+                        DebugMessageOut::GenericResult { success } => {
+                            if success {
+                                println!("success");
+                            } else {
+                                println!("fail");
+                            }
+                        }
+                        DebugMessageOut::BreakpointList {bps} => {
+                            println!("Breakpoints:");
+                            for bp in &bps {
+                                println!("{}", bp);
+                            }
+                        }
+                        DebugMessageOut::GetValueResult { path, value } => {
+                            println!("{} = {:?}", path, value);
+                        }
+                        DebugMessageOut::GetSubpropsResult { path, props } => {
+                            println!("{} = {{", path);
+                            for p in &props {
+                                println!("    {},", p);
+                            }
+                            println!("}}");
+                        }
                     }
-                    input_block.store(false, Ordering::SeqCst);
                 }
+                input_block.store(false, Ordering::SeqCst);
             }
         }
 
@@ -544,8 +567,10 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
         // This is needed as async tcp without a standard async runtime (such as Ruffle desktop) is quite difficult
         // This won't really be needed on web, but shouldn't hurt either
         if Instant::now().duration_since(last_ping) > Duration::from_millis(500) {
-            stream.write_message(Message::Ping(Vec::new())).unwrap();
-            stream.write_pending().unwrap();
+            if stream.can_write() {
+                stream.write_message(Message::Ping(Vec::new())).unwrap();
+                stream.write_pending().unwrap();
+            }
             last_ping = Instant::now();
         }
     }

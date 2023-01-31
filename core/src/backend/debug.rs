@@ -4,6 +4,7 @@ use crate::debugable::{DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg, 
 use std::{
     sync::{Arc, RwLock},
 };
+use std::time::Duration;
 use crate::backend::navigator::OwnedFuture;
 use crate::loader::Error as LoaderError;
 
@@ -99,7 +100,10 @@ impl DebuggerBackend for WebsocketDebugBackend {
         let queue_out_local = Arc::clone(&self.event_queue_out);
 
 
-        let (mut socket, _) = tungstenite::connect("ws://localhost:7979/").unwrap();
+        let (socket, _) = match tungstenite::connect("ws://localhost:7979/") {
+            Ok(s) => s,
+            Err(_) => return None,
+        };
         let socket = Arc::new(RwLock::new(socket));
 
 
@@ -107,7 +111,16 @@ impl DebuggerBackend for WebsocketDebugBackend {
         let socket_read = Arc::clone(&socket);
         std::thread::spawn(move || {
             loop {
+                std::thread::sleep(Duration::from_millis(100));
+
                 if let Ok(msg) = socket_read.write().unwrap().read_message() {
+                    if msg.is_ping() {
+                        continue;
+                    }
+                    if msg.is_close() {
+                        break;
+                    }
+
                     if let Ok(txt) = msg.to_text() {
                         if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
                             println!("Got data: {:?}", msg);
@@ -134,8 +147,10 @@ impl DebuggerBackend for WebsocketDebugBackend {
         std::thread::spawn(move || {
             loop {
                 if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
-                    socket_write.write().unwrap().write_message(tungstenite::Message::text(serde_json::to_string(&out_msg).unwrap())).unwrap();
-                    socket_write.write().unwrap().write_pending().unwrap();
+                    let mut socket_write = socket_write.write().unwrap();
+                    socket_write.write_message(tungstenite::Message::text(serde_json::to_string(&out_msg).unwrap())).unwrap();
+                    socket_write.write_pending().unwrap();
+                    println!("Sent {:?}", out_msg);
                 }
             }
         });
@@ -237,7 +252,6 @@ impl DebuggerBackend for WebsocketDebugBackend {
     }
 }
 
-//TODO: procotol name: ridp?
 //TODO: feature flag all debug changes
 //TODO: websocket
 //TODO: support do commands in avm1
