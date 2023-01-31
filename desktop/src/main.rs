@@ -63,7 +63,7 @@ static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-in
     version = RUFFLE_VERSION,
 )]
 struct Opt {
-    /// Path to a Flash movie (SWF) to play.
+    /// Path or URL of a Flash movie (SWF) to play.
     #[clap(name = "FILE")]
     input_path: Option<PathBuf>,
 

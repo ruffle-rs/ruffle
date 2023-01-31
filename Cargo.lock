@@ -3471,6 +3471,7 @@ dependencies = [
  "bytemuck",
  "byteorder",
  "chrono",
+ "clap",
  "dasp",
  "downcast-rs",
  "encoding_rs",
