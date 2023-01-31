@@ -17,6 +17,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use gc_arena::{GcCell, MutationContext};
 use std::str::FromStr;
 use swf::Twips;
@@ -375,93 +376,93 @@ pub fn set_y<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stubs `z`'s getter.
 pub fn z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "z");
     Ok(0.into())
 }
 
-/// Stubs `z`'s setter.
 pub fn set_z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
     Ok(Value::Undefined)
 }
 
-/// Stubs `rotationX`'s getter.
 pub fn rotation_x<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
     Ok(0.into())
 }
 
-/// Stubs `rotationX`'s setter.
 pub fn set_rotation_x<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
     Ok(Value::Undefined)
 }
 
-/// Stubs `rotationY`'s getter.
 pub fn rotation_y<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
     Ok(0.into())
 }
 
-/// Stubs `rotationY`'s setter.
 pub fn set_rotation_y<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
     Ok(Value::Undefined)
 }
 
-/// Stubs `rotationZ`'s getter.
 pub fn rotation_z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
     Ok(0.into())
 }
 
-/// Stubs `rotationZ`'s setter.
 pub fn set_rotation_z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
     Ok(Value::Undefined)
 }
 
-/// Stubs `scaleZ`'s getter.
 pub fn scale_z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scaleZ");
     Ok(1.into())
 }
 
-/// Stubs `scaleZ`'s setter.
 pub fn set_scale_z<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scaleZ");
     Ok(Value::Undefined)
 }
 
