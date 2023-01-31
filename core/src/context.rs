@@ -353,6 +353,10 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     }
 
     pub fn avm_trace(&self, message: &str) {
+        let dbg = &self.debugger;
+        dbg.submit_debug_message(crate::debugable::DebugMessageOut::LogTrace(
+            message.to_string(),
+        ));
         self.log.avm_trace(&message.replace('\r', "\n"));
     }
 }

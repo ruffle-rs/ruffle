@@ -24,7 +24,7 @@ pub enum DValue {
 use crate::avm1::Value as Avm1Value;
 
 impl DValue {
-    fn as_avm1<'gc>(&self) -> Avm1Value<'gc> {
+    fn as_avm1<'gc>(&self, context: &mut UpdateContext<'_, 'gc>) -> Avm1Value<'gc> {
         match self {
             // Objects can only be sent for now, not recieved
             Self::Null | Self::Object { .. } => Avm1Value::Null,
@@ -32,7 +32,7 @@ impl DValue {
             Self::Int(v) => Avm1Value::Number(*v as f64),
             Self::Number(v) => Avm1Value::Number(*v),
             Self::Bool(b) => Avm1Value::Bool(*b),
-            Self::String(s) => panic!(),
+            Self::String(s) => Avm1Value::String(AvmString::new_utf8(context.gc_context, s)),
         }
     }
 }
@@ -44,16 +44,18 @@ impl<'gc> From<Avm1Value<'gc>> for DValue {
             Avm1Value::Null => Self::Null,
             Avm1Value::Bool(b) => Self::Bool(b),
             Avm1Value::Number(n) => {
-                if let Ok(i) = i32::from_str_radix(&n.to_string(), 10) {
+                if let Ok(i) = n.to_string().parse::<i32>() {
                     Self::Int(i)
                 } else {
                     Self::Number(n)
                 }
-            },
+            }
             //TODO: send wstrs
             Avm1Value::String(s) => Self::String(s.to_utf8_lossy().to_string()),
 
-            Avm1Value::Object(o) => Self::Object { kind: format!("{:?}", o) },
+            Avm1Value::Object(o) => Self::Object {
+                kind: format!("{:?}", o),
+            },
         }
     }
 }
@@ -86,21 +88,13 @@ impl<'gc> DebugProvider<'gc> for Debuggable<'gc> {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DebugMessageIn {
     /// Send a command to the object at the given path
-    Targeted {
-        path: String,
-        msg: TargetedMsg,
-    },
+    Targeted { path: String, msg: TargetedMsg },
 
     /// Send a command to the player
-    Player {
-        msg: PlayerMsg,
-    },
-
+    Player { msg: PlayerMsg },
 
     /// Send a command to AVM1
-    Avm1 {
-        msg: Avm1Msg,
-    }
+    Avm1 { msg: Avm1Msg },
 }
 
 /// Debug messages that are handled by the AVM1 VM
@@ -161,7 +155,7 @@ pub enum Avm1Msg {
     GetGlobals,
 
     /// Get local variables
-    GetLocals
+    GetLocals,
 }
 
 /// Debug messages that are handled in the player
@@ -191,7 +185,7 @@ pub enum TargetedMsg {
     GetPropValue { name: String },
 
     /// Set the value of the given prop
-    SetPropValue { name: String, value: String },
+    SetPropValue { name: String, value: DValue },
 
     /// Stop this clip
     /// TODO: this only works on clips, should we have a custom(str) msg that allows do-specific behaviour, or should they all be in this enum with a msg that allows getting which ones are available
@@ -201,32 +195,61 @@ pub enum TargetedMsg {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum DebugMessageOut {
     /// A generic success / fail message
-    GenericResult { success: bool },
+    GenericResult {
+        success: bool,
+    },
 
     /// Result sent when a value is retrieved
-    GetValueResult { path: String, value: DValue },
+    GetValueResult {
+        path: String,
+        value: DValue,
+    },
 
     /// Result sent when requesting sub-properties of an object
-    GetSubpropsResult { path: String, props: Vec<String> },
+    GetSubpropsResult {
+        path: String,
+        props: Vec<String>,
+    },
 
     /// Result sent when requesting a backtrace
-    GetBacktraceResult { backtrace: Vec<String> },
+    GetBacktraceResult {
+        backtrace: Vec<String>,
+    },
 
     /// Result send when requesting registers
-    GetRegisterResult { regs: Vec<DValue> },
+    GetRegisterResult {
+        regs: Vec<DValue>,
+    },
 
     /// Result sent when requesting locals
-    GetLocalsResult { locals: Vec<String> },
+    GetLocalsResult {
+        locals: Vec<String>,
+    },
 
     /// Result sent when requesting globals
-    GetGlobalsResult { globals: Vec<String> },
+    GetGlobalsResult {
+        globals: Vec<String>,
+    },
 
-    State { playing: bool },
-    BreakpointHit { name: String },
-    GetVarResult { value: String },
+    /// Message sent when a trace is logged
+    LogTrace(String),
+
+    State {
+        playing: bool,
+    },
+    BreakpointHit {
+        name: String,
+    },
+    GetVarResult {
+        value: String,
+    },
     DisplayObjectInfo(crate::debugable::DisplayObjectInfo),
-    GetPropsResult { keys: Vec<String> },
-    BreakpointList { bps: Vec<String> },
+    GetPropsResult {
+        keys: Vec<String>,
+    },
+    BreakpointList {
+        bps: Vec<String>,
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -336,7 +359,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
                 obj.set(
                     AvmString::new_utf8(activation.context.gc_context, name),
-                    AvmString::new_utf8(activation.context.gc_context, value).into(),
+                    value.as_avm1(&mut activation.context),
                     &mut activation,
                 )
                 .unwrap();
@@ -446,7 +469,7 @@ pub fn handle_targeted_debug_events<'gc>(context: &mut UpdateContext<'_, 'gc>) {
         } else {
             //let dp = path.split("/").map(|x| Depth::from_str(x).unwrap()).collect::<Vec<_>>();
             //let d_o = walk_depthpath(context, &dp);
-            let dp = path.split("/").collect::<Vec<_>>();
+            let dp = path.split('/').collect::<Vec<_>>();
             println!("path = {:?}", dp);
             let d_o = walk_path(context, &dp);
             d_o.unwrap()
@@ -488,7 +511,7 @@ impl Avm1Debugger {
 
     /// Should the vm be paused
     pub fn pause_execution(&self) -> bool {
-        self.execution_state == Avm1ExecutionState::Paused 
+        self.execution_state == Avm1ExecutionState::Paused
     }
 
     /// Update the current debugger state based on the action to be executed
@@ -504,11 +527,11 @@ impl Avm1Debugger {
 
     /// Preprocess a given function call to update debugger state
     pub fn preprocess_call<'gc>(&mut self, context: &mut UpdateContext<'_, 'gc>, name: String) {
-        //println!("call = {}, bps = {:?}", name, self.pending_breakpoints); 
+        //println!("call = {}, bps = {:?}", name, self.pending_breakpoints);
         if self.pending_breakpoints.contains(&name) || name == "_debugbreak" {
             self.execution_state = Avm1ExecutionState::Paused;
 
-            let msg = DebugMessageOut::BreakpointHit { name: name.clone() };
+            let msg = DebugMessageOut::BreakpointHit { name };
             context.debugger.submit_debug_message(msg);
         }
     }
@@ -560,7 +583,8 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::Push { val } => {
-                activation.context.avm1.push(val.as_avm1());
+                let val = val.as_avm1(&mut activation.context);
+                activation.context.avm1.push(val);
                 let msg = DebugMessageOut::GenericResult { success: true };
                 activation.context.debugger.submit_debug_message(msg);
             }
@@ -570,26 +594,51 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::GetBreakpoints => {
-                let msg = DebugMessageOut::BreakpointList { bps: dbg.pending_breakpoints.clone() };
+                let msg = DebugMessageOut::BreakpointList {
+                    bps: dbg.pending_breakpoints.clone(),
+                };
                 activation.context.debugger.submit_debug_message(msg);
             }
             Avm1Msg::GetVariable { path } => {
-                let res = activation.get_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()));
+                let res = activation.get_variable(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    path.clone(),
+                ));
                 if let Ok(res) = res {
                     let val: Avm1Value<'gc> = res.into();
                     println!("val = {:?}", val);
 
-                    activation.context.debugger.submit_debug_message(DebugMessageOut::GetValueResult { path, value: val.into() });
+                    activation.context.debugger.submit_debug_message(
+                        DebugMessageOut::GetValueResult {
+                            path,
+                            value: val.into(),
+                        },
+                    );
                 } else {
-                    activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: false });
+                    activation
+                        .context
+                        .debugger
+                        .submit_debug_message(DebugMessageOut::GenericResult { success: false });
                 }
             }
             Avm1Msg::SetVariable { path, value } => {
-                let res = activation.set_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()), value.as_avm1());
-                activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: res.is_ok() });
+                let value = value.as_avm1(&mut activation.context);
+                let res = activation.set_variable(
+                    AvmString::new_utf8(activation.context.gc_context, path.clone()),
+                    value,
+                );
+                activation
+                    .context
+                    .debugger
+                    .submit_debug_message(DebugMessageOut::GenericResult {
+                        success: res.is_ok(),
+                    });
             }
             Avm1Msg::GetSubprops { path } => {
-                let res = activation.get_variable(AvmString::new_utf8(activation.context.gc_context, path.clone()));
+                let res = activation.get_variable(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    path.clone(),
+                ));
                 if let Ok(res) = res {
                     let res: Avm1Value<'gc> = res.into();
 
@@ -600,12 +649,22 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                             props.push(child.to_utf8_lossy().to_string());
                         }
 
-                        activation.context.debugger.submit_debug_message(DebugMessageOut::GetSubpropsResult { path, props });
+                        activation.context.debugger.submit_debug_message(
+                            DebugMessageOut::GetSubpropsResult { path, props },
+                        );
                     } else {
-                        activation.context.debugger.submit_debug_message(DebugMessageOut::GetSubpropsResult { path, props: vec![] });
+                        activation.context.debugger.submit_debug_message(
+                            DebugMessageOut::GetSubpropsResult {
+                                path,
+                                props: vec![],
+                            },
+                        );
                     }
                 } else {
-                    activation.context.debugger.submit_debug_message(DebugMessageOut::GenericResult { success: false });
+                    activation
+                        .context
+                        .debugger
+                        .submit_debug_message(DebugMessageOut::GenericResult { success: false });
                 }
             }
             Avm1Msg::GetBacktrace => {
@@ -616,7 +675,10 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                     bt.push(p.name().to_string());
                     id = p.parent;
                 }
-                activation.context.debugger.submit_debug_message(DebugMessageOut::GetBacktraceResult { backtrace: bt });
+                activation
+                    .context
+                    .debugger
+                    .submit_debug_message(DebugMessageOut::GetBacktraceResult { backtrace: bt });
             }
             Avm1Msg::GetRegisters => {
                 let mut regs = Vec::<DValue>::new();
@@ -628,9 +690,10 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                     }
                 }
 
-                activation.context.debugger.submit_debug_message(DebugMessageOut::GetRegisterResult { regs });
-
-
+                activation
+                    .context
+                    .debugger
+                    .submit_debug_message(DebugMessageOut::GetRegisterResult { regs });
             }
             Avm1Msg::StepOver => {}
             Avm1Msg::GetConstantPool => {}
@@ -642,7 +705,10 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 for child in locals.get_keys(activation) {
                     props.push(child.to_utf8_lossy().to_string());
                 }
-                activation.context.debugger.submit_debug_message(DebugMessageOut::GetLocalsResult { locals: props });
+                activation
+                    .context
+                    .debugger
+                    .submit_debug_message(DebugMessageOut::GetLocalsResult { locals: props });
             }
             Avm1Msg::GetGlobals => {
                 let mut root_scope = activation.scope();
@@ -656,7 +722,10 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 for child in root_object.get_keys(activation) {
                     props.push(child.to_utf8_lossy().to_string());
                 }
-                activation.context.debugger.submit_debug_message(DebugMessageOut::GetGlobalsResult { globals: props });
+                activation
+                    .context
+                    .debugger
+                    .submit_debug_message(DebugMessageOut::GetGlobalsResult { globals: props });
             }
         }
     }

@@ -5,306 +5,25 @@ use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use ruffle_core::debugable::{DebugMessageIn, DebugMessageOut, TargetedMsg, PlayerMsg, Avm1Msg, DValue};
-use tungstenite::{WebSocket, Message};
+use crate::command::Command;
+use ruffle_core::debugable::{Avm1Msg, DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg};
+use tungstenite::{Message, WebSocket};
 
-
-fn smatch<'a, 'b: 'a>(s: &'a str, t: &'b str) -> Option<&'a str> {
-    let s = s.trim_start();
-    if s.starts_with(t) {
-        Some(&s[t.len()..].trim_start())
-    } else {
-        None
-    }
-}
-
-fn parse_value(s: &str) -> Option<DValue> {
-    if let Ok(v) = s.parse::<i32>() {
-        Some(DValue::Int(v))
-    } else if let Ok(v) = s.parse::<f64>() {
-        Some(DValue::Number(v))
-    } else if s == "null" {
-        Some(DValue::Null)
-    } else if s == "undefined" {
-        Some(DValue::Undefined)
-    } else {
-        //TODO: should this require quotes
-        Some(DValue::String(s.to_string()))
-    }
-}
-
-// list current function args
-// list all functions
-// forward traces
-// colour
-// actually handle short form
-// prevent using some commands when not in a breakpoint
-
-fn parse_avm1_command(cmd: &str) -> Option<Command> {
-    if let Some(_) = smatch(cmd, "help") {
-        println!("Ruffle Debugger Help (AVM1)");
-        println!();
-        println!("() = Short form");
-        println!();
-        println!("Values:");
-        println!("null - Null");
-        println!("undefined - Undefined");
-        println!("123.4 - Number");
-        println!("123 - Int");
-        println!("\"Foo\" - String");
-        println!();
-        println!("Commands:");
-        println!("avm1 break - Break execution at the next instruction");
-        println!("avm1 breakpoint list - List active breakpoints");
-        println!("avm1 breakpoint add \"function_name\" - Break execution when \"function_name\" is called");
-        println!("avm1 breakpoint remove \"function_name\" - Remove a breakpoint");
-        println!();
-        println!("Only available when in a breakpoint:");
-        println!("avm1 (si)/step - Execute next instruction");
-        println!("avm1 (sr)/step_out - Continue execution, until returning");
-        println!();
-        println!("avm1 stack show - Show the current state of the stack");
-        println!("avm1 stack push <Value> - Push a value onto the stack");
-        println!("avm1 stack pop - Remove the top value from the stack");
-        println!();
-        println!("avm1 registers show - Show the current state of the registers");
-        println!();
-        println!("avm1 backtrace - Show the call stack");
-        println!("avm1 locals - Show the current local variables");
-        println!("avm1 globals - Show global variables");
-        println!();
-        println!("avm1 get <path> - Get the value of the variable at <path>");
-        println!("avm1 set <path> <value> - Set the value of the variable at <path> to <value>");
-        println!("avm1 props <path> - Get the sub-properties of the variable at <path>");
-        println!();
-        println!("avm1 continue");
-        println!();
-        println!("avm1 help - View this message");
-    } else if let Some(path) = smatch(cmd, "set") {
-        let mut parts = path.split(" ");
-        let path = parts.next().unwrap();
-        let value = parts.next().unwrap();
-
-        if let Some(value) = parse_value(value) {
-            return Some(Command::Avm1VariableSet { path: path.to_string(), value, });
-        } else {
-            return None;
-        }
-    } else if let Some(path) = smatch(cmd, "props") {
-        return Some(Command::Avm1SubpropGet { path: path.to_string() });
-    } else if let Some(path) = smatch(cmd, "get") {
-        return Some(Command::Avm1VariableGet { path: path.to_string() });
-    } else if let Some(bp) = smatch(cmd, "breakpoint") {
-        if let Some(name) = smatch(bp, "add") {
-            return Some(Command::Avm1FunctionBreak { name: name.to_string() });
-        } else if let Some(name) = smatch(bp, "remove") {
-            return Some(Command::Avm1FunctionBreakDelete { name: name.to_string() });
-        } else if let Some(_) = smatch(bp, "list") {
-            return Some(Command::Avm1BreakpointsGet);
-        }    
-    } else if let Some(_) = smatch(cmd, "break") {
-            return Some(Command::Avm1Break);
-    } else if let Some(_) = smatch(cmd, "step_out") {
-        return Some(Command::Avm1StepOut);
-    } else if let Some(_) = smatch(cmd, "step") {
-        return Some(Command::Avm1StepInto);
-    } else if let Some(_) = smatch(cmd, "registers show") {
-        return Some(Command::Avm1Registers);
-    } else if let Some(_) = smatch(cmd, "backtrace") {
-        return Some(Command::Avm1Backtrace);
-    } else if let Some(_) = smatch(cmd, "locals") {
-        return Some(Command::Avm1Locals);
-    } else if let Some(_) = smatch(cmd, "globals") {
-        return Some(Command::Avm1Globals);
-    } else if let Some(stack) = smatch(cmd, "stack") {
-        if let Some(_) = smatch(stack, "show") {
-            return Some(Command::Avm1Stack);
-        } else if let Some(arg) = smatch(stack, "push") {
-            if let Some(val) = parse_value(arg) {
-                return Some(Command::Avm1Push { val });
-            }
-        } else if let Some(_) = smatch(stack, "pop") {
-            return Some(Command::Avm1Pop);
-        }
-    } else if let Some(_) = smatch(cmd, "continue") {
-        return Some(Command::Avm1Continue);
-    }
-
-    None
-}
-
-fn parse_player_command(cmd: &str) -> Option<Command> {
-    if let Some(_) = smatch(cmd, "help") {
-        println!("Ruffle Debugger Help (Player)");
-        println!();
-        println!("Commands:");
-        println!("player pause");
-        println!("player resume");
-        println!();
-        println!("player help - View this message");
-    } else if let Some(_) = smatch(cmd, "pause") {
-        return Some(Command::Pause);
-    } else if let Some(_) = smatch(cmd, "resume") {
-        return Some(Command::Play);
-    }
-
-    None
-}
-
-fn parse_do_command(cmd: &str) -> Option<Command> {
-    if let Some(_) = smatch(cmd, "help") {
-        println!("Ruffle Debugger Help (Display Object)");
-        println!();
-        println!("() = Short form");
-        println!();
-        println!("Commands:");
-        println!("do info <path>");
-        println!("do children <path>");
-        println!("do props <path>");
-        println!("do stop <path>");
-        println!("do prop get <path> <prop_name>");
-        println!();
-        println!("do help - View this message");
-    } else if let Some(path) = smatch(cmd, "info") {
-        return Some(Command::Info { path: path.to_string()});
-    } else if let Some(path) = smatch(cmd, "children") {
-        return Some(Command::GetChildren { path: path.to_string()});
-    } else if let Some(path) = smatch(cmd, "props") {
-        return Some(Command::GetProps { path: path.to_string()});
-    } else if let Some(path) = smatch(cmd, "stop") {
-        return Some(Command::StopDO { path: path.to_string()});
-    } else if let Some(prop) = smatch(cmd, "prop") {
-        if let Some(args) = smatch(prop, "get") {
-            //TODO: target support
-            let next_space_or_end = args.chars().position(|c| c == ' ').unwrap_or_else(|| args.len());
-            let path = &args[..next_space_or_end];
-            let name = &args[next_space_or_end..];
-            return Some(Command::GetPropValue { path: path.to_string(), name: name.to_string()});
-        }
-    }
-
-    None
-}
-
-fn parse_command(cmd: &str) -> Option<Command> {
-    if let Some(avm1_cmd) = smatch(cmd, "avm1") {
-        parse_avm1_command(avm1_cmd)
-    } else if let Some(do_cmd) = smatch(cmd, "do") {
-        parse_do_command(do_cmd)
-    } else if let Some(player_cmd) = smatch(cmd, "player") {
-        parse_player_command(player_cmd)
-    } else if let Some(_) = smatch(cmd, "quit") {
-        std::process::exit(0);
-    } else if let Some(_) = smatch(cmd, "help") {
-        println!("Ruffle Debugger Help (Top level)");
-        println!();
-        println!("Commands:");
-        println!("avm1 - Query the state of the AVM1 interpreter");
-        println!("do - Query a display object");
-        println!("player - Control the state of the player");
-        println!("help - View this message");
-        println!("quit - Exit the debugger");
-        println!();
-        println!("Try \"<command> help\" for more details");
-        None
-    } else {
-        None
-    }
-}
-
-/// Commands that the debugger client can send the the current debuggee
-#[derive(Debug, Clone)]
-pub enum Command {
-    /// Pause at the start of the next frame
-    Pause,
-
-    /// Resume execution of the next frame
-    Play,
-
-    /// Reconnect client
-    Reconnect,
-
-    /// Get information about the display object at the given path
-    Info { path: String },
-
-    /// Get the children of the display object at the given depth
-    GetChildren { path: String },
-
-    /// Get the properties on this object
-    GetProps { path: String },
-
-    /// Get the value of a property
-    GetPropValue { path: String, name: String },
-
-    /// Set the value of a property
-    SetPropValue {
-        path: String,
-        name: String,
-        value: String,
-    },
-
-    /// Stop the current display object
-    StopDO { path: String },
-
-    /// Break the execution of AVM1
-    Avm1Break,
-
-    /// Get the state of the AVM1 stack
-    Avm1Stack,
-
-    /// Execute the next instruction, stepping into function calls
-    Avm1StepInto,
-    
-    /// Execute until the current scope returns
-    Avm1StepOut,
-
-    /// Add a breakpoint that will break when `name` is called, either as a function or a method
-    Avm1FunctionBreak { name: String },
-
-    /// Remove any breakpoint on `name`
-    Avm1FunctionBreakDelete { name: String},
-
-    /// Continue execution
-    Avm1Continue,
-
-    /// Push a value onto the stack
-    Avm1Push { val: DValue },
-
-    /// Pop a value from the stack
-    Avm1Pop,
-
-    /// Get all the current breakpoints
-    Avm1BreakpointsGet,
-
-    /// Get the value of a avm1 variable
-    Avm1VariableGet { path: String },
-
-    /// Set the value of a avm1 variable
-    Avm1VariableSet { path: String, value: DValue },
-
-    /// Get the sub-properties of an avm1 variable
-    Avm1SubpropGet { path: String },
-
-    /// Get the avm1 backtrace
-    Avm1Backtrace,
-
-    /// Get the avm1 registers
-    Avm1Registers,
-
-    /// Get global variables
-    Avm1Globals,
-
-    /// Get local variables
-    Avm1Locals
-}
+pub mod command;
+pub mod command_parser;
 
 #[derive(Debug, Default)]
 struct DebuggerState {
     /// The last command that was executed
     last_cmd: Option<Command>,
 
-    /// The current targeted object
-    target: Option<String>,
+    /// Are we in a breakpoint / is the avm paused
+    ///
+    /// If the avm is currently running, then some operations such as stack push or pop are
+    /// practically impossible to send "safely" because the current state will be changing
+    /// as they are being typed.
+    /// Additionally, single stepping execution requires that the vm is paused.
+    in_breakpoint: bool,
 }
 
 fn stdin_thread(
@@ -321,90 +40,39 @@ fn stdin_thread(
             }
 
             let mut out = std::io::stdout();
-            if let Some(select) = &state.read().unwrap().target {
-                out.write(b"[").unwrap();
-                out.write(select.as_bytes()).unwrap();
-                out.write(b"]").unwrap();
-            }
-            out.write(b"> ").unwrap();
+
+            // Write a prefix
+            out.write_all(b"> ").unwrap();
             out.flush().unwrap();
 
+            // Read blockingly
             let mut buf = [0u8; 4096];
             if let Ok(len) = std::io::stdin().read(&mut buf) {
                 if len == 0 {
                     break;
                 }
 
+                // Convert input to string
                 let buf = &buf[..len];
                 let s = String::from_utf8(buf.to_vec()).unwrap();
 
-                let mut cmd = parse_command(&s.strip_suffix("\n").unwrap());
-
-                if cmd.is_none() {
-                if s.starts_with("reconnect") || s == "rc\n" {
-                    cmd = Some(Command::Reconnect);
-                } else if s.starts_with("set_prop") {
-                    let var_name = s
-                        .strip_suffix("\n")
-                        .unwrap()
-                        .split(" ")
-                        .skip(1)
-                        .next()
-                        .map(|x| x.to_string())
-                        .unwrap_or_else(|| {
-                            state
-                                .read()
-                                .unwrap()
-                                .target
-                                .as_ref()
-                                .map(|x| x.to_string())
-                                .unwrap_or_else(|| "".to_string())
-                        });
-
-                    let arg_name = s
-                        .strip_suffix("\n")
-                        .unwrap()
-                        .split(" ")
-                        .skip(2)
-                        .next()
-                        .map(|x| x.to_string())
-                        .unwrap();
-
-                    let new_value = s
-                        .strip_suffix("\n")
-                        .unwrap()
-                        .split(" ")
-                        .skip(3)
-                        .next()
-                        .map(|x| x.to_string())
-                        .unwrap();
-
-                    cmd = Some(Command::SetPropValue {
-                        path: var_name,
-                        name: arg_name,
-                        value: new_value,
-                    });
-                } else if s.starts_with("select") {
-                    let var_name = s
-                        .strip_suffix("\n")
-                        .unwrap()
-                        .split(" ")
-                        .skip(1)
-                        .next()
-                        .unwrap();
-                    state.write().unwrap().target = Some(var_name.to_string());
-                } else if s == "\n" {
-                    cmd = state.write().unwrap().last_cmd.take();
+                // Newline implies repeat last command, otherwise use parser
+                let cmd = if s == "\n" {
+                    state.write().unwrap().last_cmd.take()
                 } else {
-                    println!("Unknown command");
-                }
-                }
+                    crate::command_parser::parse_command(&s.strip_suffix('\n').unwrap())
+                };
 
-                if let Some(cmd) = cmd {
-                    println!("Got cmd {:?}", cmd);
-                    queue.write().unwrap().push(cmd.clone());
-                    state.write().unwrap().last_cmd = Some(cmd);
-                    input_block.store(true, Ordering::SeqCst);
+                match cmd {
+                    // No command, log warning
+                    None => println!("Unknown command"),
+
+                    // We have something to do, put it in the queue
+                    Some(cmd) => {
+                        queue.write().unwrap().push(cmd.clone());
+                        state.write().unwrap().last_cmd = Some(cmd);
+                        input_block.store(true, Ordering::SeqCst);
+                    }
                 }
             }
         }
@@ -417,7 +85,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
     let state = Arc::new(RwLock::new(DebuggerState::default()));
     let input_block = Arc::new(AtomicBool::new(false));
     let input_thread = stdin_thread(
-            Arc::clone(&queue),
+        Arc::clone(&queue),
         Arc::clone(&flag),
         Arc::clone(&state),
         Arc::clone(&input_block),
@@ -431,118 +99,231 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
     let mut last_ping = Instant::now();
 
     loop {
+        // If we have a command, convert to `DebugMessageIn` and send
         if let Some(cmd) = queue.write().unwrap().pop() {
+            // Check that we can exec this command
+            if cmd.requires_paused_vm() && !state.read().unwrap().in_breakpoint {
+                println!("This command requires that the vm is paused, try breaking execution");
+                continue;
+            }
+
             match cmd {
                 Command::Avm1Locals => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetLocals });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetLocals,
+                        },
+                    );
                 }
                 Command::Avm1Globals => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetGlobals });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetGlobals,
+                        },
+                    );
                 }
                 Command::Avm1Backtrace => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBacktrace });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetBacktrace,
+                        },
+                    );
                 }
                 Command::Avm1Registers => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetRegisters });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetRegisters,
+                        },
+                    );
                 }
                 Command::Avm1SubpropGet { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetSubprops { path } });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetSubprops { path },
+                        },
+                    );
                 }
                 Command::Avm1VariableSet { path, value } => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::SetVariable { path, value } });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::SetVariable { path, value },
+                        },
+                    );
                 }
                 Command::Avm1VariableGet { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetVariable { path } });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetVariable { path },
+                        },
+                    );
                 }
                 Command::Avm1BreakpointsGet => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBreakpoints });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetBreakpoints,
+                        },
+                    );
                 }
                 Command::Avm1Pop => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Pop});
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Pop });
                 }
                 Command::Avm1Push { val } => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Push {val }});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::Push { val },
+                        },
+                    );
                 }
                 Command::Avm1Continue => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Continue});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::Continue,
+                        },
+                    );
+                    state.write().unwrap().in_breakpoint = true;
                 }
-                Command::Avm1FunctionBreakDelete { name }  => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunctionDelete {name}});
+                Command::Avm1FunctionBreakDelete { name } => {
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::BreakFunctionDelete { name },
+                        },
+                    );
                 }
-                Command::Avm1FunctionBreak { name }  => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::BreakFunction {name}});
+                Command::Avm1FunctionBreak { name } => {
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::BreakFunction { name },
+                        },
+                    );
                 }
                 Command::Avm1StepInto => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::StepInto});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::StepInto,
+                        },
+                    );
                 }
                 Command::Avm1StepOut => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::StepOut});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::StepOut,
+                        },
+                    );
                 }
                 Command::Avm1Stack => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetStack});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::GetStack,
+                        },
+                    );
                 }
                 Command::Avm1Break => {
-                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::Break});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Avm1 {
+                            msg: Avm1Msg::Break,
+                        },
+                    );
                 }
                 Command::Pause => {
-                    send_msg(&mut stream, DebugMessageIn::Player { msg: PlayerMsg::Pause});
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Player {
+                            msg: PlayerMsg::Pause,
+                        },
+                    );
                 }
                 Command::Play => {
-                    send_msg(&mut stream, DebugMessageIn::Player { msg: PlayerMsg::Play});
-                }
-                Command::Reconnect => {
-                    break;
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Player {
+                            msg: PlayerMsg::Play,
+                        },
+                    );
                 }
                 Command::Info { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::GetInfo,
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::GetInfo,
+                        },
+                    );
                 }
                 Command::GetChildren { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::GetChildren,
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::GetChildren,
+                        },
+                    );
                 }
                 Command::GetProps { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::GetChildren,
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::GetChildren,
+                        },
+                    );
                 }
                 Command::GetPropValue { path, name } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::GetPropValue { name },
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::GetPropValue { name },
+                        },
+                    );
                 }
                 Command::SetPropValue { path, name, value } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::SetPropValue { name, value },
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::SetPropValue { name, value },
+                        },
+                    );
                 }
                 Command::StopDO { path } => {
-                    send_msg(&mut stream, DebugMessageIn::Targeted {
-                        path,
-                        msg: TargetedMsg::Stop
-                    });
+                    send_msg(
+                        &mut stream,
+                        DebugMessageIn::Targeted {
+                            path,
+                            msg: TargetedMsg::Stop,
+                        },
+                    );
                 }
             }
         }
 
+        // Handle any incoming messages
         if let Ok(msg) = stream.read_message() {
+            // Exit if the stream is closed
             if msg.is_close() {
-                println!("Closed");
                 break;
             }
 
+            // Ignore ping and pong
             if msg.is_ping() || msg.is_pong() {
-
             } else if let Ok(txt) = msg.to_text() {
-                println!("Got incomming {:?}", txt);
-
+                // We got a message, display it
                 if let Ok(msg) = serde_json::from_str::<DebugMessageOut>(txt) {
                     match msg {
                         DebugMessageOut::State { playing } => {
@@ -550,7 +331,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                         }
                         DebugMessageOut::BreakpointHit { name } => {
                             println!("Hit BP {}", name);
-                            //stream.write(serde_json::to_string(&DebugMessageIn::Pause).unwrap().as_bytes()).unwrap();
+                            state.write().unwrap().in_breakpoint = true;
                         }
                         DebugMessageOut::GetVarResult { value } => {
                             println!("Result: {:?}", value);
@@ -570,7 +351,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                                 println!("fail");
                             }
                         }
-                        DebugMessageOut::BreakpointList {bps} => {
+                        DebugMessageOut::BreakpointList { bps } => {
                             println!("Breakpoints:");
                             for bp in &bps {
                                 println!("{}", bp);
@@ -588,7 +369,7 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                         }
                         DebugMessageOut::GetRegisterResult { regs } => {
                             for (i, r) in regs.iter().enumerate() {
-                                println!("register{} => {:?}", i+1, r);
+                                println!("register{} => {:?}", i + 1, r);
                             }
                         }
                         DebugMessageOut::GetBacktraceResult { backtrace } => {
@@ -605,6 +386,9 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                             for b in globals {
                                 println!("{}", b);
                             }
+                        }
+                        DebugMessageOut::LogTrace(t) => {
+                            println!("[trace] {}", t);
                         }
                     }
                 }
@@ -626,13 +410,15 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
         }
     }
 
+    // The client has d/c'ed, stop the input thread
     flag.store(false, Ordering::SeqCst);
+
+    // Wait for the thread to die
     input_thread.join().unwrap();
 }
 
 fn main() {
     let listener = TcpListener::bind("0.0.0.0:7979").unwrap();
-
 
     while let Some(Ok(stream)) = listener.incoming().next() {
         println!("New connection: {}", stream.peer_addr().unwrap());

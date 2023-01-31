@@ -170,7 +170,9 @@ impl<'a> ActivationIdentifier<'a> {
         self.depth
     }
 
-    pub fn name(&self) -> &str { self.name.borrow() }
+    pub fn name(&self) -> &str {
+        self.name.borrow()
+    }
 }
 
 pub struct Activation<'a, 'gc: 'a> {
@@ -435,13 +437,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let action = reader.read_action()?;
 
-            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone())};
+            unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_action(action.clone()) };
 
             // Keep processing events while we are in a breakpoint
             loop {
                 crate::debugable::handle_avm1_debug_events(self);
 
-                if !unsafe { crate::debugable::AVM1_DBG_STATE.pause_execution()} {
+                if !unsafe { crate::debugable::AVM1_DBG_STATE.pause_execution() } {
                     break;
                 }
             }
@@ -753,7 +755,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             args.push(self.context.avm1.pop());
         }
 
-        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string())};
+        unsafe {
+            crate::debugable::AVM1_DBG_STATE
+                .preprocess_call(&mut self.context, fn_name.to_utf8_lossy().to_string())
+        };
 
         let variable = self.get_variable(fn_name)?;
 
@@ -794,7 +799,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             method_name.coerce_to_string(self)?
         };
 
-        unsafe { crate::debugable::AVM1_DBG_STATE.preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string())};
+        unsafe {
+            crate::debugable::AVM1_DBG_STATE
+                .preprocess_call(&mut self.context, method_name.to_utf8_lossy().to_string())
+        };
 
         let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.

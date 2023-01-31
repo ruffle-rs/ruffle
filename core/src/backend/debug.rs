@@ -1,12 +1,10 @@
 //! Backend for handling debugger communication
 
-use crate::debugable::{DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg, Avm1Msg};
-use std::{
-    sync::{Arc, RwLock},
-};
-use std::time::Duration;
 use crate::backend::navigator::OwnedFuture;
+use crate::debugable::{Avm1Msg, DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg};
 use crate::loader::Error as LoaderError;
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
 /// A trait that defines the async interactions between a connected debugger and the player
 pub trait DebuggerBackend {
@@ -25,7 +23,7 @@ pub trait DebuggerBackend {
 
     /// Enqueue a debug message to be sent to the attached debugger if it exists
     /// This function should not block
-    fn submit_debug_message(&mut self, _evt: DebugMessageOut);
+    fn submit_debug_message(&self, _evt: DebugMessageOut);
 
     /// Attempt to connect to a debugger if one exists
     /// This function is free to block until the connection is established.
@@ -57,7 +55,7 @@ impl DebuggerBackend for NullDebuggerBackend {
         None
     }
 
-    fn submit_debug_message(&mut self, _evt: DebugMessageOut) {
+    fn submit_debug_message(&self, _evt: DebugMessageOut) {
         // NOOP
     }
 
@@ -93,12 +91,10 @@ impl WebsocketDebugBackend {
 
 impl DebuggerBackend for WebsocketDebugBackend {
     fn connect_debugger(&mut self) -> Option<OwnedFuture<(), LoaderError>> {
-
         let queue_local_player = Arc::clone(&self.event_queue_player);
         let queue_local_targeted = Arc::clone(&self.event_queue_targeted);
         let queue_local_avm1 = Arc::clone(&self.event_queue_avm1);
         let queue_out_local = Arc::clone(&self.event_queue_out);
-
 
         let (socket, _) = match tungstenite::connect("ws://localhost:7979/") {
             Ok(s) => s,
@@ -106,35 +102,32 @@ impl DebuggerBackend for WebsocketDebugBackend {
         };
         let socket = Arc::new(RwLock::new(socket));
 
-
         // Read thread
         let socket_read = Arc::clone(&socket);
-        std::thread::spawn(move || {
-            loop {
-                std::thread::sleep(Duration::from_millis(100));
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_millis(100));
 
-                if let Ok(msg) = socket_read.write().unwrap().read_message() {
-                    if msg.is_ping() {
-                        continue;
-                    }
-                    if msg.is_close() {
-                        break;
-                    }
+            if let Ok(msg) = socket_read.write().unwrap().read_message() {
+                if msg.is_ping() {
+                    continue;
+                }
+                if msg.is_close() {
+                    break;
+                }
 
-                    if let Ok(txt) = msg.to_text() {
-                        if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
-                            println!("Got data: {:?}", msg);
+                if let Ok(txt) = msg.to_text() {
+                    if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
+                        println!("Got data: {:?}", msg);
 
-                            match msg {
-                                DebugMessageIn::Player { msg } => {
-                                    queue_local_player.write().unwrap().push(msg);
-                                }
-                                DebugMessageIn::Targeted { path, msg } => {
-                                    queue_local_targeted.write().unwrap().push((path, msg));
-                                }
-                                DebugMessageIn::Avm1 { msg } => {
-                                    queue_local_avm1.write().unwrap().push(msg);
-                                }
+                        match msg {
+                            DebugMessageIn::Player { msg } => {
+                                queue_local_player.write().unwrap().push(msg);
+                            }
+                            DebugMessageIn::Targeted { path, msg } => {
+                                queue_local_targeted.write().unwrap().push((path, msg));
+                            }
+                            DebugMessageIn::Avm1 { msg } => {
+                                queue_local_avm1.write().unwrap().push(msg);
                             }
                         }
                     }
@@ -144,19 +137,19 @@ impl DebuggerBackend for WebsocketDebugBackend {
 
         // Write thread
         let socket_write = Arc::clone(&socket);
-        std::thread::spawn(move || {
-            loop {
-                if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
-                    let mut socket_write = socket_write.write().unwrap();
-                    socket_write.write_message(tungstenite::Message::text(serde_json::to_string(&out_msg).unwrap())).unwrap();
-                    socket_write.write_pending().unwrap();
-                    println!("Sent {:?}", out_msg);
-                }
+        std::thread::spawn(move || loop {
+            if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
+                let mut socket_write = socket_write.write().unwrap();
+                socket_write
+                    .write_message(tungstenite::Message::text(
+                        serde_json::to_string(&out_msg).unwrap(),
+                    ))
+                    .unwrap();
+                socket_write.write_pending().unwrap();
+                println!("Sent {:?}", out_msg);
             }
         });
 
-
-        return None;
         /*
 
         return Some(Box::pin(async move {
@@ -233,10 +226,12 @@ impl DebuggerBackend for WebsocketDebugBackend {
         }));
 
         */
+
+        None
     }
 
-    fn submit_debug_message(&mut self, evt: DebugMessageOut) {
-        self.event_queue_out.write().unwrap().push(evt.clone());
+    fn submit_debug_message(&self, evt: DebugMessageOut) {
+        self.event_queue_out.write().unwrap().push(evt);
     }
 
     fn get_debug_event_player(&mut self) -> Option<PlayerMsg> {
