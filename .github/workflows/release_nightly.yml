@@ -315,7 +315,6 @@ jobs:
           npm ci
       
       - name: Seal version data
-        if: ${{ !matrix.demo }}
         shell: bash -l {0}
         working-directory: web
         env:
