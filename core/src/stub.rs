@@ -14,6 +14,11 @@ pub enum Stub {
         method: &'static str,
         specifics: Option<&'static str>,
     },
+    Avm2Method {
+        class: &'static str,
+        method: &'static str,
+        specifics: Option<&'static str>,
+    },
     Avm2Getter {
         class: &'static str,
         property: &'static str,
@@ -44,6 +49,20 @@ impl Display for Stub {
                 specifics: Some(specifics),
             } => {
                 write!(f, "AVM1 {class}.{method}() {specifics}")
+            }
+            Stub::Avm2Method {
+                class,
+                method,
+                specifics: None,
+            } => {
+                write!(f, "AVM2 {class}.{method}()")
+            }
+            Stub::Avm2Method {
+                class,
+                method,
+                specifics: Some(specifics),
+            } => {
+                write!(f, "AVM2 {class}.{method}() {specifics}")
             }
             Stub::Avm2Getter {
                 class,
