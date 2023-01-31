@@ -3,12 +3,16 @@ use std::borrow::Cow;
 use std::collections::hash_set::Iter;
 use std::fmt::{Debug, Display, Formatter};
 
+#[cfg(feature = "known_stubs")]
+#[linkme::distributed_slice]
+pub static KNOWN_STUBS: [Stub] = [..];
+
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Clone)]
 pub enum Stub {
     Avm1Method {
         class: &'static str,
         method: &'static str,
-        specifics: Option<Cow<'static, str>>,
+        specifics: Option<&'static str>,
     },
     Other(Cow<'static, str>),
 }
@@ -45,10 +49,10 @@ impl StubCollection {
         Self::default()
     }
 
-    pub fn encounter(&mut self, stub: Stub) {
-        if !self.inner.contains(&stub) {
+    pub fn encounter(&mut self, stub: &Stub) {
+        if !self.inner.contains(stub) {
             tracing::warn!("Encountered stub: {stub}");
-            self.inner.insert(stub);
+            self.inner.insert(stub.clone());
         }
     }
 
