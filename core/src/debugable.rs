@@ -120,9 +120,6 @@ pub enum Avm1Msg {
 
     /// Execute a single avm1 opcode, without following calls
     StepOver,
-    
-    /// Continue exeuction until the current activation returns
-    SteoOut,
 
     /// Break execution at the current position
     Break,
@@ -159,6 +156,12 @@ pub enum Avm1Msg {
 
     /// Get the sub-properties of the value the given path
     GetSubprops { path: String },
+
+    /// Get global variables
+    GetGlobals,
+
+    /// Get local variables
+    GetLocals
 }
 
 /// Debug messages that are handled in the player
@@ -211,6 +214,12 @@ pub enum DebugMessageOut {
 
     /// Result send when requesting registers
     GetRegisterResult { regs: Vec<DValue> },
+
+    /// Result sent when requesting locals
+    GetLocalsResult { locals: Vec<String> },
+
+    /// Result sent when requesting globals
+    GetGlobalsResult { globals: Vec<String> },
 
     State { playing: bool },
     BreakpointHit { name: String },
@@ -620,8 +629,35 @@ pub fn handle_avm1_debug_events<'gc>(activation: &mut Activation<'_, 'gc>) {
                 }
 
                 activation.context.debugger.submit_debug_message(DebugMessageOut::GetRegisterResult { regs });
+
+
             }
-            _ => {},
+            Avm1Msg::StepOver => {}
+            Avm1Msg::GetConstantPool => {}
+            Avm1Msg::GetLocals => {
+                let scope = activation.scope();
+                let locals = scope.locals();
+                let mut props = Vec::new();
+
+                for child in locals.get_keys(activation) {
+                    props.push(child.to_utf8_lossy().to_string());
+                }
+                activation.context.debugger.submit_debug_message(DebugMessageOut::GetLocalsResult { locals: props });
+            }
+            Avm1Msg::GetGlobals => {
+                let mut root_scope = activation.scope();
+                while let Some(parent_scope) = root_scope.parent() {
+                    root_scope = parent_scope;
+                }
+                let root_object = root_scope.locals();
+
+                let mut props = Vec::new();
+
+                for child in root_object.get_keys(activation) {
+                    props.push(child.to_utf8_lossy().to_string());
+                }
+                activation.context.debugger.submit_debug_message(DebugMessageOut::GetGlobalsResult { globals: props });
+            }
         }
     }
 }

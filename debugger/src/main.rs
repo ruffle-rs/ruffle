@@ -33,18 +33,12 @@ fn parse_value(s: &str) -> Option<DValue> {
     }
 }
 
-
-
 // list current function args
 // list all functions
-// list locals
-// all global vars?
 // forward traces
+// colour
 // actually handle short form
 // prevent using some commands when not in a breakpoint
-
-
-
 
 fn parse_avm1_command(cmd: &str) -> Option<Command> {
     if let Some(_) = smatch(cmd, "help") {
@@ -76,6 +70,8 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         println!("avm1 registers show - Show the current state of the registers");
         println!();
         println!("avm1 backtrace - Show the call stack");
+        println!("avm1 locals - Show the current local variables");
+        println!("avm1 globals - Show global variables");
         println!();
         println!("avm1 get <path> - Get the value of the variable at <path>");
         println!("avm1 set <path> <value> - Set the value of the variable at <path> to <value>");
@@ -116,6 +112,10 @@ fn parse_avm1_command(cmd: &str) -> Option<Command> {
         return Some(Command::Avm1Registers);
     } else if let Some(_) = smatch(cmd, "backtrace") {
         return Some(Command::Avm1Backtrace);
+    } else if let Some(_) = smatch(cmd, "locals") {
+        return Some(Command::Avm1Locals);
+    } else if let Some(_) = smatch(cmd, "globals") {
+        return Some(Command::Avm1Globals);
     } else if let Some(stack) = smatch(cmd, "stack") {
         if let Some(_) = smatch(stack, "show") {
             return Some(Command::Avm1Stack);
@@ -290,6 +290,12 @@ pub enum Command {
 
     /// Get the avm1 registers
     Avm1Registers,
+
+    /// Get global variables
+    Avm1Globals,
+
+    /// Get local variables
+    Avm1Locals
 }
 
 #[derive(Debug, Default)]
@@ -427,6 +433,12 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
             match cmd {
+                Command::Avm1Locals => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetLocals });
+                }
+                Command::Avm1Globals => {
+                    send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetGlobals });
+                }
                 Command::Avm1Backtrace => {
                     send_msg(&mut stream, DebugMessageIn::Avm1 { msg: Avm1Msg::GetBacktrace });
                 }
@@ -581,6 +593,16 @@ fn handle_client(mut stream: WebSocket<TcpStream>) {
                         }
                         DebugMessageOut::GetBacktraceResult { backtrace } => {
                             for b in backtrace {
+                                println!("{}", b);
+                            }
+                        }
+                        DebugMessageOut::GetLocalsResult { locals } => {
+                            for b in locals {
+                                println!("{}", b);
+                            }
+                        }
+                        DebugMessageOut::GetGlobalsResult { globals } => {
+                            for b in globals {
                                 println!("{}", b);
                             }
                         }
