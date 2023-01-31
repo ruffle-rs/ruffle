@@ -3,6 +3,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, Value};
+use crate::avm2_stub_method;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
@@ -211,19 +212,19 @@ pub fn flush<'gc>(
 }
 
 pub fn close<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("SharedObject.close - not yet implemented");
+    avm2_stub_method!(activation, "flash.net.SharedObject", "close");
     Ok(Value::Undefined)
 }
 
 pub fn clear<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("SharedObject.clear - not yet implemented");
+    avm2_stub_method!(activation, "flash.net.SharedObject", "clear");
     Ok(Value::Undefined)
 }
