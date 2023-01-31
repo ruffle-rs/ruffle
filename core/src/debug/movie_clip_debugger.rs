@@ -39,43 +39,28 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                 self.tgt.stop(context);
                 Some(DebugMessageOut::GenericResult { success: true })
             }
-            TargetedMsg::GetInfo => {
-                {
-                    let mut activation = Activation::from_stub(
-                        context.reborrow(),
-                        ActivationIdentifier::root("[Foobar]"),
-                    );
-
-                    let obj = self.tgt.object().coerce_to_object(&mut activation);
-                    println!("obj = {:?}", obj);
-                    let keys = obj.get_keys(&mut activation);
-                    println!("keys = {:?}", keys);
-                }
-
-                Some(DebugMessageOut::DisplayObjectInfo(
-                    DisplayObjectInfo::MovieClip(MovieClipInfo {
-                        depth: self.tgt.depth(),
-                        current_frame: self.tgt.current_frame(),
-                        is_focusable: self.tgt.is_focusable(),
-                        enabled: self.tgt.enabled(),
-                    }),
-                ))
-            }
+            TargetedMsg::GetInfo => Some(DebugMessageOut::DisplayObjectInfo(
+                DisplayObjectInfo::MovieClip(MovieClipInfo {
+                    depth: self.tgt.depth(),
+                    current_frame: self.tgt.current_frame(),
+                    is_focusable: self.tgt.is_focusable(),
+                    enabled: self.tgt.enabled(),
+                }),
+            )),
             TargetedMsg::GetChildren => {
                 for x in self.tgt.as_container().unwrap().iter_render_list() {
-                    println!("{:?}", x.name())
+                    //TODO: msg
                 }
                 Some(DebugMessageOut::GenericResult { success: true })
             }
             TargetedMsg::GetProps => {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
-                    ActivationIdentifier::root("[Foobar]"),
+                    ActivationIdentifier::root("[Debugger]"),
                 );
 
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
                 let keys = obj.get_keys(&mut activation);
-                println!("keys = {:?}", keys);
 
                 let mut out_keys: Vec<String> = Vec::new();
                 for key in &keys {
@@ -87,7 +72,7 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
             TargetedMsg::GetPropValue { name } => {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
-                    ActivationIdentifier::root("[Foobar]"),
+                    ActivationIdentifier::root("[Debugger]"),
                 );
 
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
@@ -95,14 +80,14 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                     AvmString::new_utf8(activation.context.gc_context, name),
                     &mut activation,
                 );
-                println!("keys = {:?}", val);
+                //TODO: msg
 
                 Some(DebugMessageOut::GenericResult { success: true })
             }
             TargetedMsg::SetPropValue { name, value } => {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
-                    ActivationIdentifier::root("[Foobar]"),
+                    ActivationIdentifier::root("[Debugger]"),
                 );
 
                 let obj = self.tgt.object().coerce_to_object(&mut activation);

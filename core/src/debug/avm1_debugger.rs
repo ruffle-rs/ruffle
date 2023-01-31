@@ -54,7 +54,6 @@ impl Avm1Debugger {
 
     /// Preprocess a given function call to update debugger state
     pub fn preprocess_call<'gc>(&mut self, context: &mut UpdateContext<'_, 'gc>, name: String) {
-        //println!("call = {}, bps = {:?}", name, self.pending_breakpoints);
         if self.pending_breakpoints.contains(&name) || name == "_debugbreak" {
             self.execution_state = Avm1ExecutionState::Paused;
 
