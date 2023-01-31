@@ -1080,7 +1080,7 @@ fn set_cache_as_bitmap<'gc>(
 /// Stubs `opaqueBackground`'s getter.
 pub fn opaque_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Null)
@@ -1088,9 +1088,9 @@ pub fn opaque_background<'gc>(
 
 /// Stubs `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
