@@ -9,3 +9,4 @@ edition = "2021"
 ruffle_core = { path = "../core" }
 serde = { version = "1.0.150", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
+tungstenite = "0.18.0"

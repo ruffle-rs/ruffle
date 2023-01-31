@@ -250,7 +250,6 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                         ActivationIdentifier::root("[Foobar]"),
                     );
 
-                    use crate::avm1::TObject;
                     let obj = self.tgt.object().coerce_to_object(&mut activation);
                     println!("obj = {:?}", obj);
                     let keys = obj.get_keys(&mut activation);
@@ -278,7 +277,6 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                     ActivationIdentifier::root("[Foobar]"),
                 );
 
-                use crate::avm1::TObject;
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
                 let keys = obj.get_keys(&mut activation);
                 println!("keys = {:?}", keys);
@@ -296,7 +294,6 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                     ActivationIdentifier::root("[Foobar]"),
                 );
 
-                use crate::avm1::TObject;
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
                 let val = obj.get(
                     AvmString::new_utf8(activation.context.gc_context, name),
@@ -312,7 +309,6 @@ impl<'gc> DebugProvider<'gc> for MovieClipDebugger<'gc> {
                     ActivationIdentifier::root("[Foobar]"),
                 );
 
-                use crate::avm1::TObject;
                 let obj = self.tgt.object().coerce_to_object(&mut activation);
                 obj.set(
                     AvmString::new_utf8(activation.context.gc_context, name),

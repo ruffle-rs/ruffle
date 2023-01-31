@@ -3,9 +3,10 @@ use std::net::{Shutdown, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use ruffle_core::debugable::{DebugMessageIn, DebugMessageOut, TargetedMsg, PlayerMsg, Avm1Msg, DValue};
+use tungstenite::{WebSocket, Message};
 
 
 fn smatch<'a, 'b: 'a>(s: &'a str, t: &'b str) -> Option<&'a str> {
@@ -371,10 +372,7 @@ fn stdin_thread(
     })
 }
 
-fn handle_client(mut stream: TcpStream) {
-    stream
-        .set_read_timeout(Some(Duration::from_millis(100)))
-        .unwrap();
+fn handle_client(mut stream: WebSocket<TcpStream>) {
     let queue = Arc::new(RwLock::new(Vec::new()));
     let flag = Arc::new(AtomicBool::new(true));
     let state = Arc::new(RwLock::new(DebuggerState::default()));
@@ -386,15 +384,12 @@ fn handle_client(mut stream: TcpStream) {
         Arc::clone(&input_block),
     );
 
-    fn send_msg(stream: &mut TcpStream, msg: DebugMessageIn) {
-                    stream
-                        .write(
-                            serde_json::to_string(&msg)
-                                .unwrap()
-                                .as_bytes(),
-                        )
-                        .unwrap();
+    fn send_msg(stream: &mut WebSocket<TcpStream>, msg: DebugMessageIn) {
+        stream.write_message(Message::text(serde_json::to_string(&msg).unwrap())).unwrap();
+        stream.write_pending().unwrap();
     }
+
+    let mut last_ping = Instant::now();
 
     loop {
         if let Some(cmd) = queue.write().unwrap().pop() {
@@ -445,139 +440,113 @@ fn handle_client(mut stream: TcpStream) {
                     break;
                 }
                 Command::Info { path } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
                                 path,
                                 msg: TargetedMsg::GetInfo,
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    });
                 }
                 Command::GetChildren { path } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::GetChildren,
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
+                        path,
+                        msg: TargetedMsg::GetChildren,
+                    });
                 }
                 Command::GetProps { path } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::GetProps,
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
+                        path,
+                        msg: TargetedMsg::GetChildren,
+                    });
                 }
                 Command::GetPropValue { path, name } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::GetPropValue { name },
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
+                        path,
+                        msg: TargetedMsg::GetPropValue { name },
+                    });
                 }
                 Command::SetPropValue { path, name, value } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::SetPropValue { name, value },
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
+                        path,
+                        msg: TargetedMsg::SetPropValue { name, value },
+                    });
                 }
                 Command::StopDO { path } => {
-                    stream
-                        .write(
-                            serde_json::to_string(&DebugMessageIn::Targeted {
-                                path,
-                                msg: TargetedMsg::Stop,
-                            })
-                            .unwrap()
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                    send_msg(&mut stream, DebugMessageIn::Targeted {
+                        path,
+                        msg: TargetedMsg::Stop
+                    });
                 }
                 _ => {}
             }
         }
 
         {
-            let mut buf = [0u8; 4096];
-            if let Ok(len) = stream.read(&mut buf) {
-                if len == 0 {
+            if let Ok(msg) = stream.read_message() {
+                if msg.is_close() {
                     break;
                 }
 
-                let buf = &buf[..len];
-                let s = String::from_utf8(buf.to_vec()).unwrap();
-                println!("Got incomming {:?}", s);
+                if msg.is_ping() || msg.is_pong() {
 
-                if let Ok(msg) = serde_json::from_str::<DebugMessageOut>(&s) {
-                    match msg {
-                        DebugMessageOut::State { playing } => {
-                            println!("Playing: {}", playing);
-                        }
-                        DebugMessageOut::BreakpointHit { name } => {
-                            println!("Hit BP {}", name);
-                            //stream.write(serde_json::to_string(&DebugMessageIn::Pause).unwrap().as_bytes()).unwrap();
-                        }
-                        DebugMessageOut::GetVarResult { value } => {
-                            println!("Result: {:?}", value);
-                        }
-                        DebugMessageOut::DisplayObjectInfo(i) => {
-                            println!("Info = {:#?}", i);
-                        }
-                        DebugMessageOut::GetPropsResult { keys } => {
-                            for key in &keys {
-                                println!("\"{}\"", key);
+                } else if let Ok(txt) = msg.to_text() {
+                    println!("Got incomming {:?}", txt);
+
+                    if let Ok(msg) = serde_json::from_str::<DebugMessageOut>(txt) {
+                        match msg {
+                            DebugMessageOut::State { playing } => {
+                                println!("Playing: {}", playing);
                             }
-                        }
-                        DebugMessageOut::GenericResult { success } => {
-                            if success {
-                                println!("success");
-                            } else {
-                                println!("fail");
+                            DebugMessageOut::BreakpointHit { name } => {
+                                println!("Hit BP {}", name);
+                                //stream.write(serde_json::to_string(&DebugMessageIn::Pause).unwrap().as_bytes()).unwrap();
                             }
-                        }
-                        DebugMessageOut::BreakpointList {bps} => {
-                            println!("Breakpoints:");
-                            for bp in &bps {
-                                println!("{}", bp);
+                            DebugMessageOut::GetVarResult { value } => {
+                                println!("Result: {:?}", value);
                             }
-                        }
-                        DebugMessageOut::GetValueResult { path, value } => {
-                            println!("{} = {:?}", path, value);
-                        }
-                        DebugMessageOut::GetSubpropsResult { path, props } => {
-                            println!("{} = {{", path);
-                            for p in &props {
-                                println!("    {},", p);
+                            DebugMessageOut::DisplayObjectInfo(i) => {
+                                println!("Info = {:#?}", i);
                             }
-                            println!("}}");
+                            DebugMessageOut::GetPropsResult { keys } => {
+                                for key in &keys {
+                                    println!("\"{}\"", key);
+                                }
+                            }
+                            DebugMessageOut::GenericResult { success } => {
+                                if success {
+                                    println!("success");
+                                } else {
+                                    println!("fail");
+                                }
+                            }
+                            DebugMessageOut::BreakpointList {bps} => {
+                                println!("Breakpoints:");
+                                for bp in &bps {
+                                    println!("{}", bp);
+                                }
+                            }
+                            DebugMessageOut::GetValueResult { path, value } => {
+                                println!("{} = {:?}", path, value);
+                            }
+                            DebugMessageOut::GetSubpropsResult { path, props } => {
+                                println!("{} = {{", path);
+                                for p in &props {
+                                    println!("    {},", p);
+                                }
+                                println!("}}");
+                            }
                         }
                     }
+                    input_block.store(false, Ordering::SeqCst);
                 }
-                input_block.store(false, Ordering::SeqCst);
             }
+        }
+
+        // We send a ping at least once every 500ms so that the client won't get stuck waiting for incomming data when using a blocking tcp channel
+        // This is needed as async tcp without a standard async runtime (such as Ruffle desktop) is quite difficult
+        // This won't really be needed on web, but shouldn't hurt either
+        if Instant::now().duration_since(last_ping) > Duration::from_millis(500) {
+            stream.write_message(Message::Ping(Vec::new())).unwrap();
+            stream.write_pending().unwrap();
+            last_ping = Instant::now();
         }
     }
 
@@ -588,15 +557,14 @@ fn handle_client(mut stream: TcpStream) {
 fn main() {
     let listener = TcpListener::bind("0.0.0.0:7979").unwrap();
 
-    loop {
-        if let Some(Ok(stream)) = listener.incoming().next() {
-            println!("New connection: {}", stream.peer_addr().unwrap());
-            handle_client(stream);
-            println!("client d/c");
-        }
+
+    while let Some(Ok(stream)) = listener.incoming().next() {
+        println!("New connection: {}", stream.peer_addr().unwrap());
+        stream.set_nonblocking(true).unwrap();
+        let wsc = tungstenite::accept(stream).unwrap();
+        handle_client(wsc);
+        println!("client d/c");
     }
-    // close the socket server
-    drop(listener);
 }
 
 //TODO: avm1 ops should be disabled unless in a bp context

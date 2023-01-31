@@ -425,7 +425,9 @@ impl Player {
         }
 
         // Connect a debugger if one exists
-        self.debugger_mut().connect_debugger();
+        if let Some(dbg_future) = self.debugger_mut().connect_debugger() {
+            self.navigator.spawn_future(dbg_future);
+        }
 
         self.audio.set_frame_rate(self.frame_rate);
     }

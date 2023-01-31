@@ -2,10 +2,10 @@
 
 use crate::debugable::{DebugMessageIn, DebugMessageOut, PlayerMsg, TargetedMsg, Avm1Msg};
 use std::{
-    io::Read,
-    net::TcpStream,
     sync::{Arc, RwLock},
 };
+use crate::backend::navigator::OwnedFuture;
+use crate::loader::Error as LoaderError;
 
 /// A trait that defines the async interactions between a connected debugger and the player
 pub trait DebuggerBackend {
@@ -28,7 +28,8 @@ pub trait DebuggerBackend {
 
     /// Attempt to connect to a debugger if one exists
     /// This function is free to block until the connection is established.
-    fn connect_debugger(&mut self);
+    //TODO: docs
+    fn connect_debugger(&mut self) -> Option<OwnedFuture<(), LoaderError>>;
 }
 
 /// A null debugger backend
@@ -59,8 +60,8 @@ impl DebuggerBackend for NullDebuggerBackend {
         // NOOP
     }
 
-    fn connect_debugger(&mut self) {
-        // NOOP
+    fn connect_debugger(&mut self) -> Option<OwnedFuture<(), LoaderError>> {
+        None
     }
 }
 
@@ -90,31 +91,73 @@ impl WebsocketDebugBackend {
 }
 
 impl DebuggerBackend for WebsocketDebugBackend {
-    fn connect_debugger(&mut self) {
+    fn connect_debugger(&mut self) -> Option<OwnedFuture<(), LoaderError>> {
+
         let queue_local_player = Arc::clone(&self.event_queue_player);
         let queue_local_targeted = Arc::clone(&self.event_queue_targeted);
         let queue_local_avm1 = Arc::clone(&self.event_queue_avm1);
         let queue_out_local = Arc::clone(&self.event_queue_out);
 
-        // spawn debugger thread
+
+        let (mut socket, _) = tungstenite::connect("ws://localhost:7979/").unwrap();
+        let socket = Arc::new(RwLock::new(socket));
+
+
+        // Read thread
+        let socket_read = Arc::clone(&socket);
         std::thread::spawn(move || {
-            if let Ok(mut stream) = TcpStream::connect("localhost:7979") {
-                stream
-                    .set_read_timeout(Some(std::time::Duration::from_millis(100)))
-                    .unwrap();
+            loop {
+                if let Ok(msg) = socket_read.write().unwrap().read_message() {
+                    if let Ok(txt) = msg.to_text() {
+                        if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
+                            println!("Got data: {:?}", msg);
 
-                loop {
-                    {
-                        let mut data = [0u8; 1024];
-                        if let Ok(len) = stream.read(&mut data) {
-                            if len == 0 {
-                                break;
+                            match msg {
+                                DebugMessageIn::Player { msg } => {
+                                    queue_local_player.write().unwrap().push(msg);
+                                }
+                                DebugMessageIn::Targeted { path, msg } => {
+                                    queue_local_targeted.write().unwrap().push((path, msg));
+                                }
+                                DebugMessageIn::Avm1 { msg } => {
+                                    queue_local_avm1.write().unwrap().push(msg);
+                                }
                             }
+                        }
+                    }
+                }
+            }
+        });
 
-                            let data = &data[..len];
-                            let s = String::from_utf8(data.to_vec()).unwrap();
+        // Write thread
+        let socket_write = Arc::clone(&socket);
+        std::thread::spawn(move || {
+            loop {
+                if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
+                    socket_write.write().unwrap().write_message(tungstenite::Message::text(serde_json::to_string(&out_msg).unwrap())).unwrap();
+                    socket_write.write().unwrap().write_pending().unwrap();
+                }
+            }
+        });
 
-                            if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(&s) {
+
+        return None;
+        /*
+
+        return Some(Box::pin(async move {
+            use futures::{StreamExt, SinkExt};
+
+            //stream.set_read_timeout(Some(std::time::Duration::from_millis(100))).unwrap();
+            //stream.set_nonblocking(true).unwrap();
+
+            println!("Socket connected");
+
+            let reader = async {
+                loop {
+                    println!("Checking for msg");
+                    if let Ok(msg) = socket.read_message() {
+                        if let Ok(txt) = msg.to_text() {
+                            if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(txt) {
                                 println!("Got data: {:?}", msg);
 
                                 match msg {
@@ -131,17 +174,50 @@ impl DebuggerBackend for WebsocketDebugBackend {
                             }
                         }
                     }
+                }
+            };
 
-                    if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
-                        std::io::Write::write(
-                            &mut stream,
-                            serde_json::to_string(&out_msg).unwrap().as_bytes(),
-                        )
-                        .unwrap();
+            //reader.await;
+
+            /*
+            let reader = async {
+                loop {
+                    while let Some(msg) = stream.next().await {
+                        if let Ok(txt) = msg {
+                            if let Ok(msg) = serde_json::from_str::<DebugMessageIn>(&txt) {
+                                println!("Got data: {:?}", msg);
+
+                                match msg {
+                                    DebugMessageIn::Player { msg } => {
+                                        queue_local_player.write().unwrap().push(msg);
+                                    }
+                                    DebugMessageIn::Targeted { path, msg } => {
+                                        queue_local_targeted.write().unwrap().push((path, msg));
+                                    }
+                                    DebugMessageIn::Avm1 { msg } => {
+                                        queue_local_avm1.write().unwrap().push(msg);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        });
+            };
+
+            let writer = async {
+                loop {
+                    if let Some(out_msg) = queue_out_local.write().unwrap().pop() {
+                        sink.send(serde_json::to_string(&out_msg).unwrap()).await.unwrap();
+                    }
+                }
+            };
+
+            let _ = futures::join!(reader, writer);
+            */
+            Ok(())
+        }));
+
+        */
     }
 
     fn submit_debug_message(&mut self, evt: DebugMessageOut) {
