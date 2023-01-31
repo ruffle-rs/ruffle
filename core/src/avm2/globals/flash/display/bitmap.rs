@@ -14,6 +14,7 @@ use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.Bitmap`'s instance constructor.
@@ -176,20 +177,22 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Bitmap", "pixelSnapping");
     Ok("auto".into())
 }
 
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Bitmap.pixelSnapping is a stub".into())
+    avm2_stub_setter!(activation, "flash.display.Bitmap", "pixelSnapping");
+    Ok(Value::Undefined)
 }
 
 /// Implement `Bitmap.smoothing`'s getter
