@@ -29,6 +29,7 @@ use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::registry::Registry;
 use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
+use url::Url;
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
     AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
@@ -240,8 +241,23 @@ impl Ruffle {
     /// Play an arbitrary movie on this instance.
     ///
     /// This method should only be called once per player.
-    pub fn load_data(&mut self, swf_data: Uint8Array, parameters: JsValue) -> Result<(), JsValue> {
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
+    pub fn load_data(
+        &mut self,
+        swf_data: Uint8Array,
+        parameters: JsValue,
+        swf_name: String,
+    ) -> Result<(), JsValue> {
+        let window = web_sys::window().ok_or("Expected window")?;
+        let mut url = Url::from_str(&window.location().href()?)
+            .map_err(|e| format!("Error creating url: {e}"))?;
+        url.set_query(None);
+        url.set_fragment(None);
+        if let Ok(mut segments) = url.path_segments_mut() {
+            segments.pop();
+            segments.push(&swf_name);
+        }
+
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), Some(url.to_string()), None)
             .map_err(|e| format!("Error loading movie: {e}"))?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 

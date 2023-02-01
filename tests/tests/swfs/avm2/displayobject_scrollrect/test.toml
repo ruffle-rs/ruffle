@@ -1,0 +1,11 @@
+num_frames = 100
+
+[image_comparison]
+tolerance = 0
+
+[approximations]
+number_patterns = ["\\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\\)"]
+max_relative = 0.00000011920928955078125
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }

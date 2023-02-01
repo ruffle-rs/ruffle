@@ -41,11 +41,13 @@ impl CpalAudioBackend {
                     &config,
                     move |buffer, _| mixer.mix::<f32>(buffer),
                     error_handler,
+                    None,
                 ),
                 cpal::SampleFormat::I16 => device.build_output_stream(
                     &config,
                     move |buffer, _| mixer.mix::<i16>(buffer),
                     error_handler,
+                    None,
                 ),
                 cpal::SampleFormat::U16 => device.build_output_stream(
                     &config,
@@ -59,7 +61,9 @@ impl CpalAudioBackend {
                         }
                     },
                     error_handler,
+                    None,
                 ),
+                _ => anyhow::bail!("Unsupported sample format {sample_format:?}"),
             }?
         };
 

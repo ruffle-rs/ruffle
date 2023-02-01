@@ -1,0 +1,4 @@
+num_frames = 7
+
+[approximations]
+epsilon = 0.06

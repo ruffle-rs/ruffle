@@ -79,6 +79,11 @@ The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> dumps every variable insi
 This can be very useful to inspect the internal state of games and see, for example, if a coordinate is NaN, your lives
 are negative, or maybe an important object just didn't get initialized.
 
+### Render Tree Dumping
+
+The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it. 
+This allows you to see Ruffle's representation of the objects on the Stage.
+
 ## Reporting Bugs
 
 [Issue reports and feature requests](https://github.com/ruffle-rs/ruffle/issues) are encouraged, and are a great way to measure our progress!

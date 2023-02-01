@@ -314,13 +314,18 @@ jobs:
         run: |
           npm ci
       
-      - name: Produce reproducible source archive
-        if: ${{ !matrix.demo }}
+      - name: Seal version data
         shell: bash -l {0}
         working-directory: web
         env:
+          BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
-        run: node packages/core/tools/set_version.js && zip -r ../reproducible-source.zip .
+        run: npm run version-seal
+      
+      - name: Produce reproducible source archive
+        if: ${{ !matrix.demo }}
+        shell: bash -l {0}
+        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/*
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}

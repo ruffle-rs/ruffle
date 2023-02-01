@@ -1416,9 +1416,10 @@ pub trait TDisplayObject<'gc>:
 
     #[cfg(feature = "avm_debug")]
     fn display_render_tree(&self, depth: usize) {
-        let self_str = format!("{self:?}");
-        let paren = self_str.find('(').unwrap();
-        let self_str = &self_str[..paren];
+        let mut self_str = &*format!("{self:?}");
+        if let Some(end_char) = self_str.find(|c: char| !c.is_ascii_alphanumeric()) {
+            self_str = &self_str[..end_char];
+        }
 
         let bounds = self.world_bounds();
 

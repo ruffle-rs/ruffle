@@ -23,3 +23,21 @@ _root.p.buzz = undefined
 buzz = undefined
 _root.o.buzz = undefined
 _root.p.buzz = undefined
+// with(m) (DefineLocal that already exists)
+b = 10
+c = 10
+d = 10
+m.b = 10
+m.c = undefined
+c = 10
+m.d = undefined
+d = 10
+// with(n) (DefineLocal that already exists, prototype)
+b = 10
+c = 10
+d = 20
+m.b = 10
+m.c = undefined
+c = 10
+m.d = 20
+d = 10

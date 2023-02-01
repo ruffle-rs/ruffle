@@ -38,6 +38,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
             version_channel: version_channel,
             build_date: build_date,
             commitHash: commitHash,
+            build_id: process.env.BUILD_ID,
         };
 
         fs.writeFileSync("version_seal.json", JSON.stringify(version_seal));
