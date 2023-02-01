@@ -125,7 +125,7 @@ pub fn are_sounds_inaccessible<'gc>(
         "flash.media.SoundMixer",
         "areSoundsInaccessible"
     );
-    Ok(Value::Undefined)
+    Ok(false.into())
 }
 
 /// Implements `SoundMixer.computeSpectrum`

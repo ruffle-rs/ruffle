@@ -13,5 +13,5 @@ pub fn is_attribute<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // yes, this is supposed to be implemented
     avm2_stub_method!(activation, "flash.utils.Proxy", "isAttribute");
-    Ok(Value::Undefined)
+    Ok(false.into())
 }

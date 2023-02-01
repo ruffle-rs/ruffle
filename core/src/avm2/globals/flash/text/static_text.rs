@@ -19,5 +19,5 @@ pub fn get_text<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.StaticText", "text");
-    Ok(Value::Undefined)
+    Ok("".into())
 }
