@@ -1,6 +1,6 @@
 package flash.net {
 
-	import __ruffle__.log_warn;
+	import __ruffle__.stub_setter;
 
 	public final class URLRequest {
 		// NOTE - when implementing properties (e.g. `contentType`, `data`, etc.)
@@ -24,6 +24,7 @@ package flash.net {
 
 		public function set method(newMethod:String):void {
 			// FIXME - perform validation here
+			stub_setter("flash.net.URLRequest", "method");
 			this._method = newMethod;
 		}
 
@@ -32,16 +33,12 @@ package flash.net {
 		}
 
 		public function set data(newData:Object):void {
-			if (newData !== null) {
-				log_warn("URLRequest.data setter is not yet implemented");
-			}
+			stub_setter("flash.net.URLRequest", "data");
 			this._data = newData;
 		}
 
 		public function set contentType(value:String):void {
-			if (value !== this._contentType) {
-				log_warn("URLRequest.contentType setter is not yet implemented");
-			}
+			stub_setter("flash.net.URLRequest", "contentType");
 			this._contentType = value;
 		}
 

@@ -1,6 +1,7 @@
 package flash.net {
     import flash.events.EventDispatcher;
-    import __ruffle__.log_warn;
+    import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
 
     // NOTE: this entire class is a stub.
     // Thankfully (hopefully) a lot of code like Mochicrypt doesn't actually require this to... well do anything.
@@ -14,17 +15,28 @@ package flash.net {
 
         public function get domain():String {
             // FIXME - implement this - this is unrelated to the messaging functionality.
+            stub_getter("flash.net.LocalConnection", "domain");
             return "localhost";
         }
 
-        public function close(): void {}
-        public function connect(connectionName:String): void {
-            log_warn("LocalConnection.connect is not implemented");
+        public function close(): void {
+            stub_method("flash.net.LocalConnection", "close");
         }
 
-        public function send(connectionName: String, methodName: String, ... arguments): void {}
+        public function connect(connectionName:String): void {
+            stub_method("flash.net.LocalConnection", "connect");
+        }
 
-        public function allowDomain(... domains): void {}
-        public function allowInsecureDomain(... domains): void {}
+        public function send(connectionName: String, methodName: String, ... arguments): void {
+            stub_method("flash.net.LocalConnection", "send");
+        }
+
+        public function allowDomain(... domains): void {
+            stub_method("flash.net.LocalConnection", "allowDomain");
+        }
+
+        public function allowInsecureDomain(... domains): void {
+            stub_method("flash.net.LocalConnection", "allowInsecureDomain");
+        }
     }
 }

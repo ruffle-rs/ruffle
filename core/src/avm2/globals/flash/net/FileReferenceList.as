@@ -1,6 +1,8 @@
 package flash.net
 {
     import flash.events.EventDispatcher;
+    import __ruffle__.stub_method;
+
     public class FileReferenceList extends EventDispatcher
     {
         private var _fileList:Array;
@@ -16,7 +18,8 @@ package flash.net
 
         public function browse(typeFilter:Array = null):Boolean
         {
-            throw new Error("FileReferenceList.browse() is not yet implemented!");
+            stub_method("flash.net.FileReferenceList", "browse");
+            return false;
         }
     }
 }

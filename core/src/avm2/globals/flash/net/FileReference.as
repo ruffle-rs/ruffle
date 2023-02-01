@@ -2,6 +2,8 @@ package flash.net
 {
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
+    import __ruffle__.stub_method;
+
     public class FileReference extends EventDispatcher
     {
         private var _creationDate: Date;
@@ -58,32 +60,32 @@ package flash.net
             return false;
         }   
 
-        public function cancel():void { 
-            throw new Error("FileReference.cancel() is not yet implemented!");
+        public function cancel():void {
+            stub_method("flash.net.FileReference", "cancel");
         }   
 
-        public function download(request:URLRequest, defaultFileName:String = null):void {  
-            throw new Error("FileReference.download() is not yet implemented!");
+        public function download(request:URLRequest, defaultFileName:String = null):void {
+            stub_method("flash.net.FileReference", "download");
         }   
 
-        public function load():void {   
-            throw new Error("FileReference.load() is not yet implemented!");
+        public function load():void {
+            stub_method("flash.net.FileReference", "load");
         }   
 
-        public function requestPermission():void {  
-            throw new Error("FileReference.requestPermission() is not yet implemented!");
+        public function requestPermission():void {
+            stub_method("flash.net.FileReference", "requestPermission");
         }   
 
-        public function save(data:*, defaultFileName:String = null):void {  
-            throw new Error("FileReference.save() is not yet implemented!");
+        public function save(data:*, defaultFileName:String = null):void {
+            stub_method("flash.net.FileReference", "save");
         }   
 
-        public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {  
-            throw new Error("FileReference.upload() is not yet implemented!");
+        public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {
+            stub_method("flash.net.FileReference", "upload");
         }   
 
-        public function uploadUnencoded(request:URLRequest):void {  
-            throw new Error("FileReference.uploadUnencoded() is not yet implemented!");
+        public function uploadUnencoded(request:URLRequest):void {
+            stub_method("flash.net.FileReference", "uploadUnencoded");
         }
     }
 }
