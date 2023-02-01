@@ -5,10 +5,10 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
@@ -569,7 +569,7 @@ pub fn get_objects_under_point<'gc>(
         "flash.display.DisplayObjectContainer",
         "getObjectsUnderPoint"
     );
-    Ok(Value::Undefined)
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
 }
 
 pub fn are_inaccessible_objects_under_point<'gc>(
@@ -582,7 +582,7 @@ pub fn are_inaccessible_objects_under_point<'gc>(
         "flash.display.DisplayObjectContainer",
         "areInaccessibleObjectsUnderPoint"
     );
-    Ok(Value::Undefined)
+    Ok(false.into())
 }
 
 pub fn mouse_children<'gc>(
@@ -619,7 +619,7 @@ pub fn tab_children<'gc>(
     avm2_stub_getter!(
         activation,
         "flash.display.DisplayObjectContainer",
-        "areInaccessibleObjectsUnderPoint"
+        "tabChildren"
     );
 
     Ok(true.into())
@@ -633,10 +633,10 @@ pub fn set_tab_children<'gc>(
     avm2_stub_setter!(
         activation,
         "flash.display.DisplayObjectContainer",
-        "areInaccessibleObjectsUnderPoint"
+        "tabChildren"
     );
 
-    Ok(true.into())
+    Ok(Value::Undefined)
 }
 
 /// Construct `DisplayObjectContainer`'s class.

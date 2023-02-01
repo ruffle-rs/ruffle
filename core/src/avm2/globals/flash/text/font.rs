@@ -5,10 +5,10 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::avm2_stub_getter;
 use crate::character::Character;
 use crate::string::AvmString;
@@ -163,7 +163,7 @@ pub fn enumerate_fonts<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.Font", "enumerateFonts");
-    Ok(Value::Undefined)
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
 }
 
 /// `Font.registerFont`
