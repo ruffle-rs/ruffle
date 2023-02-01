@@ -2,7 +2,7 @@
 package flash.events
 {
     import flash.display.InteractiveObject;
-    import __ruffle__.log_warn;
+    import __ruffle__.stub_method;
 
     public class MouseEvent extends Event
     {
@@ -78,7 +78,7 @@ package flash.events
 
         public function updateAfterEvent():void {
             // TODO - determine when we should actually force a frame to be rendered.
-            log_warn("MouseEvent.updateAfterEvent is not yet implemented");
+            stub_method("flash.events.MouseEvent", "updateAfterEvent");
         }
 
         public native function get stageX() : Number;
