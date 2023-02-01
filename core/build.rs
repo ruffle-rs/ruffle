@@ -1,6 +1,10 @@
 fn main() {
-    build_playerglobal::build_playerglobal("../".into(), std::env::var("OUT_DIR").unwrap().into())
-        .expect("Failed to build playerglobal");
+    build_playerglobal::build_playerglobal(
+        "../".into(),
+        std::env::var("OUT_DIR").unwrap().into(),
+        cfg!(feature = "known_stubs"),
+    )
+    .expect("Failed to build playerglobal");
 
     // This is overly conservative - it will cause us to rebuild playerglobal.swf
     // if *any* files in this directory change, not just .as files.

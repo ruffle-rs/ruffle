@@ -7,6 +7,23 @@ use std::fmt::{Debug, Display, Formatter};
 #[linkme::distributed_slice]
 pub static KNOWN_STUBS: [Stub] = [..];
 
+#[cfg(feature = "known_stubs")]
+mod external {
+    include!(concat!(env!("OUT_DIR"), "/actionscript_stubs.rs"));
+}
+
+#[cfg(feature = "known_stubs")]
+pub fn get_known_stubs() -> FnvHashSet<&'static Stub> {
+    let mut result = FnvHashSet::default();
+    for stub in KNOWN_STUBS.iter() {
+        result.insert(stub);
+    }
+    for stub in external::AS_DEFINED_STUBS {
+        result.insert(stub);
+    }
+    result
+}
+
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Clone)]
 pub enum Stub {
     Avm1Method {
@@ -15,17 +32,17 @@ pub enum Stub {
         specifics: Option<&'static str>,
     },
     Avm2Method {
-        class: &'static str,
-        method: &'static str,
-        specifics: Option<&'static str>,
+        class: Cow<'static, str>,
+        method: Cow<'static, str>,
+        specifics: Option<Cow<'static, str>>,
     },
     Avm2Getter {
-        class: &'static str,
-        property: &'static str,
+        class: Cow<'static, str>,
+        property: Cow<'static, str>,
     },
     Avm2Setter {
-        class: &'static str,
-        property: &'static str,
+        class: Cow<'static, str>,
+        property: Cow<'static, str>,
     },
     Avm2Constructor {
         class: &'static str,

@@ -4,6 +4,9 @@
 use convert_case::{Boundary, Case, Casing};
 use proc_macro2::TokenStream;
 use quote::quote;
+use regex::RegexBuilder;
+use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::Write;
@@ -13,6 +16,7 @@ use std::str::FromStr;
 use swf::avm2::types::*;
 use swf::avm2::write::Writer;
 use swf::{DoAbc, DoAbcFlag, Header, Tag};
+use walkdir::WalkDir;
 
 // The metadata name - all metadata in our .as files
 // should be of the form `[Ruffle(key1 = value1, key2 = value2)]`
@@ -30,6 +34,7 @@ const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
 pub fn build_playerglobal(
     repo_root: PathBuf,
     out_dir: PathBuf,
+    with_stubs: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let classes_dir = repo_root.join("core/src/avm2/globals/");
     let asc_path = repo_root.join("core/build_playerglobal/asc.jar");
@@ -76,6 +81,10 @@ pub fn build_playerglobal(
     std::fs::remove_file(playerglobal.with_extension("abc"))?;
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
+
+    if with_stubs {
+        collect_stubs(&classes_dir, &out_dir)?;
+    }
 
     bytes = write_native_table(&bytes, &out_dir)?;
 
@@ -442,4 +451,84 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     writer.write(abc).expect("Failed to write modified ABC");
 
     Ok(out_bytes)
+}
+
+fn collect_stubs(root: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let pattern = RegexBuilder::new(
+        r#"
+            \b (?P<type> stub_method | stub_getter | stub_setter) \s* 
+            \( \s*
+                "(?P<class> .+)" \s*
+                , \s*
+                "(?P<property> .+)" \s*
+                (?:|
+                    , \s*
+                    "(?P<specifics> .+)" \s*
+                )
+            \) \s*
+            ;
+        "#,
+    )
+    .ignore_whitespace(true)
+    .build()?;
+
+    let mut stubs = Vec::new();
+
+    for entry in WalkDir::new(root)
+        .into_iter()
+        .filter_map(|f| f.ok())
+        .filter(|f| f.path().extension() == Some(OsStr::new("as")))
+    {
+        let contents = fs::read_to_string(entry.path())?;
+        for entry in pattern.captures_iter(&contents) {
+            let class = &entry["class"];
+            let property = &entry["property"];
+            let specifics = entry.name("specifics").map(|m| m.as_str());
+
+            match (&entry["type"], specifics) {
+                ("stub_method", Some(specifics)) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Method {
+                        class: Cow::Borrowed(#class),
+                        method: Cow::Borrowed(#property),
+                        specifics: Cow::Borrowed(#specifics)
+                    }
+                }),
+                ("stub_method", None) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Method {
+                        class: Cow::Borrowed(#class),
+                        method: Cow::Borrowed(#property),
+                        specifics: None
+                    }
+                }),
+                ("stub_getter", _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Getter {
+                        class: Cow::Borrowed(#class),
+                        property: Cow::Borrowed(#property)
+                    }
+                }),
+                ("stub_setter", _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Setter {
+                        class: Cow::Borrowed(#class),
+                        property: Cow::Borrowed(#property)
+                    }
+                }),
+                _ => panic!("Unsupported stub type {}", &entry["type"]),
+            }
+        }
+    }
+
+    let stub_block = quote! {
+        #[cfg(feature = "known_stubs")]
+        use std::borrow::Cow;
+
+        #[cfg(feature = "known_stubs")]
+        pub static AS_DEFINED_STUBS: &[crate::stub::Stub] = &[
+            #(#stubs,)*
+        ];
+    };
+
+    let mut as_stub_file = File::create(out_dir.join("actionscript_stubs.rs"))?;
+    as_stub_file.write_all(stub_block.to_string().as_bytes())?;
+
+    Ok(())
 }
