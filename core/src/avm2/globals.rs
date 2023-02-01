@@ -420,6 +420,27 @@ pub fn load_player_globals<'gc>(
         toplevel::log_warn,
         script,
     )?;
+    function(
+        activation,
+        "__ruffle__",
+        "stub_method",
+        toplevel::stub_method,
+        script,
+    )?;
+    function(
+        activation,
+        "__ruffle__",
+        "stub_getter",
+        toplevel::stub_getter,
+        script,
+    )?;
+    function(
+        activation,
+        "__ruffle__",
+        "stub_setter",
+        toplevel::stub_setter,
+        script,
+    )?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
     function(activation, "", "parseInt", toplevel::parse_int, script)?;

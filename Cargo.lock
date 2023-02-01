@@ -307,9 +307,11 @@ dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
+ "regex",
  "serde",
  "serde-xml-rs",
  "swf",
+ "walkdir",
 ]
 
 [[package]]

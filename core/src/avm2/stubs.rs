@@ -6,8 +6,8 @@ macro_rules! avm2_stub_method {
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Method {
-            class: $class,
-            method: $method,
+            class: std::borrow::Cow::Borrowed($class),
+            method: std::borrow::Cow::Borrowed($method),
             specifics: None,
         };
         $activation.context.stub_tracker.encounter(&STUB);
@@ -18,9 +18,9 @@ macro_rules! avm2_stub_method {
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Method {
-            class: $class,
-            method: $method,
-            specifics: Some($specifics),
+            class: std::borrow::Cow::Borrowed($class),
+            method: std::borrow::Cow::Borrowed($method),
+            specifics: Some(std::borrow::Cow::Borrowed($specifics)),
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };
@@ -46,8 +46,8 @@ macro_rules! avm2_stub_getter {
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Getter {
-            class: $class,
-            property: $property,
+            class: std::borrow::Cow::Borrowed($class),
+            property: std::borrow::Cow::Borrowed($property),
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };
@@ -61,8 +61,8 @@ macro_rules! avm2_stub_setter {
             linkme::distributed_slice($crate::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm2Setter {
-            class: $class,
-            property: $property,
+            class: std::borrow::Cow::Borrowed($class),
+            property: std::borrow::Cow::Borrowed($property),
         };
         $activation.context.stub_tracker.encounter(&STUB);
     };
