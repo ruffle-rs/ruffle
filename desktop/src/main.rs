@@ -52,7 +52,7 @@ thread_local! {
 #[cfg(feature = "tracy")]
 #[global_allocator]
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
-    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 100);
+    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
 
