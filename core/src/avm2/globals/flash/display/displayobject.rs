@@ -1077,21 +1077,23 @@ fn set_cache_as_bitmap<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stubs `opaqueBackground`'s getter.
+/// `opaqueBackground`'s getter.
 pub fn opaque_background<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "opaqueBackground");
     Ok(Value::Null)
 }
 
-/// Stubs `opaqueBackground`'s setter.
+/// `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.DisplayObject", "opaqueBackground");
     Ok(Value::Undefined)
 }
 
