@@ -1,6 +1,7 @@
+use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
-use crate::mesh::{Draw, Mesh};
+use crate::mesh::{Mesh, PendingDraw};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
@@ -234,12 +235,30 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             .tessellate_shape(shape, bitmap_source);
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
+        let mut uniform_buffer = BufferBuilder::new(&self.descriptors);
         for draw in lyon_mesh {
             let draw_id = draws.len();
-            if let Some(draw) = Draw::new(self, bitmap_source, draw, shape_id, draw_id) {
+            if let Some(draw) = PendingDraw::new(
+                self,
+                bitmap_source,
+                draw,
+                shape_id,
+                draw_id,
+                &mut uniform_buffer,
+            ) {
                 draws.push(draw);
             }
         }
+
+        let uniform_buffer = uniform_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} uniforms", shape_id),
+        );
+
+        let draws = draws
+            .into_iter()
+            .map(|d| d.finish(&self.descriptors, &uniform_buffer))
+            .collect();
 
         Mesh { draws }
     }
