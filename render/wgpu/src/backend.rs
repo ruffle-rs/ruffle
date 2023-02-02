@@ -673,10 +673,6 @@ async fn request_device(
     limits = limits.using_resolution(adapter.limits());
     limits = limits.using_alignment(adapter.limits());
 
-    limits.max_storage_buffers_per_shader_stage =
-        adapter.limits().max_storage_buffers_per_shader_stage;
-    limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
-
     let mut features = Default::default();
     let needed_size = (mem::size_of::<Transforms>() + mem::size_of::<ColorAdjustments>()) as u32;
     if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
