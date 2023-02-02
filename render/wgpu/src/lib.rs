@@ -32,6 +32,7 @@ mod uniform_buffer;
 
 pub mod backend;
 mod blend;
+mod buffer_builder;
 mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
@@ -349,6 +350,7 @@ impl Texture {
                 &layout,
                 samplers.get_sampler(false, smoothed),
                 &quad.texture_transforms,
+                0 as wgpu::BufferAddress,
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )
