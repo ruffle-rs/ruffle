@@ -1,8 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms,
-    PosColorVertex, PosVertex, TextureTransforms,
+    as_texture, create_buffer_with_data, Descriptors, GradientUniforms, PosColorVertex, PosVertex,
+    TextureTransforms,
 };
 use std::ops::Range;
 
@@ -136,29 +136,16 @@ impl PendingDrawType {
         let spread = gradient.repeat_mode;
         let mode = gradient.gradient_type;
 
-        let gradient_ubo = if descriptors.limits.max_storage_buffers_per_shader_stage > 0 {
-            create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&[GradientStorage::from(gradient)]),
-                wgpu::BufferUsages::STORAGE,
-                create_debug_label!(
-                    "Shape {} draw {} gradient ubo transfer buffer",
-                    shape_id,
-                    draw_id
-                ),
-            )
-        } else {
-            create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-                wgpu::BufferUsages::UNIFORM,
-                create_debug_label!(
-                    "Shape {} draw {} gradient ubo transfer buffer",
-                    shape_id,
-                    draw_id
-                ),
-            )
-        };
+        let gradient_ubo = create_buffer_with_data(
+            &descriptors.device,
+            bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
+            wgpu::BufferUsages::UNIFORM,
+            create_debug_label!(
+                "Shape {} draw {} gradient ubo transfer buffer",
+                shape_id,
+                draw_id
+            ),
+        );
 
         let bind_group_label =
             create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);

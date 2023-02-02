@@ -171,39 +171,6 @@ impl From<TessGradient> for GradientUniforms {
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct GradientStorage {
-    colors: [[f32; 4]; 16],
-    ratios: [f32; 16],
-    gradient_type: i32,
-    num_colors: u32,
-    interpolation: i32,
-    focal_point: f32,
-}
-
-impl From<TessGradient> for GradientStorage {
-    fn from(gradient: TessGradient) -> Self {
-        let mut ratios = [0.0; 16];
-        let mut colors = [[0.0; 4]; 16];
-        ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
-        colors[..gradient.num_colors].copy_from_slice(&gradient.colors[..gradient.num_colors]);
-
-        Self {
-            colors,
-            ratios,
-            gradient_type: match gradient.gradient_type {
-                GradientType::Linear => 0,
-                GradientType::Radial => 1,
-                GradientType::Focal => 2,
-            },
-            num_colors: gradient.num_colors as u32,
-            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
-            focal_point: gradient.focal_point.to_f32(),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum QueueSyncHandle {
     AlreadyCopied {

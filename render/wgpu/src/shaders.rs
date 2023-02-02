@@ -26,10 +26,6 @@ impl Shaders {
             "use_push_constants".to_owned(),
             ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
         );
-        shader_defs.insert(
-            "use_storage_buffers".to_owned(),
-            ShaderDefValue::Bool(device.limits().max_storage_buffers_per_shader_stage > 0),
-        );
         let color_shader = make_shader(
             &device,
             &mut composer,
