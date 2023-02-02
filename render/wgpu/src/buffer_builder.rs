@@ -1,4 +1,3 @@
-use crate::descriptors::Descriptors;
 use bytemuck::{AnyBitPattern, NoUninit};
 use wgpu::util::DeviceExt;
 
@@ -8,11 +7,10 @@ pub struct BufferBuilder {
 }
 
 impl BufferBuilder {
-    pub fn new(descriptors: &Descriptors) -> Self {
-        let align_mask = (descriptors.limits.min_uniform_buffer_offset_alignment - 1) as usize;
+    pub fn new(alignment: usize) -> Self {
         Self {
             inner: Vec::new(),
-            align_mask,
+            align_mask: alignment - 1,
         }
     }
 
@@ -29,11 +27,16 @@ impl BufferBuilder {
         address
     }
 
-    pub fn finish(self, device: &wgpu::Device, label: Option<String>) -> wgpu::Buffer {
+    pub fn finish(
+        self,
+        device: &wgpu::Device,
+        label: Option<String>,
+        usage: wgpu::BufferUsages,
+    ) -> wgpu::Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: label.as_deref(),
             contents: &self.inner,
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage,
         })
     }
 }
