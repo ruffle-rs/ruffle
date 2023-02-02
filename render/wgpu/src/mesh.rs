@@ -1,8 +1,7 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, create_buffer_with_data, Descriptors, GradientUniforms, PosColorVertex, PosVertex,
-    TextureTransforms,
+    as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
 };
 use std::ops::Range;
 
@@ -63,8 +62,6 @@ impl PendingDraw {
         vertex_buffer: &mut BufferBuilder,
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
-        let descriptors = backend.descriptors().clone();
-
         let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
             let vertices: Vec<_> = draw
                 .vertices
@@ -83,7 +80,7 @@ impl PendingDraw {
         let draw_type = match draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
             TessDrawType::Gradient(gradient) => {
-                PendingDrawType::gradient(&descriptors, gradient, shape_id, draw_id, uniform_buffer)
+                PendingDrawType::gradient(gradient, shape_id, draw_id, uniform_buffer)
             }
             TessDrawType::Bitmap(bitmap) => {
                 PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
@@ -105,7 +102,7 @@ pub enum PendingDrawType {
     Color,
     Gradient {
         texture_transforms_index: wgpu::BufferAddress,
-        gradient: wgpu::Buffer,
+        gradient: wgpu::BufferAddress,
         spread: GradientSpread,
         mode: GradientType,
         bind_group_label: Option<String>,
@@ -125,7 +122,6 @@ impl PendingDrawType {
     }
 
     pub fn gradient(
-        descriptors: &Descriptors,
         gradient: Gradient,
         shape_id: CharacterId,
         draw_id: usize,
@@ -136,22 +132,15 @@ impl PendingDrawType {
         let spread = gradient.repeat_mode;
         let mode = gradient.gradient_type;
 
-        let gradient_ubo = create_buffer_with_data(
-            &descriptors.device,
-            bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-            wgpu::BufferUsages::UNIFORM,
-            create_debug_label!(
-                "Shape {} draw {} gradient ubo transfer buffer",
-                shape_id,
-                draw_id
-            ),
-        );
+        let gradient = uniform_buffers
+            .add(&[GradientUniforms::from(gradient)])
+            .start;
 
         let bind_group_label =
             create_debug_label!("Shape {} (gradient) draw {} bindgroup", shape_id, draw_id);
         PendingDrawType::Gradient {
             texture_transforms_index: tex_transforms_index,
-            gradient: gradient_ubo,
+            gradient,
             spread,
             mode,
             bind_group_label,
@@ -209,13 +198,18 @@ impl PendingDrawType {
                             },
                             wgpu::BindGroupEntry {
                                 binding: 1,
-                                resource: gradient.as_entire_binding(),
+                                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                                    buffer: &uniform_buffer,
+                                    offset: gradient,
+                                    size: wgpu::BufferSize::new(
+                                        std::mem::size_of::<GradientUniforms>() as u64,
+                                    ),
+                                }),
                             },
                         ],
                         label: bind_group_label.as_deref(),
                     });
                 DrawType::Gradient {
-                    gradient,
                     bind_group,
                     spread,
                     mode,
@@ -251,7 +245,6 @@ impl PendingDrawType {
 pub enum DrawType {
     Color,
     Gradient {
-        gradient: wgpu::Buffer,
         bind_group: wgpu::BindGroup,
         spread: GradientSpread,
         mode: GradientType,
