@@ -8,6 +8,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
+use tracing::instrument;
 
 pub struct ShapeTessellator {
     fill_tess: FillTessellator,
@@ -30,6 +31,7 @@ impl ShapeTessellator {
         }
     }
 
+    #[instrument(level = "debug", skip_all)]
     pub fn tessellate_shape(
         &mut self,
         shape: DistilledShape,
@@ -182,7 +184,7 @@ impl ShapeTessellator {
                 }
                 Err(e) => {
                     // This may simply be a degenerate path.
-                    log::error!("Tessellation failure: {:?}", e);
+                    tracing::error!("Tessellation failure: {:?}", e);
                 }
             }
         }

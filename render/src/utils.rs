@@ -32,7 +32,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
     let format = determine_jpeg_tag_format(data);
     if format != JpegTagFormat::Jpeg && alpha_data.is_some() {
         // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
-        log::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect")
+        tracing::warn!("DefineBitsJPEG contains non-JPEG data with alpha; probably incorrect")
     }
     match format {
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
@@ -135,7 +135,7 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<[u8]> {
     if data.ends_with(&[0xFF, EOI]) {
         data
     } else {
-        log::warn!("JPEG is missing EOI marker and may not decode properly");
+        tracing::warn!("JPEG is missing EOI marker and may not decode properly");
         data.to_mut().extend_from_slice(&[0xFF, EOI]);
         data
     }
@@ -171,7 +171,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
             .collect(),
         jpeg_decoder::PixelFormat::L8 => decoded_data.iter().flat_map(|&c| [c, c, c]).collect(),
         jpeg_decoder::PixelFormat::L16 => {
-            log::warn!("Unimplemented L16 JPEG pixel format");
+            tracing::warn!("Unimplemented L16 JPEG pixel format");
             decoded_data
         }
     };
@@ -204,7 +204,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
             ));
         } else {
             // Size isn't correct; fallback to RGB?
-            log::error!("Size mismatch in DefineBitsJPEG3 alpha data");
+            tracing::error!("Size mismatch in DefineBitsJPEG3 alpha data");
         }
     }
 

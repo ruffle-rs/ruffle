@@ -3567,13 +3567,13 @@ dependencies = [
  "gc-arena",
  "gif 0.12.0",
  "jpeg-decoder",
- "log",
  "lyon",
  "png",
  "serde",
  "smallvec",
  "swf",
  "thiserror",
+ "tracing",
  "wasm-bindgen",
 ]
 
