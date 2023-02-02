@@ -319,8 +319,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.apply_transform(&transform.matrix, &transform.color_transform);
 
             self.draw(
-                draw.vertex_buffer.slice(..),
-                draw.index_buffer.slice(..),
+                mesh.vertex_buffer.slice(draw.vertices.clone()),
+                mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
             );
         }

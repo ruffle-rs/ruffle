@@ -238,6 +238,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut uniform_buffer = BufferBuilder::new(
             self.descriptors.limits.min_uniform_buffer_offset_alignment as usize,
         );
+        let mut vertex_buffer = BufferBuilder::new(0);
+        let mut index_buffer = BufferBuilder::new(0);
         for draw in lyon_mesh {
             let draw_id = draws.len();
             if let Some(draw) = PendingDraw::new(
@@ -247,6 +249,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 shape_id,
                 draw_id,
                 &mut uniform_buffer,
+                &mut vertex_buffer,
+                &mut index_buffer,
             ) {
                 draws.push(draw);
             }
@@ -257,13 +261,27 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             create_debug_label!("Shape {} uniforms", shape_id),
             wgpu::BufferUsages::UNIFORM,
         );
+        let vertex_buffer = vertex_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} vertices", shape_id),
+            wgpu::BufferUsages::VERTEX,
+        );
+        let index_buffer = index_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} indices", shape_id),
+            wgpu::BufferUsages::INDEX,
+        );
 
         let draws = draws
             .into_iter()
             .map(|d| d.finish(&self.descriptors, &uniform_buffer))
             .collect();
 
-        Mesh { draws }
+        Mesh {
+            draws,
+            vertex_buffer,
+            index_buffer,
+        }
     }
 
     pub fn descriptors(&self) -> &Arc<Descriptors> {
