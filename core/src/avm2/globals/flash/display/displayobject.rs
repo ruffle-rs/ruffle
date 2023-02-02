@@ -1083,7 +1083,11 @@ pub fn opaque_background<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "opaqueBackground");
+    avm2_stub_getter!(
+        activation,
+        "flash.display.DisplayObject",
+        "opaqueBackground"
+    );
     Ok(Value::Null)
 }
 
@@ -1093,7 +1097,11 @@ pub fn set_opaque_background<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "opaqueBackground");
+    avm2_stub_setter!(
+        activation,
+        "flash.display.DisplayObject",
+        "opaqueBackground"
+    );
     Ok(Value::Undefined)
 }
 
