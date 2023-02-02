@@ -4,6 +4,7 @@ use crate::{
     as_texture, create_buffer_with_data, Descriptors, GradientStorage, GradientUniforms,
     PosColorVertex, PosVertex, TextureTransforms,
 };
+use std::ops::Range;
 
 use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::RenderBackend;
@@ -16,13 +17,15 @@ use swf::{CharacterId, GradientSpread};
 #[derive(Debug)]
 pub struct Mesh {
     pub draws: Vec<Draw>,
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
 }
 
 #[derive(Debug)]
 pub struct PendingDraw {
     pub draw_type: PendingDrawType,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertices: Range<wgpu::BufferAddress>,
+    pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
     pub num_mask_indices: u32,
 }
@@ -31,8 +34,8 @@ impl PendingDraw {
     pub fn finish(self, descriptors: &Descriptors, uniform_buffer: &wgpu::Buffer) -> Draw {
         Draw {
             draw_type: self.draw_type.finish(descriptors, uniform_buffer),
-            vertex_buffer: self.vertex_buffer,
-            index_buffer: self.index_buffer,
+            vertices: self.vertices,
+            indices: self.indices,
             num_indices: self.num_indices,
             num_mask_indices: self.num_mask_indices,
         }
@@ -42,13 +45,14 @@ impl PendingDraw {
 #[derive(Debug)]
 pub struct Draw {
     pub draw_type: DrawType,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertices: Range<wgpu::BufferAddress>,
+    pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
     pub num_mask_indices: u32,
 }
 
 impl PendingDraw {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
@@ -56,37 +60,24 @@ impl PendingDraw {
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffer: &mut BufferBuilder,
+        vertex_buffer: &mut BufferBuilder,
+        index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
         let descriptors = backend.descriptors().clone();
 
-        let vertex_buffer = if matches!(draw.draw_type, TessDrawType::Color) {
+        let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
             let vertices: Vec<_> = draw
                 .vertices
                 .into_iter()
                 .map(PosColorVertex::from)
                 .collect();
-            create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&vertices),
-                wgpu::BufferUsages::VERTEX,
-                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
-            )
+            vertex_buffer.add(&vertices)
         } else {
             let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
-            create_buffer_with_data(
-                &descriptors.device,
-                bytemuck::cast_slice(&vertices),
-                wgpu::BufferUsages::VERTEX,
-                create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
-            )
+            vertex_buffer.add(&vertices)
         };
 
-        let index_buffer = create_buffer_with_data(
-            &descriptors.device,
-            bytemuck::cast_slice(&draw.indices),
-            wgpu::BufferUsages::INDEX,
-            create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
-        );
+        let indices = index_buffer.add(&draw.indices);
 
         let index_count = draw.indices.len() as u32;
         let draw_type = match draw.draw_type {
@@ -100,8 +91,8 @@ impl PendingDraw {
         };
         Some(PendingDraw {
             draw_type,
-            vertex_buffer,
-            index_buffer,
+            vertices,
+            indices,
             num_indices: index_count,
             num_mask_indices: draw.mask_index_count,
         })
@@ -335,5 +326,5 @@ fn create_texture_transforms(
     texture_transform[0][..3].copy_from_slice(&matrix[0]);
     texture_transform[1][..3].copy_from_slice(&matrix[1]);
     texture_transform[2][..3].copy_from_slice(&matrix[2]);
-    buffer.add(texture_transform)
+    buffer.add(&[texture_transform]).start
 }

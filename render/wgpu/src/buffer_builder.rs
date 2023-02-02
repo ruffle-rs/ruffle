@@ -1,4 +1,5 @@
 use bytemuck::{AnyBitPattern, NoUninit};
+use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 pub struct BufferBuilder {
@@ -10,12 +11,12 @@ impl BufferBuilder {
     pub fn new(alignment: usize) -> Self {
         Self {
             inner: Vec::new(),
-            align_mask: alignment - 1,
+            align_mask: if alignment > 0 { alignment - 1 } else { 0 },
         }
     }
 
-    pub fn add<T: NoUninit + AnyBitPattern>(&mut self, value: T) -> wgpu::BufferAddress {
-        if !self.inner.is_empty() {
+    pub fn add<T: NoUninit + AnyBitPattern>(&mut self, value: &[T]) -> Range<wgpu::BufferAddress> {
+        if !self.inner.is_empty() && self.align_mask > 0 {
             // Pad the internal buffer to match alignment requirements
             // Pad on creation so that we don't wastefully pad the end of the buffer
             let length = (self.inner.len() + self.align_mask) & !self.align_mask;
@@ -23,8 +24,8 @@ impl BufferBuilder {
         }
 
         let address = self.inner.len() as wgpu::BufferAddress;
-        self.inner.extend_from_slice(bytemuck::cast_slice(&[value]));
-        address
+        self.inner.extend_from_slice(bytemuck::cast_slice(value));
+        address..(self.inner.len() as wgpu::BufferAddress)
     }
 
     pub fn finish(
