@@ -6,13 +6,14 @@ use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
-use crate::utils::remove_srgb;
+use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
     ColorAdjustments, Descriptors, MaskState, Pipelines, PushConstants, Texture, TextureTransforms,
     Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use ruffle_render::commands::CommandList;
 use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
+use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
 use tracing::instrument;
@@ -21,6 +22,7 @@ use wgpu::util::DeviceExt;
 #[derive(Debug)]
 pub struct Surface {
     size: wgpu::Extent3d,
+    quality: StageQuality,
     sample_count: u32,
     pipelines: Arc<Pipelines>,
     format: wgpu::TextureFormat,
@@ -30,7 +32,7 @@ pub struct Surface {
 impl Surface {
     pub fn new(
         descriptors: &Descriptors,
-        sample_count: u32,
+        quality: StageQuality,
         width: u32,
         height: u32,
         surface_format: wgpu::TextureFormat,
@@ -42,9 +44,11 @@ impl Surface {
         };
         let frame_buffer_format = remove_srgb(surface_format);
 
+        let sample_count = supported_sample_count(quality, frame_buffer_format);
         let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
         Self {
             size,
+            quality,
             sample_count,
             pipelines,
             format: frame_buffer_format,
@@ -219,7 +223,7 @@ impl Surface {
             uniform_encoder,
             draw_encoder,
             meshes,
-            target.sample_count(),
+            self.quality,
             target.width(),
             target.height(),
             nearest_layer.unwrap_or(&target),
@@ -393,6 +397,10 @@ impl Surface {
         }
 
         target
+    }
+
+    pub fn quality(&self) -> StageQuality {
+        self.quality
     }
 
     pub fn sample_count(&self) -> u32 {

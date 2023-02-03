@@ -1,3 +1,4 @@
+use ruffle_render::quality::StageQuality;
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::borrow::Cow;
 use std::mem::size_of;
@@ -154,4 +155,17 @@ pub fn buffer_to_image(
     drop(map);
     buffer.unmap();
     image
+}
+
+pub fn supported_sample_count(quality: StageQuality, format: wgpu::TextureFormat) -> u32 {
+    let mut sample_count = quality.sample_count();
+    let features = format.describe().guaranteed_format_features.flags;
+
+    // Keep halving the sample count until we get one that's supported - or 1 (no multisampling)
+    // It's not guaranteed that supporting 4x means supporting 2x, so there's no "max" option
+    // And it's probably safer to round down than up, given it's a performance setting.
+    while sample_count > 1 && !features.sample_count_supported(sample_count) {
+        sample_count /= 2;
+    }
+    sample_count
 }

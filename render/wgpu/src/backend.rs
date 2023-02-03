@@ -47,10 +47,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(
-        canvas: &web_sys::HtmlCanvasElement,
-        sample_count: u32,
-    ) -> Result<Self, Error> {
+    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
@@ -67,7 +64,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let descriptors = Descriptors::new(adapter, device, queue);
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
-        Self::new(Arc::new(descriptors), target, sample_count)
+        Self::new(Arc::new(descriptors), target)
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -100,7 +97,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         ))?;
         let descriptors = Descriptors::new(adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
-        Self::new(Arc::new(descriptors), target, 4)
+        Self::new(Arc::new(descriptors), target)
     }
 }
 
@@ -131,7 +128,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         ))?;
         let descriptors = Descriptors::new(adapter, device, queue);
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
-        Self::new(Arc::new(descriptors), target, 4)
+        Self::new(Arc::new(descriptors), target)
     }
 
     pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
@@ -152,11 +149,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(
-        descriptors: Arc<Descriptors>,
-        target: T,
-        preferred_sample_count: u32,
-    ) -> Result<Self, Error> {
+    pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
             || target.height() > descriptors.limits.max_texture_dimension_2d
         {
@@ -171,7 +164,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let surface = Surface::new(
             &descriptors,
-            preferred_sample_count,
+            StageQuality::Low,
             target.width(),
             target.height(),
             target.format(),
@@ -319,7 +312,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.surface = Surface::new(
             &self.descriptors,
-            self.surface.sample_count(),
+            self.surface.quality(),
             width,
             height,
             self.target.format(),
@@ -400,6 +393,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         result.push(format!("Enabled features: {enabled_features:?}"));
         result.push(format!("Available features: {available_features:?}"));
         result.push(format!("Current limits: {current_limits:?}"));
+        result.push(format!("Surface quality: {}", self.surface.quality()));
         result.push(format!("Surface samples: {}", self.surface.sample_count()));
         result.push(format!("Surface size: {:?}", self.surface.size()));
 
@@ -409,7 +403,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn set_quality(&mut self, quality: StageQuality) {
         self.surface = Surface::new(
             &self.descriptors,
-            quality.sample_count(),
+            quality,
             self.surface.size().width,
             self.surface.size().height,
             self.target.format(),
@@ -630,7 +624,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut surface = Surface::new(
             &self.descriptors,
-            self.surface.sample_count(),
+            self.surface.quality(),
             width,
             height,
             wgpu::TextureFormat::Rgba8Unorm,
@@ -701,7 +695,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .expect("TextureTargetFrame.get_next_texture is infallible");
         let surface = Surface::new(
             &self.descriptors,
-            self.preferred_sample_count,
+            self.surface.quality(),
             dest_texture.width,
             dest_texture.height,
             wgpu::TextureFormat::Rgba8Unorm,

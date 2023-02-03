@@ -13,6 +13,7 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color, Fixed8, GradientSpread};
@@ -449,7 +450,7 @@ pub fn chunk_blends<'a>(
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
     meshes: &'a Vec<Mesh>,
-    sample_count: u32,
+    quality: StageQuality,
     width: u32,
     height: u32,
     nearest_layer: &CommandTarget,
@@ -465,7 +466,7 @@ pub fn chunk_blends<'a>(
             Command::Blend(commands, blend_mode) => {
                 let mut surface = Surface::new(
                     &descriptors,
-                    sample_count,
+                    quality,
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8Unorm,

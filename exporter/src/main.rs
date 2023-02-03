@@ -114,7 +114,7 @@ fn take_screenshot(
         .map_err(|e| anyhow!(e.to_string()))?;
     let player = PlayerBuilder::new()
         .with_renderer(
-            WgpuRenderBackend::new(descriptors, target, 4).map_err(|e| anyhow!(e.to_string()))?,
+            WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
         )
         .with_movie(movie)
         .with_viewport_dimensions(width, height, size.scale)

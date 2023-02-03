@@ -4,6 +4,8 @@ use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
+use ruffle_render::backend::RenderBackend;
+use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -118,10 +120,15 @@ impl PlayerOptions {
                 let target = TextureTarget::new(&descriptors.device, (width, height))
                     .map_err(|e| anyhow!(e.to_string()))?;
 
-                player_builder = player_builder.with_renderer(
-                    WgpuRenderBackend::new(descriptors, target, render_options.sample_count)
-                        .map_err(|e| anyhow!(e.to_string()))?,
-                );
+                let mut backend = WgpuRenderBackend::new(descriptors, target)
+                    .map_err(|e| anyhow!(e.to_string()))?;
+                backend.set_quality(match render_options.sample_count {
+                    8 => StageQuality::High,
+                    4 => StageQuality::High,
+                    2 => StageQuality::Medium,
+                    _ => StageQuality::Low,
+                });
+                player_builder = player_builder.with_renderer(backend);
             }
         }
 
