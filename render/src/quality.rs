@@ -61,6 +61,20 @@ impl StageQuality {
             StageQuality::High16x16 | StageQuality::High16x16Linear => "16X16",
         }
     }
+
+    /// Returns the preferred anti-aliasing sample count for this quality
+    pub fn sample_count(self) -> u32 {
+        match self {
+            StageQuality::Low => 1,
+            StageQuality::Medium => 2,
+            StageQuality::High => 4,
+            StageQuality::Best => 4,
+            StageQuality::High8x8 => 8,
+            StageQuality::High8x8Linear => 8,
+            StageQuality::High16x16 => 16,
+            StageQuality::High16x16Linear => 16,
+        }
+    }
 }
 
 impl Display for StageQuality {

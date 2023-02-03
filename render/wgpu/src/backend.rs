@@ -41,7 +41,6 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
-    preferred_sample_count: u32,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
 }
@@ -193,7 +192,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
-            preferred_sample_count,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
         })
@@ -321,7 +319,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.surface = Surface::new(
             &self.descriptors,
-            self.preferred_sample_count,
+            self.surface.sample_count(),
             width,
             height,
             self.target.format(),
@@ -408,7 +406,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Cow::Owned(result.join("\n"))
     }
 
-    fn set_quality(&mut self, _quality: StageQuality) {}
+    fn set_quality(&mut self, quality: StageQuality) {
+        self.surface = Surface::new(
+            &self.descriptors,
+            quality.sample_count(),
+            self.surface.size().width,
+            self.surface.size().height,
+            self.target.format(),
+        );
+    }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
         ViewportDimensions {
@@ -624,7 +630,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut surface = Surface::new(
             &self.descriptors,
-            self.preferred_sample_count,
+            self.surface.sample_count(),
             width,
             height,
             wgpu::TextureFormat::Rgba8Unorm,
