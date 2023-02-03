@@ -638,6 +638,15 @@ impl Player {
                     ContextMenuCallback::Avm2 { .. } => {
                         // TODO: Send menuItemSelect event
                     }
+                    ContextMenuCallback::QualityLow => {
+                        context.stage.set_quality(context, StageQuality::Low)
+                    }
+                    ContextMenuCallback::QualityMedium => {
+                        context.stage.set_quality(context, StageQuality::Medium)
+                    }
+                    ContextMenuCallback::QualityHigh => {
+                        context.stage.set_quality(context, StageQuality::High)
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
