@@ -3569,6 +3569,7 @@ dependencies = [
  "jpeg-decoder",
  "lyon",
  "png",
+ "ruffle_wstr",
  "serde",
  "smallvec",
  "swf",

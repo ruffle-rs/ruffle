@@ -668,7 +668,7 @@ fn high_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: DisplayObject<'gc>,
 ) -> Value<'gc> {
-    use crate::display_object::StageQuality;
+    use ruffle_render::quality::StageQuality;
     let quality = match activation.context.stage.quality() {
         StageQuality::Best => 2,
         StageQuality::High => 1,
@@ -682,7 +682,7 @@ fn set_high_quality<'gc>(
     _this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    use crate::display_object::StageQuality;
+    use ruffle_render::quality::StageQuality;
     let val = val.coerce_to_f64(activation)?;
     if !val.is_nan() {
         // 0 -> Low, 1 -> High, 2 -> Best, but with some odd rules for non-integers.

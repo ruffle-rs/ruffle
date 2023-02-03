@@ -12,5 +12,6 @@ pub mod transform;
 pub mod utils;
 
 pub mod commands;
+pub mod quality;
 #[cfg(feature = "tessellator")]
 pub mod tessellator;
