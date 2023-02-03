@@ -3,8 +3,9 @@
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, TObject, Value};
 use crate::avm2_stub_getter;
-use crate::display_object::{StageQuality, TDisplayObject};
+use crate::display_object::TDisplayObject;
 use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
+use ruffle_render::quality::StageQuality;
 use swf::Fixed8;
 
 fn get_display_object<'gc>(

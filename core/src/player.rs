@@ -22,8 +22,8 @@ use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
 };
 use crate::display_object::{
-    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
-    StageScaleMode, TInteractiveObject, WindowMode,
+    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageScaleMode,
+    TInteractiveObject, WindowMode,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -46,6 +46,7 @@ use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
