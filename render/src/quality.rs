@@ -9,6 +9,7 @@ use std::str::FromStr;
 /// In the Flash Player, this settings affects anti-aliasing and bitmap smoothing.
 /// These settings currently have no effect in Ruffle, but the active setting is still stored.
 /// [StageQuality in the AS3 Reference](https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/StageQuality.html)
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Default, Clone, Collect, Copy, Debug, Eq, PartialEq)]
 #[collect(require_static)]
 pub enum StageQuality {

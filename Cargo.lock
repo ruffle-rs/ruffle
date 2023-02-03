@@ -3561,6 +3561,7 @@ name = "ruffle_render"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "clap",
  "downcast-rs",
  "enum-map",
  "flate2",
