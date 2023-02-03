@@ -44,7 +44,8 @@ impl Surface {
         };
         let frame_buffer_format = remove_srgb(surface_format);
 
-        let sample_count = supported_sample_count(quality, frame_buffer_format);
+        let sample_count =
+            supported_sample_count(&descriptors.adapter, quality, frame_buffer_format);
         let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
         Self {
             size,

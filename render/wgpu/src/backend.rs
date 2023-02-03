@@ -754,12 +754,20 @@ async fn request_device(
     limits = limits.using_alignment(adapter.limits());
 
     let mut features = Default::default();
+
     let needed_size = (mem::size_of::<Transforms>() + mem::size_of::<ColorAdjustments>()) as u32;
     if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
         && adapter.limits().max_push_constant_size >= needed_size
     {
         limits.max_push_constant_size = needed_size;
         features |= wgpu::Features::PUSH_CONSTANTS;
+    }
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES)
+    {
+        features |= wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES;
     }
 
     adapter
