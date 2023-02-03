@@ -3695,6 +3695,7 @@ dependencies = [
  "getrandom",
  "js-sys",
  "ruffle_core",
+ "ruffle_render",
  "ruffle_render_canvas",
  "ruffle_render_webgl",
  "ruffle_render_wgpu",

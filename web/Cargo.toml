@@ -34,6 +34,7 @@ tracing-subscriber = { version = "0.3.16", default-features = false, features = 
 tracing-wasm = "0.2.1"
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
+ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
