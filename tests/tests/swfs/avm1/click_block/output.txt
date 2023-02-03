@@ -1,0 +1,5 @@
+Clicked at 21, 24
+Clicked at 526, 23
+Clicked at 22, 375
+Clicked at 524, 375
+Clicked at 275, 195

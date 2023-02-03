@@ -43,6 +43,7 @@ mod regexp;
 mod scope;
 mod script;
 mod string;
+mod stubs;
 mod traits;
 mod value;
 mod vector;

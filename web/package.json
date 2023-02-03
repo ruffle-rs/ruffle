@@ -44,10 +44,12 @@
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
         "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm_debug npm run build",
         "build:dual-wasm": "cross-env ENABLE_WASM_EXTENSIONS=true npm run build",
+        "build:repro": "cross-env ENABLE_WASM_EXTENSIONS=true ENABLE_VERSION_SEAL=true npm run build",
         "demo": "npm start --workspace ruffle-demo",
         "test": "npm test --workspaces --if-present",
         "docs": "npm run docs --workspaces --if-present",
         "lint": "eslint . && stylelint **.css",
-        "format": "eslint . --fix && stylelint --fix **.css"
+        "format": "eslint . --fix && stylelint --fix **.css",
+        "version-seal": "cross-env ENABLE_VERSION_SEAL=true node packages/core/tools/set_version.js"
     }
 }

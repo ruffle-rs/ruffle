@@ -13,6 +13,7 @@ use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use gc_arena::{GcCell, MutationContext};
 use swf::Color;
 
@@ -648,24 +649,26 @@ pub fn set_stage_height<'gc>(
 }
 
 /// Implement `allowsFullScreen`'s getter
-///
-/// TODO: This is a stub.
 pub fn allows_full_screen<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Stage", "allowsFullScreen");
     Ok(true.into())
 }
 
 /// Implement `allowsFullScreenInteractive`'s getter
-///
-/// TODO: This is a stub.
 pub fn allows_full_screen_interactive<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(
+        activation,
+        "flash.display.Stage",
+        "allowsFullScreenInteractive"
+    );
     Ok(false.into())
 }
 
@@ -723,23 +726,23 @@ pub fn stage3ds<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stage.fullScreenSourceRect Stub
+/// Stage.fullScreenSourceRect's getter
 pub fn full_screen_source_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
 
-/// Stage.fullScreenSourceRect Stub
+/// Stage.fullScreenSourceRect's setter
 pub fn set_full_screen_source_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
 

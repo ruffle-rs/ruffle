@@ -10,6 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
+use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 use swf::{write_swf, Compression};
@@ -253,22 +254,23 @@ pub fn height<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `isURLInaccessible` getter stub
+/// `isURLInaccessible` getter
 pub fn is_url_inaccessible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "isURLInaccessible");
     Ok(false.into())
 }
 
-/// `parentAllowsChild` getter stub
+/// `parentAllowsChild` getter
 pub fn parent_allows_child<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("LoaderInfo.parentAllowsChild is a stub");
+    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
     Ok(false.into())
 }
 

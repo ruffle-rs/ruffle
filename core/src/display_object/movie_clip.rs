@@ -2753,7 +2753,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             for child in self.iter_render_list().rev() {
                 // Clicking static text is ignored
-                if matches!(child, DisplayObject::Text(_)) {
+                if context.is_action_script_3() && matches!(child, DisplayObject::Text(_)) {
                     continue;
                 }
 

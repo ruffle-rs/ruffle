@@ -122,7 +122,13 @@ fn make_shader(
                     shader_defs: shader_defs.clone(),
                     ..Default::default()
                 })
-                .unwrap_or_else(|_| panic!("{name} failed to compile")),
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "{name} failed to compile:\n{}\n{:#?}",
+                        e.emit_to_string(&composer),
+                        e
+                    )
+                }),
         )),
     })
 }

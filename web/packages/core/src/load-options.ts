@@ -316,4 +316,11 @@ export interface DataLoadOptions extends BaseLoadOptions {
      * The data to load a movie from.
      */
     data: Iterable<number>;
+
+    /**
+     * The filename of the SWF movie to provide to ActionScript.
+     *
+     * @default "movie.swf"
+     */
+    swfFileName?: string;
 }

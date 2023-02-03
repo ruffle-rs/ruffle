@@ -1,0 +1,19 @@
+dragging start
+dragging done
+// child.dropTarget.name
+instance1
+dragging start
+dragging done
+// child.dropTarget.name
+dragging start
+dragging done
+// child.dropTarget.name
+instance2
+dragging start
+dragging done
+// child.dropTarget.name
+instance3
+dragging start
+dragging done
+// child.dropTarget.name
+instance4

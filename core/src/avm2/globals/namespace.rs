@@ -9,22 +9,25 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_constructor;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Namespace`'s instance initializer.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_constructor!(activation, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 
 fn class_call<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_constructor!(activation, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 

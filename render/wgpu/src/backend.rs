@@ -49,9 +49,12 @@ impl WgpuRenderBackend<SwapChainTarget> {
         canvas: &web_sys::HtmlCanvasElement,
         sample_count: u32,
     ) -> Result<Self, Error> {
-        let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
         let surface = instance.create_surface_from_canvas(canvas)?;
-        let descriptors = Self::build_descriptors(
+        let (adapter, device, queue) = Self::request_device(
             wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             instance,
             Some(&surface),
@@ -59,6 +62,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             None,
         )
         .await?;
+        let descriptors = Descriptors::new(adapter, device, queue);
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
         Self::new(Arc::new(descriptors), target, sample_count)
@@ -80,15 +84,19 @@ impl WgpuRenderBackend<SwapChainTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(backend);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: backend,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
         let surface = unsafe { instance.create_surface(window) }?;
-        let descriptors = futures::executor::block_on(Self::build_descriptors(
+        let (adapter, device, queue) = futures::executor::block_on(Self::request_device(
             backend,
             instance,
             Some(&surface),
             power_preference,
             trace_path,
         ))?;
+        let descriptors = Descriptors::new(adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Self::new(Arc::new(descriptors), target, 4)
     }
@@ -108,14 +116,18 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(backend);
-        let descriptors = futures::executor::block_on(Self::build_descriptors(
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: backend,
+            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        });
+        let (adapter, device, queue) = futures::executor::block_on(Self::request_device(
             backend,
             instance,
             None,
             power_preference,
             trace_path,
         ))?;
+        let descriptors = Descriptors::new(adapter, device, queue);
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
         Self::new(Arc::new(descriptors), target, 4)
     }
@@ -184,13 +196,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         })
     }
 
-    pub async fn build_descriptors(
+    pub async fn request_device(
         backend: wgpu::Backends,
         instance: wgpu::Instance,
         surface: Option<&wgpu::Surface>,
         power_preference: wgpu::PowerPreference,
         trace_path: Option<&Path>,
-    ) -> Result<Descriptors, Error> {
+    ) -> Result<(wgpu::Adapter, wgpu::Device, wgpu::Queue), Error> {
         let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference,
             compatible_surface: surface,
@@ -208,8 +220,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             })?;
 
         let (device, queue) = request_device(&adapter, trace_path).await?;
-
-        Ok(Descriptors::new(adapter, device, queue))
+        Ok((adapter, device, queue))
     }
 
     fn register_shape_internal(
@@ -297,6 +308,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format,
+                view_formats: &[format],
                 usage: wgpu::TextureUsages::COPY_SRC,
             });
 
@@ -466,6 +478,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8Unorm,
+                view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                 usage: wgpu::TextureUsages::TEXTURE_BINDING
                     | wgpu::TextureUsages::COPY_DST
                     | wgpu::TextureUsages::RENDER_ATTACHMENT

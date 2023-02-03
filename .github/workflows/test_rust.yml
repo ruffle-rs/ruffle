@@ -79,21 +79,18 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: Run tests with image tests
-        if: runner.os == 'Linux' || runner.os == 'Windows'
         run: cargo test --locked --features imgtests
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
-
-      - name: Run tests without image tests
-        if: ${{ !(runner.os == 'Linux' || runner.os == 'Windows') }}
-        run: cargo test --locked
 
       - name: Upload images
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: swf_images
-          path: tests*/**/actual*.png
+          path: |
+            tests*/**/actual*.png
+            tests*/**/difference*.png
 
   check-required:
     needs: changes

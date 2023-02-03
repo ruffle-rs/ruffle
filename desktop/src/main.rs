@@ -110,6 +110,7 @@ struct Opt {
     #[clap(long, action)]
     timedemo: bool,
 
+    /// Start application without ActionScript 3 warning.
     #[clap(long, action)]
     dont_warn_on_unsupported_content: bool,
 
@@ -788,6 +789,11 @@ fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<ch
         (VirtualKeyCode::Numpad7, false) => '7',
         (VirtualKeyCode::Numpad8, false) => '8',
         (VirtualKeyCode::Numpad9, false) => '9',
+        (VirtualKeyCode::NumpadEnter, _) => '\r',
+
+        (VirtualKeyCode::Tab, _) => '\t',
+        (VirtualKeyCode::Return, _) => '\r',
+        (VirtualKeyCode::Back, _) => '\u{0008}',
 
         _ => return None,
     })

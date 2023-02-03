@@ -2,6 +2,7 @@ use crate::avm2::object::{ClassObject, TObject};
 use crate::avm2::Activation;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
+use crate::avm2_stub_method;
 
 pub fn index_buffer_3d_allocator<'gc>(
     _class: ClassObject<'gc>,
@@ -11,11 +12,15 @@ pub fn index_buffer_3d_allocator<'gc>(
 }
 
 pub fn upload_from_byte_array<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("IndexBuffer3D.uploadFromByteArray - not yet implemented");
+    avm2_stub_method!(
+        activation,
+        "flash.display3D.IndexBuffer3D",
+        "uploadFromByteArray"
+    );
     Ok(Value::Undefined)
 }
 

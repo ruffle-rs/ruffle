@@ -1,0 +1,4 @@
+click_mc.onMouseDown at 234, 197
+click_mc.onPress at 234, 197
+// dragger._droptarget
+/texts

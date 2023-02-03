@@ -71,6 +71,5 @@ inherits = "release"
 [profile.web-wasm-extensions]
 inherits = "release"
 
-
 [patch.crates-io]
-naga = { git = "https://github.com/gfx-rs/naga", rev = "e7fc8e6" }
+naga = { git = "https://github.com/gfx-rs/naga", rev = "1be8024" }

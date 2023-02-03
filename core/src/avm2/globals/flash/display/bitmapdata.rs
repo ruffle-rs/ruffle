@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::bitmap::is_size_valid;
@@ -684,11 +685,11 @@ pub fn get_color_bounds_rect<'gc>(
 }
 
 pub fn lock<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("BitmapData.lock - not yet implemented");
+    avm2_stub_method!(activation, "flash.display.BitmapData", "lock");
     Ok(Value::Undefined)
 }
 
@@ -850,11 +851,11 @@ pub fn rect<'gc>(
 
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("BitmapData.applyFilter: Not yet implemented");
+    avm2_stub_method!(activation, "flash.display.BitmapData", "applyFilter");
     Ok(Value::Undefined)
 }
 

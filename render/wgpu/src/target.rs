@@ -188,6 +188,7 @@ impl TextureTarget {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
+            view_formats: &[format],
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         });
         let buffer_label = create_debug_label!("Render target buffer");

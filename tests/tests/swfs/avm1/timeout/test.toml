@@ -1,0 +1,4 @@
+num_frames = 1
+
+[player_options]
+max_execution_duration = { secs = 5, nanos = 0 }

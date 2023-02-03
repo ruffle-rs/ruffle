@@ -53,6 +53,7 @@ impl TexturePool {
                     sample_count,
                     dimension: wgpu::TextureDimension::D2,
                     format,
+                    view_formats: &[format],
                     usage,
                 });
                 let view = texture.create_view(&Default::default());

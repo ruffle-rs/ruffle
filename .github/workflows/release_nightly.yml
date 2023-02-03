@@ -307,6 +307,36 @@ jobs:
       - name: Install binaryen
         shell: bash -l {0}
         run: conda install -c conda-forge binaryen
+      
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+      
+      - name: Seal version data
+        shell: bash -l {0}
+        working-directory: web
+        env:
+          BUILD_ID: ${{ github.run_number }}
+          ENABLE_VERSION_SEAL: "true"
+        run: npm run version-seal
+      
+      - name: Produce reproducible source archive
+        if: ${{ !matrix.demo }}
+        shell: bash -l {0}
+        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/*
+
+      - name: Upload reproducible source archive
+        if: ${{ !matrix.demo }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./reproducible-source.zip
+          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip
+          asset_content_type: application/zip
 
       - name: Build web
         env:
@@ -317,8 +347,7 @@ jobs:
         working-directory: web
         shell: bash -l {0}
         run: |
-          npm ci
-          npm run build:dual-wasm
+          npm run build:repro
           npm run docs
 
       - name: Publish Firefox extension
