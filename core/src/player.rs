@@ -1927,6 +1927,7 @@ pub struct PlayerBuilder {
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
     player_version: Option<u8>,
+    quality: StageQuality,
 }
 
 impl PlayerBuilder {
@@ -1963,6 +1964,7 @@ impl PlayerBuilder {
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
             player_version: None,
+            quality: StageQuality::High,
         }
     }
 
@@ -2064,9 +2066,15 @@ impl PlayerBuilder {
         self
     }
 
-    // Sets whether the stage is fullscreen.
+    /// Sets whether the stage is fullscreen.
     pub fn with_fullscreen(mut self, fullscreen: bool) -> Self {
         self.fullscreen = fullscreen;
+        self
+    }
+
+    /// Sets the default stage quality
+    pub fn with_quality(mut self, quality: StageQuality) -> Self {
+        self.quality = quality;
         self
     }
 
@@ -2223,6 +2231,7 @@ impl PlayerBuilder {
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
+        player_lock.set_quality(self.quality);
         player_lock.set_viewport_dimensions(ViewportDimensions {
             width: self.viewport_width,
             height: self.viewport_height,

@@ -530,6 +530,13 @@ impl Ruffle {
             }
         };
 
+        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
+            tracing::info!("Running on a mobile device; defaulting to low quality");
+            StageQuality::Low
+        } else {
+            StageQuality::High
+        };
+
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
@@ -539,14 +546,13 @@ impl Ruffle {
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .with_player_version(config.player_version)
+            .with_quality(
+                config
+                    .quality
+                    .and_then(|q| StageQuality::from_str(&q).ok())
+                    .unwrap_or(default_quality),
+            )
             .build();
-
-        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
-            tracing::info!("Running on a mobile device; defaulting to low quality");
-            StageQuality::Low
-        } else {
-            StageQuality::High
-        };
 
         let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
@@ -556,12 +562,6 @@ impl Ruffle {
             }
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
-            core.set_quality(
-                config
-                    .quality
-                    .and_then(|q| StageQuality::from_str(&q).ok())
-                    .unwrap_or(default_quality),
-            );
             core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
