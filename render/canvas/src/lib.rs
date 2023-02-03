@@ -12,6 +12,7 @@ use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
@@ -507,6 +508,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn debug_info(&self) -> Cow<'static, str> {
         Cow::Borrowed("Renderer: Canvas")
     }
+
+    fn set_quality(&mut self, _quality: StageQuality) {}
 }
 
 impl CommandHandler for WebCanvasRenderBackend {

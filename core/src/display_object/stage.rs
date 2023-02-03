@@ -224,8 +224,8 @@ impl<'gc> Stage<'gc> {
     /// In the Flash Player, the quality setting affects anti-aliasing and smoothing of bitmaps.
     /// This setting is currently ignored in Ruffle.
     /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
-    pub fn set_quality(self, gc_context: MutationContext<'gc, '_>, quality: StageQuality) {
-        let mut this = self.0.write(gc_context);
+    pub fn set_quality(self, context: &mut UpdateContext<'_, 'gc>, quality: StageQuality) {
+        let mut this = self.0.write(context.gc_context);
         this.quality = quality;
         this.use_bitmap_downsampling = matches!(
             quality,
@@ -235,6 +235,7 @@ impl<'gc> Stage<'gc> {
                 | StageQuality::High16x16
                 | StageQuality::High16x16Linear
         );
+        context.renderer.set_quality(quality);
     }
 
     pub fn stage3ds(&self) -> Ref<Vec<Avm2Object<'gc>>> {

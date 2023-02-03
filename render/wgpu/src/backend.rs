@@ -17,6 +17,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
@@ -406,6 +407,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         Cow::Owned(result.join("\n"))
     }
+
+    fn set_quality(&mut self, _quality: StageQuality) {}
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
         ViewportDimensions {

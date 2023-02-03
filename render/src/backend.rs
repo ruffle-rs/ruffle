@@ -4,6 +4,7 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
+use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -85,6 +86,8 @@ pub trait RenderBackend: Downcast {
     ) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+
+    fn set_quality(&mut self, quality: StageQuality);
 }
 impl_downcast!(RenderBackend);
 
