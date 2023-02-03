@@ -157,9 +157,13 @@ pub fn buffer_to_image(
     image
 }
 
-pub fn supported_sample_count(quality: StageQuality, format: wgpu::TextureFormat) -> u32 {
+pub fn supported_sample_count(
+    adapter: &wgpu::Adapter,
+    quality: StageQuality,
+    format: wgpu::TextureFormat,
+) -> u32 {
     let mut sample_count = quality.sample_count();
-    let features = format.describe().guaranteed_format_features.flags;
+    let features = adapter.get_texture_format_features(format).flags;
 
     // Keep halving the sample count until we get one that's supported - or 1 (no multisampling)
     // It's not guaranteed that supporting 4x means supporting 2x, so there's no "max" option
