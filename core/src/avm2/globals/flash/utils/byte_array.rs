@@ -92,15 +92,17 @@ pub fn write_bytes<'gc>(
             let ba_read = bytearray
                 .as_bytearray()
                 .ok_or("ArgumentError: Parameter must be a bytearray")?;
-            let to_write = ba_read.read_at(
-                // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
-                if length != 0 {
-                    length
-                } else {
-                    ba_read.len().saturating_sub(offset)
-                },
-                offset,
-            )?;
+            let to_write = ba_read
+                .read_at(
+                    // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
+                    if length != 0 {
+                        length
+                    } else {
+                        ba_read.len().saturating_sub(offset)
+                    },
+                    offset,
+                )
+                .map_err(|e| e.to_avm(activation))?;
 
             if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
                 bytearray.write_bytes(to_write)?;
@@ -142,14 +144,16 @@ pub fn read_bytes<'gc>(
 
         if !Object::ptr_eq(this, bytearray) {
             if let Some(bytearray_read) = this.as_bytearray() {
-                let to_write = bytearray_read.read_bytes(
-                    // If length is 0, lets read the remaining bytes of ByteArray
-                    if length != 0 {
-                        length
-                    } else {
-                        bytearray_read.bytes_available()
-                    },
-                )?;
+                let to_write = bytearray_read
+                    .read_bytes(
+                        // If length is 0, lets read the remaining bytes of ByteArray
+                        if length != 0 {
+                            length
+                        } else {
+                            bytearray_read.bytes_available()
+                        },
+                    )
+                    .map_err(|e| e.to_avm(activation))?;
 
                 let mut ba_write = bytearray
                     .as_bytearray_mut(activation.context.gc_context)
@@ -199,7 +203,7 @@ pub fn read_utf<'gc>(
         if let Some(bytearray) = this.as_bytearray() {
             return Ok(AvmString::new_utf8_bytes(
                 activation.context.gc_context,
-                bytearray.read_utf()?,
+                bytearray.read_utf().map_err(|e| e.to_avm(activation))?,
             )
             .into());
         }
@@ -358,13 +362,16 @@ pub fn set_endian<'gc>(
 }
 
 pub fn read_short<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_short()?.into());
+            return Ok(bytearray
+                .read_short()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -372,13 +379,16 @@ pub fn read_short<'gc>(
 }
 
 pub fn read_unsigned_short<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_unsigned_short()?.into());
+            return Ok(bytearray
+                .read_unsigned_short()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -386,13 +396,16 @@ pub fn read_unsigned_short<'gc>(
 }
 
 pub fn read_double<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_double()?.into());
+            return Ok(bytearray
+                .read_double()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -400,13 +413,16 @@ pub fn read_double<'gc>(
 }
 
 pub fn read_float<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_float()?.into());
+            return Ok(bytearray
+                .read_float()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -414,13 +430,16 @@ pub fn read_float<'gc>(
 }
 
 pub fn read_int<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_int()?.into());
+            return Ok(bytearray
+                .read_int()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -428,13 +447,16 @@ pub fn read_int<'gc>(
 }
 
 pub fn read_unsigned_int<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_unsigned_int()?.into());
+            return Ok(bytearray
+                .read_unsigned_int()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -442,13 +464,16 @@ pub fn read_unsigned_int<'gc>(
 }
 
 pub fn read_boolean<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_boolean()?.into());
+            return Ok(bytearray
+                .read_boolean()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -456,13 +481,16 @@ pub fn read_boolean<'gc>(
 }
 
 pub fn read_byte<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_byte()?.into());
+            return Ok(bytearray
+                .read_byte()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -482,7 +510,11 @@ pub fn read_utf_bytes<'gc>(
                 .coerce_to_u32(activation)?;
             return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
-                String::from_utf8_lossy(bytearray.read_bytes(len as usize)?),
+                String::from_utf8_lossy(
+                    bytearray
+                        .read_bytes(len as usize)
+                        .map_err(|e| e.to_avm(activation))?,
+                ),
             )
             .into());
         }
@@ -492,13 +524,16 @@ pub fn read_utf_bytes<'gc>(
 }
 
 pub fn read_unsigned_byte<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(bytearray.read_unsigned_byte()?.into());
+            return Ok(bytearray
+                .read_unsigned_byte()
+                .map_err(|e| e.to_avm(activation))?
+                .into());
         }
     }
 
@@ -651,7 +686,9 @@ pub fn read_multi_byte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            let bytes = bytearray.read_bytes(len as usize)?;
+            let bytes = bytearray
+                .read_bytes(len as usize)
+                .map_err(|e| e.to_avm(activation))?;
             let encoder =
                 Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
@@ -756,7 +793,9 @@ pub fn read_object<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            let bytes = bytearray.read_at(bytearray.bytes_available(), bytearray.position())?;
+            let bytes = bytearray
+                .read_at(bytearray.bytes_available(), bytearray.position())
+                .map_err(|e| e.to_avm(activation))?;
             let (bytes_left, value) = match bytearray.object_encoding() {
                 ObjectEncoding::Amf0 => {
                     let mut decoder = AMF0Decoder::default();
