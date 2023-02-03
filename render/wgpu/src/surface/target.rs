@@ -206,10 +206,6 @@ impl CommandTarget {
         self.size.height
     }
 
-    pub fn sample_count(&self) -> u32 {
-        self.sample_count
-    }
-
     pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder) {
         if self.color_needs_clear.get().is_some() {
             return;

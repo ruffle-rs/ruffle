@@ -4241,6 +4241,7 @@ dependencies = [
  "regex",
  "ruffle_core",
  "ruffle_input_format",
+ "ruffle_render",
  "ruffle_render_wgpu",
  "serde",
  "toml",
