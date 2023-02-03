@@ -3093,7 +3093,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(2, address)?;
+        let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
@@ -3107,7 +3107,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(4, address)?;
+        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
@@ -3120,7 +3120,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(4, address)?;
+        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
@@ -3134,7 +3134,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(8, address)?;
+        let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }

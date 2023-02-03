@@ -1,3 +1,5 @@
+use crate::avm2::error::eof_error;
+use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::string::{FromWStr, WStr};
 use flate2::read::*;
@@ -21,6 +23,18 @@ pub enum CompressionAlgorithm {
     Zlib,
     Deflate,
     Lzma,
+}
+
+pub struct EofError;
+
+impl EofError {
+    #[inline(never)]
+    pub fn to_avm<'gc>(&self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+        match eof_error(activation, "End of file was encountered.", 2030) {
+            Ok(e) => Error::AvmError(e),
+            Err(e) => e,
+        }
+    }
 }
 
 impl Display for CompressionAlgorithm {
@@ -112,7 +126,7 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes from the current position in the ByteArray
     #[inline]
-    pub fn read_bytes<'gc>(&self, amnt: usize) -> Result<&[u8], Error<'gc>> {
+    pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], EofError> {
         let bytes = self.read_at(amnt, self.position.get())?;
         self.position.set(self.position.get() + amnt);
         Ok(bytes)
@@ -120,11 +134,11 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
-    pub fn read_at<'gc>(&self, amnt: usize, offset: usize) -> Result<&[u8], Error<'gc>> {
+    pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], EofError> {
         self.bytes
             .get(offset..)
             .and_then(|bytes| bytes.get(..amnt))
-            .ok_or_else(|| "EOFError: Reached EOF".into())
+            .ok_or(EofError)
     }
 
     /// Write bytes at any offset in the ByteArray
@@ -238,7 +252,7 @@ impl ByteArrayStorage {
         }
     }
 
-    pub fn read_utf<'gc>(&self) -> Result<&[u8], Error<'gc>> {
+    pub fn read_utf(&self) -> Result<&[u8], EofError> {
         let len = self.read_unsigned_short()?;
         let val = self.read_bytes(len.into())?;
         Ok(val)
@@ -248,7 +262,7 @@ impl ByteArrayStorage {
         self.write_bytes(&[val as u8; 1])
     }
 
-    pub fn read_boolean<'gc>(&self) -> Result<bool, Error<'gc>> {
+    pub fn read_boolean(&self) -> Result<bool, EofError> {
         Ok(self.read_bytes(1)? != [0])
     }
 
@@ -424,14 +438,14 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name<'gc> (&self) -> Result<$data_type, Error<'gc>> {
+            $( pub fn $method_name<'gc> (&self) -> Result<$data_type, EofError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())
                 })
              } )*
 
-             $( pub fn $at_method_name<'gc> (&self, offset: usize) -> Result<$data_type, Error<'gc>> {
+             $( pub fn $at_method_name<'gc> (&self, offset: usize) -> Result<$data_type, EofError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_at($size, offset)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_at($size, offset)?.try_into().unwrap())
