@@ -2057,7 +2057,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
         self.context
             .stage
-            .set_quality(self.context.gc_context, new_quality);
+            .set_quality(&mut self.context, new_quality);
         self.context
             .stage
             .set_use_bitmap_downsampling(self.context.gc_context, use_bitmap_downsamping);

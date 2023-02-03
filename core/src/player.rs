@@ -778,7 +778,7 @@ impl Player {
 
     pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
-            context.stage.set_quality(context.gc_context, quality);
+            context.stage.set_quality(context, quality);
         })
     }
 

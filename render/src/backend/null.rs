@@ -5,6 +5,7 @@ use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use gc_arena::MutationContext;
 use swf::Color;
@@ -101,4 +102,6 @@ impl RenderBackend for NullRenderer {
     fn debug_info(&self) -> Cow<'static, str> {
         Cow::Borrowed("Renderer: Null")
     }
+
+    fn set_quality(&mut self, _quality: StageQuality) {}
 }

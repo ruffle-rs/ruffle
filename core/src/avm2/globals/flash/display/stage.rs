@@ -698,7 +698,7 @@ pub fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(activation.context.gc_context, quality);
+            .set_quality(&mut activation.context, quality);
     }
     Ok(Value::Undefined)
 }
