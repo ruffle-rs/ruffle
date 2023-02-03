@@ -776,12 +776,9 @@ impl Player {
         })
     }
 
-    pub fn set_quality(&mut self, quality: &str) {
+    pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(quality) = StageQuality::from_str(quality) {
-                stage.set_quality(context.gc_context, quality);
-            }
+            context.stage.set_quality(context.gc_context, quality);
         })
     }
 

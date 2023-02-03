@@ -17,6 +17,7 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
@@ -540,6 +541,13 @@ impl Ruffle {
             .with_player_version(config.player_version)
             .build();
 
+        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
+            tracing::info!("Running on a mobile device; defaulting to low quality");
+            StageQuality::Low
+        } else {
+            StageQuality::High
+        };
+
         let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
@@ -548,7 +556,12 @@ impl Ruffle {
             }
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
-            core.set_quality(config.quality.as_deref().unwrap_or("high"));
+            core.set_quality(
+                config
+                    .quality
+                    .and_then(|q| StageQuality::from_str(&q).ok())
+                    .unwrap_or(default_quality),
+            );
             core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
