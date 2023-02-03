@@ -24,4 +24,4 @@ RUN cargo install wasm-bindgen-cli --version 0.2.83
 COPY . ruffle
 WORKDIR ruffle/web
 RUN npm install
-RUN npm run build:dual-wasm
+RUN npm run build:repro
