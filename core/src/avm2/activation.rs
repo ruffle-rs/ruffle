@@ -1335,7 +1335,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let value = receiver.call_property(&multiname, &args, self)?;
 
@@ -1354,7 +1354,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?.as_callable(
             self,
             Some(&multiname),
@@ -1377,7 +1377,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         receiver.call_property(&multiname, &args, self)?;
 
@@ -1413,7 +1413,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1434,7 +1434,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1463,7 +1463,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             let value = object.get_property(&multiname, self)?;
             self.push_stack(value);
             return Ok(FrameControl::Continue);
@@ -1478,7 +1478,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1493,7 +1493,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let value = object.get_property(&multiname, self)?;
         self.push_stack(value);
 
@@ -1511,7 +1511,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             object.set_property(&multiname, value, self)?;
             return Ok(FrameControl::Continue);
         }
@@ -1525,7 +1525,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1543,7 +1543,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1558,7 +1558,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let mut object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         object.init_property(&multiname, value, self)?;
 
@@ -1575,7 +1575,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             let did_delete = object.delete_property(self, &multiname)?;
             self.push_stack(did_delete);
             return Ok(FrameControl::Continue);
@@ -1590,7 +1590,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1608,7 +1608,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let did_delete = object.delete_property(self, &multiname)?;
 
         self.push_stack(did_delete);
@@ -1624,7 +1624,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1644,7 +1644,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1799,7 +1799,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         let value = object.get_slot(index)?;
 
         self.push_stack(value);
@@ -1809,7 +1809,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         object.set_slot(index, value, self.context.gc_context)?;
 
@@ -1859,7 +1859,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let source = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let object = source.construct_prop(&multiname, &args, self)?;
 
@@ -1870,7 +1870,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().coerce_to_receiver(self, None)?;
+        let receiver = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         self.super_init(receiver, &args)?;
 
@@ -2735,7 +2735,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_name(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         let name = object.get_enumerant_name(cur_index as u32, self)?;
 
@@ -2746,7 +2746,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_value(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         let value = object.get_enumerant_value(cur_index as u32, self)?;
 

@@ -1,0 +1,27 @@
+// 1009: use of null
+1009
+1009
+1009
+1009
+// 1010: use of undefined
+1010
+1010
+1010
+1010
+// 1037: setproperty to method
+ReferenceError: Error #1037: Cannot assign to a method method on FilePrivateNS:Test.C.
+// 1056: setproperty fail
+ReferenceError: Error #1056: Cannot create property asdf on FilePrivateNS:Test.C.
+ReferenceError: Error #1056: Cannot create property ns::asdf on FilePrivateNS:Test.C.
+1056
+// 1069: getproperty not found
+ReferenceError: Error #1069: Property asdf not found on FilePrivateNS:Test.C and there is no default value.
+ReferenceError: Error #1069: Property ns::asdf not found on FilePrivateNS:Test.C and there is no default value.
+1069
+// 1074: setproperty on read-only
+ReferenceError: Error #1074: Illegal write to read-only property getonly on FilePrivateNS:Test.C.
+// 1077: getproperty on write-only
+ReferenceError: Error #1077: Illegal read of write-only property setonly on FilePrivateNS:Test.C.
+// 1120: deleteproperty on non-object
+1120
+// should not throw

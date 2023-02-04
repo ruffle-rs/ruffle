@@ -392,6 +392,30 @@ impl<'gc> Multiname<'gc> {
 
         AvmString::new(mc, uri)
     }
+
+    // note: I didn't look very deeply into how different exactly this should be
+    // this is currently generally based on to_qualified_name, without params and leading ::
+    pub fn to_error_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        let mut uri = WString::new();
+        let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
+            Some(Namespace::Any) => "*".into(),
+            Some(ns) => ns.as_uri(),
+            None => "".into(),
+        };
+
+        if !ns.is_empty() {
+            uri.push_str(&ns);
+            uri.push_str(WStr::from_units(b"::"));
+        }
+
+        if let Some(name) = self.name {
+            uri.push_str(&name);
+        } else {
+            uri.push_str(WStr::from_units(b"*"));
+        }
+
+        AvmString::new(mc, uri)
+    }
 }
 
 impl<'gc> From<QName<'gc>> for Multiname<'gc> {

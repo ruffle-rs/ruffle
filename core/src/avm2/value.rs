@@ -1,6 +1,7 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error;
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
@@ -856,27 +857,18 @@ impl<'gc> Value<'gc> {
         PrimitiveObject::from_primitive(*self, activation)
     }
 
-    /// Coerce the value to an object, and report an error relating to object
+    /// Coerce the value to an object, and throw a TypeError relating to object
     /// receivers being null or undefined otherwise.
-    ///
-    /// If the `name` parameter is provided, the error will indicate the object
-    /// property being interacted with.
-    pub fn coerce_to_receiver(
+    /// Note: The error may contain a non-spec info about the way in which it was to be used.
+    pub fn coerce_to_object_or_typeerror(
         &self,
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        self.coerce_to_object(activation).map_err(|_| {
-            if let Some(name) = name {
-                format!(
-                    "Cannot access property {} of null or undefined",
-                    name.to_qualified_name(activation.context.gc_context)
-                )
-                .into()
-            } else {
-                "Cannot access properties of null or undefined".into()
-            }
-        })
+        if matches!(self, Value::Null | Value::Undefined) {
+            return Err(error::make_null_or_undefined_error(activation, *self, name));
+        }
+        self.coerce_to_object(activation)
     }
 
     pub fn as_object(&self) -> Option<Object<'gc>> {
