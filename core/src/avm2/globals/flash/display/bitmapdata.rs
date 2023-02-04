@@ -917,13 +917,49 @@ pub fn apply_filter<'gc>(
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
             })?;
 
-        let color_matrix_filter = activation.resolve_class(&Multiname::new(
+        let bevel_filter = activation.resolve_class(&Multiname::new(
             Namespace::package("flash.filters"),
-            "ColorMatrixFilter",
+            "BevelFilter",
+        ))?;
+        let bitmap_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "BitmapFilter",
         ))?;
         let blur_filter = activation.resolve_class(&Multiname::new(
             Namespace::package("flash.filters"),
             "BlurFilter",
+        ))?;
+        let color_matrix_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "ColorMatrixFilter",
+        ))?;
+        let convolution_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "ConvolutionFilter",
+        ))?;
+        let displacement_map_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "DisplacementMapFilter",
+        ))?;
+        let drop_shadow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "DropShadowFilter",
+        ))?;
+        let glow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GlowFilter",
+        ))?;
+        let gradient_bevel_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GradientBevelFilter",
+        ))?;
+        let gradient_glow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GradientGlowFilter",
+        ))?;
+        let shader_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "ShaderFilter",
         ))?;
         let filter = if filter.is_of_type(color_matrix_filter, activation) {
             let mut matrix = [0.0; 20];
@@ -957,12 +993,96 @@ pub fn apply_filter<'gc>(
                 blur_y: blur_y as f32,
                 quality: quality.clamp(1, 15) as u8,
             })
-        } else {
-            tracing::warn!(
-                "BitmapData.applyFilter: Not yet implemented for {}",
-                filter.instance_of_class_name(activation.context.gc_context)
+        } else if filter.is_of_type(bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bevel filter"
             );
-            // Treat unimplemented ones as a default ColorMatrixFilter, as that's basically just blit
+            Filter::default()
+        } else if filter.is_of_type(bitmap_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bitmap filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(blur_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with blur filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(color_matrix_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with color matrix filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(convolution_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with convolution filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(displacement_map_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with displacement map filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(drop_shadow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with drop shadow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with glow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient bevel filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient glow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(shader_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with shader filter"
+            );
+            Filter::default()
+        } else {
+            tracing::error!("BitmapData.applyFilter received unknown filter");
             Filter::default()
         };
         dest_bitmap
