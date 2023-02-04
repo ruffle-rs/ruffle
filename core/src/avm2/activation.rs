@@ -942,10 +942,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        tracing::error!("AVM2 error: {:?}", error);
-        if let Some(err) = error.as_object().and_then(|obj| obj.as_error_object()) {
-            tracing::error!("{}", err.display_full(self)?);
-        }
         Err(Error::AvmError(error))
     }
 

@@ -299,15 +299,18 @@ impl<'gc> Avm2<'gc> {
 
     /// Dispatch an event on an object.
     ///
+    /// This should be a root activation. As such, the error is a message and not something actionable.
+    ///
     /// The `bool` parameter reads true if the event was cancelled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) -> Result<bool, Error<'gc>> {
+    ) -> Result<bool, String> {
         use crate::avm2::events::dispatch_event;
         let mut activation = Activation::from_nothing(context.reborrow());
         dispatch_event(&mut activation, target, event)
+            .map_err(|e| e.detailed_message(&mut activation))
     }
 
     /// Add an object to the broadcast list.
@@ -397,9 +400,11 @@ impl<'gc> Avm2<'gc> {
         reciever: Option<Object<'gc>>,
         args: &[Value<'gc>],
         context: &mut UpdateContext<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<(), String> {
         let mut evt_activation = Activation::from_nothing(context.reborrow());
-        callable.call(reciever, args, &mut evt_activation)?;
+        callable
+            .call(reciever, args, &mut evt_activation)
+            .map_err(|e| e.detailed_message(&mut evt_activation))?;
 
         Ok(())
     }

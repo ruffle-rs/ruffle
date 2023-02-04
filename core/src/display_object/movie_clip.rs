@@ -866,7 +866,7 @@ impl<'gc> MovieClip<'gc> {
                 }
                 Err(e) => tracing::warn!(
                     "Got AVM2 error {} when attempting to assign symbol class {}",
-                    e,
+                    e.detailed_message(&mut activation),
                     class_name
                 ),
             }
