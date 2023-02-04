@@ -1140,11 +1140,15 @@ pub fn sort_on<'gc>(
                 first_option,
                 constrain(|activation, a, b| {
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
-                        let a_object = a.coerce_to_receiver(activation, None)?;
+                        // note: these are incorrect: pretty sure
+                        // if the object is null/undefined or does not have the field,
+                        // it's treated as if the field's value was undefined.
+                        // TODO: verify this and fix it
+                        let a_object = a.coerce_to_object(activation)?;
                         let a_field =
                             a_object.get_property(&Multiname::public(*field_name), activation)?;
 
-                        let b_object = b.coerce_to_receiver(activation, None)?;
+                        let b_object = b.coerce_to_object(activation)?;
                         let b_field =
                             b_object.get_property(&Multiname::public(*field_name), activation)?;
 

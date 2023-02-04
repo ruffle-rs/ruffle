@@ -5,6 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::error;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::property::Property;
@@ -182,7 +183,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.call_method(get, &[], activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
-                Err("Illegal read of write-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.get_property_local(multiname, activation),
         }
@@ -228,13 +234,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                 )
             }
-            Some(Property::ConstSlot { .. }) => Err("Illegal write to read-only property".into()),
-            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Method { .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    self.instance_of(),
+                ));
+            }
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::Virtual { set: None, .. }) => {
-                Err("Illegal write to read-only property".into())
+            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.set_property_local(multiname, value, activation),
         }
@@ -281,12 +298,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                 )
             }
-            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Method { .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    self.instance_of(),
+                ));
+            }
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
             Some(Property::Virtual { set: None, .. }) => {
-                Err("Illegal write to read-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.init_property_local(multiname, value, activation),
         }
@@ -380,7 +409,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
-                Err("Illegal read of write-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.call_property_local(multiname, arguments, activation),
         }
@@ -501,6 +535,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
+        if self.as_primitive().is_some() {
+            return Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::InvalidDelete,
+                multiname,
+                self.instance_of(),
+            ));
+        }
+
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             None => {
                 if self
