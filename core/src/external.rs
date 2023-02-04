@@ -284,10 +284,14 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                if let Ok(result) = method.call(None, &args, &mut activation) {
-                    Value::from_avm2(result)
-                } else {
-                    Value::Null
+                match method.call(None, &args, &mut activation) {
+                    Ok(result) => Value::from_avm2(result),
+                    Err(e) => {
+                        tracing::error!(
+                            "Unhandled error in External Interface callback {name}: {e}"
+                        );
+                        Value::Null
+                    }
                 }
             }
         }
