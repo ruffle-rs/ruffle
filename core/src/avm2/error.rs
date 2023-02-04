@@ -19,6 +19,20 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
+impl<'gc> Error<'gc> {
+    pub fn detailed_message(&self, activation: &mut Activation<'_, 'gc>) -> String {
+        if let Error::AvmError(error) = self {
+            if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
+                if let Ok(text) = error.display_full(activation) {
+                    return text.to_string();
+                }
+            }
+        }
+
+        self.to_string()
+    }
+}
+
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
 // For now, we only test on Nightly, since a new niche optimization was recently
 // added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
