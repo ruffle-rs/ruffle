@@ -957,10 +957,10 @@ pub fn apply_filter<'gc>(
             Namespace::package("flash.filters"),
             "GradientGlowFilter",
         ))?;
-        let shader_filter = activation.resolve_class(&Multiname::new(
-            Namespace::package("flash.filters"),
-            "ShaderFilter",
-        ))?;
+        // let shader_filter = activation.resolve_class(&Multiname::new(
+        //     Namespace::package("flash.filters"),
+        //     "ShaderFilter",
+        // ))?;
         let filter = if filter.is_of_type(color_matrix_filter, activation) {
             let mut matrix = [0.0; 20];
             if let Some(object) = filter
@@ -1073,14 +1073,14 @@ pub fn apply_filter<'gc>(
                 "with gradient glow filter"
             );
             Filter::default()
-        } else if filter.is_of_type(shader_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with shader filter"
-            );
-            Filter::default()
+        // } else if filter.is_of_type(shader_filter, activation) {
+        //     avm2_stub_method!(
+        //         activation,
+        //         "flash.display.BitmapData",
+        //         "applyFilter",
+        //         "with shader filter"
+        //     );
+        //     Filter::default()
         } else {
             tracing::error!("BitmapData.applyFilter received unknown filter");
             Filter::default()
