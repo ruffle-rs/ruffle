@@ -276,6 +276,13 @@ export interface BaseLoadOptions {
     scale?: string;
 
     /**
+     * If set to true, movies are prevented from changing the stage scale mode.
+     *
+     * @default false
+     */
+    forceScale?: boolean;
+
+    /**
      * The window mode of the Ruffle player.
      *
      * This setting controls how the Ruffle container is layered and rendered with other content on the page.
