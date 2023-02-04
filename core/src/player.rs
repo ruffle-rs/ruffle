@@ -793,15 +793,6 @@ impl Player {
         })
     }
 
-    pub fn set_scale_mode(&mut self, scale_mode: &str) {
-        self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(scale_mode) = StageScaleMode::from_str(scale_mode) {
-                stage.set_scale_mode(context, scale_mode);
-            }
-        })
-    }
-
     pub fn set_window_mode(&mut self, window_mode: &str) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
@@ -1932,6 +1923,8 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    scale_mode: StageScaleMode,
+    forced_scale_mode: bool,
     fullscreen: bool,
     letterbox: Letterbox,
     max_execution_duration: Duration,
@@ -1965,6 +1958,8 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
+            scale_mode: StageScaleMode::ShowAll,
+            forced_scale_mode: false,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
             letterbox: Letterbox::Fullscreen,
@@ -2080,6 +2075,14 @@ impl PlayerBuilder {
         self.viewport_width = width;
         self.viewport_height = height;
         self.viewport_scale_factor = dpi_scale_factor;
+        self
+    }
+
+    /// Sets the stage scale mode and optionally prevents movies from changing it.
+    #[inline]
+    pub fn with_scale_mode(mut self, scale: StageScaleMode, force: bool) -> Self {
+        self.scale_mode = scale;
+        self.forced_scale_mode = force;
         self
     }
 
@@ -2245,6 +2248,8 @@ impl PlayerBuilder {
             context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
+            stage.set_scale_mode(context, self.scale_mode);
+            stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
         });

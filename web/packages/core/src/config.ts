@@ -50,6 +50,7 @@ export const DEFAULT_CONFIG: Required<Config> = {
     salign: "",
     quality: "high",
     scale: "showAll",
+    forceScale: false,
     wmode: WindowMode.Opaque,
     publicPath: null,
     polyfills: true,

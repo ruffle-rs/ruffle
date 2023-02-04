@@ -22,7 +22,7 @@ use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
-    PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
+    PlayerEvent, StageDisplayState, StageScaleMode, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
@@ -94,6 +94,14 @@ struct Opt {
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
     quality: StageQuality,
+
+    /// The scale mode of the stage.
+    #[clap(long, short, default_value = "show-all")]
+    scale: StageScaleMode,
+
+    /// Prevent movies from changing the stage scale mode.
+    #[clap(long, action)]
+    force_scale: bool,
 
     /// Location to store a wgpu trace output
     #[clap(long)]
@@ -302,6 +310,7 @@ impl App {
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
+            .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
