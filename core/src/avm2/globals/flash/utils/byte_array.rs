@@ -741,6 +741,7 @@ pub fn compress<'gc>(
             let buffer = bytearray.compress(algorithm);
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
+            bytearray.set_position(bytearray.len());
         }
     }
 
@@ -780,6 +781,7 @@ pub fn uncompress<'gc>(
             };
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
+            bytearray.set_position(0);
         }
     }
 
