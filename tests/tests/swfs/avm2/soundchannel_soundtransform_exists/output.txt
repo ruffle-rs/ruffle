@@ -1,0 +1,6 @@
+// channel
+[object SoundChannel]
+
+// channel.soundTransform
+[object SoundTransform]
+

@@ -88,15 +88,14 @@ pub fn sound_transform<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(instance) = this
-        .and_then(|this| this.as_sound_channel())
-        .and_then(|channel| channel.instance())
-    {
-        let dobj_st = activation.context.local_sound_transform(instance).cloned();
+    if let Some(channel) = this.and_then(|this| this.as_sound_channel()) {
+        let dobj_st = channel
+            .instance()
+            .and_then(|instance| activation.context.local_sound_transform(instance))
+            .cloned()
+            .unwrap_or_default();
 
-        if let Some(dobj_st) = dobj_st {
-            return Ok(dobj_st.into_avm2_object(activation)?.into());
-        }
+        return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
 
     Ok(Value::Undefined)
