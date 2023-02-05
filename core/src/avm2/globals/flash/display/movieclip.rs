@@ -48,7 +48,11 @@ pub fn add_frame_script<'gc>(
     {
         for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
-            let callable = callable.as_callable(activation, None, None)?;
+            let callable = if callable == Value::Null {
+                None
+            } else {
+                Some(callable.as_callable(activation, None, None)?)
+            };
 
             mc.register_frame_script(frame_id, callable, &mut activation.context);
         }
