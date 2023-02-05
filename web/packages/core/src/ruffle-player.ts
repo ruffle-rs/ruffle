@@ -810,6 +810,25 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private async openVirtualKeyboard(): Promise<void> {
+        // Use simple prompt for now. Ideally the system keyboard would come up,
+        // possibly with a library for fallback (e.g. simple-keyboard)
+        const string = prompt("String to type:") ?? "";
+
+        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+        for (const char of string) {
+            for (const type of ["keydown", "keyup"]) {
+                const event = new KeyboardEvent(type, {
+                    key: char,
+                    bubbles: true,
+                });
+                this.dispatchEvent(event);
+                await sleep(16);
+            }
+        }
+    }
+
     private contextMenuItems(): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);
         const items = [];
@@ -879,6 +898,10 @@ export class RufflePlayer extends HTMLElement {
             items.push({
                 text: "Hide this menu",
                 onClick: () => (this.contextMenuForceDisabled = true),
+            });
+            items.push({
+                text: "Virtual keyboard (experimental)",
+                onClick: () => this.openVirtualKeyboard(),
             });
         }
         return items;
