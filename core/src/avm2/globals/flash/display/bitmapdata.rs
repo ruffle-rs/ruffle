@@ -3,7 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{bitmapdata_allocator, BitmapDataObject, Object, TObject};
+use crate::avm2::object::{
+    bitmapdata_allocator, BitmapDataObject, ByteArrayObject, Object, TObject,
+};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -313,6 +315,40 @@ pub fn copy_pixels<'gc>(
                     );
             }
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.getPixels`.
+pub fn get_pixels<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data.read().check_valid(activation)?;
+        let rectangle = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let x = rectangle
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_i32(activation)?;
+        let y = rectangle
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_i32(activation)?;
+        let width = rectangle
+            .get_property(&Multiname::public("width"), activation)?
+            .coerce_to_i32(activation)?;
+        let height = rectangle
+            .get_property(&Multiname::public("height"), activation)?
+            .coerce_to_i32(activation)?;
+        let bytearray = ByteArrayObject::from_storage(
+            activation,
+            bitmap_data.read().get_pixels(x, y, width, height)?,
+        )?;
+        return Ok(bytearray.into());
     }
 
     Ok(Value::Undefined)
@@ -1241,6 +1277,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("getPixels", get_pixels),
         ("getPixel", get_pixel),
         ("getPixel32", get_pixel32),
         ("setPixel", set_pixel),
