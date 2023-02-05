@@ -89,7 +89,7 @@ pub struct MovieClipData<'gc> {
     clip_event_handlers: Vec<ClipEventHandler>,
     #[collect(require_static)]
     clip_event_flags: ClipEventFlag,
-    frame_scripts: Vec<Avm2FrameScript<'gc>>,
+    frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     flags: MovieClipFlags,
     avm2_class: Option<Avm2ClassObject<'gc>>,
     drawing: Drawing,
@@ -2064,10 +2064,15 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         let frame_scripts = &mut self.0.write(context.gc_context).frame_scripts;
-        frame_scripts.retain(|fs| fs.frame_id != frame_id);
 
+        let index = frame_id as usize;
         if let Some(callable) = callable {
-            frame_scripts.push(Avm2FrameScript { frame_id, callable });
+            if frame_scripts.len() <= index {
+                frame_scripts.resize(index + 1, None);
+            }
+            frame_scripts[index] = Some(callable);
+        } else if frame_scripts.len() > index {
+            frame_scripts[index] = None;
         }
     }
 
@@ -2334,7 +2339,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc>) {
-        let mut index = 0;
         let mut write = self.0.write(context.gc_context);
         let avm2_object = write.object.and_then(|o| o.as_avm2_object());
 
@@ -2354,36 +2358,32 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         write.queued_script_frame != write.last_queued_script_frame;
 
                     if is_fresh_frame {
-                        while let Some(fs) = write.frame_scripts.get(index) {
-                            if fs.frame_id == frame_id {
-                                let callable = fs.callable;
+                        if let Some(Some(callable)) =
+                            write.frame_scripts.get(frame_id as usize).cloned()
+                        {
+                            write.last_queued_script_frame = Some(frame_id);
+                            write.queued_script_frame = None;
+                            write
+                                .flags
+                                .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
 
-                                write.last_queued_script_frame = Some(frame_id);
-                                write.queued_script_frame = None;
-                                write
-                                    .flags
-                                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
-
-                                drop(write);
-                                if let Err(e) = Avm2::run_stack_frame_for_callable(
-                                    callable,
-                                    Some(avm2_object),
-                                    &[],
-                                    context,
-                                ) {
-                                    tracing::error!(
-                                        "Error occured when running AVM2 frame script: {}",
-                                        e
-                                    );
-                                }
-                                write = self.0.write(context.gc_context);
-
-                                write
-                                    .flags
-                                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                            drop(write);
+                            if let Err(e) = Avm2::run_stack_frame_for_callable(
+                                callable,
+                                Some(avm2_object),
+                                &[],
+                                context,
+                            ) {
+                                tracing::error!(
+                                    "Error occured when running AVM2 frame script: {}",
+                                    e
+                                );
                             }
+                            write = self.0.write(context.gc_context);
 
-                            index += 1;
+                            write
+                                .flags
+                                .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                         }
                     }
                 }
@@ -4226,15 +4226,4 @@ impl ClipEventHandler {
             action_data,
         }
     }
-}
-
-/// An AVM2 frame script attached to a (presumably AVM2) MovieClip.
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub struct Avm2FrameScript<'gc> {
-    /// The frame to invoke this frame script on.
-    pub frame_id: FrameNumber,
-
-    /// The AVM2 callable object to invoke when the frame script runs.
-    pub callable: Avm2Object<'gc>,
 }
