@@ -2060,14 +2060,15 @@ impl<'gc> MovieClip<'gc> {
     pub fn register_frame_script(
         self,
         frame_id: FrameNumber,
-        callable: Avm2Object<'gc>,
+        callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let mut write = self.0.write(context.gc_context);
+        let frame_scripts = &mut self.0.write(context.gc_context).frame_scripts;
+        frame_scripts.retain(|fs| fs.frame_id != frame_id);
 
-        write
-            .frame_scripts
-            .push(Avm2FrameScript { frame_id, callable });
+        if let Some(callable) = callable {
+            frame_scripts.push(Avm2FrameScript { frame_id, callable });
+        }
     }
 
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc>) {
