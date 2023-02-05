@@ -866,8 +866,9 @@ pub fn apply_filter<'gc>(
     } else {
         return Err("ArgumentError: Error #1063: Argument count mismatch on flash.display::BitmapData/applyFilter(). Expected 4, got 0.".into());
     };
-    if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data()) {
-        dest_bitmap.read().check_valid(activation)?;
+    if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels(activation.context.gc_context);
+        dest_bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args[0]
             .as_object()
             .and_then(|o| o.as_bitmap_data())
@@ -1085,16 +1086,15 @@ pub fn apply_filter<'gc>(
             tracing::error!("BitmapData.applyFilter received unknown filter");
             Filter::default()
         };
-        dest_bitmap
-            .write(activation.context.gc_context)
-            .apply_filter(
-                &mut activation.context,
-                source_handle,
-                source_point,
-                source_size,
-                dest_point,
-                filter,
-            )
+        let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
+        dest_bitmap_data.apply_filter(
+            &mut activation.context,
+            source_handle,
+            source_point,
+            source_size,
+            dest_point,
+            filter,
+        )
     }
     Ok(Value::Undefined)
 }
