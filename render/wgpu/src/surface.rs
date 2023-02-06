@@ -566,7 +566,7 @@ impl Surface {
             color_attachments: &[target.color_attachments()],
             depth_stencil_attachment: None,
         });
-        render_pass.set_pipeline(&self.pipelines.color_matrix_filter);
+        render_pass.set_pipeline(&self.pipelines.color_matrix_filter(&descriptors));
 
         render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
         if descriptors.limits.max_push_constant_size > 0 {
@@ -736,7 +736,7 @@ impl Surface {
                 color_attachments: &[current.color_attachments()],
                 depth_stencil_attachment: None,
             });
-            render_pass.set_pipeline(&self.pipelines.blur_filter);
+            render_pass.set_pipeline(&self.pipelines.blur_filter(&descriptors));
 
             render_pass.set_bind_group(0, current.globals().bind_group(), &[]);
             if descriptors.limits.max_push_constant_size > 0 {

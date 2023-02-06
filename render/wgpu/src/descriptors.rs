@@ -225,7 +225,6 @@ impl Descriptors {
             .or_insert_with(|| {
                 Arc::new(Pipelines::new(
                     &self.device,
-                    &self.shaders,
                     format,
                     msaa_sample_count,
                     &self.bind_layouts,

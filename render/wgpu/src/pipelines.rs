@@ -56,8 +56,11 @@ pub struct Pipelines {
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: EnumMap<GradientType, EnumMap<GradientSpread, ShapePipeline>>,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
-    pub color_matrix_filter: wgpu::RenderPipeline,
-    pub blur_filter: wgpu::RenderPipeline,
+    color_matrix_filter: OnceCell<wgpu::RenderPipeline>,
+    blur_filter: OnceCell<wgpu::RenderPipeline>,
+    format: wgpu::TextureFormat,
+    sample_count: u32,
+    full_push_constants: Vec<wgpu::PushConstantRange>,
 }
 
 impl ShapePipeline {
@@ -192,7 +195,6 @@ impl ShapePipeline {
 impl Pipelines {
     pub fn new(
         device: &wgpu::Device,
-        shaders: &Shaders,
         format: wgpu::TextureFormat,
         msaa_sample_count: u32,
         bind_layouts: &BindLayouts,
@@ -207,7 +209,7 @@ impl Pipelines {
             ]
         };
 
-        let full_push_constants = &if device.limits().max_push_constant_size > 0 {
+        let full_push_constants = if device.limits().max_push_constant_size > 0 {
             vec![wgpu::PushConstantRange {
                 stages: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 range: 0..mem::size_of::<PushConstants>() as u32,
@@ -216,7 +218,7 @@ impl Pipelines {
             vec![]
         };
 
-        let partial_push_constants = &if device.limits().max_push_constant_size > 0 {
+        let partial_push_constants = if device.limits().max_push_constant_size > 0 {
             vec![wgpu::PushConstantRange {
                 stages: wgpu::ShaderStages::VERTEX,
                 range: 0..(mem::size_of::<Transforms>() as u32),
@@ -321,121 +323,129 @@ impl Pipelines {
             .try_into()
             .unwrap();
 
-        let color_matrix_filter_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.bitmap,
-                &bind_layouts.color_matrix_filter,
-            ]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.bitmap,
-                &bind_layouts.color_matrix_filter,
-            ]
-        };
-
-        let color_matrix_filter_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: None,
-                bind_group_layouts: &color_matrix_filter_bindings,
-                push_constant_ranges: &full_push_constants,
-            });
-
-        let color_matrix_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: create_debug_label!("Color Matrix Filter").as_deref(),
-            layout: Some(&color_matrix_filter_layout),
-            vertex: wgpu::VertexState {
-                module: &shaders.color_matrix_filter,
-                entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
-            },
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::default(),
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: msaa_sample_count,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shaders.color_matrix_filter,
-                entry_point: "main_fragment",
-                targets: &[Some(format.into())],
-            }),
-            multiview: None,
-        });
-
-        let blur_filter_bindings = if device.limits().max_push_constant_size > 0 {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.bitmap,
-                &bind_layouts.blur_filter,
-            ]
-        } else {
-            vec![
-                &bind_layouts.globals,
-                &bind_layouts.transforms,
-                &bind_layouts.color_transforms,
-                &bind_layouts.bitmap,
-                &bind_layouts.blur_filter,
-            ]
-        };
-
-        let blur_filter_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &blur_filter_bindings,
-            push_constant_ranges: &full_push_constants,
-        });
-
-        let blur_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: create_debug_label!("Blur Filter").as_deref(),
-            layout: Some(&blur_filter_layout),
-            vertex: wgpu::VertexState {
-                module: &shaders.blur_filter,
-                entry_point: "main_vertex",
-                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
-            },
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::default(),
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: msaa_sample_count,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shaders.blur_filter,
-                entry_point: "main_fragment",
-                targets: &[Some(format.into())],
-            }),
-            multiview: None,
-        });
-
         Self {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
             gradients: gradient_pipelines,
             complex_blends: complex_blend_pipelines,
-            color_matrix_filter,
-            blur_filter,
+            color_matrix_filter: OnceCell::new(),
+            blur_filter: OnceCell::new(),
+            format,
+            sample_count: msaa_sample_count,
+            full_push_constants,
         }
+    }
+
+    pub fn color_matrix_filter(&self, descriptors: &Descriptors) -> &wgpu::RenderPipeline {
+        self.color_matrix_filter.get_or_init(|| {
+            let bindings = if descriptors.limits.max_push_constant_size > 0 {
+                vec![
+                    &descriptors.bind_layouts.globals,
+                    &descriptors.bind_layouts.bitmap,
+                    &descriptors.bind_layouts.color_matrix_filter,
+                ]
+            } else {
+                vec![
+                    &descriptors.bind_layouts.globals,
+                    &descriptors.bind_layouts.transforms,
+                    &descriptors.bind_layouts.color_transforms,
+                    &descriptors.bind_layouts.bitmap,
+                    &descriptors.bind_layouts.color_matrix_filter,
+                ]
+            };
+            let layout =
+                descriptors
+                    .device
+                    .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: None,
+                        bind_group_layouts: &bindings,
+                        push_constant_ranges: &self.full_push_constants,
+                    });
+            descriptors
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&layout),
+                    vertex: wgpu::VertexState {
+                        module: &descriptors.shaders.color_matrix_filter,
+                        entry_point: "main_vertex",
+                        buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                    },
+                    primitive: Default::default(),
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: self.sample_count,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &descriptors.shaders.color_matrix_filter,
+                        entry_point: "main_fragment",
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: self.format,
+                            blend: None,
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                    }),
+                    multiview: None,
+                })
+        })
+    }
+
+    pub fn blur_filter(&self, descriptors: &Descriptors) -> &wgpu::RenderPipeline {
+        self.blur_filter.get_or_init(|| {
+            let bindings = if descriptors.limits.max_push_constant_size > 0 {
+                vec![
+                    &descriptors.bind_layouts.globals,
+                    &descriptors.bind_layouts.bitmap,
+                    &descriptors.bind_layouts.blur_filter,
+                ]
+            } else {
+                vec![
+                    &descriptors.bind_layouts.globals,
+                    &descriptors.bind_layouts.transforms,
+                    &descriptors.bind_layouts.color_transforms,
+                    &descriptors.bind_layouts.bitmap,
+                    &descriptors.bind_layouts.blur_filter,
+                ]
+            };
+            let layout =
+                descriptors
+                    .device
+                    .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: None,
+                        bind_group_layouts: &bindings,
+                        push_constant_ranges: &self.full_push_constants,
+                    });
+            descriptors
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&layout),
+                    vertex: wgpu::VertexState {
+                        module: &descriptors.shaders.blur_filter,
+                        entry_point: "main_vertex",
+                        buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                    },
+                    primitive: Default::default(),
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: self.sample_count,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &descriptors.shaders.blur_filter,
+                        entry_point: "main_fragment",
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: self.format,
+                            blend: None,
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                    }),
+                    multiview: None,
+                })
+        })
     }
 }
 
