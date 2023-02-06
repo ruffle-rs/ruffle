@@ -8,8 +8,9 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
-log = "0.4"
+tracing = "0.1.37"
 gif = "0.12.0"
 png = { version = "0.17.7" }
 flate2 = "1.0.25"
@@ -21,6 +22,7 @@ wasm-bindgen = { version = "=0.2.83", optional = true }
 gc-arena = { workspace = true }
 enum-map = "2.4.2"
 serde = "1.0.152"
+clap = { version = "4.1.4", features = ["derive"], optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"

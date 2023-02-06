@@ -1077,6 +1077,34 @@ fn set_cache_as_bitmap<'gc>(
     Ok(Value::Undefined)
 }
 
+/// `opaqueBackground`'s getter.
+pub fn opaque_background<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(
+        activation,
+        "flash.display.DisplayObject",
+        "opaqueBackground"
+    );
+    Ok(Value::Null)
+}
+
+/// `opaqueBackground`'s setter.
+pub fn set_opaque_background<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(
+        activation,
+        "flash.display.DisplayObject",
+        "opaqueBackground"
+    );
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1135,6 +1163,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("transform", Some(transform), Some(set_transform)),
         ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
         ("mask", Some(mask), Some(set_mask)),
+        (
+            "opaqueBackground",
+            Some(opaque_background),
+            Some(set_opaque_background),
+        ),
         (
             "cacheAsBitmap",
             Some(cache_as_bitmap),

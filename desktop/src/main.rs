@@ -25,6 +25,7 @@ use ruffle_core::{
     PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
+use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::cell::RefCell;
@@ -52,7 +53,7 @@ thread_local! {
 #[cfg(feature = "tracy")]
 #[global_allocator]
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
-    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 100);
+    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
 
@@ -63,7 +64,7 @@ static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-in
     version = RUFFLE_VERSION,
 )]
 struct Opt {
-    /// Path to a Flash movie (SWF) to play.
+    /// Path or URL of a Flash movie (SWF) to play.
     #[clap(name = "FILE")]
     input_path: Option<PathBuf>,
 
@@ -89,6 +90,10 @@ struct Opt {
     /// Height of window in pixels.
     #[clap(long, display_order = 2)]
     height: Option<f64>,
+
+    /// Default quality of the movie.
+    #[clap(long, short, default_value = "high")]
+    quality: StageQuality,
 
     /// Location to store a wgpu trace output
     #[clap(long)]

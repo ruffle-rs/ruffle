@@ -32,6 +32,7 @@ mod uniform_buffer;
 
 pub mod backend;
 mod blend;
+mod buffer_builder;
 mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
@@ -101,12 +102,26 @@ impl From<ColorTransform> for ColorAdjustments {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
+struct PosVertex {
+    position: [f32; 2],
+}
+
+impl From<TessVertex> for PosVertex {
+    fn from(vertex: TessVertex) -> Self {
+        Self {
+            position: [vertex.x, vertex.y],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct PosColorVertex {
     position: [f32; 2],
     color: [f32; 4],
 }
 
-impl From<TessVertex> for Vertex {
+impl From<TessVertex> for PosColorVertex {
     fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
@@ -140,39 +155,6 @@ impl From<TessGradient> for GradientUniforms {
             ratios[i] = gradient.ratios[i];
             colors[i].copy_from_slice(&gradient.colors[i]);
         }
-
-        Self {
-            colors,
-            ratios,
-            gradient_type: match gradient.gradient_type {
-                GradientType::Linear => 0,
-                GradientType::Radial => 1,
-                GradientType::Focal => 2,
-            },
-            num_colors: gradient.num_colors as u32,
-            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
-            focal_point: gradient.focal_point.to_f32(),
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct GradientStorage {
-    colors: [[f32; 4]; 16],
-    ratios: [f32; 16],
-    gradient_type: i32,
-    num_colors: u32,
-    interpolation: i32,
-    focal_point: f32,
-}
-
-impl From<TessGradient> for GradientStorage {
-    fn from(gradient: TessGradient) -> Self {
-        let mut ratios = [0.0; 16];
-        let mut colors = [[0.0; 4]; 16];
-        ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
-        colors[..gradient.num_colors].copy_from_slice(&gradient.colors[..gradient.num_colors]);
 
         Self {
             colors,
@@ -335,6 +317,7 @@ impl Texture {
                 &layout,
                 samplers.get_sampler(false, smoothed),
                 &quad.texture_transforms,
+                0 as wgpu::BufferAddress,
                 self.texture.create_view(&Default::default()),
                 create_debug_label!("Bitmap {:?} bind group (smoothed: {})", handle.0, smoothed),
             )

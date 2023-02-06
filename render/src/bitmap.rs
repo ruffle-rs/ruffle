@@ -61,7 +61,7 @@ impl Bitmap {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = width as usize * height as usize * format.bytes_per_pixel();
         if data.len() != expected_len {
-            log::warn!(
+            tracing::warn!(
                 "Incorrect bitmap data size, expected {} bytes, got {}",
                 data.len(),
                 expected_len

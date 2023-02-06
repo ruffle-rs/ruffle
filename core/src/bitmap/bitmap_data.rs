@@ -11,6 +11,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
@@ -316,7 +317,7 @@ mod wrapper {
 
                 // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
                 // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
-                inner_bitmap_data.update_dirty_texture(context);
+                inner_bitmap_data.update_dirty_texture(context.renderer);
                 let handle = inner_bitmap_data
                     .bitmap_handle(context.renderer)
                     .expect("Missing bitmap handle");
@@ -1195,11 +1196,11 @@ impl<'gc> BitmapData<'gc> {
 
     // Updates the data stored with our `BitmapHandle` if this `BitmapData`
     // is dirty
-    pub fn update_dirty_texture(&mut self, context: &mut RenderContext) {
-        let handle = self.bitmap_handle(context.renderer).unwrap();
+    pub fn update_dirty_texture(&mut self, renderer: &mut dyn RenderBackend) {
+        let handle = self.bitmap_handle(renderer).unwrap();
         match &self.dirty_state {
             DirtyState::CpuModified => {
-                if let Err(e) = context.renderer.update_texture(
+                if let Err(e) = renderer.update_texture(
                     &handle,
                     self.width(),
                     self.height(),
@@ -1277,6 +1278,40 @@ impl<'gc> BitmapData<'gc> {
         self.avm2_object = Some(object)
     }
 
+    pub fn apply_filter(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        source: BitmapHandle,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        dest_point: (u32, u32),
+        filter: Filter,
+    ) {
+        let dest = self.bitmap_handle(context.renderer).unwrap();
+
+        self.update_dirty_texture(context.renderer);
+        let sync_handle = context.renderer.apply_filter(
+            source,
+            source_point,
+            source_size,
+            dest,
+            dest_point,
+            filter,
+        );
+        match sync_handle {
+            Some(sync_handle) => match self.dirty_state {
+                DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
+                DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                    "Called BitmapData.render while already dirty: {:?}",
+                    self.dirty_state
+                ),
+            },
+            None => {
+                tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
+            }
+        }
+    }
+
     pub fn draw(
         &mut self,
         mut source: IBitmapDrawable<'gc>,
@@ -1351,7 +1386,7 @@ impl<'gc> BitmapData<'gc> {
             render_context.commands.pop_mask();
         }
 
-        self.update_dirty_texture(&mut render_context);
+        self.update_dirty_texture(render_context.renderer);
 
         let commands = if blend_mode == BlendMode::Normal {
             render_context.commands
@@ -1369,17 +1404,16 @@ impl<'gc> BitmapData<'gc> {
         );
 
         match image {
-            Ok(sync_handle) => match self.dirty_state {
+            Some(sync_handle) => match self.dirty_state {
                 DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
                 DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
                     self.dirty_state
                 ),
             },
-            Err(ruffle_render::error::Error::Unimplemented) => {
+            None => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }
-            Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }
     }
 }

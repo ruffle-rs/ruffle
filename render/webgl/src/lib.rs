@@ -14,6 +14,7 @@ use ruffle_render::bitmap::{
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
@@ -943,8 +944,8 @@ impl RenderBackend for WebGlRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented)
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -1138,6 +1139,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         return Cow::Owned(result.join("\n"));
     }
+
+    fn set_quality(&mut self, _quality: StageQuality) {}
 }
 
 impl CommandHandler for WebGlRenderBackend {

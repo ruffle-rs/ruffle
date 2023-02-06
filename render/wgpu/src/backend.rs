@@ -1,6 +1,7 @@
+use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
-use crate::mesh::{Draw, Mesh};
+use crate::mesh::{Mesh, PendingDraw};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
@@ -15,6 +16,8 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::filters::Filter;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
@@ -38,17 +41,13 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
-    preferred_sample_count: u32,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(
-        canvas: &web_sys::HtmlCanvasElement,
-        sample_count: u32,
-    ) -> Result<Self, Error> {
+    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
@@ -65,7 +64,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         let descriptors = Descriptors::new(adapter, device, queue);
         let target =
             SwapChainTarget::new(surface, &descriptors.adapter, (1, 1), &descriptors.device);
-        Self::new(Arc::new(descriptors), target, sample_count)
+        Self::new(Arc::new(descriptors), target)
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -98,7 +97,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         ))?;
         let descriptors = Descriptors::new(adapter, device, queue);
         let target = SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
-        Self::new(Arc::new(descriptors), target, 4)
+        Self::new(Arc::new(descriptors), target)
     }
 }
 
@@ -129,7 +128,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         ))?;
         let descriptors = Descriptors::new(adapter, device, queue);
         let target = crate::target::TextureTarget::new(&descriptors.device, size)?;
-        Self::new(Arc::new(descriptors), target, 4)
+        Self::new(Arc::new(descriptors), target)
     }
 
     pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
@@ -150,11 +149,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(
-        descriptors: Arc<Descriptors>,
-        target: T,
-        preferred_sample_count: u32,
-    ) -> Result<Self, Error> {
+    pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
         if target.width() > descriptors.limits.max_texture_dimension_2d
             || target.height() > descriptors.limits.max_texture_dimension_2d
         {
@@ -169,7 +164,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let surface = Surface::new(
             &descriptors,
-            preferred_sample_count,
+            StageQuality::Low,
             target.width(),
             target.height(),
             target.format(),
@@ -190,7 +185,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
             viewport_scale_factor: 1.0,
-            preferred_sample_count,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
         })
@@ -234,14 +228,53 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             .tessellate_shape(shape, bitmap_source);
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
+        let mut uniform_buffer = BufferBuilder::new(
+            self.descriptors.limits.min_uniform_buffer_offset_alignment as usize,
+        );
+        let mut vertex_buffer = BufferBuilder::new(0);
+        let mut index_buffer = BufferBuilder::new(0);
         for draw in lyon_mesh {
             let draw_id = draws.len();
-            if let Some(draw) = Draw::new(self, bitmap_source, draw, shape_id, draw_id) {
+            if let Some(draw) = PendingDraw::new(
+                self,
+                bitmap_source,
+                draw,
+                shape_id,
+                draw_id,
+                &mut uniform_buffer,
+                &mut vertex_buffer,
+                &mut index_buffer,
+            ) {
                 draws.push(draw);
             }
         }
 
-        Mesh { draws }
+        let uniform_buffer = uniform_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} uniforms", shape_id),
+            wgpu::BufferUsages::UNIFORM,
+        );
+        let vertex_buffer = vertex_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} vertices", shape_id),
+            wgpu::BufferUsages::VERTEX,
+        );
+        let index_buffer = index_buffer.finish(
+            &self.descriptors.device,
+            create_debug_label!("Shape {} indices", shape_id),
+            wgpu::BufferUsages::INDEX,
+        );
+
+        let draws = draws
+            .into_iter()
+            .map(|d| d.finish(&self.descriptors, &uniform_buffer))
+            .collect();
+
+        Mesh {
+            draws,
+            vertex_buffer,
+            index_buffer,
+        }
     }
 
     pub fn descriptors(&self) -> &Arc<Descriptors> {
@@ -279,7 +312,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.surface = Surface::new(
             &self.descriptors,
-            self.preferred_sample_count,
+            self.surface.quality(),
             width,
             height,
             self.target.format(),
@@ -360,10 +393,21 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         result.push(format!("Enabled features: {enabled_features:?}"));
         result.push(format!("Available features: {available_features:?}"));
         result.push(format!("Current limits: {current_limits:?}"));
+        result.push(format!("Surface quality: {}", self.surface.quality()));
         result.push(format!("Surface samples: {}", self.surface.sample_count()));
         result.push(format!("Surface size: {:?}", self.surface.size()));
 
         Cow::Owned(result.join("\n"))
+    }
+
+    fn set_quality(&mut self, quality: StageQuality) {
+        self.surface = Surface::new(
+            &self.descriptors,
+            quality,
+            self.surface.size().width,
+            self.surface.size().height,
+            self.target.format(),
+        );
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -556,7 +600,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
+    ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
         let extent = wgpu::Extent3d {
@@ -580,7 +624,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut surface = Surface::new(
             &self.descriptors,
-            self.preferred_sample_count,
+            self.surface.quality(),
             width,
             height,
             wgpu::TextureFormat::Rgba8Unorm,
@@ -605,15 +649,91 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.color_buffers_storage.recall();
 
         match texture_offscreen {
-            Some(texture_offscreen) => Ok(Box::new(QueueSyncHandle::AlreadyCopied {
+            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
                 index,
                 size: target.size,
                 buffer: texture_offscreen.buffer.clone(),
                 buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
                 descriptors: self.descriptors.clone(),
             })),
-            None => Ok(Box::new(QueueSyncHandle::NotCopied {
+            None => Some(Box::new(QueueSyncHandle::NotCopied {
                 handle: handle.clone(),
+                size: target.size,
+                descriptors: self.descriptors.clone(),
+            })),
+        }
+    }
+
+    fn apply_filter(
+        &mut self,
+        source: BitmapHandle,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        destination: BitmapHandle,
+        dest_point: (u32, u32),
+        filter: Filter,
+    ) -> Option<Box<dyn SyncHandle>> {
+        let source_texture = as_texture(&source);
+        let dest_texture = as_texture(&destination);
+
+        let mut target = TextureTarget {
+            size: wgpu::Extent3d {
+                width: dest_texture.width,
+                height: dest_texture.height,
+                depth_or_array_layers: 1,
+            },
+            texture: dest_texture.texture.clone(),
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            buffer: dest_texture
+                .texture_offscreen
+                .get()
+                .map(|t| (t.buffer.clone(), t.buffer_dimensions.clone())),
+        };
+        let texture_offscreen = dest_texture.texture_offscreen.get();
+        let frame_output = target
+            .get_next_texture()
+            .expect("TextureTargetFrame.get_next_texture is infallible");
+        let surface = Surface::new(
+            &self.descriptors,
+            self.surface.quality(),
+            dest_texture.width,
+            dest_texture.height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+        let label = create_debug_label!("Draw encoder");
+        let mut draw_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: label.as_deref(),
+                });
+        surface.apply_filter(
+            &self.descriptors,
+            &mut draw_encoder,
+            &mut self.offscreen_texture_pool,
+            source_texture,
+            source_point,
+            source_size,
+            dest_texture,
+            dest_point,
+            filter,
+        );
+        let index = target.submit(
+            &self.descriptors.device,
+            &self.descriptors.queue,
+            Some(draw_encoder.finish()),
+            frame_output,
+        );
+        match texture_offscreen {
+            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
+                index,
+                size: target.size,
+                buffer: texture_offscreen.buffer.clone(),
+                buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
+                descriptors: self.descriptors.clone(),
+            })),
+            None => Some(Box::new(QueueSyncHandle::NotCopied {
+                handle: destination.clone(),
                 size: target.size,
                 descriptors: self.descriptors.clone(),
             })),
@@ -633,17 +753,21 @@ async fn request_device(
     limits = limits.using_resolution(adapter.limits());
     limits = limits.using_alignment(adapter.limits());
 
-    limits.max_storage_buffers_per_shader_stage =
-        adapter.limits().max_storage_buffers_per_shader_stage;
-    limits.max_storage_buffer_binding_size = adapter.limits().max_storage_buffer_binding_size;
-
     let mut features = Default::default();
+
     let needed_size = (mem::size_of::<Transforms>() + mem::size_of::<ColorAdjustments>()) as u32;
     if adapter.features().contains(wgpu::Features::PUSH_CONSTANTS)
         && adapter.limits().max_push_constant_size >= needed_size
     {
         limits.max_push_constant_size = needed_size;
         features |= wgpu::Features::PUSH_CONSTANTS;
+    }
+
+    if adapter
+        .features()
+        .contains(wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES)
+    {
+        features |= wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES;
     }
 
     adapter

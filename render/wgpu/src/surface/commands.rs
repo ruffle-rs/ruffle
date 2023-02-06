@@ -13,6 +13,7 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color, Fixed8, GradientSpread};
@@ -249,7 +250,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -271,7 +272,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.apply_transform(&transform.matrix, &transform.color_transform);
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -319,8 +320,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.apply_transform(&transform.matrix, &transform.color_transform);
 
             self.draw(
-                draw.vertex_buffer.slice(..),
-                draw.index_buffer.slice(..),
+                mesh.vertex_buffer.slice(draw.vertices.clone()),
+                mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
             );
         }
@@ -351,7 +352,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos_color.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -449,7 +450,7 @@ pub fn chunk_blends<'a>(
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
     meshes: &'a Vec<Mesh>,
-    sample_count: u32,
+    quality: StageQuality,
     width: u32,
     height: u32,
     nearest_layer: &CommandTarget,
@@ -465,7 +466,7 @@ pub fn chunk_blends<'a>(
             Command::Blend(commands, blend_mode) => {
                 let mut surface = Surface::new(
                     &descriptors,
-                    sample_count,
+                    quality,
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8Unorm,

@@ -17,6 +17,7 @@ use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -852,10 +853,249 @@ pub fn rect<'gc>(
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.BitmapData", "applyFilter");
+    let args = if args.len() == 4 {
+        [
+            args.get(0).expect("Infallible"),
+            args.get(1).expect("Infallible"),
+            args.get(2).expect("Infallible"),
+            args.get(3).expect("Infallible"),
+        ]
+    } else {
+        return Err("ArgumentError: Error #1063: Argument count mismatch on flash.display::BitmapData/applyFilter(). Expected 4, got 0.".into());
+    };
+    if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels(activation.context.gc_context);
+        dest_bitmap_data.read().check_valid(activation)?;
+        let source_bitmap = args[0]
+            .as_object()
+            .and_then(|o| o.as_bitmap_data())
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let source_handle = match source_bitmap
+            .write(activation.context.gc_context)
+            .bitmap_handle(activation.context.renderer)
+        {
+            Some(handle) => handle,
+            None => {
+                tracing::warn!("Ignoring BitmapData.apply_filter() with an undrawable source");
+                return Ok(Value::Undefined);
+            }
+        };
+        let source_rect = args[1]
+            .as_object()
+            .and_then(|o| super::displayobject::object_to_rectangle(activation, o).ok())
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Rectangle.", args[1].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let source_point = (
+            source_rect.x_min.to_pixels().floor() as u32,
+            source_rect.y_min.to_pixels().floor() as u32,
+        );
+        let source_size = (
+            source_rect.width().to_pixels().ceil() as u32,
+            source_rect.height().to_pixels().ceil() as u32,
+        );
+        let dest_point = args[2]
+            .as_object()
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Point.", args[2].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let dest_point = (
+            dest_point
+                .get_property(&Multiname::public("x"), activation)?
+                .coerce_to_u32(activation)?,
+            dest_point
+                .get_property(&Multiname::public("x"), activation)?
+                .coerce_to_u32(activation)?,
+        );
+        let filter = args[3]
+            .as_object()
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+
+        let bevel_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "BevelFilter",
+        ))?;
+        let bitmap_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "BitmapFilter",
+        ))?;
+        let blur_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "BlurFilter",
+        ))?;
+        let color_matrix_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "ColorMatrixFilter",
+        ))?;
+        let convolution_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "ConvolutionFilter",
+        ))?;
+        let displacement_map_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "DisplacementMapFilter",
+        ))?;
+        let drop_shadow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "DropShadowFilter",
+        ))?;
+        let glow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GlowFilter",
+        ))?;
+        let gradient_bevel_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GradientBevelFilter",
+        ))?;
+        let gradient_glow_filter = activation.resolve_class(&Multiname::new(
+            Namespace::package("flash.filters"),
+            "GradientGlowFilter",
+        ))?;
+        // let shader_filter = activation.resolve_class(&Multiname::new(
+        //     Namespace::package("flash.filters"),
+        //     "ShaderFilter",
+        // ))?;
+        let filter = if filter.is_of_type(color_matrix_filter, activation) {
+            let mut matrix = [0.0; 20];
+            if let Some(object) = filter
+                .get_property(&Multiname::public("matrix"), activation)?
+                .as_object()
+            {
+                if let Some(array) = object.as_array_storage() {
+                    for i in 0..matrix.len().min(array.length()) {
+                        matrix[i] = array
+                            .get(i)
+                            .expect("Length was already checked at this point")
+                            .coerce_to_number(activation)?
+                            as f32;
+                    }
+                }
+            }
+            Filter::ColorMatrixFilter(ColorMatrixFilter { matrix })
+        } else if filter.is_of_type(blur_filter, activation) {
+            let blur_x = filter
+                .get_property(&Multiname::public("blurX"), activation)?
+                .coerce_to_number(activation)?;
+            let blur_y = filter
+                .get_property(&Multiname::public("blurY"), activation)?
+                .coerce_to_number(activation)?;
+            let quality = filter
+                .get_property(&Multiname::public("quality"), activation)?
+                .coerce_to_u32(activation)?;
+            Filter::BlurFilter(BlurFilter {
+                blur_x: blur_x as f32,
+                blur_y: blur_y as f32,
+                quality: quality.clamp(1, 15) as u8,
+            })
+        } else if filter.is_of_type(bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bevel filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(bitmap_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bitmap filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(blur_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with blur filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(color_matrix_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with color matrix filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(convolution_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with convolution filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(displacement_map_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with displacement map filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(drop_shadow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with drop shadow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with glow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient bevel filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient glow filter"
+            );
+            Filter::default()
+        // } else if filter.is_of_type(shader_filter, activation) {
+        //     avm2_stub_method!(
+        //         activation,
+        //         "flash.display.BitmapData",
+        //         "applyFilter",
+        //         "with shader filter"
+        //     );
+        //     Filter::default()
+        } else {
+            tracing::error!("BitmapData.applyFilter received unknown filter");
+            Filter::default()
+        };
+        let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
+        dest_bitmap_data.apply_filter(
+            &mut activation.context,
+            source_handle,
+            source_point,
+            source_size,
+            dest_point,
+            filter,
+        )
+    }
     Ok(Value::Undefined)
 }
 

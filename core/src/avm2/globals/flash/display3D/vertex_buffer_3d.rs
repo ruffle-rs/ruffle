@@ -40,7 +40,8 @@ pub fn upload_from_byte_array<'gc>(
             .coerce_to_u32(activation)?;
 
         let data = byte_array
-            .read_at(num_vertices as usize * 2, byte_offset as usize)?
+            .read_at(num_vertices as usize * 2, byte_offset as usize)
+            .map_err(|e| e.to_avm(activation))?
             .to_vec();
 
         vertex_buffer.context3d().upload_vertex_buffer_data(

@@ -11,6 +11,7 @@ version.workspace = true
 futures = "0.3.25"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
+ruffle_render = { path = "../render" }
 ruffle_input_format = { path = "input-format" }
 image = { version = "0.24.5", default-features = false, features = ["png"] }
 regex = "1.7.1"

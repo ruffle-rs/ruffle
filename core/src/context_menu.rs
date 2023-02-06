@@ -9,6 +9,7 @@ use crate::avm2;
 use crate::display_object::Stage;
 use crate::display_object::TDisplayObject;
 use gc_arena::Collect;
+use ruffle_render::quality::StageQuality;
 use serde::Serialize;
 
 #[derive(Collect, Default)]
@@ -79,6 +80,36 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuCallback::Back,
             );
         }
+        if item_flags.quality {
+            // TODO: This should be a submenu, but at time of writing those aren't supported
+            self.push(
+                ContextMenuItem {
+                    enabled: stage.quality() != StageQuality::Low,
+                    separator_before: true,
+                    checked: stage.quality() == StageQuality::Low,
+                    caption: "Quality: Low".to_string(),
+                },
+                ContextMenuCallback::QualityLow,
+            );
+            self.push(
+                ContextMenuItem {
+                    enabled: stage.quality() != StageQuality::Medium,
+                    separator_before: false,
+                    checked: stage.quality() == StageQuality::Medium,
+                    caption: "Quality: Medium".to_string(),
+                },
+                ContextMenuCallback::QualityMedium,
+            );
+            self.push(
+                ContextMenuItem {
+                    enabled: stage.quality() != StageQuality::High,
+                    separator_before: false,
+                    checked: stage.quality() == StageQuality::High,
+                    caption: "Quality: High".to_string(),
+                },
+                ContextMenuCallback::QualityHigh,
+            );
+        }
     }
 }
 
@@ -96,7 +127,9 @@ pub struct ContextMenuItem {
 #[collect(no_drop)]
 pub enum ContextMenuCallback<'gc> {
     Zoom,
-    Quality,
+    QualityLow,
+    QualityMedium,
+    QualityHigh,
     Play,
     Loop,
     Rewind,

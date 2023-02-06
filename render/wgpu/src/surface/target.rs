@@ -206,10 +206,6 @@ impl CommandTarget {
         self.size.height
     }
 
-    pub fn sample_count(&self) -> u32 {
-        self.sample_count
-    }
-
     pub fn ensure_cleared(&self, encoder: &mut wgpu::CommandEncoder) {
         if self.color_needs_clear.get().is_some() {
             return;
@@ -350,5 +346,12 @@ impl CommandTarget {
             .as_ref()
             .map(|b| b.view())
             .unwrap_or_else(|| self.frame_buffer.view())
+    }
+
+    pub fn color_texture(&self) -> &wgpu::Texture {
+        self.resolve_buffer
+            .as_ref()
+            .map(|b| b.texture())
+            .unwrap_or_else(|| self.frame_buffer.texture())
     }
 }

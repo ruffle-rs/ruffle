@@ -22,8 +22,8 @@ use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
 };
 use crate::display_object::{
-    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
-    StageScaleMode, TInteractiveObject, WindowMode,
+    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageScaleMode,
+    TInteractiveObject, WindowMode,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -46,6 +46,7 @@ use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
@@ -637,6 +638,15 @@ impl Player {
                     ContextMenuCallback::Avm2 { .. } => {
                         // TODO: Send menuItemSelect event
                     }
+                    ContextMenuCallback::QualityLow => {
+                        context.stage.set_quality(context, StageQuality::Low)
+                    }
+                    ContextMenuCallback::QualityMedium => {
+                        context.stage.set_quality(context, StageQuality::Medium)
+                    }
+                    ContextMenuCallback::QualityHigh => {
+                        context.stage.set_quality(context, StageQuality::High)
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
@@ -775,12 +785,9 @@ impl Player {
         })
     }
 
-    pub fn set_quality(&mut self, quality: &str) {
+    pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(quality) = StageQuality::from_str(quality) {
-                stage.set_quality(context.gc_context, quality);
-            }
+            context.stage.set_quality(context, quality);
         })
     }
 
@@ -1929,6 +1936,7 @@ pub struct PlayerBuilder {
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
     player_version: Option<u8>,
+    quality: StageQuality,
 }
 
 impl PlayerBuilder {
@@ -1965,6 +1973,7 @@ impl PlayerBuilder {
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
             player_version: None,
+            quality: StageQuality::High,
         }
     }
 
@@ -2066,9 +2075,15 @@ impl PlayerBuilder {
         self
     }
 
-    // Sets whether the stage is fullscreen.
+    /// Sets whether the stage is fullscreen.
     pub fn with_fullscreen(mut self, fullscreen: bool) -> Self {
         self.fullscreen = fullscreen;
+        self
+    }
+
+    /// Sets the default stage quality
+    pub fn with_quality(mut self, quality: StageQuality) -> Self {
+        self.quality = quality;
         self
     }
 
@@ -2225,6 +2240,7 @@ impl PlayerBuilder {
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
+        player_lock.set_quality(self.quality);
         player_lock.set_viewport_dimensions(ViewportDimensions {
             width: self.viewport_width,
             height: self.viewport_height,

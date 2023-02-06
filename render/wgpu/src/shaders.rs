@@ -16,6 +16,8 @@ pub struct Shaders {
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
+    pub color_matrix_filter: wgpu::ShaderModule,
+    pub blur_filter: wgpu::ShaderModule,
 }
 
 impl Shaders {
@@ -25,10 +27,6 @@ impl Shaders {
         shader_defs.insert(
             "use_push_constants".to_owned(),
             ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
-        );
-        shader_defs.insert(
-            "use_storage_buffers".to_owned(),
-            ShaderDefValue::Bool(device.limits().max_storage_buffers_per_shader_stage > 0),
         );
         let color_shader = make_shader(
             &device,
@@ -58,6 +56,20 @@ impl Shaders {
             "copy.wgsl",
             include_str!("../shaders/copy.wgsl"),
         );
+        let color_matrix_filter = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "filter/color_matrix.wgsl",
+            include_str!("../shaders/filter/color_matrix.wgsl"),
+        );
+        let blur_filter = make_shader(
+            &device,
+            &mut composer,
+            &shader_defs,
+            "filter/blur.wgsl",
+            include_str!("../shaders/filter/blur.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
@@ -83,6 +95,8 @@ impl Shaders {
             copy_srgb_shader,
             copy_shader,
             blend_shaders,
+            color_matrix_filter,
+            blur_filter,
         }
     }
 }
@@ -100,6 +114,11 @@ fn composer() -> Result<Composer, ComposerError> {
     composer.add_composable_module(ComposableModuleDescriptor {
         source: include_str!("../shaders/gradient/common.wgsl"),
         file_path: "gradient/common.wgsl",
+        ..Default::default()
+    })?;
+    composer.add_composable_module(ComposableModuleDescriptor {
+        source: include_str!("../shaders/filter/common.wgsl"),
+        file_path: "filter/common.wgsl",
         ..Default::default()
     })?;
     Ok(composer)
