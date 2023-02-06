@@ -738,7 +738,7 @@ pub fn draw<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels(activation.context.gc_context);
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -903,7 +903,7 @@ pub fn apply_filter<'gc>(
         return Err("ArgumentError: Error #1063: Argument count mismatch on flash.display::BitmapData/applyFilter(). Expected 4, got 0.".into());
     };
     if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
-        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels(activation.context.gc_context);
+        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         dest_bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args[0]
             .as_object()
