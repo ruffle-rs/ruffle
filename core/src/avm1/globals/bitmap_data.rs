@@ -549,7 +549,7 @@ pub fn draw<'gc>(
 
             let bmd = bitmap_data
                 .bitmap_data_wrapper()
-                .overwrite_cpu_pixels(activation.context.gc_context);
+                .overwrite_cpu_pixels_from_gpu(&mut activation.context);
             let mut write = bmd.write(activation.context.gc_context);
             write.draw(
                 source,

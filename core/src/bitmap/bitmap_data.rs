@@ -204,9 +204,9 @@ enum DirtyState {
 }
 
 mod wrapper {
-    use crate::avm2::Value as Avm2Value;
     use crate::context::RenderContext;
-    use gc_arena::{Collect, GcCell, MutationContext};
+    use crate::{avm2::Value as Avm2Value, context::UpdateContext};
+    use gc_arena::{Collect, GcCell};
     use ruffle_render::commands::CommandHandler;
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
@@ -230,9 +230,11 @@ mod wrapper {
     ///    This is done for the vast majority of BitmapData AS2/AS3 methods, as they need to access CPU-side pixels.
     /// 2. Ignoring the current GPU->CPU sync state. This is done by the `render` method defined on this type,
     ///    since rendering only uses GPU-side data, and ignores CPU-side pixels entirely.
-    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels`. This is
-    ///    currently only used by `BitmapData.draw`, since the new rendering result will completely
-    ///    replace the current CPU-side pixels. In the future, we could explore using this in additional
+    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels_from_gpu`. This is
+    ///    used by `BitmapData.draw` and `BitmapData.apply_filter`, since the new rendering result will completely
+    ///    replace the current CPU-side pixels. This performs a CPU -> GPU sync, to ensure that the GPU side
+    ///    is up to date before we overwrite the CPU-side pixels.
+    ///    In the future, we could explore using this in additional
     ///    cases where we know that the entire CPU-side pixel array will be overwritten without being read
     ///    (e.g. `BitmapData.fillRect` with a rectangle covering the entire bitmap). However, `overwrite_cpu_pixels`
     ///    is always a performance optimization, and can always be safely replaced with `sync` (at the cost of worse performance)
@@ -271,14 +273,18 @@ mod wrapper {
         // Provides access to the underlying `BitmapData`.
         // This should only be used when you will be overwriting the entire
         // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
-        pub fn overwrite_cpu_pixels(
+        // If the CPU pixels are dirty, syncs them to the GPU.
+        pub fn overwrite_cpu_pixels_from_gpu(
             &self,
-            mc: MutationContext<'gc, '_>,
+            context: &mut UpdateContext<'_, 'gc>,
         ) -> GcCell<'gc, BitmapData<'gc>> {
-            let mut write = self.0.write(mc);
+            let mut write = self.0.write(context.gc_context);
             match write.dirty_state {
                 DirtyState::GpuModified(_) => write.dirty_state = DirtyState::Clean,
-                DirtyState::CpuModified | DirtyState::Clean => {}
+                DirtyState::CpuModified => {
+                    write.update_dirty_texture(context.renderer);
+                }
+                DirtyState::Clean => {}
             }
             self.0
         }
