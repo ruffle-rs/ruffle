@@ -99,11 +99,14 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
     pub fn prep_color(&mut self) {
         if self.needs_depth {
-            self.render_pass
-                .set_pipeline(self.pipelines.color.pipeline_for(self.mask_state));
+            self.render_pass.set_pipeline(
+                self.pipelines
+                    .color
+                    .pipeline_for(self.mask_state, &self.descriptors),
+            );
         } else {
             self.render_pass
-                .set_pipeline(self.pipelines.color.depthless_pipeline());
+                .set_pipeline(self.pipelines.color.depthless_pipeline(&self.descriptors));
         }
     }
 
@@ -114,11 +117,14 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         spread: GradientSpread,
     ) {
         if self.needs_depth {
-            self.render_pass
-                .set_pipeline(self.pipelines.gradients[mode][spread].pipeline_for(self.mask_state));
+            self.render_pass.set_pipeline(
+                self.pipelines.gradients[mode][spread]
+                    .pipeline_for(self.mask_state, &self.descriptors),
+            );
         } else {
-            self.render_pass
-                .set_pipeline(self.pipelines.gradients[mode][spread].depthless_pipeline());
+            self.render_pass.set_pipeline(
+                self.pipelines.gradients[mode][spread].depthless_pipeline(&self.descriptors),
+            );
         }
 
         self.render_pass.set_bind_group(
@@ -134,11 +140,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 
     pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup, blend_mode: TrivialBlend) {
         if self.needs_depth {
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
+            self.render_pass.set_pipeline(
+                self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state, &self.descriptors),
+            );
         } else {
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+            self.render_pass.set_pipeline(
+                self.pipelines.bitmap[blend_mode].depthless_pipeline(&self.descriptors),
+            );
         }
 
         self.render_pass.set_bind_group(

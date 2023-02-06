@@ -354,11 +354,13 @@ impl Surface {
                             }
                         }
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].pipeline_for(mask_state),
+                            self.pipelines.complex_blends[blend_mode]
+                                .pipeline_for(mask_state, &descriptors),
                         );
                     } else {
                         render_pass.set_pipeline(
-                            self.pipelines.complex_blends[blend_mode].depthless_pipeline(),
+                            self.pipelines.complex_blends[blend_mode]
+                                .depthless_pipeline(&descriptors),
                         );
                     }
 

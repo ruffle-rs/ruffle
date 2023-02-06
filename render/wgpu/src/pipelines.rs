@@ -1,9 +1,12 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
+use crate::descriptors::Descriptors;
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
+use once_cell::sync::OnceCell;
 use ruffle_render::tessellator::GradientType;
+use std::fmt::{Debug, Formatter};
 use std::mem;
 use swf::GradientSpread;
 use wgpu::vertex_attr_array;
@@ -27,10 +30,24 @@ pub const VERTEX_BUFFERS_DESCRIPTION_COLOR: [wgpu::VertexBufferLayout; 1] =
         ],
     }];
 
+struct ShaderFn(Box<dyn Fn(&Shaders) -> &wgpu::ShaderModule + Sync + Send>);
+
+impl Debug for ShaderFn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ShaderFn")
+    }
+}
+
 #[derive(Debug)]
 pub struct ShapePipeline {
-    pub pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
-    depthless: wgpu::RenderPipeline,
+    with_depth: EnumMap<MaskState, OnceCell<wgpu::RenderPipeline>>,
+    depthless: OnceCell<wgpu::RenderPipeline>,
+    layout: wgpu::PipelineLayout,
+    shader_fn: ShaderFn,
+    vertex_buffers: &'static [wgpu::VertexBufferLayout<'static>],
+    color_format: wgpu::TextureFormat,
+    sample_count: u32,
+    blend: wgpu::BlendState,
 }
 
 #[derive(Debug)]
@@ -44,33 +61,131 @@ pub struct Pipelines {
 }
 
 impl ShapePipeline {
-    pub fn pipeline_for(&self, mask_state: MaskState) -> &wgpu::RenderPipeline {
-        &self.pipelines[mask_state]
+    pub fn pipeline_for(
+        &self,
+        mask_state: MaskState,
+        descriptors: &Descriptors,
+    ) -> &wgpu::RenderPipeline {
+        self.with_depth[mask_state].get_or_init(|| {
+            let shader_module = self.shader_fn.0(&descriptors.shaders);
+
+            let (_, stencil_state, write_mask) = match mask_state {
+                MaskState::NoMask => (
+                    "no mask",
+                    wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Always,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    wgpu::ColorWrites::ALL,
+                ),
+                MaskState::DrawMaskStencil => (
+                    "draw mask stencil",
+                    wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::IncrementClamp,
+                    },
+                    wgpu::ColorWrites::empty(),
+                ),
+                MaskState::DrawMaskedContent => (
+                    "draw masked content",
+                    wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::Keep,
+                    },
+                    wgpu::ColorWrites::ALL,
+                ),
+                MaskState::ClearMaskStencil => (
+                    "clear mask stencil",
+                    wgpu::StencilFaceState {
+                        compare: wgpu::CompareFunction::Equal,
+                        fail_op: wgpu::StencilOperation::Keep,
+                        depth_fail_op: wgpu::StencilOperation::Keep,
+                        pass_op: wgpu::StencilOperation::DecrementClamp,
+                    },
+                    wgpu::ColorWrites::empty(),
+                ),
+            };
+
+            descriptors
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&self.layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader_module,
+                        entry_point: "main_vertex",
+                        buffers: &self.vertex_buffers,
+                    },
+                    primitive: Default::default(),
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: wgpu::TextureFormat::Stencil8,
+                        depth_write_enabled: false,
+                        depth_compare: wgpu::CompareFunction::Always,
+                        stencil: wgpu::StencilState {
+                            front: stencil_state,
+                            back: stencil_state,
+                            read_mask: !0,
+                            write_mask: !0,
+                        },
+                        bias: Default::default(),
+                    }),
+                    multisample: wgpu::MultisampleState {
+                        count: self.sample_count,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader_module,
+                        entry_point: "main_fragment",
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: self.color_format,
+                            blend: Some(self.blend),
+                            write_mask,
+                        })],
+                    }),
+                    multiview: None,
+                })
+        })
     }
 
-    pub fn depthless_pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.depthless
-    }
-
-    /// Builds of a nested `EnumMap` that maps a `MaskState` to
-    /// a `RenderPipeline`. The provided callback is used to construct the `RenderPipeline`
-    /// for each possible `MaskState`.
-    fn build(
-        depthless: wgpu::RenderPipeline,
-        mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
-    ) -> Self {
-        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
-            .map(|mask_enum| {
-                let mask_state = MaskState::from_usize(mask_enum);
-                f(mask_state)
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        ShapePipeline {
-            pipelines: EnumMap::from_array(mask_array),
-            depthless,
-        }
+    pub fn depthless_pipeline(&self, descriptors: &Descriptors) -> &wgpu::RenderPipeline {
+        self.depthless.get_or_init(|| {
+            let shader_module = self.shader_fn.0(&descriptors.shaders);
+            descriptors
+                .device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&self.layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader_module,
+                        entry_point: "main_vertex",
+                        buffers: &self.vertex_buffers,
+                    },
+                    primitive: Default::default(),
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState {
+                        count: self.sample_count,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader_module,
+                        entry_point: "main_fragment",
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: self.color_format,
+                            blend: Some(self.blend),
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                    }),
+                    multiview: None,
+                })
+        })
     }
 }
 
@@ -114,7 +229,7 @@ impl Pipelines {
             "Color",
             device,
             format,
-            &shaders.color_shader,
+            Box::new(|shaders| &shaders.color_shader),
             msaa_sample_count,
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
@@ -135,17 +250,19 @@ impl Pipelines {
 
         let gradient_pipelines = enum_map! {
             mode => enum_map! {
-                spread => create_shape_pipeline(
-                    &format!("Gradient - {mode:?} {spread:?}"),
-                    device,
-                    format,
-                    &shaders.gradient_shaders[mode][spread],
-                    msaa_sample_count,
-                    &VERTEX_BUFFERS_DESCRIPTION_POS,
-                    &gradient_bindings,
-                    wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-                    &full_push_constants,
-                )
+                spread =>
+                    create_shape_pipeline(
+                        &format!("Gradient - {mode:?} {spread:?}"),
+                        device,
+                        format,
+                        Box::new(move |shaders| &shaders.gradient_shaders[mode][spread]),
+                        msaa_sample_count,
+                        &VERTEX_BUFFERS_DESCRIPTION_POS,
+                        &gradient_bindings,
+                        wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+                        &full_push_constants,
+                    )
+
             }
         };
 
@@ -164,7 +281,7 @@ impl Pipelines {
                 &format!("Complex Blend: {blend:?}"),
                 device,
                 format,
-                &shaders.blend_shaders[blend],
+                Box::new(move |shaders| &shaders.blend_shaders[blend]),
                 msaa_sample_count,
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
@@ -192,7 +309,7 @@ impl Pipelines {
                     &name,
                     device,
                     format,
-                    &shaders.bitmap_shader,
+                    Box::new(|shaders| &shaders.bitmap_shader),
                     msaa_sample_count,
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
@@ -323,56 +440,13 @@ impl Pipelines {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn create_pipeline_descriptor<'a>(
-    label: Option<&'a str>,
-    vertex_shader: &'a wgpu::ShaderModule,
-    fragment_shader: &'a wgpu::ShaderModule,
-    pipeline_layout: &'a wgpu::PipelineLayout,
-    depth_stencil_state: Option<wgpu::DepthStencilState>,
-    color_target_state: &'a [Option<wgpu::ColorTargetState>],
-    vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
-    msaa_sample_count: u32,
-) -> wgpu::RenderPipelineDescriptor<'a> {
-    wgpu::RenderPipelineDescriptor {
-        label,
-        layout: Some(pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: vertex_shader,
-            entry_point: "main_vertex",
-            buffers: vertex_buffer_layout,
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: fragment_shader,
-            entry_point: "main_fragment",
-            targets: color_target_state,
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: None,
-            polygon_mode: wgpu::PolygonMode::default(),
-            unclipped_depth: false,
-            conservative: false,
-        },
-        depth_stencil: depth_stencil_state,
-        multisample: wgpu::MultisampleState {
-            count: msaa_sample_count,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        multiview: None,
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
 fn create_shape_pipeline(
     name: &str,
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
-    shader: &wgpu::ShaderModule,
+    shader_fn: Box<dyn Fn(&Shaders) -> &wgpu::ShaderModule + Sync + Send>,
     msaa_sample_count: u32,
-    vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
+    vertex_buffers_layout: &'static [wgpu::VertexBufferLayout<'static>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
     blend: wgpu::BlendState,
     push_constant_ranges: &[wgpu::PushConstantRange],
@@ -384,90 +458,14 @@ fn create_shape_pipeline(
         push_constant_ranges,
     });
 
-    let mask_render_state = |mask_name, stencil_state, write_mask| {
-        device.create_render_pipeline(&create_pipeline_descriptor(
-            create_debug_label!("{} pipeline {}", name, mask_name).as_deref(),
-            shader,
-            shader,
-            &pipeline_layout,
-            Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Stencil8,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Always,
-                stencil: wgpu::StencilState {
-                    front: stencil_state,
-                    back: stencil_state,
-                    read_mask: !0,
-                    write_mask: !0,
-                },
-                bias: Default::default(),
-            }),
-            &[Some(wgpu::ColorTargetState {
-                format,
-                blend: Some(blend),
-                write_mask,
-            })],
-            vertex_buffers_layout,
-            msaa_sample_count,
-        ))
-    };
-
-    ShapePipeline::build(
-        device.create_render_pipeline(&create_pipeline_descriptor(
-            create_debug_label!("{} depthless pipeline", name).as_deref(),
-            shader,
-            shader,
-            &pipeline_layout,
-            None,
-            &[Some(wgpu::ColorTargetState {
-                format,
-                blend: Some(blend),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-            vertex_buffers_layout,
-            msaa_sample_count,
-        )),
-        |mask_state| match mask_state {
-            MaskState::NoMask => mask_render_state(
-                "no mask",
-                wgpu::StencilFaceState {
-                    compare: wgpu::CompareFunction::Always,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
-                },
-                wgpu::ColorWrites::ALL,
-            ),
-            MaskState::DrawMaskStencil => mask_render_state(
-                "draw mask stencil",
-                wgpu::StencilFaceState {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::IncrementClamp,
-                },
-                wgpu::ColorWrites::empty(),
-            ),
-            MaskState::DrawMaskedContent => mask_render_state(
-                "draw masked content",
-                wgpu::StencilFaceState {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::Keep,
-                },
-                wgpu::ColorWrites::ALL,
-            ),
-            MaskState::ClearMaskStencil => mask_render_state(
-                "clear mask stencil",
-                wgpu::StencilFaceState {
-                    compare: wgpu::CompareFunction::Equal,
-                    fail_op: wgpu::StencilOperation::Keep,
-                    depth_fail_op: wgpu::StencilOperation::Keep,
-                    pass_op: wgpu::StencilOperation::DecrementClamp,
-                },
-                wgpu::ColorWrites::empty(),
-            ),
-        },
-    )
+    ShapePipeline {
+        with_depth: Default::default(),
+        depthless: Default::default(),
+        layout: pipeline_layout,
+        shader_fn: ShaderFn(shader_fn),
+        vertex_buffers: vertex_buffers_layout,
+        color_format: format,
+        sample_count: msaa_sample_count,
+        blend,
+    }
 }
