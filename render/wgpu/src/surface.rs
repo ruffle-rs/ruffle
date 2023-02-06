@@ -589,7 +589,7 @@ impl Surface {
             render_pass.set_bind_group(2, &filter_group, &[]);
         } else {
             render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
-            render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
+            render_pass.set_bind_group(2, &descriptors.default_color_bind_group(), &[0]);
             render_pass.set_bind_group(3, &bitmap_group, &[]);
             render_pass.set_bind_group(4, &filter_group, &[]);
         }
@@ -759,7 +759,7 @@ impl Surface {
                 render_pass.set_bind_group(2, &filter_group, &[]);
             } else {
                 render_pass.set_bind_group(1, current.whole_frame_bind_group(descriptors), &[0]);
-                render_pass.set_bind_group(2, &descriptors.default_color_bind_group, &[0]);
+                render_pass.set_bind_group(2, &descriptors.default_color_bind_group(), &[0]);
                 render_pass.set_bind_group(3, &bitmap_group, &[]);
                 render_pass.set_bind_group(4, &filter_group, &[]);
             }

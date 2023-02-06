@@ -208,7 +208,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             if color_adjustments == &ColorTransform::IDENTITY {
                 self.render_pass.set_bind_group(
                     2,
-                    &self.descriptors.default_color_bind_group,
+                    &self.descriptors.default_color_bind_group(),
                     &[0],
                 );
             } else {

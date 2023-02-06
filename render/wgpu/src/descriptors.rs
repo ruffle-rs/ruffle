@@ -6,6 +6,7 @@ use crate::{
     TextureTransforms, Transforms, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
+use once_cell::sync::OnceCell;
 use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
@@ -22,7 +23,7 @@ pub struct Descriptors {
     copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
     pub shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
-    pub default_color_bind_group: wgpu::BindGroup,
+    default_color_bind_group: OnceCell<wgpu::BindGroup>,
 }
 
 impl Debug for Descriptors {
@@ -38,20 +39,6 @@ impl Descriptors {
         let bitmap_samplers = BitmapSamplers::new(&device);
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
-        let default_color_transform = create_buffer_with_data(
-            &device,
-            bytemuck::cast_slice(&[DEFAULT_COLOR_ADJUSTMENTS]),
-            wgpu::BufferUsages::UNIFORM,
-            create_debug_label!("Default colors"),
-        );
-        let default_color_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: create_debug_label!("Default colors").as_deref(),
-            layout: &bind_layouts.color_transforms,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: default_color_transform.as_entire_binding(),
-            }],
-        });
 
         Self {
             adapter,
@@ -65,8 +52,27 @@ impl Descriptors {
             copy_srgb_pipeline: Default::default(),
             shaders,
             pipelines: Default::default(),
-            default_color_bind_group,
+            default_color_bind_group: OnceCell::new(),
         }
+    }
+
+    pub fn default_color_bind_group(&self) -> &wgpu::BindGroup {
+        self.default_color_bind_group.get_or_init(|| {
+            let default_color_transform = create_buffer_with_data(
+                &self.device,
+                bytemuck::cast_slice(&[DEFAULT_COLOR_ADJUSTMENTS]),
+                wgpu::BufferUsages::UNIFORM,
+                create_debug_label!("Default colors"),
+            );
+            self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: create_debug_label!("Default colors").as_deref(),
+                layout: &self.bind_layouts.color_transforms,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: default_color_transform.as_entire_binding(),
+                }],
+            })
+        })
     }
 
     pub fn copy_srgb_pipeline(&self, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
