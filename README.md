@@ -155,6 +155,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="https://www.kongregate.com/">
     <img src="https://ruffle.rs/assets/sponsors/kongregate.svg" alt="Kongregate">
   </a>
+  <a href="https://www.bubbleshooter.net/">
+    <img src="https://ruffle.rs/assets/sponsors/bubble-shooter.png" alt="Bubble Shooter">
+  </a>
 </p>
 
 ## License
