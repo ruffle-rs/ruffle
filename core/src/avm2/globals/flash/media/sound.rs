@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{sound_allocator, Object, SoundChannelObject, TObject};
+use crate::avm2::object::{sound_allocator, Object, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -12,7 +12,7 @@ use crate::avm2::QName;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use crate::{avm2_stub_getter, avm2_stub_method};
+use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
 use gc_arena::{GcCell, MutationContext};
 use swf::{SoundEvent, SoundInfo};
 
@@ -20,12 +20,16 @@ use swf::{SoundEvent, SoundInfo};
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
-        if this.as_sound().is_none() {
+        if !args.is_empty() {
+            avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
+        }
+
+        if let Some(sound_object) = this.as_sound_object() {
             let class_object = this
                 .instance_of()
                 .ok_or("Attempted to construct Sound on a bare object.")?;
@@ -42,7 +46,8 @@ pub fn instance_init<'gc>(
                     .library_for_movie_mut(movie)
                     .character_by_id(symbol)
                 {
-                    this.set_sound(activation.context.gc_context, *sound);
+                    let sound = *sound;
+                    sound_object.set_sound(&mut activation.context, sound)?;
                 } else {
                     tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.inner_class_definition().read().name().local_name(), symbol);
                 }
@@ -68,10 +73,13 @@ pub fn bytes_total<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(sound) = this.and_then(|this| this.as_sound()) {
-        if let Some(length) = activation.context.audio.get_sound_size(sound) {
-            return Ok((length).into());
+    if let Some(sound) = this.and_then(|this| this.as_sound_object()) {
+        if let Some(sound_handle) = sound.sound_handle() {
+            if let Some(length) = activation.context.audio.get_sound_size(sound_handle) {
+                return Ok((length).into());
+            }
         }
+        return Ok(0.into());
     }
 
     Ok(Value::Undefined)
@@ -105,10 +113,13 @@ pub fn length<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(sound) = this.and_then(|this| this.as_sound()) {
-        if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
-            return Ok((duration).into());
+    if let Some(sound) = this.and_then(|this| this.as_sound_object()) {
+        if let Some(sound_handle) = sound.sound_handle() {
+            if let Some(duration) = activation.context.audio.get_sound_duration(sound_handle) {
+                return Ok((duration).into());
+            }
         }
+        return Ok(0.into());
     }
 
     Ok(Value::Undefined)
@@ -120,7 +131,7 @@ pub fn play<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(sound) = this.and_then(|this| this.as_sound()) {
+    if let Some(sound_object) = this.and_then(|this| this.as_sound_object()) {
         let position = args
             .get(0)
             .cloned()
@@ -132,12 +143,6 @@ pub fn play<'gc>(
             .unwrap_or_else(|| 0.into())
             .coerce_to_i32(activation)?;
         let sound_transform = args.get(2).cloned().unwrap_or(Value::Null).as_object();
-
-        if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
-            if position > duration {
-                return Ok(Value::Null);
-            }
-        }
 
         let in_sample = if position > 0.0 {
             Some((position / 1000.0 * 44100.0) as u32)
@@ -153,23 +158,29 @@ pub fn play<'gc>(
             envelope: None,
         };
 
-        if let Some(instance) = activation
-            .context
-            .start_sound(sound, &sound_info, None, None)
-        {
-            if let Some(sound_transform) = sound_transform {
-                let st = SoundTransform::from_avm2_object(activation, sound_transform)?;
-                activation.context.set_local_sound_transform(instance, st);
-            }
+        let sound_transform = if let Some(sound_transform) = sound_transform {
+            Some(SoundTransform::from_avm2_object(
+                activation,
+                sound_transform,
+            )?)
+        } else {
+            None
+        };
 
-            let sound_channel = SoundChannelObject::from_sound_instance(activation, instance)?;
+        let sound_channel = SoundChannelObject::empty(activation)?;
 
-            activation
-                .context
-                .attach_avm2_sound_channel(instance, sound_channel);
-
+        let queued_play = QueuedPlay {
+            position,
+            sound_info,
+            sound_transform,
+            sound_channel,
+        };
+        if sound_object.play(queued_play, activation)? {
             return Ok(sound_channel.into());
         }
+        // If we start playing a loaded sound with an invalid position,
+        // this method returns `null`
+        return Ok(Value::Null);
     }
 
     Ok(Value::Null)
@@ -202,6 +213,7 @@ pub fn load<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
+        // FIXME - don't allow replacing an existing sound
         let url_request = match args.get(0) {
             Some(Value::Object(request)) => request,
             // This should never actually happen

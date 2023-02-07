@@ -89,11 +89,7 @@ pub fn sound_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(channel) = this.and_then(|this| this.as_sound_channel()) {
-        let dobj_st = channel
-            .instance()
-            .and_then(|instance| activation.context.local_sound_transform(instance))
-            .cloned()
-            .unwrap_or_default();
+        let dobj_st = channel.sound_transform(activation).unwrap_or_default();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
@@ -107,10 +103,7 @@ pub fn set_sound_transform<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(instance) = this
-        .and_then(|this| this.as_sound_channel())
-        .and_then(|channel| channel.instance())
-    {
+    if let Some(sound_channel) = this.and_then(|this| this.as_sound_channel()) {
         let as3_st = args
             .get(0)
             .cloned()
@@ -118,9 +111,7 @@ pub fn set_sound_transform<'gc>(
             .coerce_to_object(activation)?;
         let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
-        activation
-            .context
-            .set_local_sound_transform(instance, dobj_st);
+        sound_channel.set_sound_transform(activation, dobj_st);
     }
 
     Ok(Value::Undefined)
@@ -132,11 +123,8 @@ pub fn stop<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(instance) = this
-        .and_then(|this| this.as_sound_channel())
-        .and_then(|channel| channel.instance())
-    {
-        activation.context.stop_sound(instance);
+    if let Some(sound_channel) = this.and_then(|this| this.as_sound_channel()) {
+        sound_channel.stop(activation);
     }
 
     Ok(Value::Undefined)

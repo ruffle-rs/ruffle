@@ -17,7 +17,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -81,7 +80,7 @@ pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
 pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
+pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
@@ -1087,24 +1086,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object's sound handle.
-    fn as_sound(self) -> Option<SoundHandle> {
+    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
         None
     }
-
-    /// Associate the object with a particular sound handle.
-    ///
-    /// This does nothing if the object is not a sound.
-    fn set_sound(self, _mc: MutationContext<'gc, '_>, _sound: SoundHandle) {}
 
     /// Unwrap this object's sound instance handle.
     fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
         None
     }
-
-    /// Associate the object with a particular sound instance handle.
-    ///
-    /// This does nothing if the object is not a sound channel.
-    fn set_sound_instance(self, _mc: MutationContext<'gc, '_>, _sound: SoundInstanceHandle) {}
 
     /// Unwrap this object's bitmap data
     fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
