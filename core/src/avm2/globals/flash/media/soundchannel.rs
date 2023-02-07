@@ -9,6 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
 use gc_arena::{GcCell, MutationContext};
 
@@ -93,7 +94,12 @@ pub fn sound_transform<'gc>(
             .instance()
             .and_then(|instance| activation.context.local_sound_transform(instance))
             .cloned()
-            .unwrap_or_default();
+            .unwrap_or_else(|| {
+                // TODO: The sound isn't playing, a default is given but somehow we should store this on the channel?
+                // https://github.com/ruffle-rs/ruffle/pull/9427
+                avm2_stub_getter!(activation, "flash.media.SoundChannel", "sound_transform");
+                Default::default()
+            });
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
