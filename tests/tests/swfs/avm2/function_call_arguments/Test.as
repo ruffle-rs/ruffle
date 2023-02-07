@@ -1,5 +1,13 @@
-﻿package {
-	public class Test {}
+﻿// compiled with mxmlc
+
+package {
+    import flash.display.MovieClip;
+
+    public class Test extends MovieClip {
+        public function Test() {
+
+        }
+    }
 }
 
 class Evil {
@@ -9,6 +17,14 @@ class Evil {
 }
 
 function testfunc() {
+	trace(arguments.length);
+	
+	for (var i = 0; i < arguments.length; i += 1) {
+		trace(arguments[i]);
+	}
+}
+
+function testfunc_defaults(a, b, c="c", d="d") {
 	trace(arguments.length);
 	
 	for (var i = 0; i < arguments.length; i += 1) {
@@ -27,14 +43,27 @@ function argprops() {
 	trace(arguments.callee === argprops);
 }
 
+trace("///var func = testfunc;");
+var func = testfunc; // needed to fool mxmlc
 trace("///testfunc(\"arg1\");");
-testfunc("arg1");
+func("arg1");
 
 trace("///testfunc(\"arg1\", \"arg2\", \"arg3\");");
-testfunc("arg1", "arg2", "arg3");
+func("arg1", "arg2", "arg3");
 
 trace("///testfunc(\"arg1\", \"arg2\", \"arg3\", \"arg4\", \"arg5\");");
-testfunc("arg1", "arg2", "arg3", "arg4", "arg5");
+func("arg1", "arg2", "arg3", "arg4", "arg5");
+
+trace("///var func = testfunc_defaults;");
+func = testfunc_defaults;
+trace("///testfunc(\"arg1\", \"arg2\");");
+func("arg1", "arg2");
+
+trace("///testfunc(\"arg1\", \"arg2\", \"arg3\");");
+func("arg1", "arg2", "arg3");
+
+trace("///testfunc(\"arg1\", \"arg2\", \"arg3\", \"arg4\", \"arg5\");");
+func("arg1", "arg2", "arg3", "arg4", "arg5");
 
 argprops();
 
