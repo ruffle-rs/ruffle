@@ -39,7 +39,7 @@ package flash.display {
 		}
 		
 		public function close():void {
-			throw new Error("flash.display.Loader.close - not yet implemented");
+			stub_method("flash.display.Loader", "close");
 		}
 
 		override public function addChild(child:DisplayObject):DisplayObject {
