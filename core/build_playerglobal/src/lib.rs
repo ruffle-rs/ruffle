@@ -456,7 +456,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 fn collect_stubs(root: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let pattern = RegexBuilder::new(
         r#"
-            \b (?P<type> stub_method | stub_getter | stub_setter) \s* 
+            \b (?P<type> stub_method | stub_getter | stub_setter | stub_constructor) \s* 
             \( \s*
                 "(?P<class> .+)" \s*
                 , \s*
@@ -482,34 +482,47 @@ fn collect_stubs(root: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::
         let contents = fs::read_to_string(entry.path())?;
         for entry in pattern.captures_iter(&contents) {
             let class = &entry["class"];
-            let property = &entry["property"];
+            let property = entry.name("property").map(|m| m.as_str());
             let specifics = entry.name("specifics").map(|m| m.as_str());
 
-            match (&entry["type"], specifics) {
-                ("stub_method", Some(specifics)) => stubs.push(quote! {
+            match (&entry["type"], property, specifics) {
+                ("stub_method", Some(property), Some(specifics)) => stubs.push(quote! {
                     crate::stub::Stub::Avm2Method {
                         class: Cow::Borrowed(#class),
                         method: Cow::Borrowed(#property),
                         specifics: Cow::Borrowed(#specifics)
                     }
                 }),
-                ("stub_method", None) => stubs.push(quote! {
+                ("stub_method", Some(property), None) => stubs.push(quote! {
                     crate::stub::Stub::Avm2Method {
                         class: Cow::Borrowed(#class),
                         method: Cow::Borrowed(#property),
                         specifics: None
                     }
                 }),
-                ("stub_getter", _) => stubs.push(quote! {
+                ("stub_getter", Some(property), _) => stubs.push(quote! {
                     crate::stub::Stub::Avm2Getter {
                         class: Cow::Borrowed(#class),
                         property: Cow::Borrowed(#property)
                     }
                 }),
-                ("stub_setter", _) => stubs.push(quote! {
+                ("stub_setter", Some(property), _) => stubs.push(quote! {
                     crate::stub::Stub::Avm2Setter {
                         class: Cow::Borrowed(#class),
                         property: Cow::Borrowed(#property)
+                    }
+                }),
+                ("stub_constructor", Some(property), _) => stubs.push(quote! {
+                    // Property is actually specifics here
+                    crate::stub::Stub::Avm2Constructor {
+                        class: Cow::Borrowed(#class),
+                        specifics: Some(Cow::Borrowed(#property))
+                    }
+                }),
+                ("stub_constructor", None, _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Constructor {
+                        class: Cow::Borrowed(#class),
+                        specifics: None
                     }
                 }),
                 _ => panic!("Unsupported stub type {}", &entry["type"]),

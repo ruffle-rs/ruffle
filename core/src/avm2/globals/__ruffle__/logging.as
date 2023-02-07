@@ -6,4 +6,6 @@ package __ruffle__ {
     public native function stub_getter(class_name, method);
 
     public native function stub_setter(class_name, method);
+
+    public native function stub_constructor(class_name, method);
 }

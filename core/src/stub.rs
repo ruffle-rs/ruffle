@@ -45,7 +45,8 @@ pub enum Stub {
         property: Cow<'static, str>,
     },
     Avm2Constructor {
-        class: &'static str,
+        class: Cow<'static, str>,
+        specifics: Option<Cow<'static, str>>,
     },
     Other(Cow<'static, str>),
 }
@@ -93,8 +94,17 @@ impl Display for Stub {
             } => {
                 write!(f, "AVM2 {class}.{field} setter")
             }
-            Stub::Avm2Constructor { class } => {
+            Stub::Avm2Constructor {
+                class,
+                specifics: None,
+            } => {
                 write!(f, "AVM2 {class} constructor")
+            }
+            Stub::Avm2Constructor {
+                class,
+                specifics: Some(specifics),
+            } => {
+                write!(f, "AVM2 {class} constructor {specifics}")
             }
             Stub::Other(text) => write!(f, "{text}"),
         }
