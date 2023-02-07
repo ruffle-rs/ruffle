@@ -1207,7 +1207,13 @@ impl<'gc> Loader<'gc> {
                 match response {
                     Ok(response) => {
                         let handle = uc.audio.register_mp3(&response.body)?;
-                        sound_object.set_sound(uc.gc_context, handle);
+                        if let Err(e) = sound_object
+                            .as_sound_object()
+                            .expect("Not a sound object")
+                            .set_sound(uc, handle)
+                        {
+                            tracing::error!("Encountered AVM2 error when setting sound: {}", e);
+                        }
 
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());

@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
+use crate::display_object::SoundTransform;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -21,7 +22,10 @@ pub fn soundchannel_allocator<'gc>(
         activation.context.gc_context,
         SoundChannelObjectData {
             base,
-            sound: None,
+            sound_channel_data: SoundChannelData::NotLoaded {
+                sound_transform: None,
+                should_stop: false,
+            },
             position: 0.0,
         },
     ))
@@ -40,7 +44,7 @@ impl fmt::Debug for SoundChannelObject<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
@@ -48,18 +52,27 @@ pub struct SoundChannelObjectData<'gc> {
 
     /// The sound this object holds.
     #[collect(require_static)]
-    sound: Option<SoundInstanceHandle>,
+    sound_channel_data: SoundChannelData,
 
     /// Position of the last playing sound in milliseconds.
     position: f64,
 }
 
+#[derive(Collect)]
+#[collect(require_static)]
+pub enum SoundChannelData {
+    NotLoaded {
+        sound_transform: Option<SoundTransform>,
+        should_stop: bool,
+    },
+    Loaded {
+        sound_instance: SoundInstanceHandle,
+    },
+}
+
 impl<'gc> SoundChannelObject<'gc> {
     /// Convert a bare sound instance into it's object representation.
-    pub fn from_sound_instance(
-        activation: &mut Activation<'_, 'gc>,
-        sound: SoundInstanceHandle,
-    ) -> Result<Self, Error<'gc>> {
+    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
@@ -67,7 +80,10 @@ impl<'gc> SoundChannelObject<'gc> {
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,
-                sound: Some(sound),
+                sound_channel_data: SoundChannelData::NotLoaded {
+                    sound_transform: None,
+                    should_stop: false,
+                },
                 position: 0.0,
             },
         ));
@@ -78,11 +94,6 @@ impl<'gc> SoundChannelObject<'gc> {
         Ok(sound_object)
     }
 
-    /// Return the backend handle to the currently playing sound instance.
-    pub fn instance(self) -> Option<SoundInstanceHandle> {
-        self.0.read().sound
-    }
-
     /// Return the position of the playing sound in seconds.
     pub fn position(self) -> f64 {
         self.0.read().position
@@ -91,6 +102,93 @@ impl<'gc> SoundChannelObject<'gc> {
     /// Set the position of the playing sound in seconds.
     pub fn set_position(self, mc: MutationContext<'gc, '_>, value: f64) {
         self.0.write(mc).position = value;
+    }
+
+    pub fn instance(self) -> Option<SoundInstanceHandle> {
+        match &self.0.read().sound_channel_data {
+            SoundChannelData::NotLoaded { .. } => None,
+            SoundChannelData::Loaded { sound_instance } => Some(*sound_instance),
+        }
+    }
+
+    pub fn set_sound_instance(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        instance: SoundInstanceHandle,
+    ) {
+        let mut this = self.0.write(activation.context.gc_context);
+        match &mut this.sound_channel_data {
+            SoundChannelData::NotLoaded {
+                sound_transform,
+                should_stop,
+            } => {
+                if let Some(sound_transform) = sound_transform {
+                    activation
+                        .context
+                        .set_local_sound_transform(instance, sound_transform.clone());
+                }
+
+                if *should_stop {
+                    activation.context.stop_sound(instance);
+                }
+                this.sound_channel_data = SoundChannelData::Loaded {
+                    sound_instance: instance,
+                }
+            }
+            SoundChannelData::Loaded { sound_instance } => {
+                panic!(
+                    "Tried to replace loaded sound instance {sound_instance:?} with {instance:?}"
+                )
+            }
+        }
+    }
+
+    pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
+        let this = self.0.read();
+        match &this.sound_channel_data {
+            SoundChannelData::NotLoaded {
+                sound_transform, ..
+            } => sound_transform.clone(),
+            SoundChannelData::Loaded { sound_instance } => activation
+                .context
+                .local_sound_transform(*sound_instance)
+                .cloned(),
+        }
+    }
+
+    pub fn set_sound_transform(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        new_sound_transform: SoundTransform,
+    ) {
+        let mut this = self.0.write(activation.context.gc_context);
+        match &mut this.sound_channel_data {
+            SoundChannelData::NotLoaded {
+                sound_transform, ..
+            } => {
+                *sound_transform = Some(new_sound_transform);
+            }
+            SoundChannelData::Loaded { sound_instance } => {
+                activation
+                    .context
+                    .set_local_sound_transform(*sound_instance, new_sound_transform);
+            }
+        }
+    }
+
+    pub fn stop(self, activation: &mut Activation<'_, 'gc>) {
+        let mut this = self.0.write(activation.context.gc_context);
+        match &mut this.sound_channel_data {
+            SoundChannelData::NotLoaded {
+                sound_transform: _,
+                should_stop,
+            } => {
+                *should_stop = true;
+            }
+            SoundChannelData::Loaded { sound_instance } => {
+                activation.context.stop_sound(*sound_instance);
+            }
+        }
     }
 }
 
@@ -113,9 +211,5 @@ impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
 
     fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
         Some(self)
-    }
-
-    fn set_sound_instance(self, mc: MutationContext<'gc, '_>, sound: SoundInstanceHandle) {
-        self.0.write(mc).sound = Some(sound);
     }
 }
