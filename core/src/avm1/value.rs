@@ -422,7 +422,7 @@ impl<'gc> Value<'gc> {
             }
 
                 if let Some(start) = start {
-                    if start.is_on_stage(&activation.context) {
+                    if start.is_on_stage(&activation.context) || start.pending_removal() {
                         *path
                     } else {
                         "".into()
