@@ -137,6 +137,20 @@ pub fn set_focus<'gc>(
                 Ok(true.into())
             }
         }
+        Some(Value::MovieClip(_)) => {
+            let obj = args.get(0).unwrap().coerce_to_object(activation);
+            
+            if let Some(display_object) = obj.as_display_object() {
+                if display_object.is_focusable() {
+                    tracker.set(Some(display_object), &mut activation.context);
+                }
+                // [NA] Note: The documentation says true is success and false is failure,
+                // but from testing this seems to be opposite.
+                Ok(false.into())
+            } else {
+                Ok(true.into())
+            }
+        }
         _ => Ok(false.into()),
     }
 }

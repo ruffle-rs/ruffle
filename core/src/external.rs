@@ -127,6 +127,7 @@ impl Value {
             Avm1Value::Bool(value) => value.into(),
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
+            Avm1Value::MovieClip(_) => todo!(),
             Avm1Value::Object(object) => {
                 if object.as_array_object().is_some() {
                     let length = object.length(activation)?;

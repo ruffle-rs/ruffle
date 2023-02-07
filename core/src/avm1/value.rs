@@ -4,7 +4,7 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::{Object, TObject};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
@@ -23,6 +23,7 @@ pub enum Value<'gc> {
     Number(f64),
     String(AvmString<'gc>),
     Object(Object<'gc>),
+    MovieClip(AvmString<'gc>),
 }
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
@@ -115,6 +116,7 @@ impl PartialEq for Value<'_> {
             (Value::Number(a), Value::Number(b)) => (a == b) || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
+            (Value::MovieClip(a), Value::MovieClip(b)) => a == b,
             _ => false,
         }
     }
@@ -145,12 +147,10 @@ impl<'gc> Value<'gc> {
             Value::Undefined if activation.swf_version() < 7 => 0.0,
             Value::Null if activation.swf_version() < 7 => 0.0,
             Value::Object(_) if activation.swf_version() < 5 => 0.0,
-            Value::Undefined => f64::NAN,
-            Value::Null => f64::NAN,
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
-            Value::Object(_) => f64::NAN,
+            Value::Object(_) | Value::MovieClip(_) | Value::Null | Value::Undefined => f64::NAN,
             Value::String(v) => string_to_f64(v, activation.swf_version()),
         }
     }
@@ -311,6 +311,13 @@ impl<'gc> Value<'gc> {
             | (string @ Value::String(_), Value::Number(num)) => {
                 num == string.primitive_as_number(activation)
             }
+            /*
+            // Technically, this shouldn't be needed as it should be impossible to get a Value::object(_) reference to an mc
+            // But while transitioning to Value::MC we will still check for it here
+            (Value::MovieClip(_), Value::Object(y)) => {
+                Object::ptr_eq(a.coerce_to_object(activation), y)
+            }*/
+            (Value::MovieClip(l), Value::MovieClip(r)) => l == r,
 
             // Object-to-value comparison: Call `obj.valueOf` and compare.
             (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
@@ -391,6 +398,39 @@ impl<'gc> Value<'gc> {
                     }
                 }
             }
+            Value::MovieClip(path) => {
+                           let mut parts = path.as_wstr().split(b'.').into_iter();
+
+            let mut start = activation.root_object().coerce_to_object(activation).as_display_object();
+
+            // Handle the level id, to support multi-file movies
+            if let Some(root) = parts.next() {
+                if root.to_utf8_lossy().starts_with("_level") {
+                    if let Ok(level_id) = root[6..].parse::<i32>() {
+                        start = Some(activation.resolve_level(level_id));
+                    }
+                }
+            }
+
+            // Keep traversing to find the target DisplayObject
+            for part in parts {
+                if let Some(s) = start {
+                    if let Some(con) = s.as_container() {
+                        start = con.child_by_name(part, activation.is_case_sensitive());
+                    }
+                }
+            }
+
+                if let Some(start) = start {
+                    if start.is_on_stage(&activation.context) {
+                        *path
+                    } else {
+                        "".into()
+                    }
+                } else {
+                    "".into()
+                }
+            }
             Value::Undefined => "undefined".into(),
             Value::Null => "null".into(),
             Value::Bool(true) => "true".into(),
@@ -415,7 +455,7 @@ impl<'gc> Value<'gc> {
                     !num.is_nan() && num != 0.0
                 }
             }
-            Value::Object(_) => true,
+            Value::Object(_) | Value::MovieClip(_) => true,
             _ => false,
         }
     }
@@ -428,21 +468,52 @@ impl<'gc> Value<'gc> {
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
             Value::Object(object) if object.as_executable().is_some() => "function",
-            // MovieClips have a special typeof "movieclip", while others have the default "object".
-            Value::Object(object)
-                if object
-                    .as_display_object()
-                    .and_then(|o| o.as_movie_clip())
-                    .is_some() =>
-            {
-                "movieclip"
-            }
+            Value::MovieClip(_) => "movieclip",
             Value::Object(_) => "object",
         }
     }
 
     pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        ValueObject::boxed(activation, self.to_owned())
+        if let Value::MovieClip(path) = self {
+            // Here we manually parse the path, in order to find the target display object
+            // This is different to how paths resolve in activation in two ways:
+            // 1: We only handle slash-paths to display objects, other path type and paths to variables are *not* valid here
+            // 2: We only interact with the DisplayObject tree, not scopes, if you shadow a display object in a path this needs to still resolve to the correct object, e.g:
+            // var _level0 = 123;
+            // trace(this.child);
+            // Should correctly find the child. As `this` is Value::MovieClip("_level0.child"), we don't want to try and find `123.child`!
+
+            let mut parts = path.as_wstr().split(b'.').into_iter();
+
+            let mut start = activation.root_object().coerce_to_object(activation).as_display_object();
+
+            // Handle the level id, to support multi-file movies
+            if let Some(root) = parts.next() {
+                if root.to_utf8_lossy().starts_with("_level") {
+                    if let Ok(level_id) = root[6..].parse::<i32>() {
+                        start = Some(activation.resolve_level(level_id));
+                    }
+                }
+            }
+
+            // Keep traversing to find the target DisplayObject
+            for part in parts {
+                if let Some(s) = start {
+                    if let Some(con) = s.as_container() {
+                        start = con.child_by_name(part, activation.is_case_sensitive());
+                    }
+                }
+            }
+
+            if let Some(o) = start {
+                o.object().coerce_to_object(activation)
+            } else {
+                ValueObject::boxed(activation, Value::Undefined)
+            }
+            //TODO:
+        } else {
+            ValueObject::boxed(activation, self.to_owned())
+        }
     }
 }
 
