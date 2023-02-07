@@ -152,6 +152,7 @@ impl<'a> VariableDumper<'a> {
             Value::Object(object) => {
                 self.print_object(object, activation);
             }
+            Value::MovieClip(_) => todo!(),
         }
     }
 

@@ -537,11 +537,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
+
+    fn stack_push(&mut self, value: Value<'gc>) {
+            if let Value::Object(o) = value {
+                if let Some(d) = o.as_display_object() {
+                    if let Some(mc) = d.as_movie_clip() {
+                        let path_str = AvmString::new(self.context.gc_context, mc.path());
+                        self.context.avm1.push(Value::MovieClip(path_str));
+                        return;
+                    }
+                }
+            }
+
+        self.context.avm1.push(value);
+    }
+
     fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_f64(self)? + a.coerce_to_f64(self)?;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -561,7 +576,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
             _ => (b.coerce_to_f64(self)? + a.coerce_to_f64(self)?).into(),
         };
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -570,7 +585,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.as_bool(self.swf_version()) && a.as_bool(self.swf_version());
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -602,7 +617,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
         // TODO: Should this happen in SWF5 and below?
         let c = crate::string::utils::utf16_code_unit_to_char(char_code);
-        self.context.avm1.push(u32::from(c).into());
+        self.stack_push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
 
@@ -631,7 +646,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a & b;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -639,7 +654,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b << a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -647,7 +662,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a | b;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -655,7 +670,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_u32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b >> a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -669,7 +684,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             result.into()
         };
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -677,7 +692,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b ^ a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -740,7 +755,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self,
             &args,
         )?;
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         // After any function call, execution of this frame stops if the base clip doesn't exist.
         // For example, a _root.gotoAndStop moves the timeline to a frame where the clip was removed.
@@ -759,7 +774,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Can not call method on undefined/null.
         if matches!(object_val, Value::Undefined | Value::Null) {
-            self.context.avm1.push(Value::Undefined);
+            self.stack_push(Value::Undefined);
             return Ok(FrameControl::Continue);
         }
 
@@ -778,7 +793,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // Call `this[method_name]`.
             object.call_method(method_name, &args, self, ExecutionReason::FunctionCall)?
         };
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         self.continue_if_base_clip_exists()
     }
@@ -790,12 +805,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let is_instance_of = if let Value::Object(obj) = obj {
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
+        } else if let Value::MovieClip(_) = obj {
+            let obj = obj.coerce_to_object(self);
+            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            obj.is_instance_of(self, constr, prototype)?
         } else {
             false
         };
 
         let result = if is_instance_of { obj } else { Value::Null };
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         Ok(FrameControl::Continue)
     }
@@ -823,7 +842,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_decrement(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = a - 1.0;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -859,7 +878,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(name) = name {
             self.define_local(name, func_obj.into())?;
         } else {
-            self.context.avm1.push(func_obj.into());
+            self.stack_push(func_obj.into());
         }
 
         Ok(FrameControl::Continue)
@@ -904,11 +923,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let success = if let Value::Object(object) = object {
             object.delete(self, name)
+        } else if let Value::MovieClip(path) = object {
+            let object = object.coerce_to_object(self);
+            object.delete(self, name)
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
             false
         };
-        self.context.avm1.push(success.into());
+        self.stack_push(success.into());
 
         Ok(FrameControl::Continue)
     }
@@ -920,7 +942,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         // a boolean based on if the delete actually deleted something.
         let success = self.scope().delete(self, name);
-        self.context.avm1.push(success.into());
+        self.stack_push(success.into());
 
         Ok(FrameControl::Continue)
     }
@@ -937,7 +959,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             (b / a).into()
         };
 
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -959,12 +981,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
         let object: Value<'gc> = self.get_variable(name)?.into();
-        self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
+        self.stack_push(Value::Undefined); // Sentinel that indicates end of enumeration
 
         match object {
+            Value::MovieClip(_) => {
+                let ob = object.coerce_to_object(self);
+                for k in ob.get_keys(self).into_iter().rev() {
+                    self.stack_push(k.into());
+                }
+            }
             Value::Object(ob) => {
                 for k in ob.get_keys(self).into_iter().rev() {
-                    self.context.avm1.push(k.into());
+                    self.stack_push(k.into());
                 }
             }
             _ => avm_error!(self, "Cannot enumerate properties of {}", name),
@@ -976,11 +1004,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_enumerate_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.context.avm1.pop();
 
-        self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
+        self.stack_push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        if let Value::Object(object) = value {
+        if let Value::MovieClip(_) = value {
+            let object = value.coerce_to_object(self);
             for k in object.get_keys(self).into_iter().rev() {
-                self.context.avm1.push(k.into());
+                self.stack_push(k.into());
+            }
+        } else if let Value::Object(object) = value {
+            for k in object.get_keys(self).into_iter().rev() {
+                self.stack_push(k.into());
             }
         } else {
             avm_warn!(self, "Cannot enumerate {:?}", value);
@@ -997,7 +1030,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = b == a;
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1006,7 +1039,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.abstract_eq(a, self)?;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1051,7 +1084,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = object_val.coerce_to_object(self);
 
         let result = object.get(name, self)?;
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         Ok(FrameControl::Continue)
     }
@@ -1082,7 +1115,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             avm_warn!(self, "GetProperty: Invalid base clip");
             Value::Undefined
         };
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1097,7 +1130,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .duration_since(self.context.start_time)
             .as_millis() as u32;
         let result = time.wrapping_add(*self.context.time_offset);
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1105,8 +1138,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let value: Value<'gc> = self.get_variable(path)?.into();
-        self.context.avm1.push(value);
+        let mut value: Value<'gc> = self.get_variable(path)?.into();
+
+        self.stack_push(value);
 
         Ok(FrameControl::Continue)
     }
@@ -1361,7 +1395,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_increment(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = a + 1.0;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1379,7 +1413,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .into()
         };
 
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1402,7 +1436,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(object.into())
         };
 
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1441,11 +1475,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let result = if let Value::Object(obj) = obj {
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
+        } else if let Value::MovieClip(_) = obj {
+            let obj = obj.coerce_to_object(self);
+            let prototype = constr.get("prototype", self)?.coerce_to_object(self);
+            obj.is_instance_of(self, constr, prototype)?
         } else {
             false
         };
 
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1466,7 +1504,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_f64(self)? < a.coerce_to_f64(self)?;
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1475,7 +1513,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.abstract_lt(a, self)?;
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1484,7 +1522,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = a.abstract_lt(b, self)?;
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1520,7 +1558,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
             crate::string::utils::utf16_code_unit_to_char(char_code)
         };
-        self.context.avm1.push(u32::from(c).into());
+        self.stack_push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1553,7 +1591,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_mb_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let len = val.coerce_to_string(self)?.len();
-        self.context.avm1.push((len as f64).into());
+        self.stack_push((len as f64).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1561,7 +1599,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = b * a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1570,14 +1608,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = b % a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_not(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let result = !a.as_bool(self.swf_version());
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1606,7 +1644,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Can not call method on undefined/null.
         if matches!(object_val, Value::Undefined | Value::Null) {
-            self.context.avm1.push(Value::Undefined);
+            self.stack_push(Value::Undefined);
             return Ok(FrameControl::Continue);
         }
 
@@ -1636,7 +1674,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         self.continue_if_base_clip_exists()
     }
@@ -1654,7 +1692,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
         let result = constructor.construct(self, &args)?;
-        self.context.avm1.push(result);
+        self.stack_push(result);
 
         self.continue_if_base_clip_exists()
     }
@@ -1664,7 +1702,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.as_bool(self.swf_version()) || a.as_bool(self.swf_version());
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1728,15 +1766,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     }
                 }
             };
-            self.context.avm1.push(value);
+            self.stack_push(value);
         }
         Ok(FrameControl::Continue)
     }
 
     fn action_push_duplicate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val);
-        self.context.avm1.push(val);
+        self.stack_push(val);
+        self.stack_push(val);
         Ok(FrameControl::Continue)
     }
 
@@ -1748,7 +1786,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             0
         };
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1817,7 +1855,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = a == b;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1873,8 +1911,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_stack_swap(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        self.context.avm1.push(a);
-        self.context.avm1.push(b);
+        self.stack_push(a);
+        self.stack_push(b);
         Ok(FrameControl::Continue)
     }
 
@@ -1924,7 +1962,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The value must remain on the stack.
         let val = self.context.avm1.pop();
-        self.context.avm1.push(val);
+        self.stack_push(val);
         self.set_current_register(action.register, val);
         Ok(FrameControl::Continue)
     }
@@ -1939,7 +1977,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             b.coerce_to_string(self)?,
             a.coerce_to_string(self)?,
         );
-        self.context.avm1.push(s.into());
+        self.stack_push(s.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1948,7 +1986,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)? == a.coerce_to_string(self)?;
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1981,7 +2019,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)?.gt(&a.coerce_to_string(self)?);
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1990,7 +2028,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
         let val = self.context.avm1.pop().coerce_to_string(self)?;
-        self.context.avm1.push(val.len().into());
+        self.stack_push(val.len().into());
         Ok(FrameControl::Continue)
     }
 
@@ -1999,7 +2037,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)?.lt(&a.coerce_to_string(self)?);
-        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
+        self.stack_push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -2007,7 +2045,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = b - a;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2021,7 +2059,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             Value::Undefined
         };
-        self.context.avm1.push(result);
+        self.stack_push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -2060,21 +2098,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let result = val.coerce_to_i32(self)?;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_to_number(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let result = val.coerce_to_f64(self)?;
-        self.context.avm1.push(result.into());
+        self.stack_push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_to_string(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let string = val.coerce_to_string(self)?;
-        self.context.avm1.push(string.into());
+        self.stack_push(string.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2142,7 +2180,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let type_of = self.context.avm1.pop().type_of();
-        self.context.avm1.push(AvmString::from(type_of).into());
+        self.stack_push(AvmString::from(type_of).into());
         Ok(FrameControl::Continue)
     }
 
