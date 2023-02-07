@@ -564,6 +564,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // ECMA-262 s. 11.6.1
         let a = self.context.avm1.pop().to_primitive(self)?;
         let b = self.context.avm1.pop().to_primitive(self)?;
+
+        let a = if let Value::MovieClip(mc) = a {
+            Value::String(mc)
+        } else {
+            a
+        };
+
+        let b = if let Value::MovieClip(mc) = b {
+            Value::String(mc)
+        } else {
+            b
+        };
+
         let result: Value<'_> = match (a, b) {
             (Value::String(a), Value::String(b)) => {
                 AvmString::concat(self.context.gc_context, b, a).into()
@@ -1138,7 +1151,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let mut value: Value<'gc> = self.get_variable(path)?.into();
+        let value: Value<'gc> = self.get_variable(path)?.into();
+
+        println!("gv {var_path:?} = {value:?}");
 
         self.stack_push(value);
 
