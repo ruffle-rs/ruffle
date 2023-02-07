@@ -6,7 +6,13 @@
   "packageRules": [
     {
       "matchLanguages": ["rust"],
-      "groupName": "Rust dependencies",
+      "matchUpdateTypes": "patch",
+      "excludePackageNames": ["wasm-bindgen"],
+      "groupName": "Rust dependency patches",
+      "extends": ["schedule:weekly"]
+    },
+    {
+      "matchLanguages": ["rust"],
       "extends": ["schedule:weekly"]
     },
     {
