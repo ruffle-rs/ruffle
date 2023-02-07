@@ -28,7 +28,7 @@ wgpu-webgl = ["ruffle_render_wgpu", "ruffle_render_wgpu/webgl"]
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 generational-arena = "0.2.8"
-js-sys = "0.3.60"
+js-sys = "0.3.61"
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.16", default-features = false, features = ["registry"] }
 tracing-wasm = "0.2.1"
@@ -39,8 +39,8 @@ ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = "2.3.1"
-wasm-bindgen = "=0.2.83"
-wasm-bindgen-futures = "0.4.33"
+wasm-bindgen = "=0.2.84"
+wasm-bindgen-futures = "0.4.34"
 serde-wasm-bindgen = "0.4.5"
 chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
@@ -54,7 +54,7 @@ default-features = false
 features = ["audio", "mp3", "nellymoser", "wasm-bindgen"]
 
 [dependencies.web-sys]
-version = "0.3.60"
+version = "0.3.61"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
     "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
