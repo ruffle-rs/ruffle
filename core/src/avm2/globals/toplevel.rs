@@ -139,6 +139,39 @@ pub fn stub_setter<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn stub_constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    match args {
+        [class] => {
+            let class = class.coerce_to_string(activation)?;
+            activation
+                .context
+                .stub_tracker
+                .encounter(&Stub::Avm2Constructor {
+                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
+                    specifics: None,
+                });
+        }
+        [class, specifics] => {
+            let class = class.coerce_to_string(activation)?;
+            let specifics = specifics.coerce_to_string(activation)?;
+            activation
+                .context
+                .stub_tracker
+                .encounter(&Stub::Avm2Constructor {
+                    class: Cow::Owned(class.to_utf8_lossy().to_string()),
+                    specifics: Some(Cow::Owned(specifics.to_utf8_lossy().to_string())),
+                });
+        }
+        _ => tracing::warn!("(__ruffle__.stub_constructor called with wrong args)"),
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
