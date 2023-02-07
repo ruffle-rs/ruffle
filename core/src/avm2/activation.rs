@@ -480,7 +480,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                ArrayStorage::from_args(&arguments_list)
+                // note: resolve_parameters ensures that arguments_list length is >= user_arguments
+                ArrayStorage::from_args(&arguments_list[..user_arguments.len()])
             } else if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
                 if let Some(rest_args) = arguments_list.get(signature.len()..) {
                     ArrayStorage::from_args(rest_args)
