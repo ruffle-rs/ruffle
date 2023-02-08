@@ -122,6 +122,7 @@ export class RufflePlayer extends HTMLElement {
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
     private preloader: HTMLElement;
+    private virtualKeyboard: HTMLInputElement;
 
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
@@ -221,6 +222,9 @@ export class RufflePlayer extends HTMLElement {
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
         this.preloader = this.shadow.getElementById("preloader")!;
+        this.virtualKeyboard = <HTMLInputElement>(
+            this.shadow.getElementById("virtual-keyboard")!
+        );
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         window.addEventListener("pointerdown", this.pointerDown.bind(this));
@@ -478,6 +482,13 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.unmuteAudioContext();
+        this.container.addEventListener("click", () =>
+            this.virtualKeyboard.blur()
+        );
+        this.virtualKeyboard.addEventListener(
+            "input",
+            this.virtualKeyboardInput.bind(this)
+        );
 
         // Treat invalid values as `AutoPlay.Auto`.
         if (
@@ -821,6 +832,32 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private virtualKeyboardInput() {
+        const input = this.virtualKeyboard;
+        const initialValue = input.defaultValue;
+        const initialValueLength = initialValue.length;
+        const isBackspace = input.value.length <= initialValueLength;
+        const chars = isBackspace
+            ? ["Backspace"]
+            : [...input.value.slice(initialValueLength)];
+
+        for (const char of chars) {
+            for (const eventType of ["keydown", "keyup"]) {
+                this.dispatchEvent(
+                    new KeyboardEvent(eventType, {
+                        key: char,
+                        bubbles: true,
+                    })
+                );
+            }
+        }
+        input.value = initialValue;
+    }
+    private openVirtualKeyboard(): void {
+        this.virtualKeyboard.setSelectionRange(-1, -1);
+        this.virtualKeyboard.focus({ preventScroll: true });
+    }
+
     private contextMenuItems(): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);
         const items = [];
@@ -882,6 +919,13 @@ export class RufflePlayer extends HTMLElement {
             });
         }
 
+        if (this.isTouch) {
+            items.push(null);
+            items.push({
+                text: "Show keyboard",
+                onClick: () => this.openVirtualKeyboard(),
+            });
+        }
         items.push(null);
 
         const extensionString = this.isExtension ? "extension" : "";
@@ -995,7 +1039,7 @@ export class RufflePlayer extends HTMLElement {
 
                 if (enabled !== false) {
                     menuItem.addEventListener(
-                        this.isTouch ? "pointerup" : "click",
+                        this.contextMenuSupported ? "click" : "pointerup",
                         onClick
                     );
                 } else {
