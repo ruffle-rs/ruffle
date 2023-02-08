@@ -63,7 +63,7 @@ pub fn constructor<'gc>(
 
     if let [Value::Object(clip)] = args {
         if let (Some(transform), Some(clip)) = (
-                this.as_transform_object(),
+            this.as_transform_object(),
             clip.as_display_object().and_then(|o| o.as_movie_clip()),
         ) {
             transform.set_clip(activation.context.gc_context, clip);

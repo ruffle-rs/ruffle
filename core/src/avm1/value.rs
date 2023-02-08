@@ -129,7 +129,7 @@ impl<'gc> Value<'gc> {
     /// expected that their `toString`/`valueOf` handlers have already had a
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
-        !matches!(self, Value::Object(_))
+        !matches!(self, Value::Object(_) | Value::MovieClip(_))
     }
 
     /// ECMA-262 2nd edition s. 9.3 ToNumber (after calling `to_primitive_num`)
@@ -159,6 +159,9 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_f64(&self, activation: &mut Activation<'_, 'gc>) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Object(_) => self
+                .to_primitive_num(activation)?
+                .primitive_as_number(activation),
+            Value::MovieClip(_) => Value::Object(self.coerce_to_object(activation))
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
             val => val.primitive_as_number(activation),
@@ -229,6 +232,21 @@ impl<'gc> Value<'gc> {
                 } else {
                     // If the above coercion yields an object, the coercion failed, fall back to the object itself.
                     self
+                }
+            }
+            Value::MovieClip(_) => {
+                let object = self.coerce_to_object(activation);
+                // Other objects call `valueOf`.
+                let res = object.call_method(
+                    "valueOf".into(),
+                    &[],
+                    activation,
+                    ExecutionReason::Special,
+                )?;
+                if let Value::Undefined = res {
+                    self.coerce_to_string(activation)?.into()
+                } else {
+                    res
                 }
             }
             _ => self,
@@ -311,12 +329,7 @@ impl<'gc> Value<'gc> {
             | (string @ Value::String(_), Value::Number(num)) => {
                 num == string.primitive_as_number(activation)
             }
-            /*
-            // Technically, this shouldn't be needed as it should be impossible to get a Value::object(_) reference to an mc
-            // But while transitioning to Value::MC we will still check for it here
-            (Value::MovieClip(_), Value::Object(y)) => {
-                Object::ptr_eq(a.coerce_to_object(activation), y)
-            }*/
+
             (Value::MovieClip(l), Value::MovieClip(r)) => l == r,
 
             // Object-to-value comparison: Call `obj.valueOf` and compare.
@@ -399,27 +412,30 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::MovieClip(path) => {
-                           let mut parts = path.as_wstr().split(b'.').into_iter();
+                let mut parts = path.as_wstr().split(b'.').into_iter();
 
-            let mut start = activation.root_object().coerce_to_object(activation).as_display_object();
+                let mut start = activation
+                    .root_object()
+                    .coerce_to_object(activation)
+                    .as_display_object();
 
-            // Handle the level id, to support multi-file movies
-            if let Some(root) = parts.next() {
-                if root.to_utf8_lossy().starts_with("_level") {
-                    if let Ok(level_id) = root[6..].parse::<i32>() {
-                        start = Some(activation.resolve_level(level_id));
+                // Handle the level id, to support multi-file movies
+                if let Some(root) = parts.next() {
+                    if root.to_utf8_lossy().starts_with("_level") {
+                        if let Ok(level_id) = root[6..].parse::<i32>() {
+                            start = Some(activation.resolve_level(level_id));
+                        }
                     }
                 }
-            }
 
-            // Keep traversing to find the target DisplayObject
-            for part in parts {
-                if let Some(s) = start {
-                    if let Some(con) = s.as_container() {
-                        start = con.child_by_name(part, activation.is_case_sensitive());
+                // Keep traversing to find the target DisplayObject
+                for part in parts {
+                    if let Some(s) = start {
+                        if let Some(con) = s.as_container() {
+                            start = con.child_by_name(part, activation.is_case_sensitive());
+                        }
                     }
                 }
-            }
 
                 if let Some(start) = start {
                     if start.is_on_stage(&activation.context) || start.pending_removal() {
@@ -485,7 +501,10 @@ impl<'gc> Value<'gc> {
 
             let mut parts = path.as_wstr().split(b'.').into_iter();
 
-            let mut start = activation.root_object().coerce_to_object(activation).as_display_object();
+            let mut start = activation
+                .root_object()
+                .coerce_to_object(activation)
+                .as_display_object();
 
             // Handle the level id, to support multi-file movies
             if let Some(root) = parts.next() {
