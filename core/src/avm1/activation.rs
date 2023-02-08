@@ -539,8 +539,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn stack_push(&mut self, value: Value<'gc>) {
         if let Value::Object(o) = value {
-            if let Some(d) = o.as_display_object() {
-                if let Some(mc) = d.as_movie_clip() {
+            // We can't use as_display_object + as_movie_clip here as we explicitly
+            if let Object::StageObject(s) = o {
+                let d_o = s.as_display_object().unwrap();
+                if let DisplayObject::MovieClip(mc) = d_o {
                     let path_str = AvmString::new(self.context.gc_context, mc.path());
                     self.context.avm1.push(Value::MovieClip(path_str));
                     return;

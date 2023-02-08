@@ -4,7 +4,7 @@ use crate::avm1::{Object, TObject, Value};
 use crate::string::AvmString;
 use gc_arena::Collect;
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum CallableValue<'gc> {
     UnCallable(Value<'gc>),
