@@ -139,7 +139,7 @@ pub fn set_focus<'gc>(
         }
         Some(Value::MovieClip(_)) => {
             let obj = args.get(0).unwrap().coerce_to_object(activation);
-            
+
             if let Some(display_object) = obj.as_display_object() {
                 if display_object.is_focusable() {
                     tracker.set(Some(display_object), &mut activation.context);

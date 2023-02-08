@@ -147,12 +147,7 @@ pub fn broadcast_internal<'gc>(
                 )?;
             } else if let Value::MovieClip(_) = listener {
                 let object = listener.coerce_to_object(activation);
-                object.call_method(
-                        method_name,
-                    call_args,
-                    activation,
-                    ExecutionReason::Special,
-                )?;
+                object.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
             }
         }
 

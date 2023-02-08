@@ -537,17 +537,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-
     fn stack_push(&mut self, value: Value<'gc>) {
-            if let Value::Object(o) = value {
-                if let Some(d) = o.as_display_object() {
-                    if let Some(mc) = d.as_movie_clip() {
-                        let path_str = AvmString::new(self.context.gc_context, mc.path());
-                        self.context.avm1.push(Value::MovieClip(path_str));
-                        return;
-                    }
+        if let Value::Object(o) = value {
+            if let Some(d) = o.as_display_object() {
+                if let Some(mc) = d.as_movie_clip() {
+                    let path_str = AvmString::new(self.context.gc_context, mc.path());
+                    self.context.avm1.push(Value::MovieClip(path_str));
+                    return;
                 }
             }
+        }
 
         self.context.avm1.push(value);
     }
@@ -757,7 +756,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            args.push(self.context.avm1.pop());
+            let arg = self.context.avm1.pop();
+            if let Value::MovieClip(_) = arg {
+                args.push(Value::Object(arg.coerce_to_object(self)));
+            } else {
+                args.push(arg);
+            }
         }
 
         let variable = self.get_variable(fn_name)?;
@@ -782,7 +786,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            args.push(self.context.avm1.pop());
+            let arg = self.context.avm1.pop();
+            if let Value::MovieClip(_) = arg {
+                args.push(Value::Object(arg.coerce_to_object(self)));
+            } else {
+                args.push(arg);
+            }
         }
 
         // Can not call method on undefined/null.
@@ -1153,8 +1162,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value: Value<'gc> = self.get_variable(path)?.into();
 
-        println!("gv {var_path:?} = {value:?}");
-
         self.stack_push(value);
 
         Ok(FrameControl::Continue)
@@ -1243,6 +1250,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if action.is_load_vars() || action.is_target_sprite() {
             if let Value::Object(target) = target_val {
                 target.as_display_object()
+            } else if let Value::MovieClip(_) = target_val {
+                let tgt = target_val.coerce_to_object(self);
+                tgt.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
                 self.resolve_target_display_object(start, target_val, true)?
@@ -1258,6 +1268,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if !(action.is_target_sprite() || level_target > -1) {
                 is_load_vars = false;
                 if matches!(target_val, Value::Object(_)) {
+                    if let Some(clip) = clip_target {
+                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
+                    }
+                }
+                if matches!(target_val, Value::MovieClip(_)) {
                     if let Some(clip) = clip_target {
                         is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
                     }
@@ -1654,7 +1669,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            args.push(self.context.avm1.pop());
+            let arg = self.context.avm1.pop();
+            if let Value::MovieClip(_) = arg {
+                args.push(Value::Object(arg.coerce_to_object(self)));
+            } else {
+                args.push(arg);
+            }
         }
 
         // Can not call method on undefined/null.
@@ -1701,7 +1721,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            args.push(self.context.avm1.pop());
+            let arg = self.context.avm1.pop();
+            if let Value::MovieClip(_) = arg {
+                args.push(Value::Object(arg.coerce_to_object(self)));
+            } else {
+                args.push(arg);
+            }
         }
 
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();
@@ -1898,6 +1923,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 self.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
+                if let Some(clip) = o.as_display_object() {
+                    // MovieClips can be targeted directly.
+                    self.set_target_clip(Some(clip));
+                } else {
+                    // Other objects get coerced to string.
+                    let target = target.coerce_to_string(self)?;
+                    return self.set_target(&target);
+                }
+            }
+            Value::MovieClip(_) => {
+                let o = target.coerce_to_object(self);
                 if let Some(clip) = o.as_display_object() {
                     // MovieClips can be targeted directly.
                     self.set_target_clip(Some(clip));
