@@ -772,7 +772,7 @@ pub fn set_transform<'gc>(
             .get_property(&Multiname::public("matrix"), activation)?
             .coerce_to_object(activation)?;
         let color_transform = transform
-            .get_property(&Multiname::public("matrix"), activation)?
+            .get_property(&Multiname::public("colorTransform"), activation)?
             .coerce_to_object(activation)?;
 
         let matrix =
