@@ -17,3 +17,5 @@ Loaded binary with length: 4
 IOErrorEvent.IO_ERROR: [object URLLoader]
 IOErrorEvent text: Error #2032: Stream Error
 Old data: 
+Loaded using constructor: Fetched from disk!
+

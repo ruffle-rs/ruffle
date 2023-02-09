@@ -10,10 +10,12 @@ import flash.events.IOErrorEvent;
 import flash.events.Event;
 import flash.utils.setInterval;
 import flash.utils.clearInterval;
+import flash.net.URLVariables;
 
 var txtRequest:URLRequest = new URLRequest("data.txt");
 var binRequest:URLRequest = new URLRequest("data.bin");
 var missingRequest:URLRequest = new URLRequest("missingFile.bin");
+
 var urlLoader:URLLoader = new URLLoader();
 urlLoader.addEventListener(Event.OPEN, on_open);
 urlLoader.addEventListener(Event.COMPLETE, on_complete);
@@ -58,12 +60,12 @@ function on_error(evt:IOErrorEvent):void {
 	var loader = new URLLoader(txtRequest);
 	// FIXME - setInterval is not currently implemented,
 	// so the rest of this test does not work under Ruffle
-	/*var interval = setInterval(checkData, 100);
+	var interval = setInterval(checkData, 100);
 
 	function checkData() {
 		if (loader.data != null) {
 			trace("Loaded using constructor: " + loader.data);
 			clearInterval(interval);
 		}
-	}*/
+	}
 }
