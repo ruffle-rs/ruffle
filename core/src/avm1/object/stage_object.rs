@@ -12,7 +12,7 @@ use crate::display_object::{
 };
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext, GcWeakCell};
 use std::fmt;
 
 /// A ScriptObject that is inherently tied to a display node.
@@ -30,12 +30,18 @@ pub struct StageObjectData<'gc> {
     base: ScriptObject<'gc>,
 
     /// The display node this stage object
-    display_object: DisplayObject<'gc>,
+    pub display_object: DisplayObject<'gc>,
 
     text_field_bindings: Vec<TextFieldBinding<'gc>>,
 }
 
 impl<'gc> StageObject<'gc> {
+
+    /// Create a weak reference to the underlying data of this `StageObject`
+    pub fn as_weak(&self) -> GcWeakCell<'gc, StageObjectData<'gc>> {
+        GcCell::downgrade(self.0)
+    }
+
     /// Create a stage object for a given display node.
     pub fn for_display_object(
         gc_context: MutationContext<'gc, '_>,

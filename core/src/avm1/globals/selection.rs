@@ -137,7 +137,7 @@ pub fn set_focus<'gc>(
                 Ok(true.into())
             }
         }
-        Some(Value::MovieClip(_)) => {
+        Some(Value::MovieClip(_, _)) => {
             let obj = args.get(0).unwrap().coerce_to_object(activation);
 
             if let Some(display_object) = obj.as_display_object() {
