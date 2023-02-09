@@ -10,8 +10,9 @@ use crate::ecma_conversions::{
     f64_to_wrapping_u8,
 };
 use crate::string::{AvmString, Integer, WStr};
-use gc_arena::Collect;
+use gc_arena::{Collect, GcWeakCell};
 use std::{borrow::Cow, io::Write, num::Wrapping};
+use crate::avm1::object::stage_object::StageObjectData;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -23,7 +24,7 @@ pub enum Value<'gc> {
     Number(f64),
     String(AvmString<'gc>),
     Object(Object<'gc>),
-    MovieClip(AvmString<'gc>),
+    MovieClip(AvmString<'gc>, GcWeakCell<'gc, StageObjectData<'gc>>),
 }
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
@@ -116,7 +117,8 @@ impl PartialEq for Value<'_> {
             (Value::Number(a), Value::Number(b)) => (a == b) || (a.is_nan() && b.is_nan()),
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Object(a), Value::Object(b)) => Object::ptr_eq(*a, *b),
-            (Value::MovieClip(a), Value::MovieClip(b)) => a == b,
+            //TODO: sus, handle cached strings
+            (Value::MovieClip(a, _), Value::MovieClip(b, _)) => a == b,
             _ => false,
         }
     }
@@ -129,7 +131,7 @@ impl<'gc> Value<'gc> {
     /// expected that their `toString`/`valueOf` handlers have already had a
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
-        !matches!(self, Value::Object(_) | Value::MovieClip(_))
+        !matches!(self, Value::Object(_) | Value::MovieClip(_, _))
     }
 
     /// ECMA-262 2nd edition s. 9.3 ToNumber (after calling `to_primitive_num`)
@@ -150,7 +152,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => 0.0,
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
-            Value::Object(_) | Value::MovieClip(_) | Value::Null | Value::Undefined => f64::NAN,
+            Value::Object(_) | Value::MovieClip(_, _) | Value::Null | Value::Undefined => f64::NAN,
             Value::String(v) => string_to_f64(v, activation.swf_version()),
         }
     }
@@ -161,7 +163,7 @@ impl<'gc> Value<'gc> {
             Value::Object(_) => self
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
-            Value::MovieClip(_) => Value::Object(self.coerce_to_object(activation))
+            Value::MovieClip(_, _) => Value::Object(self.coerce_to_object(activation))
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
             val => val.primitive_as_number(activation),
@@ -234,7 +236,7 @@ impl<'gc> Value<'gc> {
                     self
                 }
             }
-            Value::MovieClip(_) => {
+            Value::MovieClip(_, _) => {
                 let object = self.coerce_to_object(activation);
                 // Other objects call `valueOf`.
                 let res = object.call_method(
@@ -330,7 +332,8 @@ impl<'gc> Value<'gc> {
                 num == string.primitive_as_number(activation)
             }
 
-            (Value::MovieClip(l), Value::MovieClip(r)) => l == r,
+            //TODO: sus, need to handle cached strings
+            (Value::MovieClip(l, _), Value::MovieClip(r, _)) => l == r,
 
             // Object-to-value comparison: Call `obj.valueOf` and compare.
             (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
@@ -411,7 +414,15 @@ impl<'gc> Value<'gc> {
                     }
                 }
             }
-            Value::MovieClip(path) => {
+            Value::MovieClip(path, mc) => {
+                if let Some(mc) = mc.upgrade(activation.context.gc_context) {
+                    if mc.read().display_object.is_on_stage(&activation.context) {
+                        // Note that we can't re-use the `path` from the value above sadly, it would be quicker if we could
+                        // But if the clip has been re-named, since being created then `mc.path() != path`
+                        return Ok(AvmString::new(activation.context.gc_context, mc.read().display_object.path().as_wstr()));
+                    }
+                }
+
                 let mut parts = path.as_wstr().split(b'.').into_iter();
 
                 let mut start = activation
@@ -471,7 +482,7 @@ impl<'gc> Value<'gc> {
                     !num.is_nan() && num != 0.0
                 }
             }
-            Value::Object(_) | Value::MovieClip(_) => true,
+            Value::Object(_) | Value::MovieClip(_, _) => true,
             _ => false,
         }
     }
@@ -484,13 +495,21 @@ impl<'gc> Value<'gc> {
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
             Value::Object(object) if object.as_executable().is_some() => "function",
-            Value::MovieClip(_) => "movieclip",
+            Value::MovieClip(_, _) => "movieclip",
             Value::Object(_) => "object",
         }
     }
 
     pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        if let Value::MovieClip(path) = self {
+        if let Value::MovieClip(path, mc) = self {
+            // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
+            if let Some(mc) = mc.upgrade(activation.context.gc_context) {
+                if mc.read().display_object.is_on_stage(&activation.context) {
+                    return mc.read().display_object.object().coerce_to_object(activation);
+                }
+            }
+
+            // Either the GcWeak ref is gone, or the clip can't be used (not on stage etc)
             // Here we manually parse the path, in order to find the target display object
             // This is different to how paths resolve in activation in two ways:
             // 1: We only handle slash-paths to display objects, other path type and paths to variables are *not* valid here

@@ -145,7 +145,7 @@ pub fn broadcast_internal<'gc>(
                     activation,
                     ExecutionReason::Special,
                 )?;
-            } else if let Value::MovieClip(_) = listener {
+            } else if let Value::MovieClip(_, _) = listener {
                 let object = listener.coerce_to_object(activation);
                 object.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
             }

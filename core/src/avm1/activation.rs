@@ -539,12 +539,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn stack_push(&mut self, value: Value<'gc>) {
         if let Value::Object(o) = value {
-            // We can't use as_display_object + as_movie_clip here as we explicitly
+            // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
             if let Object::StageObject(s) = o {
                 let d_o = s.as_display_object().unwrap();
                 if let DisplayObject::MovieClip(mc) = d_o {
+                    // TODO: this is wrong, because we will re-create cached references, once a clip switches to the slower path resolution, it shouldn't swich back
                     let path_str = AvmString::new(self.context.gc_context, mc.path());
-                    self.context.avm1.push(Value::MovieClip(path_str));
+                    self.context.avm1.push(Value::MovieClip(path_str, s.as_weak()));
                     return;
                 }
             }
@@ -566,13 +567,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().to_primitive(self)?;
         let b = self.context.avm1.pop().to_primitive(self)?;
 
-        let a = if let Value::MovieClip(mc) = a {
+        let a = if let Value::MovieClip(mc, _) = a {
             Value::String(mc)
         } else {
             a
         };
 
-        let b = if let Value::MovieClip(mc) = b {
+        let b = if let Value::MovieClip(mc, _) = b {
             Value::String(mc)
         } else {
             b
@@ -759,7 +760,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
+            if let Value::MovieClip(_, _) = arg {
                 args.push(Value::Object(arg.coerce_to_object(self)));
             } else {
                 args.push(arg);
@@ -789,7 +790,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
+            if let Value::MovieClip(_, _) = arg {
                 args.push(Value::Object(arg.coerce_to_object(self)));
             } else {
                 args.push(arg);
@@ -829,7 +830,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let is_instance_of = if let Value::Object(obj) = obj {
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
-        } else if let Value::MovieClip(_) = obj {
+        } else if let Value::MovieClip(_, _) = obj {
             let obj = obj.coerce_to_object(self);
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
@@ -947,7 +948,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let success = if let Value::Object(object) = object {
             object.delete(self, name)
-        } else if let Value::MovieClip(path) = object {
+        } else if let Value::MovieClip(path, _) = object {
             let object = object.coerce_to_object(self);
             object.delete(self, name)
         } else {
@@ -1008,7 +1009,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.stack_push(Value::Undefined); // Sentinel that indicates end of enumeration
 
         match object {
-            Value::MovieClip(_) => {
+            Value::MovieClip(_, _) => {
                 let ob = object.coerce_to_object(self);
                 for k in ob.get_keys(self).into_iter().rev() {
                     self.stack_push(k.into());
@@ -1030,7 +1031,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.stack_push(Value::Undefined); // Sentinel that indicates end of enumeration
 
-        if let Value::MovieClip(_) = value {
+        if let Value::MovieClip(_, _) = value {
             let object = value.coerce_to_object(self);
             for k in object.get_keys(self).into_iter().rev() {
                 self.stack_push(k.into());
@@ -1252,7 +1253,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if action.is_load_vars() || action.is_target_sprite() {
             if let Value::Object(target) = target_val {
                 target.as_display_object()
-            } else if let Value::MovieClip(_) = target_val {
+            } else if let Value::MovieClip(_, _) = target_val {
                 let tgt = target_val.coerce_to_object(self);
                 tgt.as_display_object()
             } else {
@@ -1274,7 +1275,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
                     }
                 }
-                if matches!(target_val, Value::MovieClip(_)) {
+                if matches!(target_val, Value::MovieClip(_, _)) {
                     if let Some(clip) = clip_target {
                         is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
                     }
@@ -1507,7 +1508,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let result = if let Value::Object(obj) = obj {
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
-        } else if let Value::MovieClip(_) = obj {
+        } else if let Value::MovieClip(_, _) = obj {
             let obj = obj.coerce_to_object(self);
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
@@ -1672,7 +1673,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
+            if let Value::MovieClip(_, _) = arg {
                 args.push(Value::Object(arg.coerce_to_object(self)));
             } else {
                 args.push(arg);
@@ -1724,7 +1725,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
+            if let Value::MovieClip(_, _) = arg {
                 args.push(Value::Object(arg.coerce_to_object(self)));
             } else {
                 args.push(arg);
@@ -1934,7 +1935,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     return self.set_target(&target);
                 }
             }
-            Value::MovieClip(_) => {
+            Value::MovieClip(_, _) => {
                 let o = target.coerce_to_object(self);
                 if let Some(clip) = o.as_display_object() {
                     // MovieClips can be targeted directly.
