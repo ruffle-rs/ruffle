@@ -10,7 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::SoundTransform;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.media.SoundChannel`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -131,11 +131,12 @@ pub fn stop<'gc>(
 }
 
 /// Construct `SoundChannel`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.media"), "SoundChannel"),
+        QName::new(Namespace::package("flash.media", mc), "SoundChannel"),
         Some(Multiname::new(
-            Namespace::package("flash.events"),
+            Namespace::package("flash.events", mc),
             "EventDispatcher",
         )),
         Method::from_builtin(instance_init, "<SoundChannel instance initializer>", mc),
@@ -162,10 +163,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_sound_transform),
         ),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("stop", stop)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

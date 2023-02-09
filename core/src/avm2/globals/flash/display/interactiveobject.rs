@@ -11,7 +11,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.display.InteractiveObject`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -144,7 +144,10 @@ fn set_context_menu<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls_name = Multiname::new(Namespace::package("flash.display"), "NativeMenu");
+        let cls_name = Multiname::new(
+            Namespace::package("flash.display", activation.context.gc_context),
+            "NativeMenu",
+        );
         let cls = activation.resolve_class(&cls_name)?;
         let value = args
             .get(0)
@@ -222,11 +225,12 @@ pub fn set_focus_rect<'gc>(
 }
 
 /// Construct `InteractiveObject`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "InteractiveObject"),
+        QName::new(Namespace::package("flash.display", mc), "InteractiveObject"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObject",
         )),
         Method::from_builtin(
@@ -262,7 +266,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("tabIndex", Some(tab_index), Some(set_tab_index)),
         ("focusRect", Some(focus_rect), Some(set_focus_rect)),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

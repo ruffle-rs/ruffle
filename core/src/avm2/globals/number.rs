@@ -6,10 +6,9 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `Number`'s instance initializer.
 fn instance_init<'gc>(
@@ -58,8 +57,8 @@ fn class_init<'gc>(
         let this_class = this.as_class_object().unwrap();
         let number_proto = this_class.prototype();
 
-        number_proto.set_property_local(
-            &Multiname::public("toExponential"),
+        number_proto.set_string_property_local(
+            "toExponential",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_exponential, "toExponential", gc_context),
@@ -70,8 +69,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        number_proto.set_property_local(
-            &Multiname::public("toFixed"),
+        number_proto.set_string_property_local(
+            "toFixed",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_fixed, "toFixed", gc_context),
@@ -82,8 +81,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        number_proto.set_property_local(
-            &Multiname::public("toPrecision"),
+        number_proto.set_string_property_local(
+            "toPrecision",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_precision, "toPrecision", gc_context),
@@ -94,8 +93,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        number_proto.set_property_local(
-            &Multiname::public("toString"),
+        number_proto.set_string_property_local(
+            "toString",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
@@ -106,8 +105,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        number_proto.set_property_local(
-            &Multiname::public("valueOf"),
+        number_proto.set_string_property_local(
+            "valueOf",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
@@ -351,10 +350,11 @@ fn value_of<'gc>(
 }
 
 /// Construct `Number`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "Number"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Number"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Number instance initializer>", mc),
         Method::from_builtin(class_init, "<Number class initializer>", mc),
         mc,
@@ -376,11 +376,19 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("NEGATIVE_INFINITY", f64::NEG_INFINITY),
         ("POSITIVE_INFINITY", f64::INFINITY),
     ];
-    write.define_public_constant_number_class_traits(CLASS_CONSTANTS);
+    write.define_constant_number_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS,
+        activation,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("toLocaleString", to_locale_string)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toExponential", to_exponential),
@@ -389,7 +397,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     class
 }

@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.media.Video`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -34,11 +34,12 @@ pub fn class_init<'gc>(
 }
 
 /// Construct `Video`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.media"), "Video"),
+        QName::new(Namespace::package("flash.media", mc), "Video"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObject",
         )),
         Method::from_builtin(instance_init, "<Video instance initializer>", mc),

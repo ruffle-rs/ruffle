@@ -15,7 +15,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.media.SoundMixer`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -218,10 +218,11 @@ pub fn compute_spectrum<'gc>(
 }
 
 /// Construct `SoundMixer`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.media"), "SoundMixer"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.media", mc), "SoundMixer"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<SoundMixer instance initializer>", mc),
         Method::from_builtin(class_init, "<SoundMixer class initializer>", mc),
         mc,
@@ -240,14 +241,22 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             ),
             ("bufferTime", Some(buffer_time), Some(set_buffer_time)),
         ];
-    write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
+    write.define_builtin_class_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_CLASS_PROPERTIES,
+    );
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("stopAll", stop_all),
         ("areSoundsInaccessible", are_sounds_inaccessible),
         ("computeSpectrum", compute_spectrum),
     ];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_builtin_class_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_CLASS_METHODS,
+    );
 
     class
 }

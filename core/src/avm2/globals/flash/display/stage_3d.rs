@@ -1,6 +1,5 @@
 use crate::avm2::object::Context3DObject;
 use crate::avm2::object::TObject;
-use crate::avm2::Multiname;
 
 use crate::avm2::{Activation, Error, Object, Value};
 
@@ -26,11 +25,7 @@ pub fn request_context3d_internal<'gc>(
 
             // FIXME - fire this at least one frame later,
             // since some seems to expect this (e.g. the adobe triangle example)
-            this.call_property(
-                &Multiname::public("dispatchEvent"),
-                &[event.into()],
-                activation,
-            )?;
+            this.call_public_property("dispatchEvent", &[event.into()], activation)?;
         }
     }
     Ok(Value::Undefined)

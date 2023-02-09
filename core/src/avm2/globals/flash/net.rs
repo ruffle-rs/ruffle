@@ -1,7 +1,7 @@
 //! `flash.net` namespace
 
 use crate::avm2::object::TObject;
-use crate::avm2::{Activation, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, Error, Object, Value};
 
 pub mod object_encoding;
 pub mod shared_object;
@@ -24,7 +24,7 @@ pub fn navigate_to_url<'gc>(
         .coerce_to_string(activation)?;
 
     let url = request
-        .get_property(&Multiname::public("url"), activation)?
+        .get_public_property("url", activation)?
         .coerce_to_string(activation)?;
 
     activation

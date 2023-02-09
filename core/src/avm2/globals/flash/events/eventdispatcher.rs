@@ -2,9 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::events::{
-    dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
-};
+use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
@@ -13,7 +11,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.events.EventDispatcher`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -27,7 +25,7 @@ pub fn instance_init<'gc>(
         let target = args.get(0).cloned().unwrap_or(Value::Null);
 
         this.init_property(
-            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+            &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
             target,
             activation,
         )?;
@@ -46,14 +44,14 @@ fn dispatch_list<'gc>(
     mut this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
-        &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+        &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
         activation,
     )? {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
             this.init_property(
-                &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+                &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
                 dispatch_list.into(),
                 activation,
             )?;
@@ -185,7 +183,7 @@ pub fn will_trigger<'gc>(
 
         let target = this
             .get_property(
-                &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+                &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
                 activation,
             )?
             .as_object()
@@ -237,7 +235,7 @@ pub fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object_proto = activation.avm2().classes().object.prototype();
-    let name = Multiname::public("toString");
+    let name = Multiname::new(activation.avm2().public_namespace, "toString");
     object_proto
         .get_property(&name, activation)?
         .as_callable(activation, Some(&name), Some(object_proto))?
@@ -245,10 +243,11 @@ pub fn to_string<'gc>(
 }
 
 /// Construct `EventDispatcher`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.events"), "EventDispatcher"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.events", mc), "EventDispatcher"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<EventDispatcher instance initializer>", mc),
         Method::from_builtin(class_init, "<EventDispatcher class initializer>", mc),
         mc,
@@ -259,7 +258,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
 
     write.implements(Multiname::new(
-        Namespace::package("flash.events"),
+        Namespace::package("flash.events", mc),
         "IEventDispatcher",
     ));
 
@@ -271,16 +270,20 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("dispatchEvent", dispatch_event),
         ("toString", to_string),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
-        Multiname::public("Object"),
+        QName::new(activation.avm2().ruffle_private_namespace, "target"),
+        Multiname::new(activation.avm2().public_namespace, "Object"),
         None,
     ));
     write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
-        Multiname::public("Object"),
+        QName::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
+        Multiname::new(activation.avm2().public_namespace, "Object"),
         None,
     ));
 

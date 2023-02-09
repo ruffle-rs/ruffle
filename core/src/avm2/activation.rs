@@ -492,18 +492,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 unreachable!();
             };
 
-            let mut args_object = ArrayObject::from_storage(&mut activation, args_array)?;
+            let args_object = ArrayObject::from_storage(&mut activation, args_array)?;
 
             if method
                 .method()
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                args_object.set_property(
-                    &Multiname::public("callee"),
-                    callee.into(),
-                    &mut activation,
-                )?;
+                args_object.set_string_property_local("callee", callee.into(), &mut activation)?;
             }
 
             *activation
@@ -647,11 +643,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.avm2
     }
 
-    /// Set the return value.
-    pub fn set_return_value(&mut self, value: Value<'gc>) {
-        self.return_value = Some(value);
-    }
-
     /// Get the class that defined the currently-executing method, if it
     /// exists.
     ///
@@ -781,7 +772,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
-        Namespace::from_abc_namespace(method.translation_unit(), index, self.context.gc_context)
+        method
+            .translation_unit()
+            .pool_namespace(index, self.context.gc_context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -1667,7 +1660,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let name = name_value.coerce_to_string(self)?;
-        let multiname = Multiname::public(name);
+        let multiname = Multiname::new(self.avm2().public_namespace, name);
         let has_prop = obj.has_property_via_in(self, &multiname)?;
 
         self.push_stack(has_prop);
@@ -1897,11 +1890,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_property(
-                &Multiname::public(name.coerce_to_string(self)?),
-                value,
-                self,
-            )?;
+            object.set_public_property(name.coerce_to_string(self)?, value, self)?;
         }
 
         self.push_stack(object);

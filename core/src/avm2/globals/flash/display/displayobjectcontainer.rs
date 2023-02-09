@@ -12,7 +12,7 @@ use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
@@ -640,14 +640,15 @@ pub fn set_tab_children<'gc>(
 }
 
 /// Construct `DisplayObjectContainer`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObjectContainer",
         ),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "InteractiveObject",
         )),
         Method::from_builtin(
@@ -680,7 +681,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("tabChildren", Some(tab_children), Some(set_tab_children)),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("getChildAt", get_child_at),
@@ -702,7 +707,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             are_inaccessible_objects_under_point,
         ),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

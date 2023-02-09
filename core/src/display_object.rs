@@ -1319,8 +1319,9 @@ pub trait TDisplayObject<'gc>:
             if self.has_explicit_name() {
                 if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
                     if let Avm2Value::Object(c) = self.object2() {
-                        let name = Avm2Multiname::public(self.name());
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let name =
+                            Avm2Multiname::new(activation.avm2().public_namespace, self.name());
                         if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
                             tracing::error!(
                                 "Got error when setting AVM2 child named \"{}\": {}",
@@ -1895,23 +1896,23 @@ impl SoundTransform {
     ) -> Result<Self, Avm2Error<'gc>> {
         Ok(SoundTransform {
             left_to_left: (as3_st
-                .get_property(&Avm2Multiname::public("leftToLeft"), activation)?
+                .get_public_property("leftToLeft", activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             left_to_right: (as3_st
-                .get_property(&Avm2Multiname::public("leftToRight"), activation)?
+                .get_public_property("leftToRight", activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             right_to_left: (as3_st
-                .get_property(&Avm2Multiname::public("rightToLeft"), activation)?
+                .get_public_property("rightToLeft", activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             right_to_right: (as3_st
-                .get_property(&Avm2Multiname::public("rightToRight"), activation)?
+                .get_public_property("rightToRight", activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
             volume: (as3_st
-                .get_property(&Avm2Multiname::public("volume"), activation)?
+                .get_public_property("volume", activation)?
                 .coerce_to_number(activation)?
                 * 100.0) as i32,
         })
@@ -1927,31 +1928,27 @@ impl SoundTransform {
             .soundtransform
             .construct(activation, &[])?;
 
-        as3_st.set_property(
-            &Avm2Multiname::public("leftToLeft"),
+        as3_st.set_public_property(
+            "leftToLeft",
             (self.left_to_left as f64 / 100.0).into(),
             activation,
         )?;
-        as3_st.set_property(
-            &Avm2Multiname::public("leftToRight"),
+        as3_st.set_public_property(
+            "leftToRight",
             (self.left_to_right as f64 / 100.0).into(),
             activation,
         )?;
-        as3_st.set_property(
-            &Avm2Multiname::public("rightToLeft"),
+        as3_st.set_public_property(
+            "rightToLeft",
             (self.right_to_left as f64 / 100.0).into(),
             activation,
         )?;
-        as3_st.set_property(
-            &Avm2Multiname::public("rightToRight"),
+        as3_st.set_public_property(
+            "rightToRight",
             (self.right_to_right as f64 / 100.0).into(),
             activation,
         )?;
-        as3_st.set_property(
-            &Avm2Multiname::public("volume"),
-            (self.volume as f64 / 100.0).into(),
-            activation,
-        )?;
+        as3_st.set_public_property("volume", (self.volume as f64 / 100.0).into(), activation)?;
 
         Ok(as3_st)
     }

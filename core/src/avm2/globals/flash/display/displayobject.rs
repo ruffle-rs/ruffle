@@ -18,7 +18,7 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use std::str::FromStr;
 use swf::Twips;
 use swf::{BlendMode, Rectangle};
@@ -285,8 +285,9 @@ pub fn set_filters<'gc>(
 
             if let Some(filters_array) = new_filters.as_array_object() {
                 if let Some(filters_storage) = filters_array.as_array_storage() {
-                    let filter_class =
-                        Multiname::new(Namespace::package("flash.filters"), "BitmapFilter");
+                    let filters_namespace =
+                        Namespace::package("flash.filters", activation.context.gc_context);
+                    let filter_class = Multiname::new(filters_namespace, "BitmapFilter");
 
                     let filter_class_object = activation.resolve_class(&filter_class)?;
 
@@ -769,10 +770,10 @@ pub fn set_transform<'gc>(
 
         // FIXME - consider 3D matrix and pixel bounds
         let matrix = transform
-            .get_property(&Multiname::public("matrix"), activation)?
+            .get_public_property("matrix", activation)?
             .coerce_to_object(activation)?;
         let color_transform = transform
-            .get_property(&Multiname::public("colorTransform"), activation)?
+            .get_public_property("colorTransform", activation)?
             .coerce_to_object(activation)?;
 
         let matrix =
@@ -867,7 +868,7 @@ pub fn object_to_rectangle<'gc>(
     let mut values = [0.0; 4];
     for (&name, value) in NAMES.iter().zip(&mut values) {
         *value = object
-            .get_property(&Multiname::public(name), activation)?
+            .get_public_property(name, activation)?
             .coerce_to_number(activation)?;
     }
     let [x, y, width, height] = values;
@@ -921,10 +922,10 @@ fn local_to_global<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
         let x = point
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_number(activation)?;
         let y = point
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
         let (out_x, out_y) = dobj.local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
@@ -953,10 +954,10 @@ fn global_to_local<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
         let x = point
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_number(activation)?;
         let y = point
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
         let (out_x, out_y) = dobj.global_to_local((Twips::from_pixels(x), Twips::from_pixels(y)));
@@ -1106,11 +1107,12 @@ pub fn set_opaque_background<'gc>(
 }
 
 /// Construct `DisplayObject`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "DisplayObject"),
+        QName::new(Namespace::package("flash.display", mc), "DisplayObject"),
         Some(Multiname::new(
-            Namespace::package("flash.events"),
+            Namespace::package("flash.events", mc),
             "EventDispatcher",
         )),
         Method::from_builtin(instance_init, "<DisplayObject instance initializer>", mc),
@@ -1128,7 +1130,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ));
 
     write.implements(Multiname::new(
-        Namespace::package("flash.display"),
+        Namespace::package("flash.display", mc),
         "IBitmapDrawable",
     ));
 
@@ -1174,7 +1176,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_cache_as_bitmap),
         ),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("hitTestPoint", hit_test_point),
@@ -1184,7 +1190,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getBounds", get_bounds),
         ("getRect", get_rect),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

@@ -1,15 +1,26 @@
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::string::AvmString;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
+#[derive(Clone, Copy, Collect, Debug)]
+#[collect(no_drop)]
+pub struct Namespace<'gc>(pub Gc<'gc, NamespaceData<'gc>>);
+
+impl<'gc> PartialEq for Namespace<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        *self.0 == *other.0
+    }
+}
+impl<'gc> Eq for Namespace<'gc> {}
+
 /// Represents the name of a namespace.
 #[allow(clippy::enum_variant_names)]
-#[derive(Clone, Copy, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[collect(no_drop)]
-pub enum Namespace<'gc> {
+pub enum NamespaceData<'gc> {
     // note: this is the default "public namespace", corresponding to both
     // ABC Namespace and PackageNamespace
     Namespace(AvmString<'gc>),
@@ -24,13 +35,15 @@ pub enum Namespace<'gc> {
 impl<'gc> Namespace<'gc> {
     /// Read a namespace declaration from the ABC constant pool and copy it to
     /// a namespace value.
+    /// NOTE: you should use the TranslationUnit.pool_namespace instead of calling this.
+    /// otherwise you run a risk of creating a duplicate of private ns singleton.
     pub fn from_abc_namespace(
         translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
-            return Ok(Self::Any);
+            return Ok(Self::any(mc));
         }
 
         let actual_index = namespace_index.0 as usize - 1;
@@ -41,73 +54,84 @@ impl<'gc> Namespace<'gc> {
             .get(actual_index)
             .ok_or_else(|| format!("Unknown namespace constant {}", namespace_index.0).into());
 
-        Ok(match abc_namespace? {
+        let ns = match abc_namespace? {
             AbcNamespace::Namespace(idx) => {
-                Self::Namespace(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Namespace(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Package(idx) => Self::Namespace(translation_unit.pool_string(idx.0, mc)?),
+            AbcNamespace::Package(idx) => {
+                NamespaceData::Namespace(translation_unit.pool_string(idx.0, mc)?)
+            }
             AbcNamespace::PackageInternal(idx) => {
-                Self::PackageInternal(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::PackageInternal(translation_unit.pool_string(idx.0, mc)?)
             }
             AbcNamespace::Protected(idx) => {
-                Self::Protected(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Protected(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Explicit(idx) => Self::Explicit(translation_unit.pool_string(idx.0, mc)?),
+            AbcNamespace::Explicit(idx) => {
+                NamespaceData::Explicit(translation_unit.pool_string(idx.0, mc)?)
+            }
             AbcNamespace::StaticProtected(idx) => {
-                Self::StaticProtected(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::StaticProtected(translation_unit.pool_string(idx.0, mc)?)
             }
-            AbcNamespace::Private(idx) => Self::Private(translation_unit.pool_string(idx.0, mc)?),
-        })
+            AbcNamespace::Private(idx) => {
+                NamespaceData::Private(translation_unit.pool_string(idx.0, mc)?)
+            }
+        };
+        Ok(Self(Gc::allocate(mc, ns)))
     }
 
-    pub fn public() -> Self {
-        Self::Namespace("".into())
+    pub fn any(mc: MutationContext<'gc, '_>) -> Self {
+        Self(Gc::allocate(mc, NamespaceData::Any))
     }
 
-    pub fn as3_namespace() -> Self {
-        Self::Namespace("http://adobe.com/AS3/2006/builtin".into())
+    pub fn package(package_name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+        Self(Gc::allocate(
+            mc,
+            NamespaceData::Namespace(package_name.into()),
+        ))
     }
 
-    pub fn package(package_name: impl Into<AvmString<'gc>>) -> Self {
-        Self::Namespace(package_name.into())
+    pub fn internal(package_name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+        Self(Gc::allocate(
+            mc,
+            NamespaceData::PackageInternal(package_name.into()),
+        ))
     }
 
-    pub fn internal(package_name: impl Into<AvmString<'gc>>) -> Self {
-        Self::PackageInternal(package_name.into())
-    }
-
-    pub fn private(name: impl Into<AvmString<'gc>>) -> Self {
-        Self::Private(name.into())
+    // note: since private namespaces are compared by identity,
+    // if you try using it to create temporary namespaces it will likely not work.
+    pub fn private(name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+        Self(Gc::allocate(mc, NamespaceData::Private(name.into())))
     }
 
     pub fn is_public(&self) -> bool {
-        matches!(self, Self::Namespace(name) if name.is_empty())
+        matches!(*self.0, NamespaceData::Namespace(name) if name.is_empty())
     }
 
     pub fn is_any(&self) -> bool {
-        matches!(self, Self::Any)
+        matches!(*self.0, NamespaceData::Any)
     }
 
     pub fn is_private(&self) -> bool {
-        matches!(self, Self::Private(_))
+        matches!(*self.0, NamespaceData::Private(_))
     }
 
     pub fn is_namespace(&self) -> bool {
-        matches!(self, Self::Namespace(_))
+        matches!(*self.0, NamespaceData::Namespace(_))
     }
 
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
     pub fn as_uri(&self) -> AvmString<'gc> {
-        match self {
-            Self::Namespace(s) => *s,
-            Self::PackageInternal(s) => *s,
-            Self::Protected(s) => *s,
-            Self::Explicit(s) => *s,
-            Self::StaticProtected(s) => *s,
-            Self::Private(s) => *s,
-            Self::Any => "".into(),
+        match &*self.0 {
+            NamespaceData::Namespace(s) => *s,
+            NamespaceData::PackageInternal(s) => *s,
+            NamespaceData::Protected(s) => *s,
+            NamespaceData::Explicit(s) => *s,
+            NamespaceData::StaticProtected(s) => *s,
+            NamespaceData::Private(s) => *s,
+            NamespaceData::Any => "".into(),
         }
     }
 }
