@@ -93,6 +93,10 @@ pub struct Avm2<'gc> {
     pub vector_internal_namespace: Namespace<'gc>,
     pub proxy_namespace: Namespace<'gc>,
     pub ruffle_private_namespace: Namespace<'gc>,
+    // these are required to facilitate shared access between Rust and AS
+    pub flash_display_internal: Namespace<'gc>,
+    pub flash_utils_internal: Namespace<'gc>,
+    pub flash_geom_internal: Namespace<'gc>,
 
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -138,6 +142,10 @@ impl<'gc> Avm2<'gc> {
                 mc,
             ),
             ruffle_private_namespace: Namespace::private("", mc),
+            // these are required to facilitate shared access between Rust and AS
+            flash_display_internal: Namespace::internal("flash.display", mc),
+            flash_utils_internal: Namespace::internal("flash.utils", mc),
+            flash_geom_internal: Namespace::internal("flash.geom", mc),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),

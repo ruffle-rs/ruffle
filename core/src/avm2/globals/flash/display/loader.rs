@@ -40,7 +40,7 @@ pub fn init<'gc>(
         )?;
         this.set_property(
             &Multiname::new(
-                activation.avm2().ruffle_private_namespace,
+                activation.avm2().flash_display_internal,
                 "_contentLoaderInfo",
             ),
             loader_info.into(),
@@ -75,7 +75,7 @@ pub fn load<'gc>(
         let loader_info = this
             .get_property(
                 &Multiname::new(
-                    activation.avm2().ruffle_private_namespace,
+                    activation.avm2().flash_display_internal,
                     "_contentLoaderInfo",
                 ),
                 activation,
@@ -118,7 +118,7 @@ pub fn load_bytes<'gc>(
         let loader_info = this
             .get_property(
                 &Multiname::new(
-                    activation.avm2().ruffle_private_namespace,
+                    activation.avm2().flash_display_internal,
                     "_contentLoaderInfo",
                 ),
                 activation,
