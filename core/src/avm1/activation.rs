@@ -545,7 +545,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if let DisplayObject::MovieClip(mc) = d_o {
                     // TODO: this is wrong, because we will re-create cached references, once a clip switches to the slower path resolution, it shouldn't swich back
                     let path_str = AvmString::new(self.context.gc_context, mc.path());
-                    self.context.avm1.push(Value::MovieClip(path_str, s.as_weak()));
+                    self.context
+                        .avm1
+                        .push(Value::MovieClip(path_str, s.as_weak()));
                     return;
                 }
             }
@@ -567,14 +569,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().to_primitive(self)?;
         let b = self.context.avm1.pop().to_primitive(self)?;
 
-        let a = if let Value::MovieClip(mc, _) = a {
-            Value::String(mc)
+        let a = if let Value::MovieClip(_, _) = a {
+            a.coerce_to_string(self)?.into()
         } else {
             a
         };
 
-        let b = if let Value::MovieClip(mc, _) = b {
-            Value::String(mc)
+        let b = if let Value::MovieClip(_, _) = b {
+            a.coerce_to_string(self)?.into()
         } else {
             b
         };
