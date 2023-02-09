@@ -47,6 +47,7 @@ pub mod config;
 pub mod external;
 pub mod stub;
 
+pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use indexmap;
