@@ -1,7 +1,7 @@
 package flash.geom {
 	import flash.display.DisplayObject;
 	public class Transform {
-		private var _displayObject:DisplayObject;
+		internal var _displayObject:DisplayObject;
 
 		function Transform(object: DisplayObject) {
 			this.init(object);

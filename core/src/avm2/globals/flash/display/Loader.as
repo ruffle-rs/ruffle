@@ -8,7 +8,7 @@ package flash.display {
 		import flash.net.URLRequest;
    		import __ruffle__.stub_method;
 
-		private var _contentLoaderInfo: LoaderInfo;
+		internal var _contentLoaderInfo: LoaderInfo;
 
 		public function get contentLoaderInfo():LoaderInfo {
 			return this._contentLoaderInfo;

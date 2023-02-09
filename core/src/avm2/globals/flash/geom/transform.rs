@@ -14,7 +14,7 @@ fn get_display_object<'gc>(
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
         .get_property(
-            &Multiname::new(activation.avm2().ruffle_private_namespace, "_displayObject"),
+            &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
             activation,
         )?
         .as_object()
@@ -29,7 +29,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.unwrap().set_property(
-        &Multiname::new(activation.avm2().ruffle_private_namespace, "_displayObject"),
+        &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
         args[0],
         activation,
     )?;

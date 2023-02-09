@@ -11,7 +11,13 @@ pub struct Namespace<'gc>(pub Gc<'gc, NamespaceData<'gc>>);
 
 impl<'gc> PartialEq for Namespace<'gc> {
     fn eq(&self, other: &Self) -> bool {
-        *self.0 == *other.0
+        if Gc::as_ptr(self.0) == Gc::as_ptr(other.0) {
+            true
+        } else if self.is_private() || other.is_private() {
+            false
+        } else {
+            *self.0 == *other.0
+        }
     }
 }
 impl<'gc> Eq for Namespace<'gc> {}
