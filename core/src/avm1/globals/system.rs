@@ -295,6 +295,27 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
+    pub fn new(sandbox_type: SandboxType) -> Self {
+        SystemProperties {
+            //TODO: default to true on fp>=7, false <= 6
+            exact_settings: true,
+            //TODO: default to false on fp>=7, true <= 6
+            use_codepage: false,
+            capabilities: SystemCapabilities::empty(),
+            player_type: PlayerType::StandAlone,
+            screen_color: ScreenColor::Color,
+            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
+            language: Language::English,
+            screen_resolution: (0, 0),
+            aspect_ratio: 1_f32,
+            dpi: 1_f32,
+            manufacturer: Manufacturer::Linux,
+            os: OperatingSystem::Linux,
+            sandbox_type,
+            cpu_architecture: CpuArchitecture::X86,
+            idc_level: "5.1".into(),
+        }
+    }
     pub fn get_version_string(&self, avm: &mut Avm1) -> String {
         format!(
             "{} {},0,0,0",
@@ -393,30 +414,6 @@ impl SystemProperties {
             )
             .append_pair("DP", &self.dpi.to_string())
             .finish()
-    }
-}
-
-impl Default for SystemProperties {
-    fn default() -> Self {
-        SystemProperties {
-            //TODO: default to true on fp>=7, false <= 6
-            exact_settings: true,
-            //TODO: default to false on fp>=7, true <= 6
-            use_codepage: false,
-            capabilities: SystemCapabilities::empty(),
-            player_type: PlayerType::StandAlone,
-            screen_color: ScreenColor::Color,
-            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
-            language: Language::English,
-            screen_resolution: (0, 0),
-            aspect_ratio: 1_f32,
-            dpi: 1_f32,
-            manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
-            sandbox_type: SandboxType::LocalTrusted,
-            cpu_architecture: CpuArchitecture::X86,
-            idc_level: "5.1".into(),
-        }
     }
 }
 

@@ -16,7 +16,9 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
+};
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
@@ -552,6 +554,8 @@ impl Ruffle {
                     .and_then(|q| StageQuality::from_str(&q).ok())
                     .unwrap_or(default_quality),
             )
+            // FIXME - should this be configurable?
+            .with_sandbox_type(SandboxType::Remote)
             .build();
 
         let mut callstack = None;

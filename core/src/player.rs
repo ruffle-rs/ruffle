@@ -1,3 +1,4 @@
+use crate::avm1::globals::system::SandboxType;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::Object;
@@ -1948,6 +1949,7 @@ pub struct PlayerBuilder {
     spoofed_url: Option<String>,
     player_version: Option<u8>,
     quality: StageQuality,
+    sandbox_type: SandboxType,
 }
 
 impl PlayerBuilder {
@@ -1985,6 +1987,7 @@ impl PlayerBuilder {
             spoofed_url: None,
             player_version: None,
             quality: StageQuality::High,
+            sandbox_type: SandboxType::LocalTrusted,
         }
     }
 
@@ -2116,6 +2119,12 @@ impl PlayerBuilder {
         self
     }
 
+    // Configured the security sandbox type (default is `SandboxType::LocalTrusted`)
+    pub fn with_sandbox_type(mut self, sandbox_type: SandboxType) -> Self {
+        self.sandbox_type = sandbox_type;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2185,7 +2194,7 @@ impl PlayerBuilder {
 
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
-                system: SystemProperties::default(),
+                system: SystemProperties::new(self.sandbox_type),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
                 player_version,
