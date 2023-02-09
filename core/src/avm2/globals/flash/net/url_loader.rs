@@ -5,6 +5,7 @@ use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
+use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::loader::DataFormat;
 
@@ -59,8 +60,55 @@ fn spawn_fetch<'gc>(
         NavigationMethod::Get
     });
 
+    let content_type = url_request
+        .get_property(&Multiname::public("contentType"), activation)?
+        .coerce_to_string(activation)?;
+
+    let data = url_request.get_property(&Multiname::public("data"), activation)?;
+
+    let data = if let Value::Null = data {
+        None
+    } else {
+        Some(data.coerce_to_object(activation)?)
+    };
+
     // FIXME - set options from the `URLRequest`
-    let request = Request::request(method, url.to_string(), None);
+    let mut request = Request::request(method, url.to_string(), None);
+
+    if let Some(data) = data {
+        if data.is_of_type(activation.avm2().classes().urlvariables, activation) {
+            if &*content_type == b"application/x-www-form-urlencoded" {
+                let data = data
+                    .call_property(&Multiname::public("toString"), &[], activation)?
+                    .coerce_to_string(activation)?
+                    .to_string()
+                    .into_bytes();
+                if &*method_str == b"GET" {
+                    avm2_stub_method!(
+                        activation,
+                        "flash.net.URLLoader",
+                        "load",
+                        "with GET method and URLVariables data"
+                    );
+                }
+                request.set_body((data, "application/x-www-form-urlencoded".to_string()));
+            } else {
+                avm2_stub_method!(
+                    activation,
+                    "flash.net.URLLoader",
+                    "load",
+                    "with URLVariables data and content type other than application/x-www-form-urlencoded"
+                );
+            }
+        } else {
+            avm2_stub_method!(
+                activation,
+                "flash.net.URLLoader",
+                "load",
+                "with non-URLVariables data"
+            );
+        }
+    }
 
     let future = activation.context.load_manager.load_data_into_url_loader(
         activation.context.player.clone(),

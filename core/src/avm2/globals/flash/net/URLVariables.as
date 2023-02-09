@@ -6,28 +6,28 @@ package flash.net {
 	public function URLVariables() {}
 
         public function toString(): String {
-	    var acc : String = ""
-	    var sep :String = ""
-	    for (p in this) {
-		var pe : String = escapeMultiByte(p);
-		var val = this[p];
-		if (val is Array) {
-		    for (i in val) {
+			var acc : String = ""
+			var sep :String = ""
+			for (p in this) {
+			var pe : String = escapeMultiByte(p);
+			var val = this[p];
+			if (val is Array) {
+				for (i in val) {
+				acc += sep;
+					acc += pe;
+							acc += "=";
+					acc += escapeMultiByte(val[i]);
+				sep = "&";
+				}
+				continue;
+			}
 			acc += sep;
-		        acc += pe;
-                        acc += "=";
-		        acc += escapeMultiByte(val[i]);
-			sep = "&";
- 		    }
-		    continue;
+			acc += pe;
+			acc += "=";
+			acc += escapeMultiByte(val);
+			sep="&";
+			}
+			return acc;
 		}
-		acc += sep;
-		acc += pe;
-		acc += "=";
-		acc += escapeMultiByte(val);
-		sep="&";
-	    }
-	    return acc;
-	}
     }
 }

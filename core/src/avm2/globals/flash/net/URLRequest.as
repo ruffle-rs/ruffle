@@ -24,7 +24,6 @@ package flash.net {
 
 		public function set method(newMethod:String):void {
 			// FIXME - perform validation here
-			stub_setter("flash.net.URLRequest", "method");
 			this._method = newMethod;
 		}
 
@@ -33,12 +32,10 @@ package flash.net {
 		}
 
 		public function set data(newData:Object):void {
-			stub_setter("flash.net.URLRequest", "data");
 			this._data = newData;
 		}
 
 		public function set contentType(value:String):void {
-			stub_setter("flash.net.URLRequest", "contentType");
 			this._contentType = value;
 		}
 

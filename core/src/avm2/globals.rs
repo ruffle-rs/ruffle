@@ -115,6 +115,7 @@ pub struct SystemClasses<'gc> {
     pub indexbuffer3d: ClassObject<'gc>,
     pub vertexbuffer3d: ClassObject<'gc>,
     pub program3d: ClassObject<'gc>,
+    pub urlvariables: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -200,6 +201,7 @@ impl<'gc> SystemClasses<'gc> {
             indexbuffer3d: object,
             vertexbuffer3d: object,
             program3d: object,
+            urlvariables: object,
         }
     }
 }
@@ -701,6 +703,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
+            ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextLineMetrics", textlinemetrics),
