@@ -1,6 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
+use crate::avm1::object::stage_object::StageObjectData;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::{Object, TObject};
@@ -12,7 +13,6 @@ use crate::ecma_conversions::{
 use crate::string::{AvmString, Integer, WStr};
 use gc_arena::{Collect, GcWeakCell};
 use std::{borrow::Cow, io::Write, num::Wrapping};
-use crate::avm1::object::stage_object::StageObjectData;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -248,7 +248,7 @@ impl<'gc> Value<'gc> {
                 if let Value::Undefined = res {
                     self.coerce_to_string(activation)?.into()
                 } else {
-                    res
+                    self
                 }
             }
             _ => self,
@@ -416,10 +416,15 @@ impl<'gc> Value<'gc> {
             }
             Value::MovieClip(path, mc) => {
                 if let Some(mc) = mc.upgrade(activation.context.gc_context) {
-                    if mc.read().display_object.is_on_stage(&activation.context) {
+                    if !mc.read().display_object.removed()
+                        | mc.read().display_object.pending_removal()
+                    {
                         // Note that we can't re-use the `path` from the value above sadly, it would be quicker if we could
                         // But if the clip has been re-named, since being created then `mc.path() != path`
-                        return Ok(AvmString::new(activation.context.gc_context, mc.read().display_object.path().as_wstr()));
+                        return Ok(AvmString::new(
+                            activation.context.gc_context,
+                            mc.read().display_object.path().as_wstr(),
+                        ));
                     }
                 }
 
@@ -449,7 +454,7 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Some(start) = start {
-                    if start.is_on_stage(&activation.context) || start.pending_removal() {
+                    if !start.removed() || start.pending_removal() {
                         *path
                     } else {
                         "".into()
@@ -504,8 +509,13 @@ impl<'gc> Value<'gc> {
         if let Value::MovieClip(path, mc) = self {
             // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
             if let Some(mc) = mc.upgrade(activation.context.gc_context) {
-                if mc.read().display_object.is_on_stage(&activation.context) {
-                    return mc.read().display_object.object().coerce_to_object(activation);
+                if !mc.read().display_object.removed() || mc.read().display_object.pending_removal()
+                {
+                    return mc
+                        .read()
+                        .display_object
+                        .object()
+                        .coerce_to_object(activation);
                 }
             }
 
