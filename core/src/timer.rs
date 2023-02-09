@@ -11,6 +11,7 @@ use crate::avm1::{
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
@@ -102,18 +103,39 @@ impl<'gc> Timers<'gc> {
                     method_name,
                     params,
                 } => {
-                    let result = this.call_method(
-                        method_name,
-                        &params,
-                        &mut activation,
-                        ExecutionReason::Special,
-                    );
+                    // If you add a timer onto a MovieClip and then remove the clip
+                    // The timer should stop firing and be canceled
+                    // Because we store an object and not a value, we have to check for a clip like this
 
-                    if let Err(e) = result {
-                        tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                    let mut removed = false;
+
+                    // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
+                    if let Avm1Object::StageObject(s) = this {
+                        let d_o = s.as_display_object().unwrap();
+                        if let DisplayObject::MovieClip(mc) = d_o {
+                            // Note that we don't want to fire the timer here
+                            if mc.removed() {
+                                removed = true;
+                            }
+                        }
                     }
 
-                    false
+                    if !removed {
+                        let result = this.call_method(
+                            method_name,
+                            &params,
+                            &mut activation,
+                            ExecutionReason::Special,
+                        );
+
+                        if let Err(e) = result {
+                            tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                        }
+
+                        false
+                    } else {
+                        true
+                    }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let mut avm2_activation =
