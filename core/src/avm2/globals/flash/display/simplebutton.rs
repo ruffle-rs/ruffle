@@ -12,7 +12,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
 use crate::vminterface::Instantiator;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use swf::ButtonState;
 
 /// Implements `flash.display.SimpleButton`'s instance constructor.
@@ -362,11 +362,12 @@ pub fn set_use_hand_cursor<'gc>(
 }
 
 /// Construct `SimpleButton`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "SimpleButton"),
+        QName::new(Namespace::package("flash.display", mc), "SimpleButton"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "InteractiveObject",
         )),
         Method::from_builtin(instance_init, "<SimpleButton instance initializer>", mc),
@@ -404,7 +405,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_sound_transform),
         ),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

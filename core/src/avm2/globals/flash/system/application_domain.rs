@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.system.ApplicationDomain`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -71,7 +71,7 @@ pub fn get_definition<'gc>(
             .cloned()
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
-        let name = QName::from_qualified_name(name, activation.context.gc_context);
+        let name = QName::from_qualified_name(name, activation);
         let (qname, mut defined_script) = match appdomain.get_defining_script(&name.into())? {
             Some(data) => data,
             None => {
@@ -107,7 +107,7 @@ pub fn has_definition<'gc>(
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
 
-        let qname = QName::from_qualified_name(name, activation.context.gc_context);
+        let qname = QName::from_qualified_name(name, activation);
 
         return Ok(appdomain.has_definition(qname).into());
     }
@@ -147,10 +147,11 @@ pub fn domain_memory<'gc>(
 }
 
 /// Construct `ApplicationDomain`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.system"), "ApplicationDomain"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.system", mc), "ApplicationDomain"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(
             instance_init,
             "<ApplicationDomain instance initializer>",
@@ -165,7 +166,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_CLASS_PROPERTIES: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] =
         &[("currentDomain", Some(current_domain), None)];
-    write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
+    write.define_builtin_class_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_CLASS_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -175,13 +180,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("domainMemory", Some(domain_memory), Some(set_domain_memory)),
         ("parentDomain", Some(parent_domain), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("getDefinition", get_definition),
         ("hasDefinition", has_definition),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

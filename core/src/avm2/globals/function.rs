@@ -8,9 +8,8 @@ use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -36,8 +35,8 @@ pub fn class_init<'gc>(
         let this_class = this.as_class_object().unwrap();
         let function_proto = this_class.prototype();
 
-        function_proto.set_property_local(
-            &Multiname::public("call"),
+        function_proto.set_string_property_local(
+            "call",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(call, "call", activation.context.gc_context),
@@ -48,8 +47,8 @@ pub fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        function_proto.set_property_local(
-            &Multiname::public("apply"),
+        function_proto.set_string_property_local(
+            "apply",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(apply, "apply", activation.context.gc_context),
@@ -181,10 +180,11 @@ fn set_prototype<'gc>(
 }
 
 /// Construct `Function`'s class.
-pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let gc_context = activation.context.gc_context;
     let function_class = Class::new(
-        QName::new(Namespace::public(), "Function"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Function"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,
@@ -194,7 +194,11 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
 
     // Fixed traits (in AS3 namespace)
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("call", call), ("apply", apply)];
-    write.define_as3_builtin_instance_methods(gc_context, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        gc_context,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -204,7 +208,11 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         ("prototype", Some(prototype), Some(set_prototype)),
         ("length", Some(length), None),
     ];
-    write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        gc_context,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     write.set_instance_allocator(function_allocator);
 

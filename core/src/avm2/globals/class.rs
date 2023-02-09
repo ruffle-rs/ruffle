@@ -7,9 +7,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `Class`'s instance initializer.
 ///
@@ -46,10 +45,11 @@ fn prototype<'gc>(
 }
 
 /// Construct `Class`'s class.
-pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let gc_context = activation.context.gc_context;
     let class_class = Class::new(
-        QName::new(Namespace::public(), "Class"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Class"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
@@ -62,7 +62,11 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("prototype", Some(prototype), None)];
-    write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        gc_context,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class_class
 }

@@ -6,7 +6,6 @@ use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
 use serde::Serialize;
@@ -42,9 +41,9 @@ fn deserialize_json_inner<'gc>(
                     Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_property(activation, &Multiname::public(key))?;
+                    obj.delete_public_property(activation, key)?;
                 } else {
-                    obj.set_property(&Multiname::public(key), mapped_val, activation)?;
+                    obj.set_public_property(key, mapped_val, activation)?;
                 }
             }
             obj.into()
@@ -119,7 +118,7 @@ impl<'gc> AvmSerializer<'gc> {
         } else {
             let obj = value.as_object().unwrap();
             let to_json = obj
-                .get_property(&Multiname::public("toJSON"), activation)?
+                .get_public_property("toJSON", activation)?
                 .as_object()
                 .and_then(|obj| obj.as_function_object());
             if let Some(to_json) = to_json {
@@ -152,7 +151,7 @@ impl<'gc> AvmSerializer<'gc> {
             while let Some(r) = iter.next(activation) {
                 let item = r?.1;
                 let key = item.coerce_to_string(activation)?;
-                let value = obj.get_property(&Multiname::public(key), activation)?;
+                let value = obj.get_public_property(key, activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
                 if !matches!(mapped, Value::Undefined) {
                     js_obj.insert(
@@ -168,7 +167,7 @@ impl<'gc> AvmSerializer<'gc> {
                     Value::Undefined => break,
                     name_val => {
                         let name = name_val.coerce_to_string(activation)?;
-                        let value = obj.get_property(&Multiname::public(name), activation)?;
+                        let value = obj.get_public_property(name, activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
                         if !matches!(mapped, Value::Undefined) {
                             js_obj.insert(

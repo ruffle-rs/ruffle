@@ -14,7 +14,7 @@ use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.
@@ -762,11 +762,12 @@ pub fn set_full_screen_source_rect<'gc>(
 }
 
 /// Construct `Stage`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "Stage"),
+        QName::new(Namespace::package("flash.display", mc), "Stage"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObjectContainer",
         )),
         Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
@@ -820,7 +821,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         if let Some(getter) = getter {
             write.define_instance_trait(
                 Trait::from_getter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(activation.avm2().public_namespace, name),
                     Method::from_builtin(getter, name, mc),
                 )
                 .with_override(),
@@ -829,7 +830,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         if let Some(setter) = setter {
             write.define_instance_trait(
                 Trait::from_setter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(activation.avm2().public_namespace, name),
                     Method::from_builtin(setter, name, mc),
                 )
                 .with_override(),
@@ -876,10 +877,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("quality", Some(quality), Some(set_quality)),
         ("stage3Ds", Some(stage3ds), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("invalidate", invalidate)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

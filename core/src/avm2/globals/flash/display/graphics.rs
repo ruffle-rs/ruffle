@@ -13,7 +13,7 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::WStr;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use ruffle_render::shape_utils::DrawCommand;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
@@ -788,10 +788,11 @@ fn draw_ellipse<'gc>(
 }
 
 /// Construct `Graphics`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "Graphics"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.display", mc), "Graphics"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Graphics instance initializer>", mc),
         Method::from_builtin(class_init, "<Graphics class initializer>", mc),
         mc,
@@ -822,7 +823,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("drawCircle", draw_circle),
         ("drawEllipse", draw_ellipse),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

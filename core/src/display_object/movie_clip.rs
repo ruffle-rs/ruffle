@@ -737,7 +737,7 @@ impl<'gc> MovieClip<'gc> {
             let class_name = reader.read_str()?.to_str_lossy(reader.encoding());
             let class_name = AvmString::new_utf8(activation.context.gc_context, class_name);
 
-            let name = Avm2QName::from_qualified_name(class_name, activation.context.gc_context);
+            let name = Avm2QName::from_qualified_name(class_name, &mut activation);
             let library = activation
                 .context
                 .library

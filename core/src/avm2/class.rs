@@ -260,11 +260,7 @@ impl<'gc> Class<'gc> {
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(Namespace::from_abc_namespace(
-                unit,
-                *ns,
-                activation.context.gc_context,
-            )?)
+            Some(unit.pool_namespace(*ns, activation.context.gc_context)?)
         } else {
             None
         };
@@ -472,7 +468,7 @@ impl<'gc> Class<'gc> {
         Ok(GcCell::allocate(
             activation.context.gc_context,
             Self {
-                name: QName::dynamic_name(name),
+                name: QName::new(activation.avm2().public_namespace, name),
                 params: Vec::new(),
                 super_class: None,
                 attributes: ClassAttributes::empty(),
@@ -526,52 +522,55 @@ impl<'gc> Class<'gc> {
     }
 
     #[inline(never)]
-    pub fn define_public_constant_string_class_traits(
+    pub fn define_constant_number_class_traits(
         &mut self,
-        items: &[(&'static str, &'static str)],
+        namespace: Namespace<'gc>,
+        items: &[(&'static str, f64)],
+        activation: &mut Activation<'_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public(), name),
-                Multiname::public("String"),
+                QName::new(namespace, name),
+                Multiname::new(activation.avm2().public_namespace, "Number"),
                 Some(value.into()),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_public_constant_number_class_traits(&mut self, items: &[(&'static str, f64)]) {
+    pub fn define_constant_uint_class_traits(
+        &mut self,
+        namespace: Namespace<'gc>,
+        items: &[(&'static str, u32)],
+        activation: &mut Activation<'_, 'gc>,
+    ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public(), name),
-                Multiname::public("Number"),
+                QName::new(namespace, name),
+                Multiname::new(activation.avm2().public_namespace, "uint"),
                 Some(value.into()),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_public_constant_uint_class_traits(&mut self, items: &[(&'static str, u32)]) {
+    pub fn define_constant_int_class_traits(
+        &mut self,
+        namespace: Namespace<'gc>,
+        items: &[(&'static str, i32)],
+        activation: &mut Activation<'_, 'gc>,
+    ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public(), name),
-                Multiname::public("uint"),
+                QName::new(namespace, name),
+                Multiname::new(activation.avm2().public_namespace, "int"),
                 Some(value.into()),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_public_constant_int_class_traits(&mut self, items: &[(&'static str, i32)]) {
-        for &(name, value) in items {
-            self.define_class_trait(Trait::from_const(
-                QName::new(Namespace::public(), name),
-                Multiname::public("int"),
-                Some(value.into()),
-            ));
-        }
-    }
-    #[inline(never)]
-    pub fn define_public_builtin_class_properties(
+    pub fn define_builtin_class_properties(
         &mut self,
         mc: MutationContext<'gc, '_>,
+        namespace: Namespace<'gc>,
         items: &[(
             &'static str,
             Option<NativeMethodImpl>,
@@ -581,88 +580,51 @@ impl<'gc> Class<'gc> {
         for &(name, getter, setter) in items {
             if let Some(getter) = getter {
                 self.define_class_trait(Trait::from_getter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(namespace, name),
                     Method::from_builtin(getter, name, mc),
                 ));
             }
             if let Some(setter) = setter {
                 self.define_class_trait(Trait::from_setter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(namespace, name),
                     Method::from_builtin(setter, name, mc),
                 ));
             }
         }
     }
     #[inline(never)]
-    pub fn define_public_builtin_instance_methods(
+    pub fn define_builtin_instance_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
+        namespace: Namespace<'gc>,
         items: &[(&'static str, NativeMethodImpl)],
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
-                QName::new(Namespace::public(), name),
+                QName::new(namespace, name),
                 Method::from_builtin(value, name, mc),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_as3_builtin_class_methods(
+    pub fn define_builtin_class_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
+        namespace: Namespace<'gc>,
         items: &[(&'static str, NativeMethodImpl)],
     ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_method(
-                QName::new(Namespace::as3_namespace(), name),
+                QName::new(namespace, name),
                 Method::from_builtin(value, name, mc),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_as3_builtin_instance_methods(
+    pub fn define_builtin_instance_properties(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, NativeMethodImpl)],
-    ) {
-        for &(name, value) in items {
-            self.define_instance_trait(Trait::from_method(
-                QName::new(Namespace::as3_namespace(), name),
-                Method::from_builtin(value, name, mc),
-            ));
-        }
-    }
-    #[inline(never)]
-    pub fn define_ns_builtin_instance_methods(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        ns: &'static str,
-        items: &[(&'static str, NativeMethodImpl)],
-    ) {
-        for &(name, value) in items {
-            self.define_instance_trait(Trait::from_method(
-                QName::new(Namespace::Namespace(ns.into()), name),
-                Method::from_builtin(value, name, mc),
-            ));
-        }
-    }
-    #[inline(never)]
-    pub fn define_public_builtin_class_methods(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, NativeMethodImpl)],
-    ) {
-        for &(name, value) in items {
-            self.define_class_trait(Trait::from_method(
-                QName::new(Namespace::public(), name),
-                Method::from_builtin(value, name, mc),
-            ));
-        }
-    }
-    #[inline(never)]
-    pub fn define_public_builtin_instance_properties(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
+        namespace: Namespace<'gc>,
         items: &[(
             &'static str,
             Option<NativeMethodImpl>,
@@ -672,70 +634,30 @@ impl<'gc> Class<'gc> {
         for &(name, getter, setter) in items {
             if let Some(getter) = getter {
                 self.define_instance_trait(Trait::from_getter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(namespace, name),
                     Method::from_builtin(getter, name, mc),
                 ));
             }
             if let Some(setter) = setter {
                 self.define_instance_trait(Trait::from_setter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(namespace, name),
                     Method::from_builtin(setter, name, mc),
                 ));
             }
         }
     }
     #[inline(never)]
-    pub fn define_public_slot_number_instance_traits(
+    pub fn define_slot_number_instance_traits(
         &mut self,
+        namespace: Namespace<'gc>,
         items: &[(&'static str, Option<f64>)],
+        activation: &mut Activation<'_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_slot(
-                QName::new(Namespace::public(), name),
-                Multiname::public("Number"),
+                QName::new(namespace, name),
+                Multiname::new(activation.avm2().public_namespace, "Number"),
                 value.map(|v| v.into()),
-            ));
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_public_slot_instance_traits(
-        &mut self,
-        items: &[(&'static str, &'static str, &'static str)],
-    ) {
-        for &(name, type_ns, type_name) in items {
-            self.define_instance_trait(Trait::from_slot(
-                QName::new(Namespace::public(), name),
-                Multiname::new(Namespace::Namespace(type_ns.into()), type_name),
-                None,
-            ));
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_public_slot_instance_traits_type_multiname(
-        &mut self,
-        items: &[(&'static str, Multiname<'gc>)],
-    ) {
-        for (name, type_name) in items {
-            self.define_instance_trait(Trait::from_slot(
-                QName::new(Namespace::public(), *name),
-                type_name.clone(),
-                None,
-            ));
-        }
-    }
-
-    #[inline(never)]
-    pub fn define_private_slot_instance_traits(
-        &mut self,
-        items: &[(&'static str, &'static str, &'static str, &'static str)],
-    ) {
-        for &(ns, name, type_ns, type_name) in items {
-            self.define_instance_trait(Trait::from_slot(
-                QName::new(Namespace::Private(ns.into()), name),
-                Multiname::new(Namespace::Namespace(type_ns.into()), type_name),
-                None,
             ));
         }
     }

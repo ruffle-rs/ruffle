@@ -10,8 +10,8 @@ use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Multiname as Avm2Multiname,
-    Object as Avm2Object, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
+    Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -632,7 +632,7 @@ impl<'gc> Loader<'gc> {
             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
                 let mut loader = loader_info
-                    .get_property(&Avm2Multiname::public("loader"), &mut activation)
+                    .get_public_property("loader", &mut activation)
                     .map_err(|e| Error::Avm2Error(e.to_string()))?
                     .as_object()
                     .unwrap()
@@ -1035,7 +1035,7 @@ impl<'gc> Loader<'gc> {
                     };
 
                     target
-                        .set_property(&Avm2Multiname::public("data"), data_object, activation)
+                        .set_public_property("data", data_object, activation)
                         .unwrap();
                 }
 
@@ -1386,11 +1386,8 @@ impl<'gc> Loader<'gc> {
                     let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                     let domain = context
                         .and_then(|o| {
-                            o.get_property(
-                                &Avm2Multiname::public("applicationDomain"),
-                                &mut activation,
-                            )
-                            .ok()
+                            o.get_public_property("applicationDomain", &mut activation)
+                                .ok()
                         })
                         .and_then(|v| v.coerce_to_object(&mut activation).ok())
                         .and_then(|o| o.as_application_domain())

@@ -141,7 +141,10 @@ pub fn get_local<'gc>(
     let mut this = sharedobject_cls.construct(activation, &[])?;
 
     // Set the internal name
-    let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
+    let ruffle_name = Multiname::new(
+        Namespace::package("__ruffle__", activation.context.gc_context),
+        "_ruffleName",
+    );
     this.set_property(
         &ruffle_name,
         AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
@@ -167,7 +170,7 @@ pub fn get_local<'gc>(
             .into();
     }
 
-    this.set_property(&Multiname::public("data"), data, activation)?;
+    this.set_public_property("data", data, activation)?;
     activation
         .context
         .avm2_shared_objects
@@ -183,10 +186,13 @@ pub fn flush<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let data = this
-            .get_property(&Multiname::public("data"), activation)?
+            .get_public_property("data", activation)?
             .coerce_to_object(activation)?;
 
-        let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
+        let ruffle_name = Multiname::new(
+            Namespace::package("__ruffle__", activation.context.gc_context),
+            "_ruffleName",
+        );
         let name = this
             .get_property(&ruffle_name, activation)?
             .coerce_to_string(activation)?;

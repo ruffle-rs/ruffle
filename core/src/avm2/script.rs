@@ -10,6 +10,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -18,7 +19,8 @@ use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{
-    AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Script as AbcScript,
+    AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
+    Script as AbcScript,
 };
 
 #[derive(Copy, Clone, Collect)]
@@ -60,6 +62,9 @@ pub struct TranslationUnitData<'gc> {
     /// They're lazy loaded and offset by 1, with the 0th element being always None.
     strings: Vec<Option<AvmString<'gc>>>,
 
+    /// All namespaces loaded from the ABC's scripts list.
+    namespaces: Vec<Option<Namespace<'gc>>>,
+
     /// All multinames loaded from the ABC's multiname list
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
@@ -91,6 +96,7 @@ impl<'gc> TranslationUnit<'gc> {
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
         let strings = vec![None; abc.constant_pool.strings.len() + 1];
+        let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
         let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
         let private_trait_scripts = PropertyMap::new();
 
@@ -103,6 +109,7 @@ impl<'gc> TranslationUnit<'gc> {
                 methods,
                 scripts,
                 strings,
+                namespaces,
                 multinames,
                 private_trait_scripts,
             },
@@ -278,6 +285,28 @@ impl<'gc> TranslationUnit<'gc> {
             .unwrap_or_default())
     }
 
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    ///
+    /// This version of the function treats index 0 as an error condition.
+    pub fn pool_namespace(
+        self,
+        ns_index: Index<AbcNamespace>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Namespace<'gc>, Error<'gc>> {
+        let read = self.0.read();
+        if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
+            return Ok(*namespace);
+        }
+
+        drop(read);
+
+        let namespace = Namespace::from_abc_namespace(self, ns_index, mc)?;
+        self.0.write(mc).namespaces[ns_index.0 as usize] = Some(namespace);
+
+        Ok(namespace)
+    }
+
     /// Retrieve a multiname from the current constant pool.
     /// The name can have a lazy component, do not pass it anywhere.
     pub fn pool_maybe_uninitialized_multiname(
@@ -326,7 +355,7 @@ impl<'gc> TranslationUnit<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
-            Ok(Gc::allocate(mc, Multiname::any()))
+            Ok(Gc::allocate(mc, Multiname::any(mc)))
         } else {
             self.pool_multiname_static(multiname_index, mc)
         }

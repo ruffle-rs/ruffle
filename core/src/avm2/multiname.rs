@@ -126,15 +126,13 @@ impl<'gc> Multiname<'gc> {
         let ns_set = ns_set?;
 
         if ns_set.len() == 1 {
-            Ok(NamespaceSet::single(Namespace::from_abc_namespace(
-                translation_unit,
-                ns_set[0],
-                mc,
-            )?))
+            Ok(NamespaceSet::single(
+                translation_unit.pool_namespace(ns_set[0], mc)?,
+            ))
         } else {
             let mut result = Vec::with_capacity(ns_set.len());
             for ns in ns_set {
-                result.push(Namespace::from_abc_namespace(translation_unit, *ns, mc)?)
+                result.push(translation_unit.pool_namespace(*ns, mc)?)
             }
             Ok(NamespaceSet::multiple(result, mc))
         }
@@ -151,11 +149,7 @@ impl<'gc> Multiname<'gc> {
         Ok(match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: NamespaceSet::single(Namespace::from_abc_namespace(
-                        translation_unit,
-                        *namespace,
-                        mc,
-                    )?),
+                    ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, mc)?),
                     name: translation_unit.pool_string_option(name.0, mc)?,
                     params: Vec::new(),
                     flags: Default::default(),
@@ -290,9 +284,9 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// Indicates the any type (any name in any namespace).
-    pub fn any() -> Self {
+    pub fn any(mc: MutationContext<'gc, '_>) -> Self {
         Self {
-            ns: NamespaceSet::single(Namespace::Any),
+            ns: NamespaceSet::single(Namespace::any(mc)),
             name: None,
             params: Vec::new(),
             flags: Default::default(),
@@ -302,15 +296,6 @@ impl<'gc> Multiname<'gc> {
     pub fn new(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
         Self {
             ns: NamespaceSet::single(ns),
-            name: Some(name.into()),
-            params: Vec::new(),
-            flags: Default::default(),
-        }
-    }
-
-    pub fn public(name: impl Into<AvmString<'gc>>) -> Self {
-        Self {
-            ns: NamespaceSet::single(Namespace::public()),
             name: Some(name.into()),
             params: Vec::new(),
             flags: Default::default(),
@@ -339,8 +324,8 @@ impl<'gc> Multiname<'gc> {
     pub fn is_any(&self) -> bool {
         self.name.is_none()
             && match self.ns {
-                NamespaceSet::Single(ns) => ns == Namespace::Any,
-                NamespaceSet::Multiple(ns) => ns.contains(&Namespace::Any),
+                NamespaceSet::Single(ns) => ns.is_any(),
+                NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_any()),
             }
     }
 
@@ -349,7 +334,7 @@ impl<'gc> Multiname<'gc> {
         let ns_match = self
             .namespace_set()
             .iter()
-            .any(|ns| *ns == Namespace::Any || *ns == name.namespace());
+            .any(|ns| ns.is_any() || *ns == name.namespace());
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
 
         ns_match && name_match
@@ -363,7 +348,7 @@ impl<'gc> Multiname<'gc> {
     pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
-            Some(Namespace::Any) => "*".into(),
+            Some(ns) if ns.is_any() => "*".into(),
             Some(ns) => ns.as_uri(),
             None => "".into(),
         };
@@ -398,7 +383,7 @@ impl<'gc> Multiname<'gc> {
     pub fn to_error_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
-            Some(Namespace::Any) => "*".into(),
+            Some(ns) if ns.is_any() => "*".into(),
             Some(ns) => ns.as_uri(),
             None => "".into(),
         };

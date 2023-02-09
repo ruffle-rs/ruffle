@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Emulates attempts to execute bodiless methods.
 pub fn bodiless_method<'gc>(
@@ -29,9 +29,10 @@ pub fn class_init<'gc>(
 }
 
 /// Construct `IEventDispatcher`'s class.
-pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_interface<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.events"), "IEventDispatcher"),
+        QName::new(Namespace::package("flash.events", mc), "IEventDispatcher"),
         None,
         Method::from_builtin(
             bodiless_method,
@@ -53,7 +54,11 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
         ("removeEventListener", bodiless_method),
         ("willTrigger", bodiless_method),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

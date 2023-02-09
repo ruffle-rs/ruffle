@@ -8,11 +8,10 @@ use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
@@ -135,11 +134,8 @@ pub fn resolve_array_hole<'gc>(
     }
 
     if let Some(proto) = this.proto() {
-        proto.get_property(
-            &Multiname::public(AvmString::new_utf8(
-                activation.context.gc_context,
-                i.to_string(),
-            )),
+        proto.get_public_property(
+            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
             activation,
         )
     } else {
@@ -213,7 +209,7 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(act, this, &[",".into()], |v, activation| {
         if let Ok(o) = v.coerce_to_object(activation) {
-            o.call_property(&Multiname::public("toLocaleString"), &[], activation)
+            o.call_public_property("toLocaleString", &[], activation)
         } else {
             Ok(v)
         }
@@ -270,7 +266,7 @@ impl<'gc> ArrayIter<'gc> {
         end_index: u32,
     ) -> Result<Self, Error<'gc>> {
         let length = array_object
-            .get_property(&Multiname::public("length"), activation)?
+            .get_public_property("length", activation)?
             .coerce_to_u32(activation)?;
 
         Ok(Self {
@@ -295,11 +291,8 @@ impl<'gc> ArrayIter<'gc> {
 
             Some(
                 self.array_object
-                    .get_property(
-                        &Multiname::public(AvmString::new_utf8(
-                            activation.context.gc_context,
-                            i.to_string(),
-                        )),
+                    .get_public_property(
+                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -324,11 +317,8 @@ impl<'gc> ArrayIter<'gc> {
 
             Some(
                 self.array_object
-                    .get_property(
-                        &Multiname::public(AvmString::new_utf8(
-                            activation.context.gc_context,
-                            i.to_string(),
-                        )),
+                    .get_public_property(
+                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         activation,
                     )
                     .map(|val| (i, val)),
@@ -1145,12 +1135,10 @@ pub fn sort_on<'gc>(
                         // it's treated as if the field's value was undefined.
                         // TODO: verify this and fix it
                         let a_object = a.coerce_to_object(activation)?;
-                        let a_field =
-                            a_object.get_property(&Multiname::public(*field_name), activation)?;
+                        let a_field = a_object.get_public_property(*field_name, activation)?;
 
                         let b_object = b.coerce_to_object(activation)?;
-                        let b_field =
-                            b_object.get_property(&Multiname::public(*field_name), activation)?;
+                        let b_field = b_object.get_public_property(*field_name, activation)?;
 
                         let ord = if options.contains(SortOptions::NUMERIC) {
                             compare_numeric(activation, a_field, b_field)?
@@ -1183,10 +1171,11 @@ pub fn sort_on<'gc>(
 }
 
 /// Construct `Array`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "Array"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Array"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Array instance initializer>", mc),
         Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,
@@ -1202,14 +1191,22 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("length", Some(length), Some(set_length))];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
@@ -1231,7 +1228,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("sortOn", sort_on),
     ];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     const CONSTANTS: &[(&str, u32)] = &[
         (
@@ -1246,7 +1247,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
     ];
-    write.define_public_constant_uint_class_traits(CONSTANTS);
+    write.define_constant_uint_class_traits(
+        activation.avm2().public_namespace,
+        CONSTANTS,
+        activation,
+    );
 
     class
 }

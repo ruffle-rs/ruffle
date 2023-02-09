@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.media.SoundTransform`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -31,8 +31,8 @@ pub fn instance_init<'gc>(
             .unwrap_or_else(|| 0.0.into())
             .coerce_to_number(activation)?;
 
-        this.set_property(&Multiname::public("volume"), volume.into(), activation)?;
-        this.set_property(&Multiname::public("pan"), pan.into(), activation)?;
+        this.set_public_property("volume", volume.into(), activation)?;
+        this.set_public_property("pan", pan.into(), activation)?;
     }
 
     Ok(Value::Undefined)
@@ -55,10 +55,10 @@ pub fn pan<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let left_to_right = this
-            .get_property(&Multiname::public("leftToRight"), activation)?
+            .get_public_property("leftToRight", activation)?
             .coerce_to_number(activation)?;
         let right_to_left = this
-            .get_property(&Multiname::public("rightToLeft"), activation)?
+            .get_public_property("rightToLeft", activation)?
             .coerce_to_number(activation)?;
 
         if left_to_right != 0.0 || right_to_left != 0.0 {
@@ -66,7 +66,7 @@ pub fn pan<'gc>(
         }
 
         let left_to_left = this
-            .get_property(&Multiname::public("leftToLeft"), activation)?
+            .get_public_property("leftToLeft", activation)?
             .coerce_to_number(activation)?;
 
         return Ok((1.0 - left_to_left.powf(2.0).abs()).into());
@@ -88,28 +88,21 @@ pub fn set_pan<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
 
-        this.set_property(
-            &Multiname::public("leftToLeft"),
-            (1.0 - pan).sqrt().into(),
-            activation,
-        )?;
-        this.set_property(
-            &Multiname::public("rightToRight"),
-            (1.0 + pan).sqrt().into(),
-            activation,
-        )?;
-        this.set_property(&Multiname::public("leftToRight"), (0.0).into(), activation)?;
-        this.set_property(&Multiname::public("rightToLeft"), (0.0).into(), activation)?;
+        this.set_public_property("leftToLeft", (1.0 - pan).sqrt().into(), activation)?;
+        this.set_public_property("rightToRight", (1.0 + pan).sqrt().into(), activation)?;
+        this.set_public_property("leftToRight", (0.0).into(), activation)?;
+        this.set_public_property("rightToLeft", (0.0).into(), activation)?;
     }
 
     Ok(Value::Undefined)
 }
 
 /// Construct `SoundTransform`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.media"), "SoundTransform"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.media", mc), "SoundTransform"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<SoundTransform instance initializer>", mc),
         Method::from_builtin(class_init, "<SoundTransform class initializer>", mc),
         mc,
@@ -124,7 +117,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("pan", Some(pan), Some(set_pan))];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_SLOTS: &[(&str, Option<f64>)] = &[
         ("leftToLeft", None),
@@ -133,7 +130,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("rightToRight", None),
         ("volume", None),
     ];
-    write.define_public_slot_number_instance_traits(PUBLIC_INSTANCE_SLOTS);
+    write.define_slot_number_instance_traits(
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_SLOTS,
+        activation,
+    );
 
     class
 }

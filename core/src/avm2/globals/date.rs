@@ -7,12 +7,11 @@ use crate::avm2::object::{date_allocator, DateObject, FunctionObject, Object, TO
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use num_traits::ToPrimitive;
 
 // All of these methods will be defined as both
@@ -302,8 +301,8 @@ pub fn class_init<'gc>(
         let date_proto = this_class.prototype();
 
         for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
-            date_proto.set_property_local(
-                &Multiname::public(*name),
+            date_proto.set_string_property_local(
+                *name,
                 FunctionObject::from_method(
                     activation,
                     Method::from_builtin(*method, name, gc_context),
@@ -1326,10 +1325,11 @@ pub fn parse<'gc>(
 }
 
 /// Construct `Date`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "Date"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Date"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Date instance initializer>", mc),
         Method::from_builtin(class_init, "<Date class initializer>", mc),
         mc,
@@ -1366,13 +1366,24 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("dayUTC", Some(day_utc), None),
         ("timezoneOffset", Some(timezone_offset), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
-
-    write.define_as3_builtin_instance_methods(mc, PUBLIC_INSTANCE_AND_PROTO_METHODS);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        PUBLIC_INSTANCE_AND_PROTO_METHODS,
+    );
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc), ("parse", parse)];
 
-    write.define_as3_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_builtin_class_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_CLASS_METHODS,
+    );
 
     class
 }

@@ -13,7 +13,7 @@ use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
 use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use swf::{SoundEvent, SoundInfo};
 
 /// Implements `flash.media.Sound`'s instance constructor.
@@ -221,7 +221,7 @@ pub fn load<'gc>(
         };
 
         let url = url_request
-            .get_property(&Multiname::public("url"), activation)?
+            .get_public_property("url", activation)?
             .coerce_to_string(activation)?;
 
         // TODO: context parameter currently unused.
@@ -266,11 +266,12 @@ pub fn load_pcm_from_byte_array<'gc>(
 }
 
 /// Construct `Sound`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.media"), "Sound"),
+        QName::new(Namespace::package("flash.media", mc), "Sound"),
         Some(Multiname::new(
-            Namespace::package("flash.events"),
+            Namespace::package("flash.events", mc),
             "EventDispatcher",
         )),
         Method::from_builtin(instance_init, "<Sound instance initializer>", mc),
@@ -295,7 +296,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("url", Some(url), None),
         ("length", Some(length), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("play", play),
@@ -308,7 +313,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("loadPCMFromByteArray", load_pcm_from_byte_array),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

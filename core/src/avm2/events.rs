@@ -5,7 +5,6 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -342,8 +341,6 @@ impl<'gc> Hash for EventHandler<'gc> {
     }
 }
 
-pub const NS_EVENT_DISPATCHER: &str = "https://ruffle.rs/AS3/impl/EventDispatcher/";
-
 /// Retrieve the parent of a given `EventDispatcher`.
 ///
 /// `EventDispatcher` does not provide a generic way for it's subclasses to
@@ -381,7 +378,7 @@ pub fn dispatch_event_to_target<'gc>(
     );
     let dispatch_list = dispatcher
         .get_property(
-            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+            &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
             activation,
         )?
         .as_object();
@@ -438,7 +435,7 @@ pub fn dispatch_event<'gc>(
 ) -> Result<bool, Error<'gc>> {
     let target = this
         .get_property(
-            &Multiname::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+            &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
             activation,
         )?
         .as_object()

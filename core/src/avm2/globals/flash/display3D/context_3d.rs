@@ -4,7 +4,6 @@ use ruffle_render::backend::Context3DVertexBufferFormat;
 use ruffle_render::backend::ProgramType;
 
 use crate::avm2::Activation;
-use crate::avm2::Multiname;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
@@ -255,14 +254,14 @@ pub fn set_program_constants_from_matrix<'gc>(
         // See https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
         if user_transposedMatrix {
             matrix = matrix
-                .call_property(&Multiname::public("clone"), &[], activation)?
+                .call_public_property("clone", &[], activation)?
                 .coerce_to_object(activation)?;
 
-            matrix.call_property(&Multiname::public("transpose"), &[], activation)?;
+            matrix.call_public_property("transpose", &[], activation)?;
         }
 
         let matrix_raw_data = matrix
-            .get_property(&Multiname::public("rawData"), activation)?
+            .get_public_property("rawData", activation)?
             .coerce_to_object(activation)?;
         let matrix_raw_data = matrix_raw_data
             .as_vector_storage()

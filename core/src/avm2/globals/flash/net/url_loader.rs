@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
@@ -23,7 +22,7 @@ pub fn load<'gc>(
         };
 
         let data_format = this
-            .get_property(&Multiname::public("dataFormat"), activation)?
+            .get_public_property("dataFormat", activation)?
             .coerce_to_string(activation)?;
 
         let data_format = if &data_format == b"binary" {
@@ -48,11 +47,11 @@ fn spawn_fetch<'gc>(
     data_format: DataFormat,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let url = url_request
-        .get_property(&Multiname::public("url"), activation)?
+        .get_public_property("url", activation)?
         .coerce_to_string(activation)?;
 
     let method_str = url_request
-        .get_property(&Multiname::public("method"), activation)?
+        .get_public_property("method", activation)?
         .coerce_to_string(activation)?;
 
     let method = NavigationMethod::from_method_str(&method_str).unwrap_or_else(|| {
@@ -61,10 +60,10 @@ fn spawn_fetch<'gc>(
     });
 
     let content_type = url_request
-        .get_property(&Multiname::public("contentType"), activation)?
+        .get_public_property("contentType", activation)?
         .coerce_to_string(activation)?;
 
-    let data = url_request.get_property(&Multiname::public("data"), activation)?;
+    let data = url_request.get_public_property("data", activation)?;
 
     let data = if let Value::Null = data {
         None
@@ -80,7 +79,7 @@ fn spawn_fetch<'gc>(
         if data.is_of_type(activation.avm2().classes().urlvariables, activation) {
             if &*content_type == b"application/x-www-form-urlencoded" {
                 let data = data
-                    .call_property(&Multiname::public("toString"), &[], activation)?
+                    .call_public_property("toString", &[], activation)?
                     .coerce_to_string(activation)?
                     .to_string()
                     .into_bytes();

@@ -193,6 +193,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
+    /// Same as get_property, but constructs a public Multiname for you.
+    fn get_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            activation,
+        )
+    }
+
     /// Set a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:
@@ -206,6 +218,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.set_property_local(name, value, activation)
+    }
+
+    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
+    /// by the time we reach dynamic properties.
+    /// But for now, this function is a smaller change to the core than a full refactor.
+    fn set_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let name = Multiname::new(activation.avm2().public_namespace, name);
+        self.set_property_local(&name, value, activation)
     }
 
     /// Set a property by Multiname lookup.
@@ -254,6 +280,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
             None => self.set_property_local(multiname, value, activation),
         }
+    }
+
+    /// Same as set_property, but constructs a public Multiname for you.
+    fn set_public_property(
+        &mut self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.set_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            value,
+            activation,
+        )
     }
 
     /// Init a local property of the object. The Multiname should always be public.
@@ -419,6 +459,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
+    /// Same as call_property, but constructs a public Multiname for you.
+    fn call_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.call_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            arguments,
+            activation,
+        )
+    }
+
     /// Retrieve a slot by its index.
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
         let base = self.base();
@@ -559,6 +613,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
+    /// Same as delete_property, but constructs a public Multiname for you.
+    fn delete_public_property(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        name: impl Into<AvmString<'gc>>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().public_namespace, name);
+        self.delete_property(activation, &name)
+    }
+
     /// Retrieve the `__proto__` of a given object.
     ///
     /// The proto is another object used to resolve methods across a class of
@@ -630,7 +694,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let name = self
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        self.get_property(&Multiname::public(name), activation)
+        // todo: this probably doesn't need non-public accesses
+        self.get_public_property(name, activation)
     }
 
     /// Determine if a property is currently enumerable.
@@ -840,7 +905,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let type_proto = class
-            .get_property(&Multiname::public("prototype"), activation)?
+            .get_public_property("prototype", activation)?
             .as_object();
 
         if let Some(type_proto) = type_proto {

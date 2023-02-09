@@ -7,9 +7,8 @@ use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `Boolean`'s instance initializer.
 fn instance_init<'gc>(
@@ -58,8 +57,8 @@ fn class_init<'gc>(
         let this_class = this.as_class_object().unwrap();
         let boolean_proto = this_class.prototype();
 
-        boolean_proto.set_property_local(
-            &Multiname::public("toString"),
+        boolean_proto.set_string_property_local(
+            "toString",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
@@ -70,8 +69,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        boolean_proto.set_property_local(
-            &Multiname::public("valueOf"),
+        boolean_proto.set_string_property_local(
+            "valueOf",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
@@ -124,10 +123,11 @@ fn value_of<'gc>(
 }
 
 /// Construct `Boolean`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "Boolean"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Boolean"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Boolean instance initializer>", mc),
         Method::from_builtin(class_init, "<Boolean class initializer>", mc),
         mc,
@@ -144,7 +144,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("toString", to_string), ("valueOf", value_of)];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     class
 }

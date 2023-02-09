@@ -14,7 +14,7 @@ use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use std::sync::Arc;
 use swf::Color;
 
@@ -1296,11 +1296,12 @@ pub fn set_restrict<'gc>(
 }
 
 /// Construct `TextField`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.text"), "TextField"),
+        QName::new(Namespace::package("flash.text", mc), "TextField"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "InteractiveObject",
         )),
         Method::from_builtin(instance_init, "<TextField instance initializer>", mc),
@@ -1364,7 +1365,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sharpness", Some(sharpness), Some(set_sharpness)),
         ("numLines", Some(num_lines), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("appendText", append_text),
@@ -1375,7 +1380,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setTextFormat", set_text_format),
         ("getLineMetrics", get_line_metrics),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

@@ -12,7 +12,7 @@ use crate::avm2::QName;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -489,11 +489,8 @@ fn set_tab_stops<'gc>(
 
             let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
-                    let element = object.get_property(
-                        &Multiname::public(AvmString::new_utf8(
-                            activation.context.gc_context,
-                            i.to_string(),
-                        )),
+                    let element = object.get_public_property(
+                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         activation,
                     )?;
                     Ok(round_to_even(element.coerce_to_number(activation)?).into())
@@ -570,10 +567,11 @@ fn set_url<'gc>(
 }
 
 /// Construct `TextFormat`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.text"), "TextFormat"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.text", mc), "TextFormat"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<TextFormat instance initializer>", mc),
         Method::from_builtin(class_init, "<TextFormat class initializer>", mc),
         mc,
@@ -640,7 +638,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("url", Some(getter!(url)), Some(setter!(set_url))),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

@@ -2,7 +2,6 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
-use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use enumset::EnumSet;
@@ -101,7 +100,7 @@ pub fn recursive_serialize<'gc>(
         let name = obj
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        let value = obj.get_property(&Multiname::public(name), activation)?;
+        let value = obj.get_public_property(name, activation)?;
 
         if let Some(value) = serialize_value(activation, value, amf_version) {
             elements.push(Element::new(name.to_utf8_lossy(), value));
@@ -138,11 +137,8 @@ pub fn deserialize_value<'gc>(
             let mut array = ArrayObject::from_storage(activation, storage)?;
             // Now let's add each element as a property
             for element in elements {
-                array.set_property(
-                    &Multiname::public(AvmString::new_utf8(
-                        activation.context.gc_context,
-                        element.name(),
-                    )),
+                array.set_public_property(
+                    AvmString::new_utf8(activation.context.gc_context, element.name()),
                     deserialize_value(activation, element.value())?,
                     activation,
                 )?;
@@ -172,11 +168,8 @@ pub fn deserialize_value<'gc>(
                 .construct(activation, &[])?;
             for entry in elements {
                 let value = deserialize_value(activation, entry.value())?;
-                obj.set_property(
-                    &Multiname::public(AvmString::new_utf8(
-                        activation.context.gc_context,
-                        entry.name(),
-                    )),
+                obj.set_public_property(
+                    AvmString::new_utf8(activation.context.gc_context, entry.name()),
                     value,
                     activation,
                 )?;
@@ -227,11 +220,8 @@ pub fn deserialize_lso<'gc>(
         .construct(activation, &[])?;
 
     for child in &lso.body {
-        obj.set_property(
-            &Multiname::public(AvmString::new_utf8(
-                activation.context.gc_context,
-                &child.name,
-            )),
+        obj.set_public_property(
+            AvmString::new_utf8(activation.context.gc_context, &child.name),
             deserialize_value(activation, child.value())?,
             activation,
         )?;
