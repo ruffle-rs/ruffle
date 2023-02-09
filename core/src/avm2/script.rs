@@ -223,6 +223,11 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(script)
     }
 
+    /// Gets a script in the ABC file by index.
+    pub fn get_script(&self, index: usize) -> Option<Script<'gc>> {
+        self.0.read().scripts.get(index).copied().flatten()
+    }
+
     /// Load a string from the ABC's constant pool.
     ///
     /// This function yields an error if no such string index exists.
