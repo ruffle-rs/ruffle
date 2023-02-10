@@ -284,6 +284,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     // Note that `hasOwnProperty` does NOT return true for child display objects.
     fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         let obj = self.0.read();
+
+        if obj.display_object.removed() {
+            return false;
+        }
+
         if obj.base.has_property(activation, name) {
             return true;
         }

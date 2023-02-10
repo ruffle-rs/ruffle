@@ -509,7 +509,7 @@ impl<'gc> Value<'gc> {
         if let Value::MovieClip(path, mc) = self {
             // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
             if let Some(mc) = mc.upgrade(activation.context.gc_context) {
-                if !mc.read().display_object.removed()  || mc.read().display_object.pending_removal()
+                if !mc.read().display_object.removed() || mc.read().display_object.pending_removal()
                 {
                     return mc
                         .read()

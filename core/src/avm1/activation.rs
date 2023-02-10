@@ -950,7 +950,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let success = if let Value::Object(object) = object {
             object.delete(self, name)
-        } else if let Value::MovieClip(path, _) = object {
+        } else if let Value::MovieClip(_, _) = object {
             let object = object.coerce_to_object(self);
             object.delete(self, name)
         } else {
