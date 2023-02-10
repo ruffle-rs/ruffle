@@ -1,0 +1,4 @@
+Before: _level0.clipInstance2
+Before: 0
+After: 
+After: undefined
