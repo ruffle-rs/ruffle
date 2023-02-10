@@ -12,7 +12,7 @@ clap = { version = "4.1.4", features = ["derive"] }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = "0.24.5"
+image = { version = "0.24.5", default-features = false, features = ["png"] }
 log = "0.4"
 walkdir = "2.3.2"
 indicatif = "0.17"
