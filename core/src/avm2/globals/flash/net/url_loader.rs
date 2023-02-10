@@ -72,7 +72,8 @@ fn spawn_fetch<'gc>(
         Some(data.coerce_to_object(activation)?)
     };
 
-    // FIXME - set options from the `URLRequest`
+    // FIXME: set `requestHeaders`, `followRedirects`, `requestHeaders`, and `userAgent`
+    // from the `URLRequest`
     let mut request = Request::request(method, url.to_string(), None);
 
     if let Some(data) = data {

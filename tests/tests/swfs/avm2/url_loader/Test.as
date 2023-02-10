@@ -58,8 +58,6 @@ function on_error(evt:IOErrorEvent):void {
 	
 	// Now, perform a load that's started by the constructor
 	var loader = new URLLoader(txtRequest);
-	// FIXME - setInterval is not currently implemented,
-	// so the rest of this test does not work under Ruffle
 	var interval = setInterval(checkData, 100);
 
 	function checkData() {
