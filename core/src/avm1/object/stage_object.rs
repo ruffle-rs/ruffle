@@ -285,11 +285,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         let obj = self.0.read();
 
-        if obj.display_object.removed() {
-            return false;
-        }
-
-        if obj.base.has_property(activation, name) {
+        if !obj.display_object.removed() && obj.base.has_property(activation, name) {
             return true;
         }
 
@@ -307,11 +303,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
 
         let case_sensitive = activation.is_case_sensitive();
-        if obj
-            .display_object
-            .as_container()
-            .and_then(|o| o.child_by_name(&name, case_sensitive))
-            .is_some()
+
+        if !obj.display_object.removed()
+            && obj
+                .display_object
+                .as_container()
+                .and_then(|o| o.child_by_name(&name, case_sensitive))
+                .is_some()
         {
             return true;
         }

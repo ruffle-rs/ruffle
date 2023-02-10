@@ -5,6 +5,7 @@ use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, MutationContext};
 
@@ -150,7 +151,17 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
+        let removed = if let Some(s) = self.values.as_stage_object() {
+            s.as_display_object().unwrap().removed()
+        } else {
+            false
+        };
+
+        if !removed
+            && (self.class == ScopeClass::Target || self.locals().has_property(activation, name))
+        {
+            //TODO: check the clip actually exists here, would not be an issue with referenceobject enum
+
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
             self.locals().set(name, value, activation)

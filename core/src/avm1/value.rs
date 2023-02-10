@@ -419,11 +419,21 @@ impl<'gc> Value<'gc> {
                     if !mc.read().display_object.removed()
                         || mc.read().display_object.pending_removal()
                     {
+                        let mut display_object = mc.read().display_object;
+
+                        if activation.swf_version() <= 5 {
+                            while display_object.as_movie_clip().is_none() {
+                                if let Some(p) = display_object.avm1_parent() {
+                                    display_object = p;
+                                }
+                            }
+                        }
+
                         // Note that we can't re-use the `path` from the value above sadly, it would be quicker if we could
                         // But if the clip has been re-named, since being created then `mc.path() != path`
                         return Ok(AvmString::new(
                             activation.context.gc_context,
-                            mc.read().display_object.path().as_wstr(),
+                            display_object.path().as_wstr(),
                         ));
                     }
                 }
@@ -455,7 +465,18 @@ impl<'gc> Value<'gc> {
 
                 if let Some(start) = start {
                     if !start.removed() || start.pending_removal() {
-                        *path
+                        let mut display_object = start;
+
+                        if activation.swf_version() <= 5 {
+                            while display_object.as_movie_clip().is_none() {
+                                if let Some(p) = display_object.avm1_parent() {
+                                    display_object = p;
+                                }
+                            }
+                            AvmString::new(activation.context.gc_context, display_object.path())
+                        } else {
+                            *path
+                        }
                     } else {
                         "".into()
                     }
@@ -511,11 +532,17 @@ impl<'gc> Value<'gc> {
             if let Some(mc) = mc.upgrade(activation.context.gc_context) {
                 if !mc.read().display_object.removed() || mc.read().display_object.pending_removal()
                 {
-                    return mc
-                        .read()
-                        .display_object
-                        .object()
-                        .coerce_to_object(activation);
+                    let mut display_object = mc.read().display_object;
+
+                    if activation.swf_version() <= 5 {
+                        while display_object.as_movie_clip().is_none() {
+                            if let Some(p) = display_object.avm1_parent() {
+                                display_object = p;
+                            }
+                        }
+                    }
+
+                    return display_object.object().coerce_to_object(activation);
                 }
             }
 
@@ -554,7 +581,17 @@ impl<'gc> Value<'gc> {
             }
 
             if let Some(o) = start {
-                o.object().coerce_to_object(activation)
+                let mut display_object = o;
+
+                if activation.swf_version() <= 5 {
+                    while display_object.as_movie_clip().is_none() {
+                        if let Some(p) = display_object.avm1_parent() {
+                            display_object = p;
+                        }
+                    }
+                }
+
+                display_object.object().coerce_to_object(activation)
             } else {
                 ValueObject::boxed(activation, Value::Undefined)
             }
