@@ -541,13 +541,28 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Value::Object(o) = value {
             // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
             if let Object::StageObject(s) = o {
-                let d_o = s.as_display_object().unwrap();
-                if let DisplayObject::MovieClip(mc) = d_o {
+                let mut display_object = s.as_display_object().unwrap();
+
+                if let DisplayObject::MovieClip(mc) = display_object {
                     // TODO: this is wrong, because we will re-create cached references, once a clip switches to the slower path resolution, it shouldn't swich back
                     let path_str = AvmString::new(self.context.gc_context, mc.path());
                     self.context
                         .avm1
                         .push(Value::MovieClip(path_str, s.as_weak()));
+                    return;
+                } else if self.swf_version() <= 5 {
+                    while display_object.as_movie_clip().is_none() {
+                        if let Some(p) = display_object.avm1_parent() {
+                            display_object = p;
+                        }
+                    }
+
+                    let path_str = AvmString::new(self.context.gc_context, display_object.path());
+                    self.context
+                        .avm1
+                        //TODO: not s
+                        .push(Value::MovieClip(path_str, s.as_weak()));
+
                     return;
                 }
             }
