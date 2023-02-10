@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// When letterboxed, black bars will be rendered around the exterior
 /// margins of the content.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Collect, Serialize, Deserialize)]
 #[collect(require_static)]
 #[serde(rename = "letterbox")]
