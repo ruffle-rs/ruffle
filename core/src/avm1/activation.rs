@@ -576,7 +576,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         let b = if let Value::MovieClip(_, _) = b {
-            a.coerce_to_string(self)?.into()
+            b.coerce_to_string(self)?.into()
         } else {
             b
         };
