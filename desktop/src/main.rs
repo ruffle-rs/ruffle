@@ -122,6 +122,10 @@ struct Opt {
     #[clap(long, default_value = "streaming")]
     load_behavior: LoadBehavior,
 
+    /// Specify how Ruffle should handle areas outside the movie stage.
+    #[clap(long, default_value = "on")]
+    letterbox: Letterbox,
+
     /// Spoofs the root SWF URL provided to ActionScript.
     #[clap(long, value_parser)]
     spoof_url: Option<Url>,
@@ -296,7 +300,7 @@ impl App {
             .with_storage(storage::DiskStorageBackend::new()?)
             .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
-            .with_letterbox(Letterbox::On)
+            .with_letterbox(opt.letterbox)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
