@@ -1,0 +1,18 @@
+this:
+_level0.instance1.instance2
+_x:
+71
+
+_parent:
+_level0.instance1
+_parent._x:
+68.75
+typeof _parent:
+object
+_parent.instance2:
+_level0.instance1.instance2
+
+_root.instance1:
+_level0.instance1
+_root.instance1.instance2:
+_level0.instance1.instance2
