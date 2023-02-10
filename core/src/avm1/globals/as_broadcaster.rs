@@ -138,6 +138,8 @@ pub fn broadcast_internal<'gc>(
         for i in 0..length {
             let listener = listeners.get_element(activation, i);
 
+            //TODO: use referenceobject enum in scriptobject properties?
+
             if let Value::Object(listener) = listener {
                 listener.call_method(
                     method_name,
