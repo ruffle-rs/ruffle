@@ -259,6 +259,17 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
+
+        if let Some(s) = this.as_stage_object() {
+            let d_o = s.as_display_object().unwrap();
+
+            //TODO: mc check?
+            use crate::display_object::TDisplayObject;
+            if d_o.removed() {
+                return Ok(Value::Undefined);
+            }
+        }
+
         let (method, depth) = match search_prototype(Value::Object(this), name, activation, this)? {
             Some((Value::Object(method), depth)) => (method, depth),
             _ => return Ok(Value::Undefined),
