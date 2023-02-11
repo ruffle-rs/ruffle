@@ -202,8 +202,7 @@ pub fn flush<'gc>(
         crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
         let mut lso = Lso::new(
             elements,
-            &name
-                .split('/')
+            name.split('/')
                 .last()
                 .map(|e| e.to_string())
                 .unwrap_or_else(|| "<unknown>".to_string()),

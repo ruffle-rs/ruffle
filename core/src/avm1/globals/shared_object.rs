@@ -487,8 +487,7 @@ pub fn flush<'gc>(
     recursive_serialize(activation, data, &mut elements);
     let mut lso = Lso::new(
         elements,
-        &name
-            .split('/')
+        name.split('/')
             .last()
             .map(|e| e.to_string())
             .unwrap_or_else(|| "<unknown>".to_string()),

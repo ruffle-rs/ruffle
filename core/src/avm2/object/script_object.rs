@@ -110,7 +110,7 @@ impl<'gc> ScriptObject<'gc> {
         // TODO: use a proper ClassObject here; purposefully crafted bytecode
         // can observe (the lack of) it.
         let mut base = ScriptObjectData::custom_new(None, None);
-        let vt = VTable::newcatch(mc, &qname);
+        let vt = VTable::newcatch(mc, qname);
         base.set_vtable(vt);
         base.install_instance_slots();
 

@@ -153,7 +153,7 @@ impl CommandTarget {
         clear_color: wgpu::Color,
     ) -> Self {
         let frame_buffer = FrameBuffer::new(
-            &descriptors,
+            descriptors,
             sample_count,
             size,
             format,
@@ -169,7 +169,7 @@ impl CommandTarget {
 
         let resolve_buffer = if sample_count > 1 {
             Some(ResolveBuffer::new(
-                &descriptors,
+                descriptors,
                 size,
                 format,
                 wgpu::TextureUsages::COPY_SRC
@@ -264,7 +264,7 @@ impl CommandTarget {
 
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
         Some(wgpu::RenderPassColorAttachment {
-            view: &self.frame_buffer.view(),
+            view: self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
             ops: wgpu::Operations {
                 load: if self.color_needs_clear.set(false).is_ok() {
@@ -311,7 +311,7 @@ impl CommandTarget {
     ) -> &BlendBuffer {
         let blend_buffer = self.blend_buffer.get_or_init(|| {
             BlendBuffer::new(
-                &descriptors,
+                descriptors,
                 self.size,
                 self.format,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,

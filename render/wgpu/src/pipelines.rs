@@ -119,7 +119,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &full_push_constants,
+            full_push_constants,
         );
 
         let gradient_bindings = if device.limits().max_push_constant_size > 0 {
@@ -144,7 +144,7 @@ impl Pipelines {
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &gradient_bindings,
                     wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-                    &full_push_constants,
+                    full_push_constants,
                 )
             }
         };
@@ -169,7 +169,7 @@ impl Pipelines {
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 wgpu::BlendState::REPLACE,
-                &partial_push_constants,
+                partial_push_constants,
             )
         };
 
@@ -197,7 +197,7 @@ impl Pipelines {
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
                     blend.blend_state(),
-                    &full_push_constants,
+                    full_push_constants,
                 )
             })
             .collect::<Vec<_>>()
@@ -224,7 +224,7 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: None,
                 bind_group_layouts: &color_matrix_filter_bindings,
-                push_constant_ranges: &full_push_constants,
+                push_constant_ranges: full_push_constants,
             });
 
         let color_matrix_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -277,7 +277,7 @@ impl Pipelines {
         let blur_filter_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &blur_filter_bindings,
-            push_constant_ranges: &full_push_constants,
+            push_constant_ranges: full_push_constants,
         });
 
         let blur_filter = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

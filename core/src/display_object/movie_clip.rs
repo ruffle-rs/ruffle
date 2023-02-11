@@ -383,7 +383,7 @@ impl<'gc> MovieClip<'gc> {
 
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
-        let mut static_data = (&*self.0.read().static_data).clone();
+        let mut static_data = (*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
         let (mut cur_frame, mut start_pos, next_preload_chunk, preload_symbol) = {
             let read = static_data.preload_progress.read();
@@ -2657,7 +2657,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         };
 
         if let Some(frame_name) = frame_name {
-            if let Some(frame_number) = self.frame_label_to_number(frame_name, &context) {
+            if let Some(frame_number) = self.frame_label_to_number(frame_name, context) {
                 if self.is_button_mode(context) {
                     self.goto_frame(context, frame_number, true);
                 }

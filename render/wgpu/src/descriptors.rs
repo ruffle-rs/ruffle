@@ -105,7 +105,7 @@ impl Descriptors {
                     self.device
                         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                             label: create_debug_label!("Copy sRGB pipeline").as_deref(),
-                            layout: Some(&copy_texture_pipeline_layout),
+                            layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_srgb_shader,
                                 entry_point: "main_vertex",
@@ -178,7 +178,7 @@ impl Descriptors {
                     self.device
                         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                             label: create_debug_label!("Copy pipeline").as_deref(),
-                            layout: Some(&copy_texture_pipeline_layout),
+                            layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_shader,
                                 entry_point: "main_vertex",
