@@ -314,10 +314,14 @@ impl<'gc> Avm2<'gc> {
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
         for i in (0..num_scripts).rev() {
-            let mut script = tunit.load_script(i as u32, context)?;
+            tunit.load_script(i as u32, context)?;
+        }
 
-            if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
-                script.globals(context)?;
+        if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
+            for i in 0..num_scripts {
+                if let Some(mut script) = tunit.get_script(i) {
+                    script.globals(context)?;
+                }
             }
         }
         Ok(())
