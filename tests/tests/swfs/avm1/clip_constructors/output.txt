@@ -1,0 +1,8 @@
+Foo:
+[object Object]
+_level0.parInst
+end foo
+Foo2:
+[object Object]
+_level0.parInst
+end foo2
