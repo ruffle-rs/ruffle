@@ -1,0 +1,5 @@
+timer = 10
+this = 
+timer = 5
+_root = _level0
+_root.timer = 5
