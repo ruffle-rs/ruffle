@@ -1,3 +1,6 @@
+// This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
+#![allow(clippy::extra_unused_type_parameters)]
+
 use crate::bitmaps::BitmapSamplers;
 use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
@@ -313,8 +316,8 @@ impl Texture {
         };
         bind.get_or_init(|| {
             BitmapBinds::new(
-                &device,
-                &layout,
+                device,
+                layout,
                 samplers.get_sampler(false, smoothed),
                 &quad.texture_transforms,
                 0 as wgpu::BufferAddress,

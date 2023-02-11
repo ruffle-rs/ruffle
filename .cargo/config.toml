@@ -14,7 +14,4 @@ rustflags = [
     # LONG-TERM: These lints are unhelpful.
     "-Aclippy::manual_map",                  # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
     "-Aclippy::manual_range_contains",       # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
-
-    # TEMPORARY: Buggy lints that will hopefully be fixed soon.
-    "-Aclippy::needless_borrow",             # https://github.com/rust-lang/rust-clippy/pull/8355
 ]

@@ -112,12 +112,12 @@ impl Surface {
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&target.color_view()),
+                        resource: wgpu::BindingResource::TextureView(target.color_view()),
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
                         resource: wgpu::BindingResource::Sampler(
-                            &descriptors.bitmap_samplers.get_sampler(false, false),
+                            descriptors.bitmap_samplers.get_sampler(false, false),
                         ),
                     },
                 ],
@@ -207,7 +207,7 @@ impl Surface {
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
         let target = CommandTarget::new(
-            &descriptors,
+            descriptors,
             texture_pool,
             self.size,
             self.format,
@@ -247,7 +247,7 @@ impl Surface {
                             .as_deref(),
                             color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(&descriptors, texture_pool)
+                                target.depth_attachment(descriptors, texture_pool)
                             } else {
                                 None
                             },
@@ -255,8 +255,8 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
-                        &meshes,
-                        &descriptors,
+                        meshes,
+                        descriptors,
                         uniform_buffers,
                         color_buffers,
                         uniform_encoder,
@@ -282,7 +282,7 @@ impl Surface {
                     };
 
                     let parent_blend_buffer =
-                        parent.update_blend_buffer(&descriptors, texture_pool, draw_encoder);
+                        parent.update_blend_buffer(descriptors, texture_pool, draw_encoder);
 
                     let blend_bind_group =
                         descriptors
@@ -333,7 +333,7 @@ impl Surface {
                             .as_deref(),
                             color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_depth {
-                                target.depth_attachment(&descriptors, texture_pool)
+                                target.depth_attachment(descriptors, texture_pool)
                             } else {
                                 None
                             },
@@ -483,7 +483,7 @@ impl Surface {
         filter: &ColorMatrixFilter,
     ) -> CommandTarget {
         let target = CommandTarget::new(
-            &descriptors,
+            descriptors,
             texture_pool,
             wgpu::Extent3d {
                 width: source_size.0,
@@ -537,7 +537,7 @@ impl Surface {
                     wgpu::BindGroupEntry {
                         binding: 2,
                         resource: wgpu::BindingResource::Sampler(
-                            &descriptors.bitmap_samplers.get_sampler(false, false),
+                            descriptors.bitmap_samplers.get_sampler(false, false),
                         ),
                     },
                 ],
@@ -546,7 +546,7 @@ impl Surface {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: create_debug_label!("Filter arguments").as_deref(),
-                contents: &bytemuck::cast_slice(&filter.matrix),
+                contents: bytemuck::cast_slice(&filter.matrix),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
         let filter_group = descriptors
@@ -615,7 +615,7 @@ impl Surface {
     ) -> CommandTarget {
         let targets = [
             CommandTarget::new(
-                &descriptors,
+                descriptors,
                 texture_pool,
                 wgpu::Extent3d {
                     width: source_size.0,
@@ -627,7 +627,7 @@ impl Surface {
                 wgpu::Color::TRANSPARENT,
             ),
             CommandTarget::new(
-                &descriptors,
+                descriptors,
                 texture_pool,
                 wgpu::Extent3d {
                     width: source_size.0,
@@ -702,7 +702,7 @@ impl Surface {
                         wgpu::BindGroupEntry {
                             binding: 2,
                             resource: wgpu::BindingResource::Sampler(
-                                &descriptors.bitmap_samplers.get_sampler(false, true),
+                                descriptors.bitmap_samplers.get_sampler(false, true),
                             ),
                         },
                     ],
@@ -711,7 +711,7 @@ impl Surface {
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: create_debug_label!("Filter arguments").as_deref(),
-                    contents: &bytemuck::cast_slice(&[
+                    contents: bytemuck::cast_slice(&[
                         blur_x * ((i as u32) % 2) as f32,
                         blur_y * (((i as u32) % 2) + 1) as f32,
                         previous_width,

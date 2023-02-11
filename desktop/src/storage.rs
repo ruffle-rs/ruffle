@@ -80,7 +80,7 @@ impl StorageBackend for DiskStorageBackend {
         }
         if let Some(parent_dir) = path.parent() {
             if !parent_dir.exists() {
-                if let Err(r) = fs::create_dir_all(&parent_dir) {
+                if let Err(r) = fs::create_dir_all(parent_dir) {
                     tracing::warn!("Unable to create storage dir {}", r);
                     return false;
                 }

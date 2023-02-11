@@ -438,14 +438,14 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name<'gc> (&self) -> Result<$data_type, EofError> {
+            $( pub fn $method_name (&self) -> Result<$data_type, EofError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())
                 })
              } )*
 
-             $( pub fn $at_method_name<'gc> (&self, offset: usize) -> Result<$data_type, EofError> {
+             $( pub fn $at_method_name (&self, offset: usize) -> Result<$data_type, EofError> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_at($size, offset)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_at($size, offset)?.try_into().unwrap())

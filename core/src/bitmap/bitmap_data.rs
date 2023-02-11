@@ -1364,7 +1364,7 @@ impl<'gc> BitmapData<'gc> {
             commands: CommandList::new(),
             gc_context: context.gc_context,
             ui: context.ui,
-            library: &context.library,
+            library: context.library,
             transform_stack: &mut transform_stack,
             is_offscreen: true,
             stage: context.stage,

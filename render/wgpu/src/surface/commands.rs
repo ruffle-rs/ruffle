@@ -191,7 +191,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
                 &self.descriptors.bind_layouts.transforms,
-                &mut self.uniform_encoder,
+                self.uniform_encoder,
                 &mut self.render_pass,
                 1,
                 &Transforms { world_matrix },
@@ -207,7 +207,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 self.color_buffers.write_uniforms(
                     &self.descriptors.device,
                     &self.descriptors.bind_layouts.color_transforms,
-                    &mut self.uniform_encoder,
+                    self.uniform_encoder,
                     &mut self.render_pass,
                     2,
                     &ColorAdjustments::from(*color_adjustments),
@@ -337,10 +337,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.prep_color();
 
         if color == &Color::WHITE {
-            self.apply_transform(&matrix, &ColorTransform::IDENTITY);
+            self.apply_transform(matrix, &ColorTransform::IDENTITY);
         } else {
             self.apply_transform(
-                &matrix,
+                matrix,
                 &ColorTransform {
                     r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
                     g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
@@ -465,7 +465,7 @@ pub fn chunk_blends<'a>(
         match command {
             Command::Blend(commands, blend_mode) => {
                 let mut surface = Surface::new(
-                    &descriptors,
+                    descriptors,
                     quality,
                     width,
                     height,
@@ -474,8 +474,8 @@ pub fn chunk_blends<'a>(
                 let clear_color = BlendType::from(blend_mode).default_color();
                 let target = surface.draw_commands(
                     clear_color,
-                    &descriptors,
-                    &meshes,
+                    descriptors,
+                    meshes,
                     commands,
                     uniform_buffers,
                     color_buffers,
@@ -501,7 +501,7 @@ pub fn chunk_blends<'a>(
                             descriptors
                                 .device
                                 .create_bind_group(&wgpu::BindGroupDescriptor {
-                                    layout: &&descriptors.bind_layouts.bitmap,
+                                    layout: &descriptors.bind_layouts.bitmap,
                                     entries: &[
                                         wgpu::BindGroupEntry {
                                             binding: 0,

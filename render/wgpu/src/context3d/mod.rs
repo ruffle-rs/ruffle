@@ -318,7 +318,7 @@ impl WgpuContext3D {
                             NonZeroU64::new(data.len() as u64).unwrap(),
                             &self.descriptors.device,
                         )
-                        .copy_from_slice(&data);
+                        .copy_from_slice(data);
                 }
 
                 Context3DCommand::UploadToVertexBuffer {
@@ -341,7 +341,7 @@ impl WgpuContext3D {
                             NonZeroU64::new(data.len() as u64).unwrap(),
                             &self.descriptors.device,
                         )
-                        .copy_from_slice(&data);
+                        .copy_from_slice(data);
                 }
 
                 Context3DCommand::DrawTriangles {
@@ -490,7 +490,7 @@ impl WgpuContext3D {
                     // When the 'transposedMatrix' flag is false, it copies data *directly* from matrix.rawData,
                     // which is stored in column-major order
                     buffer_view.copy_from_slice(bytemuck::cast_slice::<f32, u8>(
-                        &matrix_raw_data_column_major,
+                        matrix_raw_data_column_major,
                     ));
                 }
                 Context3DCommand::SetCulling { face } => {

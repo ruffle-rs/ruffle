@@ -38,7 +38,7 @@ impl Globals {
         let bind_group_label = create_debug_label!("Globals bind group");
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: bind_group_label.as_deref(),
-            layout: &layout,
+            layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: buffer.as_entire_binding(),

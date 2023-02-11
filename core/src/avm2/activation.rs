@@ -1141,7 +1141,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             };
 
             if let Err(error) = result {
-                return self.handle_err(method, reader, &full_data, instruction_start, error);
+                return self.handle_err(method, reader, full_data, instruction_start, error);
             }
             result
         } else if let Err(e) = op {

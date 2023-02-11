@@ -16,7 +16,7 @@ impl LocalStorageBackend {
 impl StorageBackend for LocalStorageBackend {
     fn get(&self, name: &str) -> Option<Vec<u8>> {
         if let Ok(Some(data)) = self.storage.get(name) {
-            if let Ok(data) = BASE64_STANDARD.decode(&data) {
+            if let Ok(data) = BASE64_STANDARD.decode(data) {
                 return Some(data);
             }
         }

@@ -189,7 +189,7 @@ impl PendingDrawType {
                             wgpu::BindGroupEntry {
                                 binding: 0,
                                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &uniform_buffer,
+                                    buffer: uniform_buffer,
                                     offset: texture_transforms_index,
                                     size: wgpu::BufferSize::new(
                                         std::mem::size_of::<TextureTransforms>() as u64,
@@ -199,7 +199,7 @@ impl PendingDrawType {
                             wgpu::BindGroupEntry {
                                 binding: 1,
                                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer: &uniform_buffer,
+                                    buffer: uniform_buffer,
                                     offset: gradient,
                                     size: wgpu::BufferSize::new(
                                         std::mem::size_of::<GradientUniforms>() as u64,
@@ -228,7 +228,7 @@ impl PendingDrawType {
                     descriptors
                         .bitmap_samplers
                         .get_sampler(is_repeating, is_smoothed),
-                    &uniform_buffer,
+                    uniform_buffer,
                     texture_transforms_index,
                     texture_view,
                     bind_group_label,
@@ -271,12 +271,12 @@ impl BitmapBinds {
     ) -> Self {
         let bind_group =
             device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &layout,
+                layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &uniform_buffer,
+                            buffer: uniform_buffer,
                             offset: texture_transforms,
                             size: wgpu::BufferSize::new(
                                 std::mem::size_of::<TextureTransforms>() as u64
@@ -289,7 +289,7 @@ impl BitmapBinds {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
+                        resource: wgpu::BindingResource::Sampler(sampler),
                     },
                 ],
                 label: label.as_deref(),

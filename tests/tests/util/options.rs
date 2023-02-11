@@ -74,7 +74,7 @@ impl Approximations {
     pub fn number_patterns(&self) -> Vec<Regex> {
         self.number_patterns
             .iter()
-            .map(|p| Regex::new(&p).unwrap())
+            .map(|p| Regex::new(p).unwrap())
             .collect()
     }
 }

@@ -44,7 +44,7 @@ pub fn build_playerglobal(
     // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
     // in `out_dir`
     let status = Command::new("java")
-        .args(&[
+        .args([
             "-classpath",
             &asc_path.to_string_lossy(),
             "macromedia.asc.embedding.ScriptCompiler",
@@ -142,7 +142,7 @@ fn flash_to_rust_path(path: &str) -> String {
             // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
             if !component.ends_with("3D") {
                 // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                without_boundaries.extend(&[Boundary::UpperDigit, Boundary::LowerDigit]);
+                without_boundaries.extend([Boundary::UpperDigit, Boundary::LowerDigit]);
             }
 
             component
@@ -176,7 +176,7 @@ fn rust_method_name_and_path(
         // For example, a namespace of "flash.system" and a name of "Security"
         // turns into the path "flash::system::security"
         let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
-        let ns = flash_to_rust_path(resolve_multiname_ns(&abc, multiname));
+        let ns = flash_to_rust_path(resolve_multiname_ns(abc, multiname));
         if !ns.is_empty() {
             path += &ns;
             path += "::";
@@ -184,20 +184,20 @@ fn rust_method_name_and_path(
             flash_method_path += &ns;
             flash_method_path += "::";
         }
-        let name = resolve_multiname_name(&abc, multiname);
+        let name = resolve_multiname_name(abc, multiname);
         path += &flash_to_rust_path(name);
         path += "::";
 
-        flash_method_path += &name;
+        flash_method_path += name;
         flash_method_path += "::";
     } else {
         // This is a freestanding function. Append its namespace (the package).
         // For example, the freestanding function "flash.utils.getDefinitionByName"
         // has a namespace of "flash.utils", which turns into the path
         // "flash::utils"
-        let name = resolve_multiname_ns(&abc, trait_name);
+        let name = resolve_multiname_ns(abc, trait_name);
         let ns = &flash_to_rust_path(name);
-        path += &ns;
+        path += ns;
         flash_method_path += name;
         if !ns.is_empty() {
             path += "::";
@@ -209,7 +209,7 @@ fn rust_method_name_and_path(
     // name (e.g. `getDefinitionByName`)
     path += prefix;
 
-    let name = resolve_multiname_name(&abc, trait_name);
+    let name = resolve_multiname_name(abc, trait_name);
 
     path += &flash_to_rust_path(name);
     flash_method_path += name;

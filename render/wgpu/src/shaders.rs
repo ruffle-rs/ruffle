@@ -29,42 +29,42 @@ impl Shaders {
             ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
         );
         let color_shader = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "color.wgsl",
             include_str!("../shaders/color.wgsl"),
         );
         let bitmap_shader = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
         );
         let copy_srgb_shader = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "copy_srgb.wgsl",
             include_str!("../shaders/copy_srgb.wgsl"),
         );
         let copy_shader = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "copy.wgsl",
             include_str!("../shaders/copy.wgsl"),
         );
         let color_matrix_filter = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "filter/color_matrix.wgsl",
             include_str!("../shaders/filter/color_matrix.wgsl"),
         );
         let blur_filter = make_shader(
-            &device,
+            device,
             &mut composer,
             &shader_defs,
             "filter/blur.wgsl",
@@ -144,7 +144,7 @@ fn make_shader(
                 .unwrap_or_else(|e| {
                     panic!(
                         "{name} failed to compile:\n{}\n{:#?}",
-                        e.emit_to_string(&composer),
+                        e.emit_to_string(composer),
                         e
                     )
                 }),

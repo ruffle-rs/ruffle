@@ -92,7 +92,7 @@ fn take_screenshot(
     size: SizeOpt,
     skip_unsupported: bool,
 ) -> Result<Vec<RgbaImage>> {
-    let movie = SwfMovie::from_path(&swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+    let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
     if movie.is_action_script_3() && skip_unsupported {
         return Err(anyhow!("Skipping unsupported movie"));

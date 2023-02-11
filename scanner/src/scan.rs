@@ -43,7 +43,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
     let mut file_results = FileResults::new(name);
 
     let subproc = Command::new(exec_path)
-        .args(&["execute-report", &file.path().to_string_lossy()])
+        .args(["execute-report", &file.path().to_string_lossy()])
         .output();
     match subproc {
         Ok(output) => {
