@@ -97,7 +97,7 @@ impl<'gc> Domain<'gc> {
         false
     }
 
-    /// Resolve a QName and return the script that provided it.
+    /// Resolve a Multiname and return the script that provided it.
     ///
     /// If a name does not exist or cannot be resolved, no script or name will
     /// be returned.
@@ -121,25 +121,36 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
+    /// Resolve a Multiname and return the script that provided it.
+    ///
+    /// If a name does not exist or cannot be resolved, an error will be thrown.
+    pub fn find_defining_script(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        multiname: &Multiname<'gc>,
+    ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
+        match self.get_defining_script(multiname)? {
+            Some(val) => Ok(val),
+            None => Err(Error::AvmError(crate::avm2::error::reference_error(
+                activation,
+                &format!(
+                    "Error #1065: Variable {} is not defined.",
+                    multiname
+                        .local_name()
+                        .ok_or("Attempted to resolve uninitiated multiname")?
+                ),
+                1065,
+            )?)),
+        }
+    }
+
     /// Retrieve a value from this domain.
     pub fn get_defined_value(
         self,
         activation: &mut Activation<'_, 'gc>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (name, mut script) = match self.get_defining_script(&name.into())? {
-            Some(val) => val,
-            None => {
-                return Err(Error::AvmError(crate::avm2::error::reference_error(
-                    activation,
-                    &format!(
-                        "Error #1065: Variable {} is not defined.",
-                        name.local_name()
-                    ),
-                    1065,
-                )?));
-            }
-        };
+        let (name, mut script) = self.find_defining_script(activation, &name.into())?;
         let globals = script.globals(&mut activation.context)?;
 
         globals.get_property(&name.into(), activation)
