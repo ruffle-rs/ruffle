@@ -44,4 +44,9 @@ pub enum AutomatedEvent {
         pos: MousePosition,
         btn: MouseButton,
     },
+
+    /// Press a key
+    KeyDown {
+        key_code: u8,
+    }
 }
