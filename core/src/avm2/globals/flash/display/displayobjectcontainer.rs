@@ -590,7 +590,7 @@ pub fn mouse_children<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
+    avm2_stub_getter!(
         activation,
         "flash.display.DisplayObjectContainer",
         "mouseChildren"
