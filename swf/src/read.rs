@@ -529,6 +529,10 @@ impl<'a> Reader<'a> {
                 splitter_rect: tag_reader.read_rectangle()?,
             },
 
+            TagCode::DoAbc => {
+                let data = tag_reader.read_slice_to_end();
+                Tag::DoAbc(data)
+            }
             TagCode::DoAbc2 => Tag::DoAbc2(tag_reader.read_do_abc_2()?),
 
             TagCode::DoAction => {

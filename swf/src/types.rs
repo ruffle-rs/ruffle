@@ -552,6 +552,7 @@ pub enum Tag<'a> {
     DefineSprite(Sprite<'a>),
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
+    DoAbc(&'a [u8]),
     DoAbc2(DoAbc2<'a>),
     DoAction(DoAction<'a>),
     DoInitAction {
