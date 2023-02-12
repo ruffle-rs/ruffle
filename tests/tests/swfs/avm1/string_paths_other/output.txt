@@ -1,0 +1,9 @@
+a = _level0.plate1
+a = _level0.foo
+q = _level0.foo
+movieclip
+movieclip
+_root = _level0
+_root.foo = object
+_level0
+
