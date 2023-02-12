@@ -22,6 +22,7 @@ use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
 };
+use crate::display_object::Avm2MousePick;
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageScaleMode,
     TInteractiveObject, WindowMode,
@@ -1160,12 +1161,7 @@ impl Player {
                     let was_visible = display_object.visible();
                     display_object.set_visible(context.gc_context, false);
                     // Set _droptarget to the object the mouse is hovering over.
-                    let drop_target_object =
-                        context.stage.iter_render_list().rev().find_map(|level| {
-                            level
-                                .as_interactive()
-                                .and_then(|l| l.mouse_pick(context, *context.mouse_position, false))
-                        });
+                    let drop_target_object = run_mouse_pick(context, false);
                     movie_clip.set_drop_target(
                         context.gc_context,
                         drop_target_object.map(|d| d.as_displayobject()),
@@ -1184,12 +1180,7 @@ impl Player {
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
-            let new_over_object = context.stage.iter_render_list().rev().find_map(|level| {
-                level
-                    .as_interactive()
-                    .and_then(|l| l.mouse_pick(context, *context.mouse_position, true))
-            });
-
+            let new_over_object = run_mouse_pick(context, true);
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
 
@@ -1357,6 +1348,9 @@ impl Player {
                     let display_object = object.as_displayobject();
                     if !display_object.removed() {
                         object.handle_clip_event(context, event);
+                        if context.is_action_script_3() {
+                            object.event_dispatch_to_avm2(context, event);
+                        }
                     }
                     if !refresh && event.is_button_event() {
                         let is_button_mode = display_object.as_avm1_button().is_some()
@@ -2296,4 +2290,28 @@ pub struct DragObject<'gc> {
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]
     pub constraint: BoundingBox,
+}
+
+fn run_mouse_pick<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    require_button_mode: bool,
+) -> Option<InteractiveObject<'gc>> {
+    context.stage.iter_render_list().rev().find_map(|level| {
+        level.as_interactive().and_then(|l| {
+            if context.is_action_script_3() {
+                let mut res = None;
+                if let Avm2MousePick::Hit(target) =
+                    l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
+                {
+                    // Flash Player appears to never target events at the root object
+                    if !target.as_displayobject().is_root() {
+                        res = Some(target);
+                    }
+                }
+                res
+            } else {
+                l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
+            }
+        })
+    })
 }

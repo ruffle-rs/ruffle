@@ -6,6 +6,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
+use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -854,12 +855,14 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
     fn event_dispatch(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
-        event: ClipEvent<'gc>,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        self.event_dispatch_to_avm2(context, event);
-
         ClipEventResult::Handled
+    }
+
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        MouseCursor::Arrow
     }
 }
 

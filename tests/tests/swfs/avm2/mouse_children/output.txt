@@ -1,0 +1,192 @@
+MouseDown: target=inner_ id=0 mouseEnabled=true mouseChildren = true stageX= 10 stageY = 10
+MouseDown: target=middle id=0 mouseEnabled=true mouseChildren = true stageX= 30 stageY = 10
+MouseDown: target=outer_ id=0 mouseEnabled=true mouseChildren = true stageX= 50 stageY = 10
+MouseDown: target=inner_ id=1 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 10
+MouseDown: target=middle id=1 mouseEnabled=true mouseChildren = true stageX= 140 stageY = 10
+MouseDown: target=outer_ id=1 mouseEnabled=true mouseChildren = true stageX= 160 stageY = 10
+MouseDown: target=middle id=2 mouseEnabled=true mouseChildren = true stageX= 230 stageY = 10
+MouseDown: target=middle id=2 mouseEnabled=true mouseChildren = true stageX= 250 stageY = 10
+MouseDown: target=outer_ id=2 mouseEnabled=true mouseChildren = true stageX= 270 stageY = 10
+MouseDown: target=middle id=3 mouseEnabled=true mouseChildren = true stageX= 340 stageY = 10
+MouseDown: target=middle id=3 mouseEnabled=true mouseChildren = true stageX= 360 stageY = 10
+MouseDown: target=outer_ id=3 mouseEnabled=true mouseChildren = true stageX= 380 stageY = 10
+MouseDown: target=middle id=4 mouseEnabled=true mouseChildren = false stageX= 450 stageY = 10
+MouseDown: target=middle id=4 mouseEnabled=true mouseChildren = false stageX= 470 stageY = 10
+MouseDown: target=outer_ id=4 mouseEnabled=true mouseChildren = true stageX= 490 stageY = 10
+MouseDown: target=middle id=5 mouseEnabled=true mouseChildren = false stageX= 560 stageY = 10
+MouseDown: target=middle id=5 mouseEnabled=true mouseChildren = false stageX= 580 stageY = 10
+MouseDown: target=outer_ id=5 mouseEnabled=true mouseChildren = true stageX= 600 stageY = 10
+MouseDown: target=middle id=6 mouseEnabled=true mouseChildren = false stageX= 670 stageY = 10
+MouseDown: target=middle id=6 mouseEnabled=true mouseChildren = false stageX= 690 stageY = 10
+MouseDown: target=outer_ id=6 mouseEnabled=true mouseChildren = true stageX= 710 stageY = 10
+MouseDown: target=middle id=7 mouseEnabled=true mouseChildren = false stageX= 780 stageY = 10
+MouseDown: target=middle id=7 mouseEnabled=true mouseChildren = false stageX= 800 stageY = 10
+MouseDown: target=outer_ id=7 mouseEnabled=true mouseChildren = true stageX= 820 stageY = 10
+MouseDown: target=inner_ id=8 mouseEnabled=true mouseChildren = true stageX= 10 stageY = 120
+MouseDown: target=outer_ id=8 mouseEnabled=true mouseChildren = true stageX= 30 stageY = 120
+MouseDown: target=outer_ id=8 mouseEnabled=true mouseChildren = true stageX= 50 stageY = 120
+MouseDown: target=inner_ id=9 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 120
+MouseDown: target=outer_ id=9 mouseEnabled=true mouseChildren = true stageX= 140 stageY = 120
+MouseDown: target=outer_ id=9 mouseEnabled=true mouseChildren = true stageX= 160 stageY = 120
+MouseDown: target=outer_ id=10 mouseEnabled=true mouseChildren = true stageX= 230 stageY = 120
+MouseDown: target=outer_ id=10 mouseEnabled=true mouseChildren = true stageX= 250 stageY = 120
+MouseDown: target=outer_ id=10 mouseEnabled=true mouseChildren = true stageX= 270 stageY = 120
+MouseDown: target=outer_ id=11 mouseEnabled=true mouseChildren = true stageX= 340 stageY = 120
+MouseDown: target=outer_ id=11 mouseEnabled=true mouseChildren = true stageX= 360 stageY = 120
+MouseDown: target=outer_ id=11 mouseEnabled=true mouseChildren = true stageX= 380 stageY = 120
+MouseDown: target=outer_ id=12 mouseEnabled=true mouseChildren = true stageX= 450 stageY = 120
+MouseDown: target=outer_ id=12 mouseEnabled=true mouseChildren = true stageX= 470 stageY = 120
+MouseDown: target=outer_ id=12 mouseEnabled=true mouseChildren = true stageX= 490 stageY = 120
+MouseDown: target=outer_ id=13 mouseEnabled=true mouseChildren = true stageX= 560 stageY = 120
+MouseDown: target=outer_ id=13 mouseEnabled=true mouseChildren = true stageX= 580 stageY = 120
+MouseDown: target=outer_ id=13 mouseEnabled=true mouseChildren = true stageX= 600 stageY = 120
+MouseDown: target=outer_ id=14 mouseEnabled=true mouseChildren = true stageX= 670 stageY = 120
+MouseDown: target=outer_ id=14 mouseEnabled=true mouseChildren = true stageX= 690 stageY = 120
+MouseDown: target=outer_ id=14 mouseEnabled=true mouseChildren = true stageX= 710 stageY = 120
+MouseDown: target=outer_ id=15 mouseEnabled=true mouseChildren = true stageX= 780 stageY = 120
+MouseDown: target=outer_ id=15 mouseEnabled=true mouseChildren = true stageX= 800 stageY = 120
+MouseDown: target=outer_ id=15 mouseEnabled=true mouseChildren = true stageX= 820 stageY = 120
+MouseDown: target=outer_ id=16 mouseEnabled=true mouseChildren = false stageX= 10 stageY = 230
+MouseDown: target=outer_ id=16 mouseEnabled=true mouseChildren = false stageX= 30 stageY = 230
+MouseDown: target=outer_ id=16 mouseEnabled=true mouseChildren = false stageX= 50 stageY = 230
+MouseDown: target=outer_ id=17 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 230
+MouseDown: target=outer_ id=17 mouseEnabled=true mouseChildren = false stageX= 140 stageY = 230
+MouseDown: target=outer_ id=17 mouseEnabled=true mouseChildren = false stageX= 160 stageY = 230
+MouseDown: target=outer_ id=18 mouseEnabled=true mouseChildren = false stageX= 230 stageY = 230
+MouseDown: target=outer_ id=18 mouseEnabled=true mouseChildren = false stageX= 250 stageY = 230
+MouseDown: target=outer_ id=18 mouseEnabled=true mouseChildren = false stageX= 270 stageY = 230
+MouseDown: target=outer_ id=19 mouseEnabled=true mouseChildren = false stageX= 340 stageY = 230
+MouseDown: target=outer_ id=19 mouseEnabled=true mouseChildren = false stageX= 360 stageY = 230
+MouseDown: target=outer_ id=19 mouseEnabled=true mouseChildren = false stageX= 380 stageY = 230
+MouseDown: target=outer_ id=20 mouseEnabled=true mouseChildren = false stageX= 450 stageY = 230
+MouseDown: target=outer_ id=20 mouseEnabled=true mouseChildren = false stageX= 470 stageY = 230
+MouseDown: target=outer_ id=20 mouseEnabled=true mouseChildren = false stageX= 490 stageY = 230
+MouseDown: target=outer_ id=21 mouseEnabled=true mouseChildren = false stageX= 560 stageY = 230
+MouseDown: target=outer_ id=21 mouseEnabled=true mouseChildren = false stageX= 580 stageY = 230
+MouseDown: target=outer_ id=21 mouseEnabled=true mouseChildren = false stageX= 600 stageY = 230
+MouseDown: target=outer_ id=22 mouseEnabled=true mouseChildren = false stageX= 670 stageY = 230
+MouseDown: target=outer_ id=22 mouseEnabled=true mouseChildren = false stageX= 690 stageY = 230
+MouseDown: target=outer_ id=22 mouseEnabled=true mouseChildren = false stageX= 710 stageY = 230
+MouseDown: target=outer_ id=23 mouseEnabled=true mouseChildren = false stageX= 780 stageY = 230
+MouseDown: target=outer_ id=23 mouseEnabled=true mouseChildren = false stageX= 800 stageY = 230
+MouseDown: target=outer_ id=23 mouseEnabled=true mouseChildren = false stageX= 820 stageY = 230
+MouseDown: target=outer_ id=24 mouseEnabled=true mouseChildren = false stageX= 10 stageY = 340
+MouseDown: target=outer_ id=24 mouseEnabled=true mouseChildren = false stageX= 30 stageY = 340
+MouseDown: target=outer_ id=24 mouseEnabled=true mouseChildren = false stageX= 50 stageY = 340
+MouseDown: target=outer_ id=25 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 340
+MouseDown: target=outer_ id=25 mouseEnabled=true mouseChildren = false stageX= 140 stageY = 340
+MouseDown: target=outer_ id=25 mouseEnabled=true mouseChildren = false stageX= 160 stageY = 340
+MouseDown: target=outer_ id=26 mouseEnabled=true mouseChildren = false stageX= 230 stageY = 340
+MouseDown: target=outer_ id=26 mouseEnabled=true mouseChildren = false stageX= 250 stageY = 340
+MouseDown: target=outer_ id=26 mouseEnabled=true mouseChildren = false stageX= 270 stageY = 340
+MouseDown: target=outer_ id=27 mouseEnabled=true mouseChildren = false stageX= 340 stageY = 340
+MouseDown: target=outer_ id=27 mouseEnabled=true mouseChildren = false stageX= 360 stageY = 340
+MouseDown: target=outer_ id=27 mouseEnabled=true mouseChildren = false stageX= 380 stageY = 340
+MouseDown: target=outer_ id=28 mouseEnabled=true mouseChildren = false stageX= 450 stageY = 340
+MouseDown: target=outer_ id=28 mouseEnabled=true mouseChildren = false stageX= 470 stageY = 340
+MouseDown: target=outer_ id=28 mouseEnabled=true mouseChildren = false stageX= 490 stageY = 340
+MouseDown: target=outer_ id=29 mouseEnabled=true mouseChildren = false stageX= 560 stageY = 340
+MouseDown: target=outer_ id=29 mouseEnabled=true mouseChildren = false stageX= 580 stageY = 340
+MouseDown: target=outer_ id=29 mouseEnabled=true mouseChildren = false stageX= 600 stageY = 340
+MouseDown: target=outer_ id=30 mouseEnabled=true mouseChildren = false stageX= 670 stageY = 340
+MouseDown: target=outer_ id=30 mouseEnabled=true mouseChildren = false stageX= 690 stageY = 340
+MouseDown: target=outer_ id=30 mouseEnabled=true mouseChildren = false stageX= 710 stageY = 340
+MouseDown: target=outer_ id=31 mouseEnabled=true mouseChildren = false stageX= 780 stageY = 340
+MouseDown: target=outer_ id=31 mouseEnabled=true mouseChildren = false stageX= 800 stageY = 340
+MouseDown: target=outer_ id=31 mouseEnabled=true mouseChildren = false stageX= 820 stageY = 340
+MouseDown: target=inner_ id=32 mouseEnabled=true mouseChildren = true stageX= 10 stageY = 450
+MouseDown: target=middle id=32 mouseEnabled=true mouseChildren = true stageX= 30 stageY = 450
+MouseDown: target=null stageX= 50 stageY = 450
+MouseDown: target=inner_ id=33 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 450
+MouseDown: target=middle id=33 mouseEnabled=true mouseChildren = true stageX= 140 stageY = 450
+MouseDown: target=null stageX= 160 stageY = 450
+MouseDown: target=middle id=34 mouseEnabled=true mouseChildren = true stageX= 230 stageY = 450
+MouseDown: target=middle id=34 mouseEnabled=true mouseChildren = true stageX= 250 stageY = 450
+MouseDown: target=null stageX= 270 stageY = 450
+MouseDown: target=middle id=35 mouseEnabled=true mouseChildren = true stageX= 340 stageY = 450
+MouseDown: target=middle id=35 mouseEnabled=true mouseChildren = true stageX= 360 stageY = 450
+MouseDown: target=null stageX= 380 stageY = 450
+MouseDown: target=middle id=36 mouseEnabled=true mouseChildren = false stageX= 450 stageY = 450
+MouseDown: target=middle id=36 mouseEnabled=true mouseChildren = false stageX= 470 stageY = 450
+MouseDown: target=null stageX= 490 stageY = 450
+MouseDown: target=middle id=37 mouseEnabled=true mouseChildren = false stageX= 560 stageY = 450
+MouseDown: target=middle id=37 mouseEnabled=true mouseChildren = false stageX= 580 stageY = 450
+MouseDown: target=null stageX= 600 stageY = 450
+MouseDown: target=middle id=38 mouseEnabled=true mouseChildren = false stageX= 670 stageY = 450
+MouseDown: target=middle id=38 mouseEnabled=true mouseChildren = false stageX= 690 stageY = 450
+MouseDown: target=null stageX= 710 stageY = 450
+MouseDown: target=middle id=39 mouseEnabled=true mouseChildren = false stageX= 780 stageY = 450
+MouseDown: target=middle id=39 mouseEnabled=true mouseChildren = false stageX= 800 stageY = 450
+MouseDown: target=null stageX= 820 stageY = 450
+MouseDown: target=inner_ id=40 mouseEnabled=true mouseChildren = true stageX= 10 stageY = 560
+MouseDown: target=null stageX= 30 stageY = 560
+MouseDown: target=null stageX= 50 stageY = 560
+MouseDown: target=inner_ id=41 mouseEnabled=true mouseChildren = false stageX= 120 stageY = 560
+MouseDown: target=null stageX= 140 stageY = 560
+MouseDown: target=null stageX= 160 stageY = 560
+MouseDown: target=null stageX= 230 stageY = 560
+MouseDown: target=null stageX= 250 stageY = 560
+MouseDown: target=null stageX= 270 stageY = 560
+MouseDown: target=null stageX= 340 stageY = 560
+MouseDown: target=null stageX= 360 stageY = 560
+MouseDown: target=null stageX= 380 stageY = 560
+MouseDown: target=null stageX= 450 stageY = 560
+MouseDown: target=null stageX= 470 stageY = 560
+MouseDown: target=null stageX= 490 stageY = 560
+MouseDown: target=null stageX= 560 stageY = 560
+MouseDown: target=null stageX= 580 stageY = 560
+MouseDown: target=null stageX= 600 stageY = 560
+MouseDown: target=null stageX= 670 stageY = 560
+MouseDown: target=null stageX= 690 stageY = 560
+MouseDown: target=null stageX= 710 stageY = 560
+MouseDown: target=null stageX= 780 stageY = 560
+MouseDown: target=null stageX= 800 stageY = 560
+MouseDown: target=null stageX= 820 stageY = 560
+MouseDown: target=null stageX= 10 stageY = 670
+MouseDown: target=null stageX= 30 stageY = 670
+MouseDown: target=null stageX= 50 stageY = 670
+MouseDown: target=null stageX= 120 stageY = 670
+MouseDown: target=null stageX= 140 stageY = 670
+MouseDown: target=null stageX= 160 stageY = 670
+MouseDown: target=null stageX= 230 stageY = 670
+MouseDown: target=null stageX= 250 stageY = 670
+MouseDown: target=null stageX= 270 stageY = 670
+MouseDown: target=null stageX= 340 stageY = 670
+MouseDown: target=null stageX= 360 stageY = 670
+MouseDown: target=null stageX= 380 stageY = 670
+MouseDown: target=null stageX= 450 stageY = 670
+MouseDown: target=null stageX= 470 stageY = 670
+MouseDown: target=null stageX= 490 stageY = 670
+MouseDown: target=null stageX= 560 stageY = 670
+MouseDown: target=null stageX= 580 stageY = 670
+MouseDown: target=null stageX= 600 stageY = 670
+MouseDown: target=null stageX= 670 stageY = 670
+MouseDown: target=null stageX= 690 stageY = 670
+MouseDown: target=null stageX= 710 stageY = 670
+MouseDown: target=null stageX= 780 stageY = 670
+MouseDown: target=null stageX= 800 stageY = 670
+MouseDown: target=null stageX= 820 stageY = 670
+MouseDown: target=null stageX= 10 stageY = 780
+MouseDown: target=null stageX= 30 stageY = 780
+MouseDown: target=null stageX= 50 stageY = 780
+MouseDown: target=null stageX= 120 stageY = 780
+MouseDown: target=null stageX= 140 stageY = 780
+MouseDown: target=null stageX= 160 stageY = 780
+MouseDown: target=null stageX= 230 stageY = 780
+MouseDown: target=null stageX= 250 stageY = 780
+MouseDown: target=null stageX= 270 stageY = 780
+MouseDown: target=null stageX= 340 stageY = 780
+MouseDown: target=null stageX= 360 stageY = 780
+MouseDown: target=null stageX= 380 stageY = 780
+MouseDown: target=null stageX= 450 stageY = 780
+MouseDown: target=null stageX= 470 stageY = 780
+MouseDown: target=null stageX= 490 stageY = 780
+MouseDown: target=null stageX= 560 stageY = 780
+MouseDown: target=null stageX= 580 stageY = 780
+MouseDown: target=null stageX= 600 stageY = 780
+MouseDown: target=null stageX= 670 stageY = 780
+MouseDown: target=null stageX= 690 stageY = 780
+MouseDown: target=null stageX= 710 stageY = 780
+MouseDown: target=null stageX= 780 stageY = 780
+MouseDown: target=null stageX= 800 stageY = 780
+MouseDown: target=null stageX= 820 stageY = 780

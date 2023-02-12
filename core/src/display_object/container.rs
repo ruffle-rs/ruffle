@@ -547,6 +547,8 @@ pub struct ChildContainer<'gc> {
     /// This should be more efficient than switching the render list to a `BTreeMap`,
     /// as it will usually be false
     has_pending_removals: bool,
+
+    mouse_children: bool,
 }
 
 impl<'gc> Default for ChildContainer<'gc> {
@@ -561,6 +563,7 @@ impl<'gc> ChildContainer<'gc> {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
+            mouse_children: true,
         }
     }
 
@@ -751,6 +754,14 @@ impl<'gc> ChildContainer<'gc> {
     /// Get the number of children on the render list.
     fn num_children(&self) -> usize {
         self.render_list.len()
+    }
+
+    pub fn mouse_children(&self) -> bool {
+        self.mouse_children
+    }
+
+    pub fn set_mouse_children(&mut self, mouse_children: bool) {
+        self.mouse_children = mouse_children;
     }
 
     /// Insert a child at a given render list position.

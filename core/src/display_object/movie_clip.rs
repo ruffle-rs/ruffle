@@ -43,6 +43,8 @@ use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, FrameLabelData};
 
+use super::interactive::Avm2MousePick;
+
 type FrameNumber = u16;
 
 /// Indication of what frame `run_frame` should jump to next.
@@ -2740,15 +2742,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     }
                 }
             }
-        } else {
-            drop(read);
-            handled = self.event_dispatch_to_avm2(context, event);
         }
 
         handled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
@@ -2789,15 +2788,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             let mut options = HitTestOptions::SKIP_INVISIBLE;
             options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
             // AVM2 allows movie clips to recieve mouse events without explicitly enabling button mode.
-            let check_non_interactive =
-                !require_button_mode || matches!(self.object2(), Avm2Value::Object(_));
+            let check_non_interactive = !require_button_mode;
 
             for child in self.iter_render_list().rev() {
-                // Clicking static text is ignored
-                if context.is_action_script_3() && matches!(child, DisplayObject::Text(_)) {
-                    continue;
-                }
-
                 if child.clip_depth() > 0 {
                     if result.is_some() && child.clip_depth() >= hit_depth {
                         if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
@@ -2808,7 +2801,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     }
                 } else if result.is_none() {
                     if let Some(child) = child.as_interactive() {
-                        result = child.mouse_pick(context, point, require_button_mode);
+                        result = child.mouse_pick_avm1(context, point, require_button_mode);
                     } else if check_non_interactive
                         && self.mouse_enabled()
                         && child.hit_test_shape(context, point, options)
@@ -2837,6 +2830,97 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         None
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        point: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        if self.visible() {
+            let this: InteractiveObject<'gc> = (*self).into();
+
+            if let Some(masker) = self.masker() {
+                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
+                    return Avm2MousePick::Miss;
+                }
+            }
+
+            // In AVM2, mouse_enabled should only impact the ability to select the current clip
+            // but it should still be possible to select any children where child.mouse_enabled() is
+            // true.
+            // InteractiveObject.mouseEnabled:
+            // "Any children of this instance on the display list are not affected."
+            if self.mouse_enabled() && self.world_bounds().contains(point) {
+                // This MovieClip operates in "button mode" if it has a mouse handler,
+                // either via on(..) or via property mc.onRelease, etc.
+                let is_button_mode = self.is_button_mode(context);
+
+                if is_button_mode {
+                    let mut options = HitTestOptions::SKIP_INVISIBLE;
+                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                    if self.hit_test_shape(context, point, options) {
+                        return Avm2MousePick::Hit(this);
+                    }
+                }
+            }
+
+            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+            // but a child button can have an invisible hit area outside the parent's bounds.
+            let mut options = HitTestOptions::SKIP_INVISIBLE;
+            options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+
+            let mut found_propagate = None;
+
+            for child in self.iter_render_list().rev() {
+                // Clicking static text is ignored
+                if matches!(child, DisplayObject::Text(_)) {
+                    continue;
+                }
+
+                let res = if let Some(child) = child.as_interactive() {
+                    child.mouse_pick_avm2(context, point, require_button_mode)
+                } else {
+                    Avm2MousePick::Miss
+                };
+
+                match res {
+                    Avm2MousePick::Hit(_) => {
+                        return res.combine_with_parent((*self).into());
+                    }
+                    Avm2MousePick::PropagateToParent => {
+                        found_propagate = Some(res);
+                    }
+                    Avm2MousePick::Miss => {}
+                }
+            }
+
+            // Non-interactive children appear to have lower 'priority' than interactive children.
+            for child in self.iter_render_list().rev() {
+                if child.as_interactive().is_none() && child.hit_test_shape(context, point, options)
+                {
+                    return Avm2MousePick::Hit(this).combine_with_parent((*self).into());
+                }
+            }
+
+            // A 'propagated' event from a child seems to have lower 'priority' than anything else.
+            if let Some(propagate) = found_propagate {
+                return propagate.combine_with_parent((*self).into());
+            }
+
+            // Check drawing, because this selects the current clip, it must have mouse enabled
+            if self.mouse_enabled() {
+                let local_matrix = self.global_to_local_matrix();
+                let point = local_matrix * point;
+
+                if self.0.read().drawing.hit_test(point, &local_matrix) {
+                    return Avm2MousePick::Hit((*self).into());
+                }
+            }
+        }
+
+        Avm2MousePick::Miss
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
