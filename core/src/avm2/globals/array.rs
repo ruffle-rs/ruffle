@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
+use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -14,6 +14,29 @@ use bitflags::bitflags;
 use gc_arena::GcCell;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
+
+// All of these methods will be defined as both
+// AS3 instance methods and methods on the `Array` class prototype.
+const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
+    ("concat", concat),
+    ("join", join),
+    ("forEach", for_each),
+    ("map", map),
+    ("filter", filter),
+    ("every", every),
+    ("some", some),
+    ("indexOf", index_of),
+    ("lastIndexOf", last_index_of),
+    ("pop", pop),
+    ("push", push),
+    ("reverse", reverse),
+    ("shift", shift),
+    ("unshift", unshift),
+    ("slice", slice),
+    ("splice", splice),
+    ("sort", sort),
+    ("sortOn", sort_on),
+];
 
 /// Implements `Array`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -51,10 +74,32 @@ pub fn instance_init<'gc>(
 
 /// Implements `Array`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+        let array_proto = this_class.prototype();
+
+        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+            array_proto.set_string_property_local(
+                *name,
+                FunctionObject::from_method(
+                    activation,
+                    Method::from_builtin(*method, name, gc_context),
+                    scope,
+                    None,
+                    Some(this_class),
+                )
+                .into(),
+                activation,
+            )?;
+            array_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
+        }
+    }
     Ok(Value::Undefined)
 }
 
@@ -1208,30 +1253,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("concat", concat),
-        ("join", join),
-        ("forEach", for_each),
-        ("map", map),
-        ("filter", filter),
-        ("every", every),
-        ("some", some),
-        ("indexOf", index_of),
-        ("lastIndexOf", last_index_of),
-        ("pop", pop),
-        ("push", push),
-        ("reverse", reverse),
-        ("shift", shift),
-        ("unshift", unshift),
-        ("slice", slice),
-        ("splice", splice),
-        ("sort", sort),
-        ("sortOn", sort_on),
-    ];
     write.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
+        PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
     const CONSTANTS: &[(&str, u32)] = &[
