@@ -126,7 +126,6 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
-
         if self.locals().has_property(activation, name) {
             return self
                 .locals()
@@ -134,13 +133,14 @@ impl<'gc> Scope<'gc> {
                 .map(|v| CallableValue::Callable(self.locals_cell(), v));
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name, activation);
+            scope.resolve(name, activation)
         } else {
-            let res = activation.root_object().coerce_to_object(activation).get(name, activation) .map(|v| CallableValue::Callable(self.locals_cell(), v));
-            return res;
+            activation
+                .root_object()
+                .coerce_to_object(activation)
+                .get(name, activation)
+                .map(|v| CallableValue::Callable(self.locals_cell(), v))
         }
-
-        Ok(CallableValue::UnCallable(Value::Undefined))
     }
 
     /// Update a particular value in the scope chain.
