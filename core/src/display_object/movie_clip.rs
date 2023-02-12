@@ -559,6 +559,7 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
+                TagCode::DoAbc => self.do_abc(context, reader),
                 TagCode::DoAbc2 => self.do_abc_2(context, reader),
                 TagCode::SymbolClass => self.symbol_class(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => {
@@ -698,6 +699,30 @@ impl<'gc> MovieClip<'gc> {
     }
 
     #[inline]
+    fn do_abc(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'_>,
+    ) -> Result<(), Error> {
+        if !context.is_action_script_3() {
+            tracing::warn!("DoABC tag in AVM1 movie");
+            return Ok(());
+        }
+
+        let data = reader.read_slice_to_end();
+        if !data.is_empty() {
+            let movie = self.movie();
+            let domain = context.library.library_for_movie_mut(movie).avm2_domain();
+
+            if let Err(e) = Avm2::do_abc(context, data, swf::DoAbc2Flag::empty(), domain) {
+                tracing::warn!("Error loading ABC file: {}", e);
+            }
+        }
+
+        Ok(())
+    }
+
+    #[inline]
     fn do_abc_2(
         self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -713,7 +738,7 @@ impl<'gc> MovieClip<'gc> {
             let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            if let Err(e) = Avm2::do_abc_2(context, do_abc, domain) {
+            if let Err(e) = Avm2::do_abc(context, do_abc.data, do_abc.flags, domain) {
                 tracing::warn!("Error loading ABC file: {}", e);
             }
         }
