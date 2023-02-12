@@ -652,14 +652,14 @@ fn load_playerglobal<'gc>(
     let mut reader = slice.read_from(0);
 
     let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
-        if tag_code == TagCode::DoAbc {
+        if tag_code == TagCode::DoAbc2 {
             let do_abc = reader
-                .read_do_abc()
+                .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::do_abc(&mut activation.context, do_abc, domain)
+            Avm2::do_abc_2(&mut activation.context, do_abc, domain)
                 .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
-            panic!("playerglobal should only contain `DoAbc` tag - found tag {tag_code:?}")
+            panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }
         Ok(ControlFlow::Continue)
     };

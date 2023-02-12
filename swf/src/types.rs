@@ -552,7 +552,7 @@ pub enum Tag<'a> {
     DefineSprite(Sprite<'a>),
     DefineText(Box<Text>),
     DefineVideoStream(DefineVideoStream),
-    DoAbc(DoAbc<'a>),
+    DoAbc2(DoAbc2<'a>),
     DoAction(DoAction<'a>),
     DoInitAction {
         id: CharacterId,
@@ -1723,14 +1723,14 @@ pub struct DefineBitsJpeg3<'a> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DoAbc<'a> {
-    pub flags: DoAbcFlag,
+pub struct DoAbc2<'a> {
+    pub flags: DoAbc2Flag,
     pub name: &'a SwfStr,
     pub data: &'a [u8],
 }
 
 bitflags! {
-    pub struct DoAbcFlag: u32 {
+    pub struct DoAbc2Flag: u32 {
         const LAZY_INITIALIZE = 1 << 0;
     }
 }

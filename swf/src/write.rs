@@ -703,9 +703,9 @@ impl<W: Write> Writer<W> {
             Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
             Tag::DefineText(ref text) => self.write_define_text(text)?,
             Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
-            Tag::DoAbc(ref do_abc) => {
+            Tag::DoAbc2(ref do_abc) => {
                 let len = do_abc.data.len() + do_abc.name.len() + 5;
-                self.write_tag_header(TagCode::DoAbc, len as u32)?;
+                self.write_tag_header(TagCode::DoAbc2, len as u32)?;
                 self.write_u32(do_abc.flags.bits())?;
                 self.write_string(do_abc.name)?;
                 self.output.write_all(do_abc.data)?;
