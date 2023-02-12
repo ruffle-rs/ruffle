@@ -7,13 +7,16 @@
     {
       "matchLanguages": ["rust"],
       "matchUpdateTypes": "patch",
-      "excludePackageNames": ["wasm-bindgen"],
       "groupName": "Rust dependency patches",
       "extends": ["schedule:weekly"]
     },
     {
       "matchLanguages": ["rust"],
       "extends": ["schedule:weekly"]
+    },
+    {
+      "matchPackageNames": ["wasm-bindgen", "wasm-bindgen-futures"],
+      "groupName": "Rust dependencies - wasm-bindgen related"
     },
     {
       "matchLanguages": ["js"],
