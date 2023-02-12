@@ -438,7 +438,7 @@ impl<'gc> Value<'gc> {
                     }
                 }
 
-                let mut parts = path.as_wstr().split(b'.').into_iter();
+                let mut parts = path.as_wstr().split(b'.');
 
                 let mut start = activation
                     .root_object()
@@ -555,7 +555,7 @@ impl<'gc> Value<'gc> {
             // trace(this.child);
             // Should correctly find the child. As `this` is Value::MovieClip("_level0.child"), we don't want to try and find `123.child`!
 
-            let mut parts = path.as_wstr().split(b'.').into_iter();
+            let mut parts = path.as_wstr().split(b'.');
 
             let mut start = activation
                 .root_object()
