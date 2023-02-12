@@ -1,0 +1,10 @@
+true
+true
+FilePrivateNS:Test::C
+FilePrivateNS:Test::C
+FilePrivateNS:Test::C
+int
+int
+Class
+flash.utils::Dictionary
+flash.utils::Dictionary
