@@ -582,18 +582,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let a = self.context.avm1.pop().to_primitive(self)?;
         let b = self.context.avm1.pop().to_primitive(self)?;
 
-        let a = if let Value::MovieClip(_, _) = a {
-            a.coerce_to_string(self)?.into()
-        } else {
-            a
-        };
-
-        let b = if let Value::MovieClip(_, _) = b {
-            b.coerce_to_string(self)?.into()
-        } else {
-            b
-        };
-
         let result: Value<'_> = match (a, b) {
             (Value::String(a), Value::String(b)) => {
                 AvmString::concat(self.context.gc_context, b, a).into()
