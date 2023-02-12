@@ -17,6 +17,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use ruffle_core::events::KeyCode;
 
 pub struct TestAudioBackend {
     mixer: AudioMixer,
@@ -150,6 +151,9 @@ pub fn run_swf(
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
                 },
+                AutomatedEvent::KeyDown { key_code } => {
+                    PlayerEvent::KeyDown { key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"), key_char: None }
+                }
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
