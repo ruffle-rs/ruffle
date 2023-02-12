@@ -393,7 +393,10 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) if activation.swf_version() < 5 => "1".into(),
             Value::Bool(false) if activation.swf_version() < 5 => "0".into(),
             Value::Object(object) => {
-                if let Some(object) = object.as_display_object() {
+                if let Some(object) = object
+                    .as_display_object()
+                    .filter(|_| !matches!(object, Object::SuperObject(_)))
+                {
                     // StageObjects are special-cased to return their path.
                     AvmString::new(activation.context.gc_context, object.path())
                 } else {
