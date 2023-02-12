@@ -15,7 +15,7 @@ use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::types::*;
 use swf::avm2::write::Writer;
-use swf::{DoAbc, DoAbcFlag, Header, Tag};
+use swf::{DoAbc2, DoAbc2Flag, Header, Tag};
 use walkdir::WalkDir;
 
 // The metadata name - all metadata in our .as files
@@ -88,8 +88,8 @@ pub fn build_playerglobal(
 
     bytes = write_native_table(&bytes, &out_dir)?;
 
-    let tags = [Tag::DoAbc(DoAbc {
-        flags: DoAbcFlag::LAZY_INITIALIZE,
+    let tags = [Tag::DoAbc2(DoAbc2 {
+        flags: DoAbc2Flag::LAZY_INITIALIZE,
         name: "".into(),
         data: &bytes,
     })];

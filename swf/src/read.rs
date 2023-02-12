@@ -529,7 +529,7 @@ impl<'a> Reader<'a> {
                 splitter_rect: tag_reader.read_rectangle()?,
             },
 
-            TagCode::DoAbc => Tag::DoAbc(tag_reader.read_do_abc()?),
+            TagCode::DoAbc2 => Tag::DoAbc2(tag_reader.read_do_abc_2()?),
 
             TagCode::DoAction => {
                 let action_data = tag_reader.read_slice_to_end();
@@ -2516,11 +2516,11 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_do_abc(&mut self) -> Result<DoAbc<'a>> {
-        let flags = DoAbcFlag::from_bits_truncate(self.read_u32()?);
+    pub fn read_do_abc_2(&mut self) -> Result<DoAbc2<'a>> {
+        let flags = DoAbc2Flag::from_bits_truncate(self.read_u32()?);
         let name = self.read_str()?;
         let data = self.read_slice_to_end();
-        Ok(DoAbc { flags, name, data })
+        Ok(DoAbc2 { flags, name, data })
     }
 
     pub fn read_product_info(&mut self) -> Result<ProductInfo> {

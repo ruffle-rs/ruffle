@@ -73,7 +73,7 @@ pub enum TagCode {
     Metadata = 77,
     DefineScalingGrid = 78,
 
-    DoAbc = 82,
+    DoAbc2 = 82,
     DefineShape4 = 83,
     DefineMorphShape2 = 84,
 

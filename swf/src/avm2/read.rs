@@ -879,7 +879,7 @@ pub mod tests {
         let swf_buf = crate::decompress_swf(&data[..]).unwrap();
         let swf = crate::parse_swf(&swf_buf).unwrap();
         for tag in swf.tags {
-            if let Tag::DoAbc(do_abc) = tag {
+            if let Tag::DoAbc2(do_abc) = tag {
                 return do_abc.data.to_vec();
             }
         }
