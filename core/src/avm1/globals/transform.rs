@@ -49,7 +49,7 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // `Tranform` constructor accepts exactly 1 argument.
-    if let [Value::MovieClip(_, _)] = args {
+    if let [Value::MovieClip(_)] = args {
         let object = args.first().unwrap().coerce_to_object(activation);
 
         if let (Some(transform), Some(clip)) = (

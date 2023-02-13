@@ -60,7 +60,7 @@ fn serialize_value<'gc>(
     elem: Value<'gc>,
 ) -> Option<AmfValue> {
     match elem {
-        Value::Undefined | Value::MovieClip(_, _) => Some(AmfValue::Undefined),
+        Value::Undefined | Value::MovieClip(_) => Some(AmfValue::Undefined),
         Value::Null => Some(AmfValue::Null),
         Value::Bool(b) => Some(AmfValue::Bool(b)),
         Value::Number(f) => Some(AmfValue::Number(f)),
