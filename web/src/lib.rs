@@ -794,8 +794,22 @@ impl Ruffle {
                             let key_char = web_key_to_codepoint(&js_event.key());
                             core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
 
-                            if let Some(codepoint) = key_char {
-                                core.handle_event(PlayerEvent::TextInput { codepoint });
+                                let key_code = input.last_key_code();
+                                let key_char = input.last_key_char();
+                                let text_control = input.last_text_control();
+
+                                if let Some(code) = text_control {
+                                    core.handle_event(PlayerEvent::TextControl { code });
+                                } else {
+                                    if key_code != KeyCode::Unknown {
+                                        core.handle_event(PlayerEvent::KeyDown { key_code });
+                                    }
+                                    if let Some(codepoint) = key_char {
+                                        core.handle_event(PlayerEvent::TextInput { codepoint });
+                                    }
+                                }
+
+                                js_event.prevent_default();
                             }
                         });
 

@@ -17,7 +17,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, TextControlCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
@@ -1182,8 +1182,12 @@ impl<'gc> EditText<'gc> {
         None
     }
 
-    pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc>) {
-        if self.0.read().flags.contains(EditTextFlag::READ_ONLY) {
+    pub fn text_control_input(
+        self,
+        control_code: TextControlCode,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
+        if self.0.read().flags.contains(EditTextFlag::READ_ONLY) && control_code.is_edit_input() {
             return;
         }
 
@@ -1191,6 +1195,60 @@ impl<'gc> EditText<'gc> {
             let mut changed = false;
             match character as u8 {
                 8 | 127 if !selection.is_caret() => {
+                    let is_selectable = self.0.read().is_selectable;
+            match control_code {
+                TextControlCode::SelectAll => {
+                    if is_selectable {
+                        self.set_selection(
+                            Some(TextSelection::for_range(0, self.text().len())),
+                            context.gc_context,
+                        );
+                    }
+                }
+                TextControlCode::Copy => {
+                    if !selection.is_caret() {
+                        let text = &self.text()[selection.start()..selection.end()];
+                        context.input.set_clipboard_content(text.to_string());
+                    }
+                }
+                TextControlCode::Paste => {
+                    let text = &context.input.clipboard_content();
+                    self.replace_text(selection.start(), selection.end(), text, context);
+                    let new_start = selection.start() + text.len();
+                    if is_selectable {
+                        self.set_selection(
+                            Some(TextSelection::for_position(new_start)),
+                            context.gc_context,
+                        );
+                    } else {
+                        self.set_selection(
+                            Some(TextSelection::for_position(self.text().len())),
+                            context.gc_context,
+                        );
+                    }
+                    changed = true;
+                }
+                TextControlCode::Cut => {
+                    if !selection.is_caret() {
+                        let text = &self.text()[selection.start()..selection.end()];
+                        context.input.set_clipboard_content(text.to_string());
+
+                        self.replace_text(selection.start(), selection.end(), "", context);
+                        if is_selectable {
+                            self.set_selection(
+                                Some(TextSelection::for_position(selection.start())),
+                                context.gc_context,
+                            );
+                        } else {
+                            self.set_selection(
+                                Some(TextSelection::for_position(self.text().len())),
+                                context.gc_context,
+                            );
+                        }
+                        changed = true;
+                    }
+                }
+                TextControlCode::Backspace | TextControlCode::Delete if !selection.is_caret() => {
                     // Backspace or delete with multiple characters selected
                     self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                     self.set_selection(
@@ -1199,7 +1257,7 @@ impl<'gc> EditText<'gc> {
                     );
                     changed = true;
                 }
-                8 => {
+                TextControlCode::Backspace => {
                     // Backspace with caret
                     if selection.start() > 0 {
                         // Delete previous character
@@ -1213,7 +1271,7 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
-                127 => {
+                TextControlCode::Delete => {
                     // Delete with caret
                     if selection.end() < self.text_length() {
                         // Delete next character
@@ -1224,6 +1282,31 @@ impl<'gc> EditText<'gc> {
                         changed = true;
                     }
                 }
+                _ => {}
+            }
+            if changed {
+                let globals = context.avm1.global_object_cell();
+                let swf_version = context.swf.header().version;
+                let mut activation = Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Propagate Text Binding]"),
+                    swf_version,
+                    globals,
+                    self.into(),
+                );
+                self.propagate_text_binding(&mut activation);
+            }
+        }
+    }
+
+    pub fn text_input(self, character: char, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !self.0.read().is_editable {
+            return;
+        }
+
+        if let Some(selection) = self.selection() {
+            let mut changed = false;
+            match character as u8 {
                 code if !(code as char).is_control() => {
                     let can_insert = {
                         let read = self.0.read();
