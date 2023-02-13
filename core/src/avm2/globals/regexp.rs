@@ -2,7 +2,7 @@
 
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{regexp_allocator, ArrayObject, Object, TObject};
+use crate::avm2::object::{regexp_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -11,6 +11,11 @@ use crate::avm2::QName;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
 use crate::string::{AvmString, WString};
 use gc_arena::GcCell;
+
+// All of these methods will be defined as both
+// AS3 instance methods and methods on the `Array` class prototype.
+const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] =
+    &[("exec", exec), ("test", test)];
 
 /// Implements `RegExp`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -70,10 +75,32 @@ fn class_call<'gc>(
 
 /// Implements `RegExp`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+        let regexp_proto = this_class.prototype();
+
+        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+            regexp_proto.set_string_property_local(
+                *name,
+                FunctionObject::from_method(
+                    activation,
+                    Method::from_builtin(*method, name, gc_context),
+                    scope,
+                    None,
+                    Some(this_class),
+                )
+                .into(),
+                activation,
+            )?;
+            regexp_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
+        }
+    }
     Ok(Value::Undefined)
 }
 
@@ -317,11 +344,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("exec", exec), ("test", test)];
     write.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
+        PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
     class
