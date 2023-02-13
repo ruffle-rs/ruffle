@@ -146,6 +146,7 @@ impl<'gc> MovieClipReference<'gc> {
                 }
             }
         }
+        drop(cache);
 
         // We missed the cache, switch to always use the slow-path
         *self
