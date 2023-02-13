@@ -39,7 +39,6 @@ impl<'gc> MovieClipPath<'gc> {
 
         // Get the rest of the path
         let path_segments = parts
-            .into_iter()
             .map(|s| AvmString::new(activation.context.gc_context, s))
             .collect();
 
