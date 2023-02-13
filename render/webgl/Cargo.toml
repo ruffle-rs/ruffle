@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-js-sys = "0.3.60"
+js-sys = "0.3.61"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
@@ -21,7 +21,7 @@ thiserror = "1.0"
 downcast-rs = "1.2.0"
 
 [dependencies.web-sys]
-version = "0.3.60"
+version = "0.3.61"
 features = [
     "HtmlCanvasElement", "OesVertexArrayObject", "WebGl2RenderingContext", "WebGlBuffer", "WebglDebugRendererInfo",
     "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGlShader", "WebGlTexture",
