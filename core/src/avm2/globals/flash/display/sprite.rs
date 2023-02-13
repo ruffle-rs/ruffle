@@ -21,18 +21,26 @@ pub fn init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let class_object = this
-                .instance_of()
-                .ok_or("Attempted to construct Sprite on a bare object")?;
-            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do =
-                MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
-
-            this.init_display_object(activation.context.gc_context, new_do.into());
+            init_empty_sprite(activation, this)?;
         }
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn init_empty_sprite<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+) -> Result<(), Error<'gc>> {
+    let class_object = this
+        .instance_of()
+        .ok_or("Attempted to construct Sprite on a bare object")?;
+    let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+    let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
+
+    this.init_display_object(activation.context.gc_context, new_do.into());
+
+    Ok(())
 }
 
 /// Implements `dropTarget`'s getter
