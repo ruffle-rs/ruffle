@@ -23,7 +23,7 @@ url = "2.3.1"
 arboard = "3.2.0"
 dirs = "4.0"
 isahc = "1.7.2"
-rfd = "0.11.0"
+rfd = "0.11.1"
 anyhow = "1.0"
 bytemuck = "1.13.0"
 os_info = { version = "3", default-features = false }
