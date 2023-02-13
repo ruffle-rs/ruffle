@@ -895,9 +895,8 @@ impl<'gc> ChildContainer<'gc> {
             // If we have an unload handler, we need the delay
             if mc.has_unload_handler() {
                 return true;
-            // If we were created via timeline and we have a dynamic unload handler, we need the delay
+            // otherwise, check for a dynamic unload handler
             } else {
-                //if child.instantiated_by_timeline() {
                 let obj = child.object().coerce_to_object(activation);
                 if obj.has_property(activation, "onUnload".into()) {
                     return true;
