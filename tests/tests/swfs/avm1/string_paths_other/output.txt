@@ -7,3 +7,5 @@ _root = _level0
 _root.foo = object
 _level0
 
+clip before removing = _level0.foo
+clip after removing = _level0.clipInstance2
