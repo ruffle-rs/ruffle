@@ -1,8 +1,13 @@
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
+use ruffle_core::backend::audio::{
+    swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
+    SoundTransform,
+};
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::events::MouseButton as RuffleMouseButton;
+use ruffle_core::impl_audio_mixer_backend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
@@ -12,6 +17,37 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+pub struct TestAudioBackend {
+    mixer: AudioMixer,
+}
+
+impl TestAudioBackend {
+    pub fn new() -> Self {
+        const NUM_CHANNELS: u8 = 2;
+        const SAMPLE_RATE: u32 = 44100;
+        const BUFFER_SIZE: usize = 1024;
+
+        let mixer = AudioMixer::new(NUM_CHANNELS, SAMPLE_RATE);
+        let mixer_proxy = mixer.proxy();
+
+        std::thread::spawn(move || loop {
+            let mut buffer = [0f32; NUM_CHANNELS as usize * BUFFER_SIZE];
+            mixer_proxy.mix::<f32>(&mut buffer);
+            std::thread::sleep(std::time::Duration::from_secs_f32(
+                BUFFER_SIZE as f32 / SAMPLE_RATE as f32,
+            ));
+        });
+
+        Self { mixer }
+    }
+}
+
+impl AudioBackend for TestAudioBackend {
+    impl_audio_mixer_backend!(mixer);
+    fn play(&mut self) {}
+    fn pause(&mut self) {}
+}
 
 struct TestLogBackend {
     trace_output: Rc<RefCell<String>>,

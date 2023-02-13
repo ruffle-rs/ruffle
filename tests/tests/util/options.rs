@@ -1,4 +1,5 @@
 use crate::util::environment::WGPU;
+use crate::util::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
 use regex::Regex;
@@ -85,6 +86,7 @@ pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
     viewport_dimensions: Option<ViewportDimensions>,
     with_renderer: Option<RenderOptions>,
+    with_audio: bool,
 }
 
 impl PlayerOptions {
@@ -132,6 +134,10 @@ impl PlayerOptions {
                             .map_err(|e| anyhow!(e.to_string()))?,
                     );
             }
+        }
+
+        if self.with_audio {
+            player_builder = player_builder.with_audio(TestAudioBackend::new());
         }
 
         Ok(player_builder)
