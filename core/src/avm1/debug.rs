@@ -155,7 +155,7 @@ impl<'a> VariableDumper<'a> {
             Value::MovieClip(_) => {
                 let obj = value.coerce_to_object(activation);
                 self.print_object(&obj, activation);
-            },
+            }
         }
     }
 
