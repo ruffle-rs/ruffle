@@ -1,23 +1,35 @@
 /// (dispatching MouseEvent at 5.0, 1.5...)
-/// evt.stageX
-5
-/// evt.stageY
-1.5
+/// evt.localX = 5 evt.localY = 1.5 evt.stageX = 5 evt.stageY = 1.5
+/// set localX=1 localY=2
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 1 evt.stageY = 2
+/// modified target.x and target.y
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 101 evt.stageY = 102
+/// modified target.transform.matrix
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 12 evt.stageY = 16
 /// (dispatching MouseEvent at 5.0, 1.5...)
-/// evt.stageX
-37
-/// evt.stageY
-17.5
+/// evt.localX = 5 evt.localY = 1.5 evt.stageX = 41.5 evt.stageY = 32
+/// set localX=1 localY=2
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 39 evt.stageY = 26
+/// modified target.x and target.y
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 107 evt.stageY = 110
+/// modified target.transform.matrix
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 12 evt.stageY = 16
 ///this.addChild(this.te);
 /// (dispatching MouseEvent at 5.0, 1.5...)
-/// evt.stageX
-37
-/// evt.stageY
-17.5
+/// evt.localX = 5 evt.localY = 1.5 evt.stageX = 14.5 evt.stageY = 22
+/// set localX=1 localY=2
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 12 evt.stageY = 16
+/// modified target.x and target.y
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 107 evt.stageY = 110
+/// modified target.transform.matrix
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 12 evt.stageY = 16
 ///this.scaleX = 0.5
 ///this.scaleY = 0.25
 /// (dispatching MouseEvent at 5.0, 1.5...)
-/// evt.stageX
-18.5
-/// evt.stageY
-4.4
+/// evt.localX = 5 evt.localY = 1.5 evt.stageX = 7.25 evt.stageY = 5.5
+/// set localX=1 localY=2
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 6 evt.stageY = 4
+/// modified target.x and target.y
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 53.5 evt.stageY = 27.5
+/// modified target.transform.matrix
+/// evt.localX = 1 evt.localY = 2 evt.stageX = 6 evt.stageY = 4

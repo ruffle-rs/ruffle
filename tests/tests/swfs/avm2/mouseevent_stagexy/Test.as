@@ -26,11 +26,28 @@
 }
 
 import flash.events.MouseEvent;
+import flash.geom.Matrix;
 
 function assert_event(evt: MouseEvent) {
-	trace("/// evt.stageX");
-	trace(evt.stageX);
-
-	trace("/// evt.stageY");
-	trace(evt.stageY);
+	trace("/// evt.localX = " + evt.localX + " evt.localY = " + evt.localY + " evt.stageX = " + evt.stageX + " evt.stageY = " + evt.stageY);
+	
+	evt.localX = 1;
+	evt.localY = 2;
+	
+	trace("/// set localX=1 localY=2")
+	
+	trace("/// evt.localX = " + evt.localX + " evt.localY = " + evt.localY + " evt.stageX = " + evt.stageX + " evt.stageY = " + evt.stageY);
+	
+	trace("/// modified target.x and target.y")
+	
+	evt.target.x = 100;
+	evt.target.y = 100;
+	
+	trace("/// evt.localX = " + evt.localX + " evt.localY = " + evt.localY + " evt.stageX = " + evt.stageX + " evt.stageY = " + evt.stageY);
+	
+	trace("/// modified target.transform.matrix")
+	
+	evt.target.transform.matrix = new Matrix(1, 2, 3, 4, 5, 6);
+	
+	trace("/// evt.localX = " + evt.localX + " evt.localY = " + evt.localY + " evt.stageX = " + evt.stageX + " evt.stageY = " + evt.stageY);
 }
