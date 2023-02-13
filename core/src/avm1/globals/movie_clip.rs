@@ -717,8 +717,6 @@ fn create_empty_movie_clip<'gc>(
     movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(&mut activation.context, None, Instantiator::Avm1, true);
 
-    // let path_str = AvmString::new(activation.context.gc_context, new_clip.path());
-    //  Ok(Value::MovieClip(path_str))
     Ok(new_clip.object())
 }
 

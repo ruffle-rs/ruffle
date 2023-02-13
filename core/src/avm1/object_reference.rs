@@ -172,3 +172,10 @@ impl<'gc> MovieClipReference<'gc> {
         &self.path
     }
 }
+
+
+/// A reference to an `Object`-like, either an `Object` or a `MovieClip`
+pub enum ObjectReference<'gc> {
+    Object(Object<'gc>),
+    MovieClip(MovieClipReference<'gc>)
+}
