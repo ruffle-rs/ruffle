@@ -6,6 +6,7 @@ use ruffle_core::backend::audio::{
 };
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
+use ruffle_core::events::KeyCode;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_core::limits::ExecutionLimit;
@@ -17,7 +18,6 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use ruffle_core::events::KeyCode;
 
 pub struct TestAudioBackend {
     mixer: AudioMixer,
@@ -151,9 +151,10 @@ pub fn run_swf(
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
                 },
-                AutomatedEvent::KeyDown { key_code } => {
-                    PlayerEvent::KeyDown { key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"), key_char: None }
-                }
+                AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
+                    key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
+                    key_char: None,
+                },
                 AutomatedEvent::Wait => unreachable!(),
             });
         });

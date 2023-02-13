@@ -46,7 +46,5 @@ pub enum AutomatedEvent {
     },
 
     /// Press a key
-    KeyDown {
-        key_code: u8,
-    }
+    KeyDown { key_code: u8 },
 }
