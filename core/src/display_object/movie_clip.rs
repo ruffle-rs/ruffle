@@ -3343,6 +3343,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 &swf_button,
                 &self.static_data.swf,
                 context,
+                true,
             ))
         } else {
             Character::Avm1Button(Avm1Button::from_swf_tag(
