@@ -126,6 +126,17 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
+        self.resolve_recursive(name, activation, true)
+    }
+
+    /// Recursively resolve a value on the scope chain
+    /// See [`Scope::resolve`] for details
+    fn resolve_recursive(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        top_level: bool,
+    ) -> Result<CallableValue<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
             return self
                 .locals()
@@ -133,13 +144,25 @@ impl<'gc> Scope<'gc> {
                 .map(|v| CallableValue::Callable(self.locals_cell(), v));
         }
         if let Some(scope) = self.parent() {
-            scope.resolve(name, activation)
+            let res = scope.resolve(name, activation)?;
+
+            // If we failed to find the value in the scope chain, but it *would* resolve on `self.locals()` if it wasn't
+            // a removed clip, then try resolving on root instead
+            if let (CallableValue::UnCallable(Value::Undefined), Object::StageObject(s)) =
+                (&res, self.locals())
+            {
+                if top_level && s.raw_script_object().has_property(activation, name) {
+                    return activation
+                        .root_object()
+                        .coerce_to_object(activation)
+                        .get(name, activation)
+                        .map(|v| CallableValue::Callable(self.locals_cell(), v));
+                }
+            }
+
+            Ok(res)
         } else {
-            activation
-                .root_object()
-                .coerce_to_object(activation)
-                .get(name, activation)
-                .map(|v| CallableValue::Callable(self.locals_cell(), v))
+            Ok(CallableValue::UnCallable(Value::Undefined))
         }
     }
 

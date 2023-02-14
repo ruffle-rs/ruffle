@@ -9,3 +9,28 @@ _level0
 
 clip before removing = _level0.foo
 clip after removing = _level0.clipInstance2
+_level0.clipInstance2
+_level0.clipInstance2.clipChild
+_level0
+_level0.clipInstance2
+_level0.clipInstance2.clipChild
+_level0.clipInstance2
+_level0.clipInstance2.clipChild
+undefined
+undefined
+foo = _level0.clipInstance2
+_level0.clipInstance2
+0
+0
+foo = _level0.clipInstance2.clipChild
+_level0.clipInstance2.clipChild
+_level0.clipInstance2.clipChild
+0
+undefined
+_level0
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
