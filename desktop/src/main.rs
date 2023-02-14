@@ -151,16 +151,16 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 }
 
 fn parse_url(path: &Path) -> Result<Url, Error> {
-    Ok(if path.exists() {
+    if path.exists() {
         let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
         Url::from_file_path(absolute_path)
-            .map_err(|_| anyhow!("Path must be absolute and cannot be a URL"))?
+            .map_err(|_| anyhow!("Path must be absolute and cannot be a URL"))
     } else {
         Url::parse(path.to_str().unwrap_or_default())
             .ok()
-            .filter(|url| url.host().is_some())
-            .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))?
-    })
+            .filter(|url| url.host().is_some() || url.scheme() == "file")
+            .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
+    }
 }
 
 fn parse_parameters(opt: &Opt) -> impl '_ + Iterator<Item = (String, String)> {
