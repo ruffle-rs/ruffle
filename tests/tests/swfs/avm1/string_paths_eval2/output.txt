@@ -1,0 +1,7 @@
+setting testclip to clip1.swf
+Loaded, testclip = _level0.testclip
+Setting _loc1_ to testclip
+testclip: _level0.testclip
+_loc1_: _level0.testclip
+eval("testclip." + testclip.varname): 3
+eval("_loc1_." + _loc1_.varname): 3
