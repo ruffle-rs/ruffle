@@ -2556,6 +2556,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // Resolve the value to an object while traversing the path.
             object = if let Value::Object(o) = val {
                 o
+            } else if let Value::MovieClip(_) = val {
+                val.coerce_to_object(self)
             } else {
                 return Ok(None);
             };
