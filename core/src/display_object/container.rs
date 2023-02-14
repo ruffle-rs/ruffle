@@ -966,6 +966,11 @@ impl<'gc> Iterator for RenderIter<'gc> {
 
         this
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.neg_i - self.i;
+        (len, Some(len))
+    }
 }
 
 impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
@@ -981,3 +986,5 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
         this
     }
 }
+
+impl<'gc> ExactSizeIterator for RenderIter<'gc> {}

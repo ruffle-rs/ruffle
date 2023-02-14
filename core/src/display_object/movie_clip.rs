@@ -2873,17 +2873,67 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             let mut found_propagate = None;
 
-            for child in self.iter_render_list().rev() {
+            let mut clip_layers = vec![];
+
+            for child in self.iter_render_list() {
+                if child.clip_depth() > 0 {
+                    // Note - we intentionally use 'child.depth()' here insteado
+                    // of the position in the render list - this matches Flash's
+                    // behavior. The 'depth' value comes from the PlaceObject tag
+                    clip_layers.push((child, (child.depth() + 1)..=(child.clip_depth())))
+                }
+            }
+            let (mouse_enabled, non_mouse_enabled): (Vec<_>, Vec<_>) =
+                self.iter_render_list().rev().partition(|child| {
+                    if let Some(child) = child.as_interactive() {
+                        child.mouse_enabled()
+                    } else {
+                        false
+                    }
+                });
+
+            // Children with `mouseEnabled` take priority over children with `!mouseEnabled`.
+            for child in mouse_enabled.into_iter().chain(non_mouse_enabled) {
+                // Mask children are not clickable
+                if child.clip_depth() > 0 {
+                    continue;
+                }
+
                 // Clicking static text is ignored
                 if matches!(child, DisplayObject::Text(_)) {
                     continue;
                 }
 
-                let res = if let Some(child) = child.as_interactive() {
+                let mut res = if let Some(child) = child.as_interactive() {
                     child.mouse_pick_avm2(context, point, require_button_mode)
+                } else if child.as_interactive().is_none()
+                    && child.hit_test_shape(context, point, options)
+                {
+                    Avm2MousePick::Hit(this)
                 } else {
                     Avm2MousePick::Miss
                 };
+
+                while !clip_layers.is_empty() {
+                    let (clip, clip_range) = clip_layers.last().unwrap();
+                    // This clip layer no longer applies to the remaining children (which all have lower depth values).
+                    // This is a rare case where we actually use 'child.depth()' in AVM2 - child.depth()
+                    // gets set from a PlaceObject tag, and may be *greater* than position in the render list.
+                    if *clip_range.start() > child.depth() {
+                        clip_layers.pop();
+                        continue;
+                    }
+
+                    if clip_range.contains(&child.depth()) {
+                        // If the clip layer applies to the current child, check if the child is masked by the clip.
+                        // If the position isn't within the mask region, then treat this as a miss unconditionally.
+                        // We'll continue the outer loop over the children, as another child may be hit.
+                        if !clip.hit_test_shape(context, point, options) {
+                            res = Avm2MousePick::Miss;
+                        }
+                    }
+                    break;
+                }
 
                 match res {
                     Avm2MousePick::Hit(_) => {
@@ -2893,14 +2943,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                         found_propagate = Some(res);
                     }
                     Avm2MousePick::Miss => {}
-                }
-            }
-
-            // Non-interactive children appear to have lower 'priority' than interactive children.
-            for child in self.iter_render_list().rev() {
-                if child.as_interactive().is_none() && child.hit_test_shape(context, point, options)
-                {
-                    return Avm2MousePick::Hit(this).combine_with_parent((*self).into());
                 }
             }
 
