@@ -314,9 +314,11 @@ impl App {
             let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
         };
 
+        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
+        parameters.extend(parse_parameters(&opt));
         player.lock().expect("Cannot reenter").fetch_root_movie(
             movie_url.to_string(),
-            parse_parameters(&opt).collect(),
+            parameters,
             Box::new(on_metadata),
         );
 
