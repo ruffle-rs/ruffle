@@ -149,6 +149,8 @@ export class RufflePlayer extends HTMLElement {
     private _cachedDebugInfo: string | null = null;
 
     private isExtension = false;
+    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    private longPressTimeout = 800;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -220,6 +222,28 @@ export class RufflePlayer extends HTMLElement {
         this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
+        if ("ontouchstart" in window) {
+            this.addEventListener(
+                "touchstart",
+                this.startLongPressTimer.bind(this),
+                true
+            );
+            this.addEventListener(
+                "touchcancel",
+                this.clearLongPressTimer.bind(this),
+                true
+            );
+            this.addEventListener(
+                "touchend",
+                this.clearLongPressTimer.bind(this),
+                true
+            );
+            this.addEventListener(
+                "touchmove",
+                this.clearLongPressTimer.bind(this),
+                true
+            );
+        }
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.addEventListener("pointerdown", this.pointerDown.bind(this));
         this.addEventListener(
@@ -883,7 +907,22 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private showContextMenu(e: MouseEvent): void {
+    private startLongPressTimer(e: TouchEvent): void {
+        this.clearLongPressTimer();
+        this.longPressTimer = setTimeout(
+            this.showContextMenu.bind(this, e),
+            this.longPressTimeout
+        );
+    }
+
+    private clearLongPressTimer(): void {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+    }
+
+    private showContextMenu(e: MouseEvent | TouchEvent): void {
         e.preventDefault();
 
         if (
@@ -938,8 +977,12 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement.style.display = "block";
 
         const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.x;
-        const y = e.clientY - rect.y;
+        const clientX =
+            e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+        const clientY =
+            e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
+        const x = clientX - rect.x;
+        const y = clientY - rect.y;
         const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
         const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
 
