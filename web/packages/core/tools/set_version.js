@@ -5,6 +5,8 @@ const fs = require("fs");
 let version_number = process.env.npm_package_version;
 let version_channel = process.env.CFG_RELEASE_CHANNEL || "nightly";
 let build_date = new Date().toISOString();
+let firefox_extension_id =
+    process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";
 
 let commitHash = "unknown";
 
@@ -39,6 +41,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
             build_date: build_date,
             commitHash: commitHash,
             build_id: process.env.BUILD_ID,
+            firefox_extension_id: firefox_extension_id,
         };
 
         fs.writeFileSync("version_seal.json", JSON.stringify(version_seal));
