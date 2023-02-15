@@ -1,5 +1,4 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::multiname::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -11,26 +10,16 @@ pub fn hide_built_in_items<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        if let Value::Object(mut items) =
-            this.get_property(&Multiname::public("builtInItems"), activation)?
-        {
+        if let Value::Object(mut items) = this.get_public_property("builtInItems", activation)? {
             // items is a ContextMenuBuiltInItems
-            items.set_property(
-                &Multiname::public("forwardAndBack"),
-                Value::Bool(false),
-                activation,
-            )?;
-            items.set_property(&Multiname::public("loop"), Value::Bool(false), activation)?;
-            items.set_property(&Multiname::public("play"), Value::Bool(false), activation)?;
-            items.set_property(&Multiname::public("print"), Value::Bool(false), activation)?;
-            items.set_property(
-                &Multiname::public("quality"),
-                Value::Bool(false),
-                activation,
-            )?;
-            items.set_property(&Multiname::public("rewind"), Value::Bool(false), activation)?;
-            items.set_property(&Multiname::public("save"), Value::Bool(false), activation)?;
-            items.set_property(&Multiname::public("zoom"), Value::Bool(false), activation)?;
+            items.set_public_property("forwardAndBack", Value::Bool(false), activation)?;
+            items.set_public_property("loop", Value::Bool(false), activation)?;
+            items.set_public_property("play", Value::Bool(false), activation)?;
+            items.set_public_property("print", Value::Bool(false), activation)?;
+            items.set_public_property("quality", Value::Bool(false), activation)?;
+            items.set_public_property("rewind", Value::Bool(false), activation)?;
+            items.set_public_property("save", Value::Bool(false), activation)?;
+            items.set_public_property("zoom", Value::Bool(false), activation)?;
         }
     }
 
@@ -46,7 +35,7 @@ pub fn make_context_menu_state<'gc>(
     macro_rules! check_bool {
         ( $obj:expr, $name:expr, $value:expr ) => {
             matches!(
-                $obj.get_property(&Multiname::public($name), activation),
+                $obj.get_public_property($name, activation),
                 Ok(Value::Bool($value))
             )
         };
@@ -54,9 +43,7 @@ pub fn make_context_menu_state<'gc>(
 
     let mut builtin_items = context_menu::BuiltInItemFlags::for_stage(activation.context.stage);
     if let Some(menu) = menu {
-        if let Ok(Value::Object(builtins)) =
-            menu.get_property(&Multiname::public("builtInItems"), activation)
-        {
+        if let Ok(Value::Object(builtins)) = menu.get_public_property("builtInItems", activation) {
             if check_bool!(builtins, "zoom", false) {
                 builtin_items.zoom = false;
             }
@@ -84,8 +71,7 @@ pub fn make_context_menu_state<'gc>(
     result.build_builtin_items(builtin_items, activation.context.stage);
 
     if let Some(menu) = menu {
-        if let Ok(Value::Object(custom_items)) =
-            menu.get_property(&Multiname::public("customItems"), activation)
+        if let Ok(Value::Object(custom_items)) = menu.get_public_property("customItems", activation)
         {
             // note: this borrows the array, but it shouldn't be possible for
             // AS to get invoked here and cause BorrowMutError
@@ -94,7 +80,7 @@ pub fn make_context_menu_state<'gc>(
                     // this is a CustomMenuItem
                     if let Some(Value::Object(item)) = item {
                         let caption = if let Ok(Value::String(s)) =
-                            item.get_property(&Multiname::public("caption"), activation)
+                            item.get_public_property("caption", activation)
                         {
                             s
                         } else {

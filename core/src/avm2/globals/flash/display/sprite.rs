@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::traits::Trait;
@@ -13,7 +12,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use crate::tag_utils::SwfMovie;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use ruffle_render::bounding_box::BoundingBox;
 use std::sync::Arc;
 use swf::Twips;
@@ -78,13 +77,13 @@ pub fn graphics<'gc>(
         if let Some(dobj) = this.as_display_object() {
             // Lazily initialize the `Graphics` object in a hidden property.
             let graphics = match this.get_property(
-                &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                &Multiname::new(activation.avm2().ruffle_private_namespace, "graphics"),
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
                     let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
-                        &Multiname::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                        &Multiname::new(activation.avm2().ruffle_private_namespace, "graphics"),
                         graphics,
                         activation,
                     )?;
@@ -196,19 +195,19 @@ pub fn start_drag<'gc>(
         let constraint = if let Some(rect) = args.get(1) {
             let rect = rect.coerce_to_object(activation)?;
             let x = rect
-                .get_property(&Multiname::public("x"), activation)?
+                .get_public_property("x", activation)?
                 .coerce_to_number(activation)?;
 
             let y = rect
-                .get_property(&Multiname::public("y"), activation)?
+                .get_public_property("y", activation)?
                 .coerce_to_number(activation)?;
 
             let width = rect
-                .get_property(&Multiname::public("width"), activation)?
+                .get_public_property("width", activation)?
                 .coerce_to_number(activation)?;
 
             let height = rect
-                .get_property(&Multiname::public("height"), activation)?
+                .get_public_property("height", activation)?
                 .coerce_to_number(activation)?;
 
             // Normalize the bounds.
@@ -300,11 +299,12 @@ pub fn set_use_hand_cursor<'gc>(
 }
 
 /// Construct `Sprite`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "Sprite"),
+        QName::new(Namespace::package("flash.display", mc), "Sprite"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObjectContainer",
         )),
         Method::from_builtin(instance_init, "<Sprite instance initializer>", mc),
@@ -335,16 +335,27 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_use_hand_cursor),
         ),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("startDrag", start_drag), ("stopDrag", stop_drag)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(
-        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
-        Multiname::new(Namespace::package("flash.display"), "Graphics"),
+        QName::new(activation.avm2().ruffle_private_namespace, "graphics"),
+        Multiname::new(
+            Namespace::package("flash.display", activation.context.gc_context),
+            "Graphics",
+        ),
         None,
     ));
 

@@ -25,6 +25,7 @@ use ruffle_core::{
     PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
+use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::cell::RefCell;
@@ -52,7 +53,7 @@ thread_local! {
 #[cfg(feature = "tracy")]
 #[global_allocator]
 static GLOBAL: tracing_tracy::client::ProfiledAllocator<std::alloc::System> =
-    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 100);
+    tracing_tracy::client::ProfiledAllocator::new(std::alloc::System, 0);
 
 static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-info.txt"));
 
@@ -63,7 +64,7 @@ static RUFFLE_VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/version-in
     version = RUFFLE_VERSION,
 )]
 struct Opt {
-    /// Path to a Flash movie (SWF) to play.
+    /// Path or URL of a Flash movie (SWF) to play.
     #[clap(name = "FILE")]
     input_path: Option<PathBuf>,
 
@@ -89,6 +90,10 @@ struct Opt {
     /// Height of window in pixels.
     #[clap(long, display_order = 2)]
     height: Option<f64>,
+
+    /// Default quality of the movie.
+    #[clap(long, short, default_value = "high")]
+    quality: StageQuality,
 
     /// Location to store a wgpu trace output
     #[clap(long)]
@@ -116,6 +121,10 @@ struct Opt {
 
     #[clap(long, default_value = "streaming")]
     load_behavior: LoadBehavior,
+
+    /// Specify how Ruffle should handle areas outside the movie stage.
+    #[clap(long, default_value = "on")]
+    letterbox: Letterbox,
 
     /// Spoofs the root SWF URL provided to ActionScript.
     #[clap(long, value_parser)]
@@ -291,7 +300,7 @@ impl App {
             .with_storage(storage::DiskStorageBackend::new()?)
             .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
-            .with_letterbox(Letterbox::On)
+            .with_letterbox(opt.letterbox)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
@@ -305,9 +314,11 @@ impl App {
             let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
         };
 
+        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
+        parameters.extend(parse_parameters(&opt));
         player.lock().expect("Cannot reenter").fetch_root_movie(
             movie_url.to_string(),
-            parse_parameters(&opt).collect(),
+            parameters,
             Box::new(on_metadata),
         );
 

@@ -173,7 +173,7 @@ impl<'gc> BytecodeMethod<'gc> {
             abc_method: abc_method.0,
             abc_method_body: None,
             signature,
-            return_type: Multiname::any(),
+            return_type: Multiname::any(activation.context.gc_context),
             is_function,
         })
     }

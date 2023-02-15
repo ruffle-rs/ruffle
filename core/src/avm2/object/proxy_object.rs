@@ -1,12 +1,10 @@
 //! Object representation for `Proxy`.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::globals::NS_FLASH_PROXY;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 use core::fmt;
@@ -79,7 +77,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return self.call_property(
-                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty"),
+                        &Multiname::new(activation.avm2().proxy_namespace, "getProperty"),
                         &[qname.into()],
                         activation,
                     );
@@ -115,7 +113,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     self.call_property(
-                        &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty"),
+                        &Multiname::new(activation.avm2().proxy_namespace, "setProperty"),
                         &[qname.into(), value],
                         activation,
                     )?;
@@ -160,10 +158,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     args.extend_from_slice(arguments);
 
                     return self.call_property(
-                        &Multiname::new(
-                            Namespace::Namespace(NS_FLASH_PROXY.into()),
-                            "callProperty",
-                        ),
+                        &Multiname::new(activation.avm2().proxy_namespace, "callProperty"),
                         &args[..],
                         activation,
                     );
@@ -195,10 +190,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
 
                     return Ok(self
                         .call_property(
-                            &Multiname::new(
-                                Namespace::Namespace(NS_FLASH_PROXY.into()),
-                                "deleteProperty",
-                            ),
+                            &Multiname::new(activation.avm2().proxy_namespace, "deleteProperty"),
                             &[qname.into()],
                             activation,
                         )?
@@ -221,7 +213,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         Ok(self
             .call_property(
-                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty"),
+                &Multiname::new(activation.avm2().proxy_namespace, "hasProperty"),
                 // this should probably pass the multiname as-is? See above
                 &[name.local_name().unwrap().into()],
                 activation,
@@ -236,7 +228,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     ) -> Result<Option<u32>, Error<'gc>> {
         Ok(Some(
             self.call_property(
-                &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex"),
+                &Multiname::new(activation.avm2().proxy_namespace, "nextNameIndex"),
                 &[last_index.into()],
                 activation,
             )?
@@ -250,7 +242,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
-            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName"),
+            &Multiname::new(activation.avm2().proxy_namespace, "nextName"),
             &[index.into()],
             activation,
         )
@@ -262,7 +254,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
-            &Multiname::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue"),
+            &Multiname::new(activation.avm2().proxy_namespace, "nextValue"),
             &[index.into()],
             activation,
         )

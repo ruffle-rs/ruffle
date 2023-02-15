@@ -94,6 +94,10 @@ impl Request {
     pub fn body(&self) -> &Option<(Vec<u8>, String)> {
         &self.body
     }
+
+    pub fn set_body(&mut self, body: (Vec<u8>, String)) {
+        self.body = Some(body);
+    }
 }
 
 /// A response to a fetch request.

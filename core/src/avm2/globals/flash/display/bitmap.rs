@@ -14,7 +14,8 @@ use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
-use gc_arena::{GcCell, MutationContext};
+use crate::{avm2_stub_getter, avm2_stub_setter};
+use gc_arena::GcCell;
 
 /// Implements `flash.display.Bitmap`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -93,11 +94,7 @@ pub fn instance_init<'gc>(
                 );
             };
 
-            this.set_property(
-                &Multiname::public("bitmapData"),
-                bd_object.into(),
-                activation,
-            )?;
+            this.set_public_property("bitmapData", bd_object.into(), activation)?;
 
             bitmap.set_smoothing(activation.context.gc_context, smoothing);
         } else {
@@ -176,20 +173,22 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Bitmap", "pixelSnapping");
     Ok("auto".into())
 }
 
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Bitmap.pixelSnapping is a stub".into())
+    avm2_stub_setter!(activation, "flash.display.Bitmap", "pixelSnapping");
+    Ok(Value::Undefined)
 }
 
 /// Implement `Bitmap.smoothing`'s getter
@@ -226,11 +225,12 @@ pub fn set_smoothing<'gc>(
 }
 
 /// Construct `Bitmap`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "Bitmap"),
+        QName::new(Namespace::package("flash.display", mc), "Bitmap"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObject",
         )),
         Method::from_builtin(instance_init, "<Bitmap instance initializer>", mc),
@@ -255,7 +255,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("smoothing", Some(smoothing), Some(set_smoothing)),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

@@ -6,13 +6,13 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
-use crate::avm_error;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
+use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, MutationContext};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -522,7 +522,7 @@ pub fn draw<'gc>(
             }
 
             if args.get(4).is_some() {
-                tracing::warn!("BitmapData.draw with clip rect - not implemented")
+                avm1_stub!(activation, "BitmapData", "draw", "with clip rect");
             }
             let smoothing = args
                 .get(5)
@@ -549,7 +549,7 @@ pub fn draw<'gc>(
 
             let bmd = bitmap_data
                 .bitmap_data_wrapper()
-                .overwrite_cpu_pixels(activation.context.gc_context);
+                .overwrite_cpu_pixels_from_gpu(&mut activation.context);
             let mut write = bmd.write(activation.context.gc_context);
             write.draw(
                 source,
@@ -570,22 +570,22 @@ pub fn draw<'gc>(
 }
 
 pub fn apply_filter<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("BitmapData.applyFilter - not yet implemented");
+    avm1_stub!(activation, "BitmapData", "applyFilter");
     Ok((-1).into())
 }
 
 pub fn generate_filter_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            tracing::warn!("BitmapData.generateFilterRect - not yet implemented");
+            avm1_stub!(activation, "BitmapData", "generateFilterRect");
             return Ok(Value::Undefined);
         }
     }
@@ -743,13 +743,13 @@ pub fn perlin_noise<'gc>(
 }
 
 pub fn hit_test<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            tracing::warn!("BitmapData.hitTest - not yet implemented");
+            avm1_stub!(activation, "BitmapData", "hitTest");
             return Ok(Value::Undefined);
         }
     }
@@ -1076,13 +1076,13 @@ pub fn palette_map<'gc>(
 }
 
 pub fn pixel_dissolve<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            tracing::warn!("BitmapData.pixelDissolve - not yet implemented");
+            avm1_stub!(activation, "BitmapData", "pixelDissolve");
             return Ok(Value::Undefined);
         }
     }

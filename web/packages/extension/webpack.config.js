@@ -12,6 +12,8 @@ function transformManifest(content, env) {
     let versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
     let buildDate = new Date().toISOString().substring(0, 10);
     let build_id = process.env.BUILD_ID;
+    let firefox_extension_id =
+        process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";
 
     if (process.env.ENABLE_VERSION_SEAL === "true") {
         if (fs.existsSync("../../version_seal.json")) {
@@ -23,6 +25,7 @@ function transformManifest(content, env) {
             versionChannel = version_seal.version_channel;
             buildDate = version_seal.build_date.substring(0, 10);
             build_id = version_seal.build_id;
+            firefox_extension_id = version_seal.firefox_extension_id;
         } else {
             throw new Error(
                 "Version seal requested but not found. Please run web/packages/core/tools/set_version.js with ENABLE_VERSION_SEAL to generate it."
@@ -44,7 +47,7 @@ function transformManifest(content, env) {
     if (env.firefox) {
         manifest.browser_specific_settings = {
             gecko: {
-                id: process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs",
+                id: firefox_extension_id,
             },
         };
     } else {

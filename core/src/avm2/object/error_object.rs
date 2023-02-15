@@ -8,7 +8,6 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::string::WString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -62,10 +61,10 @@ impl<'gc> ErrorObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         let name = self
-            .get_property(&Multiname::public("name"), activation)?
+            .get_public_property("name", activation)?
             .coerce_to_string(activation)?;
         let message = self
-            .get_property(&Multiname::public("message"), activation)?
+            .get_public_property("message", activation)?
             .coerce_to_string(activation)?;
         if message.is_empty() {
             return Ok(name);

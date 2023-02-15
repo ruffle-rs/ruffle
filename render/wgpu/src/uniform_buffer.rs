@@ -72,7 +72,7 @@ impl<T: Pod> BufferStorage<T> {
         let bind_group_label = create_debug_label!("Dynamic buffer bind group");
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: bind_group_label.as_deref(),
-            layout: &layout,
+            layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {

@@ -5,6 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::error;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::property::Property;
@@ -16,7 +17,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -80,7 +80,7 @@ pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
 pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
+pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
@@ -182,10 +182,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.call_method(get, &[], activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
-                Err("Illegal read of write-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.get_property_local(multiname, activation),
         }
+    }
+
+    /// Same as get_property, but constructs a public Multiname for you.
+    fn get_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            activation,
+        )
     }
 
     /// Set a local property of the object. The Multiname should always be public.
@@ -201,6 +218,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.set_property_local(name, value, activation)
+    }
+
+    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
+    /// by the time we reach dynamic properties.
+    /// But for now, this function is a smaller change to the core than a full refactor.
+    fn set_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let name = Multiname::new(activation.avm2().public_namespace, name);
+        self.set_property_local(&name, value, activation)
     }
 
     /// Set a property by Multiname lookup.
@@ -228,16 +259,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                 )
             }
-            Some(Property::ConstSlot { .. }) => Err("Illegal write to read-only property".into()),
-            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Method { .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    self.instance_of(),
+                ));
+            }
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::Virtual { set: None, .. }) => {
-                Err("Illegal write to read-only property".into())
+            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.set_property_local(multiname, value, activation),
         }
+    }
+
+    /// Same as set_property, but constructs a public Multiname for you.
+    fn set_public_property(
+        &mut self,
+        name: impl Into<AvmString<'gc>>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.set_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            value,
+            activation,
+        )
     }
 
     /// Init a local property of the object. The Multiname should always be public.
@@ -281,12 +337,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                 )
             }
-            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Method { .. }) => {
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::AssignToMethod,
+                    multiname,
+                    self.instance_of(),
+                ));
+            }
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
             Some(Property::Virtual { set: None, .. }) => {
-                Err("Illegal write to read-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::WriteToReadOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.init_property_local(multiname, value, activation),
         }
@@ -380,10 +448,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
-                Err("Illegal read of write-only property".into())
+                return Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    self.instance_of(),
+                ));
             }
             None => self.call_property_local(multiname, arguments, activation),
         }
+    }
+
+    /// Same as call_property, but constructs a public Multiname for you.
+    fn call_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.call_property(
+            &Multiname::new(activation.avm2().public_namespace, name),
+            arguments,
+            activation,
+        )
     }
 
     /// Retrieve a slot by its index.
@@ -501,6 +588,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
+        if self.as_primitive().is_some() {
+            return Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::InvalidDelete,
+                multiname,
+                self.instance_of(),
+            ));
+        }
+
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             None => {
                 if self
@@ -515,6 +611,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
             _ => Ok(false),
         }
+    }
+
+    /// Same as delete_property, but constructs a public Multiname for you.
+    fn delete_public_property(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        name: impl Into<AvmString<'gc>>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().public_namespace, name);
+        self.delete_property(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -588,7 +694,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let name = self
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        self.get_property(&Multiname::public(name), activation)
+        // todo: this probably doesn't need non-public accesses
+        self.get_public_property(name, activation)
     }
 
     /// Determine if a property is currently enumerable.
@@ -798,7 +905,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let type_proto = class
-            .get_property(&Multiname::public("prototype"), activation)?
+            .get_public_property("prototype", activation)?
             .as_object();
 
         if let Some(type_proto) = type_proto {
@@ -1044,24 +1151,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object's sound handle.
-    fn as_sound(self) -> Option<SoundHandle> {
+    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
         None
     }
-
-    /// Associate the object with a particular sound handle.
-    ///
-    /// This does nothing if the object is not a sound.
-    fn set_sound(self, _mc: MutationContext<'gc, '_>, _sound: SoundHandle) {}
 
     /// Unwrap this object's sound instance handle.
     fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
         None
     }
-
-    /// Associate the object with a particular sound instance handle.
-    ///
-    /// This does nothing if the object is not a sound channel.
-    fn set_sound_instance(self, _mc: MutationContext<'gc, '_>, _sound: SoundInstanceHandle) {}
 
     /// Unwrap this object's bitmap data
     fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {

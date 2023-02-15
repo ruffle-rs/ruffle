@@ -284,11 +284,7 @@ impl<'gc> ClassObject<'gc> {
         class_proto: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         self.0.write(activation.context.gc_context).prototype = Some(class_proto);
-        class_proto.set_property_local(
-            &Multiname::public("constructor"),
-            self.into(),
-            activation,
-        )?;
+        class_proto.set_string_property_local("constructor", self.into(), activation)?;
         class_proto.set_local_property_is_enumerable(
             activation.context.gc_context,
             "constructor".into(),
@@ -353,7 +349,10 @@ impl<'gc> ClassObject<'gc> {
 
                 for interface_trait in iface_read.instance_traits() {
                     if !interface_trait.name().namespace().is_public() {
-                        let public_name = QName::dynamic_name(interface_trait.name().local_name());
+                        let public_name = QName::new(
+                            activation.context.avm2.public_namespace,
+                            interface_trait.name().local_name(),
+                        );
                         self.instance_vtable().copy_property_for_interface(
                             activation.context.gc_context,
                             public_name,

@@ -60,7 +60,7 @@ impl TexturePool {
                 (texture, view)
             }))
         });
-        pool.take(&descriptors)
+        pool.take(descriptors)
     }
 
     pub fn get_globals(

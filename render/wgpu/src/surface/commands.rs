@@ -13,6 +13,7 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
 use swf::{BlendMode, Color, Fixed8, GradientSpread};
@@ -190,7 +191,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
                 &self.descriptors.bind_layouts.transforms,
-                &mut self.uniform_encoder,
+                self.uniform_encoder,
                 &mut self.render_pass,
                 1,
                 &Transforms { world_matrix },
@@ -206,7 +207,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 self.color_buffers.write_uniforms(
                     &self.descriptors.device,
                     &self.descriptors.bind_layouts.color_transforms,
-                    &mut self.uniform_encoder,
+                    self.uniform_encoder,
                     &mut self.render_pass,
                     2,
                     &ColorAdjustments::from(*color_adjustments),
@@ -249,7 +250,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -271,7 +272,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.apply_transform(&transform.matrix, &transform.color_transform);
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -319,8 +320,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.apply_transform(&transform.matrix, &transform.color_transform);
 
             self.draw(
-                draw.vertex_buffer.slice(..),
-                draw.index_buffer.slice(..),
+                mesh.vertex_buffer.slice(draw.vertices.clone()),
+                mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
             );
         }
@@ -336,10 +337,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.prep_color();
 
         if color == &Color::WHITE {
-            self.apply_transform(&matrix, &ColorTransform::IDENTITY);
+            self.apply_transform(matrix, &ColorTransform::IDENTITY);
         } else {
             self.apply_transform(
-                &matrix,
+                matrix,
                 &ColorTransform {
                     r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
                     g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
@@ -351,7 +352,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
 
         self.draw(
-            self.descriptors.quad.vertices.slice(..),
+            self.descriptors.quad.vertices_pos_color.slice(..),
             self.descriptors.quad.indices.slice(..),
             6,
         );
@@ -449,7 +450,7 @@ pub fn chunk_blends<'a>(
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
     meshes: &'a Vec<Mesh>,
-    sample_count: u32,
+    quality: StageQuality,
     width: u32,
     height: u32,
     nearest_layer: &CommandTarget,
@@ -464,8 +465,8 @@ pub fn chunk_blends<'a>(
         match command {
             Command::Blend(commands, blend_mode) => {
                 let mut surface = Surface::new(
-                    &descriptors,
-                    sample_count,
+                    descriptors,
+                    quality,
                     width,
                     height,
                     wgpu::TextureFormat::Rgba8Unorm,
@@ -473,8 +474,8 @@ pub fn chunk_blends<'a>(
                 let clear_color = BlendType::from(blend_mode).default_color();
                 let target = surface.draw_commands(
                     clear_color,
-                    &descriptors,
-                    &meshes,
+                    descriptors,
+                    meshes,
                     commands,
                     uniform_buffers,
                     color_buffers,
@@ -500,7 +501,7 @@ pub fn chunk_blends<'a>(
                             descriptors
                                 .device
                                 .create_bind_group(&wgpu::BindGroupDescriptor {
-                                    layout: &&descriptors.bind_layouts.bitmap,
+                                    layout: &descriptors.bind_layouts.bitmap,
                                     entries: &[
                                         wgpu::BindGroupEntry {
                                             binding: 0,

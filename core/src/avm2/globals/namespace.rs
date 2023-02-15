@@ -7,24 +7,26 @@ use crate::avm2::object::{namespace_allocator, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use crate::avm2_stub_constructor;
+use gc_arena::GcCell;
 
 /// Implements `Namespace`'s instance initializer.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_constructor!(activation, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 
 fn class_call<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_constructor!(activation, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 
@@ -51,10 +53,11 @@ pub fn class_init<'gc>(
 }
 
 /// Construct `Namespace`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "Namespace"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "Namespace"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Namespace instance initializer>", mc),
         Method::from_builtin(class_init, "<Namespace class initializer>", mc),
         mc,

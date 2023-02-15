@@ -16,7 +16,10 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
+};
+use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
@@ -529,6 +532,13 @@ impl Ruffle {
             }
         };
 
+        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
+            tracing::info!("Running on a mobile device; defaulting to low quality");
+            StageQuality::Low
+        } else {
+            StageQuality::High
+        };
+
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
@@ -538,6 +548,14 @@ impl Ruffle {
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .with_player_version(config.player_version)
+            .with_quality(
+                config
+                    .quality
+                    .and_then(|q| StageQuality::from_str(&q).ok())
+                    .unwrap_or(default_quality),
+            )
+            // FIXME - should this be configurable?
+            .with_sandbox_type(SandboxType::Remote)
             .build();
 
         let mut callstack = None;
@@ -548,7 +566,6 @@ impl Ruffle {
             }
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
-            core.set_quality(config.quality.as_deref().unwrap_or("high"));
             core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
@@ -1281,16 +1298,7 @@ async fn create_renderer(
                 .dyn_into()
                 .map_err(|_| "Expected HtmlCanvasElement")?;
 
-            let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-                tracing::info!("Running on a mobile device; defaulting to no MSAA");
-                1
-            } else {
-                4
-            };
-
-            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas, sample_count)
-                .await
-            {
+            match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
                 Ok(renderer) => {
                     return Ok((builder.with_renderer(renderer), canvas));
                 }
@@ -1307,16 +1315,7 @@ async fn create_renderer(
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
 
-        let sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-            tracing::info!("Running on a mobile device; defaulting to no MSAA");
-            1
-        } else {
-            4
-        };
-
-        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas, sample_count)
-            .await
-        {
+        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(&canvas).await {
             Ok(renderer) => {
                 return Ok((builder.with_renderer(renderer), canvas));
             }

@@ -1,7 +1,7 @@
 //! `QName` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{qname_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `QName`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -25,8 +25,11 @@ pub fn instance_init<'gc>(
 
                 let namespace = match ns_arg {
                     Value::Object(o) if o.as_namespace().is_some() => *o.as_namespace().unwrap(),
-                    Value::Undefined | Value::Null => Namespace::Any,
-                    v => Namespace::Namespace(v.coerce_to_string(activation)?),
+                    Value::Undefined | Value::Null => Namespace::any(activation.context.gc_context),
+                    v => Namespace::package(
+                        v.coerce_to_string(activation)?,
+                        activation.context.gc_context,
+                    ),
                 };
 
                 (namespace, local_arg)
@@ -36,7 +39,7 @@ pub fn instance_init<'gc>(
                     Value::Object(o) if o.as_qname_object().is_some() => {
                         o.as_qname_object().unwrap().qname().unwrap().namespace()
                     }
-                    _ => Namespace::Namespace("".into()),
+                    _ => activation.avm2().public_namespace,
                 };
 
                 (namespace, qname_arg)
@@ -68,10 +71,10 @@ pub fn class_init<'gc>(
     let this = this.unwrap();
     let scope = activation.create_scopechain();
     let this_class = this.as_class_object().unwrap();
-    let mut qname_proto = this_class.prototype();
+    let qname_proto = this_class.prototype();
 
-    qname_proto.set_property(
-        &Multiname::public("toString"),
+    qname_proto.set_string_property_local(
+        "toString",
         FunctionObject::from_method(
             activation,
             Method::from_builtin(to_string, "toString", activation.context.gc_context),
@@ -83,8 +86,8 @@ pub fn class_init<'gc>(
         activation,
     )?;
 
-    qname_proto.set_property(
-        &Multiname::public("valueOf"),
+    qname_proto.set_string_property_local(
+        "valueOf",
         FunctionObject::from_method(
             activation,
             Method::from_builtin(value_of, "valueOf", activation.context.gc_context),
@@ -134,7 +137,7 @@ pub fn uri<'gc>(
     if let Some(this) = this.and_then(|t| t.as_qname_object()) {
         if let Some(qname) = this.qname() {
             return Ok(match qname.namespace() {
-                Namespace::Any => Value::Null,
+                ns if ns.is_any() => Value::Null,
                 ns => ns.as_uri().into(),
             });
         }
@@ -172,16 +175,18 @@ pub fn value_of<'gc>(
 }
 
 /// Construct `QName`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "QName"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "QName"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<QName instance initializer>", mc),
         Method::from_builtin(class_init, "<QName class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
+    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_allocator(qname_allocator);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
@@ -192,11 +197,19 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("localName", Some(local_name), None),
         ("uri", Some(uri), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("toString", to_string), ("valueOf", value_of)];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     class
 }

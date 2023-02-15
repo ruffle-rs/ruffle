@@ -13,6 +13,7 @@ package flash.events {
 
 		public function updateAfterEvent():void {
 			// TODO - determine when we should actually force a frame to be rendered.
+			stub_method("flash.events.TimerEvent", "updateAfterEvent");
 		}
 	}
 }

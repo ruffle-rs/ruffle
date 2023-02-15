@@ -2,10 +2,10 @@ package flash.utils {
 	import flash.events.EventDispatcher;
 	import flash.events.TimerEvent;
 	public class Timer extends EventDispatcher {
-		private var _currentCount: int;
-		private var _delay: Number;
-		private var _repeatCount: int;
-		private var _timerId: int = -1;
+		internal var _currentCount: int;
+		internal var _delay: Number;
+		internal var _repeatCount: int;
+		internal var _timerId: int = -1;
 
 		private function checkDelay(delay:Number): void {
 			if (!isFinite(delay) || delay < 0) {
@@ -61,7 +61,7 @@ package flash.utils {
 		public native function start():void;
 
 		// Returns 'true' if we should cancel the underlying Ruffle native timer
-		private function onUpdate():Boolean {
+		internal function onUpdate():Boolean {
 			this._currentCount += 1;
 			this.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
 			if (this.repeatCount != 0 && this._currentCount >= this._repeatCount) {

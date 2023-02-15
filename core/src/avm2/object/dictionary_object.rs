@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
 use fnv::FnvHashMap;
@@ -153,10 +153,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         if !name_value.is_primitive() {
             Ok(self.get_property_by_object(name_value.as_object().unwrap()))
         } else {
-            self.get_property(
-                &Multiname::public(name_value.coerce_to_string(activation)?),
-                activation,
-            )
+            self.get_public_property(name_value.coerce_to_string(activation)?, activation)
         }
     }
 

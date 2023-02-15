@@ -1,7 +1,7 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
-use crate::avm2::globals::NS_VECTOR;
+use crate::avm2::error;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
@@ -531,7 +531,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
             activation,
-            Namespace::from_abc_namespace(translation_unit, *ns, activation.context.gc_context)?,
+            translation_unit.pool_namespace(*ns, activation.context.gc_context)?,
         )?
         .into()),
     }
@@ -635,20 +635,16 @@ impl<'gc> Value<'gc> {
                 let mut prim = *self;
                 let object = *o;
 
-                if let Value::Object(_) =
-                    object.get_property(&Multiname::public("toString"), activation)?
-                {
-                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
+                if let Value::Object(_) = object.get_public_property("toString", activation)? {
+                    prim = object.call_public_property("toString", &[], activation)?;
                 }
 
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(_) =
-                    object.get_property(&Multiname::public("valueOf"), activation)?
-                {
-                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
+                if let Value::Object(_) = object.get_public_property("valueOf", activation)? {
+                    prim = object.call_public_property("valueOf", &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -661,20 +657,16 @@ impl<'gc> Value<'gc> {
                 let mut prim = *self;
                 let object = *o;
 
-                if let Value::Object(_) =
-                    object.get_property(&Multiname::public("valueOf"), activation)?
-                {
-                    prim = object.call_property(&Multiname::public("valueOf"), &[], activation)?;
+                if let Value::Object(_) = object.get_public_property("valueOf", activation)? {
+                    prim = object.call_public_property("valueOf", &[], activation)?;
                 }
 
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(_) =
-                    object.get_property(&Multiname::public("toString"), activation)?
-                {
-                    prim = object.call_property(&Multiname::public("toString"), &[], activation)?;
+                if let Value::Object(_) = object.get_public_property("toString", activation)? {
+                    prim = object.call_public_property("toString", &[], activation)?;
                 }
 
                 if prim.is_primitive() {
@@ -856,27 +848,18 @@ impl<'gc> Value<'gc> {
         PrimitiveObject::from_primitive(*self, activation)
     }
 
-    /// Coerce the value to an object, and report an error relating to object
+    /// Coerce the value to an object, and throw a TypeError relating to object
     /// receivers being null or undefined otherwise.
-    ///
-    /// If the `name` parameter is provided, the error will indicate the object
-    /// property being interacted with.
-    pub fn coerce_to_receiver(
+    /// Note: The error may contain a non-spec info about the way in which it was to be used.
+    pub fn coerce_to_object_or_typeerror(
         &self,
         activation: &mut Activation<'_, 'gc>,
         name: Option<&Multiname<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        self.coerce_to_object(activation).map_err(|_| {
-            if let Some(name) = name {
-                format!(
-                    "Cannot access property {} of null or undefined",
-                    name.to_qualified_name(activation.context.gc_context)
-                )
-                .into()
-            } else {
-                "Cannot access properties of null or undefined".into()
-            }
-        })
+        if matches!(self, Value::Null | Value::Undefined) {
+            return Err(error::make_null_or_undefined_error(activation, *self, name));
+        }
+        self.coerce_to_object(activation)
     }
 
     pub fn as_object(&self) -> Option<Object<'gc>> {
@@ -977,14 +960,16 @@ impl<'gc> Value<'gc> {
 
             if let Some(vector) = object.as_vector_storage() {
                 let name = class.inner_class_definition().read().name();
-                if name == QName::new(Namespace::package(NS_VECTOR), "Vector")
-                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$int")
+                let vector_public_namespace = activation.avm2().vector_public_namespace;
+                let vector_internal_namespace = activation.avm2().vector_internal_namespace;
+                if name == QName::new(vector_public_namespace, "Vector")
+                    || (name == QName::new(vector_internal_namespace, "Vector$int")
                         && vector.value_type() == activation.avm2().classes().int)
-                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$uint")
+                    || (name == QName::new(vector_internal_namespace, "Vector$uint")
                         && vector.value_type() == activation.avm2().classes().uint)
-                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$number")
+                    || (name == QName::new(vector_internal_namespace, "Vector$number")
                         && vector.value_type() == activation.avm2().classes().number)
-                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$object")
+                    || (name == QName::new(vector_internal_namespace, "Vector$object")
                         && vector.value_type() == activation.avm2().classes().object)
                 {
                     return Ok(*self);

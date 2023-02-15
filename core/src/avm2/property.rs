@@ -159,25 +159,8 @@ fn resolve_class_private<'gc>(
         let domain = unit.map_or(activation.avm2().globals, |u| u.domain());
         let globals = if let Some((_, mut script)) = domain.get_defining_script(name)? {
             script.globals(&mut activation.context)?
-        } else if let Some(txunit) = unit {
-            // If we couldn't find an exported symbol, then check for a
-            // private trait in the translation unit. This kind of trait
-            // is inaccessible to `resolve_class`.
-            //
-            // Subtle: `get_loaded_private_trait_script` requires us to have already
-            // performed the lazy-loading of `script.globals` for the correct script.
-            // Since we are setting/initializing a property with an instance of
-            // the class `name`, user bytecode must have already initialized
-            // the `ClassObject` in order to have created the value we're setting.
-            // Therefore, we don't need to run `script.globals()` for every script
-            // in the `TranslationUnit` - we're guaranteed to have already loaded
-            // the proper script.
-            txunit
-                .get_loaded_private_trait_script(name)
-                .ok_or_else(|| {
-                    Error::from(format!("Could not find script for class trait {name:?}"))
-                })?
-                .globals(&mut activation.context)?
+        } else if unit.is_some() {
+            return Err(format!("Could not find script for class trait {name:?}").into());
         } else {
             return Err(format!("Missing script and translation unit for class {name:?}").into());
         };

@@ -4,6 +4,9 @@
 use convert_case::{Boundary, Case, Casing};
 use proc_macro2::TokenStream;
 use quote::quote;
+use regex::RegexBuilder;
+use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::Write;
@@ -12,7 +15,8 @@ use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::types::*;
 use swf::avm2::write::Writer;
-use swf::{DoAbc, DoAbcFlag, Header, Tag};
+use swf::{DoAbc2, DoAbc2Flag, Header, Tag};
+use walkdir::WalkDir;
 
 // The metadata name - all metadata in our .as files
 // should be of the form `[Ruffle(key1 = value1, key2 = value2)]`
@@ -30,6 +34,7 @@ const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
 pub fn build_playerglobal(
     repo_root: PathBuf,
     out_dir: PathBuf,
+    with_stubs: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let classes_dir = repo_root.join("core/src/avm2/globals/");
     let asc_path = repo_root.join("core/build_playerglobal/asc.jar");
@@ -39,7 +44,7 @@ pub fn build_playerglobal(
     // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
     // in `out_dir`
     let status = Command::new("java")
-        .args(&[
+        .args([
             "-classpath",
             &asc_path.to_string_lossy(),
             "macromedia.asc.embedding.ScriptCompiler",
@@ -77,10 +82,14 @@ pub fn build_playerglobal(
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 
+    if with_stubs {
+        collect_stubs(&classes_dir, &out_dir)?;
+    }
+
     bytes = write_native_table(&bytes, &out_dir)?;
 
-    let tags = [Tag::DoAbc(DoAbc {
-        flags: DoAbcFlag::LAZY_INITIALIZE,
+    let tags = [Tag::DoAbc2(DoAbc2 {
+        flags: DoAbc2Flag::LAZY_INITIALIZE,
         name: "".into(),
         data: &bytes,
     })];
@@ -133,7 +142,7 @@ fn flash_to_rust_path(path: &str) -> String {
             // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
             if !component.ends_with("3D") {
                 // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                without_boundaries.extend(&[Boundary::UpperDigit, Boundary::LowerDigit]);
+                without_boundaries.extend([Boundary::UpperDigit, Boundary::LowerDigit]);
             }
 
             component
@@ -167,7 +176,7 @@ fn rust_method_name_and_path(
         // For example, a namespace of "flash.system" and a name of "Security"
         // turns into the path "flash::system::security"
         let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
-        let ns = flash_to_rust_path(resolve_multiname_ns(&abc, multiname));
+        let ns = flash_to_rust_path(resolve_multiname_ns(abc, multiname));
         if !ns.is_empty() {
             path += &ns;
             path += "::";
@@ -175,20 +184,20 @@ fn rust_method_name_and_path(
             flash_method_path += &ns;
             flash_method_path += "::";
         }
-        let name = resolve_multiname_name(&abc, multiname);
+        let name = resolve_multiname_name(abc, multiname);
         path += &flash_to_rust_path(name);
         path += "::";
 
-        flash_method_path += &name;
+        flash_method_path += name;
         flash_method_path += "::";
     } else {
         // This is a freestanding function. Append its namespace (the package).
         // For example, the freestanding function "flash.utils.getDefinitionByName"
         // has a namespace of "flash.utils", which turns into the path
         // "flash::utils"
-        let name = resolve_multiname_ns(&abc, trait_name);
+        let name = resolve_multiname_ns(abc, trait_name);
         let ns = &flash_to_rust_path(name);
-        path += &ns;
+        path += ns;
         flash_method_path += name;
         if !ns.is_empty() {
             path += "::";
@@ -200,7 +209,7 @@ fn rust_method_name_and_path(
     // name (e.g. `getDefinitionByName`)
     path += prefix;
 
-    let name = resolve_multiname_name(&abc, trait_name);
+    let name = resolve_multiname_name(abc, trait_name);
 
     path += &flash_to_rust_path(name);
     flash_method_path += name;
@@ -442,4 +451,97 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     writer.write(abc).expect("Failed to write modified ABC");
 
     Ok(out_bytes)
+}
+
+fn collect_stubs(root: &Path, out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let pattern = RegexBuilder::new(
+        r#"
+            \b (?P<type> stub_method | stub_getter | stub_setter | stub_constructor) \s* 
+            \( \s*
+                "(?P<class> .+)" \s*
+                , \s*
+                "(?P<property> .+)" \s*
+                (?:|
+                    , \s*
+                    "(?P<specifics> .+)" \s*
+                )
+            \) \s*
+            ;
+        "#,
+    )
+    .ignore_whitespace(true)
+    .build()?;
+
+    let mut stubs = Vec::new();
+
+    for entry in WalkDir::new(root)
+        .into_iter()
+        .filter_map(|f| f.ok())
+        .filter(|f| f.path().extension() == Some(OsStr::new("as")))
+    {
+        let contents = fs::read_to_string(entry.path())?;
+        for entry in pattern.captures_iter(&contents) {
+            let class = &entry["class"];
+            let property = entry.name("property").map(|m| m.as_str());
+            let specifics = entry.name("specifics").map(|m| m.as_str());
+
+            match (&entry["type"], property, specifics) {
+                ("stub_method", Some(property), Some(specifics)) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Method {
+                        class: Cow::Borrowed(#class),
+                        method: Cow::Borrowed(#property),
+                        specifics: Cow::Borrowed(#specifics)
+                    }
+                }),
+                ("stub_method", Some(property), None) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Method {
+                        class: Cow::Borrowed(#class),
+                        method: Cow::Borrowed(#property),
+                        specifics: None
+                    }
+                }),
+                ("stub_getter", Some(property), _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Getter {
+                        class: Cow::Borrowed(#class),
+                        property: Cow::Borrowed(#property)
+                    }
+                }),
+                ("stub_setter", Some(property), _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Setter {
+                        class: Cow::Borrowed(#class),
+                        property: Cow::Borrowed(#property)
+                    }
+                }),
+                ("stub_constructor", Some(property), _) => stubs.push(quote! {
+                    // Property is actually specifics here
+                    crate::stub::Stub::Avm2Constructor {
+                        class: Cow::Borrowed(#class),
+                        specifics: Some(Cow::Borrowed(#property))
+                    }
+                }),
+                ("stub_constructor", None, _) => stubs.push(quote! {
+                    crate::stub::Stub::Avm2Constructor {
+                        class: Cow::Borrowed(#class),
+                        specifics: None
+                    }
+                }),
+                _ => panic!("Unsupported stub type {}", &entry["type"]),
+            }
+        }
+    }
+
+    let stub_block = quote! {
+        #[cfg(feature = "known_stubs")]
+        use std::borrow::Cow;
+
+        #[cfg(feature = "known_stubs")]
+        pub static AS_DEFINED_STUBS: &[crate::stub::Stub] = &[
+            #(#stubs,)*
+        ];
+    };
+
+    let mut as_stub_file = File::create(out_dir.join("actionscript_stubs.rs"))?;
+    as_stub_file.write_all(stub_block.to_string().as_bytes())?;
+
+    Ok(())
 }

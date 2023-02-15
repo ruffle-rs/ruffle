@@ -92,7 +92,7 @@ fn take_screenshot(
     size: SizeOpt,
     skip_unsupported: bool,
 ) -> Result<Vec<RgbaImage>> {
-    let movie = SwfMovie::from_path(&swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+    let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
     if movie.is_action_script_3() && skip_unsupported {
         return Err(anyhow!("Skipping unsupported movie"));
@@ -114,7 +114,7 @@ fn take_screenshot(
         .map_err(|e| anyhow!(e.to_string()))?;
     let player = PlayerBuilder::new()
         .with_renderer(
-            WgpuRenderBackend::new(descriptors, target, 4).map_err(|e| anyhow!(e.to_string()))?,
+            WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
         )
         .with_movie(movie)
         .with_viewport_dimensions(width, height, size.scale)

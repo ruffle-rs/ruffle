@@ -262,7 +262,7 @@ impl<'gc> RegExp<'gc> {
         let mut start = 0;
         while let Some(m) = self.find_utf16_match(*text, start) {
             ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&f(activation, &text, &m)?);
+            ret.push_str(&f(activation, text, &m)?);
 
             start = m.range.end;
 

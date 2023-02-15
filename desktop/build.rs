@@ -59,7 +59,7 @@ fn channel() -> String {
 
 fn commit_hash() -> Option<String> {
     Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .output()
         .ok()
         .and_then(|r| String::from_utf8(r.stdout).ok())
@@ -67,7 +67,7 @@ fn commit_hash() -> Option<String> {
 
 fn commit_date() -> Option<String> {
     Command::new("git")
-        .args(&["log", "-1", "--date=short", "--pretty=format:%cd"])
+        .args(["log", "-1", "--date=short", "--pretty=format:%cd"])
         .output()
         .ok()
         .and_then(|r| String::from_utf8(r.stdout).ok())

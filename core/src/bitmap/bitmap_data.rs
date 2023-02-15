@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::{Error, Object as Avm2Object, Value as Avm2Value};
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
@@ -11,6 +11,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
@@ -203,9 +204,9 @@ enum DirtyState {
 }
 
 mod wrapper {
-    use crate::avm2::Value as Avm2Value;
     use crate::context::RenderContext;
-    use gc_arena::{Collect, GcCell, MutationContext};
+    use crate::{avm2::Value as Avm2Value, context::UpdateContext};
+    use gc_arena::{Collect, GcCell};
     use ruffle_render::commands::CommandHandler;
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
@@ -229,9 +230,11 @@ mod wrapper {
     ///    This is done for the vast majority of BitmapData AS2/AS3 methods, as they need to access CPU-side pixels.
     /// 2. Ignoring the current GPU->CPU sync state. This is done by the `render` method defined on this type,
     ///    since rendering only uses GPU-side data, and ignores CPU-side pixels entirely.
-    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels`. This is
-    ///    currently only used by `BitmapData.draw`, since the new rendering result will completely
-    ///    replace the current CPU-side pixels. In the future, we could explore using this in additional
+    /// 3. Explicitly cancelling any in-progress GPU->CPU sync via `overwrite_cpu_pixels_from_gpu`. This is
+    ///    used by `BitmapData.draw` and `BitmapData.apply_filter`, since the new rendering result will completely
+    ///    replace the current CPU-side pixels. This performs a CPU -> GPU sync, to ensure that the GPU side
+    ///    is up to date before we overwrite the CPU-side pixels.
+    ///    In the future, we could explore using this in additional
     ///    cases where we know that the entire CPU-side pixel array will be overwritten without being read
     ///    (e.g. `BitmapData.fillRect` with a rectangle covering the entire bitmap). However, `overwrite_cpu_pixels`
     ///    is always a performance optimization, and can always be safely replaced with `sync` (at the cost of worse performance)
@@ -270,14 +273,18 @@ mod wrapper {
         // Provides access to the underlying `BitmapData`.
         // This should only be used when you will be overwriting the entire
         // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
-        pub fn overwrite_cpu_pixels(
+        // If the CPU pixels are dirty, syncs them to the GPU.
+        pub fn overwrite_cpu_pixels_from_gpu(
             &self,
-            mc: MutationContext<'gc, '_>,
+            context: &mut UpdateContext<'_, 'gc>,
         ) -> GcCell<'gc, BitmapData<'gc>> {
-            let mut write = self.0.write(mc);
+            let mut write = self.0.write(context.gc_context);
             match write.dirty_state {
                 DirtyState::GpuModified(_) => write.dirty_state = DirtyState::Clean,
-                DirtyState::CpuModified | DirtyState::Clean => {}
+                DirtyState::CpuModified => {
+                    write.update_dirty_texture(context.renderer);
+                }
+                DirtyState::Clean => {}
             }
             self.0
         }
@@ -316,7 +323,7 @@ mod wrapper {
 
                 // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
                 // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
-                inner_bitmap_data.update_dirty_texture(context);
+                inner_bitmap_data.update_dirty_texture(context.renderer);
                 let handle = inner_bitmap_data
                     .bitmap_handle(context.renderer)
                     .expect("Missing bitmap handle");
@@ -333,6 +340,7 @@ mod wrapper {
     }
 }
 
+use crate::avm2::bytearray::ByteArrayStorage;
 pub use wrapper::BitmapDataWrapper;
 
 impl fmt::Debug for BitmapData<'_> {
@@ -508,6 +516,30 @@ impl<'gc> BitmapData<'gc> {
         } else {
             0
         }
+    }
+
+    pub fn get_pixels(
+        &self,
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    ) -> Result<ByteArrayStorage, Error<'gc>> {
+        let mut result = ByteArrayStorage::new();
+
+        let x0 = x.max(0) as u32;
+        let y0 = y.max(0) as u32;
+        let x1 = (x + width).clamp(0, self.width as i32) as u32;
+        let y1 = (y + height).clamp(0, self.height as i32) as u32;
+
+        for y in y0..y1 {
+            for x in x0..x1 {
+                let color = self.pixels[(x + y * self.width) as usize];
+                result.write_int(color.to_un_multiplied_alpha().0)?;
+            }
+        }
+
+        Ok(result)
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
@@ -1195,11 +1227,11 @@ impl<'gc> BitmapData<'gc> {
 
     // Updates the data stored with our `BitmapHandle` if this `BitmapData`
     // is dirty
-    pub fn update_dirty_texture(&mut self, context: &mut RenderContext) {
-        let handle = self.bitmap_handle(context.renderer).unwrap();
+    pub fn update_dirty_texture(&mut self, renderer: &mut dyn RenderBackend) {
+        let handle = self.bitmap_handle(renderer).unwrap();
         match &self.dirty_state {
             DirtyState::CpuModified => {
-                if let Err(e) = context.renderer.update_texture(
+                if let Err(e) = renderer.update_texture(
                     &handle,
                     self.width(),
                     self.height(),
@@ -1277,6 +1309,40 @@ impl<'gc> BitmapData<'gc> {
         self.avm2_object = Some(object)
     }
 
+    pub fn apply_filter(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        source: BitmapHandle,
+        source_point: (u32, u32),
+        source_size: (u32, u32),
+        dest_point: (u32, u32),
+        filter: Filter,
+    ) {
+        let dest = self.bitmap_handle(context.renderer).unwrap();
+
+        self.update_dirty_texture(context.renderer);
+        let sync_handle = context.renderer.apply_filter(
+            source,
+            source_point,
+            source_size,
+            dest,
+            dest_point,
+            filter,
+        );
+        match sync_handle {
+            Some(sync_handle) => match self.dirty_state {
+                DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
+                DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                    "Called BitmapData.render while already dirty: {:?}",
+                    self.dirty_state
+                ),
+            },
+            None => {
+                tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
+            }
+        }
+    }
+
     pub fn draw(
         &mut self,
         mut source: IBitmapDrawable<'gc>,
@@ -1298,7 +1364,7 @@ impl<'gc> BitmapData<'gc> {
             commands: CommandList::new(),
             gc_context: context.gc_context,
             ui: context.ui,
-            library: &context.library,
+            library: context.library,
             transform_stack: &mut transform_stack,
             is_offscreen: true,
             stage: context.stage,
@@ -1351,7 +1417,7 @@ impl<'gc> BitmapData<'gc> {
             render_context.commands.pop_mask();
         }
 
-        self.update_dirty_texture(&mut render_context);
+        self.update_dirty_texture(render_context.renderer);
 
         let commands = if blend_mode == BlendMode::Normal {
             render_context.commands
@@ -1369,17 +1435,16 @@ impl<'gc> BitmapData<'gc> {
         );
 
         match image {
-            Ok(sync_handle) => match self.dirty_state {
+            Some(sync_handle) => match self.dirty_state {
                 DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
                 DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
                     self.dirty_state
                 ),
             },
-            Err(ruffle_render::error::Error::Unimplemented) => {
+            None => {
                 tracing::warn!("BitmapData.draw: Not yet implemented")
             }
-            Err(e) => panic!("BitmapData.draw failed: {e:?}"),
         }
     }
 }

@@ -35,6 +35,7 @@ max_relative = 0.0 # The default relative tolerance for testing values that are 
 max_execution_duration = { secs = 15, nanos = 0} # How long can actionscript execute for before being forcefully stopped
 viewport_dimensions = { width = 100, height = 100, scale_factor = 1 } # The size of the player. Defaults to the swfs stage size
 with_renderer = { optional = false, sample_count = 4 } # If this test requires a renderer to run. Optional will enable the renderer where available.
+with_audio = false # If this test requires an audio backend to run.
 
 # Whether or not to compare the image rendered with an expected image
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled

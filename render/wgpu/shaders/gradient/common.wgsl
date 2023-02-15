@@ -15,45 +15,24 @@ struct VertexOutput {
     @group(3) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
 #endif
 
-#if use_storage_buffers == true
-    struct Gradient {
-        colors: array<vec4<f32>,16u>,
-        ratios: array<f32,16u>,
-        gradient_type: i32,
-        num_colors: u32,
-        interpolation: i32,
-        focal_point: f32,
-    };
+struct Gradient {
+    colors: array<vec4<f32>, 16>,
+    ratios: array<vec4<f32>, 4u>, // secretly array<f32; 16> but this let's us squeeze it into alignment
+    gradient_type: i32,
+    num_colors: u32,
+    interpolation: i32,
+    focal_point: f32,
+};
 
-    #if use_push_constants == true
-        @group(1) @binding(1) var<storage> gradient: Gradient;
-    #else
-        @group(3) @binding(1) var<storage> gradient: Gradient;
-    #endif
-
-    fn ratio(i: u32) -> f32 {
-        return gradient.ratios[i];
-    }
+#if use_push_constants == true
+    @group(1) @binding(1) var<uniform> gradient: Gradient;
 #else
-    struct Gradient {
-        colors: array<vec4<f32>, 16>,
-        ratios: array<vec4<f32>, 4u>, // secretly array<f32; 16> but this let's us squeeze it into alignment
-        gradient_type: i32,
-        num_colors: u32,
-        interpolation: i32,
-        focal_point: f32,
-    };
-
-    #if use_push_constants == true
-        @group(1) @binding(1) var<uniform> gradient: Gradient;
-    #else
-        @group(3) @binding(1) var<uniform> gradient: Gradient;
-    #endif
-
-    fn ratio(i: u32) -> f32 {
-        return gradient.ratios[i / 4u][i % 4u];
-    }
+    @group(3) @binding(1) var<uniform> gradient: Gradient;
 #endif
+
+fn ratio(i: u32) -> f32 {
+    return gradient.ratios[i / 4u][i % 4u];
+}
 
 fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
     return 0.0;
@@ -66,9 +45,6 @@ fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
 struct GradientVertexInput {
     /// The position of the vertex in object space.
     @location(0) position: vec2<f32>,
-
-    /// The color of this vertex (only used by the color shader).
-    @location(1) color: vec4<f32>,
 };
 
 @vertex

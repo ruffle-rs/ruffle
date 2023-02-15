@@ -89,7 +89,7 @@ pub struct MovieClipData<'gc> {
     clip_event_handlers: Vec<ClipEventHandler>,
     #[collect(require_static)]
     clip_event_flags: ClipEventFlag,
-    frame_scripts: Vec<Avm2FrameScript<'gc>>,
+    frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     flags: MovieClipFlags,
     avm2_class: Option<Avm2ClassObject<'gc>>,
     drawing: Drawing,
@@ -383,7 +383,7 @@ impl<'gc> MovieClip<'gc> {
 
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
-        let mut static_data = (&*self.0.read().static_data).clone();
+        let mut static_data = (*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
         let (mut cur_frame, mut start_pos, next_preload_chunk, preload_symbol) = {
             let read = static_data.preload_progress.read();
@@ -560,6 +560,7 @@ impl<'gc> MovieClip<'gc> {
                     .define_text(context, reader, 2),
                 TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
                 TagCode::DoAbc => self.do_abc(context, reader),
+                TagCode::DoAbc2 => self.do_abc_2(context, reader),
                 TagCode::SymbolClass => self.symbol_class(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => {
                     self.scene_and_frame_labels(reader, &mut static_data)
@@ -708,12 +709,37 @@ impl<'gc> MovieClip<'gc> {
             return Ok(());
         }
 
-        let do_abc = reader.read_do_abc()?;
+        let data = reader.read_slice_to_end();
+        if !data.is_empty() {
+            let movie = self.movie();
+            let domain = context.library.library_for_movie_mut(movie).avm2_domain();
+
+            // DoAbc tag seems to be equivalent to a DoAbc2 with Lazy flag set
+            if let Err(e) = Avm2::do_abc(context, data, swf::DoAbc2Flag::LAZY_INITIALIZE, domain) {
+                tracing::warn!("Error loading ABC file: {}", e);
+            }
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn do_abc_2(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'_>,
+    ) -> Result<(), Error> {
+        if !context.is_action_script_3() {
+            tracing::warn!("DoABC2 tag in AVM1 movie");
+            return Ok(());
+        }
+
+        let do_abc = reader.read_do_abc_2()?;
         if !do_abc.data.is_empty() {
             let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            if let Err(e) = Avm2::do_abc(context, do_abc, domain) {
+            if let Err(e) = Avm2::do_abc(context, do_abc.data, do_abc.flags, domain) {
                 tracing::warn!("Error loading ABC file: {}", e);
             }
         }
@@ -737,7 +763,7 @@ impl<'gc> MovieClip<'gc> {
             let class_name = reader.read_str()?.to_str_lossy(reader.encoding());
             let class_name = AvmString::new_utf8(activation.context.gc_context, class_name);
 
-            let name = Avm2QName::from_qualified_name(class_name, activation.context.gc_context);
+            let name = Avm2QName::from_qualified_name(class_name, &mut activation);
             let library = activation
                 .context
                 .library
@@ -895,6 +921,15 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn stop(self, context: &mut UpdateContext<'_, 'gc>) {
         self.0.write(context.gc_context).stop(context)
+    }
+
+    /// Does this clip have a unload handler
+    pub fn has_unload_handler(&self) -> bool {
+        self.0
+            .read()
+            .clip_event_handlers
+            .iter()
+            .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
     }
 
     /// Queues up a goto to the specified frame.
@@ -2051,14 +2086,20 @@ impl<'gc> MovieClip<'gc> {
     pub fn register_frame_script(
         self,
         frame_id: FrameNumber,
-        callable: Avm2Object<'gc>,
+        callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let mut write = self.0.write(context.gc_context);
+        let frame_scripts = &mut self.0.write(context.gc_context).frame_scripts;
 
-        write
-            .frame_scripts
-            .push(Avm2FrameScript { frame_id, callable });
+        let index = frame_id as usize;
+        if let Some(callable) = callable {
+            if frame_scripts.len() <= index {
+                frame_scripts.resize(index + 1, None);
+            }
+            frame_scripts[index] = Some(callable);
+        } else if frame_scripts.len() > index {
+            frame_scripts[index] = None;
+        }
     }
 
     pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc>) {
@@ -2324,7 +2365,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc>) {
-        let mut index = 0;
         let mut write = self.0.write(context.gc_context);
         let avm2_object = write.object.and_then(|o| o.as_avm2_object());
 
@@ -2344,36 +2384,32 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         write.queued_script_frame != write.last_queued_script_frame;
 
                     if is_fresh_frame {
-                        while let Some(fs) = write.frame_scripts.get(index) {
-                            if fs.frame_id == frame_id {
-                                let callable = fs.callable;
+                        if let Some(Some(callable)) =
+                            write.frame_scripts.get(frame_id as usize).cloned()
+                        {
+                            write.last_queued_script_frame = Some(frame_id);
+                            write.queued_script_frame = None;
+                            write
+                                .flags
+                                .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
 
-                                write.last_queued_script_frame = Some(frame_id);
-                                write.queued_script_frame = None;
-                                write
-                                    .flags
-                                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
-
-                                drop(write);
-                                if let Err(e) = Avm2::run_stack_frame_for_callable(
-                                    callable,
-                                    Some(avm2_object),
-                                    &[],
-                                    context,
-                                ) {
-                                    tracing::error!(
-                                        "Error occured when running AVM2 frame script: {}",
-                                        e
-                                    );
-                                }
-                                write = self.0.write(context.gc_context);
-
-                                write
-                                    .flags
-                                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                            drop(write);
+                            if let Err(e) = Avm2::run_stack_frame_for_callable(
+                                callable,
+                                Some(avm2_object),
+                                &[],
+                                context,
+                            ) {
+                                tracing::error!(
+                                    "Error occured when running AVM2 frame script: {}",
+                                    e
+                                );
                             }
+                            write = self.0.write(context.gc_context);
 
-                            index += 1;
+                            write
+                                .flags
+                                .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                         }
                     }
                 }
@@ -2561,7 +2597,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);
         }
-        self.event_dispatch(context, ClipEvent::Unload);
+
+        // If this clip is currently pending removal, then it unload event will have already been dispatched
+        if !self.pending_removal() {
+            self.event_dispatch(context, ClipEvent::Unload);
+        }
+
         self.set_removed(context.gc_context, true);
     }
 
@@ -2642,7 +2683,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         };
 
         if let Some(frame_name) = frame_name {
-            if let Some(frame_number) = self.frame_label_to_number(frame_name, &context) {
+            if let Some(frame_number) = self.frame_label_to_number(frame_name, context) {
                 if self.is_button_mode(context) {
                     self.goto_frame(context, frame_number, true);
                 }
@@ -4211,15 +4252,4 @@ impl ClipEventHandler {
             action_data,
         }
     }
-}
-
-/// An AVM2 frame script attached to a (presumably AVM2) MovieClip.
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub struct Avm2FrameScript<'gc> {
-    /// The frame to invoke this frame script on.
-    pub frame_id: FrameNumber,
-
-    /// The AVM2 callable object to invoke when the frame script runs.
-    pub callable: Avm2Object<'gc>,
 }

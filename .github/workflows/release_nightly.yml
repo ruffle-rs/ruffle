@@ -295,7 +295,7 @@ jobs:
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.83
+        run: cargo install wasm-bindgen-cli --version 0.2.84
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
@@ -421,7 +421,7 @@ jobs:
         continue-on-error: true
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-        uses: mnao305/chrome-extension-upload@v4.0.0
+        uses: mnao305/chrome-extension-upload@v4.0.1
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
@@ -523,7 +523,7 @@ jobs:
         run: sed -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/" -i ./PKGBUILD
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v2.2.5
+        uses: KSXGitHub/github-actions-deploy-aur@v2.6.0
         with:
           pkgname: ruffle-nightly-bin
           pkgbuild: ./PKGBUILD

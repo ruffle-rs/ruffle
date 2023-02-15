@@ -12,7 +12,7 @@ mod callable_value;
 mod debug;
 mod error;
 mod fscommand;
-mod globals;
+pub(crate) mod globals;
 mod object;
 mod property;
 mod property_map;
@@ -62,4 +62,32 @@ macro_rules! avm_error {
             tracing::error!($($arg)*)
         }
     )
+}
+
+#[macro_export]
+macro_rules! avm1_stub {
+    ($activation: ident, $class: literal, $method: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Method {
+            class: $class,
+            method: $method,
+            specifics: None,
+        };
+        $activation.context.stub_tracker.encounter(&STUB);
+    };
+    ($activation: ident, $class: literal, $method: literal, $specifics: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Method {
+            class: $class,
+            method: $method,
+            specifics: Some($specifics),
+        };
+        $activation.context.stub_tracker.encounter(&STUB);
+    };
 }

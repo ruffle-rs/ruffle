@@ -10,7 +10,7 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::read::Reader;
-use swf::{DoAbc, DoAbcFlag};
+use swf::DoAbc2Flag;
 
 #[macro_export]
 macro_rules! avm_debug {
@@ -43,6 +43,7 @@ mod regexp;
 mod scope;
 mod script;
 mod string;
+mod stubs;
 mod traits;
 mod value;
 mod vector;
@@ -55,7 +56,7 @@ pub use crate::avm2::domain::Domain;
 pub use crate::avm2::error::Error;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
-pub use crate::avm2::namespace::Namespace;
+pub use crate::avm2::namespace::{Namespace, NamespaceData};
 pub use crate::avm2::object::{
     ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
     TObject,
@@ -65,7 +66,7 @@ pub use crate::avm2::value::Value;
 
 use self::scope::Scope;
 
-const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
+const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
@@ -85,6 +86,17 @@ pub struct Avm2<'gc> {
 
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
+
+    pub public_namespace: Namespace<'gc>,
+    pub as3_namespace: Namespace<'gc>,
+    pub vector_public_namespace: Namespace<'gc>,
+    pub vector_internal_namespace: Namespace<'gc>,
+    pub proxy_namespace: Namespace<'gc>,
+    pub ruffle_private_namespace: Namespace<'gc>,
+    // these are required to facilitate shared access between Rust and AS
+    pub flash_display_internal: Namespace<'gc>,
+    pub flash_utils_internal: Namespace<'gc>,
+    pub flash_geom_internal: Namespace<'gc>,
 
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -120,6 +132,21 @@ impl<'gc> Avm2<'gc> {
             call_stack: GcCell::allocate(mc, CallStack::new()),
             globals,
             system_classes: None,
+
+            public_namespace: Namespace::package("", mc),
+            as3_namespace: Namespace::package("http://adobe.com/AS3/2006/builtin", mc),
+            vector_public_namespace: Namespace::package("__AS3__.vec", mc),
+            vector_internal_namespace: Namespace::internal("__AS3__.vec", mc),
+            proxy_namespace: Namespace::package(
+                "http://www.adobe.com/2006/actionscript/flash/proxy",
+                mc,
+            ),
+            ruffle_private_namespace: Namespace::private("", mc),
+            // these are required to facilitate shared access between Rust and AS
+            flash_display_internal: Namespace::internal("flash.display", mc),
+            flash_utils_internal: Namespace::internal("flash.utils", mc),
+            flash_geom_internal: Namespace::internal("flash.geom", mc),
+
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
             native_instance_init_table: Default::default(),
@@ -155,7 +182,7 @@ impl<'gc> Avm2<'gc> {
             Method::Native(method) => {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
-                init_activation.resolve_parameters(&method.name, &[], &method.signature)?;
+                init_activation.resolve_parameters(method.name, &[], &method.signature)?;
                 init_activation
                     .context
                     .avm2
@@ -291,13 +318,14 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    /// Load an ABC file embedded in a `DoAbc` tag.
+    /// Load an ABC file embedded in a `DoAbc` or `DoAbc2` tag.
     pub fn do_abc(
         context: &mut UpdateContext<'_, 'gc>,
-        do_abc: DoAbc,
+        data: &[u8],
+        flags: DoAbc2Flag,
         domain: Domain<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut reader = Reader::new(do_abc.data);
+        let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
             Err(_) => {
@@ -313,10 +341,14 @@ impl<'gc> Avm2<'gc> {
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
         for i in (0..num_scripts).rev() {
-            let mut script = tunit.load_script(i as u32, context)?;
+            tunit.load_script(i as u32, context)?;
+        }
 
-            if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
-                script.globals(context)?;
+        if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
+            for i in 0..num_scripts {
+                if let Some(mut script) = tunit.get_script(i) {
+                    script.globals(context)?;
+                }
             }
         }
         Ok(())

@@ -10,8 +10,8 @@ use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Multiname as Avm2Multiname,
-    Object as Avm2Object, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object,
+    Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -30,7 +30,6 @@ use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
@@ -40,6 +39,7 @@ use url::form_urlencoded;
 pub type Handle = Index;
 
 /// How Ruffle should load movies.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Clone, Copy)]
 pub enum LoadBehavior {
     /// Allow movies to execute before they have finished loading.
@@ -61,22 +61,6 @@ pub enum LoadBehavior {
     /// done synchronously. Complex movies will visibly block the player from
     /// accepting user input and the application will appear to freeze.
     Blocking,
-}
-
-impl FromStr for LoadBehavior {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "streaming" {
-            Ok(LoadBehavior::Streaming)
-        } else if s == "delayed" {
-            Ok(LoadBehavior::Delayed)
-        } else if s == "blocking" {
-            Ok(LoadBehavior::Blocking)
-        } else {
-            Err("Not a valid load behavior")
-        }
-    }
 }
 
 /// Enumeration of all content types that `Loader` can handle.
@@ -648,7 +632,7 @@ impl<'gc> Loader<'gc> {
             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
                 let mut loader = loader_info
-                    .get_property(&Avm2Multiname::public("loader"), &mut activation)
+                    .get_public_property("loader", &mut activation)
                     .map_err(|e| Error::Avm2Error(e.to_string()))?
                     .as_object()
                     .unwrap()
@@ -1051,7 +1035,7 @@ impl<'gc> Loader<'gc> {
                     };
 
                     target
-                        .set_property(&Avm2Multiname::public("data"), data_object, activation)
+                        .set_public_property("data", data_object, activation)
                         .unwrap();
                 }
 
@@ -1223,7 +1207,13 @@ impl<'gc> Loader<'gc> {
                 match response {
                     Ok(response) => {
                         let handle = uc.audio.register_mp3(&response.body)?;
-                        sound_object.set_sound(uc.gc_context, handle);
+                        if let Err(e) = sound_object
+                            .as_sound_object()
+                            .expect("Not a sound object")
+                            .set_sound(uc, handle)
+                        {
+                            tracing::error!("Encountered AVM2 error when setting sound: {}", e);
+                        }
 
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());
@@ -1396,11 +1386,8 @@ impl<'gc> Loader<'gc> {
                     let mut activation = Avm2Activation::from_nothing(uc.reborrow());
                     let domain = context
                         .and_then(|o| {
-                            o.get_property(
-                                &Avm2Multiname::public("applicationDomain"),
-                                &mut activation,
-                            )
-                            .ok()
+                            o.get_public_property("applicationDomain", &mut activation)
+                                .ok()
                         })
                         .and_then(|v| v.coerce_to_object(&mut activation).ok())
                         .and_then(|o| o.as_application_domain())

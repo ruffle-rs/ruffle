@@ -480,7 +480,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                ArrayStorage::from_args(&arguments_list)
+                // note: resolve_parameters ensures that arguments_list length is >= user_arguments
+                ArrayStorage::from_args(&arguments_list[..user_arguments.len()])
             } else if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
                 if let Some(rest_args) = arguments_list.get(signature.len()..) {
                     ArrayStorage::from_args(rest_args)
@@ -491,18 +492,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 unreachable!();
             };
 
-            let mut args_object = ArrayObject::from_storage(&mut activation, args_array)?;
+            let args_object = ArrayObject::from_storage(&mut activation, args_array)?;
 
             if method
                 .method()
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                args_object.set_property(
-                    &Multiname::public("callee"),
-                    callee.into(),
-                    &mut activation,
-                )?;
+                args_object.set_string_property_local("callee", callee.into(), &mut activation)?;
             }
 
             *activation
@@ -646,11 +643,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.avm2
     }
 
-    /// Set the return value.
-    pub fn set_return_value(&mut self, value: Value<'gc>) {
-        self.return_value = Some(value);
-    }
-
     /// Get the class that defined the currently-executing method, if it
     /// exists.
     ///
@@ -780,7 +772,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
-        Namespace::from_abc_namespace(method.translation_unit(), index, self.context.gc_context)
+        method
+            .translation_unit()
+            .pool_namespace(index, self.context.gc_context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -1011,6 +1005,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetOuterScope { index } => self.op_get_outer_scope(index),
                 Op::GetScopeObject { index } => self.op_get_scope_object(index),
                 Op::GetGlobalScope => self.op_get_global_scope(),
+                Op::FindDef { index } => self.op_find_def(method, index),
                 Op::FindProperty { index } => self.op_find_property(method, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(method, index),
                 Op::GetLex { index } => self.op_get_lex(method, index),
@@ -1147,7 +1142,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             };
 
             if let Err(error) = result {
-                return self.handle_err(method, reader, &full_data, instruction_start, error);
+                return self.handle_err(method, reader, full_data, instruction_start, error);
             }
             result
         } else if let Err(e) = op {
@@ -1334,7 +1329,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let value = receiver.call_property(&multiname, &args, self)?;
 
@@ -1353,7 +1348,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?.as_callable(
             self,
             Some(&multiname),
@@ -1376,7 +1371,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         receiver.call_property(&multiname, &args, self)?;
 
@@ -1412,7 +1407,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1433,7 +1428,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1462,7 +1457,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             let value = object.get_property(&multiname, self)?;
             self.push_stack(value);
             return Ok(FrameControl::Continue);
@@ -1477,7 +1472,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1492,7 +1487,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let value = object.get_property(&multiname, self)?;
         self.push_stack(value);
 
@@ -1510,7 +1505,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             object.set_property(&multiname, value, self)?;
             return Ok(FrameControl::Continue);
         }
@@ -1524,7 +1519,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1542,7 +1537,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let mut object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1557,7 +1552,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let mut object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         object.init_property(&multiname, value, self)?;
 
@@ -1574,7 +1569,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
-            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
             let did_delete = object.delete_property(self, &multiname)?;
             self.push_stack(did_delete);
             return Ok(FrameControl::Continue);
@@ -1589,7 +1584,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
-                let object = object.coerce_to_receiver(self, None)?;
+                let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
@@ -1607,7 +1602,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
-        let object = object.coerce_to_receiver(self, Some(&multiname))?;
+        let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
         let did_delete = object.delete_property(self, &multiname)?;
 
         self.push_stack(did_delete);
@@ -1623,7 +1618,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1643,7 +1638,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let superclass_object = self.superclass_object(&multiname)?;
 
@@ -1666,7 +1661,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let name = name_value.coerce_to_string(self)?;
-        let multiname = Multiname::public(name);
+        let multiname = Multiname::new(self.avm2().public_namespace, name);
         let has_prop = obj.has_property_via_in(self, &multiname)?;
 
         self.push_stack(has_prop);
@@ -1748,6 +1743,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_find_def(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let multiname = self.pool_multiname_static(method, index)?;
+        avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
+        let (_, mut script) = self.domain().find_defining_script(self, &multiname)?;
+        let obj = script.globals(&mut self.context)?;
+        self.push_stack(obj);
+        Ok(FrameControl::Continue)
+    }
+
     fn op_find_property(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -1798,7 +1806,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         let value = object.get_slot(index)?;
 
         self.push_stack(value);
@@ -1808,7 +1816,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         object.set_slot(index, value, self.context.gc_context)?;
 
@@ -1858,7 +1866,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         let source = self
             .pop_stack()
-            .coerce_to_receiver(self, Some(&multiname))?;
+            .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
         let object = source.construct_prop(&multiname, &args, self)?;
 
@@ -1869,7 +1877,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let receiver = self.pop_stack().coerce_to_receiver(self, None)?;
+        let receiver = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         self.super_init(receiver, &args)?;
 
@@ -1896,11 +1904,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_property(
-                &Multiname::public(name.coerce_to_string(self)?),
-                value,
-                self,
-            )?;
+            object.set_public_property(name.coerce_to_string(self)?, value, self)?;
         }
 
         self.push_stack(object);
@@ -2734,7 +2738,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_name(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         let name = object.get_enumerant_name(cur_index as u32, self)?;
 
@@ -2745,7 +2749,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_next_value(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_receiver(self, None)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         let value = object.get_enumerant_value(cur_index as u32, self)?;
 
@@ -3093,7 +3097,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(2, address)?;
+        let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
@@ -3107,7 +3111,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(4, address)?;
+        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
@@ -3120,7 +3124,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(4, address)?;
+        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
@@ -3134,7 +3138,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.read_at(8, address)?;
+        let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }

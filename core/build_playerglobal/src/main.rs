@@ -23,7 +23,7 @@ fn main() {
     let args = cli::Cli::parse();
     match args.command {
         Commands::Compile { out_dir } => {
-            build_playerglobal::build_playerglobal(repo_root, out_dir.into()).unwrap();
+            build_playerglobal::build_playerglobal(repo_root, out_dir.into(), false).unwrap();
         }
         Commands::Lint => {
             let tmp = root.join("tmp");

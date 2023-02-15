@@ -1,9 +1,11 @@
 use crate::util::environment::WGPU;
+use crate::util::runner::TestAudioBackend;
 use anyhow::{anyhow, Result};
 use approx::assert_relative_eq;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
+use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -73,7 +75,7 @@ impl Approximations {
     pub fn number_patterns(&self) -> Vec<Regex> {
         self.number_patterns
             .iter()
-            .map(|p| Regex::new(&p).unwrap())
+            .map(|p| Regex::new(p).unwrap())
             .collect()
     }
 }
@@ -84,6 +86,7 @@ pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
     viewport_dimensions: Option<ViewportDimensions>,
     with_renderer: Option<RenderOptions>,
+    with_audio: bool,
 }
 
 impl PlayerOptions {
@@ -118,11 +121,23 @@ impl PlayerOptions {
                 let target = TextureTarget::new(&descriptors.device, (width, height))
                     .map_err(|e| anyhow!(e.to_string()))?;
 
-                player_builder = player_builder.with_renderer(
-                    WgpuRenderBackend::new(descriptors, target, render_options.sample_count)
-                        .map_err(|e| anyhow!(e.to_string()))?,
-                );
+                player_builder = player_builder
+                    .with_quality(match render_options.sample_count {
+                        16 => StageQuality::High16x16,
+                        8 => StageQuality::High8x8,
+                        4 => StageQuality::High,
+                        2 => StageQuality::Medium,
+                        _ => StageQuality::Low,
+                    })
+                    .with_renderer(
+                        WgpuRenderBackend::new(descriptors, target)
+                            .map_err(|e| anyhow!(e.to_string()))?,
+                    );
             }
+        }
+
+        if self.with_audio {
+            player_builder = player_builder.with_audio(TestAudioBackend::new());
         }
 
         Ok(player_builder)

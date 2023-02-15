@@ -2,16 +2,20 @@
 
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{regexp_allocator, ArrayObject, Object, TObject};
+use crate::avm2::object::{regexp_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
 use crate::string::{AvmString, WString};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
+
+// All of these methods will be defined as both
+// AS3 instance methods and methods on the `Array` class prototype.
+const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] =
+    &[("exec", exec), ("test", test)];
 
 /// Implements `RegExp`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -71,10 +75,32 @@ fn class_call<'gc>(
 
 /// Implements `RegExp`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+        let regexp_proto = this_class.prototype();
+
+        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+            regexp_proto.set_string_property_local(
+                *name,
+                FunctionObject::from_method(
+                    activation,
+                    Method::from_builtin(*method, name, gc_context),
+                    scope,
+                    None,
+                    Some(this_class),
+                )
+                .into(),
+                activation,
+            )?;
+            regexp_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
+        }
+    }
     Ok(Value::Undefined)
 }
 
@@ -233,13 +259,9 @@ pub fn exec<'gc>(
 
             let object = ArrayObject::from_storage(activation, storage)?;
 
-            object.set_property_local(
-                &Multiname::public("index"),
-                Value::Number(index as f64),
-                activation,
-            )?;
+            object.set_string_property_local("index", Value::Number(index as f64), activation)?;
 
-            object.set_property_local(&Multiname::public("input"), text.into(), activation)?;
+            object.set_string_property_local("input", text.into(), activation)?;
 
             return Ok(object.into());
         }
@@ -268,16 +290,25 @@ pub fn test<'gc>(
 }
 
 /// Construct `RegExp`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "RegExp"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "RegExp"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin_and_params(
             instance_init,
             "<RegExp instance initializer>",
             vec![
-                ParamConfig::optional("re", Multiname::public("String"), ""),
-                ParamConfig::optional("flags", Multiname::public("String"), ""),
+                ParamConfig::optional(
+                    "re",
+                    Multiname::new(activation.avm2().public_namespace, "String"),
+                    "",
+                ),
+                ParamConfig::optional(
+                    "flags",
+                    Multiname::new(activation.avm2().public_namespace, "String"),
+                    "",
+                ),
             ],
             false,
             mc,
@@ -307,10 +338,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("lastIndex", Some(last_index), Some(set_last_index)),
         ("source", Some(source), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("exec", exec), ("test", test)];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        PUBLIC_INSTANCE_AND_PROTO_METHODS,
+    );
 
     class
 }

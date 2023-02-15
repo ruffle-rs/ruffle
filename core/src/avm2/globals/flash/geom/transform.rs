@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 
 use crate::avm2::Multiname;
-use crate::avm2::{Activation, Error, Namespace, Object, TObject, Value};
-use crate::display_object::{StageQuality, TDisplayObject};
+use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2_stub_getter;
+use crate::display_object::TDisplayObject;
 use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
+use ruffle_render::quality::StageQuality;
 use swf::Fixed8;
 
 fn get_display_object<'gc>(
@@ -12,7 +14,7 @@ fn get_display_object<'gc>(
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
         .get_property(
-            &Multiname::new(Namespace::Private("".into()), "_displayObject"),
+            &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
             activation,
         )?
         .as_object()
@@ -27,7 +29,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.unwrap().set_property(
-        &Multiname::new(Namespace::Private("".into()), "_displayObject"),
+        &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
         args[0],
         activation,
     )?;
@@ -124,11 +126,15 @@ pub fn get_concatenated_matrix<'gc>(
 }
 
 pub fn get_concatenated_color_transform<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("Transform.concatenatedColorTransform: not yet implemented");
+    avm2_stub_getter!(
+        activation,
+        "flash.geom.Transform",
+        "concatenatedColorTransform"
+    );
     Ok(Value::Undefined)
 }
 
@@ -139,28 +145,28 @@ pub fn object_to_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
-        .get_property(&Multiname::public("redMultiplier"), activation)?
+        .get_public_property("redMultiplier", activation)?
         .coerce_to_number(activation)?;
     let green_multiplier = object
-        .get_property(&Multiname::public("greenMultiplier"), activation)?
+        .get_public_property("greenMultiplier", activation)?
         .coerce_to_number(activation)?;
     let blue_multiplier = object
-        .get_property(&Multiname::public("blueMultiplier"), activation)?
+        .get_public_property("blueMultiplier", activation)?
         .coerce_to_number(activation)?;
     let alpha_multiplier = object
-        .get_property(&Multiname::public("alphaMultiplier"), activation)?
+        .get_public_property("alphaMultiplier", activation)?
         .coerce_to_number(activation)?;
     let red_offset = object
-        .get_property(&Multiname::public("redOffset"), activation)?
+        .get_public_property("redOffset", activation)?
         .coerce_to_number(activation)?;
     let green_offset = object
-        .get_property(&Multiname::public("greenOffset"), activation)?
+        .get_public_property("greenOffset", activation)?
         .coerce_to_number(activation)?;
     let blue_offset = object
-        .get_property(&Multiname::public("blueOffset"), activation)?
+        .get_public_property("blueOffset", activation)?
         .coerce_to_number(activation)?;
     let alpha_offset = object
-        .get_property(&Multiname::public("alphaOffset"), activation)?
+        .get_public_property("alphaOffset", activation)?
         .coerce_to_number(activation)?;
     Ok(ColorTransform {
         r_mult: Fixed8::from_f64(red_multiplier),
@@ -218,25 +224,25 @@ pub fn object_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object
-        .get_property(&Multiname::public("a"), activation)?
+        .get_public_property("a", activation)?
         .coerce_to_number(activation)? as f32;
     let b = object
-        .get_property(&Multiname::public("b"), activation)?
+        .get_public_property("b", activation)?
         .coerce_to_number(activation)? as f32;
     let c = object
-        .get_property(&Multiname::public("c"), activation)?
+        .get_public_property("c", activation)?
         .coerce_to_number(activation)? as f32;
     let d = object
-        .get_property(&Multiname::public("d"), activation)?
+        .get_public_property("d", activation)?
         .coerce_to_number(activation)? as f32;
     let tx = Twips::from_pixels(
         object
-            .get_property(&Multiname::public("tx"), activation)?
+            .get_public_property("tx", activation)?
             .coerce_to_number(activation)?,
     );
     let ty = Twips::from_pixels(
         object
-            .get_property(&Multiname::public("ty"), activation)?
+            .get_public_property("ty", activation)?
             .coerce_to_number(activation)?,
     );
 

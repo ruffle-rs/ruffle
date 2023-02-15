@@ -5,7 +5,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
-use crate::avm_warn;
+use crate::avm1_stub;
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::MutationContext;
@@ -295,6 +295,27 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
+    pub fn new(sandbox_type: SandboxType) -> Self {
+        SystemProperties {
+            //TODO: default to true on fp>=7, false <= 6
+            exact_settings: true,
+            //TODO: default to false on fp>=7, true <= 6
+            use_codepage: false,
+            capabilities: SystemCapabilities::empty(),
+            player_type: PlayerType::StandAlone,
+            screen_color: ScreenColor::Color,
+            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
+            language: Language::English,
+            screen_resolution: (0, 0),
+            aspect_ratio: 1_f32,
+            dpi: 1_f32,
+            manufacturer: Manufacturer::Linux,
+            os: OperatingSystem::Linux,
+            sandbox_type,
+            cpu_architecture: CpuArchitecture::X86,
+            idc_level: "5.1".into(),
+        }
+    }
     pub fn get_version_string(&self, avm: &mut Avm1) -> String {
         format!(
             "{} {},0,0,0",
@@ -396,30 +417,6 @@ impl SystemProperties {
     }
 }
 
-impl Default for SystemProperties {
-    fn default() -> Self {
-        SystemProperties {
-            //TODO: default to true on fp>=7, false <= 6
-            exact_settings: true,
-            //TODO: default to false on fp>=7, true <= 6
-            use_codepage: false,
-            capabilities: SystemCapabilities::empty(),
-            player_type: PlayerType::StandAlone,
-            screen_color: ScreenColor::Color,
-            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
-            language: Language::English,
-            screen_resolution: (0, 0),
-            aspect_ratio: 1_f32,
-            dpi: 1_f32,
-            manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
-            sandbox_type: SandboxType::LocalTrusted,
-            cpu_architecture: CpuArchitecture::X86,
-            idc_level: "5.1".into(),
-        }
-    }
-}
-
 pub fn set_clipboard<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
@@ -449,13 +446,9 @@ pub fn show_settings<'gc>(
         .unwrap_or(&last_panel_pos.into())
         .coerce_to_i32(activation)?;
 
-    let panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
+    let _panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
-    avm_warn!(
-        activation,
-        "System.showSettings({:?}) not not implemented",
-        panel
-    );
+    avm1_stub!(activation, "System", "showSettings");
     Ok(Value::Undefined)
 }
 
@@ -512,7 +505,7 @@ pub fn on_status<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "System.onStatus() not implemented");
+    avm1_stub!(activation, "System", "onStatus");
     Ok(Value::Undefined)
 }
 

@@ -1,12 +1,13 @@
 //! Container mix-in for display objects
 
+use crate::avm1::{Activation, ActivationIdentifier, TObject};
 use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
-use crate::display_object::{Depth, DisplayObject, TDisplayObject};
+use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
 use crate::string::WStr;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -299,12 +300,54 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
+    ///
+    /// Will also handle AVM1 delayed clip removal, when a unload listener is present
     fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
+        // We should always be the parent of this child
         debug_assert!(DisplayObject::ptr_eq(
             child.parent().unwrap(),
             (*self).into()
         ));
 
+        // Check if this child should have delayed removal (AVM1 only)
+        if !context.is_action_script_3() {
+            let should_delay_removal = {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Unload Handler Check]"),
+                );
+
+                ChildContainer::should_delay_removal(&mut activation, child)
+            };
+
+            if should_delay_removal {
+                let mut raw_container = self.raw_container_mut(context.gc_context);
+
+                // Remove the child from the depth list, before moving it to a negative depth
+                raw_container.remove_child_from_depth_list(child);
+
+                // Enqueue for removal
+                ChildContainer::queue_removal(child, context);
+
+                // Mark that we have a pending removal
+                raw_container.set_pending_removals(true);
+
+                // Re-Insert the child at the new depth
+                raw_container.insert_child_into_depth_list(child.depth(), child);
+
+                return;
+            }
+        }
+
+        self.remove_child_directly(context, child);
+    }
+
+    /// Remove (and unloads) a child display object from this container's render and depth lists.
+    fn remove_child_directly(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        child: DisplayObject<'gc>,
+    ) {
         dispatch_removed_event(child, context);
 
         let mut write = self.raw_container_mut(context.gc_context);
@@ -494,6 +537,16 @@ pub struct ChildContainer<'gc> {
     /// exclusively with the depth list. However, AS3 instead references clips
     /// by render list indexes and does not manipulate the depth list.
     depth_list: BTreeMap<Depth, DisplayObject<'gc>>,
+
+    /// Does this container have any AVM1 objects that are pending removal
+    ///
+    /// Objects that are pending removal are placed at a negative depth in the depth list,
+    /// because accessing children exclusively interacts with the render list, which cannot handle
+    /// negative render depths, we need to check both lists when we have something pending removal.
+    ///
+    /// This should be more efficient than switching the render list to a `BTreeMap`,
+    /// as it will usually be false
+    has_pending_removals: bool,
 }
 
 impl<'gc> Default for ChildContainer<'gc> {
@@ -507,6 +560,7 @@ impl<'gc> ChildContainer<'gc> {
         Self {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
+            has_pending_removals: false,
         }
     }
 
@@ -593,13 +647,17 @@ impl<'gc> ChildContainer<'gc> {
                 .next();
 
             if let Some(above_child) = above {
-                let position = self
+                if let Some(position) = self
                     .render_list
                     .iter()
                     .position(|x| DisplayObject::ptr_eq(*x, above_child))
-                    .unwrap();
-                self.insert_id(position, child);
-                None
+                {
+                    self.insert_id(position, child);
+                    None
+                } else {
+                    self.push_id(child);
+                    None
+                }
             } else {
                 self.push_id(child);
                 None
@@ -630,18 +688,42 @@ impl<'gc> ChildContainer<'gc> {
     /// If multiple children with the same name exist, the one that occurs
     /// first in the render list wins.
     fn get_name(&self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
-        // TODO: Make a HashMap from name -> child?
-        // But need to handle conflicting names (lowest in depth order takes priority).
-        if case_sensitive {
-            self.render_list
-                .iter()
-                .copied()
-                .find(|child| child.name() == name)
+        if self.has_pending_removals {
+            // Find matching children by searching the depth list
+            let mut matching_render_children = if case_sensitive {
+                self.depth_list
+                    .iter()
+                    .filter(|(_, child)| child.name() == name)
+                    .collect::<Vec<_>>()
+            } else {
+                self.depth_list
+                    .iter()
+                    .filter(|(_, child)| child.name().eq_ignore_case(name))
+                    .collect::<Vec<_>>()
+            };
+
+            // Sort so we can get the lowest depth child
+            matching_render_children.sort_by_key(|&(depth, _child)| *depth);
+
+            // First child will have the lowest depth
+            return matching_render_children
+                .first()
+                .map(|&(_depth, child)| child)
+                .copied();
         } else {
-            self.render_list
-                .iter()
-                .copied()
-                .find(|child| child.name().eq_ignore_case(name))
+            // TODO: Make a HashMap from name -> child?
+            // But need to handle conflicting names (lowest in depth order takes priority).
+            if case_sensitive {
+                self.render_list
+                    .iter()
+                    .copied()
+                    .find(|child| child.name() == name)
+            } else {
+                self.render_list
+                    .iter()
+                    .copied()
+                    .find(|child| child.name().eq_ignore_case(name))
+            }
         }
     }
 
@@ -774,8 +856,72 @@ impl<'gc> ChildContainer<'gc> {
     }
 
     /// Yield children in the order they are rendered.
-    fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
+    pub fn iter_render_list<'a>(&'a self) -> impl 'a + Iterator<Item = DisplayObject<'gc>> {
         self.render_list.iter().copied()
+    }
+
+    /// Check for pending removals and update the pending removals flag
+    pub fn update_pending_removals(&mut self) {
+        self.has_pending_removals = self.depth_list.values().any(|c| c.pending_removal());
+    }
+
+    /// Set the pending_removals flag
+    pub fn set_pending_removals(&mut self, pending: bool) {
+        self.has_pending_removals = pending;
+    }
+
+    /// Should the removal of this clip be delayed to the start of the next frame
+    ///
+    /// Checks recursively for unload handlers
+    pub fn should_delay_removal(
+        activation: &mut Activation<'_, 'gc>,
+        child: DisplayObject<'gc>,
+    ) -> bool {
+        // Do we have an unload event handler
+        if let Some(mc) = child.as_movie_clip() {
+            // If we have an unload handler, we need the delay
+            if mc.has_unload_handler() {
+                return true;
+            // If we were created via timeline and we have a dynamic unload handler, we need the delay
+            } else if child.instantiated_by_timeline() {
+                let obj = child.object().coerce_to_object(activation);
+                if obj.has_property(activation, "onUnload".into()) {
+                    return true;
+                }
+            }
+        }
+
+        // Otherwise, check children if we have them
+        if let Some(c) = child.as_container() {
+            for child in c.iter_render_list() {
+                if Self::should_delay_removal(activation, child) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Enqueue the given child and all sub-children for delayed removal at the start of the next frame
+    ///
+    /// This just moves the children to a negative depth
+    /// Will also fire unload events, as they should occur when the removal is queued, not when it actually occurs
+    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+        if let Some(c) = child.as_container() {
+            for child in c.iter_render_list() {
+                Self::queue_removal(child, context);
+            }
+        }
+
+        let cur_depth = child.depth();
+        // Note that the depth returned by AS will be offset by the `AVM_DEPTH_BIAS`, so this is really `-(cur_depth+1+AVM_DEPTH_BIAS)`
+        child.set_depth(context.gc_context, -cur_depth - 1);
+
+        if let Some(mc) = child.as_movie_clip() {
+            // Clip events should still fire
+            mc.event_dispatch(context, crate::events::ClipEvent::Unload);
+        }
     }
 }
 

@@ -6,17 +6,15 @@ use crate::avm2::globals::array::{
     compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
     SortOptions,
 };
-use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use std::cmp::{max, min, Ordering};
 
 /// Implements `Vector`'s instance constructor.
@@ -71,7 +69,7 @@ fn class_call<'gc>(
     }
 
     let length = arg
-        .get_property(&Multiname::public("length"), activation)?
+        .get_public_property("length", activation)?
         .coerce_to_i32(activation)?;
 
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
@@ -98,17 +96,22 @@ pub fn class_init<'gc>(
         let mut globals = activation.global_scope().unwrap();
         let mut domain = activation.domain();
 
+        let vector_internal_namespace = activation.avm2().vector_internal_namespace;
+
         //We have to grab Object's defining script instead of our own, because
         //at this point Vector hasn't actually been defined yet. It doesn't
         //matter because we only have one script for our globals.
         let (_, script) = domain
-            .get_defining_script(&Multiname::public("Object"))?
+            .get_defining_script(&Multiname::new(
+                activation.avm2().public_namespace,
+                "Object",
+            ))?
             .unwrap();
 
         let class_class = activation.avm2().classes().class;
         let int_class = activation.avm2().classes().int;
         let int_vector_class = this.apply(activation, &[int_class.into()])?;
-        let int_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$int");
+        let int_vector_name = QName::new(vector_internal_namespace, "Vector$int");
         int_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -124,7 +127,7 @@ pub fn class_init<'gc>(
 
         let uint_class = activation.avm2().classes().uint;
         let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
-        let uint_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$uint");
+        let uint_vector_name = QName::new(vector_internal_namespace, "Vector$uint");
         uint_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -140,7 +143,7 @@ pub fn class_init<'gc>(
 
         let number_class = activation.avm2().classes().number;
         let number_vector_class = this.apply(activation, &[number_class.into()])?;
-        let number_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$double");
+        let number_vector_name = QName::new(vector_internal_namespace, "Vector$double");
         number_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -155,7 +158,7 @@ pub fn class_init<'gc>(
         domain.export_definition(number_vector_name, script, activation.context.gc_context)?;
 
         let object_vector_class = this.apply(activation, &[Value::Null])?;
-        let object_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$object");
+        let object_vector_name = QName::new(vector_internal_namespace, "Vector$object");
         object_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -180,8 +183,8 @@ pub fn specialized_class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        let mut proto = this
-            .get_property(&Multiname::public("prototype"), activation)?
+        let proto = this
+            .get_public_property("prototype", activation)?
             .as_object()
             .ok_or_else(|| {
                 format!(
@@ -213,8 +216,8 @@ pub fn specialized_class_init<'gc>(
             ("splice", splice),
         ];
         for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
-            proto.set_property(
-                &Multiname::public(*pubname),
+            proto.set_string_property_local(
+                *pubname,
                 FunctionObject::from_function(
                     activation,
                     Method::from_builtin(*func, pubname, activation.context.gc_context),
@@ -437,7 +440,7 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
-            o.call_property(&Multiname::public("toLocaleString"), &[], act)
+            o.call_public_property("toLocaleString", &[], act)
         } else {
             Ok(v)
         }
@@ -592,7 +595,7 @@ pub fn index_of<'gc>(
 
         let from_index = if from_index < 0 {
             let length = this
-                .get_property(&Multiname::public("length"), activation)?
+                .get_public_property("length", activation)?
                 .coerce_to_i32(activation)?;
             max(length + from_index, 0) as u32
         } else {
@@ -629,7 +632,7 @@ pub fn last_index_of<'gc>(
 
         let from_index = if from_index < 0 {
             let length = this
-                .get_property(&Multiname::public("length"), activation)?
+                .get_public_property("length", activation)?
                 .coerce_to_i32(activation)?;
             max(length + from_index, 0) as u32
         } else {
@@ -1006,10 +1009,11 @@ pub fn splice<'gc>(
 }
 
 /// Construct `Vector`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package(NS_VECTOR), "Vector"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().vector_public_namespace, "Vector"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Vector instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector class initializer>", mc),
         mc,
@@ -1038,7 +1042,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("length", Some(length), Some(set_length)),
         ("fixed", Some(fixed), Some(set_fixed)),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
@@ -1063,7 +1071,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("splice", splice),
     ];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     class
 }

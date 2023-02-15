@@ -5,11 +5,11 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -18,7 +18,8 @@ use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
 use swf::avm2::types::{
-    AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Script as AbcScript,
+    AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
+    Script as AbcScript,
 };
 
 #[derive(Copy, Clone, Collect)]
@@ -60,27 +61,13 @@ pub struct TranslationUnitData<'gc> {
     /// They're lazy loaded and offset by 1, with the 0th element being always None.
     strings: Vec<Option<AvmString<'gc>>>,
 
+    /// All namespaces loaded from the ABC's scripts list.
+    namespaces: Vec<Option<Namespace<'gc>>>,
+
     /// All multinames loaded from the ABC's multiname list
     /// Note that some of these may have a runtime (lazy) component.
     /// Make sure to check for that before using them.
     multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
-
-    /// A map from trait names to their defining `Scripts`.
-    /// This is very similar to `Domain.defs`, except it
-    /// only stores traits with `Namespace::Private`, which are
-    /// not exported/stored in `Domain`.
-    ///
-    /// This should only be used in very specific circumstances -
-    /// such as resolving classes for property types. All other
-    /// lookups should go through `Activation.resolve_definition`,
-    /// which takes scopes and privacy into account.
-    ///
-    /// Note that this map is 'gradually' populated over time -
-    /// each call to `script.load_traits` inserts all private
-    /// traits declared by that script. When looking up a
-    /// trait name in this map, you must ensure that its
-    /// corresponing `Script` will have already been loaded.
-    private_trait_scripts: PropertyMap<'gc, Script<'gc>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -91,8 +78,8 @@ impl<'gc> TranslationUnit<'gc> {
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
         let strings = vec![None; abc.constant_pool.strings.len() + 1];
+        let namespaces = vec![None; abc.constant_pool.namespaces.len() + 1];
         let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
-        let private_trait_scripts = PropertyMap::new();
 
         Self(GcCell::allocate(
             mc,
@@ -103,8 +90,8 @@ impl<'gc> TranslationUnit<'gc> {
                 methods,
                 scripts,
                 strings,
+                namespaces,
                 multinames,
-                private_trait_scripts,
             },
         ))
     }
@@ -116,14 +103,6 @@ impl<'gc> TranslationUnit<'gc> {
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
         self.0.read().abc.clone()
-    }
-
-    pub fn get_loaded_private_trait_script(self, name: &Multiname<'gc>) -> Option<Script<'gc>> {
-        self.0
-            .read()
-            .private_trait_scripts
-            .get_for_multiname(name)
-            .copied()
     }
 
     /// Load a method from the ABC file and return its method definition.
@@ -223,6 +202,11 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(script)
     }
 
+    /// Gets a script in the ABC file by index.
+    pub fn get_script(&self, index: usize) -> Option<Script<'gc>> {
+        self.0.read().scripts.get(index).copied().flatten()
+    }
+
     /// Load a string from the ABC's constant pool.
     ///
     /// This function yields an error if no such string index exists.
@@ -273,6 +257,28 @@ impl<'gc> TranslationUnit<'gc> {
             .unwrap_or_default())
     }
 
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    ///
+    /// This version of the function treats index 0 as an error condition.
+    pub fn pool_namespace(
+        self,
+        ns_index: Index<AbcNamespace>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Namespace<'gc>, Error<'gc>> {
+        let read = self.0.read();
+        if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
+            return Ok(*namespace);
+        }
+
+        drop(read);
+
+        let namespace = Namespace::from_abc_namespace(self, ns_index, mc)?;
+        self.0.write(mc).namespaces[ns_index.0 as usize] = Some(namespace);
+
+        Ok(namespace)
+    }
+
     /// Retrieve a multiname from the current constant pool.
     /// The name can have a lazy component, do not pass it anywhere.
     pub fn pool_maybe_uninitialized_multiname(
@@ -321,7 +327,7 @@ impl<'gc> TranslationUnit<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
-            Ok(Gc::allocate(mc, Multiname::any()))
+            Ok(Gc::allocate(mc, Multiname::any(mc)))
         } else {
             self.pool_multiname_static(multiname_index, mc)
         }
@@ -455,19 +461,11 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            let name = newtrait.name();
-            if name.namespace().is_private() {
-                unit.0
-                    .write(activation.context.gc_context)
-                    .private_trait_scripts
-                    .insert(name, *self);
-            } else {
-                write.domain.export_definition(
-                    newtrait.name(),
-                    *self,
-                    activation.context.gc_context,
-                )?;
-            }
+            write.domain.export_definition(
+                newtrait.name(),
+                *self,
+                activation.context.gc_context,
+            )?;
             write.traits.push(newtrait);
         }
 

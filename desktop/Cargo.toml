@@ -10,8 +10,8 @@ version.workspace = true
 [dependencies]
 clap = { version = "4.1.4", features = ["derive"] }
 cpal = "0.15.0"
-ruffle_core = { path = "../core", features = ["audio", "mp3", "nellymoser"] }
-ruffle_render = { path = "../render" }
+ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser"] }
+ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
@@ -23,7 +23,7 @@ url = "2.3.1"
 arboard = "3.2.0"
 dirs = "4.0"
 isahc = "1.7.2"
-rfd = "0.11.0"
+rfd = "0.11.1"
 anyhow = "1.0"
 bytemuck = "1.13.0"
 os_info = { version = "3", default-features = false }

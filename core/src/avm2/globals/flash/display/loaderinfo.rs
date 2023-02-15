@@ -10,8 +10,9 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
+use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use swf::{write_swf, Compression};
 
 // FIXME - Throw an actual 'Error' with the proper code
@@ -253,22 +254,23 @@ pub fn height<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `isURLInaccessible` getter stub
+/// `isURLInaccessible` getter
 pub fn is_url_inaccessible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "isURLInaccessible");
     Ok(false.into())
 }
 
-/// `parentAllowsChild` getter stub
+/// `parentAllowsChild` getter
 pub fn parent_allows_child<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("LoaderInfo.parentAllowsChild is a stub");
+    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
     Ok(false.into())
 }
 
@@ -468,7 +470,7 @@ pub fn parameters<'gc>(
             for (k, v) in parameters.iter() {
                 let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
                 let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
-                params_obj.set_property(&Multiname::public(avm_k), avm_v.into(), activation)?;
+                params_obj.set_public_property(avm_k, avm_v.into(), activation)?;
             }
 
             return Ok(params_obj.into());
@@ -503,11 +505,12 @@ pub fn uncaught_error_events<'gc>(
 }
 
 /// Construct `LoaderInfo`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "LoaderInfo"),
+        QName::new(Namespace::package("flash.display", mc), "LoaderInfo"),
         Some(Multiname::new(
-            Namespace::package("flash.events"),
+            Namespace::package("flash.events", mc),
             "EventDispatcher",
         )),
         Method::from_builtin(instance_init, "<LoaderInfo instance initializer>", mc),
@@ -550,7 +553,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sharedEvents", Some(shared_events), None),
         ("uncaughtErrorEvents", Some(uncaught_error_events), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

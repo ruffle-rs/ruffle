@@ -13,7 +13,8 @@ use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
-use gc_arena::{GcCell, MutationContext};
+use crate::{avm2_stub_getter, avm2_stub_setter};
+use gc_arena::GcCell;
 use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.
@@ -648,24 +649,26 @@ pub fn set_stage_height<'gc>(
 }
 
 /// Implement `allowsFullScreen`'s getter
-///
-/// TODO: This is a stub.
 pub fn allows_full_screen<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Stage", "allowsFullScreen");
     Ok(true.into())
 }
 
 /// Implement `allowsFullScreenInteractive`'s getter
-///
-/// TODO: This is a stub.
 pub fn allows_full_screen_interactive<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(
+        activation,
+        "flash.display.Stage",
+        "allowsFullScreenInteractive"
+    );
     Ok(false.into())
 }
 
@@ -695,7 +698,7 @@ pub fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(activation.context.gc_context, quality);
+            .set_quality(&mut activation.context, quality);
     }
     Ok(Value::Undefined)
 }
@@ -723,32 +726,48 @@ pub fn stage3ds<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stage.fullScreenSourceRect Stub
-pub fn full_screen_source_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+/// Implement `invalidate`
+pub fn invalidate<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    if let Some(stage) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        stage.set_invalidated(activation.context.gc_context, true);
+    }
     Ok(Value::Undefined)
 }
 
-/// Stage.fullScreenSourceRect Stub
-pub fn set_full_screen_source_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+/// Stage.fullScreenSourceRect's getter
+pub fn full_screen_source_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("stage.fullScreenSourceRect - not yet implemented");
+    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenSourceRect");
+    Ok(Value::Undefined)
+}
+
+/// Stage.fullScreenSourceRect's setter
+pub fn set_full_screen_source_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
 
 /// Construct `Stage`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "Stage"),
+        QName::new(Namespace::package("flash.display", mc), "Stage"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObjectContainer",
         )),
         Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
@@ -802,7 +821,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         if let Some(getter) = getter {
             write.define_instance_trait(
                 Trait::from_getter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(activation.avm2().public_namespace, name),
                     Method::from_builtin(getter, name, mc),
                 )
                 .with_override(),
@@ -811,7 +830,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         if let Some(setter) = setter {
             write.define_instance_trait(
                 Trait::from_setter(
-                    QName::new(Namespace::public(), name),
+                    QName::new(activation.avm2().public_namespace, name),
                     Method::from_builtin(setter, name, mc),
                 )
                 .with_override(),
@@ -858,7 +877,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("quality", Some(quality), Some(set_quality)),
         ("stage3Ds", Some(stage3ds), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("invalidate", invalidate)];
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

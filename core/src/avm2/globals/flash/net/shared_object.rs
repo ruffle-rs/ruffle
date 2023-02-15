@@ -3,6 +3,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Namespace, Object, Value};
+use crate::avm2_stub_method;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
@@ -140,7 +141,10 @@ pub fn get_local<'gc>(
     let mut this = sharedobject_cls.construct(activation, &[])?;
 
     // Set the internal name
-    let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
+    let ruffle_name = Multiname::new(
+        Namespace::package("__ruffle__", activation.context.gc_context),
+        "_ruffleName",
+    );
     this.set_property(
         &ruffle_name,
         AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
@@ -166,7 +170,7 @@ pub fn get_local<'gc>(
             .into();
     }
 
-    this.set_property(&Multiname::public("data"), data, activation)?;
+    this.set_public_property("data", data, activation)?;
     activation
         .context
         .avm2_shared_objects
@@ -182,10 +186,13 @@ pub fn flush<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let data = this
-            .get_property(&Multiname::public("data"), activation)?
+            .get_public_property("data", activation)?
             .coerce_to_object(activation)?;
 
-        let ruffle_name = Multiname::new(Namespace::Namespace("__ruffle__".into()), "_ruffleName");
+        let ruffle_name = Multiname::new(
+            Namespace::package("__ruffle__", activation.context.gc_context),
+            "_ruffleName",
+        );
         let name = this
             .get_property(&ruffle_name, activation)?
             .coerce_to_string(activation)?;
@@ -195,8 +202,7 @@ pub fn flush<'gc>(
         crate::avm2::amf::recursive_serialize(activation, data, &mut elements, AMFVersion::AMF3)?;
         let mut lso = Lso::new(
             elements,
-            &name
-                .split('/')
+            name.split('/')
                 .last()
                 .map(|e| e.to_string())
                 .unwrap_or_else(|| "<unknown>".to_string()),
@@ -211,19 +217,19 @@ pub fn flush<'gc>(
 }
 
 pub fn close<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("SharedObject.close - not yet implemented");
+    avm2_stub_method!(activation, "flash.net.SharedObject", "close");
     Ok(Value::Undefined)
 }
 
 pub fn clear<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("SharedObject.clear - not yet implemented");
+    avm2_stub_method!(activation, "flash.net.SharedObject", "clear");
     Ok(Value::Undefined)
 }

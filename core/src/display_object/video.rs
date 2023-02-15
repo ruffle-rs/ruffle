@@ -14,6 +14,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_render::bounding_box::BoundingBox;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::quality::StageQuality;
 use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
@@ -22,8 +23,6 @@ use std::cell::{Ref, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use swf::{CharacterId, DefineVideoStream, VideoFrame};
-
-use super::StageQuality;
 
 /// A Video display object is a high-level interface to a video player.
 ///

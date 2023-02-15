@@ -1,9 +1,9 @@
 use crate::layouts::BindLayouts;
-use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION;
+use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
-    create_buffer_with_data, BitmapSamplers, Pipelines, TextureTransforms, Transforms, Vertex,
-    DEFAULT_COLOR_ADJUSTMENTS,
+    create_buffer_with_data, BitmapSamplers, Pipelines, PosColorVertex, PosVertex,
+    TextureTransforms, Transforms, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use fnv::FnvHashMap;
 use std::fmt::Debug;
@@ -105,11 +105,11 @@ impl Descriptors {
                     self.device
                         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                             label: create_debug_label!("Copy sRGB pipeline").as_deref(),
-                            layout: Some(&copy_texture_pipeline_layout),
+                            layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_srgb_shader,
                                 entry_point: "main_vertex",
-                                buffers: &VERTEX_BUFFERS_DESCRIPTION,
+                                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_srgb_shader,
@@ -178,11 +178,11 @@ impl Descriptors {
                     self.device
                         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                             label: create_debug_label!("Copy pipeline").as_deref(),
-                            layout: Some(&copy_texture_pipeline_layout),
+                            layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_shader,
                                 entry_point: "main_vertex",
-                                buffers: &VERTEX_BUFFERS_DESCRIPTION,
+                                buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_shader,
@@ -236,38 +236,60 @@ impl Descriptors {
 }
 
 pub struct Quad {
-    pub vertices: wgpu::Buffer,
+    pub vertices_pos: wgpu::Buffer,
+    pub vertices_pos_color: wgpu::Buffer,
     pub indices: wgpu::Buffer,
     pub texture_transforms: wgpu::Buffer,
 }
 
 impl Quad {
     pub fn new(device: &wgpu::Device) -> Self {
-        let vertices = [
-            Vertex {
+        let vertices_pos = [
+            PosVertex {
+                position: [0.0, 0.0],
+            },
+            PosVertex {
+                position: [1.0, 0.0],
+            },
+            PosVertex {
+                position: [1.0, 1.0],
+            },
+            PosVertex {
+                position: [0.0, 1.0],
+            },
+        ];
+        let vertices_pos_color = [
+            PosColorVertex {
                 position: [0.0, 0.0],
                 color: [1.0, 1.0, 1.0, 1.0],
             },
-            Vertex {
+            PosColorVertex {
                 position: [1.0, 0.0],
                 color: [1.0, 1.0, 1.0, 1.0],
             },
-            Vertex {
+            PosColorVertex {
                 position: [1.0, 1.0],
                 color: [1.0, 1.0, 1.0, 1.0],
             },
-            Vertex {
+            PosColorVertex {
                 position: [0.0, 1.0],
                 color: [1.0, 1.0, 1.0, 1.0],
             },
         ];
         let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
-        let vbo = create_buffer_with_data(
+        let vbo_pos = create_buffer_with_data(
             device,
-            bytemuck::cast_slice(&vertices),
+            bytemuck::cast_slice(&vertices_pos),
             wgpu::BufferUsages::VERTEX,
-            create_debug_label!("Quad vbo"),
+            create_debug_label!("Quad vbo (pos)"),
+        );
+
+        let vbo_pos_color = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&vertices_pos_color),
+            wgpu::BufferUsages::VERTEX,
+            create_debug_label!("Quad vbo (pos & color)"),
         );
 
         let ibo = create_buffer_with_data(
@@ -292,7 +314,8 @@ impl Quad {
         );
 
         Self {
-            vertices: vbo,
+            vertices_pos: vbo_pos,
+            vertices_pos_color: vbo_pos_color,
             indices: ibo,
             texture_transforms: tex_transforms,
         }

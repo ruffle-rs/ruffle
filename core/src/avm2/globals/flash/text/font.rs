@@ -5,13 +5,14 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::{ArrayObject, ArrayStorage, Error};
+use crate::avm2_stub_getter;
 use crate::character::Character;
 use crate::string::AvmString;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.text.Font`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -155,29 +156,32 @@ pub fn has_glyphs<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stub `Font.enumerateFonts`
+/// `Font.enumerateFonts`
 pub fn enumerate_fonts<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Font.enumerateFonts is a stub".into())
+    avm2_stub_getter!(activation, "flash.text.Font", "enumerateFonts");
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
 }
 
-/// Stub `Font.registerFont`
+/// `Font.registerFont`
 pub fn register_font<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Font.registerFont is a stub".into())
+    avm2_stub_getter!(activation, "flash.text.Font", "registerFont");
+    Ok(Value::Undefined)
 }
 
 /// Construct `Font`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.text"), "Font"),
-        Some(Multiname::public("Object")),
+        QName::new(Namespace::package("flash.text", mc), "Font"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<Font instance initializer>", mc),
         Method::from_builtin(class_init, "<Font class initializer>", mc),
         mc,
@@ -196,16 +200,28 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("fontStyle", Some(font_style), None),
         ("fontType", Some(font_type), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("hasGlyphs", has_glyphs)];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("enumerateFonts", enumerate_fonts),
         ("registerFont", register_font),
     ];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_builtin_class_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_CLASS_METHODS,
+    );
 
     class
 }

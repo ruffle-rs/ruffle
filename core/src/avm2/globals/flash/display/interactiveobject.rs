@@ -10,7 +10,8 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
-use gc_arena::{GcCell, MutationContext};
+use crate::{avm2_stub_getter, avm2_stub_setter};
+use gc_arena::GcCell;
 
 /// Implements `flash.display.InteractiveObject`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -143,7 +144,10 @@ fn set_context_menu<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls_name = Multiname::new(Namespace::package("flash.display"), "NativeMenu");
+        let cls_name = Multiname::new(
+            Namespace::package("flash.display", activation.context.gc_context),
+            "NativeMenu",
+        );
         let cls = activation.resolve_class(&cls_name)?;
         let value = args
             .get(0)
@@ -156,30 +160,57 @@ fn set_context_menu<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Stub getter & setter for `tabEnabled`.
 pub fn tab_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("InteractiveObject.tabEnabled is a stub");
+    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabEnabled");
 
     Ok(false.into())
 }
 
-/// Stub getter & setter for `tabIndex`.
-pub fn tab_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+pub fn set_tab_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("InteractiveObject.tabIndex is a stub");
+    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+
+    Ok(Value::Undefined)
+}
+
+pub fn tab_index<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabIndex");
 
     Ok((-1).into())
 }
 
+pub fn set_tab_index<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+
+    Ok(Value::Undefined)
+}
+
 pub fn focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "focusRect");
+    Ok(Value::Null)
+}
+
+pub fn set_focus_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -187,18 +218,19 @@ pub fn focus_rect<'gc>(
 
     // let's only warn on true, as games sometimes just set focusRect to false for some reason.
     if matches!(args.get(0), Some(Value::Bool(true))) {
-        tracing::warn!("InteractiveObject.focusRect is a stub");
+        avm2_stub_setter!(activation, "flash.display.InteractiveObject", "focusRect");
     }
 
     Ok(Value::Null)
 }
 
 /// Construct `InteractiveObject`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "InteractiveObject"),
+        QName::new(Namespace::package("flash.display", mc), "InteractiveObject"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "DisplayObject",
         )),
         Method::from_builtin(
@@ -230,11 +262,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_double_click_enabled),
         ),
         ("contextMenu", Some(context_menu), Some(set_context_menu)),
-        ("tabEnabled", Some(tab_enabled), Some(tab_enabled)),
-        ("tabIndex", Some(tab_index), Some(tab_index)),
-        ("focusRect", Some(focus_rect), Some(focus_rect)),
+        ("tabEnabled", Some(tab_enabled), Some(set_tab_enabled)),
+        ("tabIndex", Some(tab_index), Some(set_tab_index)),
+        ("focusRect", Some(focus_rect), Some(set_focus_rect)),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }

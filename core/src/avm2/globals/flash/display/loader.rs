@@ -5,7 +5,6 @@ use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::Request;
 use crate::display_object::LoaderDisplay;
@@ -40,7 +39,10 @@ pub fn init<'gc>(
             false,
         )?;
         this.set_property(
-            &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
+            &Multiname::new(
+                activation.avm2().flash_display_internal,
+                "_contentLoaderInfo",
+            ),
             loader_info.into(),
             activation,
         )?;
@@ -61,7 +63,7 @@ pub fn load<'gc>(
             .and_then(|v| v.coerce_to_object(activation).ok());
 
         let url = url_request
-            .get_property(&Multiname::public("url"), activation)?
+            .get_public_property("url", activation)?
             .coerce_to_string(activation)?;
 
         // This is a dummy MovieClip, which will get overwritten in `Loader`
@@ -72,7 +74,10 @@ pub fn load<'gc>(
 
         let loader_info = this
             .get_property(
-                &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
+                &Multiname::new(
+                    activation.avm2().flash_display_internal,
+                    "_contentLoaderInfo",
+                ),
                 activation,
             )?
             .as_object()
@@ -112,7 +117,10 @@ pub fn load_bytes<'gc>(
 
         let loader_info = this
             .get_property(
-                &Multiname::new(Namespace::private(""), "_contentLoaderInfo"),
+                &Multiname::new(
+                    activation.avm2().flash_display_internal,
+                    "_contentLoaderInfo",
+                ),
                 activation,
             )?
             .as_object()

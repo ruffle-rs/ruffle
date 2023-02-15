@@ -8,6 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+linkme = { version = "0.3", optional = true }
 byteorder = "1.4"
 bitstream-io = "1.6.0"
 flate2 = "1.0.25"
@@ -33,7 +34,7 @@ percent-encoding = "2.2.0"
 thiserror = "1.0"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
-encoding_rs = "0.8.31"
+encoding_rs = "0.8.32"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
@@ -47,12 +48,13 @@ enumset = "1.0.12"
 static_assertions = "1.1.0"
 rustversion = "1.0.11"
 bytemuck = "1.13.0"
+clap = { version = "4.1.4", features = ["derive"], optional=true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.26"
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.33"
+version = "0.4.34"
 
 [features]
 default = []
@@ -64,6 +66,7 @@ timeline_debug = []
 mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
+known_stubs = ["linkme"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

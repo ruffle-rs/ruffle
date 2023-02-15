@@ -3,19 +3,23 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{bitmapdata_allocator, BitmapDataObject, Object, TObject};
+use crate::avm2::object::{
+    bitmapdata_allocator, BitmapDataObject, ByteArrayObject, Object, TObject,
+};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
+use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -215,16 +219,16 @@ pub fn copy_pixels<'gc>(
             .coerce_to_object(activation)?;
 
         let src_min_x = source_rect
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
         let src_min_y = source_rect
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_i32(activation)?;
         let src_width = source_rect
-            .get_property(&Multiname::public("width"), activation)?
+            .get_public_property("width", activation)?
             .coerce_to_i32(activation)?;
         let src_height = source_rect
-            .get_property(&Multiname::public("height"), activation)?
+            .get_public_property("height", activation)?
             .coerce_to_i32(activation)?;
 
         let dest_point = args
@@ -233,10 +237,10 @@ pub fn copy_pixels<'gc>(
             .coerce_to_object(activation)?;
 
         let dest_x = dest_point
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
         let dest_y = dest_point
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_i32(activation)?;
 
         if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
@@ -273,10 +277,10 @@ pub fn copy_pixels<'gc>(
                         .coerce_to_object(activation)
                     {
                         x = alpha_point
-                            .get_property(&Multiname::public("x"), activation)?
+                            .get_public_property("x", activation)?
                             .coerce_to_i32(activation)?;
                         y = alpha_point
-                            .get_property(&Multiname::public("y"), activation)?
+                            .get_public_property("y", activation)?
                             .coerce_to_i32(activation)?;
                     }
 
@@ -311,6 +315,40 @@ pub fn copy_pixels<'gc>(
                     );
             }
         }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.getPixels`.
+pub fn get_pixels<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data.read().check_valid(activation)?;
+        let rectangle = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_i32(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_i32(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_i32(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_i32(activation)?;
+        let bytearray = ByteArrayObject::from_storage(
+            activation,
+            bitmap_data.read().get_pixels(x, y, width, height)?,
+        )?;
+        return Ok(bytearray.into());
     }
 
     Ok(Value::Undefined)
@@ -431,16 +469,16 @@ pub fn set_pixels<'gc>(
         .coerce_to_object(activation)?;
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let x = rectangle
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_u32(activation)?;
         let y = rectangle
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_u32(activation)?;
         let width = rectangle
-            .get_property(&Multiname::public("width"), activation)?
+            .get_public_property("width", activation)?
             .coerce_to_u32(activation)?;
         let height = rectangle
-            .get_property(&Multiname::public("height"), activation)?
+            .get_public_property("height", activation)?
             .coerce_to_u32(activation)?;
 
         let ba_read = bytearray
@@ -494,10 +532,10 @@ pub fn copy_channel<'gc>(
             .coerce_to_object(activation)?;
 
         let dest_x = dest_point
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_u32(activation)?;
         let dest_y = dest_point
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_u32(activation)?;
 
         let source_channel = args
@@ -513,16 +551,16 @@ pub fn copy_channel<'gc>(
         if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
             //TODO: what if source is disposed
             let src_min_x = source_rect
-                .get_property(&Multiname::public("x"), activation)?
+                .get_public_property("x", activation)?
                 .coerce_to_u32(activation)?;
             let src_min_y = source_rect
-                .get_property(&Multiname::public("y"), activation)?
+                .get_public_property("y", activation)?
                 .coerce_to_u32(activation)?;
             let src_width = source_rect
-                .get_property(&Multiname::public("width"), activation)?
+                .get_public_property("width", activation)?
                 .coerce_to_u32(activation)?;
             let src_height = source_rect
-                .get_property(&Multiname::public("height"), activation)?
+                .get_public_property("height", activation)?
                 .coerce_to_u32(activation)?;
             let src_max_x = src_min_x + src_width;
             let src_max_y = src_min_y + src_height;
@@ -622,16 +660,16 @@ pub fn color_transform<'gc>(
                 // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
                 let rectangle = rectangle.coerce_to_object(activation)?;
                 let x = rectangle
-                    .get_property(&Multiname::public("x"), activation)?
+                    .get_public_property("x", activation)?
                     .coerce_to_i32(activation)?;
                 let y = rectangle
-                    .get_property(&Multiname::public("y"), activation)?
+                    .get_public_property("y", activation)?
                     .coerce_to_i32(activation)?;
                 let width = rectangle
-                    .get_property(&Multiname::public("width"), activation)?
+                    .get_public_property("width", activation)?
                     .coerce_to_i32(activation)?;
                 let height = rectangle
-                    .get_property(&Multiname::public("height"), activation)?
+                    .get_public_property("height", activation)?
                     .coerce_to_i32(activation)?;
 
                 let x_min = x.max(0) as u32;
@@ -684,11 +722,11 @@ pub fn get_color_bounds_rect<'gc>(
 }
 
 pub fn lock<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("BitmapData.lock - not yet implemented");
+    avm2_stub_method!(activation, "flash.display.BitmapData", "lock");
     Ok(Value::Undefined)
 }
 
@@ -700,7 +738,7 @@ pub fn draw<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels(activation.context.gc_context);
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -790,16 +828,16 @@ pub fn fill_rect<'gc>(
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         let x = rectangle
-            .get_property(&Multiname::public("x"), activation)?
+            .get_public_property("x", activation)?
             .coerce_to_u32(activation)?;
         let y = rectangle
-            .get_property(&Multiname::public("y"), activation)?
+            .get_public_property("y", activation)?
             .coerce_to_u32(activation)?;
         let width = rectangle
-            .get_property(&Multiname::public("width"), activation)?
+            .get_public_property("width", activation)?
             .coerce_to_u32(activation)?;
         let height = rectangle
-            .get_property(&Multiname::public("height"), activation)?
+            .get_public_property("height", activation)?
             .coerce_to_u32(activation)?;
 
         bitmap_data.write(activation.context.gc_context).fill_rect(
@@ -850,11 +888,231 @@ pub fn rect<'gc>(
 
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    tracing::warn!("BitmapData.applyFilter: Not yet implemented");
+    let args = if args.len() == 4 {
+        [
+            args.get(0).expect("Infallible"),
+            args.get(1).expect("Infallible"),
+            args.get(2).expect("Infallible"),
+            args.get(3).expect("Infallible"),
+        ]
+    } else {
+        return Err("ArgumentError: Error #1063: Argument count mismatch on flash.display::BitmapData/applyFilter(). Expected 4, got 0.".into());
+    };
+    if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        dest_bitmap_data.read().check_valid(activation)?;
+        let source_bitmap = args[0]
+            .as_object()
+            .and_then(|o| o.as_bitmap_data())
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let source_handle = match source_bitmap
+            .write(activation.context.gc_context)
+            .bitmap_handle(activation.context.renderer)
+        {
+            Some(handle) => handle,
+            None => {
+                tracing::warn!("Ignoring BitmapData.apply_filter() with an undrawable source");
+                return Ok(Value::Undefined);
+            }
+        };
+        let source_rect = args[1]
+            .as_object()
+            .and_then(|o| super::displayobject::object_to_rectangle(activation, o).ok())
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Rectangle.", args[1].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let source_point = (
+            source_rect.x_min.to_pixels().floor() as u32,
+            source_rect.y_min.to_pixels().floor() as u32,
+        );
+        let source_size = (
+            source_rect.width().to_pixels().ceil() as u32,
+            source_rect.height().to_pixels().ceil() as u32,
+        );
+        let dest_point = args[2]
+            .as_object()
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Point.", args[2].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+        let dest_point = (
+            dest_point
+                .get_public_property("x", activation)?
+                .coerce_to_u32(activation)?,
+            dest_point
+                .get_public_property("x", activation)?
+                .coerce_to_u32(activation)?,
+        );
+        let filter = args[3]
+            .as_object()
+            .ok_or_else(|| {
+                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
+            })?;
+
+        let filters_namespace = Namespace::package("flash.filters", activation.context.gc_context);
+        let bevel_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "BevelFilter"))?;
+        let bitmap_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "BitmapFilter"))?;
+        let blur_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "BlurFilter"))?;
+        let color_matrix_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "ColorMatrixFilter"))?;
+        let convolution_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "ConvolutionFilter"))?;
+        let displacement_map_filter = activation
+            .resolve_class(&Multiname::new(filters_namespace, "DisplacementMapFilter"))?;
+        let drop_shadow_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "DropShadowFilter"))?;
+        let glow_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "GlowFilter"))?;
+        let gradient_bevel_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "GradientBevelFilter"))?;
+        let gradient_glow_filter =
+            activation.resolve_class(&Multiname::new(filters_namespace, "GradientGlowFilter"))?;
+        // let shader_filter = activation.resolve_class(&Multiname::new(
+        //     Namespace::package("flash.filters"),
+        //     "ShaderFilter",
+        // ))?;
+        let filter = if filter.is_of_type(color_matrix_filter, activation) {
+            let mut matrix = [0.0; 20];
+            if let Some(object) = filter
+                .get_public_property("matrix", activation)?
+                .as_object()
+            {
+                if let Some(array) = object.as_array_storage() {
+                    for i in 0..matrix.len().min(array.length()) {
+                        matrix[i] = array
+                            .get(i)
+                            .expect("Length was already checked at this point")
+                            .coerce_to_number(activation)?
+                            as f32;
+                    }
+                }
+            }
+            Filter::ColorMatrixFilter(ColorMatrixFilter { matrix })
+        } else if filter.is_of_type(blur_filter, activation) {
+            let blur_x = filter
+                .get_public_property("blurX", activation)?
+                .coerce_to_number(activation)?;
+            let blur_y = filter
+                .get_public_property("blurY", activation)?
+                .coerce_to_number(activation)?;
+            let quality = filter
+                .get_public_property("quality", activation)?
+                .coerce_to_u32(activation)?;
+            Filter::BlurFilter(BlurFilter {
+                blur_x: blur_x as f32,
+                blur_y: blur_y as f32,
+                quality: quality.clamp(1, 15) as u8,
+            })
+        } else if filter.is_of_type(bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bevel filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(bitmap_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with bitmap filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(blur_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with blur filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(color_matrix_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with color matrix filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(convolution_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with convolution filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(displacement_map_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with displacement map filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(drop_shadow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with drop shadow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with glow filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_bevel_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient bevel filter"
+            );
+            Filter::default()
+        } else if filter.is_of_type(gradient_glow_filter, activation) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "applyFilter",
+                "with gradient glow filter"
+            );
+            Filter::default()
+        // } else if filter.is_of_type(shader_filter, activation) {
+        //     avm2_stub_method!(
+        //         activation,
+        //         "flash.display.BitmapData",
+        //         "applyFilter",
+        //         "with shader filter"
+        //     );
+        //     Filter::default()
+        } else {
+            tracing::error!("BitmapData.applyFilter received unknown filter");
+            Filter::default()
+        };
+        let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
+        dest_bitmap_data.apply_filter(
+            &mut activation.context,
+            source_handle,
+            source_point,
+            source_size,
+            dest_point,
+            filter,
+        )
+    }
     Ok(Value::Undefined)
 }
 
@@ -930,10 +1188,10 @@ pub fn perlin_noise<'gc>(
                         if let Some(offsets) = offsets.as_array_storage() {
                             if let Some(Value::Object(e)) = offsets.get(i) {
                                 let x = e
-                                    .get_property(&Multiname::public("x"), activation)?
+                                    .get_public_property("x", activation)?
                                     .coerce_to_number(activation)?;
                                 let y = e
-                                    .get_property(&Multiname::public("y"), activation)?
+                                    .get_public_property("y", activation)?
                                     .coerce_to_number(activation)?;
                                 Ok((x, y))
                             } else {
@@ -968,10 +1226,11 @@ pub fn perlin_noise<'gc>(
 }
 
 /// Construct `BitmapData`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "BitmapData"),
-        Some(Multiname::new(Namespace::package(""), "Object")),
+        QName::new(Namespace::package("flash.display", mc), "BitmapData"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<BitmapData instance initializer>", mc),
         Method::from_builtin(class_init, "<BitmapData class initializer>", mc),
         mc,
@@ -983,7 +1242,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_instance_allocator(bitmapdata_allocator);
 
     write.implements(Multiname::new(
-        Namespace::package("flash.display"),
+        Namespace::package("flash.display", mc),
         "IBitmapDrawable",
     ));
 
@@ -997,9 +1256,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("rect", Some(rect), None),
         ("transparent", Some(transparent), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("getPixels", get_pixels),
         ("getPixel", get_pixel),
         ("getPixel32", get_pixel32),
         ("setPixel", set_pixel),
@@ -1021,7 +1285,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("clone", clone),
         ("perlinNoise", perlin_noise),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }

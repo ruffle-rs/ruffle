@@ -1,5 +1,7 @@
 #![allow(clippy::bool_to_int_with_if)]
 #![deny(clippy::unwrap_used)]
+// This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
+#![allow(clippy::extra_unused_type_parameters)]
 
 use bytemuck::{Pod, Zeroable};
 use std::borrow::Cow;
@@ -14,6 +16,7 @@ use ruffle_render::bitmap::{
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
@@ -943,8 +946,8 @@ impl RenderBackend for WebGlRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, ruffle_render::error::Error> {
-        Err(ruffle_render::error::Error::Unimplemented)
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
     }
 
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -1031,9 +1034,7 @@ impl RenderBackend for WebGlRenderBackend {
         let texture = self
             .gl
             .create_texture()
-            .ok_or(BitmapError::JavascriptError(
-                "Unable to create texture".into(),
-            ))?;
+            .ok_or_else(|| BitmapError::JavascriptError("Unable to create texture".into()))?;
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1076,7 +1077,7 @@ impl RenderBackend for WebGlRenderBackend {
     ) -> Result<(), BitmapError> {
         let texture = &as_registry_data(handle).texture;
 
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
 
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
@@ -1136,8 +1137,10 @@ impl RenderBackend for WebGlRenderBackend {
             self.renderbuffer_width, self.renderbuffer_height
         ));
 
-        return Cow::Owned(result.join("\n"));
+        Cow::Owned(result.join("\n"))
     }
+
+    fn set_quality(&mut self, _quality: StageQuality) {}
 }
 
 impl CommandHandler for WebGlRenderBackend {
@@ -1332,7 +1335,7 @@ impl CommandHandler for WebGlRenderBackend {
                 }
                 DrawType::Bitmap(bitmap) => {
                     let texture = match &bitmap.handle {
-                        Some(handle) => &as_registry_data(&handle).texture,
+                        Some(handle) => &as_registry_data(handle).texture,
                         None => {
                             log::warn!("Tried to render a handleless bitmap");
                             continue;
@@ -1347,7 +1350,7 @@ impl CommandHandler for WebGlRenderBackend {
 
                     // Bind texture.
                     self.gl.active_texture(Gl::TEXTURE0);
-                    self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+                    self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
                     program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
                     // Set texture parameters.

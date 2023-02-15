@@ -13,9 +13,6 @@ pub mod dictionary;
 pub mod proxy;
 pub mod timer;
 
-/// `flash.utils.flash_proxy` namespace
-pub const NS_FLASH_PROXY: &str = "http://www.adobe.com/2006/actionscript/flash/proxy";
-
 /// Implements `flash.utils.getTimer`
 pub fn get_timer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -260,6 +257,6 @@ pub fn get_definition_by_name<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let qname = QName::from_qualified_name(name, activation.context.gc_context);
+    let qname = QName::from_qualified_name(name, activation);
     appdomain.get_defined_value(activation, qname)
 }

@@ -1,0 +1,52 @@
+Frame 1:
+clip.depth = -16383
+clip2.depth = -16381
+clip3.depth = 0
+clip4.depth = 1
+clip5.depth = -16379
+clip = _level0.clip
+clip._x = 125.5
+clip2 = _level0.clip2
+clip3 = _level0.clip3
+clip4 = _level0.clip4
+clip5 = _level0.clip5
+End frame 1
+Unload clip4
+Unload clip5
+Frame 2
+clip = _level0.clip
+clip._x = 125.5
+clip2 = undefined
+clip3 = undefined
+clip4 = undefined
+clip5 = _level0.clip5
+clip.depth = -16386
+clip2.depth = undefined
+Fixme(5492)
+clip5.depth = -16390
+End frame 2
+unload clipEvent
+unload clipEvent 2
+Frame 3
+clip = _level0.clip
+clip._x = 429.95
+clip2 = undefined
+clip3 = undefined
+clip4 = undefined
+clip5 = undefined
+clip.depth = -16386
+clip2.depth = undefined
+Fixme(5492)
+clip5.depth = undefined
+End frame 3
+Frame 4
+clip = undefined
+clip._x = undefined
+clip2 = undefined
+Fixme(5492)
+clip5 = undefined
+clip.depth = undefined
+clip2.depth = undefined
+Fixme(5492)
+clip5.depth = undefined
+End frame 4

@@ -1,6 +1,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::Activation;
 use crate::avm2::AvmString;
+use crate::avm2::Multiname;
 use crate::avm2::Value;
 
 use super::ClassObject;
@@ -30,6 +31,96 @@ static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 24]);
 #[rustversion::nightly]
 #[cfg(target_pointer_width = "64")]
 static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 32]);
+
+#[inline(never)]
+#[cold]
+pub fn make_null_or_undefined_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    name: Option<&Multiname<'gc>>,
+) -> Error<'gc> {
+    let class = activation.avm2().classes().typeerror;
+    let error = if matches!(value, Value::Undefined) {
+        let mut msg = "Error #1010: A term is undefined and has no properties.".to_string();
+        if let Some(name) = name {
+            msg.push_str(&format!(
+                " (accessing field: {})",
+                name.to_qualified_name(activation.context.gc_context)
+            ));
+        }
+        error_constructor(activation, class, &msg, 1010)
+    } else {
+        let mut msg = "Error #1009: Cannot access a property or method of a null object reference."
+            .to_string();
+        if let Some(name) = name {
+            msg.push_str(&format!(
+                " (accessing field: {})",
+                name.to_qualified_name(activation.context.gc_context)
+            ));
+        }
+        error_constructor(activation, class, &msg, 1009)
+    };
+    match error {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+pub enum ReferenceErrorCode {
+    AssignToMethod = 1037,
+    InvalidWrite = 1056,
+    InvalidRead = 1069,
+    WriteToReadOnly = 1074,
+    ReadFromWriteOnly = 1077,
+    InvalidDelete = 1120,
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_reference_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    code: ReferenceErrorCode,
+    multiname: &Multiname<'gc>,
+    object_class: Option<ClassObject<'gc>>,
+) -> Error<'gc> {
+    let qualified_name = multiname.to_error_qualified_name(activation.context.gc_context);
+    let class_name = object_class
+        .map(|cls| {
+            cls.inner_class_definition()
+                .read()
+                .name()
+                .to_qualified_name_err_message(activation.context.gc_context)
+        })
+        .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+
+    let msg = match code {
+        ReferenceErrorCode::AssignToMethod => format!(
+            "Error #1037: Cannot assign to a method {qualified_name} on {class_name}.",
+        ),
+        ReferenceErrorCode::InvalidWrite => format!(
+            "Error #1056: Cannot create property {qualified_name} on {class_name}.",
+        ),
+        ReferenceErrorCode::InvalidRead => format!(
+            "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
+        ),
+        ReferenceErrorCode::WriteToReadOnly => format!(
+            "Error #1074: Illegal write to read-only property {qualified_name} on {class_name}.",
+        ),
+        ReferenceErrorCode::ReadFromWriteOnly => format!(
+            "Error #1077: Illegal read of write-only property {qualified_name} on {class_name}.",
+        ),
+        ReferenceErrorCode::InvalidDelete => format!(
+            "Error #1120: Cannot delete property {qualified_name} on {class_name}.",
+        ),
+    };
+
+    let class = activation.avm2().classes().referenceerror;
+    let error = error_constructor(activation, class, &msg, code as u32);
+    match error {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
 
 #[inline(never)]
 #[cold]

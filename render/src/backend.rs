@@ -3,6 +3,8 @@ pub mod null;
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::filters::Filter;
+use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -44,7 +46,25 @@ pub trait RenderBackend: Downcast {
         width: u32,
         height: u32,
         commands: CommandList,
-    ) -> Result<Box<dyn SyncHandle>, Error>;
+    ) -> Option<Box<dyn SyncHandle>>;
+
+    /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
+    /// The `destination_rect` must be calculated by the caller and is assumed to be correct.
+    /// Both `source_rect` and `destination_rect` must be valid (`BoundingBox::valid`).
+    /// `source` may equal `destination`, in which case a temporary buffer is used internally.
+    ///
+    /// Returns None if the backend does not support this filter.
+    fn apply_filter(
+        &mut self,
+        _source: BitmapHandle,
+        _source_point: (u32, u32),
+        _source_size: (u32, u32),
+        _destination: BitmapHandle,
+        _dest_point: (u32, u32),
+        _filter: Filter,
+    ) -> Option<Box<dyn SyncHandle>> {
+        None
+    }
 
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 
@@ -66,6 +86,8 @@ pub trait RenderBackend: Downcast {
     ) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+
+    fn set_quality(&mut self, quality: StageQuality);
 }
 impl_downcast!(RenderBackend);
 

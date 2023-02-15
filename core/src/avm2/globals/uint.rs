@@ -1,16 +1,15 @@
 //! `uint` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::globals::number::{print_with_precision, print_with_radix};
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `uint`'s instance initializer.
 fn instance_init<'gc>(
@@ -59,8 +58,8 @@ fn class_init<'gc>(
         let this_class = this.as_class_object().unwrap();
         let uint_proto = this_class.prototype();
 
-        uint_proto.set_property_local(
-            &Multiname::public("toExponential"),
+        uint_proto.set_string_property_local(
+            "toExponential",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_exponential, "toExponential", gc_context),
@@ -71,8 +70,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        uint_proto.set_property_local(
-            &Multiname::public("toFixed"),
+        uint_proto.set_string_property_local(
+            "toFixed",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_fixed, "toFixed", gc_context),
@@ -83,8 +82,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        uint_proto.set_property_local(
-            &Multiname::public("toPrecision"),
+        uint_proto.set_string_property_local(
+            "toPrecision",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_precision, "toPrecision", gc_context),
@@ -95,8 +94,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        uint_proto.set_property_local(
-            &Multiname::public("toString"),
+        uint_proto.set_string_property_local(
+            "toString",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
@@ -107,8 +106,8 @@ fn class_init<'gc>(
             .into(),
             activation,
         )?;
-        uint_proto.set_property_local(
-            &Multiname::public("valueOf"),
+        uint_proto.set_string_property_local(
+            "valueOf",
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
@@ -264,27 +263,36 @@ fn value_of<'gc>(
 }
 
 /// Construct `uint`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::public(), "uint"),
-        Some(Multiname::public("Object")),
+        QName::new(activation.avm2().public_namespace, "uint"),
+        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
         Method::from_builtin(instance_init, "<uint instance initializer>", mc),
         Method::from_builtin(class_init, "<uint class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
+    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_allocator(primitive_allocator);
     write.set_native_instance_init(Method::from_builtin_and_params(
         native_instance_init,
         "<uint native instance initializer>",
-        vec![ParamConfig::of_type("num", Multiname::public("Object"))],
+        vec![ParamConfig::of_type(
+            "num",
+            Multiname::new(activation.avm2().public_namespace, "Object"),
+        )],
         false,
         mc,
     ));
 
     const CLASS_CONSTANTS: &[(&str, u32)] = &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
-    write.define_public_constant_uint_class_traits(CLASS_CONSTANTS);
+    write.define_constant_uint_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS,
+        activation,
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toExponential", to_exponential),
@@ -293,7 +301,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().as3_namespace,
+        AS3_INSTANCE_METHODS,
+    );
 
     class
 }

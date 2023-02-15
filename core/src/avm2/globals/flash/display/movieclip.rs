@@ -12,7 +12,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
 use crate::string::{AvmString, WString};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 
 /// Implements `flash.display.MovieClip`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -48,7 +48,11 @@ pub fn add_frame_script<'gc>(
     {
         for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
-            let callable = callable.as_callable(activation, None, None)?;
+            let callable = if callable == Value::Null {
+                None
+            } else {
+                Some(callable.as_callable(activation, None, None)?)
+            };
 
             mc.register_frame_script(frame_id, callable, &mut activation.context);
         }
@@ -541,11 +545,12 @@ pub fn next_scene<'gc>(
 }
 
 /// Construct `MovieClip`'s class.
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+    let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(Namespace::package("flash.display"), "MovieClip"),
+        QName::new(Namespace::package("flash.display", mc), "MovieClip"),
         Some(Multiname::new(
-            Namespace::package("flash.display"),
+            Namespace::package("flash.display", mc),
             "Sprite",
         )),
         Method::from_builtin(instance_init, "<MovieClip instance initializer>", mc),
@@ -571,7 +576,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("isPlaying", Some(is_playing), None),
         ("totalFrames", Some(total_frames), None),
     ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("addFrameScript", add_frame_script),
@@ -584,7 +593,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("prevScene", prev_scene),
         ("nextScene", next_scene),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_builtin_instance_methods(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     class
 }
