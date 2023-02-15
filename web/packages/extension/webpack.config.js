@@ -86,6 +86,7 @@ module.exports = (env, _argv) => {
             ruffle: "./src/ruffle.ts",
             background: "./src/background.ts",
             player: "./src/player.ts",
+            pluginPolyfill: "./src/plugin-polyfill.ts",
         },
         output: {
             path: path.resolve(__dirname, "assets/dist/"),
