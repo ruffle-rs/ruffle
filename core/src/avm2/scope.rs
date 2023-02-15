@@ -166,6 +166,7 @@ impl<'gc> ScopeChain<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<(Option<Namespace<'gc>>, Object<'gc>)>, Error<'gc>> {
         if let Some(container) = self.container {
+            // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
             for scope in container.read().scopes.iter().skip(1).rev() {
                 // NOTE: We are manually searching the vtable's traits so we can figure out which namespace the trait
                 // belongs to.
