@@ -9,7 +9,7 @@ version.workspace = true
 
 [dependencies]
 futures = "0.3.25"
-ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug"] }
+ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_render = { path = "../render" }
 ruffle_input_format = { path = "input-format" }
