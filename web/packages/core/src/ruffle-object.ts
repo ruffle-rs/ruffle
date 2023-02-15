@@ -1,5 +1,4 @@
 import {
-    FLASH_ACTIVEX_CLASSID,
     isBuiltInContextMenuVisible,
     isFallbackElement,
     isScriptAccessAllowed,
@@ -9,6 +8,7 @@ import {
     workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
+import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";

@@ -3,7 +3,7 @@ import {
     FUTURESPLASH_MIMETYPE,
     FLASH7_AND_8_MIMETYPE,
     FLASH_MOVIE_MIMETYPE,
-} from "./ruffle-player";
+} from "./flash-identifiers";
 
 /**
  * Replacement object for `MimeTypeArray` that lets us install new fake mime

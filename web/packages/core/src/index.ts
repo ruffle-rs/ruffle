@@ -8,6 +8,7 @@ export * from "./ruffle-embed";
 export * from "./ruffle-imports";
 export * from "./ruffle-object";
 export * from "./ruffle-player";
+export * from "./flash-identifiers";
 export * from "./shadow-template";
 export * from "./version";
 export * from "./version-range";
