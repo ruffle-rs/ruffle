@@ -65,7 +65,7 @@ pub enum TagCode {
 
     PlaceObject3 = 70,
     ImportAssets2 = 71,
-
+    DoAbc = 72,
     DefineFontAlignZones = 73,
     CsmTextSettings = 74,
     DefineFont3 = 75,
@@ -73,7 +73,7 @@ pub enum TagCode {
     Metadata = 77,
     DefineScalingGrid = 78,
 
-    DoAbc = 82,
+    DoAbc2 = 82,
     DefineShape4 = 83,
     DefineMorphShape2 = 84,
 

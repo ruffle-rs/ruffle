@@ -10,7 +10,7 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::read::Reader;
-use swf::{DoAbc, DoAbcFlag};
+use swf::DoAbc2Flag;
 
 #[macro_export]
 macro_rules! avm_debug {
@@ -318,13 +318,14 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    /// Load an ABC file embedded in a `DoAbc` tag.
+    /// Load an ABC file embedded in a `DoAbc` or `DoAbc2` tag.
     pub fn do_abc(
         context: &mut UpdateContext<'_, 'gc>,
-        do_abc: DoAbc,
+        data: &[u8],
+        flags: DoAbc2Flag,
         domain: Domain<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut reader = Reader::new(do_abc.data);
+        let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
             Err(_) => {
@@ -343,7 +344,7 @@ impl<'gc> Avm2<'gc> {
             tunit.load_script(i as u32, context)?;
         }
 
-        if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
+        if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
             for i in 0..num_scripts {
                 if let Some(mut script) = tunit.get_script(i) {
                     script.globals(context)?;

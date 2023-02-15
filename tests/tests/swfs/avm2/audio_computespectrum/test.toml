@@ -1,0 +1,5 @@
+num_frames = 240
+sleep_to_meet_frame_rate = true
+
+[player_options]
+with_audio = true

@@ -1005,6 +1005,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetOuterScope { index } => self.op_get_outer_scope(index),
                 Op::GetScopeObject { index } => self.op_get_scope_object(index),
                 Op::GetGlobalScope => self.op_get_global_scope(),
+                Op::FindDef { index } => self.op_find_def(method, index),
                 Op::FindProperty { index } => self.op_find_property(method, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(method, index),
                 Op::GetLex { index } => self.op_get_lex(method, index),
@@ -1739,6 +1740,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .unwrap_or(Value::Null),
         );
 
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_find_def(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let multiname = self.pool_multiname_static(method, index)?;
+        avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
+        let (_, mut script) = self.domain().find_defining_script(self, &multiname)?;
+        let obj = script.globals(&mut self.context)?;
+        self.push_stack(obj);
         Ok(FrameControl::Continue)
     }
 
