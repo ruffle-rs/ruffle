@@ -1,0 +1,4 @@
+[class int]
+global
+[class int]
+global
