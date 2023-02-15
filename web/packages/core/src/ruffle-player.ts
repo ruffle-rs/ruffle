@@ -15,13 +15,12 @@ import type { MovieMetadata } from "./movie-metadata";
 import type { InternalContextMenuItem } from "./context-menu";
 import { swfFileName } from "./swf-file-name";
 import { buildInfo } from "./build-info";
-
-export const FLASH_MIMETYPE = "application/x-shockwave-flash";
-export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
-export const FLASH7_AND_8_MIMETYPE = "application/x-shockwave-flash2-preview";
-export const FLASH_MOVIE_MIMETYPE = "application/vnd.adobe.flash.movie";
-export const FLASH_ACTIVEX_CLASSID =
-    "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000";
+import {
+    FLASH_MIMETYPE,
+    FUTURESPLASH_MIMETYPE,
+    FLASH7_AND_8_MIMETYPE,
+    FLASH_MOVIE_MIMETYPE,
+} from "./flash-identifiers";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
