@@ -69,11 +69,10 @@ impl Color {
 
         let old_alpha = if transparency { self.alpha() } else { 255 };
 
-        let a = old_alpha as f64 / 255.0;
-
-        let r = (self.red() as f64 * a).round() as u8;
-        let g = (self.green() as f64 * a).round() as u8;
-        let b = (self.blue() as f64 * a).round() as u8;
+        let a = old_alpha as u32;
+        let r = ((self.red() as u32 * a + 127) / 255) as u8;
+        let g = ((self.green() as u32 * a + 127) / 255) as u8;
+        let b = ((self.blue() as u32 * a + 127) / 255) as u8;
 
         Self::argb(old_alpha, r, g, b)
     }
