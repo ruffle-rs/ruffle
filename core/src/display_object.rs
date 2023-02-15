@@ -1436,7 +1436,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         println!(
-            "{} rel({},{}) abs({},{}) {} {} {} depth={}",
+            "{} rel({},{}) abs({},{}) {} {} {} id={} depth={}",
             " ".repeat(depth),
             self.x(),
             self.y(),
@@ -1445,6 +1445,7 @@ pub trait TDisplayObject<'gc>:
             classname,
             self.name(),
             self_str,
+            self.id(),
             depth
         );
 

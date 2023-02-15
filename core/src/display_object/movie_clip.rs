@@ -2883,17 +2883,15 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     clip_layers.push((child, (child.depth() + 1)..=(child.clip_depth())))
                 }
             }
-            let (mouse_enabled, non_mouse_enabled): (Vec<_>, Vec<_>) =
-                self.iter_render_list().rev().partition(|child| {
-                    if let Some(child) = child.as_interactive() {
-                        child.mouse_enabled()
-                    } else {
-                        false
-                    }
-                });
 
-            // Children with `mouseEnabled` take priority over children with `!mouseEnabled`.
-            for child in mouse_enabled.into_iter().chain(non_mouse_enabled) {
+            // Interactive children run first, followed by non-interactive children.
+            // Depth is considered within each group.
+            let (interactive, non_interactive): (Vec<_>, Vec<_>) = self
+                .iter_render_list()
+                .rev()
+                .partition(|child| child.as_interactive().is_some());
+
+            for child in interactive.into_iter().chain(non_interactive) {
                 // Mask children are not clickable
                 if child.clip_depth() > 0 {
                     continue;
@@ -2907,6 +2905,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 let mut res = if let Some(child) = child.as_interactive() {
                     child.mouse_pick_avm2(context, point, require_button_mode)
                 } else if child.as_interactive().is_none()
+                    && self.mouse_enabled()
                     && child.hit_test_shape(context, point, options)
                 {
                     Avm2MousePick::Hit(this)

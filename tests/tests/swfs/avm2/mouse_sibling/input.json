@@ -48,6 +48,29 @@
     {
         "type": "MouseMove",
         "pos": [
+            84,
+            15
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            84,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            84,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
             44,
             49
         ]

@@ -30,6 +30,11 @@
 			addShape(normalChild1, 0xFF0000, 100);
 			addShape(noMouseChild1, 0x00FF00, 30);
 			addShape(noMouseChild2, 0x0000FF, 30);
+						
+			var subChild = new Sprite();
+			subChild.name = "subChild";
+			addShape(subChild, 0xaabbcc, 20);
+			noMouseChild2.addChild(subChild);
 			
 			var shapeChild = new Shape();
 			shapeChild.graphics.beginFill(0xaabb00);

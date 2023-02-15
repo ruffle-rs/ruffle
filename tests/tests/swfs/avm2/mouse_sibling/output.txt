@@ -1,5 +1,6 @@
 Mouse down: normalChild1 [object Sprite] stageX=22 stageY=15
-Mouse down: normalChild1 [object Sprite] stageX=74 stageY=15
+Mouse down: subChild [object Sprite] stageX=74 stageY=15
+Mouse down: normalChild1 [object Sprite] stageX=84 stageY=15
 Mouse down: normalChild1 [object Sprite] stageX=44 stageY=49
 Mouse down: normalChild1 [object Sprite] stageX=44 stageY=79
 Mouse down: outer [object Sprite] stageX=46 stageY=129
