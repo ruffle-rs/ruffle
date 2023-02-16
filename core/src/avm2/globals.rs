@@ -569,12 +569,6 @@ pub fn load_player_globals<'gc>(
     // package `flash.geom`
 
     // package `flash.media`
-    avm2_system_class!(
-        video,
-        activation,
-        flash::media::video::create_class(activation),
-        script
-    );
     class(
         flash::media::sound::create_class(activation),
         script,
