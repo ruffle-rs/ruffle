@@ -148,6 +148,8 @@ export class RufflePlayer extends HTMLElement {
     private _cachedDebugInfo: string | null = null;
 
     private isExtension = false;
+    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    private longPressTimeout = 800;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -219,8 +221,14 @@ export class RufflePlayer extends HTMLElement {
         this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
-        this.addEventListener("contextmenu", this.showContextMenu.bind(this));
+        this.addEventListener("contextmenu", this.noContextMenu.bind(this));
         this.addEventListener("pointerdown", this.pointerDown.bind(this));
+        this.addEventListener("pointerup", this.clearLongPressTimer.bind(this));
+        this.addEventListener(
+            "pointercancel",
+            this.clearLongPressTimer.bind(this)
+        );
+
         this.addEventListener(
             "fullscreenchange",
             this.fullScreenChange.bind(this)
@@ -770,10 +778,18 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private pointerDown(event: PointerEvent): void {
+        if (event.pointerType === "mouse" && event.button === 2) {
+            this.showContextMenu.bind(this)(event);
+        }
         // Give option to disable context menu when touch support is being used
         // to avoid a long press triggering the context menu. (#1972)
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
+            this.clearLongPressTimer.bind(this)(event);
+            this.longPressTimer = setTimeout(
+                () => this.showContextMenu.bind(this)(event),
+                this.longPressTimeout
+            );
         }
     }
 
@@ -887,7 +903,18 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private showContextMenu(e: MouseEvent): void {
+    private clearLongPressTimer(e: PointerEvent): void {
+        if (this.longPressTimer && e.pointerType !== "mouse") {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+    }
+
+    private noContextMenu(e: MouseEvent): void {
+        e.preventDefault();
+    }
+
+    private showContextMenu(e: PointerEvent): void {
         e.preventDefault();
 
         if (
