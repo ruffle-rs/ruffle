@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::argument_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{
     bitmapdata_allocator, BitmapDataObject, ByteArrayObject, Object, TObject,
@@ -782,7 +783,6 @@ pub fn draw<'gc>(
         }
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        // FIXME - handle other arguments
         let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
 
         let source = args
@@ -804,6 +804,105 @@ pub fn draw<'gc>(
             smoothing,
             blend_mode,
             clip_rect,
+            activation.context.stage.quality(),
+            &mut activation.context,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.drawWithQuality`
+pub fn draw_with_quality<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        bitmap_data.read().check_valid(activation)?;
+        let mut transform = Transform::default();
+        let mut blend_mode = BlendMode::Normal;
+
+        let matrix = args.get(1).unwrap_or(&Value::Null);
+        if !matches!(matrix, Value::Null) {
+            transform.matrix = crate::avm2::globals::flash::geom::transform::object_to_matrix(
+                matrix.coerce_to_object(activation)?,
+                activation,
+            )?;
+        }
+
+        let color_transform = args.get(2).unwrap_or(&Value::Null);
+        if !matches!(color_transform, Value::Null) {
+            transform.color_transform =
+                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
+                    color_transform.coerce_to_object(activation)?,
+                    activation,
+                )?;
+        }
+
+        let mode = args.get(3).unwrap_or(&Value::Null);
+        if !matches!(mode, Value::Null) {
+            if let Ok(mode) = BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string()) {
+                blend_mode = mode;
+            } else {
+                tracing::error!("Unknown blend mode {:?}", mode);
+                return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+            }
+        }
+
+        let mut clip_rect = None;
+
+        let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
+        if !matches!(clip_rect_val, Value::Null) {
+            let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
+            clip_rect = Some(super::displayobject::object_to_rectangle(
+                activation,
+                clip_rect_obj,
+            )?);
+        }
+
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
+
+        let source = args.get(0).and_then(|v| v.as_object()).ok_or_else(|| {
+            format!(
+                "BitmapData.drawWithQuality: source {:?} is not an Object",
+                args.get(0)
+            )
+        })?;
+
+        let source = if let Some(source_object) = source.as_display_object() {
+            IBitmapDrawable::DisplayObject(source_object)
+        } else if let Some(source_bitmap) = source.as_bitmap_data_wrapper() {
+            IBitmapDrawable::BitmapData(source_bitmap)
+        } else {
+            return Err(format!("BitmapData.drawWithQuality: unexpected source {source:?}").into());
+        };
+
+        // Unknown quality defaults to stage's quality
+        let quality = if let Some(quality) = args.get(6) {
+            match quality.coerce_to_string(activation)?.parse() {
+                Ok(quality) => quality,
+                Err(_) => {
+                    return Err(Error::AvmError(argument_error(
+                        activation,
+                        "One of the parameters is invalid.",
+                        2004,
+                    )?));
+                }
+            }
+        } else {
+            activation.context.stage.quality()
+        };
+
+        bitmap_data.draw(
+            source,
+            transform,
+            smoothing,
+            blend_mode,
+            clip_rect,
+            quality,
             &mut activation.context,
         );
     }
@@ -1279,6 +1378,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("unlock", lock), // sic, it's a noop (TODO)
         ("copyPixels", copy_pixels),
         ("draw", draw),
+        ("drawWithQuality", draw_with_quality),
         ("fillRect", fill_rect),
         ("dispose", dispose),
         ("applyFilter", apply_filter),

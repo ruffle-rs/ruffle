@@ -560,6 +560,7 @@ pub fn draw<'gc>(
                 smoothing,
                 blend_mode,
                 None,
+                activation.context.stage.quality(),
                 &mut activation.context,
             );
             return Ok(Value::Undefined);
