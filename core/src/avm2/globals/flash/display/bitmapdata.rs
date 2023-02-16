@@ -74,7 +74,7 @@ pub fn instance_init<'gc>(
             let new_bitmap_data =
                 GcCell::allocate(activation.context.gc_context, BitmapData::default());
 
-            if let Some(Character::Bitmap { bitmap }) = character {
+            if let Some(Character::Bitmap(bitmap)) = character {
                 // Instantiating BitmapData from an Animate-style bitmap asset
                 fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
             } else {

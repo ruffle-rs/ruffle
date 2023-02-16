@@ -204,7 +204,7 @@ impl<'gc> MovieLibrary<'gc> {
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, &'static str> {
         match character {
-            Character::Bitmap { bitmap } => Ok(bitmap.instantiate(gc_context)),
+            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
             Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
             Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
             Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
@@ -218,7 +218,7 @@ impl<'gc> MovieLibrary<'gc> {
     }
 
     pub fn get_bitmap(&self, id: CharacterId) -> Option<Bitmap<'gc>> {
-        if let Some(&Character::Bitmap { bitmap, .. }) = self.characters.get(&id) {
+        if let Some(&Character::Bitmap(bitmap)) = self.characters.get(&id) {
             Some(bitmap)
         } else {
             None
