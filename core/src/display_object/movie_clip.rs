@@ -811,7 +811,7 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap { bitmap, .. }) => {
+                            Some(Character::Bitmap(bitmap)) => {
                                 bitmap.set_avm2_bitmapdata_class(
                                     &mut activation.context,
                                     class_object,
@@ -3015,7 +3015,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(define_bits_lossless.id, Character::Bitmap { bitmap });
+            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3132,7 +3132,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3149,7 +3149,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3172,7 +3172,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
