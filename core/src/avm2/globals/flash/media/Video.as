@@ -4,12 +4,20 @@ package flash.media
     
     public class Video extends DisplayObject
     {
-        public var width: int;
-        public var height: int;
+        private var _videoWidth: int;
+        private var _videoHeight: int;
         
-        public function Video(width: int = 320, height: int = 240):void {
-            this.width = width;
-            this.height = height;
+        public function Video(width: int = 320, height: int = 240): {
+            this._videoWidth = width;
+            this._videoHeight = height;
+        }
+        
+        public function get videoWidth():int {
+            return this._videoWidth;
+        }
+        
+        public function get videoHeight():int {
+            return this._videoHeight;
         }
     }
 }
