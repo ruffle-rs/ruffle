@@ -13,6 +13,7 @@ use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
@@ -1342,6 +1343,7 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw(
         &mut self,
         mut source: IBitmapDrawable<'gc>,
@@ -1349,6 +1351,7 @@ impl<'gc> BitmapData<'gc> {
         smoothing: bool,
         blend_mode: BlendMode,
         clip_rect: Option<Rectangle<Twips>>,
+        quality: StageQuality,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         let bitmapdata_width = self.width();
@@ -1431,7 +1434,7 @@ impl<'gc> BitmapData<'gc> {
             bitmapdata_width,
             bitmapdata_height,
             commands,
-            context.stage.quality(),
+            quality,
         );
 
         match image {
