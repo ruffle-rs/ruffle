@@ -168,6 +168,7 @@ include "flash/media/SoundCodec.as"
 include "flash/media/SoundLoaderContext.as"
 include "flash/media/StageVideoAvailability.as"
 include "flash/media/StageVideoAvailabilityReason.as"
+include "flash/media/Video.as"
 include "flash/media/VideoCodec.as"
 include "flash/media/VideoStatus.as"
 
