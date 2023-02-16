@@ -1431,6 +1431,7 @@ impl<'gc> BitmapData<'gc> {
             bitmapdata_width,
             bitmapdata_height,
             commands,
+            context.stage.quality(),
         );
 
         match image {

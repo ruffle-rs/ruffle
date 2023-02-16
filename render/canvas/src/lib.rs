@@ -466,6 +466,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
+        _quality: StageQuality,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }

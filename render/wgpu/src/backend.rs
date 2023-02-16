@@ -600,6 +600,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         commands: CommandList,
+        quality: StageQuality,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
@@ -624,7 +625,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let mut surface = Surface::new(
             &self.descriptors,
-            self.surface.quality(),
+            quality,
             width,
             height,
             wgpu::TextureFormat::Rgba8Unorm,
