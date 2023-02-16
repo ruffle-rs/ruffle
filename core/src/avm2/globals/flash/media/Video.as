@@ -1,6 +1,8 @@
 package flash.media
 {
-    public class Video
+    import flash.display.DisplayObject
+    
+    public class Video extends DisplayObject
     {
         public var width: int;
         public var height: int;
