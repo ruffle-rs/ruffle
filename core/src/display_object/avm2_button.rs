@@ -837,11 +837,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             if let Some(state_child) = state_child {
                 let mouse_pick = state_child
                     .as_interactive()
-                    .and_then(|c| c.mouse_pick_avm1(context, point, require_button_mode));
-                if mouse_pick.is_some() {
+                    .map(|c| c.mouse_pick_avm2(context, point, require_button_mode));
+                match mouse_pick {
+                    None | Some(Avm2MousePick::Miss) => {}
                     // Selecting a child of a button is equivalent to selecting the button itself
-                    return Avm2MousePick::Hit((*self).into());
-                }
+                    _ => return Avm2MousePick::Hit((*self).into()),
+                };
             }
 
             let hit_area = self.0.read().hit_area;

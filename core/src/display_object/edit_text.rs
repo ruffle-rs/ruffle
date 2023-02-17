@@ -1838,7 +1838,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         point: (Twips, Twips),
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
-        // The button is hovered if the mouse is over any child nodes.
+        // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
             && self.is_selectable()
@@ -1856,7 +1856,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         point: (Twips, Twips),
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
-        // The button is hovered if the mouse is over any child nodes.
+        // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
             && self.is_selectable()

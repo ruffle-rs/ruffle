@@ -858,7 +858,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         _context: &mut UpdateContext<'_, 'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        ClipEventResult::Handled
+        ClipEventResult::NotHandled
     }
 
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
