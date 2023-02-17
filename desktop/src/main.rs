@@ -41,9 +41,9 @@ use winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopWindowTarget};
+use winit::monitor::MonitorHandle;
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
-use winit::monitor::{MonitorHandle};
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
@@ -225,6 +225,22 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
+fn get_max_screen_size(event_loop: &EventLoop<RuffleEvent>) -> (u32, u32) {
+    let mut max_screen_size = (0, 0);
+
+    for monitor in EventLoopWindowTarget::available_monitors(event_loop) {
+        let size = MonitorHandle::size(&monitor);
+        max_screen_size.0 += size.width;
+        max_screen_size.1 += size.height;
+    }
+
+    if max_screen_size.0 <= 32 || max_screen_size.1 <= 32 {
+        return (32767, 32767);
+    }
+
+    return max_screen_size;
+}
+
 struct App {
     opt: Opt,
     window: Rc<Window>,
@@ -259,26 +275,15 @@ impl App {
         let title = format!("Ruffle - {filename}");
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
+        let max_screen_size = get_max_screen_size(&event_loop);
+
         let window = WindowBuilder::new()
             .with_visible(false)
             .with_title(title)
             .with_window_icon(Some(icon))
             .with_min_inner_size(LogicalSize::new(16, 16))
-            .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
+            .with_max_inner_size(LogicalSize::new(max_screen_size.0, max_screen_size.1))
             .build(&event_loop)?;
-
-        let mut max_resolution_x = 0;
-        let mut max_resolution_y = 0;
-
-        for monitor in Window::available_monitors(&window) {
-            let size = MonitorHandle::size(&monitor);
-            max_resolution_x += size.width;
-            max_resolution_y += size.height;
-        };
-
-        if max_resolution_x > 0 && max_resolution_y > 0 {
-            Window::set_max_inner_size(&window, Some(LogicalSize::new(max_resolution_x, max_resolution_y)));
-        }
 
         let mut builder = PlayerBuilder::new();
 
