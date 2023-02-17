@@ -20,9 +20,9 @@ mod fixed;
 mod glow_filter;
 mod gradient_filter;
 mod matrix;
+mod point;
 mod rectangle;
 mod twips;
-mod twips_2d;
 
 pub use bevel_filter::BevelFilter;
 pub use blur_filter::BlurFilter;
@@ -34,9 +34,9 @@ pub use fixed::{Fixed16, Fixed8};
 pub use glow_filter::GlowFilter;
 pub use gradient_filter::GradientFilter;
 pub use matrix::Matrix;
+pub use point::Point;
 pub use rectangle::Rectangle;
 pub use twips::Twips;
-pub use twips_2d::Twips2d;
 
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::parse_swf` convenience method.
