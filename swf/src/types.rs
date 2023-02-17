@@ -24,7 +24,7 @@ mod point;
 mod rectangle;
 mod twips;
 
-pub use bevel_filter::BevelFilter;
+pub use bevel_filter::{BevelFilter, BevelFilterFlags};
 pub use blur_filter::{BlurFilter, BlurFilterFlags};
 pub use color::Color;
 pub use color_matrix_filter::ColorMatrixFilter;
