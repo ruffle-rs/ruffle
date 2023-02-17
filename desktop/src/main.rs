@@ -43,6 +43,7 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use winit::monitor::{MonitorHandle};
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
@@ -254,8 +255,22 @@ impl App {
             .with_visible(false)
             .with_title(title)
             .with_window_icon(Some(icon))
+            .with_min_inner_size(LogicalSize::new(16, 16))
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
             .build(&event_loop)?;
+
+        let mut max_resolution_x = 0;
+        let mut max_resolution_y = 0;
+
+        for monitor in Window::available_monitors(&window) {
+            let size = MonitorHandle::size(&monitor);
+            max_resolution_x += size.width;
+            max_resolution_y += size.height;
+        };
+
+        if max_resolution_x > 0 && max_resolution_y > 0 {
+            Window::set_max_inner_size(&window, Some(LogicalSize::new(max_resolution_x, max_resolution_y)));
+        }
 
         let mut builder = PlayerBuilder::new();
 
