@@ -1800,12 +1800,7 @@ impl<W: Write> Writer<W> {
         self.write_fixed16(filter.angle)?;
         self.write_fixed16(filter.distance)?;
         self.write_fixed8(filter.strength)?;
-        let mut bits = self.bits();
-        bits.write_bit(filter.is_inner)?;
-        bits.write_bit(filter.is_knockout)?;
-        bits.write_bit(true)?;
-        bits.write_bit(filter.is_on_top)?;
-        bits.write_ubits(4, filter.num_passes.into())?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
