@@ -387,7 +387,10 @@ pub fn goto_frame<'gc>(
     let frame_or_label = args.get(0).cloned().unwrap_or(Value::Null);
 
     let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
-        Value::Null => None,
+        Value::Null => mc
+            .current_scene()
+            .and_then(|scene| mc.scene_label_to_number(&scene.name))
+            .map(|v| v.saturating_sub(1)),
         v => mc
             .scene_label_to_number(&v.coerce_to_string(activation)?)
             .map(|v| v.saturating_sub(1)),
