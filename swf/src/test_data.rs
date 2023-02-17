@@ -245,7 +245,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         filters: vec![Filter::BlurFilter(Box::new(BlurFilter {
                             blur_x: Fixed16::from_f32(5.0),
                             blur_y: Fixed16::from_f32(5.0),
-                            num_passes: 1,
+                            flags: BlurFilterFlags::from_passes(1),
                         }))],
                         blend_mode: BlendMode::Difference,
                     },
@@ -2172,7 +2172,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     Filter::BlurFilter(Box::new(BlurFilter {
                         blur_x: Fixed16::from_f32(30.0),
                         blur_y: Fixed16::from_f32(20.0),
-                        num_passes: 2,
+                        flags: BlurFilterFlags::from_passes(2),
                     })),
                 ]),
                 background_color: Some(Color {

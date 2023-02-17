@@ -1779,7 +1779,7 @@ impl<W: Write> Writer<W> {
     fn write_blur_filter(&mut self, filter: &BlurFilter) -> Result<()> {
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
-        self.write_u8(filter.num_passes << 3)?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 

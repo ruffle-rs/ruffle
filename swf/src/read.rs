@@ -2082,7 +2082,7 @@ impl<'a> Reader<'a> {
         Ok(BlurFilter {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
-            num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
+            flags: BlurFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
