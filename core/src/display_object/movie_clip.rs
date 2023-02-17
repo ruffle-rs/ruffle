@@ -2873,16 +2873,20 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             let mut found_propagate = None;
 
-            let mut clip_layers = vec![];
-
-            for child in self.iter_render_list() {
-                if child.clip_depth() > 0 {
-                    // Note - we intentionally use 'child.depth()' here insteado
-                    // of the position in the render list - this matches Flash's
-                    // behavior. The 'depth' value comes from the PlaceObject tag
-                    clip_layers.push((child, (child.depth() + 1)..=(child.clip_depth())))
-                }
-            }
+            let mut clip_layers = self
+                .iter_render_list()
+                .flat_map(|child| {
+                    if child.clip_depth() > 0 {
+                        // Note - we intentionally use 'child.depth()' here insteado
+                        // of the position in the render list - this matches Flash's
+                        // behavior. The 'depth' value comes from the PlaceObject tag
+                        Some((child, (child.depth() + 1)..=(child.clip_depth())))
+                    } else {
+                        None
+                    }
+                })
+                .rev()
+                .peekable();
 
             // Interactive children run first, followed by non-interactive children.
             // Depth is considered within each group.
@@ -2913,13 +2917,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     Avm2MousePick::Miss
                 };
 
-                while !clip_layers.is_empty() {
-                    let (clip, clip_range) = clip_layers.last().unwrap();
+                while let Some((clip, clip_range)) = clip_layers.peek() {
                     // This clip layer no longer applies to the remaining children (which all have lower depth values).
                     // This is a rare case where we actually use 'child.depth()' in AVM2 - child.depth()
                     // gets set from a PlaceObject tag, and may be *greater* than position in the render list.
                     if *clip_range.start() > child.depth() {
-                        clip_layers.pop();
+                        clip_layers.next();
                         continue;
                     }
 
