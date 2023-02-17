@@ -928,6 +928,18 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private checkLongPress(event: PointerEvent): void {
+        // The is fired as a pointerup event on the container
+        // However, pointerup on the window will dismiss the context menu
+        // To stop the contextmenu from being dismissed immediately, we stopPropagation:
+        // 1) If a mouse did not fire this event and longPressTimer is not active
+        // (there was a previous event that cleared it)
+        // 2) If this pointerup event was fired by right-click on a mouse
+        if (
+            (!this.longPressTimer && event.pointerType !== "mouse") ||
+            (event.pointerType === "mouse" && event.button === 2)
+        ) {
+            event.stopPropagation();
+        }
         if (this.longPressTimer) {
             this.clearLongPressTimer();
         } else if (
@@ -936,7 +948,6 @@ export class RufflePlayer extends HTMLElement {
         ) {
             this.showContextMenu(event);
         }
-        event.stopPropagation();
     }
 
     private showContextMenu(e: MouseEvent | PointerEvent): void {
