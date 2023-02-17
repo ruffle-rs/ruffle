@@ -2122,23 +2122,14 @@ impl<'a> Reader<'a> {
                 ratio: self.read_u8()?,
             });
         }
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let angle = self.read_fixed16()?;
-        let distance = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(GradientFilter {
             colors: gradient_records,
-            blur_x,
-            blur_y,
-            angle,
-            distance,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            is_on_top: flags & 0b0001_0000 != 0,
-            num_passes: flags & 0b0000_1111,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: GradientFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
