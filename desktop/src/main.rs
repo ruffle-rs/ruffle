@@ -238,7 +238,7 @@ fn get_max_screen_size(event_loop: &EventLoop<RuffleEvent>) -> (u32, u32) {
         return (32767, 32767);
     }
 
-    return max_screen_size;
+    max_screen_size
 }
 
 struct App {
