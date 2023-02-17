@@ -185,16 +185,9 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The currently in use constant pool.
     constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
-    /// The immutable value of `this`.
+    /// The value of `this`.
     ///
-    /// This differs from Flash Player, where `this` is mutable and seems
-    /// to be part of the scope chain (e.g. a function with the `suppress_this` flag
-    /// set can modify the `this` value of its closure).
-    ///
-    /// Fortunately, ActionScript syntax prevents mutating `this` altogether, so
-    /// observing this behavior requires manually-crafted bytecode.
-    ///
-    /// TODO: implement correct semantics for mutable `this`.
+    /// While this is not *usually* modified, ActionScript does allow `this` to be modified
     this: Value<'gc>,
 
     /// The function object being called.
@@ -2634,6 +2627,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // If the target clip is invalid, we default to root for the variable path.
         if path.is_empty() {
+            return Ok(());
+        }
+
+        // Special case, mutating `this`
+        if path.as_wstr() == WStr::from_units(b"this") {
+            self.this = value;
             return Ok(());
         }
 
