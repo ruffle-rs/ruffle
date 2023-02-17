@@ -2143,17 +2143,14 @@ impl<'a> Reader<'a> {
         for _ in 0..num_entries {
             matrix.push(self.read_fixed16()?);
         }
-        let default_color = self.read_rgba()?;
-        let flags = self.read_u8()?;
         Ok(ConvolutionFilter {
             num_matrix_cols,
             num_matrix_rows,
             divisor,
             bias,
             matrix,
-            default_color,
-            is_clamped: (flags & 0b10) != 0,
-            is_preserve_alpha: (flags & 0b1) != 0,
+            default_color: self.read_rgba()?,
+            flags: ConvolutionFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 

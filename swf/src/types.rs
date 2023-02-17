@@ -28,7 +28,7 @@ pub use bevel_filter::{BevelFilter, BevelFilterFlags};
 pub use blur_filter::{BlurFilter, BlurFilterFlags};
 pub use color::Color;
 pub use color_matrix_filter::ColorMatrixFilter;
-pub use convolution_filter::ConvolutionFilter;
+pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
 pub use fixed::{Fixed16, Fixed8};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
