@@ -2890,10 +2890,15 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // Interactive children run first, followed by non-interactive children.
             // Depth is considered within each group.
-            let (interactive, non_interactive): (Vec<_>, Vec<_>) = self
+
+            let interactive = self
                 .iter_render_list()
                 .rev()
-                .partition(|child| child.as_interactive().is_some());
+                .filter(|child| child.as_interactive().is_some());
+            let non_interactive = self
+                .iter_render_list()
+                .rev()
+                .filter(|child| child.as_interactive().is_none());
 
             for child in interactive.into_iter().chain(non_interactive) {
                 // Mask children are not clickable
