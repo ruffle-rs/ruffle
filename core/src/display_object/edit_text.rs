@@ -33,6 +33,8 @@ use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, Twips};
 
+use super::interactive::Avm2MousePick;
+
 /// The kind of autosizing behavior an `EditText` should have, if any
 #[derive(Copy, Clone, Collect, PartialEq, Eq)]
 #[collect(no_drop)]
@@ -1813,7 +1815,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        event: ClipEvent<'gc>,
+        _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         let tracker = context.focus_tracker;
         tracker.set(Some(self.into()), context);
@@ -1827,18 +1829,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                 Some(TextSelection::for_position(self.text_length()));
         }
 
-        self.event_dispatch_to_avm2(context, event);
-
         ClipEventResult::Handled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
-        // The button is hovered if the mouse is over any child nodes.
+        // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
             && self.is_selectable()
@@ -1847,6 +1847,24 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             Some((*self).into())
         } else {
             None
+        }
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        point: (Twips, Twips),
+        _require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        // The text is hovered if the mouse is over any child nodes.
+        if self.visible()
+            && self.mouse_enabled()
+            && self.is_selectable()
+            && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
+        {
+            Avm2MousePick::Hit((*self).into())
+        } else {
+            Avm2MousePick::Miss
         }
     }
 

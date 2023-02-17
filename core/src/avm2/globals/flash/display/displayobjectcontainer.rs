@@ -586,28 +586,37 @@ pub fn are_inaccessible_objects_under_point<'gc>(
 }
 
 pub fn mouse_children<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.display.DisplayObjectContainer",
-        "mouseChildren"
-    );
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_container())
+    {
+        return Ok(dobj.raw_container().mouse_children().into());
+    }
     Ok(Value::Undefined)
 }
 
 pub fn set_mouse_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
-        activation,
-        "flash.display.DisplayObjectContainer",
-        "mouseChildren"
-    );
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_container())
+    {
+        let mouse_children = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+
+        dobj.raw_container_mut(activation.context.gc_context)
+            .set_mouse_children(mouse_children);
+    }
     Ok(Value::Undefined)
 }
 
