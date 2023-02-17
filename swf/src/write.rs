@@ -1830,10 +1830,7 @@ impl<W: Write> Writer<W> {
             self.write_fixed16(*val)?;
         }
         self.write_rgba(&filter.default_color)?;
-        self.write_u8(
-            if filter.is_clamped { 0b10 } else { 0 }
-                | if filter.is_preserve_alpha { 0b1 } else { 0 },
-        )?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
