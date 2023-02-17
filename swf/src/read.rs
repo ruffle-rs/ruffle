@@ -2087,19 +2087,12 @@ impl<'a> Reader<'a> {
     }
 
     fn read_glow_filter(&mut self) -> Result<GlowFilter> {
-        let color = self.read_rgba()?;
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(GlowFilter {
-            color,
-            blur_x,
-            blur_y,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            num_passes: flags & 0b0001_1111,
+            color: self.read_rgba()?,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: GlowFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
