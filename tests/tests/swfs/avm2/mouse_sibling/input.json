@@ -1,0 +1,186 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [
+            22,
+            15
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            22,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            22,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            74,
+            15
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            74,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            74,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            84,
+            15
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            84,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            84,
+            15
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            44,
+            49
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            44,
+            49
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            44,
+            49
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            44,
+            79
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            44,
+            79
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            44,
+            79
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            46,
+            129
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            46,
+            129
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            46,
+            129
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            50,
+            181
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            50,
+            181
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            50,
+            181
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            50,
+            225
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            50,
+            225
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            50,
+            225
+        ],
+        "btn": "Left"
+    }
+]

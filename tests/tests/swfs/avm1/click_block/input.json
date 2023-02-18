@@ -9,6 +9,11 @@
     "btn": "Left"
   },
   {
+    "type": "MouseUp",
+    "pos": [21, 24],
+    "btn": "Left"
+  },  
+  {
     "type": "MouseMove",
     "pos": [526, 23]
   },
@@ -17,6 +22,11 @@
     "pos": [526, 23],
     "btn": "Left"
   },
+  {
+    "type": "MouseUp",
+    "pos": [526, 23],
+    "btn": "Left"
+  },  
   {
     "type": "MouseMove",
     "pos": [22, 375]
@@ -27,6 +37,11 @@
     "btn": "Left"
   },
   {
+    "type": "MouseUp",
+    "pos": [22, 375],
+    "btn": "Left"
+  },  
+  {
     "type": "MouseMove",
     "pos": [524, 375]
   },
@@ -36,6 +51,11 @@
     "btn": "Left"
   },
   {
+    "type": "MouseUp",
+    "pos": [524, 375],
+    "btn": "Left"
+  },  
+  {
     "type": "MouseMove",
     "pos": [275, 195]
   },
@@ -43,5 +63,10 @@
     "type": "MouseDown",
     "pos": [275, 195],
     "btn": "Left"
-  }
+  },
+  {
+    "type": "MouseUp",
+    "pos": [275, 195],
+    "btn": "Left"
+  }  
 ]

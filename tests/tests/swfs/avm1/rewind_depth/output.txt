@@ -1,0 +1,30 @@
+Frame 1
+Child depth: -16383
+Frame 2
+Clip at depth -16383: _level0.timeline_child
+Clip at depth -100: _level0.other_empty
+Clip at depth 2: _level0.empty
+After swap:
+Clip at depth -16383: _level0.empty
+Clip at depth -100: _level0.other_empty
+Clip at depth 2: _level0.timeline_child
+Frame 3
+Clip at depth -16383: _level0.empty
+Clip at depth 2: _level0.timeline_child
+Clip at depth -100: _level0.other_empty
+Timeline child depth: 2
+this.getInstanceAtDepth(2).getDepth(): 2
+this.getInstanceAtDepth(-16383).getDepth(): -16383
+Clips are equal: false
+Frame 5
+Clip at depth -16383: _level0.empty
+Clip at depth 2: _level0.timeline_child
+gotoAndStop(3)
+Frame 3
+Clip at depth -16383: _level0.timeline_child
+Clip at depth 2: _level0.timeline_child
+Clip at depth -100: undefined
+Timeline child depth: -16383
+this.getInstanceAtDepth(2).getDepth(): 2
+this.getInstanceAtDepth(-16383).getDepth(): -16383
+Clips are equal: true

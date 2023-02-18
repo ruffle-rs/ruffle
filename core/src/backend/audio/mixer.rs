@@ -529,7 +529,7 @@ impl AudioMixer {
     }
 
     #[cfg(not(feature = "mp3"))]
-    pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
+    pub fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
         Err(decoders::Error::UnhandledCompression(AudioCompression::Mp3))
     }
 

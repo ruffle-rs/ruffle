@@ -43,6 +43,8 @@ use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, FrameLabelData};
 
+use super::interactive::Avm2MousePick;
+
 type FrameNumber = u16;
 
 /// Indication of what frame `run_frame` should jump to next.
@@ -811,7 +813,7 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap { bitmap, .. }) => {
+                            Some(Character::Bitmap(bitmap)) => {
                                 bitmap.set_avm2_bitmapdata_class(
                                     &mut activation.context,
                                     class_object,
@@ -2740,15 +2742,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     }
                 }
             }
-        } else {
-            drop(read);
-            handled = self.event_dispatch_to_avm2(context, event);
         }
 
         handled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
@@ -2789,15 +2788,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             let mut options = HitTestOptions::SKIP_INVISIBLE;
             options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
             // AVM2 allows movie clips to recieve mouse events without explicitly enabling button mode.
-            let check_non_interactive =
-                !require_button_mode || matches!(self.object2(), Avm2Value::Object(_));
+            let check_non_interactive = !require_button_mode;
 
             for child in self.iter_render_list().rev() {
-                // Clicking static text is ignored
-                if context.is_action_script_3() && matches!(child, DisplayObject::Text(_)) {
-                    continue;
-                }
-
                 if child.clip_depth() > 0 {
                     if result.is_some() && child.clip_depth() >= hit_depth {
                         if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
@@ -2808,7 +2801,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     }
                 } else if result.is_none() {
                     if let Some(child) = child.as_interactive() {
-                        result = child.mouse_pick(context, point, require_button_mode);
+                        result = child.mouse_pick_avm1(context, point, require_button_mode);
                     } else if check_non_interactive
                         && self.mouse_enabled()
                         && child.hit_test_shape(context, point, options)
@@ -2837,6 +2830,146 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
 
         None
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        point: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        if self.visible() {
+            let this: InteractiveObject<'gc> = (*self).into();
+
+            if let Some(masker) = self.masker() {
+                if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
+                    return Avm2MousePick::Miss;
+                }
+            }
+
+            // In AVM2, mouse_enabled should only impact the ability to select the current clip
+            // but it should still be possible to select any children where child.mouse_enabled() is
+            // true.
+            // InteractiveObject.mouseEnabled:
+            // "Any children of this instance on the display list are not affected."
+            if self.mouse_enabled() && self.world_bounds().contains(point) {
+                // This MovieClip operates in "button mode" if it has a mouse handler,
+                // either via on(..) or via property mc.onRelease, etc.
+                let is_button_mode = self.is_button_mode(context);
+
+                if is_button_mode {
+                    let mut options = HitTestOptions::SKIP_INVISIBLE;
+                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                    if self.hit_test_shape(context, point, options) {
+                        return Avm2MousePick::Hit(this);
+                    }
+                }
+            }
+
+            // Maybe we could skip recursing down at all if !world_bounds.contains(point),
+            // but a child button can have an invisible hit area outside the parent's bounds.
+            let mut options = HitTestOptions::SKIP_INVISIBLE;
+            options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+
+            let mut found_propagate = None;
+
+            let mut clip_layers = self
+                .iter_render_list()
+                .flat_map(|child| {
+                    if child.clip_depth() > 0 {
+                        // Note - we intentionally use 'child.depth()' here insteado
+                        // of the position in the render list - this matches Flash's
+                        // behavior. The 'depth' value comes from the PlaceObject tag
+                        Some((child, (child.depth() + 1)..=(child.clip_depth())))
+                    } else {
+                        None
+                    }
+                })
+                .rev()
+                .peekable();
+
+            // Interactive children run first, followed by non-interactive children.
+            // Depth is considered within each group.
+
+            let interactive = self
+                .iter_render_list()
+                .rev()
+                .filter(|child| child.as_interactive().is_some());
+            let non_interactive = self
+                .iter_render_list()
+                .rev()
+                .filter(|child| child.as_interactive().is_none());
+
+            for child in interactive.into_iter().chain(non_interactive) {
+                // Mask children are not clickable
+                if child.clip_depth() > 0 {
+                    continue;
+                }
+
+                // Clicking static text is ignored
+                if matches!(child, DisplayObject::Text(_)) {
+                    continue;
+                }
+
+                let mut res = if let Some(child) = child.as_interactive() {
+                    child.mouse_pick_avm2(context, point, require_button_mode)
+                } else if child.as_interactive().is_none()
+                    && self.mouse_enabled()
+                    && child.hit_test_shape(context, point, options)
+                {
+                    Avm2MousePick::Hit(this)
+                } else {
+                    Avm2MousePick::Miss
+                };
+
+                while let Some((clip, clip_range)) = clip_layers.peek() {
+                    // This clip layer no longer applies to the remaining children (which all have lower depth values).
+                    // This is a rare case where we actually use 'child.depth()' in AVM2 - child.depth()
+                    // gets set from a PlaceObject tag, and may be *greater* than position in the render list.
+                    if *clip_range.start() > child.depth() {
+                        clip_layers.next();
+                        continue;
+                    }
+
+                    if clip_range.contains(&child.depth()) {
+                        // If the clip layer applies to the current child, check if the child is masked by the clip.
+                        // If the position isn't within the mask region, then treat this as a miss unconditionally.
+                        // We'll continue the outer loop over the children, as another child may be hit.
+                        if !clip.hit_test_shape(context, point, options) {
+                            res = Avm2MousePick::Miss;
+                        }
+                    }
+                    break;
+                }
+
+                match res {
+                    Avm2MousePick::Hit(_) => {
+                        return res.combine_with_parent((*self).into());
+                    }
+                    Avm2MousePick::PropagateToParent => {
+                        found_propagate = Some(res);
+                    }
+                    Avm2MousePick::Miss => {}
+                }
+            }
+
+            // A 'propagated' event from a child seems to have lower 'priority' than anything else.
+            if let Some(propagate) = found_propagate {
+                return propagate.combine_with_parent((*self).into());
+            }
+
+            // Check drawing, because this selects the current clip, it must have mouse enabled
+            if self.mouse_enabled() {
+                let local_matrix = self.global_to_local_matrix();
+                let point = local_matrix * point;
+
+                if self.0.read().drawing.hit_test(point, &local_matrix) {
+                    return Avm2MousePick::Hit((*self).into());
+                }
+            }
+        }
+
+        Avm2MousePick::Miss
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
@@ -3015,7 +3148,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(define_bits_lossless.id, Character::Bitmap { bitmap });
+            .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3132,7 +3265,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3149,7 +3282,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 
@@ -3172,7 +3305,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap { bitmap });
+            .register_character(id, Character::Bitmap(bitmap));
         Ok(())
     }
 

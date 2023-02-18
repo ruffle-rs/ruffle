@@ -15,6 +15,8 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
+use super::interactive::Avm2MousePick;
+
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct LoaderDisplay<'gc>(GcCell<'gc, LoaderDisplayData<'gc>>);
@@ -139,7 +141,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         ClipEventResult::NotHandled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         pos: (Twips, Twips),
@@ -147,13 +149,30 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     ) -> Option<InteractiveObject<'gc>> {
         for child in self.iter_render_list().rev() {
             if let Some(int) = child.as_interactive() {
-                if let Some(result) = int.mouse_pick(context, pos, require_button_mode) {
+                if let Some(result) = int.mouse_pick_avm1(context, pos, require_button_mode) {
                     return Some(result);
                 }
             }
         }
 
         None
+    }
+
+    fn mouse_pick_avm2(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        pos: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        // We have at most one child
+        if let Some(child) = self.iter_render_list().next() {
+            if let Some(int) = child.as_interactive() {
+                return int
+                    .mouse_pick_avm2(context, pos, require_button_mode)
+                    .combine_with_parent((*self).into());
+            }
+        }
+        Avm2MousePick::Miss
     }
 }
 

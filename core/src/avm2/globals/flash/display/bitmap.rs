@@ -62,7 +62,7 @@ pub fn instance_init<'gc>(
                     .avm2_class_registry()
                     .class_symbol(b_class)
                 {
-                    if let Some(Character::Bitmap { bitmap }) = activation
+                    if let Some(Character::Bitmap(bitmap)) = activation
                         .context
                         .library
                         .library_for_movie_mut(movie)

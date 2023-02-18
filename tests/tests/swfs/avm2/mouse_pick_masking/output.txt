@@ -1,0 +1,7 @@
+Click: clickTarget [object MovieClip] stageX=90 stageY=282.8
+Click: null [object Stage] stageX=176 stageY=237
+Click: clickTarget [object MovieClip] stageX=230 stageY=254.8
+Click: clickTarget [object MovieClip] stageX=234 stageY=176.8
+Click: clickTarget [object MovieClip] stageX=518 stageY=244.8
+Click: tildeObject [object MovieClip] stageX=580 stageY=131.1
+Click: null [object Stage] stageX=572 stageY=139

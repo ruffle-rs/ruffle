@@ -23,6 +23,8 @@ use std::fmt::Debug;
 use std::time::Duration;
 use swf::Twips;
 
+use super::DisplayObjectContainer;
+
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.
 ///
@@ -479,7 +481,7 @@ pub trait TInteractiveObject<'gc>:
     /// mouse-pickable, as doing so will make them eligible to recieve targeted
     /// mouse events. As a result of this, the returned object will always be
     /// an `InteractiveObject`.
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
         _pos: (Twips, Twips),
@@ -488,9 +490,84 @@ pub trait TInteractiveObject<'gc>:
         None
     }
 
+    fn mouse_pick_avm2(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _pos: (Twips, Twips),
+        _require_button_mode: bool,
+    ) -> Avm2MousePick<'gc> {
+        Avm2MousePick::Miss
+    }
+
     /// The cursor to use when this object is the hovered element under a mouse.
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
         MouseCursor::Hand
+    }
+}
+
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub enum Avm2MousePick<'gc> {
+    Hit(InteractiveObject<'gc>),
+    PropagateToParent,
+    Miss,
+}
+
+impl<'gc> Debug for Avm2MousePick<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Avm2MousePick::Hit(target) => write!(f, "Hit({:?})", target.as_displayobject().name()),
+            Avm2MousePick::PropagateToParent => write!(f, "PropagateToParent"),
+            Avm2MousePick::Miss => write!(f, "Miss"),
+        }
+    }
+}
+
+impl<'gc> Avm2MousePick<'gc> {
+    /// Modifies this result to account for the parent's `mouseEnabled` and `mouseChildren` properties
+    #[must_use]
+    pub fn combine_with_parent(&self, parent: DisplayObjectContainer<'gc>) -> Avm2MousePick<'gc> {
+        let parent_int = DisplayObject::from(parent).as_interactive().unwrap();
+        let res = match self {
+            Avm2MousePick::Hit(_) => {
+                // If the parent has `mouseChildren=true` then propagate the existing
+                // Avm2MousePick::Hit, leaving the target unchanged. This is unaffected
+                // by the parent `mouseEnabled` property.
+                if parent.raw_container().mouse_children() {
+                    *self
+                // If the parent has `mouseChildren=false`, then the eventual
+                // MouseEvent (if it gets fired) will *not* have a `target`
+                // set to the original child.
+                } else {
+                    // If the parent has `mouseChildren=false` and `mouseEnabled=true`,
+                    // then the event from the child gets converted into an event
+                    // targeting the parent - it 'absorbs' child events.
+                    if parent_int.mouse_enabled() {
+                        Avm2MousePick::Hit(parent_int)
+                    // If the parent has `mouseChildren=false` and `mouseEnabled=true`,
+                    // we have a weird case. The event can propagate through this 'fully disabled'
+                    // parent - if it reaches an ancestor with `mouseEnabled=true`, it will get
+                    // 'abosrbed' by that ancestor. Otherwise, no event will be fired.
+                    } else {
+                        Avm2MousePick::PropagateToParent
+                    }
+                }
+            }
+            Avm2MousePick::PropagateToParent => {
+                // If the parent has `mouseEnabled=true`, then 'absorb'
+                // the event that was propagated up from some child. Note that
+                // the `mouseChildren` setting plays no role here.
+                if parent_int.mouse_enabled() {
+                    Avm2MousePick::Hit(parent_int)
+                // Otherwise, continue propagating the event up the tree.
+                } else {
+                    Avm2MousePick::PropagateToParent
+                }
+            }
+            // A miss in a child always stays a miss, regardless of parent settings.
+            Avm2MousePick::Miss => Avm2MousePick::Miss,
+        };
+        res
     }
 }
 

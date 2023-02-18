@@ -528,7 +528,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         ClipEventResult::NotHandled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
@@ -539,7 +539,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             for child in self.iter_render_list().rev() {
                 let result = child
                     .as_interactive()
-                    .and_then(|c| c.mouse_pick(context, point, require_button_mode));
+                    .and_then(|c| c.mouse_pick_avm1(context, point, require_button_mode));
                 if result.is_some() {
                     return result;
                 }
