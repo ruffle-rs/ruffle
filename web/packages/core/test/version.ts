@@ -85,7 +85,9 @@ describe("Version", function () {
             for (const test of testMatrix) {
                 for (const a of test) {
                     for (const otherTest of testMatrix) {
-                        if (test === otherTest) continue;
+                        if (test === otherTest) {
+                            continue;
+                        }
                         for (const b of otherTest) {
                             assert(
                                 !Version.fromSemver(a).isCompatibleWith(
@@ -208,7 +210,9 @@ describe("Version", function () {
             const tests = ["1-dev", "1.2-alpha", "1.2.3-beta1.build2"];
             for (const a of tests) {
                 for (const b of tests) {
-                    if (a === b) continue;
+                    if (a === b) {
+                        continue;
+                    }
                     assert(
                         !Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)

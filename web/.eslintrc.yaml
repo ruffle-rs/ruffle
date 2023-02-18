@@ -5,6 +5,7 @@ extends:
   - eslint:recommended
   - plugin:prettier/recommended
 rules:
+  curly: error
   eqeqeq: error
   no-unused-vars:
     - error

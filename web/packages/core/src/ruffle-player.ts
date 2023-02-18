@@ -257,7 +257,9 @@ export class RufflePlayer extends HTMLElement {
         document.addEventListener(
             "visibilitychange",
             () => {
-                if (!this.instance) return;
+                if (!this.instance) {
+                    return;
+                }
 
                 // Tab just changed to be inactive. Record whether instance was playing.
                 if (document.hidden) {
@@ -820,7 +822,9 @@ export class RufflePlayer extends HTMLElement {
                 readonly separatorBefore: boolean;
             }[] = this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
-                if (item.separatorBefore) items.push(null);
+                if (item.separatorBefore) {
+                    items.push(null);
+                }
                 items.push({
                     // TODO: better checkboxes
                     text:
@@ -906,13 +910,19 @@ export class RufflePlayer extends HTMLElement {
         // Populate context menu items.
         for (const item of this.contextMenuItems()) {
             if (item === null) {
-                if (!this.contextMenuElement.lastElementChild) continue; // don't start with separators
+                // Don't start with separators.
+                if (!this.contextMenuElement.lastElementChild) {
+                    continue;
+                }
+
+                // Don't repeat separators.
                 if (
                     this.contextMenuElement.lastElementChild.classList.contains(
                         "menu_separator"
                     )
-                )
-                    continue; // don't repeat separators
+                ) {
+                    continue;
+                }
 
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
@@ -997,7 +1007,9 @@ export class RufflePlayer extends HTMLElement {
      */
     private unmuteAudioContext(): void {
         // No need to play the dummy sound again once audio is unmuted.
-        if (isAudioContextUnmuted) return;
+        if (isAudioContextUnmuted) {
+            return;
+        }
 
         // TODO: Use `navigator.userAgentData` to detect the platform when support improves?
         if (navigator.maxTouchPoints < 1) {
@@ -1008,10 +1020,14 @@ export class RufflePlayer extends HTMLElement {
         this.container.addEventListener(
             "click",
             () => {
-                if (isAudioContextUnmuted) return;
+                if (isAudioContextUnmuted) {
+                    return;
+                }
 
                 const audioContext = this.instance?.audio_context();
-                if (!audioContext) return;
+                if (!audioContext) {
+                    return;
+                }
 
                 const audio = new Audio();
                 audio.src = (() => {
@@ -1151,7 +1167,9 @@ export class RufflePlayer extends HTMLElement {
 
         dataArray.push("\n# Page Info\n");
         dataArray.push(`Page URL: ${document.location.href}\n`);
-        if (this.swfUrl) dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+        if (this.swfUrl) {
+            dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+        }
 
         dataArray.push("\n# Browser Info\n");
         dataArray.push(`User Agent: ${window.navigator.userAgent}\n`);
