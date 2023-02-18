@@ -100,8 +100,8 @@ function sanitizeParameters(
     if (!(parameters instanceof URLSearchParams)) {
         parameters = new URLSearchParams(parameters);
     }
-    const output: Record<string, string> = {};
 
+    const output: Record<string, string> = {};
     for (const [key, value] of parameters) {
         // Every value must be type of string
         output[key] = value.toString();
@@ -641,9 +641,9 @@ export class RufflePlayer extends HTMLElement {
                     options.swfFileName || "movie.swf"
                 );
             }
-        } catch (err) {
-            console.error(`Serious error occurred loading SWF file: ${err}`);
-            throw err;
+        } catch (e) {
+            console.error(`Serious error occurred loading SWF file: ${e}`);
+            throw e;
         }
     }
 
@@ -737,9 +737,9 @@ export class RufflePlayer extends HTMLElement {
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
      */
     enterFullscreen(): void {
-        const options = {
+        const options: FullscreenOptions = {
             navigationUI: "hide",
-        } as const;
+        };
         if (this.requestFullscreen) {
             this.requestFullscreen(options);
         } else if (this.webkitRequestFullscreen) {
