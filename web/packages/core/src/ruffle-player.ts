@@ -239,8 +239,6 @@ export class RufflePlayer extends HTMLElement {
 
         this.lastActivePlayingState = false;
         this.setupPauseOnTabHidden();
-
-        return this;
     }
 
     /**
