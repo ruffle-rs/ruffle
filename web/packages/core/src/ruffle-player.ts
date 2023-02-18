@@ -12,7 +12,6 @@ import {
     WindowMode,
 } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
-import type { InternalContextMenuItem } from "./context-menu";
 import { swfFileName } from "./swf-file-name";
 import { buildInfo } from "./build-info";
 import {
@@ -814,8 +813,12 @@ export class RufflePlayer extends HTMLElement {
         const items = [];
 
         if (this.instance) {
-            const customItems: InternalContextMenuItem[] =
-                this.instance.prepare_context_menu();
+            const customItems: {
+                readonly caption: string;
+                readonly checked: boolean;
+                readonly enabled: boolean;
+                readonly separatorBefore: boolean;
+            }[] = this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
                 if (item.separatorBefore) items.push(null);
                 items.push({
