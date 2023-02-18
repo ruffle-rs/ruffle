@@ -885,7 +885,8 @@ export class RufflePlayer extends HTMLElement {
                 readonly separatorBefore: boolean;
             }[] = this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
-                if (item.separatorBefore) {
+                // Don't start with separators.
+                if (item.separatorBefore && items.length > 0) {
                     items.push(null);
                 }
                 items.push({
@@ -897,8 +898,12 @@ export class RufflePlayer extends HTMLElement {
                     enabled: item.enabled,
                 });
             });
+
+            // Don't start with separators.
+            if (items.length > 0) {
+                items.push(null);
+            }
         }
-        items.push(null);
 
         if (this.fullscreenEnabled) {
             if (this.isFullscreen) {
@@ -1020,20 +1025,6 @@ export class RufflePlayer extends HTMLElement {
         // Populate context menu items.
         for (const item of this.contextMenuItems()) {
             if (item === null) {
-                // Don't start with separators.
-                if (!this.contextMenuElement.lastElementChild) {
-                    continue;
-                }
-
-                // Don't repeat separators.
-                if (
-                    this.contextMenuElement.lastElementChild.classList.contains(
-                        "menu_separator"
-                    )
-                ) {
-                    continue;
-                }
-
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
                 const hr = document.createElement("hr");
