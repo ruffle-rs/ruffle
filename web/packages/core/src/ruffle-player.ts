@@ -59,23 +59,23 @@ declare global {
 }
 
 /**
- * An item to show in Ruffle's custom context menu
+ * An item to show in Ruffle's custom context menu.
  */
 interface ContextMenuItem {
     /**
-     * The text to show to the user
+     * The text shown to the user.
      */
     text: string;
 
     /**
-     * The function to call when clicked
+     * The function to call when clicked.
      *
-     * @param event The mouse event that triggered the click
+     * @param event The mouse event that triggered the click.
      */
     onClick: (event: MouseEvent) => void;
 
     /**
-     * Whether the item is clickable
+     * Whether this item is clickable.
      *
      * @default true
      */
@@ -246,8 +246,7 @@ export class RufflePlayer extends HTMLElement {
      * this.instance.play() is called when the tab becomes visible only if the
      * the instance was not paused before tab became hidden.
      *
-     * See:
-     *      https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+     * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
