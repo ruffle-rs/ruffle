@@ -275,6 +275,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         activation.avm2().public_namespace,
         PUBLIC_INSTANCE_METHODS,
     );
+    write.define_builtin_instance_methods(
+        mc,
+        Namespace::package("flash.events:IEventDispatcher", mc),
+        PUBLIC_INSTANCE_METHODS,
+    );
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(activation.avm2().ruffle_private_namespace, "target"),
