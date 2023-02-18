@@ -250,7 +250,7 @@ export class RufflePlayer extends HTMLElement {
      * @ignore
      * @internal
      */
-    setupPauseOnTabHidden(): void {
+    private setupPauseOnTabHidden(): void {
         document.addEventListener(
             "visibilitychange",
             () => {
@@ -1133,10 +1133,10 @@ export class RufflePlayer extends HTMLElement {
      * @internal
      * @ignore
      */
-    onCallbackAvailable(name: string): void {
+    protected onCallbackAvailable(name: string): void {
         const instance = this.instance;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this)[name] = (...args: any[]) => {
+        (<any>this)[name] = (...args: unknown[]) => {
             return instance?.call_exposed_callback(name, args);
         };
     }
@@ -1204,7 +1204,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @param error The error, if any, that triggered this panic.
      */
-    panic(error: Error | null): void {
+    protected panic(error: Error | null): void {
         if (this.panicked) {
             // Only show the first major error, not any repeats - they aren't as important
             return;
@@ -1484,7 +1484,7 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
-    displayRootMovieDownloadFailedMessage(): void {
+    protected displayRootMovieDownloadFailedMessage(): void {
         if (
             this.isExtension &&
             window.location.origin !== this.swfUrl!.origin
@@ -1514,7 +1514,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    displayUnsupportedMessage(): void {
+    protected displayUnsupportedMessage(): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
         // TODO: Change link to https://ruffle.rs/faq or similar
@@ -1534,8 +1534,12 @@ export class RufflePlayer extends HTMLElement {
         };
     }
 
-    displayMessage(message: string): void {
-        // Show a dismissible message in front of the player
+    /**
+     * Show a dismissible message in front of the player.
+     *
+     * @param message The message shown to the user.
+     */
+    protected displayMessage(message: string): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
         div.innerHTML = `<div class="message">
