@@ -42,6 +42,12 @@ const enum PanicError {
     SwfCors,
 }
 
+class RuffleConfigError extends Error {}
+
+class RuffleWasmError extends Error {}
+
+class RuffleFetchError extends Error {}
+
 // Safari still requires prefixed fullscreen APIs, see:
 // https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullScreen
 // Safari uses alternate capitalization of FullScreen in some older APIs.
@@ -431,43 +437,8 @@ export class RufflePlayer extends HTMLElement {
             this.onRuffleDownloadProgress.bind(this)
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
-
-            // Serious duck typing. In error conditions, let's not make assumptions.
-            if (window.location.protocol === "file:") {
-                e.ruffleIndexError = PanicError.FileProtocol;
-            } else {
-                e.ruffleIndexError = PanicError.WasmNotFound;
-                const message = String(e.message).toLowerCase();
-                if (message.includes("mime")) {
-                    e.ruffleIndexError = PanicError.WasmMimeType;
-                } else if (
-                    message.includes("networkerror") ||
-                    message.includes("failed to fetch")
-                ) {
-                    e.ruffleIndexError = PanicError.WasmCors;
-                } else if (message.includes("disallowed by embedder")) {
-                    e.ruffleIndexError = PanicError.CSPConflict;
-                } else if (e.name === "CompileError") {
-                    e.ruffleIndexError = PanicError.InvalidWasm;
-                } else if (
-                    message.includes("could not download wasm module") &&
-                    e.name === "TypeError"
-                ) {
-                    e.ruffleIndexError = PanicError.WasmDownload;
-                } else if (e.name === "TypeError") {
-                    e.ruffleIndexError = PanicError.JavascriptConflict;
-                } else if (
-                    navigator.userAgent.includes("Edg") &&
-                    message.includes("webassembly is not defined")
-                ) {
-                    // Microsoft Edge detection.
-                    e.ruffleIndexError = PanicError.WasmDisabledMicrosoftEdge;
-                }
-            }
-            this.panic(e);
-            throw e;
+            throw new RuffleWasmError(e.message);
         });
-
         this.instance = await new ruffleConstructor(
             this.container,
             this,
@@ -585,10 +556,7 @@ export class RufflePlayer extends HTMLElement {
             message: string
         ) => asserts condition = (condition, message) => {
             if (!condition) {
-                const error = new TypeError(message);
-                error.ruffleIndexError = PanicError.JavascriptConfiguration;
-                this.panic(error);
-                throw error;
+                throw new RuffleConfigError(message);
             }
         };
         check(
@@ -622,21 +590,21 @@ export class RufflePlayer extends HTMLElement {
     async load(
         options: string | URLLoadOptions | DataLoadOptions
     ): Promise<void> {
-        options = this.checkOptions(options);
-
-        if (!this.isConnected || this.isUnusedFallbackObject()) {
-            console.warn(
-                "Ignoring attempt to play a disconnected or suspended Ruffle element"
-            );
-            return;
-        }
-
-        if (isFallbackElement(this)) {
-            // Silently fail on attempt to play a Ruffle element inside a specific node.
-            return;
-        }
-
         try {
+            options = this.checkOptions(options);
+
+            if (!this.isConnected || this.isUnusedFallbackObject()) {
+                console.warn(
+                    "Ignoring attempt to play a disconnected or suspended Ruffle element"
+                );
+                return;
+            }
+
+            if (isFallbackElement(this)) {
+                // Silently fail on attempt to play a Ruffle element inside a specific node.
+                return;
+            }
+
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
                 ...(window.RufflePlayer?.config ?? {}),
@@ -681,6 +649,7 @@ export class RufflePlayer extends HTMLElement {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
+            this.panic(e);
             throw e;
         }
     }
@@ -1301,6 +1270,76 @@ export class RufflePlayer extends HTMLElement {
         return dataArray.join("");
     }
 
+    private classifyError(error: unknown): PanicError {
+        // Serious duck typing. In error conditions, let's not make assumptions.
+        if (error instanceof RuffleConfigError) {
+            // Incorrect JavaScript configuration.
+            return PanicError.JavascriptConfiguration;
+        }
+        if (
+            (error instanceof RuffleFetchError &&
+                this.swfUrl!.protocol === "file:") ||
+            window.location.protocol === "file:"
+        ) {
+            // Running on the `file:` protocol.
+            return PanicError.FileProtocol;
+        }
+        if (error instanceof RuffleFetchError) {
+            if (window.location.origin === this.swfUrl!.origin) {
+                // Cannot load SWF file - same-origin request.
+                return PanicError.SwfFetchError;
+            } else {
+                // Cannot load SWF file - cross-origin request.
+                return PanicError.SwfCors;
+            }
+        }
+        if (error instanceof RuffleWasmError) {
+            const message = String(error.message).toLowerCase();
+            if (message.includes("mime")) {
+                // Cannot load `.wasm` file - incorrect MIME type.
+                return PanicError.WasmMimeType;
+            }
+            if (
+                message.includes("networkerror") ||
+                message.includes("failed to fetch")
+            ) {
+                // Cannot load `.wasm` file - cross-origin request.
+                return PanicError.WasmCors;
+            }
+            if (message.includes("disallowed by embedder")) {
+                // Cannot load `.wasm` file - forbidden by CSP.
+                return PanicError.CSPConflict;
+            }
+            if (error.name === "CompileError") {
+                // Cannot load `.wasm` file - incorrect configuration or missing files.
+                return PanicError.InvalidWasm;
+            }
+            if (
+                message.includes("could not download wasm module") &&
+                error.name === "TypeError"
+            ) {
+                // Usually a transient network error or botched deployment.
+                return PanicError.WasmDownload;
+            }
+            if (error.name === "TypeError") {
+                // Cannot load `.wasm` file - a native object / function is overriden.
+                return PanicError.JavascriptConflict;
+            }
+            if (
+                navigator.userAgent.includes("Edg") &&
+                message.includes("webassembly is not defined")
+            ) {
+                // User has disabled WebAssembly in Microsoft Edge through the
+                // "Enhance your Security on the web" setting.
+                return PanicError.WasmDisabledMicrosoftEdge;
+            }
+            // Cannot load `.wasm` file - file not found.
+            return PanicError.WasmNotFound;
+        }
+        // Unknown error.
+        return PanicError.Unknown;
+    }
+
     /**
      * Panics this specific player, forcefully destroying all resources and displays an error message to the user.
      *
@@ -1312,9 +1351,9 @@ export class RufflePlayer extends HTMLElement {
      * all players will panic and Ruffle will become "poisoned" - no more players will run on this page until it is
      * reloaded fresh.
      *
-     * @param error The error, if any, that triggered this panic.
+     * @param error The error that triggered this panic.
      */
-    protected panic(error: Error | null): void {
+    protected panic(error: unknown): void {
         if (this.panicked) {
             // Only show the first major error, not any repeats - they aren't as important
             return;
@@ -1330,8 +1369,6 @@ export class RufflePlayer extends HTMLElement {
             // Firefox: Don't display the panic screen if the user leaves the page while something is still loading
             return;
         }
-
-        const errorIndex = error?.ruffleIndexError ?? PanicError.Unknown;
 
         const errorArray: Array<string | null> & {
             stackIndex: number;
@@ -1404,11 +1441,9 @@ export class RufflePlayer extends HTMLElement {
             actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">Update Ruffle</a>`;
         }
 
-        // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         let errorBody, errorFooter;
-        switch (errorIndex) {
+        switch (this.classifyError(error)) {
             case PanicError.FileProtocol:
-                // General error: Running on the `file:` protocol
                 errorBody = `
                     <p>It appears you are running Ruffle on the "file:" protocol.</p>
                     <p>This doesn't work as browsers block many features from working for security reasons.</p>
@@ -1420,7 +1455,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.JavascriptConfiguration:
-                // General error: Incorrect JavaScript configuration
                 errorBody = `
                     <p>Ruffle has encountered a major issue due to an incorrect JavaScript configuration.</p>
                     <p>If you are the server administrator, we invite you to check the error details to find out which parameter is at fault.</p>
@@ -1432,7 +1466,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.WasmNotFound:
-                // Self hosted: Cannot load `.wasm` file - file not found
                 errorBody = `
                     <p>Ruffle failed to load the required ".wasm" file component.</p>
                     <p>If you are the server administrator, please ensure the file has correctly been uploaded.</p>
@@ -1444,7 +1477,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.WasmMimeType:
-                // Self hosted: Cannot load `.wasm` file - incorrect MIME type
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
                     <p>This web server is not serving ".wasm" files with the correct MIME type.</p>
@@ -1466,7 +1498,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.SwfCors:
-                // Self hosted: Cannot load SWF file - CORS issues
                 errorBody = `
                     <p>Ruffle failed to load the Flash SWF file.</p>
                     <p>Access to fetch has likely been blocked by CORS policy.</p>
@@ -1478,7 +1509,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.WasmCors:
-                // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = `
                     <p>Ruffle failed to load the required ".wasm" file component.</p>
                     <p>Access to fetch has likely been blocked by CORS policy.</p>
@@ -1490,7 +1520,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.InvalidWasm:
-                // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
                     <p>It seems like this page has missing or invalid files for running Ruffle.</p>
@@ -1502,7 +1531,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.WasmDownload:
-                // Usually a transient network error or botched deployment
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
                     <p>This can often resolve itself, so you can try reloading the page.</p>
@@ -1513,8 +1541,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
-                // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
-                // "Enhance your Security on the web" setting.
                 errorBody = `
                     <p>Ruffle failed to load the required ".wasm" file component.</p>
                     <p>To fix this, try opening your browser's settings, clicking "Privacy, search, and services", scrolling down, and turning off "Enhance your security on the web".</p>
@@ -1527,7 +1553,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.JavascriptConflict:
-                // Self hosted: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
                     <p>It seems like this page uses JavaScript code that conflicts with Ruffle.</p>
@@ -1542,7 +1567,6 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
             case PanicError.CSPConflict:
-                // General error: Cannot load `.wasm` file - a native object / function is overriden
                 errorBody = `
                     <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
                     <p>This web server's Content Security Policy does not allow the required ".wasm" component to run.</p>
@@ -1553,8 +1577,7 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
-            default:
-                // Unknown error
+            case PanicError.Unknown:
                 errorBody = `<p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>`;
                 if (!isBuildOutdated) {
                     errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
@@ -1567,6 +1590,9 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 break;
         }
+
+        // Clear out any existing content (i.e. play button, canvas etc.), and replace it with the
+        // error screen.
         this.container.innerHTML = `
             <div id="panic">
                 <div id="panic-title">Something went wrong :(</div>
@@ -1611,16 +1637,7 @@ export class RufflePlayer extends HTMLElement {
             </div>`;
             this.container.prepend(div);
         } else {
-            const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (!this.swfUrl!.protocol.includes("http")) {
-                error.ruffleIndexError = PanicError.FileProtocol;
-            } else if (window.location.origin === this.swfUrl!.origin) {
-                error.ruffleIndexError = PanicError.SwfFetchError;
-            } else {
-                // This is a selfhosted build of Ruffle that tried to make a cross-origin request
-                error.ruffleIndexError = PanicError.SwfCors;
-            }
-            this.panic(error);
+            this.panic(new RuffleFetchError(`Failed to fetch ${this.swfUrl}`));
         }
     }
 
