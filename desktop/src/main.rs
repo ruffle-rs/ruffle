@@ -225,16 +225,16 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
-fn get_max_screen_size(event_loop: &EventLoop<RuffleEvent>) -> (u32, u32) {
+fn get_max_screen_size(monitors: impl IntoIterator<Item = MonitorHandle>) -> (u32, u32) {
     let mut max_screen_size = (0, 0);
 
-    for monitor in EventLoopWindowTarget::available_monitors(event_loop) {
+    for monitor in monitors {
         let size = MonitorHandle::size(&monitor);
         max_screen_size.0 += size.width;
         max_screen_size.1 += size.height;
     }
 
-    if max_screen_size.0 <= 32 || max_screen_size.1 <= 32 {
+    if max_screen_size.0 <= 64 || max_screen_size.1 <= 32 {
         return (32767, 32767);
     }
 
@@ -275,7 +275,8 @@ impl App {
         let title = format!("Ruffle - {filename}");
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
-        let max_screen_size = get_max_screen_size(&event_loop);
+        let monitors = EventLoopWindowTarget::available_monitors(&event_loop);
+        let max_screen_size = get_max_screen_size(monitors);
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -568,21 +569,38 @@ impl App {
                         let movie_width = swf_header.stage_size().width().to_pixels();
                         let movie_height = swf_header.stage_size().height().to_pixels();
 
+                        let monitors = Window::available_monitors(&self.window);
+                        let max_screen_size = get_max_screen_size(monitors);
+
                         let window_size: Size = match (self.opt.width, self.opt.height) {
-                            (None, None) => LogicalSize::new(movie_width, movie_height).into(),
+                            (None, None) => LogicalSize::new(
+                                movie_width.clamp(16.0, max_screen_size.0 as f64),
+                                movie_height.clamp(16.0, max_screen_size.1 as f64),
+                            )
+                            .into(),
                             (Some(width), None) => {
                                 let scale = width / movie_width;
                                 let height = movie_height * scale;
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                                PhysicalSize::new(
+                                    width.clamp(16.0, max_screen_size.0 as f64),
+                                    height.clamp(16.0, max_screen_size.1 as f64),
+                                )
+                                .into()
                             }
                             (None, Some(height)) => {
                                 let scale = height / movie_height;
                                 let width = movie_width * scale;
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                                PhysicalSize::new(
+                                    width.clamp(16.0, max_screen_size.0 as f64),
+                                    height.clamp(16.0, max_screen_size.1 as f64),
+                                )
+                                .into()
                             }
-                            (Some(width), Some(height)) => {
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
-                            }
+                            (Some(width), Some(height)) => PhysicalSize::new(
+                                width.clamp(16.0, max_screen_size.0 as f64),
+                                height.clamp(16.0, max_screen_size.1 as f64),
+                            )
+                            .into(),
                         };
                         self.window.set_inner_size(window_size);
                         self.window.set_fullscreen(if self.opt.fullscreen {
