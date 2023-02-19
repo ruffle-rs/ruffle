@@ -79,9 +79,11 @@ impl<'gc> E4XNode<'gc> {
                 children.push(child);
             }
             _ => {
+                // FIXME - figure out exactly when appending is allowed in FP,
+                // and throw the proper AVM error.
                 return Err(Error::RustError(
                     format!("Cannot append child {child:?} to node {:?}", this.kind).into(),
-                ))
+                ));
             }
         }
         Ok(())
@@ -373,7 +375,6 @@ pub fn simple_content_to_string<'gc>(
         }
         let child_str = child.node().xml_to_string(activation)?;
         out = AvmString::concat(activation.context.gc_context, out, child_str);
-        eprintln!("Simple string after {:?} is {:?}", child, out);
     }
     Ok(out)
 }
