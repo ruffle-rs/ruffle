@@ -70,7 +70,18 @@ impl<'gc> E4XNode<'gc> {
         child: Self,
     ) -> Result<(), Error<'gc>> {
         let mut this = self.0.write(gc_context);
-        let mut child_data = child.0.write(gc_context);
+        let mut child_data = match child.0.try_write(gc_context) {
+            Ok(data) => data,
+            Err(_) => {
+                return Err(Error::RustError(
+                    format!(
+                        "Circular write in append_child with self={:?} child={:?}",
+                        self, child
+                    )
+                    .into(),
+                ))
+            }
+        };
 
         child_data.parent = Some(*self);
 
