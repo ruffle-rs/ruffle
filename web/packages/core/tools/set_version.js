@@ -5,7 +5,7 @@ const fs = require("fs");
 let version_number = process.env.npm_package_version;
 let version_channel = process.env.CFG_RELEASE_CHANNEL || "nightly";
 let build_date = new Date().toISOString();
-let firefox_extension_id =
+const firefox_extension_id =
     process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";
 
 let commitHash = "unknown";
