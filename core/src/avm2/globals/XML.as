@@ -7,6 +7,7 @@ package {
 
         private native function init(value:*): void;
 
+        AS3 native function name():Object;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
         

@@ -2,8 +2,8 @@
 
 use crate::avm2::e4x::E4XNode;
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::TObject;
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::object::{QNameObject, TObject};
+use crate::avm2::{Activation, Error, Object, QName, Value};
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -34,6 +34,21 @@ pub fn init<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let node = this.unwrap().as_xml_object().unwrap();
+    if let Some(local_name) = node.local_name() {
+        // FIXME - use namespace
+        let namespace = activation.avm2().public_namespace;
+        Ok(QNameObject::from_qname(activation, QName::new(namespace, local_name))?.into())
+    } else {
+        Ok(Value::Null)
+    }
 }
 
 pub fn local_name<'gc>(
