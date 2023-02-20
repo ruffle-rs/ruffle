@@ -1,6 +1,8 @@
+use crate::backend::RenderTargetMode;
 use crate::buffer_pool::{PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
+use crate::surface::commands::run_copy_pipeline;
 use crate::utils::create_buffer_with_data;
 use crate::Transforms;
 use once_cell::race::OnceBool;
@@ -9,7 +11,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct ResolveBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
+    texture: PoolOrArcTexture,
 }
 
 impl ResolveBuffer {
@@ -21,26 +23,62 @@ impl ResolveBuffer {
         pool: &mut TexturePool,
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, 1);
-        Self { texture }
+        Self {
+            texture: PoolOrArcTexture::Pool(texture),
+        }
+    }
+
+    pub fn new_manual(texture: Arc<wgpu::Texture>) -> Self {
+        Self {
+            texture: PoolOrArcTexture::Manual((
+                texture.clone(),
+                texture.create_view(&Default::default()),
+            )),
+        }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture.1
+        match self.texture {
+            PoolOrArcTexture::Pool(ref texture) => &texture.1,
+            PoolOrArcTexture::Manual(ref texture) => &texture.1,
+        }
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        &self.texture.0
+        match self.texture {
+            PoolOrArcTexture::Pool(ref texture) => &texture.0,
+            PoolOrArcTexture::Manual(ref texture) => &texture.0,
+        }
     }
 
-    pub fn take_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
+    pub fn take_texture(self) -> PoolOrArcTexture {
         self.texture
     }
 }
 
 #[derive(Debug)]
 pub struct FrameBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView)>,
+    texture: PoolOrArcTexture,
     size: wgpu::Extent3d,
+}
+
+#[derive(Debug)]
+/// Holds either a `PoolEntry` texture, or an `Arc`-wrapped texture.
+/// This is used to select between using a texture pool for our framebuffer/resolve-buffer
+/// (when rendering to the main screen), or rendering to a non-pooled `Texture`
+/// (when doing an offscreen render to a BitmapData texture)
+pub enum PoolOrArcTexture {
+    Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView)>),
+    Manual((Arc<wgpu::Texture>, wgpu::TextureView)),
+}
+
+impl PoolOrArcTexture {
+    pub fn view(&self) -> &wgpu::TextureView {
+        match self {
+            PoolOrArcTexture::Pool(ref texture) => &texture.1,
+            PoolOrArcTexture::Manual(ref texture) => &texture.1,
+        }
+    }
 }
 
 impl FrameBuffer {
@@ -54,18 +92,37 @@ impl FrameBuffer {
     ) -> Self {
         let texture = pool.get_texture(descriptors, size, usage, format, sample_count);
 
-        Self { texture, size }
+        Self {
+            texture: PoolOrArcTexture::Pool(texture),
+            size,
+        }
+    }
+
+    pub fn new_manual(texture: Arc<wgpu::Texture>, size: wgpu::Extent3d) -> Self {
+        Self {
+            texture: PoolOrArcTexture::Manual((
+                texture.clone(),
+                texture.create_view(&Default::default()),
+            )),
+            size,
+        }
     }
 
     pub fn view(&self) -> &wgpu::TextureView {
-        &self.texture.1
+        match self.texture {
+            PoolOrArcTexture::Pool(ref texture) => &texture.1,
+            PoolOrArcTexture::Manual(ref texture) => &texture.1,
+        }
     }
 
     pub fn texture(&self) -> &wgpu::Texture {
-        &self.texture.0
+        match self.texture {
+            PoolOrArcTexture::Pool(ref texture) => &texture.0,
+            PoolOrArcTexture::Manual(ref texture) => &texture.0,
+        }
     }
 
-    pub fn take_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
+    pub fn take_texture(self) -> PoolOrArcTexture {
         self.texture
     }
 
@@ -140,7 +197,7 @@ pub struct CommandTarget {
     sample_count: u32,
     whole_frame_bind_group: OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
     color_needs_clear: OnceBool,
-    clear_color: wgpu::Color,
+    render_target_mode: RenderTargetMode,
 }
 
 impl CommandTarget {
@@ -150,38 +207,91 @@ impl CommandTarget {
         size: wgpu::Extent3d,
         format: wgpu::TextureFormat,
         sample_count: u32,
-        clear_color: wgpu::Color,
+        render_target_mode: RenderTargetMode,
+        encoder: &mut wgpu::CommandEncoder,
     ) -> Self {
-        let frame_buffer = FrameBuffer::new(
-            descriptors,
-            sample_count,
-            size,
-            format,
-            if sample_count > 1 {
-                wgpu::TextureUsages::RENDER_ATTACHMENT
-            } else {
-                wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING
-            },
-            pool,
-        );
+        let globals = pool.get_globals(descriptors, size.width, size.height);
 
-        let resolve_buffer = if sample_count > 1 {
-            Some(ResolveBuffer::new(
+        let mut make_pooled_frame_buffer = || {
+            FrameBuffer::new(
                 descriptors,
+                sample_count,
                 size,
                 format,
-                wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING
-                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                if sample_count > 1 {
+                    wgpu::TextureUsages::RENDER_ATTACHMENT
+                } else {
+                    wgpu::TextureUsages::RENDER_ATTACHMENT
+                        | wgpu::TextureUsages::COPY_SRC
+                        | wgpu::TextureUsages::COPY_DST
+                        | wgpu::TextureUsages::TEXTURE_BINDING
+                },
                 pool,
-            ))
-        } else {
-            None
+            )
         };
 
-        let globals = pool.get_globals(descriptors, size.width, size.height);
+        let whole_frame_bind_group = OnceCell::new();
+
+        let (frame_buffer, resolve_buffer) = match &render_target_mode {
+            // In `FreshBuffer` mode, get a new frame buffer (and resolve buffer, if necessary)
+            // from the pool. They will be cleared with the provided clear color
+            // in `color_attachments`
+            RenderTargetMode::FreshBuffer(_) => {
+                let frame_buffer = make_pooled_frame_buffer();
+                let resolve_buffer = if sample_count > 1 {
+                    Some(ResolveBuffer::new(
+                        descriptors,
+                        size,
+                        format,
+                        wgpu::TextureUsages::COPY_SRC
+                            | wgpu::TextureUsages::COPY_DST
+                            | wgpu::TextureUsages::TEXTURE_BINDING
+                            | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        pool,
+                    ))
+                } else {
+                    None
+                };
+                (frame_buffer, resolve_buffer)
+            }
+            // In `ExistingTexture` mode, we will use an existing texture
+            // as either the frame buffer or resolve buffer.
+            RenderTargetMode::ExistingTexture(texture) => {
+                if sample_count > 1 {
+                    // The exising texture always has a sample count of 1,
+                    // so we need to create a new texture for the multisampled frame
+                    // buffer. Our existing texture will be used as the resolve buffer,
+                    // which is downsampled from the frame buffer.
+                    let frame_buffer = make_pooled_frame_buffer();
+
+                    // Both our frame buffer and resolve buffer need to start out
+                    // in the same state, so copy our existing texture to the freshly
+                    // allocated frame buffer. We cannot use `copy_texture_to_texture`,
+                    // since the sample counts are different.
+                    run_copy_pipeline(
+                        descriptors,
+                        format,
+                        format,
+                        size,
+                        frame_buffer.texture.view(),
+                        &texture.create_view(&Default::default()),
+                        get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
+                        &globals,
+                        sample_count,
+                        encoder,
+                    );
+
+                    (
+                        frame_buffer,
+                        Some(ResolveBuffer::new_manual(texture.clone())),
+                    )
+                } else {
+                    // If multisampling is disabled, we don't need a resolve buffer.
+                    // We can just use our existing texture as the frame buffer.
+                    (FrameBuffer::new_manual(texture.clone(), size), None)
+                }
+            }
+        };
 
         Self {
             frame_buffer,
@@ -192,9 +302,9 @@ impl CommandTarget {
             size,
             format,
             sample_count,
-            whole_frame_bind_group: OnceCell::new(),
+            whole_frame_bind_group,
             color_needs_clear: OnceBool::new(),
-            clear_color,
+            render_target_mode,
         }
     }
 
@@ -210,14 +320,18 @@ impl CommandTarget {
         if self.color_needs_clear.get().is_some() {
             return;
         }
-        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: create_debug_label!("Clearing command target").as_deref(),
-            color_attachments: &[self.color_attachments()],
-            depth_stencil_attachment: None,
-        });
+        // If we don't have ClearType::Color (we have ClearType::Texture),
+        // the there's no point in creating a new render pass that does nothing.
+        if let RenderTargetMode::FreshBuffer(_) = self.render_target_mode {
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: create_debug_label!("Clearing command target").as_deref(),
+                color_attachments: &[self.color_attachments()],
+                depth_stencil_attachment: None,
+            });
+        }
     }
 
-    pub fn take_color_texture(self) -> PoolEntry<(wgpu::Texture, wgpu::TextureView)> {
+    pub fn take_color_texture(self) -> PoolOrArcTexture {
         self.resolve_buffer
             .map(|b| b.take_texture())
             .unwrap_or_else(|| self.frame_buffer.take_texture())
@@ -228,52 +342,20 @@ impl CommandTarget {
     }
 
     pub fn whole_frame_bind_group(&self, descriptors: &Descriptors) -> &wgpu::BindGroup {
-        &self
-            .whole_frame_bind_group
-            .get_or_init(|| {
-                let transform = Transforms {
-                    world_matrix: [
-                        [self.size.width as f32, 0.0, 0.0, 0.0],
-                        [0.0, self.size.height as f32, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ],
-                };
-                let transforms_buffer = create_buffer_with_data(
-                    &descriptors.device,
-                    bytemuck::cast_slice(&[transform]),
-                    wgpu::BufferUsages::UNIFORM,
-                    create_debug_label!("Whole-frame transforms buffer"),
-                );
-                let whole_frame_bind_group =
-                    descriptors
-                        .device
-                        .create_bind_group(&wgpu::BindGroupDescriptor {
-                            layout: &descriptors.bind_layouts.transforms,
-                            entries: &[wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: transforms_buffer.as_entire_binding(),
-                            }],
-                            label: create_debug_label!("Whole-frame transforms bind group")
-                                .as_deref(),
-                        });
-                (transforms_buffer, whole_frame_bind_group)
-            })
-            .1
+        get_whole_frame_bind_group(&self.whole_frame_bind_group, descriptors, self.size)
     }
 
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment> {
+        let mut load = wgpu::LoadOp::Load;
+        if self.color_needs_clear.set(false).is_ok() {
+            if let RenderTargetMode::FreshBuffer(clear_color) = &self.render_target_mode {
+                load = wgpu::LoadOp::Clear(*clear_color);
+            }
+        }
         Some(wgpu::RenderPassColorAttachment {
             view: self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
-            ops: wgpu::Operations {
-                load: if self.color_needs_clear.set(false).is_ok() {
-                    wgpu::LoadOp::Clear(self.clear_color)
-                } else {
-                    wgpu::LoadOp::Load
-                },
-                store: true,
-            },
+            ops: wgpu::Operations { load, store: true },
         })
     }
 
@@ -354,4 +436,41 @@ impl CommandTarget {
             .map(|b| b.texture())
             .unwrap_or_else(|| self.frame_buffer.texture())
     }
+}
+
+fn get_whole_frame_bind_group<'a>(
+    once_cell: &'a OnceCell<(wgpu::Buffer, wgpu::BindGroup)>,
+    descriptors: &Descriptors,
+    size: wgpu::Extent3d,
+) -> &'a wgpu::BindGroup {
+    &once_cell
+        .get_or_init(|| {
+            let transform = Transforms {
+                world_matrix: [
+                    [size.width as f32, 0.0, 0.0, 0.0],
+                    [0.0, size.height as f32, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+            };
+            let transforms_buffer = create_buffer_with_data(
+                &descriptors.device,
+                bytemuck::cast_slice(&[transform]),
+                wgpu::BufferUsages::UNIFORM,
+                create_debug_label!("Whole-frame transforms buffer"),
+            );
+            let whole_frame_bind_group =
+                descriptors
+                    .device
+                    .create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &descriptors.bind_layouts.transforms,
+                        entries: &[wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: transforms_buffer.as_entire_binding(),
+                        }],
+                        label: create_debug_label!("Whole-frame transforms bind group").as_deref(),
+                    });
+            (transforms_buffer, whole_frame_bind_group)
+        })
+        .1
 }

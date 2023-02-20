@@ -471,7 +471,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let command_buffers = self.surface.draw_commands_to(
             frame_output.view(),
-            Some(wgpu::Color {
+            RenderTargetMode::FreshBuffer(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
                 g: f64::from(clear.g) / 255.0,
                 b: f64::from(clear.b) / 255.0,
@@ -632,7 +632,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         let command_buffers = surface.draw_commands_to(
             frame_output.view(),
-            None,
+            RenderTargetMode::ExistingTexture(target.get_texture()),
             &self.descriptors,
             &mut self.uniform_buffers_storage,
             &mut self.color_buffers_storage,
@@ -781,4 +781,19 @@ async fn request_device(
             trace_path,
         )
         .await
+}
+
+/// Determines how we choose our frame buffer
+#[derive(Clone)]
+pub enum RenderTargetMode {
+    // Construct a new frame buffer, clearng it with the provided color.
+    // This is used when rendering to the actual display,
+    // or when applying a filter. In both cases, we have a fixed background color,
+    // and don't need to blend with anything else
+    FreshBuffer(wgpu::Color),
+    // Use the provided texture as our frame buffer. During rendering,
+    // we will blend with the previous contents of the texture.
+    // This is used in `render_offscreen`, as we need to blend with the previous
+    // contents of our `BitmapData` texture
+    ExistingTexture(Arc<wgpu::Texture>),
 }
