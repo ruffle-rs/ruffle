@@ -206,6 +206,10 @@ impl TextureTarget {
             buffer: Some((Arc::new(buffer), buffer_dimensions)),
         })
     }
+
+    pub fn get_texture(&self) -> Arc<wgpu::Texture> {
+        self.texture.clone()
+    }
 }
 
 impl RenderTarget for TextureTarget {

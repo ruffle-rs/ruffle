@@ -18,8 +18,8 @@ pub struct Descriptors {
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
     pub quad: Quad,
-    copy_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
-    copy_srgb_pipeline: Mutex<FnvHashMap<wgpu::TextureFormat, Arc<wgpu::RenderPipeline>>>,
+    copy_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
+    copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
     pub default_color_bind_group: wgpu::BindGroup,
@@ -69,13 +69,17 @@ impl Descriptors {
         }
     }
 
-    pub fn copy_srgb_pipeline(&self, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
+    pub fn copy_srgb_pipeline(
+        &self,
+        format: wgpu::TextureFormat,
+        msaa_sample_count: u32,
+    ) -> Arc<wgpu::RenderPipeline> {
         let mut pipelines = self
             .copy_srgb_pipeline
             .lock()
             .expect("Pipelines should not be already locked");
         pipelines
-            .entry(format)
+            .entry((msaa_sample_count, format))
             .or_insert_with(|| {
                 let copy_texture_pipeline_layout =
                     &self
@@ -116,7 +120,9 @@ impl Descriptors {
                                 entry_point: "main_fragment",
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
-                                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                                    // All of our blending has been done by now, so we want
+                                    // to overwrite the target pixels without any blending
+                                    blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
                             }),
@@ -131,7 +137,7 @@ impl Descriptors {
                             },
                             depth_stencil: None,
                             multisample: wgpu::MultisampleState {
-                                count: 1,
+                                count: msaa_sample_count,
                                 mask: !0,
                                 alpha_to_coverage_enabled: false,
                             },
@@ -142,13 +148,17 @@ impl Descriptors {
             .clone()
     }
 
-    pub fn copy_pipeline(&self, format: wgpu::TextureFormat) -> Arc<wgpu::RenderPipeline> {
+    pub fn copy_pipeline(
+        &self,
+        format: wgpu::TextureFormat,
+        msaa_sample_count: u32,
+    ) -> Arc<wgpu::RenderPipeline> {
         let mut pipelines = self
             .copy_pipeline
             .lock()
             .expect("Pipelines should not be already locked");
         pipelines
-            .entry(format)
+            .entry((msaa_sample_count, format))
             .or_insert_with(|| {
                 let copy_texture_pipeline_layout =
                     &self
@@ -189,7 +199,9 @@ impl Descriptors {
                                 entry_point: "main_fragment",
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
-                                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                                    // All of our blending has been done by now, so we want
+                                    // to overwrite the target pixels without any blending
+                                    blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
                             }),
@@ -204,7 +216,7 @@ impl Descriptors {
                             },
                             depth_stencil: None,
                             multisample: wgpu::MultisampleState {
-                                count: 1,
+                                count: msaa_sample_count,
                                 mask: !0,
                                 alpha_to_coverage_enabled: false,
                             },
