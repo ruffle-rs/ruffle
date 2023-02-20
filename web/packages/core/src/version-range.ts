@@ -11,8 +11,8 @@ interface Requirement {
      * Valid options are as follows:
      *
      * - `""` or `"="`: Precisely this version
-     * - `">`": A version newer than this one
-     * - `">`=": A version newer or equal to this one
+     * - `">"`: A version newer than this one
+     * - `">="`: A version newer or equal to this one
      * - `"<"`: A version older than this one
      * - `"<="`: A version older or equal to this one
      * - `"^"`: A version that is compatible with this one
@@ -58,13 +58,10 @@ export class VersionRange {
      * @returns Whether or not the given version matches this range
      */
     satisfiedBy(fver: Version): boolean {
-        for (let i = 0; i < this.requirements.length; i += 1) {
+        for (const requirement of this.requirements) {
             let matches = true;
 
-            for (let j = 0; j < this.requirements[i].length; j += 1) {
-                const comparator = this.requirements[i][j].comparator;
-                const version = this.requirements[i][j].version;
-
+            for (const { comparator, version } of requirement) {
                 matches =
                     matches && version.isStableOrCompatiblePrerelease(fver);
 
@@ -121,20 +118,18 @@ export class VersionRange {
         let set: Requirement[] = [];
         const requirements: Requirement[][] = [];
 
-        for (let i = 0; i < components.length; i += 1) {
-            if (components[i] === "||") {
+        for (const component of components) {
+            if (component === "||") {
                 if (set.length > 0) {
                     requirements.push(set);
                     set = [];
                 }
-            } else if (components[i].length > 0) {
-                const match = /[0-9]/.exec(components[i]);
+            } else if (component.length > 0) {
+                const match = /[0-9]/.exec(component);
                 if (match) {
-                    const comparator = components[i]
-                        .slice(0, match.index)
-                        .trim();
+                    const comparator = component.slice(0, match.index).trim();
                     const version = Version.fromSemver(
-                        components[i].slice(match.index).trim()
+                        component.slice(match.index).trim()
                     );
 
                     set.push({ comparator, version });

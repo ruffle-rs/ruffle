@@ -141,7 +141,7 @@ export interface BaseLoadOptions {
      *
      * @default {}
      */
-    parameters?: URLSearchParams | string | Record<string, string>;
+    parameters?: URLSearchParams | string | Record<string, string> | null;
 
     /**
      * Controls the auto-play behaviour of Ruffle.

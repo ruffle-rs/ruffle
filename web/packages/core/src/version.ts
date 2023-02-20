@@ -2,12 +2,6 @@
  * A representation of a semver 2 compliant version string
  */
 export class Version {
-    private readonly major: number;
-    private readonly minor: number;
-    private readonly patch: number;
-    private readonly prIdent: string[] | null;
-    private readonly buildIdent: string[] | null;
-
     /**
      * Construct a Version from specific components.
      *
@@ -20,18 +14,13 @@ export class Version {
      * @param buildIdent A list of build identifiers, if any
      */
     constructor(
-        major: number,
-        minor: number,
-        patch: number,
-        prIdent: string[] | null,
-        buildIdent: string[] | null
-    ) {
-        this.major = major;
-        this.minor = minor;
-        this.patch = patch;
-        this.prIdent = prIdent;
-        this.buildIdent = buildIdent;
-    }
+        private readonly major: number,
+        private readonly minor: number,
+        private readonly patch: number,
+        private readonly prIdent: string[] | null,
+        // @ts-expect-error: Property 'buildIdent' is declared but its value is never read.
+        private readonly buildIdent: string[] | null
+    ) {}
 
     /**
      * Construct a version from a semver 2 compliant string.
@@ -45,10 +34,10 @@ export class Version {
      */
     static fromSemver(versionString: string): Version {
         const buildSplit = versionString.split("+"),
-            prSplit = buildSplit[0].split("-"),
-            versionSplit = prSplit[0].split(".");
+            prSplit = buildSplit[0]!.split("-"),
+            versionSplit = prSplit[0]!.split(".");
 
-        const major = parseInt(versionSplit[0], 10);
+        const major = parseInt(versionSplit[0]!, 10);
         let minor = 0;
         let patch = 0;
         let prIdent = null;
@@ -143,37 +132,37 @@ export class Version {
                 i += 1
             ) {
                 if (
-                    !isNumeric.test(this.prIdent[i]) &&
-                    isNumeric.test(other.prIdent[i])
+                    !isNumeric.test(this.prIdent[i]!) &&
+                    isNumeric.test(other.prIdent[i]!)
                 ) {
                     return true;
                 } else if (
-                    isNumeric.test(this.prIdent[i]) &&
-                    isNumeric.test(other.prIdent[i])
+                    isNumeric.test(this.prIdent[i]!) &&
+                    isNumeric.test(other.prIdent[i]!)
                 ) {
                     if (
-                        parseInt(this.prIdent[i], 10) >
-                        parseInt(other.prIdent[i], 10)
+                        parseInt(this.prIdent[i]!, 10) >
+                        parseInt(other.prIdent[i]!, 10)
                     ) {
                         return true;
                     } else if (
-                        parseInt(this.prIdent[i], 10) <
-                        parseInt(other.prIdent[i], 10)
+                        parseInt(this.prIdent[i]!, 10) <
+                        parseInt(other.prIdent[i]!, 10)
                     ) {
                         return false;
                     }
                 } else if (
-                    isNumeric.test(this.prIdent[i]) &&
-                    !isNumeric.test(other.prIdent[i])
+                    isNumeric.test(this.prIdent[i]!) &&
+                    !isNumeric.test(other.prIdent[i]!)
                 ) {
                     return false;
                 } else if (
-                    !isNumeric.test(this.prIdent[i]) &&
-                    !isNumeric.test(other.prIdent[i])
+                    !isNumeric.test(this.prIdent[i]!) &&
+                    !isNumeric.test(other.prIdent[i]!)
                 ) {
-                    if (this.prIdent[i] > other.prIdent[i]) {
+                    if (this.prIdent[i]! > other.prIdent[i]!) {
                         return true;
-                    } else if (this.prIdent[i] < other.prIdent[i]) {
+                    } else if (this.prIdent[i]! < other.prIdent[i]!) {
                         return false;
                     }
                 }
