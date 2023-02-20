@@ -38,6 +38,14 @@
 			
 			trace("List first child: " + list[0]);
 			trace("List second child: " + list[1]);
+			
+			var a = <a><x>asdf</x></a>;
+			var a1 = a.x;
+			var a2 = a1[0];
+			var b1 = a.x;
+			var b2 = b1[0];
+			trace("XMLList strict equal: " + (a1 === b1));
+			trace("XML strict equal: " + (a2 === b2));
 		}
 	}
 }

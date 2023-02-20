@@ -370,6 +370,10 @@ impl<'gc> E4XNode<'gc> {
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
         Ref::map(self.0.read(), |r| &r.kind)
     }
+
+    pub fn ptr_eq(first: E4XNode<'gc>, second: E4XNode<'gc>) -> bool {
+        GcCell::ptr_eq(first.0, second.0)
+    }
 }
 
 pub fn simple_content_to_string<'gc>(

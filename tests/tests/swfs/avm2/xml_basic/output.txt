@@ -11,3 +11,5 @@ plainString.toXMLString() = Hello
 List children: 2
 List first child: First
 List second child: Second
+XMLList strict equal: false
+XML strict equal: true

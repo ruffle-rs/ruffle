@@ -29,6 +29,8 @@ use swf::avm2::types::{
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
+use super::e4x::E4XNode;
+
 /// Represents a particular register set.
 ///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
@@ -2620,7 +2622,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
-        self.push_stack(value1 == value2);
+        if value1 == value2 {
+            self.push_stack(true);
+        } else {
+            if let Some(xml1) = value1.as_object().and_then(|obj| obj.as_xml_object()) {
+                if let Some(xml2) = value2.as_object().and_then(|obj| obj.as_xml_object()) {
+                    self.push_stack(E4XNode::ptr_eq(*xml1.node(), *xml2.node()));
+                    return Ok(FrameControl::Continue);
+                }
+            }
+            self.push_stack(false);
+        }
 
         Ok(FrameControl::Continue)
     }
