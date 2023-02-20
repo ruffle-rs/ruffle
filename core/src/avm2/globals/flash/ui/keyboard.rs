@@ -11,7 +11,11 @@ pub fn get_caps_lock<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.ui.Keyboard", "capsLock");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.ui.Keyboard",
+        "capsLock"
+    );
     Ok(false.into())
 }
 
@@ -20,7 +24,11 @@ pub fn get_has_virtual_keyboard<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.ui.Keyboard", "hasVirtualKeyboard");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.ui.Keyboard",
+        "hasVirtualKeyboard"
+    );
     Ok(false.into())
 }
 
@@ -29,7 +37,11 @@ pub fn get_num_lock<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.ui.Keyboard", "numLock");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.ui.Keyboard",
+        "numLock"
+    );
     Ok(false.into())
 }
 
@@ -38,7 +50,11 @@ pub fn get_physical_keyboard_type<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.ui.Keyboard", "physicalKeyboardType");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.ui.Keyboard",
+        "physicalKeyboardType"
+    );
     Ok(AvmString::new_utf8(activation.context.gc_context, "alphanumeric").into())
 }
 
@@ -47,6 +63,10 @@ pub fn is_accessible<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.ui.Keyboard", "isAccessible");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.ui.Keyboard",
+        "isAccessible"
+    );
     Ok(true.into())
 }

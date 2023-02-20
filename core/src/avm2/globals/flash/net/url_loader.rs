@@ -85,7 +85,7 @@ fn spawn_fetch<'gc>(
                     .into_bytes();
                 if &*method_str == b"GET" {
                     avm2_stub_method!(
-                        activation,
+                        activation.context.stub_tracker,
                         "flash.net.URLLoader",
                         "load",
                         "with GET method and URLVariables data"
@@ -94,7 +94,7 @@ fn spawn_fetch<'gc>(
                 request.set_body((data, "application/x-www-form-urlencoded".to_string()));
             } else {
                 avm2_stub_method!(
-                    activation,
+                    activation.context.stub_tracker,
                     "flash.net.URLLoader",
                     "load",
                     "with URLVariables data and content type other than application/x-www-form-urlencoded"
@@ -102,7 +102,7 @@ fn spawn_fetch<'gc>(
             }
         } else {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.net.URLLoader",
                 "load",
                 "with non-URLVariables data"

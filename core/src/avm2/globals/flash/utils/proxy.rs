@@ -12,6 +12,10 @@ pub fn is_attribute<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // yes, this is supposed to be implemented
-    avm2_stub_method!(activation, "flash.utils.Proxy", "isAttribute");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.utils.Proxy",
+        "isAttribute"
+    );
     Ok(false.into())
 }

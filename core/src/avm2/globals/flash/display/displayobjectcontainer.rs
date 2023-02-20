@@ -565,7 +565,7 @@ pub fn get_objects_under_point<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObjectContainer",
         "getObjectsUnderPoint"
     );
@@ -578,7 +578,7 @@ pub fn are_inaccessible_objects_under_point<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObjectContainer",
         "areInaccessibleObjectsUnderPoint"
     );
@@ -626,7 +626,7 @@ pub fn tab_children<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObjectContainer",
         "tabChildren"
     );
@@ -640,7 +640,7 @@ pub fn set_tab_children<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObjectContainer",
         "tabChildren"
     );

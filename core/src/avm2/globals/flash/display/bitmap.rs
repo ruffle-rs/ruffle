@@ -177,7 +177,11 @@ pub fn pixel_snapping<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Bitmap", "pixelSnapping");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.Bitmap",
+        "pixelSnapping"
+    );
     Ok("auto".into())
 }
 
@@ -187,7 +191,11 @@ pub fn set_pixel_snapping<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.Bitmap", "pixelSnapping");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.Bitmap",
+        "pixelSnapping"
+    );
     Ok(Value::Undefined)
 }
 

@@ -14,9 +14,11 @@ use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
+use ruffle_render::stub::StubCollection;
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
+use std::rc::Rc;
 use std::sync::Arc;
 use swf::{BlendMode, Color};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
@@ -41,6 +43,7 @@ pub struct WebCanvasRenderBackend {
     // This is currnetly unused - we just store it to report
     // in `get_viewport_dimensions`
     viewport_scale_factor: f64,
+    stub_tracker: Rc<StubCollection>,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -297,6 +300,7 @@ impl WebCanvasRenderBackend {
             rect,
             mask_state: MaskState::DrawContent,
             blend_modes: vec![BlendMode::Normal],
+            stub_tracker: Rc::new(StubCollection::new()),
         };
         Ok(renderer)
     }
@@ -510,6 +514,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn stub_tracker(&self) -> Rc<StubCollection> {
+        self.stub_tracker.clone()
+    }
 }
 
 impl CommandHandler for WebCanvasRenderBackend {

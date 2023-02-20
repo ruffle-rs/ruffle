@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
@@ -7,6 +8,7 @@ use crate::commands::CommandList;
 use crate::error::Error;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
+use crate::stub::StubCollection;
 use gc_arena::MutationContext;
 use swf::Color;
 
@@ -25,11 +27,15 @@ impl BitmapSource for NullBitmapSource {
 
 pub struct NullRenderer {
     dimensions: ViewportDimensions,
+    stub_tracker: Rc<StubCollection>,
 }
 
 impl NullRenderer {
     pub fn new(dimensions: ViewportDimensions) -> Self {
-        Self { dimensions }
+        Self {
+            dimensions,
+            stub_tracker: Rc::new(StubCollection::new()),
+        }
     }
 }
 #[derive(Clone, Debug)]
@@ -104,4 +110,8 @@ impl RenderBackend for NullRenderer {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn stub_tracker(&self) -> Rc<StubCollection> {
+        self.stub_tracker.clone()
+    }
 }

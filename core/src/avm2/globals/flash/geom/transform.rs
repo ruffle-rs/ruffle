@@ -131,7 +131,7 @@ pub fn get_concatenated_color_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.geom.Transform",
         "concatenatedColorTransform"
     );

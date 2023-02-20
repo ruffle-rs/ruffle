@@ -32,6 +32,7 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -47,7 +48,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub gc_context: MutationContext<'gc, 'a>,
 
     /// A collection of stubs encountered during this movie.
-    pub stub_tracker: &'a mut StubCollection,
+    pub stub_tracker: Rc<StubCollection>,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
@@ -304,7 +305,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         UpdateContext {
             action_queue: self.action_queue,
             gc_context: self.gc_context,
-            stub_tracker: self.stub_tracker,
+            stub_tracker: self.stub_tracker.clone(),
             library: self.library,
             player_version: self.player_version,
             needs_render: self.needs_render,

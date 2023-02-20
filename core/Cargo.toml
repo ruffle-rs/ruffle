@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-linkme = { version = "0.3", optional = true }
+linkme = { workspace = true, optional = true }
 byteorder = "1.4"
 bitstream-io = "1.6.0"
 flate2 = "1.0.25"
@@ -66,7 +66,7 @@ timeline_debug = []
 mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
-known_stubs = ["linkme"]
+known_stubs = ["linkme", "ruffle_render/known_stubs"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

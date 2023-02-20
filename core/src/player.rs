@@ -244,7 +244,7 @@ pub struct Player {
 
     frame_phase: FramePhase,
 
-    stub_tracker: StubCollection,
+    stub_tracker: Rc<StubCollection>,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -318,6 +318,10 @@ impl Player {
             );
             context.navigator.spawn_future(future);
         });
+    }
+
+    pub fn stub_tracker(&self) -> Rc<StubCollection> {
+        self.stub_tracker.clone()
     }
 
     /// Change the root movie.
@@ -1758,7 +1762,7 @@ impl Player {
                 frame_rate: &mut self.frame_rate,
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
-                stub_tracker: &mut self.stub_tracker,
+                stub_tracker: self.stub_tracker.clone(),
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -2150,6 +2154,7 @@ impl PlayerBuilder {
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
         let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
+        let stub_tracker = renderer.stub_tracker();
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(player_version));
@@ -2198,7 +2203,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
-                stub_tracker: StubCollection::new(),
+                stub_tracker,
 
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(

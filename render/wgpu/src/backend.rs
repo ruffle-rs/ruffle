@@ -19,12 +19,14 @@ use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::stub::StubCollection;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
@@ -43,6 +45,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_scale_factor: f64,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
+    stub_tracker: Rc<StubCollection>,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -187,6 +190,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             viewport_scale_factor: 1.0,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
+            stub_tracker: Rc::new(StubCollection::new()),
         })
     }
 
@@ -357,6 +361,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(Box::new(WgpuContext3D::new(
             self.descriptors.clone(),
             handle,
+            self.stub_tracker.clone(),
         )))
     }
 
@@ -738,6 +743,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 descriptors: self.descriptors.clone(),
             })),
         }
+    }
+
+    fn stub_tracker(&self) -> Rc<StubCollection> {
+        self.stub_tracker.clone()
     }
 }
 

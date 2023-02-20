@@ -10,7 +10,7 @@ pub fn get_dynamic_property_writer<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.net.ObjectEncoding",
         "dynamicPropertyWriter"
     );
@@ -23,7 +23,7 @@ pub fn set_dynamic_property_writer<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.net.ObjectEncoding",
         "dynamicPropertyWriter"
     );

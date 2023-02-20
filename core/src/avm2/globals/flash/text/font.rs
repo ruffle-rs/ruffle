@@ -162,7 +162,11 @@ pub fn enumerate_fonts<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.Font", "enumerateFonts");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.text.Font",
+        "enumerateFonts"
+    );
     Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
 }
 
@@ -172,7 +176,11 @@ pub fn register_font<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.Font", "registerFont");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.text.Font",
+        "registerFont"
+    );
     Ok(Value::Undefined)
 }
 

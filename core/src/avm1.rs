@@ -69,7 +69,7 @@ macro_rules! avm1_stub {
     ($activation: ident, $class: literal, $method: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
-            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+            linkme::distributed_slice(ruffle_render::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Method {
             class: $class,
@@ -81,7 +81,7 @@ macro_rules! avm1_stub {
     ($activation: ident, $class: literal, $method: literal, $specifics: literal) => {
         #[cfg_attr(
             feature = "known_stubs",
-            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+            linkme::distributed_slice(ruffle_render::stub::KNOWN_STUBS)
         )]
         static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Method {
             class: $class,

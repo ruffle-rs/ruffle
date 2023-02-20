@@ -17,7 +17,7 @@ pub fn instance_init<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_constructor!(activation, "Namespace");
+    avm2_stub_constructor!(activation.context.stub_tracker, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 
@@ -26,7 +26,7 @@ fn class_call<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_constructor!(activation, "Namespace");
+    avm2_stub_constructor!(activation.context.stub_tracker, "Namespace");
     Err("Namespace constructor is a stub.".into())
 }
 

@@ -26,7 +26,11 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if !args.is_empty() {
-            avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
+            avm2_stub_constructor!(
+                activation.context.stub_tracker,
+                "flash.media.Sound",
+                "with arguments"
+            );
         }
 
         if let Some(sound_object) = this.as_sound_object() {
@@ -91,7 +95,11 @@ pub fn is_buffering<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.media.Sound", "isBuffering");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.media.Sound",
+        "isBuffering"
+    );
     //STUB: We do not yet support network-loaded sounds.
     Ok(false.into())
 }
@@ -102,7 +110,7 @@ pub fn url<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.media.Sound", "url");
+    avm2_stub_getter!(activation.context.stub_tracker, "flash.media.Sound", "url");
     //STUB: We do not yet support network-loaded sounds.
     Ok(Value::Null)
 }
@@ -192,7 +200,11 @@ pub fn extract<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "extract");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.media.Sound",
+        "extract"
+    );
     Ok(Value::Undefined)
 }
 
@@ -202,7 +214,11 @@ pub fn close<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "close");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.media.Sound",
+        "close"
+    );
     Ok(Value::Undefined)
 }
 
@@ -227,7 +243,12 @@ pub fn load<'gc>(
         // TODO: context parameter currently unused.
         let _sound_context = args.get(1);
         if _sound_context.is_some() {
-            avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
+            avm2_stub_method!(
+                activation.context.stub_tracker,
+                "flash.media.Sound",
+                "load",
+                "with context"
+            );
         }
 
         let future = activation.context.load_manager.load_sound_avm2(
@@ -248,7 +269,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(
-        activation,
+        activation.context.stub_tracker,
         "flash.media.Sound",
         "loadCompressedDataFromByteArray"
     );
@@ -261,7 +282,11 @@ pub fn load_pcm_from_byte_array<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.media.Sound",
+        "loadPCMFromByteArray"
+    );
     Ok(Value::Undefined)
 }
 

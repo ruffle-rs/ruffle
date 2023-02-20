@@ -654,7 +654,11 @@ pub fn allows_full_screen<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "allowsFullScreen");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.Stage",
+        "allowsFullScreen"
+    );
     Ok(true.into())
 }
 
@@ -665,7 +669,7 @@ pub fn allows_full_screen_interactive<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.Stage",
         "allowsFullScreenInteractive"
     );
@@ -747,7 +751,11 @@ pub fn full_screen_source_rect<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenSourceRect");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.Stage",
+        "fullScreenSourceRect"
+    );
     Ok(Value::Undefined)
 }
 
@@ -757,7 +765,11 @@ pub fn set_full_screen_source_rect<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.Stage",
+        "fullScreenSourceRect"
+    );
     Ok(Value::Undefined)
 }
 

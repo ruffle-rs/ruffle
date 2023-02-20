@@ -221,7 +221,11 @@ pub fn close<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.net.SharedObject", "close");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.net.SharedObject",
+        "close"
+    );
     Ok(Value::Undefined)
 }
 
@@ -230,6 +234,10 @@ pub fn clear<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.net.SharedObject", "clear");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.net.SharedObject",
+        "clear"
+    );
     Ok(Value::Undefined)
 }

@@ -260,7 +260,11 @@ pub fn is_url_inaccessible<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "isURLInaccessible");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.LoaderInfo",
+        "isURLInaccessible"
+    );
     Ok(false.into())
 }
 
@@ -270,7 +274,11 @@ pub fn parent_allows_child<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.LoaderInfo", "parentAllowsChild");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.LoaderInfo",
+        "parentAllowsChild"
+    );
     Ok(false.into())
 }
 

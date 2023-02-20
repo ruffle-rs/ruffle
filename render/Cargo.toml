@@ -23,6 +23,8 @@ gc-arena = { workspace = true }
 enum-map = "2.4.2"
 serde = "1.0.152"
 clap = { version = "4.1.4", features = ["derive"], optional = true }
+fnv = "1.0.7"
+linkme = { workspace = true, optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.3.0"
@@ -35,3 +37,4 @@ approx = "0.5.1"
 default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
+known_stubs = ["linkme"]

@@ -1,8 +1,10 @@
+use ruffle_render::avm2_stub_method;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, Context3DVertexBufferFormat, IndexBuffer, ProgramType,
     ShaderModule, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
+use ruffle_render::stub::StubCollection;
 use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
@@ -73,6 +75,8 @@ pub struct WgpuContext3D {
     compiled_pipeline: Option<wgpu::RenderPipeline>,
 
     vertex_attributes: [Option<VertexAttributeInfo>; MAX_VERTEX_ATTRIBUTES],
+
+    stub_tracker: Rc<StubCollection>,
 }
 
 const AGAL_NUM_VERTEX_CONSTANTS: u64 = 128;
@@ -85,7 +89,11 @@ const FRAGMENT_SHADER_UNIFORMS_BUFFER_SIZE: u64 =
     AGAL_NUM_FRAGMENT_CONSTANTS * AGAL_FLOATS_PER_REGISTER * std::mem::size_of::<f32>() as u64;
 
 impl WgpuContext3D {
-    pub fn new(descriptors: Arc<Descriptors>, raw_texture_handle: BitmapHandle) -> Self {
+    pub fn new(
+        descriptors: Arc<Descriptors>,
+        raw_texture_handle: BitmapHandle,
+        stub_tracker: Rc<StubCollection>,
+    ) -> Self {
         let globals_layout_label = create_debug_label!("Globals bind group layout");
         let bind_group_layout =
             descriptors
@@ -175,6 +183,7 @@ impl WgpuContext3D {
             current_pipeline: CurrentPipeline::new(),
             compiled_pipeline: None,
             vertex_attributes: std::array::from_fn(|_| None),
+            stub_tracker,
         }
     }
     // Executes all of the given `commands` in response to a `Context3D.present` call.
@@ -226,9 +235,11 @@ impl WgpuContext3D {
                     mask,
                 } => {
                     if *mask != COLOR_MASK | DEPTH_MASK | STENCIL_MASK {
-                        tracing::warn!(
-                            "Context3D::present: Clear command with mask {:x} not implemeneted",
-                            mask
+                        avm2_stub_method!(
+                            self.stub_tracker,
+                            "flash.display3D.Context3D",
+                            "clear",
+                            "with non-default mask"
                         );
                     }
 
@@ -254,13 +265,19 @@ impl WgpuContext3D {
                     wants_best_resolution_on_browser_zoom: _,
                 } => {
                     if *anti_alias != 1 {
-                        tracing::warn!(
-                            "configureBackBuffer: anti_alias={anti_alias} is not yet implemented"
+                        avm2_stub_method!(
+                            self.stub_tracker,
+                            "flash.display3D.Context3D",
+                            "configureBackBuffer",
+                            "with anti-alias != 1"
                         );
                     }
                     if *depth_and_stencil {
-                        tracing::warn!(
-                            "configureBackBuffer: depth_and_stencil is not yet implemented"
+                        avm2_stub_method!(
+                            self.stub_tracker,
+                            "flash.display3D.Context3D",
+                            "configureBackBuffer",
+                            "with enableDepthAndStencil"
                         );
                     }
 

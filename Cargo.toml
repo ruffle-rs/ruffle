@@ -35,6 +35,7 @@ version = "0.1.0"
 
 [workspace.dependencies]
 gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "318b2ea594dcdadd01f7789025e3b3940be96b2c" }
+linkme = { version = "0.3" }
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]

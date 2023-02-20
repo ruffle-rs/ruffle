@@ -13,5 +13,6 @@ pub mod utils;
 
 pub mod commands;
 pub mod quality;
+pub mod stub;
 #[cfg(feature = "tessellator")]
 pub mod tessellator;

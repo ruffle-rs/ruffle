@@ -6,6 +6,7 @@ use crate::error::Error;
 use crate::filters::Filter;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
+use crate::stub::StubCollection;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
 use serde::{Deserialize, Serialize};
@@ -88,6 +89,8 @@ pub trait RenderBackend: Downcast {
     fn debug_info(&self) -> Cow<'static, str>;
 
     fn set_quality(&mut self, quality: StageQuality);
+
+    fn stub_tracker(&self) -> Rc<StubCollection>;
 }
 impl_downcast!(RenderBackend);
 

@@ -382,7 +382,11 @@ pub fn z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "z");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "z"
+    );
     Ok(0.into())
 }
 
@@ -391,7 +395,11 @@ pub fn set_z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "z"
+    );
     Ok(Value::Undefined)
 }
 
@@ -400,7 +408,11 @@ pub fn rotation_x<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationX"
+    );
     Ok(0.into())
 }
 
@@ -409,7 +421,11 @@ pub fn set_rotation_x<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationX"
+    );
     Ok(Value::Undefined)
 }
 
@@ -418,7 +434,11 @@ pub fn rotation_y<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationY"
+    );
     Ok(0.into())
 }
 
@@ -427,7 +447,11 @@ pub fn set_rotation_y<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationY"
+    );
     Ok(Value::Undefined)
 }
 
@@ -436,7 +460,11 @@ pub fn rotation_z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationZ"
+    );
     Ok(0.into())
 }
 
@@ -445,7 +473,11 @@ pub fn set_rotation_z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "rotationZ"
+    );
     Ok(Value::Undefined)
 }
 
@@ -454,7 +486,11 @@ pub fn scale_z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "scaleZ");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "scaleZ"
+    );
     Ok(1.into())
 }
 
@@ -463,7 +499,11 @@ pub fn set_scale_z<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.DisplayObject", "scaleZ");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.DisplayObject",
+        "scaleZ"
+    );
     Ok(Value::Undefined)
 }
 
@@ -1085,7 +1125,7 @@ pub fn opaque_background<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObject",
         "opaqueBackground"
     );
@@ -1099,7 +1139,7 @@ pub fn set_opaque_background<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.display.DisplayObject",
         "opaqueBackground"
     );

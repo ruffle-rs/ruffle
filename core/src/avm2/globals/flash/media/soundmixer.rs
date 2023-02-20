@@ -121,7 +121,7 @@ pub fn are_sounds_inaccessible<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(
-        activation,
+        activation.context.stub_tracker,
         "flash.media.SoundMixer",
         "areSoundsInaccessible"
     );

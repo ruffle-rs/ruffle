@@ -56,5 +56,8 @@ pub use indexmap;
 pub use loader::LoadBehavior;
 pub use player::{Player, PlayerBuilder, StaticCallstack};
 pub use ruffle_render::backend::ViewportDimensions;
+pub use ruffle_render::{
+    avm2_stub_constructor, avm2_stub_getter, avm2_stub_method, avm2_stub_setter,
+};
 pub use swf;
 pub use swf::Color;

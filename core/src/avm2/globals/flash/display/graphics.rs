@@ -87,7 +87,11 @@ fn begin_bitmap_fill<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginBitmapFill");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.display.Graphics",
+        "beginBitmapFill"
+    );
     Ok(Value::Undefined)
 }
 
@@ -97,7 +101,11 @@ fn begin_gradient_fill<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginGradientFill");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.display.Graphics",
+        "beginGradientFill"
+    );
     Ok(Value::Undefined)
 }
 

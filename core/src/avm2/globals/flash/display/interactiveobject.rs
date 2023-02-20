@@ -165,7 +165,11 @@ pub fn tab_enabled<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabEnabled");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.InteractiveObject",
+        "tabEnabled"
+    );
 
     Ok(false.into())
 }
@@ -175,7 +179,11 @@ pub fn set_tab_enabled<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.InteractiveObject",
+        "tabIndex"
+    );
 
     Ok(Value::Undefined)
 }
@@ -185,7 +193,11 @@ pub fn tab_index<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabIndex");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.InteractiveObject",
+        "tabIndex"
+    );
 
     Ok((-1).into())
 }
@@ -195,7 +207,11 @@ pub fn set_tab_index<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.display.InteractiveObject",
+        "tabIndex"
+    );
 
     Ok(Value::Undefined)
 }
@@ -205,7 +221,11 @@ pub fn focus_rect<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "focusRect");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.display.InteractiveObject",
+        "focusRect"
+    );
     Ok(Value::Null)
 }
 
@@ -218,7 +238,11 @@ pub fn set_focus_rect<'gc>(
 
     // let's only warn on true, as games sometimes just set focusRect to false for some reason.
     if matches!(args.get(0), Some(Value::Bool(true))) {
-        avm2_stub_setter!(activation, "flash.display.InteractiveObject", "focusRect");
+        avm2_stub_setter!(
+            activation.context.stub_tracker,
+            "flash.display.InteractiveObject",
+            "focusRect"
+        );
     }
 
     Ok(Value::Null)

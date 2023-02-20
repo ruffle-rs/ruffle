@@ -1282,7 +1282,11 @@ pub fn restrict<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.TextField", "restrict");
+    avm2_stub_getter!(
+        activation.context.stub_tracker,
+        "flash.text.TextField",
+        "restrict"
+    );
     Ok(Value::Null)
 }
 
@@ -1291,7 +1295,11 @@ pub fn set_restrict<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.text.TextField", "restrict");
+    avm2_stub_setter!(
+        activation.context.stub_tracker,
+        "flash.text.TextField",
+        "restrict"
+    );
     Ok(Value::Undefined)
 }
 

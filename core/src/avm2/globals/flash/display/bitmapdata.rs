@@ -726,7 +726,11 @@ pub fn lock<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.BitmapData", "lock");
+    avm2_stub_method!(
+        activation.context.stub_tracker,
+        "flash.display.BitmapData",
+        "lock"
+    );
     Ok(Value::Undefined)
 }
 
@@ -1013,7 +1017,7 @@ pub fn apply_filter<'gc>(
             })
         } else if filter.is_of_type(bevel_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with bevel filter"
@@ -1021,7 +1025,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(bitmap_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with bitmap filter"
@@ -1029,7 +1033,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(blur_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with blur filter"
@@ -1037,7 +1041,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(color_matrix_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with color matrix filter"
@@ -1045,7 +1049,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(convolution_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with convolution filter"
@@ -1053,7 +1057,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(displacement_map_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with displacement map filter"
@@ -1061,7 +1065,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(drop_shadow_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with drop shadow filter"
@@ -1069,7 +1073,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(glow_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with glow filter"
@@ -1077,7 +1081,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(gradient_bevel_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with gradient bevel filter"
@@ -1085,7 +1089,7 @@ pub fn apply_filter<'gc>(
             Filter::default()
         } else if filter.is_of_type(gradient_glow_filter, activation) {
             avm2_stub_method!(
-                activation,
+                activation.context.stub_tracker,
                 "flash.display.BitmapData",
                 "applyFilter",
                 "with gradient glow filter"

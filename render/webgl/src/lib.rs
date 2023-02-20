@@ -4,7 +4,9 @@
 #![allow(clippy::extra_unused_type_parameters)]
 
 use bytemuck::{Pod, Zeroable};
+use ruffle_render::stub::StubCollection;
 use std::borrow::Cow;
+use std::rc::Rc;
 
 use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
@@ -153,6 +155,8 @@ pub struct WebGlRenderBackend {
     // This is currently unused - we just hold on to it
     // to expose via `get_viewport_dimensions`
     viewport_scale_factor: f64,
+
+    stub_tracker: Rc<StubCollection>,
 }
 
 #[derive(Debug)]
@@ -328,6 +332,8 @@ impl WebGlRenderBackend {
             add_color: None,
 
             viewport_scale_factor: 1.0,
+
+            stub_tracker: Rc::new(StubCollection::new()),
         };
 
         renderer.push_blend_mode(BlendMode::Normal);
@@ -1141,6 +1147,10 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn set_quality(&mut self, _quality: StageQuality) {}
+
+    fn stub_tracker(&self) -> Rc<StubCollection> {
+        self.stub_tracker.clone()
+    }
 }
 
 impl CommandHandler for WebGlRenderBackend {
