@@ -1,10 +1,9 @@
 {
-    "extends": "@tsconfig/recommended/tsconfig.json",
+    "extends": "@tsconfig/strictest/tsconfig.json",
     "compilerOptions": {
-        "target": "es2017",
         "module": "es2020",
         "moduleResolution": "node",
-        "importsNotUsedAsValues": "error",
+        "target": "es2017",
     },
     "include": ["src/**/*"],
 }
