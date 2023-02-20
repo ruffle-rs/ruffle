@@ -168,6 +168,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.base().get_slot(slot_id)
             }
             Some(Property::Method { disp_id }) => {
+                // avmplus has a special case for XML and XMLList objects, so we need one as well
+                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Toplevel.cpp#L629-L634
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some()) && multiname.contains_public_namespace() {
+                    return self.get_property_local(multiname, activation);
+                }
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }

@@ -46,6 +46,10 @@
 			var b2 = b1[0];
 			trace("XMLList strict equal: " + (a1 === b1));
 			trace("XML strict equal: " + (a2 === b2));
+			
+			var weird = <outer><name>My Name</name></outer>;
+			trace("Get 'name' property': " + weird.name);
+			trace("Get 'AS#::name' property': " + (typeof a.AS3::name));
 		}
 	}
 }

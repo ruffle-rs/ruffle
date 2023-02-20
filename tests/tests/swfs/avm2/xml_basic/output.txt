@@ -13,3 +13,5 @@ List first child: First
 List second child: Second
 XMLList strict equal: false
 XML strict equal: true
+Get 'name' property': My Name
+Get 'AS#::name' property': function
