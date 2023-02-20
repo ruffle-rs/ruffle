@@ -53,8 +53,8 @@ export function copyToAudioBufferInterleaved(
     let i = 0;
     let sample = 0;
     while (sample < numSamples) {
-        leftBuffer[sample] = interleavedData[i];
-        rightBuffer[sample] = interleavedData[i + 1];
+        leftBuffer[sample] = interleavedData[i]!;
+        rightBuffer[sample] = interleavedData[i + 1]!;
         sample++;
         i += 2;
     }

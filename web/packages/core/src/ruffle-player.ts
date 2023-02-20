@@ -1062,34 +1062,33 @@ export class RufflePlayer extends HTMLElement {
      * Copies attributes and children from another element to this player element.
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      *
-     * @param elem The element to copy all attributes from.
+     * @param element The element to copy all attributes from.
      * @protected
      */
-    protected copyElement(elem: Element): void {
-        if (elem) {
-            for (let i = 0; i < elem.attributes.length; i++) {
-                const attrib = elem.attributes[i];
-                if (attrib.specified) {
+    protected copyElement(element: Element): void {
+        if (element) {
+            for (const attribute of element.attributes) {
+                if (attribute.specified) {
                     // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
                     if (
-                        attrib.name === "title" &&
-                        attrib.value === "Adobe Flash Player"
+                        attribute.name === "title" &&
+                        attribute.value === "Adobe Flash Player"
                     ) {
                         continue;
                     }
 
                     try {
-                        this.setAttribute(attrib.name, attrib.value);
+                        this.setAttribute(attribute.name, attribute.value);
                     } catch (err) {
                         // The embed may have invalid attributes, so handle these gracefully.
                         console.warn(
-                            `Unable to set attribute ${attrib.name} on Ruffle instance`
+                            `Unable to set attribute ${attribute.name} on Ruffle instance`
                         );
                     }
                 }
             }
 
-            for (const node of Array.from(elem.children)) {
+            for (const node of Array.from(element.children)) {
                 this.appendChild(node);
             }
         }
@@ -1111,7 +1110,7 @@ export class RufflePlayer extends HTMLElement {
         if (attribute) {
             const match = attribute.match(DIMENSION_REGEX);
             if (match) {
-                let out = match[1];
+                let out = match[1]!;
                 if (!match[3]) {
                     // Unitless -- add px for CSS.
                     out += "px";
@@ -1582,7 +1581,7 @@ export class RufflePlayer extends HTMLElement {
         this.container.classList.add("hidden");
     }
 
-    private setMetadata(metadata: MovieMetadata) {
+    protected setMetadata(metadata: MovieMetadata) {
         this._metadata = metadata;
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
@@ -1749,11 +1748,11 @@ export function isSwfFilename(filename: string | null): boolean {
 /**
  * Returns whether the given MIME type is a known flash type.
  *
- * @param mime The MIME type to test.
+ * @param mimeType The MIME type to test.
  * @returns True if the MIME type is a flash MIME type.
  */
-export function isSwfMimeType(mime: string): boolean {
-    switch (mime.toLowerCase()) {
+export function isSwfMimeType(mimeType: string): boolean {
+    switch (mimeType.toLowerCase()) {
         case FLASH_MIMETYPE.toLowerCase():
         case FUTURESPLASH_MIMETYPE.toLowerCase():
         case FLASH7_AND_8_MIMETYPE.toLowerCase():

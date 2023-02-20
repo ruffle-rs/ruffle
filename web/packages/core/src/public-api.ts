@@ -72,10 +72,10 @@ export class PublicAPI {
                 prev.superseded();
             } else if (
                 prev.constructor === Object &&
-                prev.config instanceof Object
+                prev["config"] instanceof Object
             ) {
                 /// We're the first, install user configuration
-                this.config = prev.config;
+                this.config = prev["config"];
             } else {
                 /// We're the first, but conflicting with someone else.
                 this.conflict = prev;
@@ -128,7 +128,7 @@ export class PublicAPI {
 
         for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
-                const kVersion = Version.fromSemver(this.sources[k].version);
+                const kVersion = Version.fromSemver(this.sources[k]!.version);
                 if (kVersion.hasPrecedenceOver(newestVersion)) {
                     newestName = k;
                     newestVersion = kVersion;
@@ -158,7 +158,7 @@ export class PublicAPI {
 
             const polyfills = this.config.polyfills;
             if (polyfills !== false) {
-                this.sources[this.newestName].polyfill(
+                this.sources[this.newestName]!.polyfill(
                     this.newestName === "extension"
                 );
             }
@@ -172,7 +172,7 @@ export class PublicAPI {
      */
     newest(): typeof SourceAPI | null {
         const name = this.newestSourceName();
-        return name !== null ? this.sources[name] : null;
+        return name !== null ? this.sources[name]! : null;
     }
 
     /**
@@ -190,10 +190,10 @@ export class PublicAPI {
 
         for (const k in this.sources) {
             if (Object.prototype.hasOwnProperty.call(this.sources, k)) {
-                const version = Version.fromSemver(this.sources[k].version);
+                const version = Version.fromSemver(this.sources[k]!.version);
 
                 if (requirement.satisfiedBy(version)) {
-                    valid = this.sources[k];
+                    valid = this.sources[k]!;
                 }
             }
         }
@@ -208,8 +208,8 @@ export class PublicAPI {
      * @returns An instance of the Source API
      */
     localCompatible(): typeof SourceAPI | null {
-        if (this.sources.local !== undefined) {
-            return this.satisfying("^" + this.sources.local.version);
+        if (this.sources["local"] !== undefined) {
+            return this.satisfying("^" + this.sources["local"].version);
         } else {
             return this.newest();
         }
@@ -222,8 +222,8 @@ export class PublicAPI {
      * @returns An instance of the Source API
      */
     local(): typeof SourceAPI | null {
-        if (this.sources.local !== undefined) {
-            return this.satisfying("=" + this.sources.local.version);
+        if (this.sources["local"] !== undefined) {
+            return this.satisfying("=" + this.sources["local"].version);
         } else {
             return this.newest();
         }

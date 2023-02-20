@@ -68,14 +68,13 @@ function polyfillFrames(): void {
     iframes = iframes ?? document.getElementsByTagName("iframe");
     frames = frames ?? document.getElementsByTagName("frame");
 
-    [iframes, frames].forEach((elementsList) => {
-        for (let i = 0; i < elementsList.length; i++) {
-            const element = elementsList[i];
-            if (element.dataset.rufflePolyfilled !== undefined) {
+    [iframes, frames].forEach((elements) => {
+        for (const element of elements) {
+            if (element.dataset["rufflePolyfilled"] !== undefined) {
                 // Don't re-polyfill elements with the "data-ruffle-polyfilled" attribute.
                 continue;
             }
-            element.dataset.rufflePolyfilled = "";
+            element.dataset["rufflePolyfilled"] = "";
 
             const elementWindow = element.contentWindow;
 
@@ -138,7 +137,7 @@ async function injectRuffle(
 
     if (
         !isExtension &&
-        elementDocument.documentElement.dataset.ruffleOptout !== undefined
+        elementDocument.documentElement.dataset["ruffleOptout"] !== undefined
     ) {
         // Don't polyfill elements with the "data-ruffle-optout" attribute.
         return;
