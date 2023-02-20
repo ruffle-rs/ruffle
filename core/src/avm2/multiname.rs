@@ -153,7 +153,7 @@ impl<'gc> Multiname<'gc> {
         let abc = translation_unit.abc();
         let abc_multiname = Self::resolve_multiname_index(&abc, multiname_index)?;
 
-        Ok(match abc_multiname {
+        let mut multiname = match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, mc)?),
@@ -181,18 +181,12 @@ impl<'gc> Multiname<'gc> {
             | AbcMultiname::MultinameA {
                 namespace_set,
                 name,
-            } => {
-                let flags = match abc_multiname {
-                    AbcMultiname::MultinameA { .. } => MultinameFlags::ATTRIBUTE,
-                    _ => Default::default(),
-                };
-                Self {
-                    ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
-                    name: translation_unit.pool_string_option(name.0, mc)?,
-                    params: Vec::new(),
-                    flags,
-                }
-            }
+            } => Self {
+                ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
+                name: translation_unit.pool_string_option(name.0, mc)?,
+                params: Vec::new(),
+                flags: Default::default(),
+            },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
@@ -225,7 +219,19 @@ impl<'gc> Multiname<'gc> {
                 }
                 base
             }
-        })
+        };
+
+        if matches!(
+            abc_multiname,
+            AbcMultiname::QNameA { .. }
+                | AbcMultiname::RTQNameA { .. }
+                | AbcMultiname::RTQNameLA { .. }
+                | AbcMultiname::MultinameA { .. }
+                | AbcMultiname::MultinameLA { .. }
+        ) {
+            multiname.flags |= MultinameFlags::ATTRIBUTE;
+        }
+        Ok(multiname)
     }
 
     #[inline(never)]
