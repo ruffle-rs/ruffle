@@ -1214,7 +1214,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_xml_list(&self) -> Option<XmlListObject<'gc>> {
+    fn as_xml_list_object(&self) -> Option<XmlListObject<'gc>> {
         None
     }
 

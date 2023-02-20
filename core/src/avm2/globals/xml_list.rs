@@ -22,7 +22,7 @@ pub fn init<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.unwrap().as_xml_list().unwrap();
+    let this = this.unwrap().as_xml_list_object().unwrap();
     let value = args[0];
 
     match E4XNode::parse(value, activation) {
@@ -47,7 +47,7 @@ pub fn has_simple_content<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list().unwrap();
+    let list = this.unwrap().as_xml_list_object().unwrap();
     let children = list.children();
     Ok(has_simple_content_inner(&children).into())
 }
@@ -57,7 +57,7 @@ pub fn to_string<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list().unwrap();
+    let list = this.unwrap().as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
         Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
@@ -71,7 +71,7 @@ pub fn length<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.unwrap().as_xml_list().unwrap();
+    let list = this.unwrap().as_xml_list_object().unwrap();
     let children = list.children();
     Ok(children.len().into())
 }

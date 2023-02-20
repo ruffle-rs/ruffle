@@ -134,7 +134,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_xml_list(&self) -> Option<Self> {
+    fn as_xml_list_object(&self) -> Option<Self> {
         Some(*self)
     }
 
@@ -168,8 +168,9 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             child_prop.as_object().and_then(|obj| obj.as_xml_object())
                         {
                             vec![E4XOrXml::Xml(prop_xml)]
-                        } else if let Some(prop_xml_list) =
-                            child_prop.as_object().and_then(|obj| obj.as_xml_list())
+                        } else if let Some(prop_xml_list) = child_prop
+                            .as_object()
+                            .and_then(|obj| obj.as_xml_list_object())
                         {
                             // Flatten children
                             prop_xml_list.children().clone()
