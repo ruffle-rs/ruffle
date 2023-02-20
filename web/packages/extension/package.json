@@ -14,7 +14,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/recommended": "^1.0.1",
+        "@tsconfig/strictest": "^1.0.2",
         "@types/chrome": "^0.0.212",
         "@types/firefox-webext-browser": "^94.0.0",
         "archiver": "^5.3.1",
