@@ -447,8 +447,8 @@ pub trait TDisplayObjectContainer<'gc>:
 
             // Check if we need to pop off a mask.
             // This must be a while loop because multiple masks can be popped
-            // at the same dpeth.
-            while clip_depth > 0 && depth >= clip_depth {
+            // at the same depth.
+            while clip_depth > 0 && depth > clip_depth {
                 // Clear the mask stencil and pop the mask.
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
