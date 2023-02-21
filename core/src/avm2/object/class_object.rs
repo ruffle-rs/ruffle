@@ -307,7 +307,7 @@ impl<'gc> ClassObject<'gc> {
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
-            interfaces.push(self.early_resolve_interface(scope, &interface_name)?);
+            interfaces.push(self.early_resolve_interface(scope.domain(), &interface_name)?);
         }
 
         if !interfaces.is_empty() {
@@ -340,7 +340,7 @@ impl<'gc> ClassObject<'gc> {
                 let super_interfaces: Result<Vec<_>, _> = iface_read
                     .interfaces()
                     .iter()
-                    .map(|super_iface| self.early_resolve_interface(scope, super_iface))
+                    .map(|super_iface| self.early_resolve_interface(scope.domain(), super_iface))
                     .collect();
                 interfaces.extend(super_interfaces?);
             }
@@ -356,10 +356,10 @@ impl<'gc> ClassObject<'gc> {
     // which is needed to resolve interfaces when constructing a (different) `ClassObject`.
     fn early_resolve_interface(
         &self,
-        scope: ScopeChain<'gc>,
+        domain: Domain<'gc>,
         interface_name: &Multiname<'gc>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
-        let interface_class = scope.domain().get_class(interface_name)?;
+        let interface_class = domain.get_class(interface_name)?;
 
         let Some(interface_class) = interface_class else {
             return Err(format!("Could not resolve interface {interface_name:?}").into());
