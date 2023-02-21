@@ -187,8 +187,6 @@ impl<'gc> Scope<'gc> {
         if !removed
             && (self.class == ScopeClass::Target || self.locals().has_property(activation, name))
         {
-            //TODO: check the clip actually exists here, would not be an issue with referenceobject enum
-
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
             self.locals().set(name, value, activation)

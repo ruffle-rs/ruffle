@@ -541,7 +541,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn stack_push(&mut self, mut value: Value<'gc>) {
         if let Value::Object(Object::StageObject(s)) = value {
-            // TODO: this is wrong, because we will re-create cached references, once a clip switches to the slower path resolution, it shouldn't swich back
+            // Note that there currently exists a subtle issue with this logic:
+            // If the cached `Object` in a `MovieClipReference` becomes invalidated, causing it to switch back to path-based object resolution,
+            // it should *never* switch back to cache-based resolution
+            // However, currently if a `MovieClipReference` in this invalidated-cache state is converted back to an `Object`, such as when passed as an argument to a function,
+            // if it pushed back onto the stack then it will be converted into a new `MovieClipReference`, causing it to switch back to cache-based resolution
+            // Fixing this will require a thorough refactor of AVM1 to store `Either<MovieClipReference, Object>
+            // can refer to a MovieClip
+            // There is a ignored test for this issue of "reference laundering" at "avm1/string_paths_reference_launder"
             if let Some(mcr) = MovieClipReference::try_from_stage_object(self, s) {
                 value = Value::MovieClip(mcr);
             }
