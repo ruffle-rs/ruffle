@@ -22,6 +22,7 @@ use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
@@ -263,8 +264,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         if let Some(s) = this.as_stage_object() {
             let d_o = s.as_display_object().unwrap();
 
-            //TODO: mc check?
-            use crate::display_object::TDisplayObject;
             if d_o.removed() {
                 return Ok(Value::Undefined);
             }
