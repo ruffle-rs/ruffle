@@ -16,6 +16,8 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::sync::Arc;
 use swf::TagCode;
 
+use super::traits::Trait;
+
 mod array;
 mod boolean;
 mod class;
@@ -291,6 +293,8 @@ fn class<'gc>(
         activation.avm2().classes().class,
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
+    domain.export_class(class_name, class_def, activation.context.gc_context)?;
+    script.install_trait_late(Trait::from_class(class_def), activation);
 
     Ok(class_object)
 }

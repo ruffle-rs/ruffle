@@ -10,6 +10,8 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
 
+use super::class::Class;
+
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
 #[derive(Copy, Clone, Collect)]
@@ -21,6 +23,10 @@ pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.
     defs: PropertyMap<'gc, Script<'gc>>,
+
+    /// A map of all Clasess defined in this domain. Used by ClassObject
+    /// to perform early interface resolution.
+    classes: PropertyMap<'gc, GcCell<'gc, Class<'gc>>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -48,6 +54,7 @@ impl<'gc> Domain<'gc> {
             mc,
             DomainData {
                 defs: PropertyMap::new(),
+                classes: PropertyMap::new(),
                 parent: None,
                 domain_memory: None,
             },
@@ -67,6 +74,7 @@ impl<'gc> Domain<'gc> {
             activation.context.gc_context,
             DomainData {
                 defs: PropertyMap::new(),
+                classes: PropertyMap::new(),
                 parent: Some(parent),
                 domain_memory: None,
             },
@@ -116,6 +124,22 @@ impl<'gc> Domain<'gc> {
 
         if let Some(parent) = read.parent {
             return parent.get_defining_script(multiname);
+        }
+
+        Ok(None)
+    }
+
+    pub fn get_class(
+        self,
+        multiname: &Multiname<'gc>,
+    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+        let read = self.0.read();
+        if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
+            return Ok(Some(class));
+        }
+
+        if let Some(parent) = read.parent {
+            return parent.get_class(multiname);
         }
 
         Ok(None)
@@ -176,6 +200,16 @@ impl<'gc> Domain<'gc> {
 
         self.0.write(mc).defs.insert(name, script);
 
+        Ok(())
+    }
+
+    pub fn export_class(
+        &self,
+        name: QName<'gc>,
+        class: GcCell<'gc, Class<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error<'gc>> {
+        self.0.write(mc).classes.insert(name, class);
         Ok(())
     }
 
