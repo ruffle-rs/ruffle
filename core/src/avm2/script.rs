@@ -1,5 +1,6 @@
 //! Whole script representation
 
+use super::traits::TraitKind;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
@@ -466,10 +467,29 @@ impl<'gc> Script<'gc> {
                 *self,
                 activation.context.gc_context,
             )?;
+            if let TraitKind::Class { class, .. } = newtrait.kind() {
+                write.domain.export_class(
+                    newtrait.name(),
+                    *class,
+                    activation.context.gc_context,
+                )?;
+            }
+
             write.traits.push(newtrait);
         }
 
         Ok(())
+    }
+
+    /// Install a trait on this `Script` object
+    /// This should only ever be called on the `global` script, during Rust-side initialization.
+    pub fn install_trait_late(
+        &self,
+        loaded_trait: Trait<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) {
+        let mut write = self.0.write(activation.context.gc_context);
+        write.traits.push(loaded_trait);
     }
 
     /// Return the entrypoint for the script and the scope it should run in.

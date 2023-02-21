@@ -84,7 +84,7 @@ pub struct ClassObjectData<'gc> {
     applications: FnvHashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
 
     /// Interfaces implemented by this class.
-    interfaces: Vec<ClassObject<'gc>>,
+    interfaces: Vec<GcCell<'gc, Class<'gc>>>,
 
     /// VTable used for instances of this class.
     instance_vtable: VTable<'gc>,
@@ -307,29 +307,7 @@ impl<'gc> ClassObject<'gc> {
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
-            let interface = scope.resolve(&interface_name, activation)?;
-
-            if interface.is_none() {
-                return Err(format!("Could not resolve interface {interface_name:?}").into());
-            }
-
-            let iface_class = interface
-                .unwrap()
-                .as_object()
-                .and_then(|o| o.as_class_object())
-                .ok_or_else(|| Error::from("Object is not an interface"))?;
-            if !iface_class.inner_class_definition().read().is_interface() {
-                return Err(format!(
-                    "Class {:?} is not an interface and cannot be implemented by classes",
-                    iface_class
-                        .inner_class_definition()
-                        .read()
-                        .name()
-                        .local_name()
-                )
-                .into());
-            }
-            interfaces.push(iface_class);
+            interfaces.push(self.early_resolve_interface(scope, &interface_name)?);
         }
 
         if !interfaces.is_empty() {
@@ -343,10 +321,9 @@ impl<'gc> ClassObject<'gc> {
         let mut class = Some(self);
 
         while let Some(cls) = class {
-            for interface in cls.interfaces() {
-                let iface_static_class = interface.inner_class_definition();
-                let iface_read = iface_static_class.read();
-
+            let mut interfaces = cls.interfaces();
+            while let Some(interface) = interfaces.pop() {
+                let iface_read = interface.read();
                 for interface_trait in iface_read.instance_traits() {
                     if !interface_trait.name().namespace().is_public() {
                         let public_name = QName::new(
@@ -360,12 +337,42 @@ impl<'gc> ClassObject<'gc> {
                         );
                     }
                 }
+                let super_interfaces: Result<Vec<_>, _> = iface_read
+                    .interfaces()
+                    .iter()
+                    .map(|super_iface| self.early_resolve_interface(scope, super_iface))
+                    .collect();
+                interfaces.extend(super_interfaces?);
             }
 
             class = cls.superclass_object();
         }
 
         Ok(())
+    }
+
+    // Looks up an interface by name, without using `ScopeChain.resolve`
+    // This lets us look up an interface before its `ClassObject` has been constructed,
+    // which is needed to resolve interfaces when constructing a (different) `ClassObject`.
+    fn early_resolve_interface(
+        &self,
+        scope: ScopeChain<'gc>,
+        interface_name: &Multiname<'gc>,
+    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
+        let interface_class = scope.domain().get_class(interface_name)?;
+
+        let Some(interface_class) = interface_class else {
+            return Err(format!("Could not resolve interface {interface_name:?}").into());
+        };
+
+        if !interface_class.read().is_interface() {
+            return Err(format!(
+                "Class {:?} is not an interface and cannot be implemented by classes",
+                interface_class.read().name().local_name()
+            )
+            .into());
+        }
+        Ok(interface_class)
     }
 
     /// Manually set the type of this `Class`.
@@ -434,7 +441,7 @@ impl<'gc> ClassObject<'gc> {
             }
 
             for interface in class.interfaces() {
-                if Object::ptr_eq(interface, test_class) {
+                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
                     return true;
                 }
             }
@@ -701,7 +708,7 @@ impl<'gc> ClassObject<'gc> {
         self.0.read().prototype.unwrap()
     }
 
-    pub fn interfaces(self) -> Vec<ClassObject<'gc>> {
+    pub fn interfaces(self) -> Vec<GcCell<'gc, Class<'gc>>> {
         self.0.read().interfaces.clone()
     }
 
