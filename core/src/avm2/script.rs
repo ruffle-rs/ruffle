@@ -481,17 +481,6 @@ impl<'gc> Script<'gc> {
         Ok(())
     }
 
-    /// Install a trait on this `Script` object
-    /// This should only ever be called on the `global` script, during Rust-side initialization.
-    pub fn install_trait_late(
-        &self,
-        loaded_trait: Trait<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        let mut write = self.0.write(activation.context.gc_context);
-        write.traits.push(loaded_trait);
-    }
-
     /// Return the entrypoint for the script and the scope it should run in.
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
