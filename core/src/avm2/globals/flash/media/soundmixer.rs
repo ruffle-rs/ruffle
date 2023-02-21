@@ -155,27 +155,26 @@ pub fn compute_spectrum<'gc>(
             x.abs().ln().max(0.0) / 4.0
         }
 
-        // Need to make a copy of the samples used by the FFT, so they aren't
-        // modified in place.
-        let mut inp = [[0.0; 2]; 512];
-        inp.copy_from_slice(&hist[..512]);
-
-        // We could stop earlier here, depending on the value of 'stretch'.
-        for (freq, h) in hist.iter_mut().take(512).enumerate() {
-            let mut sum_left = 0.0;
-            let mut sum_right = 0.0;
-
-            for (i, sample) in inp.iter().enumerate() {
-                let freq = freq as f32;
-                let i = i as f32;
-                let coeff = (std::f32::consts::PI * freq * i / 1024.0).cos();
-
-                sum_left += sample[0] * coeff;
-                sum_right += sample[1] * coeff;
-            }
-
-            *h = [postproc(sum_left), postproc(sum_right)];
+        // Precompute a single period of the cosine function to be used as a lookup table.
+        let mut cos_lut = [0.0f32; 2048];
+        for (i, c) in cos_lut.iter_mut().enumerate() {
+            *c = (i as f32 / 2048.0 * 2.0 * std::f32::consts::PI).cos();
         }
+
+        // The actual DCT, with a naive implementation.
+        let mut outp = [[0.0, 0.0]; 512];
+        for (freq, o) in outp.iter_mut().enumerate() {
+            // Only the first 512 frames are taken into account.
+            for (i, sample) in hist.iter().take(512).enumerate() {
+                let coeff = cos_lut[(freq * i) % 2048];
+                o[0] += sample[0] * coeff;
+                o[1] += sample[1] * coeff;
+            }
+            *o = [postproc(o[0]), postproc(o[1])];
+        }
+
+        // Only the first 512 elements are used later.
+        hist[..512].copy_from_slice(&outp);
     }
 
     // A stretch factor of 0 appears to be "special" in that it squishes the
