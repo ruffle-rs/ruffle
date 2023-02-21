@@ -152,7 +152,6 @@ export class RufflePlayer extends HTMLElement {
 
     private isExtension = false;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
-    private longPressTimeout = 800;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -224,11 +223,7 @@ export class RufflePlayer extends HTMLElement {
         this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
-        window.addEventListener("contextmenu", this.contextMenu.bind(this), {
-            once: true,
-        });
         window.addEventListener("pointerdown", this.pointerDown.bind(this));
-        window.addEventListener("pointerup", this.hideContextMenu.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
             "pointerdown",
@@ -796,10 +791,6 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private contextMenu(): void {
-        this.contextMenuSupported = true;
-    }
-
     /**
      * Fetches the loaded SWF and downloads it.
      */
@@ -920,28 +911,20 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private startLongPressTimer(): void {
+        const longPressTimeout = 800;
         this.clearLongPressTimer();
         this.longPressTimer = setTimeout(
             () => this.clearLongPressTimer(),
-            this.longPressTimeout
+            longPressTimeout
         );
     }
 
     private checkLongPress(event: PointerEvent): void {
-        // The is fired as a pointerup event on the container
-        // However, pointerup on the window will dismiss the context menu
-        // To stop the contextmenu from being dismissed immediately, we stopPropagation:
-        // 1) If a mouse did not fire this event and longPressTimer is not active
-        // (there was a previous event that cleared it)
-        // 2) If this pointerup event was fired by right-click on a mouse
-        if (
-            (!this.longPressTimer && event.pointerType !== "mouse") ||
-            (event.pointerType === "mouse" && event.button === 2)
-        ) {
-            event.stopPropagation();
-        }
         if (this.longPressTimer) {
             this.clearLongPressTimer();
+            // The pointerType condition is to ensure right-click does not trigger
+            // a context menu the wrong way the first time you right-click,
+            // before contextMenuSupported is set.
         } else if (
             !this.contextMenuSupported &&
             event.pointerType !== "mouse"
@@ -950,8 +933,22 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    private showContextMenu(e: MouseEvent | PointerEvent): void {
-        e.preventDefault();
+    private showContextMenu(event: MouseEvent | PointerEvent): void {
+        event.preventDefault();
+
+        if (event.type === "contextmenu") {
+            this.contextMenuSupported = true;
+            window.addEventListener("click", this.hideContextMenu.bind(this), {
+                once: true,
+            });
+        } else {
+            window.addEventListener(
+                "pointerup",
+                this.hideContextMenu.bind(this),
+                { once: true }
+            );
+            event.stopPropagation();
+        }
 
         if (
             this.loadedConfig.contextMenu === false ||
@@ -997,7 +994,10 @@ export class RufflePlayer extends HTMLElement {
                 this.contextMenuElement.appendChild(menuItem);
 
                 if (enabled !== false) {
-                    menuItem.addEventListener("pointerup", onClick);
+                    menuItem.addEventListener(
+                        this.isTouch ? "pointerup" : "click",
+                        onClick
+                    );
                 } else {
                     menuItem.classList.add("disabled");
                 }
@@ -1011,8 +1011,8 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement.style.display = "block";
 
         const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.x;
-        const y = e.clientY - rect.y;
+        const x = event.clientX - rect.x;
+        const y = event.clientY - rect.y;
         const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
         const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
 
