@@ -22,3 +22,21 @@
 [object HitButtonShape]
 // numChildren:  1
 [object Shape]
+//my_button on frame 2
+[object SimpleButton]
+//my_button.upState on frame 2
+[object UpButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.overState on frame 2
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.downState on frame 2
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.hitTestState on frame 2
+[object HitButtonShape]
+// numChildren:  1
+[object Shape]
