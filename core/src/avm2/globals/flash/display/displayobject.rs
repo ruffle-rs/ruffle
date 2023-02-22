@@ -42,27 +42,35 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let class_object = this
-                .instance_of()
-                .ok_or("Attempted to construct DisplayObject on a bare object.")?;
+            let mut class_object = this.instance_of();
 
-            if let Some((movie, symbol)) = activation
-                .context
-                .library
-                .avm2_class_registry()
-                .class_symbol(class_object)
-            {
-                let mut child = activation
+            // Iterate the inheritance chain, starting from `this` and working backwards through `super`s
+            // This accounts for the cases where a super may be linked to symbol, but `this` may not be
+            while let Some(class) = class_object {
+                if let Some((movie, symbol)) = activation
                     .context
                     .library
-                    .library_for_movie_mut(movie)
-                    .instantiate_by_id(symbol, activation.context.gc_context)?;
+                    .avm2_class_registry()
+                    .class_symbol(class)
+                {
+                    let mut child = activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie)
+                        .instantiate_by_id(symbol, activation.context.gc_context)?;
 
-                this.init_display_object(activation.context.gc_context, child);
-                child.set_object2(activation.context.gc_context, this);
+                    this.init_display_object(activation.context.gc_context, child);
+                    child.set_object2(activation.context.gc_context, this);
 
-                child.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-                catchup_display_object_to_frame(&mut activation.context, child);
+                    child.post_instantiation(
+                        &mut activation.context,
+                        None,
+                        Instantiator::Avm2,
+                        false,
+                    );
+                    catchup_display_object_to_frame(&mut activation.context, child);
+                }
+                class_object = class.superclass_object();
             }
         }
 

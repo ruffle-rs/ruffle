@@ -1,0 +1,22 @@
+// In SuperClass constructor
+// this.text
+[object TextField]
+
+// this.box
+[object MovieClip]
+
+// this["circle"]
+[object MovieClip]
+
+
+// In ChildClass constructor
+// this.text
+[object TextField]
+
+// this.box
+[object MovieClip]
+
+// this["circle"]
+[object MovieClip]
+
+
