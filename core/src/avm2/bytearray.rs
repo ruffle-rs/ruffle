@@ -132,6 +132,16 @@ impl ByteArrayStorage {
         Ok(bytes)
     }
 
+    /// Same as `read_bytes`, but cuts the result at the first null byte to recreate a bug in FP.
+    pub fn read_bytes_null_terminated(&self, amnt: usize) -> Result<&[u8], EofError> {
+        let bytes = self.read_bytes(amnt)?;
+        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
+            Ok(&bytes[..null])
+        } else {
+            Ok(bytes)
+        }
+    }
+
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
     pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], EofError> {
@@ -254,7 +264,7 @@ impl ByteArrayStorage {
 
     pub fn read_utf(&self) -> Result<&[u8], EofError> {
         let len = self.read_unsigned_short()?;
-        let val = self.read_bytes(len.into())?;
+        let val = self.read_bytes_null_terminated(len.into())?;
         Ok(val)
     }
 
