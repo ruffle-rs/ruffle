@@ -1,6 +1,6 @@
 use swf::Fixed16;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Filter {
     BlurFilter(BlurFilter),
     ColorMatrixFilter(ColorMatrixFilter),
@@ -14,7 +14,7 @@ impl Default for Filter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlurFilter {
     pub blur_x: f32,
     pub blur_y: f32,
@@ -41,7 +41,7 @@ impl Default for BlurFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ColorMatrixFilter {
     pub matrix: [f32; 20],
 }

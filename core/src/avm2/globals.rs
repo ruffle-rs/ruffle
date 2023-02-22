@@ -111,6 +111,16 @@ pub struct SystemClasses<'gc> {
     pub vertexbuffer3d: ClassObject<'gc>,
     pub program3d: ClassObject<'gc>,
     pub urlvariables: ClassObject<'gc>,
+    pub bevelfilter: ClassObject<'gc>,
+    pub bitmapfilter: ClassObject<'gc>,
+    pub blurfilter: ClassObject<'gc>,
+    pub colormatrixfilter: ClassObject<'gc>,
+    pub convolutionfilter: ClassObject<'gc>,
+    pub displacementmapfilter: ClassObject<'gc>,
+    pub dropshadowfilter: ClassObject<'gc>,
+    pub glowfilter: ClassObject<'gc>,
+    pub gradientbevelfilter: ClassObject<'gc>,
+    pub gradientglowfilter: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -197,6 +207,16 @@ impl<'gc> SystemClasses<'gc> {
             vertexbuffer3d: object,
             program3d: object,
             urlvariables: object,
+            bevelfilter: object,
+            bitmapfilter: object,
+            blurfilter: object,
+            colormatrixfilter: object,
+            convolutionfilter: object,
+            displacementmapfilter: object,
+            dropshadowfilter: object,
+            glowfilter: object,
+            gradientbevelfilter: object,
+            gradientglowfilter: object,
         }
     }
 }
@@ -642,6 +662,20 @@ fn load_playerglobal<'gc>(
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
+            ("flash.filters", "BevelFilter", bevelfilter),
+            ("flash.filters", "BitmapFilter", bitmapfilter),
+            ("flash.filters", "BlurFilter", blurfilter),
+            ("flash.filters", "ColorMatrixFilter", colormatrixfilter),
+            ("flash.filters", "ConvolutionFilter", convolutionfilter),
+            (
+                "flash.filters",
+                "DisplacementMapFilter",
+                displacementmapfilter
+            ),
+            ("flash.filters", "DropShadowFilter", dropshadowfilter),
+            ("flash.filters", "GlowFilter", glowfilter),
+            ("flash.filters", "GradientBevelFilter", gradientbevelfilter),
+            ("flash.filters", "GradientGlowFilter", gradientglowfilter),
         ]
     );
 
