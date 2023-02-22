@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::error::range_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -53,6 +54,7 @@ pub fn class_init<'gc>(
 ///  * The index is off the end of the child list of the proposed parent.
 ///  * The child is already a transitive child of the proposed parent.
 fn validate_add_operation<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     new_parent: DisplayObject<'gc>,
     proposed_child: DisplayObject<'gc>,
     proposed_index: usize,
@@ -75,7 +77,11 @@ fn validate_add_operation<'gc>(
     }
 
     if proposed_index > ctr.num_children() {
-        return Err("RangeError: Index position does not exist in the child list".into());
+        return Err(Error::AvmError(range_error(
+            activation,
+            "Index position does not exist in the child list",
+            2006,
+        )?));
     }
 
     Ok(())
@@ -143,11 +149,15 @@ pub fn get_child_at<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let child = dobj.child_by_index(index as usize).ok_or_else(|| {
-            format!("RangeError: Display object container has no child with id {index}")
-        })?;
-
-        return Ok(child.object2());
+        return if let Some(child) = dobj.child_by_index(index as usize) {
+            Ok(child.object2())
+        } else {
+            Err(Error::AvmError(range_error(
+                activation,
+                "Display object container has no child with id {index}",
+                2006,
+            )?))
+        };
     }
 
     Ok(Value::Undefined)
@@ -196,7 +206,7 @@ pub fn add_child<'gc>(
                 .ok_or("ArgumentError: Child not a valid display object")?;
             let target_index = ctr.num_children();
 
-            validate_add_operation(parent, child, target_index)?;
+            validate_add_operation(activation, parent, child, target_index)?;
             add_child_to_displaylist(&mut activation.context, parent, child, target_index);
 
             return Ok(child.object2());
@@ -226,7 +236,7 @@ pub fn add_child_at<'gc>(
             .ok_or("ArgumentError: Index to add child at not specified")?
             .coerce_to_i32(activation)? as usize;
 
-        validate_add_operation(parent, child, target_index)?;
+        validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(&mut activation.context, parent, child, target_index);
 
         return Ok(child.object2());
@@ -348,12 +358,15 @@ pub fn remove_child_at<'gc>(
                 .coerce_to_i32(activation)?;
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
-                return Err(format!(
-                    "RangeError: {} does not exist in the child list (valid range is 0 to {})",
-                    target_child,
-                    ctr.num_children()
-                )
-                .into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!(
+                        "{} does not exist in the child list (valid range is 0 to {})",
+                        target_child,
+                        ctr.num_children()
+                    ),
+                    2006,
+                )?));
             }
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
@@ -387,25 +400,35 @@ pub fn remove_children<'gc>(
                 .coerce_to_i32(activation)?;
 
             if from >= ctr.num_children() as i32 || from < 0 {
-                return Err(format!(
-                    "RangeError: Starting position {} does not exist in the child list (valid range is 0 to {})",
-                    from,
-                    ctr.num_children()
-                )
-                .into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!(
+                        "Starting position {} does not exist in the child list (valid range is 0 to {})",
+                        from,
+                        ctr.num_children()
+                    ),
+                    2006,
+                )?));
             }
 
             if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
-                return Err(format!(
-                    "RangeError: Ending position {} does not exist in the child list (valid range is 0 to {})",
-                    to,
-                    ctr.num_children()
-                )
-                .into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!(
+                        "Ending position {} does not exist in the child list (valid range is 0 to {})",
+                        to,
+                        ctr.num_children()
+                    ),
+                    2006,
+                )?));
             }
 
             if from > to {
-                return Err(format!("RangeError: Range {from} to {to} is invalid").into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!("Range {from} to {to} is invalid"),
+                    2006,
+                )?));
             }
 
             ctr.remove_range(
@@ -443,7 +466,7 @@ pub fn set_child_index<'gc>(
             return Err("ArgumentError: Given child is not a child of this display object".into());
         }
 
-        validate_add_operation(parent, child, target_index)?;
+        validate_add_operation(activation, parent, child, target_index)?;
         add_child_to_displaylist(&mut activation.context, parent, child, target_index);
 
         return Ok(child.object2());
@@ -473,11 +496,19 @@ pub fn swap_children_at<'gc>(
             let bounds = ctr.num_children();
 
             if index0 < 0 || index0 as usize >= bounds {
-                return Err(format!("RangeError: Index {index0} is out of bounds").into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!("Index {index0} is out of bounds",),
+                    2006,
+                )?));
             }
 
             if index1 < 0 || index1 as usize >= bounds {
-                return Err(format!("RangeError: Index {index1} is out of bounds").into());
+                return Err(Error::AvmError(range_error(
+                    activation,
+                    &format!("Index {index1} is out of bounds",),
+                    2006,
+                )?));
             }
 
             let child0 = ctr.child_by_index(index0 as usize).unwrap();
