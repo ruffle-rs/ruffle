@@ -2,11 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
+use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
@@ -15,7 +14,7 @@ use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
 use gc_arena::GcCell;
-use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
+use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -1049,156 +1048,7 @@ pub fn apply_filter<'gc>(
             .ok_or_else(|| {
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
             })?;
-
-        let filters_namespace = Namespace::package("flash.filters", activation.context.gc_context);
-        let bevel_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "BevelFilter"))?;
-        let bitmap_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "BitmapFilter"))?;
-        let blur_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "BlurFilter"))?;
-        let color_matrix_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "ColorMatrixFilter"))?;
-        let convolution_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "ConvolutionFilter"))?;
-        let displacement_map_filter = activation
-            .resolve_class(&Multiname::new(filters_namespace, "DisplacementMapFilter"))?;
-        let drop_shadow_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "DropShadowFilter"))?;
-        let glow_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "GlowFilter"))?;
-        let gradient_bevel_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "GradientBevelFilter"))?;
-        let gradient_glow_filter =
-            activation.resolve_class(&Multiname::new(filters_namespace, "GradientGlowFilter"))?;
-        // let shader_filter = activation.resolve_class(&Multiname::new(
-        //     Namespace::package("flash.filters"),
-        //     "ShaderFilter",
-        // ))?;
-        let filter = if filter.is_of_type(color_matrix_filter, activation) {
-            let mut matrix = [0.0; 20];
-            if let Some(object) = filter
-                .get_public_property("matrix", activation)?
-                .as_object()
-            {
-                if let Some(array) = object.as_array_storage() {
-                    for i in 0..matrix.len().min(array.length()) {
-                        matrix[i] = array
-                            .get(i)
-                            .expect("Length was already checked at this point")
-                            .coerce_to_number(activation)?
-                            as f32;
-                    }
-                }
-            }
-            Filter::ColorMatrixFilter(ColorMatrixFilter { matrix })
-        } else if filter.is_of_type(blur_filter, activation) {
-            let blur_x = filter
-                .get_public_property("blurX", activation)?
-                .coerce_to_number(activation)?;
-            let blur_y = filter
-                .get_public_property("blurY", activation)?
-                .coerce_to_number(activation)?;
-            let quality = filter
-                .get_public_property("quality", activation)?
-                .coerce_to_u32(activation)?;
-            Filter::BlurFilter(BlurFilter {
-                blur_x: blur_x as f32,
-                blur_y: blur_y as f32,
-                quality: quality.clamp(1, 15) as u8,
-            })
-        } else if filter.is_of_type(bevel_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with bevel filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(bitmap_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with bitmap filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(blur_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with blur filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(color_matrix_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with color matrix filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(convolution_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with convolution filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(displacement_map_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with displacement map filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(drop_shadow_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with drop shadow filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(glow_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with glow filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(gradient_bevel_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with gradient bevel filter"
-            );
-            Filter::default()
-        } else if filter.is_of_type(gradient_glow_filter, activation) {
-            avm2_stub_method!(
-                activation,
-                "flash.display.BitmapData",
-                "applyFilter",
-                "with gradient glow filter"
-            );
-            Filter::default()
-        // } else if filter.is_of_type(shader_filter, activation) {
-        //     avm2_stub_method!(
-        //         activation,
-        //         "flash.display.BitmapData",
-        //         "applyFilter",
-        //         "with shader filter"
-        //     );
-        //     Filter::default()
-        } else {
-            tracing::error!("BitmapData.applyFilter received unknown filter");
-            Filter::default()
-        };
+        let filter = Filter::from_avm2_object(activation, filter)?;
         let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
         dest_bitmap_data.apply_filter(
             &mut activation.context,

@@ -31,6 +31,7 @@ mod domain;
 mod e4x;
 pub mod error;
 mod events;
+mod filters;
 mod function;
 pub mod globals;
 mod method;
