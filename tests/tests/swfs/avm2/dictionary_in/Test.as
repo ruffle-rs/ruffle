@@ -13,14 +13,17 @@ a["key"] = 5;
 
 trace("///a[\"key\"]");
 trace(a["key"]);
-trace("///a[\"key\"] = 6");
+
+trace("///a[\"key\"] = 6");
 a["key"] = 6;
+
 trace("///var key2 = new Test()");
 var key2 = new Test();
 
 trace("///a[key2] = 23");
 a[key2] = 23;
-trace("///var key3 = new Test()");
+
+trace("///var key3 = new Test()");
 var key3 = new Test();
 
 trace('///a[key3] = "Key3 True Value"');
@@ -62,7 +65,8 @@ a[null] = "oh YES!";
 trace('///a["null"] = "yeah sure"');
 a["null"] = "yeah sure";
 
-trace('///a[true] = "true"');a[true] = "true";
+trace('///a[true] = "true"');
+a[true] = "true";
 
 trace('///a["true"] = "stringy true"');
 a["true"] = "stringy true";
