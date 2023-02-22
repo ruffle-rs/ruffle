@@ -143,6 +143,28 @@ impl<'gc> E4XNode<'gc> {
         let mut top_level = vec![];
         let mut depth = 0;
 
+        // This can't be a closure that captures these variables, because we need to modify them
+        // outside of this body.
+        fn push_childless_node<'gc>(
+            node: E4XNode<'gc>,
+            open_tags: &mut Vec<E4XNode<'gc>>,
+            top_level: &mut Vec<E4XNode<'gc>>,
+            depth: usize,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<(), Error<'gc>> {
+            if !open_tags.is_empty() {
+                open_tags
+                    .last_mut()
+                    .unwrap()
+                    .append_child(activation.context.gc_context, node)?;
+            }
+
+            if depth == 0 {
+                top_level.push(node);
+            }
+            Ok(())
+        }
+
         loop {
             let event = parser.read_event(&mut buf).map_err(|error| {
                 Error::RustError(format!("XML parsing error: {error:?}").into())
@@ -162,11 +184,8 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs)?;
-                    open_tags
-                        .last_mut()
-                        .unwrap()
-                        .append_child(activation.context.gc_context, child)?;
+                    let node = E4XNode::from_start_event(activation, bs)?;
+                    push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
                     depth -= 1;
@@ -181,7 +200,7 @@ impl<'gc> E4XNode<'gc> {
                     let is_whitespace_text = text.iter().all(is_whitespace_char);
                     if !(text.is_empty() || ignore_white && is_whitespace_text) {
                         let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
-                        let child = E4XNode(GcCell::allocate(
+                        let node = E4XNode(GcCell::allocate(
                             activation.context.gc_context,
                             E4XNodeData {
                                 parent: None,
@@ -189,17 +208,13 @@ impl<'gc> E4XNode<'gc> {
                                 kind: E4XNodeKind::Text(text),
                             },
                         ));
-
-                        if !open_tags.is_empty() {
-                            open_tags
-                                .last_mut()
-                                .unwrap()
-                                .append_child(activation.context.gc_context, child)?;
-                        }
-
-                        if depth == 0 {
-                            top_level.push(child);
-                        }
+                        push_childless_node(
+                            node,
+                            &mut open_tags,
+                            &mut top_level,
+                            depth,
+                            activation,
+                        )?;
                     }
                 }
                 Event::Comment(bt) | Event::PI(bt) => {
@@ -210,7 +225,7 @@ impl<'gc> E4XNode<'gc> {
                         Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
                         _ => unreachable!(),
                     };
-                    let child = E4XNode(GcCell::allocate(
+                    let node = E4XNode(GcCell::allocate(
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
@@ -219,16 +234,7 @@ impl<'gc> E4XNode<'gc> {
                         },
                     ));
 
-                    if !open_tags.is_empty() {
-                        open_tags
-                            .last_mut()
-                            .unwrap()
-                            .append_child(activation.context.gc_context, child)?;
-                    }
-
-                    if depth == 0 {
-                        top_level.push(child);
-                    }
+                    push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::Decl(bd) => {
                     return Err(Error::RustError(
