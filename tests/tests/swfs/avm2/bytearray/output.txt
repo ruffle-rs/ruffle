@@ -14,6 +14,12 @@ motesdata
 // ba1.writeMultiByte("次 滋 治 爾 璽 痔 磁 示 而 耳 自 蒔 辞 汐 鹿 ", "shift-jis");
 // ba1.readMultiByte(6, "shift-jis")
 次 滋 
+pos 8
+bytes available 0
+length 3
+pos 10
+bytes available 0
+length 3
 3
 5
 -10
