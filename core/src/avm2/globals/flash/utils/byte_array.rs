@@ -512,7 +512,7 @@ pub fn read_utf_bytes<'gc>(
                 activation.context.gc_context,
                 String::from_utf8_lossy(
                     bytearray
-                        .read_bytes_null_terminated(len as usize)
+                        .read_utf_bytes(len as usize)
                         .map_err(|e| e.to_avm(activation))?,
                 ),
             )
