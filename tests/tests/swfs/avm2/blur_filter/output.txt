@@ -1,0 +1,44 @@
+// test.filters
+[object BlurFilter],[object BlurFilter]
+
+// test.filters.length
+2
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].quality
+1
+
+// test.filters[1].blurX
+0
+
+// test.filters[1].blurY
+255
+
+// test.filters[1].quality
+2
+
+// test.filters = [new BlurFilter()];
+// test.filters[0].blurX
+4
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].quality
+1
+
+// test.filters = [new BlurFilter(-1.2, 3.4, 5)];
+// test.filters[0].blurX
+0
+
+// test.filters[0].blurY
+3.4
+
+// test.filters[0].quality
+5
+
