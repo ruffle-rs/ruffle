@@ -462,17 +462,13 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            write.domain.export_definition(
-                newtrait.name(),
-                *self,
-                activation.context.gc_context,
-            )?;
+            write
+                .domain
+                .export_definition(newtrait.name(), *self, activation.context.gc_context);
             if let TraitKind::Class { class, .. } = newtrait.kind() {
-                write.domain.export_class(
-                    newtrait.name(),
-                    *class,
-                    activation.context.gc_context,
-                )?;
+                write
+                    .domain
+                    .export_class(newtrait.name(), *class, activation.context.gc_context);
             }
 
             write.traits.push(newtrait);

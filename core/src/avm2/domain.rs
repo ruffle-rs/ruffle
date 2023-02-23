@@ -182,25 +182,18 @@ impl<'gc> Domain<'gc> {
 
     /// Export a definition from a script into the current application domain.
     ///
-    /// This returns an error if the name is already defined in the current or
-    /// any parent domains.
+    /// This does nothing if the definition already exists.
     pub fn export_definition(
         &mut self,
         name: QName<'gc>,
         script: Script<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) {
         if self.has_definition(name) {
-            return Err(format!(
-                "VerifyError: Attempted to redefine existing name {}",
-                name.local_name()
-            )
-            .into());
+            return;
         }
 
         self.0.write(mc).defs.insert(name, script);
-
-        Ok(())
     }
 
     pub fn export_class(
@@ -208,9 +201,8 @@ impl<'gc> Domain<'gc> {
         name: QName<'gc>,
         class: GcCell<'gc, Class<'gc>>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) {
         self.0.write(mc).classes.insert(name, class);
-        Ok(())
     }
 
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
