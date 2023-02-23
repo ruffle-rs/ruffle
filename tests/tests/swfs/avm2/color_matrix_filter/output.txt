@@ -1,0 +1,20 @@
+// test.filters
+[object ColorMatrixFilter],[object ColorMatrixFilter]
+
+// test.filters.length
+2
+
+// test.filters[0].matrix
+1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0
+
+// test.filters[1].matrix
+2.2726027965545654,-2.0219390392303467,0.8993363380432129,0,30.72499656677246,-0.4740176498889923,2.1155192852020264,-0.49150165915489197,0,30.725000381469727,-1.5421260595321655,-0.37957873940467834,3.071704626083374,0,30.724998474121094,0,0,0,1,0
+
+// test.filters = [new ColorMatrixFilter()];
+// test.filters[0].matrix
+1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0
+
+// test.filters = [new ColorMatrixFilter([])];
+// test.filters[0].matrix
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
