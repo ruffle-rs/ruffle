@@ -1,12 +1,11 @@
 //! `flash.display` namespace
 
 pub mod bitmap;
-pub mod bitmapdata;
-pub mod displayobject;
-pub mod displayobjectcontainer;
+pub mod bitmap_data;
+pub mod display_object;
+pub mod display_object_container;
 pub mod graphics;
-pub mod ibitmapdrawable;
-pub mod interactiveobject;
+pub mod interactive_object;
 pub mod loader;
 pub mod loaderinfo;
 pub mod movieclip;

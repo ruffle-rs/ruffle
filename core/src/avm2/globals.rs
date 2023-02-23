@@ -479,39 +479,18 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.display`
-    class(
-        flash::display::ibitmapdrawable::create_interface(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        display_object,
-        activation,
-        flash::display::displayobject::create_class(activation),
-        script
-    );
     avm2_system_class!(
         shape,
         activation,
         flash::display::shape::create_class(activation),
         script
     );
-    class(
-        flash::display::interactiveobject::create_class(activation),
-        script,
-        activation,
-    )?;
     avm2_system_class!(
         simplebutton,
         activation,
         flash::display::simplebutton::create_class(activation),
         script
     );
-    class(
-        flash::display::displayobjectcontainer::create_class(activation),
-        script,
-        activation,
-    )?;
     avm2_system_class!(
         sprite,
         activation,
@@ -534,24 +513,6 @@ pub fn load_player_globals<'gc>(
         loaderinfo,
         activation,
         flash::display::loaderinfo::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        stage,
-        activation,
-        flash::display::stage::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmap,
-        activation,
-        flash::display::bitmap::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmapdata,
-        activation,
-        flash::display::bitmapdata::create_class(activation),
         script
     );
 
@@ -673,8 +634,11 @@ fn load_playerglobal<'gc>(
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("flash.display", "Bitmap", bitmap),
+            ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
+            ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),

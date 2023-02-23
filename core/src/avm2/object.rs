@@ -58,7 +58,7 @@ mod vertex_buffer_3d_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
-pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDataObject};
+pub use crate::avm2::object::bitmapdata_object::{bitmap_data_allocator, BitmapDataObject};
 pub use crate::avm2::object::bytearray_object::{byte_array_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::context3d_object::Context3DObject;
