@@ -1,6 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -15,6 +16,7 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_render::filters::Filter;
 use std::str::FromStr;
 use swf::Twips;
 use swf::{BlendMode, Rectangle};
@@ -242,7 +244,12 @@ pub fn get_filters<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(ArrayObject::from_storage(activation, dobj.filters())?.into());
+        let array = dobj
+            .filters()
+            .into_iter()
+            .map(|f| f.as_avm2_object(activation))
+            .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
+        return Ok(ArrayObject::from_storage(activation, array)?.into());
     }
     Ok(ArrayObject::empty(activation)?.into())
 }
@@ -266,8 +273,7 @@ pub fn set_filters<'gc>(
         let new_filters = args.get(0).cloned().unwrap_or(Value::Undefined);
 
         if matches!(new_filters, Value::Undefined | Value::Null) {
-            let new_storage = ArrayStorage::new(0);
-            dobj.set_filters(activation.context.gc_context, new_storage);
+            dobj.set_filters(activation.context.gc_context, vec![]);
         } else {
             let new_filters = new_filters.coerce_to_object(activation)?;
 
@@ -278,6 +284,7 @@ pub fn set_filters<'gc>(
                     let filter_class = Multiname::new(filters_namespace, "BitmapFilter");
 
                     let filter_class_object = activation.resolve_class(&filter_class)?;
+                    let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
                     for filter in filters_storage.iter().flatten() {
                         if matches!(filter, Value::Undefined | Value::Null) {
@@ -288,11 +295,12 @@ pub fn set_filters<'gc>(
                             if !filter_object.is_of_type(filter_class_object, activation) {
                                 return build_argument_type_error(activation);
                             }
+
+                            filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                         }
                     }
-                    let new_storage = ArrayStorage::from_storage(filters_storage.iter().collect());
 
-                    dobj.set_filters(activation.context.gc_context, new_storage);
+                    dobj.set_filters(activation.context.gc_context, filter_vec);
                 }
             }
         }
