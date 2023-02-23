@@ -35,6 +35,7 @@ include "flash/display/BitmapData.as"
 include "flash/display/InteractiveObject.as"
 include "flash/display/DisplayObjectContainer.as"
 include "flash/display/Stage.as"
+include "flash/display/LoaderInfo.as"
 
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"

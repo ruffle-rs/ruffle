@@ -71,7 +71,7 @@ pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
 pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
 pub use crate::avm2::object::loaderinfo_object::{
-    loaderinfo_allocator, LoaderInfoObject, LoaderStream,
+    loader_info_allocator, LoaderInfoObject, LoaderStream,
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};

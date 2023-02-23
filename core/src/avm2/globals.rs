@@ -509,12 +509,6 @@ pub fn load_player_globals<'gc>(
         flash::display::graphics::create_class(activation),
         script
     );
-    avm2_system_class!(
-        loaderinfo,
-        activation,
-        flash::display::loaderinfo::create_class(activation),
-        script
-    );
 
     // package `flash.geom`
 
@@ -638,6 +632,7 @@ fn load_playerglobal<'gc>(
             ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
+            ("flash.display", "LoaderInfo", loaderinfo),
             ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),

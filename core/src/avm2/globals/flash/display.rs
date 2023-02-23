@@ -7,7 +7,7 @@ pub mod display_object_container;
 pub mod graphics;
 pub mod interactive_object;
 pub mod loader;
-pub mod loaderinfo;
+pub mod loader_info;
 pub mod movieclip;
 pub mod shape;
 pub mod simplebutton;

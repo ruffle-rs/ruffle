@@ -16,7 +16,7 @@ use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
 /// A class instance allocator that allocates LoaderInfo objects.
-pub fn loaderinfo_allocator<'gc>(
+pub fn loader_info_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
