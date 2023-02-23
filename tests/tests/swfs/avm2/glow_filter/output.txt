@@ -1,0 +1,128 @@
+// test.filters
+[object GlowFilter],[object GlowFilter],[object GlowFilter]
+
+// test.filters.length
+3
+
+// test.filters[0].alpha
+1
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].color
+16711680
+
+// test.filters[0].inner
+false
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].strength
+1
+
+// test.filters[1].alpha
+0.8980392156862745
+
+// test.filters[1].blurX
+0
+
+// test.filters[1].blurY
+255
+
+// test.filters[1].color
+16751001
+
+// test.filters[1].inner
+false
+
+// test.filters[1].knockout
+true
+
+// test.filters[1].quality
+2
+
+// test.filters[1].strength
+0.63671875
+
+// test.filters[2].alpha
+1
+
+// test.filters[2].blurX
+18
+
+// test.filters[2].blurY
+4
+
+// test.filters[2].color
+3342591
+
+// test.filters[2].inner
+true
+
+// test.filters[2].knockout
+false
+
+// test.filters[2].quality
+3
+
+// test.filters[2].strength
+0.4296875
+
+// test.filters = [new GlowFilter()];
+// test.filters[0].alpha
+1
+
+// test.filters[0].blurX
+6
+
+// test.filters[0].blurY
+6
+
+// test.filters[0].color
+16711680
+
+// test.filters[0].inner
+false
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].strength
+2
+
+// test.filters = [new GlowFilter(0xABCDEF, 0.2, -1, 2.3, 4, 2, true, true)];
+// test.filters[0].alpha
+0.2
+
+// test.filters[0].blurX
+0
+
+// test.filters[0].blurY
+2.3
+
+// test.filters[0].color
+11259375
+
+// test.filters[0].inner
+true
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+2
+
+// test.filters[0].strength
+4
+
