@@ -27,6 +27,11 @@ impl DropShadowFilter {
     pub fn num_passes(&self) -> u8 {
         (self.flags & DropShadowFilterFlags::PASSES).bits()
     }
+
+    #[inline]
+    pub fn hide_object(&self) -> bool {
+        !self.flags.contains(DropShadowFilterFlags::COMPOSITE_SOURCE)
+    }
 }
 
 bitflags! {

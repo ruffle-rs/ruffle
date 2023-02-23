@@ -274,13 +274,14 @@ impl From<&swf::DropShadowFilter> for DropShadowFilter {
         let inner = value.is_inner();
         let knockout = value.is_knockout();
         let quality = value.num_passes();
+        let hide_object = value.hide_object();
         DropShadowFilter {
             color: value.color.clone(),
             angle: value.angle.to_f32().to_degrees(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             distance: value.distance.to_f32(),
-            hide_object: false,
+            hide_object,
             inner,
             knockout,
             quality,
