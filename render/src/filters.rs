@@ -5,6 +5,7 @@ pub enum Filter {
     BevelFilter(BevelFilter),
     BlurFilter(BlurFilter),
     ColorMatrixFilter(ColorMatrixFilter),
+    ConvolutionFilter(ConvolutionFilter),
 }
 
 impl Default for Filter {
@@ -126,6 +127,50 @@ impl Default for ColorMatrixFilter {
                 0.0, 0.0, 1.0, 0.0, 0.0, // b
                 0.0, 0.0, 0.0, 1.0, 0.0, // a
             ],
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ConvolutionFilter {
+    pub bias: f32,
+    pub clamp: bool,
+    pub default_color: Color,
+    pub divisor: f32,
+    pub matrix: Vec<f32>,
+    pub matrix_x: u8,
+    pub matrix_y: u8,
+    pub preserve_alpha: bool,
+}
+
+impl From<swf::ConvolutionFilter> for ConvolutionFilter {
+    fn from(value: swf::ConvolutionFilter) -> Self {
+        let preserve_alpha = value.is_preserve_alpha();
+        let clamp = value.is_clamped();
+        Self {
+            bias: value.bias.to_f32(),
+            clamp,
+            default_color: value.default_color,
+            divisor: value.divisor.to_f32(),
+            matrix: value.matrix.iter().map(|v| v.to_f32()).collect(),
+            matrix_x: value.num_matrix_cols,
+            matrix_y: value.num_matrix_rows,
+            preserve_alpha,
+        }
+    }
+}
+
+impl Default for ConvolutionFilter {
+    fn default() -> Self {
+        Self {
+            bias: 0.0,
+            clamp: true,
+            default_color: Color::from_rgba(0),
+            divisor: 1.0,
+            matrix: vec![],
+            matrix_x: 0,
+            matrix_y: 0,
+            preserve_alpha: true,
         }
     }
 }
