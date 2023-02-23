@@ -4,6 +4,8 @@
         "module": "es2020",
         "moduleResolution": "node",
         "target": "es2017",
+        "rootDir": "src",
     },
     "include": ["src/**/*"],
+    "references": [{ "path": "../core" }],
 }

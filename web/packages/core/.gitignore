@@ -1,2 +1,5 @@
+# TypeDoc output.
 /docs/
-/tsd/
+
+# TypeScript incremental compilation information.
+/tsconfig.tsbuildinfo

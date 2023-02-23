@@ -1,9 +1,11 @@
 {
     "extends": "@tsconfig/strictest/tsconfig.json",
     "compilerOptions": {
+        "composite": true,
         "module": "es2020",
         "moduleResolution": "node",
         "target": "es2017",
+        "rootDir": "src",
         "outDir": "dist",
     },
     "include": ["src/**/*"],
