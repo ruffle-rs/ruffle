@@ -47,6 +47,11 @@ impl LehmerRng {
 #[collect(no_drop)]
 pub struct Color(i32);
 
+#[derive(Debug, Clone)]
+pub enum BitmapDataDrawError {
+    Unimplemented,
+}
+
 impl Color {
     pub fn blue(&self) -> u8 {
         (self.0 & 0xFF) as u8
@@ -1353,7 +1358,7 @@ impl<'gc> BitmapData<'gc> {
         clip_rect: Option<Rectangle<Twips>>,
         quality: StageQuality,
         context: &mut UpdateContext<'_, 'gc>,
-    ) {
+    ) -> Result<(), BitmapDataDrawError> {
         let bitmapdata_width = self.width();
         let bitmapdata_height = self.height();
 
@@ -1436,16 +1441,17 @@ impl<'gc> BitmapData<'gc> {
         );
 
         match image {
-            Some(sync_handle) => match self.dirty_state {
-                DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
-                DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
-                    "Called BitmapData.render while already dirty: {:?}",
-                    self.dirty_state
-                ),
-            },
-            None => {
-                tracing::warn!("BitmapData.draw: Not yet implemented")
+            Some(sync_handle) => {
+                match self.dirty_state {
+                    DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
+                    DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                        "Called BitmapData.render while already dirty: {:?}",
+                        self.dirty_state
+                    ),
+                }
+                Ok(())
             }
+            None => Err(BitmapDataDrawError::Unimplemented),
         }
     }
 }

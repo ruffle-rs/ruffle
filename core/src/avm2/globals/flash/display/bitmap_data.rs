@@ -7,8 +7,8 @@ use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
+use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::Bitmap;
@@ -794,7 +794,7 @@ pub fn draw<'gc>(
             return Err(format!("BitmapData.draw: unexpected source {source:?}").into());
         };
 
-        bitmap_data.draw(
+        match bitmap_data.draw(
             source,
             transform,
             smoothing,
@@ -802,7 +802,12 @@ pub fn draw<'gc>(
             clip_rect,
             activation.context.stage.quality(),
             &mut activation.context,
-        );
+        ) {
+            Ok(()) => {}
+            Err(BitmapDataDrawError::Unimplemented) => {
+                return Err("Render backend does not support BitmapData.draw".into());
+            }
+        }
     }
     Ok(Value::Undefined)
 }
@@ -892,7 +897,7 @@ pub fn draw_with_quality<'gc>(
             activation.context.stage.quality()
         };
 
-        bitmap_data.draw(
+        match bitmap_data.draw(
             source,
             transform,
             smoothing,
@@ -900,7 +905,12 @@ pub fn draw_with_quality<'gc>(
             clip_rect,
             quality,
             &mut activation.context,
-        );
+        ) {
+            Ok(()) => {}
+            Err(BitmapDataDrawError::Unimplemented) => {
+                return Err("Render backend does not support BitmapData.draw".into());
+            }
+        }
     }
     Ok(Value::Undefined)
 }

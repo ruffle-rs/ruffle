@@ -6,8 +6,8 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
-use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
+use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
@@ -551,7 +551,7 @@ pub fn draw<'gc>(
                 .bitmap_data_wrapper()
                 .overwrite_cpu_pixels_from_gpu(&mut activation.context);
             let mut write = bmd.write(activation.context.gc_context);
-            write.draw(
+            match write.draw(
                 source,
                 Transform {
                     matrix,
@@ -562,7 +562,15 @@ pub fn draw<'gc>(
                 None,
                 activation.context.stage.quality(),
                 &mut activation.context,
-            );
+            ) {
+                Ok(()) => {}
+                Err(BitmapDataDrawError::Unimplemented) => {
+                    avm_error!(
+                        activation,
+                        "Render backend does not support BitmapData.draw"
+                    );
+                }
+            }
             return Ok(Value::Undefined);
         }
     }
