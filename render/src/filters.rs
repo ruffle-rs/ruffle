@@ -82,7 +82,7 @@ impl From<&swf::BevelFilter> for BevelFilter {
             highlight_color: value.highlight_color.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
-            angle: value.angle.to_f32(),
+            angle: value.angle.to_f32().to_degrees(),
             distance: value.distance.to_f32(),
             strength: value.strength.to_f32(),
             bevel_type: if value.flags.contains(BevelFilterFlags::ON_TOP) {
@@ -276,7 +276,7 @@ impl From<&swf::DropShadowFilter> for DropShadowFilter {
         let quality = value.num_passes();
         DropShadowFilter {
             color: value.color.clone(),
-            angle: value.angle.to_f32(),
+            angle: value.angle.to_f32().to_degrees(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             distance: value.distance.to_f32(),
@@ -368,7 +368,7 @@ impl From<&swf::GradientFilter> for GradientBevelFilter {
             colors: value.colors.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
-            angle: value.angle.to_f32(),
+            angle: value.angle.to_f32().to_degrees(),
             distance: value.distance.to_f32(),
             strength: value.strength.to_f32(),
             bevel_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
@@ -420,7 +420,7 @@ impl From<&swf::GradientFilter> for GradientGlowFilter {
             colors: value.colors.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
-            angle: value.angle.to_f32(),
+            angle: value.angle.to_f32().to_degrees(),
             distance: value.distance.to_f32(),
             strength: value.strength.to_f32(),
             glow_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
