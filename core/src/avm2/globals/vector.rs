@@ -123,7 +123,7 @@ pub fn class_init<'gc>(
             int_vector_class.into(),
             class_class,
         );
-        domain.export_definition(int_vector_name, script, activation.context.gc_context)?;
+        domain.export_definition(int_vector_name, script, activation.context.gc_context);
 
         let uint_class = activation.avm2().classes().uint;
         let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
@@ -139,7 +139,7 @@ pub fn class_init<'gc>(
             uint_vector_class.into(),
             class_class,
         );
-        domain.export_definition(uint_vector_name, script, activation.context.gc_context)?;
+        domain.export_definition(uint_vector_name, script, activation.context.gc_context);
 
         let number_class = activation.avm2().classes().number;
         let number_vector_class = this.apply(activation, &[number_class.into()])?;
@@ -155,7 +155,7 @@ pub fn class_init<'gc>(
             number_vector_class.into(),
             class_class,
         );
-        domain.export_definition(number_vector_name, script, activation.context.gc_context)?;
+        domain.export_definition(number_vector_name, script, activation.context.gc_context);
 
         let object_vector_class = this.apply(activation, &[Value::Null])?;
         let object_vector_name = QName::new(vector_internal_namespace, "Vector$object");
@@ -170,7 +170,7 @@ pub fn class_init<'gc>(
             object_vector_class.into(),
             class_class,
         );
-        domain.export_definition(object_vector_name, script, activation.context.gc_context)?;
+        domain.export_definition(object_vector_name, script, activation.context.gc_context);
     }
 
     Ok(Value::Undefined)

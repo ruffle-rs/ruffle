@@ -218,7 +218,7 @@ fn function<'gc>(
     );
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
-    domain.export_definition(qname, script, mc)?;
+    domain.export_definition(qname, script, mc);
     global.install_const_late(mc, qname, as3fn, activation.avm2().classes().function);
 
     Ok(())
@@ -234,7 +234,7 @@ fn dynamic_class<'gc>(
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class
     class_class: ClassObject<'gc>,
-) -> Result<(), Error<'gc>> {
+) {
     let (_, mut global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
@@ -290,8 +290,8 @@ fn class<'gc>(
         class_object.into(),
         activation.avm2().classes().class,
     );
-    domain.export_definition(class_name, script, activation.context.gc_context)?;
-    domain.export_class(class_name, class_def, activation.context.gc_context)?;
+    domain.export_definition(class_name, script, activation.context.gc_context);
+    domain.export_class(class_name, class_def, activation.context.gc_context);
 
     Ok(class_object)
 }
@@ -397,9 +397,9 @@ pub fn load_player_globals<'gc>(
 
     // From this point, `globals` is safe to be modified
 
-    dynamic_class(mc, object_class, script, class_class)?;
-    dynamic_class(mc, fn_class, script, class_class)?;
-    dynamic_class(mc, class_class, script, class_class)?;
+    dynamic_class(mc, object_class, script, class_class);
+    dynamic_class(mc, fn_class, script, class_class);
+    dynamic_class(mc, class_class, script, class_class);
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
