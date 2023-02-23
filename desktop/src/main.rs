@@ -225,19 +225,28 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
 }
 
 fn get_max_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
-    let mut max_screen_size = (0, 0);
+    let mut min_x = 0;
+    let mut min_y = 0;
+    let mut max_x = 0;
+    let mut max_y = 0;
 
     for monitor in event_loop.available_monitors() {
         let size = monitor.size();
-        max_screen_size.0 += size.width;
-        max_screen_size.1 += size.height;
+        let position = monitor.position();
+        min_x = min_x.min(position.x);
+        min_y = min_y.min(position.y);
+        max_x = max_x.max(position.x + size.width as i32);
+        max_y = max_y.max(position.y + size.height as i32);
     }
 
-    if max_screen_size.0 <= 32 || max_screen_size.1 <= 32 {
-        return PhysicalSize::new(i16::MAX as u32, i16::MAX as u32);
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+
+    if width <= 32 || height <= 32 {
+        return (i16::MAX as u32, i16::MAX as u32).into();
     }
 
-    PhysicalSize::new(max_screen_size.0, max_screen_size.1)
+    (width, height).into()
 }
 
 struct App {
