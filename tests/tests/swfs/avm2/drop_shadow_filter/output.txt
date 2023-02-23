@@ -1,0 +1,173 @@
+// test.filters
+[object DropShadowFilter],[object DropShadowFilter],[object DropShadowFilter]
+
+// test.filters.length
+3
+
+// test.filters[0].alpha
+1
+
+// test.filters[0].angle
+44.999253346524966
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].color
+0
+
+// test.filters[0].distance
+5
+
+// test.filters[0].hideObject
+false
+
+// test.filters[0].inner
+false
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].strength
+1
+
+// test.filters[1].alpha
+0.7686274509803922
+
+// test.filters[1].angle
+48.999886388698194
+
+// test.filters[1].blurX
+0
+
+// test.filters[1].blurY
+255
+
+// test.filters[1].color
+0
+
+// test.filters[1].distance
+63
+
+// test.filters[1].hideObject
+false
+
+// test.filters[1].inner
+false
+
+// test.filters[1].knockout
+true
+
+// test.filters[1].quality
+2
+
+// test.filters[1].strength
+0.77734375
+
+// test.filters[2].alpha
+1
+
+// test.filters[2].angle
+44.999253346524966
+
+// test.filters[2].blurX
+37
+
+// test.filters[2].blurY
+12
+
+// test.filters[2].color
+65280
+
+// test.filters[2].distance
+23
+
+// test.filters[2].hideObject
+true
+
+// test.filters[2].inner
+true
+
+// test.filters[2].knockout
+false
+
+// test.filters[2].quality
+3
+
+// test.filters[2].strength
+0.30859375
+
+// test.filters = [new DropShadowFilter()];
+// test.filters[0].alpha
+1
+
+// test.filters[0].angle
+45
+
+// test.filters[0].blurX
+4
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].color
+0
+
+// test.filters[0].distance
+4
+
+// test.filters[0].hideObject
+false
+
+// test.filters[0].inner
+false
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].strength
+1
+
+// test.filters = [new DropShadowFilter(-3.2, 51.23, 0xABCDEF, 0.2, -1, 2.5, 1.2, 2, true, false, true)];
+// test.filters[0].alpha
+0.2
+
+// test.filters[0].angle
+51.23
+
+// test.filters[0].blurX
+0
+
+// test.filters[0].blurY
+2.5
+
+// test.filters[0].color
+11259375
+
+// test.filters[0].distance
+-3.2
+
+// test.filters[0].hideObject
+true
+
+// test.filters[0].inner
+true
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+2
+
+// test.filters[0].strength
+1.19921875
+
