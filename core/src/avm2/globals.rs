@@ -478,18 +478,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    class(
-        flash::events::ieventdispatcher::create_interface(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        eventdispatcher,
-        activation,
-        flash::events::eventdispatcher::create_class(activation),
-        script
-    );
-
     // package `flash.display`
     class(
         flash::display::ibitmapdrawable::create_interface(activation),
@@ -700,6 +688,7 @@ fn load_playerglobal<'gc>(
             ("flash.errors", "IOError", ioerror),
             ("flash.errors", "EOFError", eoferror),
             ("flash.events", "Event", event),
+            ("flash.events", "EventDispatcher", eventdispatcher),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
             ("flash.events", "KeyboardEvent", keyboardevent),

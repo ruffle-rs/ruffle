@@ -97,6 +97,7 @@ pub struct Avm2<'gc> {
     pub flash_display_internal: Namespace<'gc>,
     pub flash_utils_internal: Namespace<'gc>,
     pub flash_geom_internal: Namespace<'gc>,
+    pub flash_events_internal: Namespace<'gc>,
 
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -146,6 +147,7 @@ impl<'gc> Avm2<'gc> {
             flash_display_internal: Namespace::internal("flash.display", mc),
             flash_utils_internal: Namespace::internal("flash.utils", mc),
             flash_geom_internal: Namespace::internal("flash.geom", mc),
+            flash_events_internal: Namespace::internal("flash.events", mc),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),

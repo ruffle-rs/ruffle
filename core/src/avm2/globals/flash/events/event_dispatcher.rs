@@ -1,42 +1,11 @@
 //! `flash.events.EventDispatcher` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{DispatchObject, Object, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
-use gc_arena::GcCell;
-
-/// Implements `flash.events.EventDispatcher`'s instance constructor.
-pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut this) = this {
-        activation.super_init(this, &[])?;
-
-        let target = args.get(0).cloned().unwrap_or(Value::Null);
-
-        this.init_property(
-            &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
-            target,
-            activation,
-        )?;
-
-        //NOTE: We *cannot* initialize the dispatch list at construction time,
-        //since it is possible to gain access to some event dispatchers before
-        //their constructors run. Notably, `SimpleButton` does this
-    }
-
-    Ok(Value::Undefined)
-}
 
 /// Get an object's dispatch list, lazily initializing it if necessary.
 fn dispatch_list<'gc>(
@@ -44,14 +13,14 @@ fn dispatch_list<'gc>(
     mut this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
-        &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
+        &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
         activation,
     )? {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
             this.init_property(
-                &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
+                &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
                 dispatch_list.into(),
                 activation,
             )?;
@@ -183,7 +152,7 @@ pub fn will_trigger<'gc>(
 
         let target = this
             .get_property(
-                &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
+                &Multiname::new(activation.avm2().flash_events_internal, "_target"),
                 activation,
             )?
             .as_object()
@@ -216,15 +185,6 @@ pub fn dispatch_event<'gc>(
     }
 }
 
-/// Implements `flash.events.EventDispatcher`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `EventDispatcher.toString`.
 ///
 /// This is an undocumented function, but MX will VerifyError if this isn't
@@ -240,57 +200,4 @@ pub fn to_string<'gc>(
         .get_property(&name, activation)?
         .as_callable(activation, Some(&name), Some(object_proto))?
         .call(this, args, activation)
-}
-
-/// Construct `EventDispatcher`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.events", mc), "EventDispatcher"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<EventDispatcher instance initializer>", mc),
-        Method::from_builtin(class_init, "<EventDispatcher class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-
-    write.implements(Multiname::new(
-        Namespace::package("flash.events", mc),
-        "IEventDispatcher",
-    ));
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("addEventListener", add_event_listener),
-        ("removeEventListener", remove_event_listener),
-        ("hasEventListener", has_event_listener),
-        ("willTrigger", will_trigger),
-        ("dispatchEvent", dispatch_event),
-        ("toString", to_string),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-    write.define_builtin_instance_methods(
-        mc,
-        Namespace::package("flash.events:IEventDispatcher", mc),
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(activation.avm2().ruffle_private_namespace, "target"),
-        Multiname::new(activation.avm2().public_namespace, "Object"),
-        None,
-    ));
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
-        Multiname::new(activation.avm2().public_namespace, "Object"),
-        None,
-    ));
-
-    class
 }

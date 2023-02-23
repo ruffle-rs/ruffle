@@ -24,6 +24,10 @@ include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
+
+include "flash/events/IEventDispatcher.as"
+include "flash/events/EventDispatcher.as"
+
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
 include "flash/display/BitmapEncodingColorSpace.as"
