@@ -1,25 +1,19 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject, TextFormatObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::GcCell;
 use std::sync::Arc;
 use swf::Color;
 
-/// Implements `flash.text.TextField`'s instance constructor.
-pub fn instance_init<'gc>(
+/// Implements `flash.text.TextField`'s `init` method, which is called from the constructor.
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -38,16 +32,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.text.TextField`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-pub fn autosize<'gc>(
+pub fn get_auto_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -67,7 +52,7 @@ pub fn autosize<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn set_autosize<'gc>(
+pub fn set_auto_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -98,7 +83,7 @@ pub fn set_autosize<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn background<'gc>(
+pub fn get_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -133,7 +118,7 @@ pub fn set_background<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn background_color<'gc>(
+pub fn get_background_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -168,7 +153,7 @@ pub fn set_background_color<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn border<'gc>(
+pub fn get_border<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -203,7 +188,7 @@ pub fn set_border<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn border_color<'gc>(
+pub fn get_border_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -238,7 +223,7 @@ pub fn set_border_color<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn default_text_format<'gc>(
+pub fn get_default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -274,7 +259,7 @@ pub fn set_default_text_format<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn display_as_password<'gc>(
+pub fn get_display_as_password<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -310,7 +295,7 @@ pub fn set_display_as_password<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn embed_fonts<'gc>(
+pub fn get_embed_fonts<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -346,7 +331,7 @@ pub fn set_embed_fonts<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn html_text<'gc>(
+pub fn get_html_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -382,7 +367,7 @@ pub fn set_html_text<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn length<'gc>(
+pub fn get_length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -397,7 +382,7 @@ pub fn length<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn multiline<'gc>(
+pub fn get_multiline<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -433,7 +418,7 @@ pub fn set_multiline<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn selectable<'gc>(
+pub fn get_selectable<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -469,7 +454,7 @@ pub fn set_selectable<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn text<'gc>(
+pub fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -505,7 +490,7 @@ pub fn set_text<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn text_color<'gc>(
+pub fn get_text_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -555,7 +540,7 @@ pub fn set_text_color<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn text_height<'gc>(
+pub fn get_text_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -571,7 +556,7 @@ pub fn text_height<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn text_width<'gc>(
+pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -632,7 +617,7 @@ pub fn set_type<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn word_wrap<'gc>(
+pub fn get_word_wrap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -877,7 +862,7 @@ pub fn set_text_format<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn anti_alias_type<'gc>(
+pub fn get_anti_alias_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -927,7 +912,7 @@ pub fn set_anti_alias_type<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn grid_fit_type<'gc>(
+pub fn get_grid_fit_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -983,7 +968,7 @@ pub fn set_grid_fit_type<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn thickness<'gc>(
+pub fn get_thickness<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1026,7 +1011,7 @@ pub fn set_thickness<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn sharpness<'gc>(
+pub fn get_sharpness<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1069,7 +1054,7 @@ pub fn set_sharpness<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn num_lines<'gc>(
+pub fn get_num_lines<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1123,7 +1108,7 @@ pub fn get_line_metrics<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn bottom_scroll_v<'gc>(
+pub fn get_bottom_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1138,7 +1123,7 @@ pub fn bottom_scroll_v<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn max_scroll_v<'gc>(
+pub fn get_max_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1153,7 +1138,7 @@ pub fn max_scroll_v<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn max_scroll_h<'gc>(
+pub fn get_max_scroll_h<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1168,7 +1153,7 @@ pub fn max_scroll_h<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn scroll_v<'gc>(
+pub fn get_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1203,7 +1188,7 @@ pub fn set_scroll_v<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn scroll_h<'gc>(
+pub fn get_scroll_h<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1242,7 +1227,7 @@ pub fn set_scroll_h<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn max_chars<'gc>(
+pub fn get_max_chars<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1277,7 +1262,7 @@ pub fn set_max_chars<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn restrict<'gc>(
+pub fn get_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1293,98 +1278,4 @@ pub fn set_restrict<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.text.TextField", "restrict");
     Ok(Value::Undefined)
-}
-
-/// Construct `TextField`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.text", mc), "TextField"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "InteractiveObject",
-        )),
-        Method::from_builtin(instance_init, "<TextField instance initializer>", mc),
-        Method::from_builtin(class_init, "<TextField class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("autoSize", Some(autosize), Some(set_autosize)),
-        ("background", Some(background), Some(set_background)),
-        (
-            "backgroundColor",
-            Some(background_color),
-            Some(set_background_color),
-        ),
-        ("border", Some(border), Some(set_border)),
-        ("borderColor", Some(border_color), Some(set_border_color)),
-        ("bottomScrollV", Some(bottom_scroll_v), None),
-        (
-            "defaultTextFormat",
-            Some(default_text_format),
-            Some(set_default_text_format),
-        ),
-        (
-            "displayAsPassword",
-            Some(display_as_password),
-            Some(set_display_as_password),
-        ),
-        ("embedFonts", Some(embed_fonts), Some(set_embed_fonts)),
-        ("htmlText", Some(html_text), Some(set_html_text)),
-        ("length", Some(length), None),
-        ("maxScrollH", Some(max_scroll_h), None),
-        ("maxScrollV", Some(max_scroll_v), None),
-        ("maxChars", Some(max_chars), Some(set_max_chars)),
-        ("multiline", Some(multiline), Some(set_multiline)),
-        ("restrict", Some(restrict), Some(set_restrict)),
-        ("scrollH", Some(scroll_h), Some(set_scroll_h)),
-        ("scrollV", Some(scroll_v), Some(set_scroll_v)),
-        ("selectable", Some(selectable), Some(set_selectable)),
-        ("text", Some(text), Some(set_text)),
-        ("textColor", Some(text_color), Some(set_text_color)),
-        ("textHeight", Some(text_height), None),
-        ("textWidth", Some(text_width), None),
-        ("type", Some(get_type), Some(set_type)),
-        ("wordWrap", Some(word_wrap), Some(set_word_wrap)),
-        (
-            "antiAliasType",
-            Some(anti_alias_type),
-            Some(set_anti_alias_type),
-        ),
-        ("gridFitType", Some(grid_fit_type), Some(set_grid_fit_type)),
-        ("thickness", Some(thickness), Some(set_thickness)),
-        ("sharpness", Some(sharpness), Some(set_sharpness)),
-        ("numLines", Some(num_lines), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("appendText", append_text),
-        ("getTextFormat", get_text_format),
-        ("replaceSelectedText", replace_selected_text),
-        ("replaceText", replace_text),
-        ("setSelection", set_selection),
-        ("setTextFormat", set_text_format),
-        ("getLineMetrics", get_line_metrics),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

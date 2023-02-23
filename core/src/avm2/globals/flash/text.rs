@@ -2,5 +2,5 @@
 
 pub mod font;
 pub mod static_text;
-pub mod textfield;
+pub mod text_field;
 pub mod textformat;
