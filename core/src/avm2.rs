@@ -92,7 +92,6 @@ pub struct Avm2<'gc> {
     pub vector_public_namespace: Namespace<'gc>,
     pub vector_internal_namespace: Namespace<'gc>,
     pub proxy_namespace: Namespace<'gc>,
-    pub ruffle_private_namespace: Namespace<'gc>,
     // these are required to facilitate shared access between Rust and AS
     pub flash_display_internal: Namespace<'gc>,
     pub flash_utils_internal: Namespace<'gc>,
@@ -142,7 +141,6 @@ impl<'gc> Avm2<'gc> {
                 "http://www.adobe.com/2006/actionscript/flash/proxy",
                 mc,
             ),
-            ruffle_private_namespace: Namespace::private("", mc),
             // these are required to facilitate shared access between Rust and AS
             flash_display_internal: Namespace::internal("flash.display", mc),
             flash_utils_internal: Namespace::internal("flash.utils", mc),
