@@ -36,6 +36,7 @@ use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlic
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_render::filters::Filter;
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
@@ -1540,7 +1541,13 @@ impl<'gc> MovieClip<'gc> {
                                 .collect(),
                         );
                     }
-                    // TODO: Missing PlaceObject properties: amf_data, filters
+                    if let Some(filters) = &place_object.filters {
+                        child.set_filters(
+                            context.gc_context,
+                            filters.iter().map(Filter::from).collect(),
+                        );
+                    }
+                    // TODO: Missing PlaceObject property: amf_data
 
                     // Run first frame.
                     child.post_instantiation(context, None, Instantiator::Movie, false);

@@ -14,6 +14,37 @@ pub enum Filter {
     GradientGlowFilter(GradientGlowFilter),
 }
 
+impl From<&swf::Filter> for Filter {
+    fn from(value: &swf::Filter) -> Self {
+        match value {
+            swf::Filter::DropShadowFilter(filter) => {
+                Filter::DropShadowFilter(DropShadowFilter::from(filter.as_ref()))
+            }
+            swf::Filter::BlurFilter(filter) => {
+                Filter::BlurFilter(BlurFilter::from(filter.as_ref()))
+            }
+            swf::Filter::GlowFilter(filter) => {
+                Filter::GlowFilter(GlowFilter::from(filter.as_ref()))
+            }
+            swf::Filter::BevelFilter(filter) => {
+                Filter::BevelFilter(BevelFilter::from(filter.as_ref()))
+            }
+            swf::Filter::GradientGlowFilter(filter) => {
+                Filter::GradientGlowFilter(GradientGlowFilter::from(filter.as_ref()))
+            }
+            swf::Filter::ConvolutionFilter(filter) => {
+                Filter::ConvolutionFilter(ConvolutionFilter::from(filter.as_ref()))
+            }
+            swf::Filter::ColorMatrixFilter(filter) => {
+                Filter::ColorMatrixFilter(ColorMatrixFilter::from(filter.as_ref()))
+            }
+            swf::Filter::GradientBevelFilter(filter) => {
+                Filter::GradientBevelFilter(GradientBevelFilter::from(filter.as_ref()))
+            }
+        }
+    }
+}
+
 impl Default for Filter {
     fn default() -> Self {
         // A default colormatrix is a filter that essentially does nothing,
@@ -43,12 +74,12 @@ pub struct BevelFilter {
     pub quality: u8,
 }
 
-impl From<swf::BevelFilter> for BevelFilter {
-    fn from(value: swf::BevelFilter) -> Self {
+impl From<&swf::BevelFilter> for BevelFilter {
+    fn from(value: &swf::BevelFilter) -> Self {
         let quality = value.num_passes();
         Self {
-            shadow_color: value.shadow_color,
-            highlight_color: value.highlight_color,
+            shadow_color: value.shadow_color.clone(),
+            highlight_color: value.highlight_color.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
@@ -91,8 +122,8 @@ pub struct BlurFilter {
     pub quality: u8,
 }
 
-impl From<swf::BlurFilter> for BlurFilter {
-    fn from(value: swf::BlurFilter) -> Self {
+impl From<&swf::BlurFilter> for BlurFilter {
+    fn from(value: &swf::BlurFilter) -> Self {
         Self {
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
@@ -116,8 +147,8 @@ pub struct ColorMatrixFilter {
     pub matrix: [f32; 20],
 }
 
-impl From<swf::ColorMatrixFilter> for ColorMatrixFilter {
-    fn from(value: swf::ColorMatrixFilter) -> Self {
+impl From<&swf::ColorMatrixFilter> for ColorMatrixFilter {
+    fn from(value: &swf::ColorMatrixFilter) -> Self {
         Self {
             matrix: value.matrix.map(Fixed16::to_f32),
         }
@@ -149,14 +180,14 @@ pub struct ConvolutionFilter {
     pub preserve_alpha: bool,
 }
 
-impl From<swf::ConvolutionFilter> for ConvolutionFilter {
-    fn from(value: swf::ConvolutionFilter) -> Self {
+impl From<&swf::ConvolutionFilter> for ConvolutionFilter {
+    fn from(value: &swf::ConvolutionFilter) -> Self {
         let preserve_alpha = value.is_preserve_alpha();
         let clamp = value.is_clamped();
         Self {
             bias: value.bias.to_f32(),
             clamp,
-            default_color: value.default_color,
+            default_color: value.default_color.clone(),
             divisor: value.divisor.to_f32(),
             matrix: value.matrix.iter().map(|v| v.to_f32()).collect(),
             matrix_x: value.num_matrix_cols,
@@ -238,13 +269,13 @@ pub struct DropShadowFilter {
     pub strength: u8,
 }
 
-impl From<swf::DropShadowFilter> for DropShadowFilter {
-    fn from(value: swf::DropShadowFilter) -> Self {
+impl From<&swf::DropShadowFilter> for DropShadowFilter {
+    fn from(value: &swf::DropShadowFilter) -> Self {
         let inner = value.is_inner();
         let knockout = value.is_knockout();
         let quality = value.num_passes();
         DropShadowFilter {
-            color: value.color,
+            color: value.color.clone(),
             angle: value.angle.to_f32(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
@@ -286,13 +317,13 @@ pub struct GlowFilter {
     pub strength: u8,
 }
 
-impl From<swf::GlowFilter> for GlowFilter {
-    fn from(value: swf::GlowFilter) -> Self {
+impl From<&swf::GlowFilter> for GlowFilter {
+    fn from(value: &swf::GlowFilter) -> Self {
         let inner = value.is_inner();
         let knockout = value.is_knockout();
         let quality = value.num_passes();
         GlowFilter {
-            color: value.color,
+            color: value.color.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             inner,
@@ -330,11 +361,11 @@ pub struct GradientBevelFilter {
     pub quality: u8,
 }
 
-impl From<swf::GradientFilter> for GradientBevelFilter {
-    fn from(value: swf::GradientFilter) -> Self {
+impl From<&swf::GradientFilter> for GradientBevelFilter {
+    fn from(value: &swf::GradientFilter) -> Self {
         let quality = value.num_passes();
         Self {
-            colors: value.colors,
+            colors: value.colors.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
@@ -382,11 +413,11 @@ pub struct GradientGlowFilter {
     pub quality: u8,
 }
 
-impl From<swf::GradientFilter> for GradientGlowFilter {
-    fn from(value: swf::GradientFilter) -> Self {
+impl From<&swf::GradientFilter> for GradientGlowFilter {
+    fn from(value: &swf::GradientFilter) -> Self {
         let quality = value.num_passes();
         Self {
-            colors: value.colors,
+            colors: value.colors.clone(),
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
