@@ -488,6 +488,28 @@ pub fn load_player_globals<'gc>(
 
     // package `flash.geom`
 
+    // package `flash.text`
+    avm2_system_class!(
+        textformat,
+        activation,
+        flash::text::textformat::create_class(activation),
+        script
+    );
+    class(
+        flash::text::font::create_class(activation),
+        script,
+        activation,
+    )?;
+
+    // Inside this call, the macro `avm2_system_classes_playerglobal`
+    // triggers classloading. Therefore, we run `load_playerglobal`
+    // relative late, so that it can access classes defined before
+    // this call.
+    load_playerglobal(activation, domain)?;
+
+    // Everything after the `load_playerglobal` call needs classes
+    // defined in the playerglobal swf.
+
     // package `flash.media`
     class(
         flash::media::sound::create_class(activation),
@@ -511,25 +533,6 @@ pub fn load_player_globals<'gc>(
         flash::media::soundchannel::create_class(activation),
         script
     );
-
-    // package `flash.text`
-    avm2_system_class!(
-        textformat,
-        activation,
-        flash::text::textformat::create_class(activation),
-        script
-    );
-    class(
-        flash::text::font::create_class(activation),
-        script,
-        activation,
-    )?;
-
-    // Inside this call, the macro `avm2_system_classes_playerglobal`
-    // triggers classloading. Therefore, we run `load_playerglobal`
-    // relative late, so that it can access classes defined before
-    // this call.
-    load_playerglobal(activation, domain)?;
 
     Ok(())
 }
