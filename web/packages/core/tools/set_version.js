@@ -49,7 +49,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
 }
 
 const options = {
-    files: "./pkg/**",
+    files: "dist/**",
     from: [
         /%VERSION_NUMBER%/g,
         /%VERSION_NAME%/g,

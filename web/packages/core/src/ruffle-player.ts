@@ -1,4 +1,4 @@
-import type { Ruffle } from "../pkg/ruffle_web";
+import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
