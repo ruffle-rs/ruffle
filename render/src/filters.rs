@@ -234,7 +234,7 @@ pub struct DisplacementMapFilter {
     pub component_x: u8,
     pub component_y: u8,
     pub map_bitmap: Option<BitmapHandle>,
-    pub map_point: (u32, u32),
+    pub map_point: (i32, i32),
     pub mode: DisplacementMapFilterMode,
     pub scale_x: f32,
     pub scale_y: f32,

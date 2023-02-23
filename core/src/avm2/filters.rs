@@ -361,10 +361,10 @@ impl FilterAvm2Ext for DisplacementMapFilter {
                 (
                     point
                         .get_public_property("x", activation)?
-                        .coerce_to_u32(activation)?,
+                        .coerce_to_i32(activation)?,
                     point
                         .get_public_property("y", activation)?
-                        .coerce_to_u32(activation)?,
+                        .coerce_to_i32(activation)?,
                 )
             } else {
                 (0, 0)
