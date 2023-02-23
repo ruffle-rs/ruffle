@@ -1,6 +1,6 @@
 use ruffle_render::filters::{
     BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter,
-    DisplacementMapFilter, DisplacementMapFilterMode, DropShadowFilter, Filter,
+    DisplacementMapFilter, DisplacementMapFilterMode, DropShadowFilter, Filter, GlowFilter,
 };
 use swf::Color;
 
@@ -54,6 +54,11 @@ impl FilterAvm2Ext for Filter {
             return DropShadowFilter::from_avm2_object(activation, object);
         }
 
+        let glow_filter = activation.avm2().classes().glowfilter;
+        if object.is_of_type(glow_filter, activation) {
+            return GlowFilter::from_avm2_object(activation, object);
+        }
+
         Err(Error::AvmError(type_error(
             activation,
             &format!(
@@ -74,6 +79,7 @@ impl FilterAvm2Ext for Filter {
             Filter::ConvolutionFilter(filter) => filter.as_avm2_object(activation),
             Filter::DisplacementMapFilter(filter) => filter.as_avm2_object(activation),
             Filter::DropShadowFilter(filter) => filter.as_avm2_object(activation),
+            Filter::GlowFilter(filter) => filter.as_avm2_object(activation),
         }
     }
 }
@@ -505,6 +511,66 @@ impl FilterAvm2Ext for DropShadowFilter {
                 self.inner.into(),
                 self.knockout.into(),
                 self.hide_object.into(),
+            ],
+        )
+    }
+}
+
+impl FilterAvm2Ext for GlowFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let alpha = object
+            .get_public_property("alpha", activation)?
+            .coerce_to_number(activation)?;
+        let blur_x = object
+            .get_public_property("blurX", activation)?
+            .coerce_to_number(activation)?;
+        let blur_y = object
+            .get_public_property("blurY", activation)?
+            .coerce_to_number(activation)?;
+        let color = object
+            .get_public_property("color", activation)?
+            .coerce_to_u32(activation)?;
+        let inner = object
+            .get_public_property("inner", activation)?
+            .coerce_to_boolean();
+        let knockout = object
+            .get_public_property("knockout", activation)?
+            .coerce_to_boolean();
+        let quality = object
+            .get_public_property("quality", activation)?
+            .coerce_to_u32(activation)?;
+        let strength = object
+            .get_public_property("strength", activation)?
+            .coerce_to_u32(activation)?;
+        Ok(Filter::GlowFilter(GlowFilter {
+            color: Color::from_rgb(color, (alpha * 255.0) as u8),
+            blur_x: blur_x as f32,
+            blur_y: blur_y as f32,
+            inner,
+            knockout,
+            strength: strength.clamp(0, 255) as u8,
+            quality: quality.clamp(1, 15) as u8,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        activation.avm2().classes().glowfilter.construct(
+            activation,
+            &[
+                self.color.to_rgb().into(),
+                (f64::from(self.color.a) / 255.0).into(),
+                self.blur_x.into(),
+                self.blur_y.into(),
+                self.strength.into(),
+                self.quality.into(),
+                self.inner.into(),
+                self.knockout.into(),
             ],
         )
     }

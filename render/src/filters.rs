@@ -9,6 +9,7 @@ pub enum Filter {
     ConvolutionFilter(ConvolutionFilter),
     DisplacementMapFilter(DisplacementMapFilter),
     DropShadowFilter(DropShadowFilter),
+    GlowFilter(GlowFilter),
 }
 
 impl Default for Filter {
@@ -268,6 +269,48 @@ impl Default for DropShadowFilter {
             knockout: false,
             quality: 1,
             strength: 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GlowFilter {
+    pub color: Color,
+    pub blur_x: f32,
+    pub blur_y: f32,
+    pub inner: bool,
+    pub knockout: bool,
+    pub quality: u8,
+    pub strength: u8,
+}
+
+impl From<swf::GlowFilter> for GlowFilter {
+    fn from(value: swf::GlowFilter) -> Self {
+        let inner = value.is_inner();
+        let knockout = value.is_knockout();
+        let quality = value.num_passes();
+        GlowFilter {
+            color: value.color,
+            blur_x: value.blur_x.to_f32(),
+            blur_y: value.blur_y.to_f32(),
+            inner,
+            knockout,
+            quality,
+            strength: (value.strength.to_f32() * 255.0) as u8,
+        }
+    }
+}
+
+impl Default for GlowFilter {
+    fn default() -> Self {
+        Self {
+            color: Color::from_rgba(0xFF0000FF),
+            blur_x: 6.0,
+            blur_y: 6.0,
+            inner: false,
+            knockout: false,
+            quality: 1,
+            strength: 2,
         }
     }
 }
