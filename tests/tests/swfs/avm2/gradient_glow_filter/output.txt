@@ -1,0 +1,207 @@
+// test.filters
+[object GradientGlowFilter],[object GradientGlowFilter],[object GradientGlowFilter]
+
+// test.filters.length
+3
+
+// test.filters[0].alphas
+0,1
+
+// test.filters[0].angle
+44.999253346524966
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].colors
+16777215,0
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].ratios
+0,255
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+outer
+
+// test.filters[1].alphas
+0,0.6,1
+
+// test.filters[1].angle
+11.9992763338784
+
+// test.filters[1].blurX
+0
+
+// test.filters[1].blurY
+22
+
+// test.filters[1].colors
+16777215,16711935,0
+
+// test.filters[1].distance
+30
+
+// test.filters[1].knockout
+false
+
+// test.filters[1].quality
+1
+
+// test.filters[1].ratios
+0,91,255
+
+// test.filters[1].strength
+0.52734375
+
+// test.filters[1].type
+full
+
+// test.filters[2].alphas
+0,1
+
+// test.filters[2].angle
+359.9992723574823
+
+// test.filters[2].blurX
+12
+
+// test.filters[2].blurY
+9
+
+// test.filters[2].colors
+16777215,0
+
+// test.filters[2].distance
+2
+
+// test.filters[2].knockout
+true
+
+// test.filters[2].quality
+2
+
+// test.filters[2].ratios
+0,255
+
+// test.filters[2].strength
+0.70703125
+
+// test.filters[2].type
+inner
+
+// test.filters = [new GradientGlowFilter()];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+45
+
+// test.filters[0].blurX
+4
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+4
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
+// test.filters = [new GradientGlowFilter(5, 2, [], 3, 4, 1, 2, "outer", true)];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+2
+
+// test.filters[0].blurX
+3
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+2
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+outer
+
+// test.filters = [new GradientGlowFilter(5, 2, [], 3, 4, 1, 2, "inner", true)];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+2
+
+// test.filters[0].blurX
+3
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+2
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
