@@ -4,7 +4,7 @@
         "module": "es2020",
         "moduleResolution": "node",
         "target": "es2017",
-        "outDir": "pkg",
+        "outDir": "dist",
     },
     "include": ["src/**/*"],
 }
