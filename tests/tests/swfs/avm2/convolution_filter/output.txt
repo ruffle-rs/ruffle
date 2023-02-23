@@ -1,0 +1,90 @@
+// test.filters
+
+
+// test.filters.length
+0
+
+// test.filters = [new ConvolutionFilter()];
+// test.filters[0].alpha
+0
+
+// test.filters[0].bias
+0
+
+// test.filters[0].clamp
+true
+
+// test.filters[0].color
+0
+
+// test.filters[0].divisor
+1
+
+// test.filters[0].matrix
+
+
+// test.filters[0].matrixX
+0
+
+// test.filters[0].matrixY
+0
+
+// test.filters[0].preserveAlpha
+true
+
+// test.filters = [new ConvolutionFilter(2, 2, [], 1.5, 0.1, false, false, 0xABCDEF, 0.2)];
+// test.filters[0].alpha
+0.2
+
+// test.filters[0].bias
+0.10000000149011612
+
+// test.filters[0].clamp
+false
+
+// test.filters[0].color
+11259375
+
+// test.filters[0].divisor
+1.5
+
+// test.filters[0].matrix
+0,0,0,0
+
+// test.filters[0].matrixX
+2
+
+// test.filters[0].matrixY
+2
+
+// test.filters[0].preserveAlpha
+false
+
+// test.filters = [new ConvolutionFilter(3, 4, [], -1.5, -0.1, true, true, 0xFEDCBA, -1)];
+// test.filters[0].alpha
+0
+
+// test.filters[0].bias
+-0.10000000149011612
+
+// test.filters[0].clamp
+true
+
+// test.filters[0].color
+16702650
+
+// test.filters[0].divisor
+-1.5
+
+// test.filters[0].matrix
+0,0,0,0,0,0,0,0,0,0,0,0
+
+// test.filters[0].matrixX
+3
+
+// test.filters[0].matrixY
+4
+
+// test.filters[0].preserveAlpha
+true
+

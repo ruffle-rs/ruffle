@@ -301,6 +301,7 @@ impl FilterAvm2Ext for ConvolutionFilter {
         let preserve_alpha = object
             .get_public_property("preserveAlpha", activation)?
             .coerce_to_boolean();
+        matrix.resize((matrix_x * matrix_y) as usize, 0.0);
         Ok(Filter::ConvolutionFilter(ConvolutionFilter {
             bias: bias as f32,
             clamp,
