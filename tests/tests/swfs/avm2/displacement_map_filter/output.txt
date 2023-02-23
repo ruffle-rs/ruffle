@@ -1,0 +1,62 @@
+// test.filters
+
+
+// test.filters.length
+0
+
+// test.filters = [new DisplacementMapFilter()];
+// test.filters[0].alpha
+0
+
+// test.filters[0].color
+0
+
+// test.filters[0].componentX
+0
+
+// test.filters[0].componentY
+0
+
+// test.filters[0].mapBitmap
+null
+
+// test.filters[0].mapPoint
+(x=0, y=0)
+
+// test.filters[0].mode
+wrap
+
+// test.filters[0].scaleX
+0
+
+// test.filters[0].scaleY
+0
+
+// test.filters = [new DisplacementMapFilter([])];
+// test.filters[0].alpha
+0.2
+
+// test.filters[0].color
+11259375
+
+// test.filters[0].componentX
+3
+
+// test.filters[0].componentY
+4
+
+// test.filters[0].mapBitmap
+null
+
+// test.filters[0].mapPoint
+(x=1, y=-2)
+
+// test.filters[0].mode
+ignore
+
+// test.filters[0].scaleX
+1.100000023841858
+
+// test.filters[0].scaleY
+2.200000047683716
+
