@@ -141,8 +141,8 @@ impl FilterAvm2Ext for BevelFilter {
         Ok(Filter::BevelFilter(BevelFilter {
             shadow_color: Color::from_rgb(shadow_color, (shadow_alpha * 255.0) as u8),
             highlight_color: Color::from_rgb(highlight_color, (highlight_alpha * 255.0) as u8),
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             angle: angle as f32,
             distance: distance as f32,
             strength: strength.clamp(0.0, 255.0) as f32,
@@ -202,8 +202,8 @@ impl FilterAvm2Ext for BlurFilter {
             .get_public_property("quality", activation)?
             .coerce_to_u32(activation)?;
         Ok(Filter::BlurFilter(BlurFilter {
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             quality: quality.clamp(1, 15) as u8,
         }))
     }
@@ -495,8 +495,8 @@ impl FilterAvm2Ext for DropShadowFilter {
         Ok(Filter::DropShadowFilter(DropShadowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
             angle: angle as f32,
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             distance: distance as f32,
             hide_object,
             inner,
@@ -560,8 +560,8 @@ impl FilterAvm2Ext for GlowFilter {
             .coerce_to_number(activation)?;
         Ok(Filter::GlowFilter(GlowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             inner,
             knockout,
             strength: strength.clamp(0.0, 255.0) as f32,
@@ -621,8 +621,8 @@ impl FilterAvm2Ext for GradientBevelFilter {
         let colors = get_gradient_colors(activation, object)?;
         Ok(Filter::GradientBevelFilter(GradientBevelFilter {
             colors,
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             angle: angle as f32,
             distance: distance as f32,
             strength: strength.clamp(0.0, 255.0) as f32,
@@ -716,8 +716,8 @@ impl FilterAvm2Ext for GradientGlowFilter {
         let colors = get_gradient_colors(activation, object)?;
         Ok(Filter::GradientGlowFilter(GradientGlowFilter {
             colors,
-            blur_x: blur_x as f32,
-            blur_y: blur_y as f32,
+            blur_x: blur_x.max(0.0) as f32,
+            blur_y: blur_y.max(0.0) as f32,
             angle: angle as f32,
             distance: distance as f32,
             strength: strength.clamp(0.0, 255.0) as f32,
