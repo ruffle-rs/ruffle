@@ -1,6 +1,8 @@
 use crate::avm2::error::type_error;
 use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
-use ruffle_render::filters::{BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, Filter};
+use ruffle_render::filters::{
+    BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter, Filter,
+};
 use swf::Color;
 
 pub trait FilterAvm2Ext {
@@ -25,14 +27,19 @@ impl FilterAvm2Ext for Filter {
             return BevelFilter::from_avm2_object(activation, object);
         }
 
+        let blur_filter = activation.avm2().classes().blurfilter;
+        if object.is_of_type(blur_filter, activation) {
+            return BlurFilter::from_avm2_object(activation, object);
+        }
+
         let color_matrix_filter = activation.avm2().classes().colormatrixfilter;
         if object.is_of_type(color_matrix_filter, activation) {
             return ColorMatrixFilter::from_avm2_object(activation, object);
         }
 
-        let blur_filter = activation.avm2().classes().blurfilter;
-        if object.is_of_type(blur_filter, activation) {
-            return BlurFilter::from_avm2_object(activation, object);
+        let convolution_filter = activation.avm2().classes().convolutionfilter;
+        if object.is_of_type(convolution_filter, activation) {
+            return ConvolutionFilter::from_avm2_object(activation, object);
         }
 
         Err(Error::AvmError(type_error(
@@ -52,6 +59,7 @@ impl FilterAvm2Ext for Filter {
             Filter::BevelFilter(filter) => filter.as_avm2_object(activation),
             Filter::BlurFilter(filter) => filter.as_avm2_object(activation),
             Filter::ColorMatrixFilter(filter) => filter.as_avm2_object(activation),
+            Filter::ConvolutionFilter(filter) => filter.as_avm2_object(activation),
         }
     }
 }
@@ -213,5 +221,86 @@ impl FilterAvm2Ext for ColorMatrixFilter {
             .classes()
             .colormatrixfilter
             .construct(activation, &[matrix.into()])
+    }
+}
+
+impl FilterAvm2Ext for ConvolutionFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let mut matrix = vec![];
+        if let Some(matrix_object) = object
+            .get_public_property("matrix", activation)?
+            .as_object()
+        {
+            if let Some(array) = matrix_object.as_array_storage() {
+                for value in array.iter() {
+                    matrix.push(
+                        value
+                            .unwrap_or(Value::Undefined)
+                            .coerce_to_number(activation)? as f32,
+                    );
+                }
+            }
+        }
+        let alpha = object
+            .get_public_property("alpha", activation)?
+            .coerce_to_number(activation)?;
+        let bias = object
+            .get_public_property("bias", activation)?
+            .coerce_to_number(activation)?;
+        let clamp = object
+            .get_public_property("clamp", activation)?
+            .coerce_to_boolean();
+        let color = object
+            .get_public_property("color", activation)?
+            .coerce_to_u32(activation)?;
+        let divisor = object
+            .get_public_property("divisor", activation)?
+            .coerce_to_number(activation)?;
+        let matrix_x = object
+            .get_public_property("matrixX", activation)?
+            .coerce_to_u32(activation)?;
+        let matrix_y = object
+            .get_public_property("matrixY", activation)?
+            .coerce_to_u32(activation)?;
+        let preserve_alpha = object
+            .get_public_property("preserveAlpha", activation)?
+            .coerce_to_boolean();
+        Ok(Filter::ConvolutionFilter(ConvolutionFilter {
+            bias: bias as f32,
+            clamp,
+            default_color: Color::from_rgb(color, (alpha * 255.0) as u8),
+            divisor: divisor as f32,
+            matrix,
+            matrix_x: matrix_x.clamp(0, 255) as u8,
+            matrix_y: matrix_y.clamp(0, 255) as u8,
+            preserve_alpha,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let matrix = ArrayObject::from_storage(
+            activation,
+            self.matrix.iter().map(|v| Value::from(*v)).collect(),
+        )?;
+        activation.avm2().classes().convolutionfilter.construct(
+            activation,
+            &[
+                self.matrix_x.into(),
+                self.matrix_y.into(),
+                matrix.into(),
+                self.divisor.into(),
+                self.bias.into(),
+                self.preserve_alpha.into(),
+                self.clamp.into(),
+                self.default_color.to_rgb().into(),
+                (f64::from(self.default_color.a) / 255.0).into(),
+            ],
+        )
     }
 }
