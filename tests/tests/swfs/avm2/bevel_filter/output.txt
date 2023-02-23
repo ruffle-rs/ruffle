@@ -1,0 +1,188 @@
+// test.filters
+[object BevelFilter],[object BevelFilter],[object BevelFilter]
+
+// test.filters.length
+3
+
+// test.filters[0].angle
+44.999253346524966
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].distance
+5
+
+// test.filters[0].highlightAlpha
+1
+
+// test.filters[0].highlightColor
+16777215
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].shadowAlpha
+1
+
+// test.filters[0].shadowColor
+0
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
+// test.filters[1].angle
+359.9992723574823
+
+// test.filters[1].blurX
+5
+
+// test.filters[1].blurY
+5
+
+// test.filters[1].distance
+3
+
+// test.filters[1].highlightAlpha
+1
+
+// test.filters[1].highlightColor
+65535
+
+// test.filters[1].knockout
+true
+
+// test.filters[1].quality
+3
+
+// test.filters[1].shadowAlpha
+1
+
+// test.filters[1].shadowColor
+13434624
+
+// test.filters[1].strength
+1
+
+// test.filters[1].type
+outer
+
+// test.filters[2].angle
+0
+
+// test.filters[2].blurX
+0
+
+// test.filters[2].blurY
+0
+
+// test.filters[2].distance
+-120
+
+// test.filters[2].highlightAlpha
+1
+
+// test.filters[2].highlightColor
+16777215
+
+// test.filters[2].knockout
+false
+
+// test.filters[2].quality
+1
+
+// test.filters[2].shadowAlpha
+1
+
+// test.filters[2].shadowColor
+0
+
+// test.filters[2].strength
+1
+
+// test.filters[2].type
+full
+
+// test.filters = [new BevelFilter()];
+// test.filters[0].angle
+45
+
+// test.filters[0].blurX
+4
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].distance
+4
+
+// test.filters[0].highlightAlpha
+1
+
+// test.filters[0].highlightColor
+16777215
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].shadowAlpha
+1
+
+// test.filters[0].shadowColor
+0
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
+// test.filters = [new BevelFilter(1.0, 15.5, 0xABCDEF, 0.5, 0xFEDBCA, 0.2, 3, 5, 2, 1, "outer", true)];
+// test.filters[0].angle
+15.5
+
+// test.filters[0].blurX
+3
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].distance
+1
+
+// test.filters[0].highlightAlpha
+0.4980392156862745
+
+// test.filters[0].highlightColor
+11259375
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+1
+
+// test.filters[0].shadowAlpha
+0.2
+
+// test.filters[0].shadowColor
+16702410
+
+// test.filters[0].strength
+2
+
+// test.filters[0].type
+outer
+
