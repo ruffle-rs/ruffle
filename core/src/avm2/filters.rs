@@ -1,8 +1,9 @@
 use ruffle_render::filters::{
     BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter,
     DisplacementMapFilter, DisplacementMapFilterMode, DropShadowFilter, Filter, GlowFilter,
+    GradientBevelFilter,
 };
-use swf::Color;
+use swf::{Color, GradientRecord};
 
 use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
@@ -59,6 +60,11 @@ impl FilterAvm2Ext for Filter {
             return GlowFilter::from_avm2_object(activation, object);
         }
 
+        let gradient_bevel_filter = activation.avm2().classes().gradientbevelfilter;
+        if object.is_of_type(gradient_bevel_filter, activation) {
+            return GradientBevelFilter::from_avm2_object(activation, object);
+        }
+
         Err(Error::AvmError(type_error(
             activation,
             &format!(
@@ -80,6 +86,7 @@ impl FilterAvm2Ext for Filter {
             Filter::DisplacementMapFilter(filter) => filter.as_avm2_object(activation),
             Filter::DropShadowFilter(filter) => filter.as_avm2_object(activation),
             Filter::GlowFilter(filter) => filter.as_avm2_object(activation),
+            Filter::GradientBevelFilter(filter) => filter.as_avm2_object(activation),
         }
     }
 }
@@ -570,6 +577,147 @@ impl FilterAvm2Ext for GlowFilter {
                 self.strength.into(),
                 self.quality.into(),
                 self.inner.into(),
+                self.knockout.into(),
+            ],
+        )
+    }
+}
+
+impl FilterAvm2Ext for GradientBevelFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let mut colors = vec![];
+        let angle = object
+            .get_public_property("angle", activation)?
+            .coerce_to_number(activation)?;
+        let blur_x = object
+            .get_public_property("blurX", activation)?
+            .coerce_to_number(activation)?;
+        let blur_y = object
+            .get_public_property("blurY", activation)?
+            .coerce_to_number(activation)?;
+        let distance = object
+            .get_public_property("distance", activation)?
+            .coerce_to_number(activation)?;
+        let knockout = object
+            .get_public_property("knockout", activation)?
+            .coerce_to_boolean();
+        let quality = object
+            .get_public_property("quality", activation)?
+            .coerce_to_u32(activation)?;
+        let strength = object
+            .get_public_property("strength", activation)?
+            .coerce_to_u32(activation)?;
+        let bevel_type = object
+            .get_public_property("type", activation)?
+            .coerce_to_string(activation)?;
+        if let Some(colors_object) = object
+            .get_public_property("colors", activation)?
+            .as_object()
+        {
+            if let Some(colors_array) = colors_object.as_array_storage() {
+                if let Some(alphas_object) = object
+                    .get_public_property("alphas", activation)?
+                    .as_object()
+                {
+                    if let Some(alphas_array) = alphas_object.as_array_storage() {
+                        if let Some(ratios_object) = object
+                            .get_public_property("ratios", activation)?
+                            .as_object()
+                        {
+                            if let Some(ratios_array) = ratios_object.as_array_storage() {
+                                // Flash only keeps the elements from any array until the lowest index in each array
+                                for i in 0..ratios_array
+                                    .length()
+                                    .min(alphas_array.length())
+                                    .min(colors_array.length())
+                                    as usize
+                                {
+                                    let color = colors_array
+                                        .get(i)
+                                        .expect("Length was already checked at this point")
+                                        .coerce_to_u32(activation)?;
+                                    let alpha = colors_array
+                                        .get(i)
+                                        .expect("Length was already checked at this point")
+                                        .coerce_to_number(activation)?
+                                        as f32;
+                                    let ratio = colors_array
+                                        .get(i)
+                                        .expect("Length was already checked at this point")
+                                        .coerce_to_u32(activation)?;
+                                    colors.push(GradientRecord {
+                                        ratio: ratio.clamp(0, 255) as u8,
+                                        color: Color::from_rgb(color, (alpha * 255.0) as u8),
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(Filter::GradientBevelFilter(GradientBevelFilter {
+            colors,
+            blur_x: blur_x as f32,
+            blur_y: blur_y as f32,
+            angle: angle as f32,
+            distance: distance as f32,
+            strength: strength.clamp(0, 255) as u8,
+            bevel_type: if &bevel_type == b"inner" {
+                BevelFilterType::Inner
+            } else if &bevel_type == b"outer" {
+                BevelFilterType::Outer
+            } else {
+                BevelFilterType::Full
+            },
+            knockout,
+            quality: quality.clamp(1, 15) as u8,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let colors = ArrayObject::from_storage(
+            activation,
+            self.colors
+                .iter()
+                .map(|v| Value::from(v.color.to_rgb()))
+                .collect(),
+        )?;
+        let alphas = ArrayObject::from_storage(
+            activation,
+            self.colors
+                .iter()
+                .map(|v| Value::from(f64::from(v.color.a) / 255.0))
+                .collect(),
+        )?;
+        let ratios = ArrayObject::from_storage(
+            activation,
+            self.colors.iter().map(|v| Value::from(v.ratio)).collect(),
+        )?;
+        activation.avm2().classes().gradientbevelfilter.construct(
+            activation,
+            &[
+                self.distance.into(),
+                self.angle.into(),
+                colors.into(),
+                alphas.into(),
+                ratios.into(),
+                self.blur_x.into(),
+                self.blur_y.into(),
+                self.strength.into(),
+                self.quality.into(),
+                match self.bevel_type {
+                    BevelFilterType::Inner => "inner",
+                    BevelFilterType::Outer => "outer",
+                    BevelFilterType::Full => "full",
+                }
+                .into(),
                 self.knockout.into(),
             ],
         )
