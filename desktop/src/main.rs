@@ -41,8 +41,7 @@ use winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopWindowTarget};
-use winit::monitor::MonitorHandle;
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
@@ -225,10 +224,10 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
-fn get_max_screen_size(monitors: impl IntoIterator<Item = MonitorHandle>) -> PhysicalSize<u32> {
+fn get_max_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
     let mut max_screen_size = (0, 0);
 
-    for monitor in monitors {
+    for monitor in event_loop.available_monitors() {
         let size = monitor.size();
         max_screen_size.0 += size.width;
         max_screen_size.1 += size.height;
@@ -276,8 +275,7 @@ impl App {
         let title = format!("Ruffle - {filename}");
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
-        let monitors = EventLoopWindowTarget::available_monitors(&event_loop);
-        let max_screen_size = get_max_screen_size(monitors);
+        let max_screen_size = get_max_screen_size(&event_loop);
 
         let window = WindowBuilder::new()
             .with_visible(false)
