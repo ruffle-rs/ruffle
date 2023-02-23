@@ -310,7 +310,7 @@ pub struct FrameLabelData<'a> {
 pub type Depth = u16;
 pub type CharacterId = u16;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PlaceObject<'a> {
     pub version: u8,
     pub action: PlaceObjectAction,
@@ -360,7 +360,7 @@ pub enum PlaceObjectAction {
     Replace(CharacterId),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Filter {
     DropShadowFilter(Box<DropShadowFilter>),
     BlurFilter(Box<BlurFilter>),
@@ -1041,7 +1041,7 @@ pub struct SoundStreamHead {
 
 pub type SoundStreamBlock<'a> = &'a [u8];
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Button<'a> {
     pub id: CharacterId,
     pub is_track_as_menu: bool,
@@ -1049,7 +1049,7 @@ pub struct Button<'a> {
     pub actions: Vec<ButtonAction<'a>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ButtonRecord {
     pub states: ButtonState,
     pub id: CharacterId,

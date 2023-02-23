@@ -1837,7 +1837,7 @@ impl<W: Write> Writer<W> {
 
     fn write_color_matrix_filter(&mut self, filter: &ColorMatrixFilter) -> Result<()> {
         for m in filter.matrix {
-            self.write_fixed16(m)?;
+            self.write_f32(m)?;
         }
         Ok(())
     }

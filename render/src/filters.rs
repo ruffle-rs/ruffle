@@ -1,5 +1,5 @@
 use crate::bitmap::BitmapHandle;
-use swf::{BevelFilterFlags, Color, Fixed16, GradientFilterFlags, GradientRecord};
+use swf::{BevelFilterFlags, Color, GradientFilterFlags, GradientRecord};
 
 #[derive(Debug, Clone)]
 pub enum Filter {
@@ -150,7 +150,7 @@ pub struct ColorMatrixFilter {
 impl From<&swf::ColorMatrixFilter> for ColorMatrixFilter {
     fn from(value: &swf::ColorMatrixFilter) -> Self {
         Self {
-            matrix: value.matrix.map(Fixed16::to_f32),
+            matrix: value.matrix,
         }
     }
 }

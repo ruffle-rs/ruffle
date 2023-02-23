@@ -2156,9 +2156,9 @@ impl<'a> Reader<'a> {
     }
 
     fn read_color_matrix_filter(&mut self) -> Result<ColorMatrixFilter> {
-        let mut matrix = [Fixed16::ZERO; 20];
+        let mut matrix = [0.0; 20];
         for m in &mut matrix {
-            *m = self.read_fixed16()?;
+            *m = self.read_f32()?;
         }
         Ok(ColorMatrixFilter { matrix })
     }
