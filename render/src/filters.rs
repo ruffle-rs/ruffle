@@ -1,5 +1,5 @@
 use crate::bitmap::BitmapHandle;
-use swf::{BevelFilterFlags, Color, Fixed16};
+use swf::{BevelFilterFlags, Color, Fixed16, GradientFilterFlags, GradientRecord};
 
 #[derive(Debug, Clone)]
 pub enum Filter {
@@ -10,6 +10,7 @@ pub enum Filter {
     DisplacementMapFilter(DisplacementMapFilter),
     DropShadowFilter(DropShadowFilter),
     GlowFilter(GlowFilter),
+    GradientBevelFilter(GradientBevelFilter),
 }
 
 impl Default for Filter {
@@ -311,6 +312,58 @@ impl Default for GlowFilter {
             knockout: false,
             quality: 1,
             strength: 2,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GradientBevelFilter {
+    pub colors: Vec<GradientRecord>,
+    pub blur_x: f32,
+    pub blur_y: f32,
+    pub angle: f32,
+    pub distance: f32,
+    pub strength: u8,
+    pub bevel_type: BevelFilterType,
+    pub knockout: bool,
+    pub quality: u8,
+}
+
+impl From<swf::GradientFilter> for GradientBevelFilter {
+    fn from(value: swf::GradientFilter) -> Self {
+        let quality = value.num_passes();
+        Self {
+            colors: value.colors,
+            blur_x: value.blur_x.to_f32(),
+            blur_y: value.blur_y.to_f32(),
+            angle: value.angle.to_f32(),
+            distance: value.distance.to_f32(),
+            strength: (value.strength.to_f32() * 255.0) as u8,
+            bevel_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
+                BevelFilterType::Full
+            } else if value.flags.contains(GradientFilterFlags::INNER_SHADOW) {
+                BevelFilterType::Inner
+            } else {
+                BevelFilterType::Outer
+            },
+            knockout: value.flags.contains(GradientFilterFlags::KNOCKOUT),
+            quality,
+        }
+    }
+}
+
+impl Default for GradientBevelFilter {
+    fn default() -> Self {
+        Self {
+            colors: vec![],
+            blur_x: 4.0,
+            blur_y: 4.0,
+            angle: 45.0,
+            distance: 4.0,
+            strength: 1,
+            bevel_type: BevelFilterType::Inner,
+            knockout: false,
+            quality: 1,
         }
     }
 }
