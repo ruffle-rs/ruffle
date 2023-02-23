@@ -9,6 +9,7 @@ include "Array.as"
 include "Boolean.as"
 include "Date.as"
 
+include "flash/display/Graphics.as"
 include "flash/media/SoundTransform.as"
 include "flash/system/ApplicationDomain.as"
 include "Function.as"
