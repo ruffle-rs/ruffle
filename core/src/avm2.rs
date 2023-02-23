@@ -340,7 +340,7 @@ impl<'gc> Avm2<'gc> {
 
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
-        for i in (0..num_scripts).rev() {
+        for i in 0..num_scripts {
             tunit.load_script(i as u32, context)?;
         }
 
