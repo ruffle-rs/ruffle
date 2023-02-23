@@ -11,6 +11,7 @@ pub enum Filter {
     DropShadowFilter(DropShadowFilter),
     GlowFilter(GlowFilter),
     GradientBevelFilter(GradientBevelFilter),
+    GradientGlowFilter(GradientGlowFilter),
 }
 
 impl Default for Filter {
@@ -22,7 +23,7 @@ impl Default for Filter {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum BevelFilterType {
+pub enum BitmapFilterType {
     Inner,
     Outer,
     Full,
@@ -37,7 +38,7 @@ pub struct BevelFilter {
     pub angle: f32,
     pub distance: f32,
     pub strength: u8,
-    pub bevel_type: BevelFilterType,
+    pub bevel_type: BitmapFilterType,
     pub knockout: bool,
     pub quality: u8,
 }
@@ -54,11 +55,11 @@ impl From<swf::BevelFilter> for BevelFilter {
             distance: value.distance.to_f32(),
             strength: (value.strength.to_f32() * 255.0) as u8,
             bevel_type: if value.flags.contains(BevelFilterFlags::ON_TOP) {
-                BevelFilterType::Full
+                BitmapFilterType::Full
             } else if value.flags.contains(BevelFilterFlags::INNER_SHADOW) {
-                BevelFilterType::Inner
+                BitmapFilterType::Inner
             } else {
-                BevelFilterType::Outer
+                BitmapFilterType::Outer
             },
             knockout: value.flags.contains(BevelFilterFlags::KNOCKOUT),
             quality,
@@ -76,7 +77,7 @@ impl Default for BevelFilter {
             angle: 45.0,
             distance: 4.0,
             strength: 1,
-            bevel_type: BevelFilterType::Inner,
+            bevel_type: BitmapFilterType::Inner,
             knockout: false,
             quality: 1,
         }
@@ -324,7 +325,7 @@ pub struct GradientBevelFilter {
     pub angle: f32,
     pub distance: f32,
     pub strength: u8,
-    pub bevel_type: BevelFilterType,
+    pub bevel_type: BitmapFilterType,
     pub knockout: bool,
     pub quality: u8,
 }
@@ -340,11 +341,11 @@ impl From<swf::GradientFilter> for GradientBevelFilter {
             distance: value.distance.to_f32(),
             strength: (value.strength.to_f32() * 255.0) as u8,
             bevel_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
-                BevelFilterType::Full
+                BitmapFilterType::Full
             } else if value.flags.contains(GradientFilterFlags::INNER_SHADOW) {
-                BevelFilterType::Inner
+                BitmapFilterType::Inner
             } else {
-                BevelFilterType::Outer
+                BitmapFilterType::Outer
             },
             knockout: value.flags.contains(GradientFilterFlags::KNOCKOUT),
             quality,
@@ -361,7 +362,59 @@ impl Default for GradientBevelFilter {
             angle: 45.0,
             distance: 4.0,
             strength: 1,
-            bevel_type: BevelFilterType::Inner,
+            bevel_type: BitmapFilterType::Inner,
+            knockout: false,
+            quality: 1,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GradientGlowFilter {
+    pub colors: Vec<GradientRecord>,
+    pub blur_x: f32,
+    pub blur_y: f32,
+    pub angle: f32,
+    pub distance: f32,
+    pub strength: u8,
+    pub glow_type: BitmapFilterType,
+    pub knockout: bool,
+    pub quality: u8,
+}
+
+impl From<swf::GradientFilter> for GradientGlowFilter {
+    fn from(value: swf::GradientFilter) -> Self {
+        let quality = value.num_passes();
+        Self {
+            colors: value.colors,
+            blur_x: value.blur_x.to_f32(),
+            blur_y: value.blur_y.to_f32(),
+            angle: value.angle.to_f32(),
+            distance: value.distance.to_f32(),
+            strength: (value.strength.to_f32() * 255.0) as u8,
+            glow_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
+                BitmapFilterType::Full
+            } else if value.flags.contains(GradientFilterFlags::INNER_SHADOW) {
+                BitmapFilterType::Inner
+            } else {
+                BitmapFilterType::Outer
+            },
+            knockout: value.flags.contains(GradientFilterFlags::KNOCKOUT),
+            quality,
+        }
+    }
+}
+
+impl Default for GradientGlowFilter {
+    fn default() -> Self {
+        Self {
+            colors: vec![],
+            blur_x: 4.0,
+            blur_y: 4.0,
+            angle: 45.0,
+            distance: 4.0,
+            strength: 1,
+            glow_type: BitmapFilterType::Inner,
             knockout: false,
             quality: 1,
         }
