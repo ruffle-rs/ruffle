@@ -43,7 +43,7 @@ pub fn class_init<'gc>(
 ///
 /// This also implements `SimpleButton`'s `soundTransform` property, as per
 /// Flash Player behavior.
-pub fn sound_transform<'gc>(
+pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -235,7 +235,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         &[
             (
                 "soundTransform",
-                Some(sound_transform),
+                Some(get_sound_transform),
                 Some(set_sound_transform),
             ),
             ("bufferTime", Some(buffer_time), Some(set_buffer_time)),

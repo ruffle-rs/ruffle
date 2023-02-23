@@ -10,7 +10,7 @@ pub mod loader;
 pub mod loader_info;
 pub mod movie_clip;
 pub mod shape;
-pub mod simplebutton;
+pub mod simple_button;
 pub mod sprite;
 pub mod stage;
 pub mod stage_3d;
