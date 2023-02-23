@@ -486,12 +486,6 @@ pub fn load_player_globals<'gc>(
         script
     );
     avm2_system_class!(
-        movieclip,
-        activation,
-        flash::display::movieclip::create_class(activation),
-        script
-    );
-    avm2_system_class!(
         graphics,
         activation,
         flash::display::graphics::create_class(activation),
@@ -621,6 +615,7 @@ fn load_playerglobal<'gc>(
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "LoaderInfo", loaderinfo),
+            ("flash.display", "MovieClip", movieclip),
             ("flash.display", "Shape", shape),
             ("flash.display", "Sprite", sprite),
             ("flash.display", "Stage", stage),

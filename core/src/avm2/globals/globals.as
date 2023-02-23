@@ -91,6 +91,8 @@ include "flash/display3D/IndexBuffer3D.as"
 include "flash/display3D/Program3D.as"
 include "flash/display3D/VertexBuffer3D.as"
 
+include "flash/display/MovieClip.as"
+
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
 include "flash/events/TextEvent.as"
