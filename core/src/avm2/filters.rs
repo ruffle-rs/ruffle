@@ -134,7 +134,7 @@ impl FilterAvm2Ext for BevelFilter {
             .coerce_to_u32(activation)?;
         let strength = object
             .get_public_property("strength", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_number(activation)?;
         let bevel_type = object
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
@@ -145,7 +145,7 @@ impl FilterAvm2Ext for BevelFilter {
             blur_y: blur_y as f32,
             angle: angle as f32,
             distance: distance as f32,
-            strength: strength.clamp(0, 255) as u8,
+            strength: strength.clamp(0.0, 255.0) as f32,
             bevel_type: if &bevel_type == b"inner" {
                 BitmapFilterType::Inner
             } else if &bevel_type == b"outer" {
@@ -491,7 +491,7 @@ impl FilterAvm2Ext for DropShadowFilter {
             .coerce_to_u32(activation)?;
         let strength = object
             .get_public_property("strength", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_number(activation)?;
         Ok(Filter::DropShadowFilter(DropShadowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
             angle: angle as f32,
@@ -501,7 +501,7 @@ impl FilterAvm2Ext for DropShadowFilter {
             hide_object,
             inner,
             knockout,
-            strength: strength.clamp(0, 255) as u8,
+            strength: strength.clamp(0.0, 255.0) as f32,
             quality: quality.clamp(1, 15) as u8,
         }))
     }
@@ -557,14 +557,14 @@ impl FilterAvm2Ext for GlowFilter {
             .coerce_to_u32(activation)?;
         let strength = object
             .get_public_property("strength", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_number(activation)?;
         Ok(Filter::GlowFilter(GlowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
             blur_x: blur_x as f32,
             blur_y: blur_y as f32,
             inner,
             knockout,
-            strength: strength.clamp(0, 255) as u8,
+            strength: strength.clamp(0.0, 255.0) as f32,
             quality: quality.clamp(1, 15) as u8,
         }))
     }
@@ -614,7 +614,7 @@ impl FilterAvm2Ext for GradientBevelFilter {
             .coerce_to_u32(activation)?;
         let strength = object
             .get_public_property("strength", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_number(activation)?;
         let bevel_type = object
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
@@ -625,7 +625,7 @@ impl FilterAvm2Ext for GradientBevelFilter {
             blur_y: blur_y as f32,
             angle: angle as f32,
             distance: distance as f32,
-            strength: strength.clamp(0, 255) as u8,
+            strength: strength.clamp(0.0, 255.0) as f32,
             bevel_type: if &bevel_type == b"inner" {
                 BitmapFilterType::Inner
             } else if &bevel_type == b"outer" {
@@ -709,7 +709,7 @@ impl FilterAvm2Ext for GradientGlowFilter {
             .coerce_to_u32(activation)?;
         let strength = object
             .get_public_property("strength", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_number(activation)?;
         let glow_type = object
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
@@ -720,7 +720,7 @@ impl FilterAvm2Ext for GradientGlowFilter {
             blur_y: blur_y as f32,
             angle: angle as f32,
             distance: distance as f32,
-            strength: strength.clamp(0, 255) as u8,
+            strength: strength.clamp(0.0, 255.0) as f32,
             glow_type: if &glow_type == b"inner" {
                 BitmapFilterType::Inner
             } else if &glow_type == b"outer" {
