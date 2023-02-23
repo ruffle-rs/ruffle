@@ -512,16 +512,14 @@ fn substr<'gc>(
             this.len(),
         );
 
-        let len = args
-            .get(1)
-            .unwrap_or(&Value::Number(0x7fffffff as f64))
-            .coerce_to_number(activation)?;
+        let len = string_wrapping_index(
+            args.get(1)
+                .unwrap_or(&Value::Number(0x7fffffff as f64))
+                .coerce_to_number(activation)?,
+            this.len(),
+        );
 
-        let end_index = if len == f64::INFINITY {
-            this.len()
-        } else {
-            this.len().min(start_index + len as usize)
-        };
+        let end_index = this.len().min(start_index + len as usize);
 
         let ret = WString::from(&this[start_index..end_index]);
         return Ok(AvmString::new(activation.context.gc_context, ret).into());
