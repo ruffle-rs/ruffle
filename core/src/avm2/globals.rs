@@ -480,12 +480,6 @@ pub fn load_player_globals<'gc>(
 
     // package `flash.display`
     avm2_system_class!(
-        shape,
-        activation,
-        flash::display::shape::create_class(activation),
-        script
-    );
-    avm2_system_class!(
         simplebutton,
         activation,
         flash::display::simplebutton::create_class(activation),
@@ -633,6 +627,7 @@ fn load_playerglobal<'gc>(
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "LoaderInfo", loaderinfo),
+            ("flash.display", "Shape", shape),
             ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),
