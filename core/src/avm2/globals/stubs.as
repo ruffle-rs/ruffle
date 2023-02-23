@@ -15,6 +15,7 @@ include "flash/display/DisplayObjectContainer.as"
 
 include "flash/display/LoaderInfo.as"
 include "flash/events/EventDispatcher.as"
+include "flash/media/SoundTransform.as"
 include "flash/system/ApplicationDomain.as"
 include "Function.as"
 include "Number.as"
