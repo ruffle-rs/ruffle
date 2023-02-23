@@ -133,6 +133,9 @@ export class RufflePlayer extends HTMLElement {
     // Whether this device is a touch device.
     // Set to true when a touch event is encountered.
     private isTouch = false;
+    // Whether this device sends contextmenu events.
+    // Set to true when a contextmenu event is seen.
+    private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
     private loadedConfig: Required<Config> = DEFAULT_CONFIG;
@@ -148,6 +151,7 @@ export class RufflePlayer extends HTMLElement {
     private _cachedDebugInfo: string | null = null;
 
     private isExtension = false;
+    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -219,8 +223,21 @@ export class RufflePlayer extends HTMLElement {
         this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
+        window.addEventListener("pointerdown", this.pointerDown.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
-        this.addEventListener("pointerdown", this.pointerDown.bind(this));
+        this.container.addEventListener(
+            "pointerdown",
+            this.startLongPressTimer.bind(this)
+        );
+        this.container.addEventListener(
+            "pointerup",
+            this.checkLongPress.bind(this)
+        );
+        this.container.addEventListener(
+            "pointercancel",
+            this.clearLongPressTimer.bind(this)
+        );
+
         this.addEventListener(
             "fullscreenchange",
             this.fullScreenChange.bind(this)
@@ -229,7 +246,6 @@ export class RufflePlayer extends HTMLElement {
             "webkitfullscreenchange",
             this.fullScreenChange.bind(this)
         );
-        window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
         this.onFSCommand = null;
@@ -770,8 +786,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private pointerDown(event: PointerEvent): void {
-        // Give option to disable context menu when touch support is being used
-        // to avoid a long press triggering the context menu. (#1972)
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
         }
@@ -877,6 +891,8 @@ export class RufflePlayer extends HTMLElement {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
         });
+        // Give option to disable context menu when touch support is being used
+        // to avoid a long press triggering the context menu. (#1972)
         if (this.isTouch) {
             items.push(null);
             items.push({
@@ -887,8 +903,52 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private showContextMenu(e: MouseEvent): void {
-        e.preventDefault();
+    private clearLongPressTimer(): void {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+    }
+
+    private startLongPressTimer(): void {
+        const longPressTimeout = 800;
+        this.clearLongPressTimer();
+        this.longPressTimer = setTimeout(
+            () => this.clearLongPressTimer(),
+            longPressTimeout
+        );
+    }
+
+    private checkLongPress(event: PointerEvent): void {
+        if (this.longPressTimer) {
+            this.clearLongPressTimer();
+            // The pointerType condition is to ensure right-click does not trigger
+            // a context menu the wrong way the first time you right-click,
+            // before contextMenuSupported is set.
+        } else if (
+            !this.contextMenuSupported &&
+            event.pointerType !== "mouse"
+        ) {
+            this.showContextMenu(event);
+        }
+    }
+
+    private showContextMenu(event: MouseEvent | PointerEvent): void {
+        event.preventDefault();
+
+        if (event.type === "contextmenu") {
+            this.contextMenuSupported = true;
+            window.addEventListener("click", this.hideContextMenu.bind(this), {
+                once: true,
+            });
+        } else {
+            window.addEventListener(
+                "pointerup",
+                this.hideContextMenu.bind(this),
+                { once: true }
+            );
+            event.stopPropagation();
+        }
 
         if (
             this.loadedConfig.contextMenu === false ||
@@ -934,7 +994,10 @@ export class RufflePlayer extends HTMLElement {
                 this.contextMenuElement.appendChild(menuItem);
 
                 if (enabled !== false) {
-                    menuItem.addEventListener("click", onClick);
+                    menuItem.addEventListener(
+                        this.isTouch ? "pointerup" : "click",
+                        onClick
+                    );
                 } else {
                     menuItem.classList.add("disabled");
                 }
@@ -948,8 +1011,8 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement.style.display = "block";
 
         const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.x;
-        const y = e.clientY - rect.y;
+        const x = event.clientX - rect.x;
+        const y = event.clientY - rect.y;
         const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
         const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
 
