@@ -1,0 +1,37 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:base"],
+    // Package rules are matched such that later rules override earlier ones.
+    "packageRules": [
+        {
+            "matchLanguages": ["rust"],
+            "matchUpdateTypes": "patch",
+            "groupName": "Rust dependency patches",
+            "extends": ["schedule:weekly"],
+        },
+        {
+            "matchLanguages": ["rust"],
+            "groupName": "Rust dependencies",
+            "extends": ["schedule:weekly"],
+        },
+        {
+            "matchPackageNames": ["wasm-bindgen", "js-sys", "web-sys", "wasm-bindgen-futures"],
+            "groupName": "wasm-bindgen",
+        },
+        // Disable `tracing-tracy` updates (needed although it's pinned in `desktop/Cargo.toml`).
+        {
+            "matchPackageNames": ["tracing-tracy"],
+            "enabled": false,
+        },
+        {
+            "matchLanguages": ["js"],
+            "groupName": "Node.js dependencies",
+            "extends": ["schedule:monthly"],
+        },
+        {
+            "matchManagers": ["github-actions"],
+            "groupName": "Github Actions dependencies",
+            "extends": ["schedule:monthly"],
+        },
+    ]
+}
