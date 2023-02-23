@@ -8,6 +8,7 @@ pub enum Filter {
     ColorMatrixFilter(ColorMatrixFilter),
     ConvolutionFilter(ConvolutionFilter),
     DisplacementMapFilter(DisplacementMapFilter),
+    DropShadowFilter(DropShadowFilter),
 }
 
 impl Default for Filter {
@@ -216,6 +217,57 @@ impl Default for DisplacementMapFilter {
             mode: DisplacementMapFilterMode::Wrap,
             scale_x: 0.0,
             scale_y: 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DropShadowFilter {
+    pub color: Color,
+    pub angle: f32,
+    pub blur_x: f32,
+    pub blur_y: f32,
+    pub distance: f32,
+    pub hide_object: bool,
+    pub inner: bool,
+    pub knockout: bool,
+    pub quality: u8,
+    pub strength: u8,
+}
+
+impl From<swf::DropShadowFilter> for DropShadowFilter {
+    fn from(value: swf::DropShadowFilter) -> Self {
+        let inner = value.is_inner();
+        let knockout = value.is_knockout();
+        let quality = value.num_passes();
+        DropShadowFilter {
+            color: value.color,
+            angle: value.angle.to_f32(),
+            blur_x: value.blur_x.to_f32(),
+            blur_y: value.blur_y.to_f32(),
+            distance: value.distance.to_f32(),
+            hide_object: false,
+            inner,
+            knockout,
+            quality,
+            strength: (value.strength.to_f32() * 255.0) as u8,
+        }
+    }
+}
+
+impl Default for DropShadowFilter {
+    fn default() -> Self {
+        Self {
+            color: Color::from_rgba(0),
+            angle: 45.0,
+            blur_x: 4.0,
+            blur_y: 4.0,
+            distance: 4.0,
+            hide_object: false,
+            inner: false,
+            knockout: false,
+            quality: 1,
+            strength: 1,
         }
     }
 }
