@@ -68,7 +68,7 @@ pub struct BevelFilter {
     pub blur_y: f32,
     pub angle: f32,
     pub distance: f32,
-    pub strength: u8,
+    pub strength: f32,
     pub bevel_type: BitmapFilterType,
     pub knockout: bool,
     pub quality: u8,
@@ -84,7 +84,7 @@ impl From<&swf::BevelFilter> for BevelFilter {
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
             distance: value.distance.to_f32(),
-            strength: (value.strength.to_f32() * 255.0) as u8,
+            strength: value.strength.to_f32(),
             bevel_type: if value.flags.contains(BevelFilterFlags::ON_TOP) {
                 BitmapFilterType::Full
             } else if value.flags.contains(BevelFilterFlags::INNER_SHADOW) {
@@ -107,7 +107,7 @@ impl Default for BevelFilter {
             blur_y: 4.0,
             angle: 45.0,
             distance: 4.0,
-            strength: 1,
+            strength: 1.0,
             bevel_type: BitmapFilterType::Inner,
             knockout: false,
             quality: 1,
@@ -266,7 +266,7 @@ pub struct DropShadowFilter {
     pub inner: bool,
     pub knockout: bool,
     pub quality: u8,
-    pub strength: u8,
+    pub strength: f32,
 }
 
 impl From<&swf::DropShadowFilter> for DropShadowFilter {
@@ -284,7 +284,7 @@ impl From<&swf::DropShadowFilter> for DropShadowFilter {
             inner,
             knockout,
             quality,
-            strength: (value.strength.to_f32() * 255.0) as u8,
+            strength: value.strength.to_f32(),
         }
     }
 }
@@ -301,7 +301,7 @@ impl Default for DropShadowFilter {
             inner: false,
             knockout: false,
             quality: 1,
-            strength: 1,
+            strength: 1.0,
         }
     }
 }
@@ -314,7 +314,7 @@ pub struct GlowFilter {
     pub inner: bool,
     pub knockout: bool,
     pub quality: u8,
-    pub strength: u8,
+    pub strength: f32,
 }
 
 impl From<&swf::GlowFilter> for GlowFilter {
@@ -329,7 +329,7 @@ impl From<&swf::GlowFilter> for GlowFilter {
             inner,
             knockout,
             quality,
-            strength: (value.strength.to_f32() * 255.0) as u8,
+            strength: value.strength.to_f32(),
         }
     }
 }
@@ -343,7 +343,7 @@ impl Default for GlowFilter {
             inner: false,
             knockout: false,
             quality: 1,
-            strength: 2,
+            strength: 2.0,
         }
     }
 }
@@ -355,7 +355,7 @@ pub struct GradientBevelFilter {
     pub blur_y: f32,
     pub angle: f32,
     pub distance: f32,
-    pub strength: u8,
+    pub strength: f32,
     pub bevel_type: BitmapFilterType,
     pub knockout: bool,
     pub quality: u8,
@@ -370,7 +370,7 @@ impl From<&swf::GradientFilter> for GradientBevelFilter {
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
             distance: value.distance.to_f32(),
-            strength: (value.strength.to_f32() * 255.0) as u8,
+            strength: value.strength.to_f32(),
             bevel_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
                 BitmapFilterType::Full
             } else if value.flags.contains(GradientFilterFlags::INNER_SHADOW) {
@@ -392,7 +392,7 @@ impl Default for GradientBevelFilter {
             blur_y: 4.0,
             angle: 45.0,
             distance: 4.0,
-            strength: 1,
+            strength: 1.0,
             bevel_type: BitmapFilterType::Inner,
             knockout: false,
             quality: 1,
@@ -407,7 +407,7 @@ pub struct GradientGlowFilter {
     pub blur_y: f32,
     pub angle: f32,
     pub distance: f32,
-    pub strength: u8,
+    pub strength: f32,
     pub glow_type: BitmapFilterType,
     pub knockout: bool,
     pub quality: u8,
@@ -422,7 +422,7 @@ impl From<&swf::GradientFilter> for GradientGlowFilter {
             blur_y: value.blur_y.to_f32(),
             angle: value.angle.to_f32(),
             distance: value.distance.to_f32(),
-            strength: (value.strength.to_f32() * 255.0) as u8,
+            strength: value.strength.to_f32(),
             glow_type: if value.flags.contains(GradientFilterFlags::ON_TOP) {
                 BitmapFilterType::Full
             } else if value.flags.contains(GradientFilterFlags::INNER_SHADOW) {
@@ -444,7 +444,7 @@ impl Default for GradientGlowFilter {
             blur_y: 4.0,
             angle: 45.0,
             distance: 4.0,
-            strength: 1,
+            strength: 1.0,
             glow_type: BitmapFilterType::Inner,
             knockout: false,
             quality: 1,
