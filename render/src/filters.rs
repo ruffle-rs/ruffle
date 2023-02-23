@@ -1,3 +1,4 @@
+use crate::bitmap::BitmapHandle;
 use swf::{BevelFilterFlags, Color, Fixed16};
 
 #[derive(Debug, Clone)]
@@ -6,6 +7,7 @@ pub enum Filter {
     BlurFilter(BlurFilter),
     ColorMatrixFilter(ColorMatrixFilter),
     ConvolutionFilter(ConvolutionFilter),
+    DisplacementMapFilter(DisplacementMapFilter),
 }
 
 impl Default for Filter {
@@ -171,6 +173,49 @@ impl Default for ConvolutionFilter {
             matrix_x: 0,
             matrix_y: 0,
             preserve_alpha: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DisplacementMapFilterComponent {
+    Alpha,
+    Blue,
+    Green,
+    Red,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DisplacementMapFilterMode {
+    Clamp,
+    Color,
+    Ignore,
+    Wrap,
+}
+
+#[derive(Debug, Clone)]
+pub struct DisplacementMapFilter {
+    pub color: Color,
+    pub component_x: u8,
+    pub component_y: u8,
+    pub map_bitmap: Option<BitmapHandle>,
+    pub map_point: (u32, u32),
+    pub mode: DisplacementMapFilterMode,
+    pub scale_x: f32,
+    pub scale_y: f32,
+}
+
+impl Default for DisplacementMapFilter {
+    fn default() -> Self {
+        Self {
+            color: Color::from_rgba(0),
+            component_x: 0,
+            component_y: 0,
+            map_bitmap: None,
+            map_point: (0, 0),
+            mode: DisplacementMapFilterMode::Wrap,
+            scale_x: 0.0,
+            scale_y: 0.0,
         }
     }
 }

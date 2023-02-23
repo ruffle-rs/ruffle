@@ -1,9 +1,11 @@
-use crate::avm2::error::type_error;
-use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
 use ruffle_render::filters::{
-    BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter, Filter,
+    BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter,
+    DisplacementMapFilter, DisplacementMapFilterMode, Filter,
 };
 use swf::Color;
+
+use crate::avm2::error::{argument_error, type_error};
+use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -42,6 +44,11 @@ impl FilterAvm2Ext for Filter {
             return ConvolutionFilter::from_avm2_object(activation, object);
         }
 
+        let displacement_map_filter = activation.avm2().classes().displacementmapfilter;
+        if object.is_of_type(displacement_map_filter, activation) {
+            return DisplacementMapFilter::from_avm2_object(activation, object);
+        }
+
         Err(Error::AvmError(type_error(
             activation,
             &format!(
@@ -60,6 +67,7 @@ impl FilterAvm2Ext for Filter {
             Filter::BlurFilter(filter) => filter.as_avm2_object(activation),
             Filter::ColorMatrixFilter(filter) => filter.as_avm2_object(activation),
             Filter::ConvolutionFilter(filter) => filter.as_avm2_object(activation),
+            Filter::DisplacementMapFilter(filter) => filter.as_avm2_object(activation),
         }
     }
 }
@@ -300,6 +308,122 @@ impl FilterAvm2Ext for ConvolutionFilter {
                 self.clamp.into(),
                 self.default_color.to_rgb().into(),
                 (f64::from(self.default_color.a) / 255.0).into(),
+            ],
+        )
+    }
+}
+
+impl FilterAvm2Ext for DisplacementMapFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let alpha = object
+            .get_public_property("alpha", activation)?
+            .coerce_to_number(activation)?;
+        let color = object
+            .get_public_property("color", activation)?
+            .coerce_to_u32(activation)?;
+        let component_x = object
+            .get_public_property("componentX", activation)?
+            .coerce_to_u32(activation)?;
+        let component_y = object
+            .get_public_property("componentY", activation)?
+            .coerce_to_u32(activation)?;
+        let map_point =
+            if let Value::Object(point) = object.get_public_property("mapPoint", activation)? {
+                (
+                    point
+                        .get_public_property("x", activation)?
+                        .coerce_to_u32(activation)?,
+                    point
+                        .get_public_property("y", activation)?
+                        .coerce_to_u32(activation)?,
+                )
+            } else {
+                (0, 0)
+            };
+        let mode = if let Value::String(mode) = object.get_public_property("mode", activation)? {
+            if &mode == b"clamp" {
+                DisplacementMapFilterMode::Clamp
+            } else if &mode == b"ignore" {
+                DisplacementMapFilterMode::Ignore
+            } else if &mode == b"color" {
+                DisplacementMapFilterMode::Color
+            } else if &mode == b"wrap" {
+                DisplacementMapFilterMode::Wrap
+            } else {
+                return Err(Error::AvmError(argument_error(
+                    activation,
+                    "Parameter mode must be one of the accepted values.",
+                    2008,
+                )?));
+            }
+        } else {
+            DisplacementMapFilterMode::Wrap
+        };
+        let scale_x = object
+            .get_public_property("scaleX", activation)?
+            .coerce_to_number(activation)?;
+        let scale_y = object
+            .get_public_property("scaleY", activation)?
+            .coerce_to_number(activation)?;
+        let map_bitmap = if let Value::Object(bitmap) =
+            object.get_public_property("mapBitmap", activation)?
+        {
+            if let Some(bitmap) = bitmap.as_bitmap_data() {
+                bitmap
+                    .write(activation.context.gc_context)
+                    .bitmap_handle(activation.context.renderer)
+            } else {
+                return Err(Error::AvmError(type_error(
+                        activation,
+                        &format!("Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."),
+                        1034,
+                    )?));
+            }
+        } else {
+            None
+        };
+        Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
+            color: Color::from_rgb(color, (alpha * 255.0) as u8),
+            component_x: component_x as u8,
+            component_y: component_y as u8,
+            map_bitmap,
+            map_point,
+            mode,
+            scale_x: scale_x as f32,
+            scale_y: scale_y as f32,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let point = activation.avm2().classes().point;
+        let map_point = point.construct(
+            activation,
+            &[self.map_point.0.into(), self.map_point.1.into()],
+        )?;
+        let mode = match self.mode {
+            DisplacementMapFilterMode::Clamp => "clamp",
+            DisplacementMapFilterMode::Color => "color",
+            DisplacementMapFilterMode::Ignore => "ignore",
+            DisplacementMapFilterMode::Wrap => "wrap",
+        };
+        activation.avm2().classes().displacementmapfilter.construct(
+            activation,
+            &[
+                Value::Null, // TODO: This should be a BitmapData...
+                map_point.into(),
+                self.component_x.into(),
+                self.component_y.into(),
+                self.scale_x.into(),
+                self.scale_y.into(),
+                mode.into(),
+                self.color.to_rgb().into(),
+                (f64::from(self.color.a) / 255.0).into(),
             ],
         )
     }
