@@ -519,7 +519,7 @@ fn substr<'gc>(
             this.len(),
         );
 
-        let end_index = this.len().min(start_index + len as usize);
+        let end_index = this.len().min(start_index + len);
 
         let ret = WString::from(&this[start_index..end_index]);
         return Ok(AvmString::new(activation.context.gc_context, ret).into());
