@@ -77,6 +77,7 @@ fn validate_add_operation<'gc>(
     }
 
     if proposed_index > ctr.num_children() {
+        // Flash error message: The supplied index is out of bounds.
         return Err(Error::AvmError(range_error(
             activation,
             "Index position does not exist in the child list",
@@ -152,6 +153,7 @@ pub fn get_child_at<'gc>(
         return if let Some(child) = dobj.child_by_index(index as usize) {
             Ok(child.object2())
         } else {
+            // Flash error message: The supplied index is out of bounds.
             Err(Error::AvmError(range_error(
                 activation,
                 "Display object container has no child with id {index}",
@@ -358,6 +360,7 @@ pub fn remove_child_at<'gc>(
                 .coerce_to_i32(activation)?;
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!(
@@ -400,6 +403,7 @@ pub fn remove_children<'gc>(
                 .coerce_to_i32(activation)?;
 
             if from >= ctr.num_children() as i32 || from < 0 {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!(
@@ -412,6 +416,7 @@ pub fn remove_children<'gc>(
             }
 
             if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!(
@@ -424,6 +429,7 @@ pub fn remove_children<'gc>(
             }
 
             if from > to {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!("Range {from} to {to} is invalid"),
@@ -496,6 +502,7 @@ pub fn swap_children_at<'gc>(
             let bounds = ctr.num_children();
 
             if index0 < 0 || index0 as usize >= bounds {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!("Index {index0} is out of bounds",),
@@ -504,6 +511,7 @@ pub fn swap_children_at<'gc>(
             }
 
             if index1 < 0 || index1 as usize >= bounds {
+                // Flash error message: The supplied index is out of bounds.
                 return Err(Error::AvmError(range_error(
                     activation,
                     &format!("Index {index1} is out of bounds",),
