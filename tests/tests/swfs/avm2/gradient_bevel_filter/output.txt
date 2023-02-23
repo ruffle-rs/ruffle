@@ -1,0 +1,207 @@
+// test.filters
+[object GradientBevelFilter],[object GradientBevelFilter],[object GradientBevelFilter]
+
+// test.filters.length
+3
+
+// test.filters[0].alphas
+1,0,1
+
+// test.filters[0].angle
+44.999253346524966
+
+// test.filters[0].blurX
+5
+
+// test.filters[0].blurY
+5
+
+// test.filters[0].colors
+16777215,16711680,0
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].ratios
+0,128,255
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
+// test.filters[1].alphas
+1,0,1
+
+// test.filters[1].angle
+0
+
+// test.filters[1].blurX
+255
+
+// test.filters[1].blurY
+0
+
+// test.filters[1].colors
+16777215,16711680,0
+
+// test.filters[1].distance
+5
+
+// test.filters[1].knockout
+true
+
+// test.filters[1].quality
+2
+
+// test.filters[1].ratios
+0,128,255
+
+// test.filters[1].strength
+0.796875
+
+// test.filters[1].type
+full
+
+// test.filters[2].alphas
+1,0.06274509803921569,0,1,1
+
+// test.filters[2].angle
+44.999253346524966
+
+// test.filters[2].blurX
+5
+
+// test.filters[2].blurY
+5
+
+// test.filters[2].colors
+16777215,3407667,16580598,15988205,10053273
+
+// test.filters[2].distance
+5
+
+// test.filters[2].knockout
+false
+
+// test.filters[2].quality
+1
+
+// test.filters[2].ratios
+0,92,128,168,255
+
+// test.filters[2].strength
+1
+
+// test.filters[2].type
+outer
+
+// test.filters = [new GradientBevelFilter()];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+45
+
+// test.filters[0].blurX
+4
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+4
+
+// test.filters[0].knockout
+false
+
+// test.filters[0].quality
+1
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
+// test.filters = [new GradientBevelFilter(5, 2, [], 3, 4, 1, 2, "outer", true)];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+2
+
+// test.filters[0].blurX
+3
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+2
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+outer
+
+// test.filters = [new GradientBevelFilter(5, 2, [], 3, 4, 1, 2, "inner", true)];
+// test.filters[0].alphas
+
+
+// test.filters[0].angle
+2
+
+// test.filters[0].blurX
+3
+
+// test.filters[0].blurY
+4
+
+// test.filters[0].colors
+
+
+// test.filters[0].distance
+5
+
+// test.filters[0].knockout
+true
+
+// test.filters[0].quality
+2
+
+// test.filters[0].ratios
+
+
+// test.filters[0].strength
+1
+
+// test.filters[0].type
+inner
+
