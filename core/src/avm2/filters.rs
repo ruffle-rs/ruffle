@@ -1,6 +1,6 @@
 use ruffle_render::filters::{
     BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter,
-    DisplacementMapFilter, DisplacementMapFilterMode, Filter,
+    DisplacementMapFilter, DisplacementMapFilterMode, DropShadowFilter, Filter,
 };
 use swf::Color;
 
@@ -49,6 +49,11 @@ impl FilterAvm2Ext for Filter {
             return DisplacementMapFilter::from_avm2_object(activation, object);
         }
 
+        let drop_shadow_filter = activation.avm2().classes().dropshadowfilter;
+        if object.is_of_type(drop_shadow_filter, activation) {
+            return DropShadowFilter::from_avm2_object(activation, object);
+        }
+
         Err(Error::AvmError(type_error(
             activation,
             &format!(
@@ -68,6 +73,7 @@ impl FilterAvm2Ext for Filter {
             Filter::ColorMatrixFilter(filter) => filter.as_avm2_object(activation),
             Filter::ConvolutionFilter(filter) => filter.as_avm2_object(activation),
             Filter::DisplacementMapFilter(filter) => filter.as_avm2_object(activation),
+            Filter::DropShadowFilter(filter) => filter.as_avm2_object(activation),
         }
     }
 }
@@ -424,6 +430,81 @@ impl FilterAvm2Ext for DisplacementMapFilter {
                 mode.into(),
                 self.color.to_rgb().into(),
                 (f64::from(self.color.a) / 255.0).into(),
+            ],
+        )
+    }
+}
+
+impl FilterAvm2Ext for DropShadowFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let alpha = object
+            .get_public_property("alpha", activation)?
+            .coerce_to_number(activation)?;
+        let angle = object
+            .get_public_property("angle", activation)?
+            .coerce_to_number(activation)?;
+        let blur_x = object
+            .get_public_property("blurX", activation)?
+            .coerce_to_number(activation)?;
+        let blur_y = object
+            .get_public_property("blurY", activation)?
+            .coerce_to_number(activation)?;
+        let color = object
+            .get_public_property("color", activation)?
+            .coerce_to_u32(activation)?;
+        let distance = object
+            .get_public_property("distance", activation)?
+            .coerce_to_number(activation)?;
+        let hide_object = object
+            .get_public_property("hideObject", activation)?
+            .coerce_to_boolean();
+        let inner = object
+            .get_public_property("inner", activation)?
+            .coerce_to_boolean();
+        let knockout = object
+            .get_public_property("knockout", activation)?
+            .coerce_to_boolean();
+        let quality = object
+            .get_public_property("quality", activation)?
+            .coerce_to_u32(activation)?;
+        let strength = object
+            .get_public_property("strength", activation)?
+            .coerce_to_u32(activation)?;
+        Ok(Filter::DropShadowFilter(DropShadowFilter {
+            color: Color::from_rgb(color, (alpha * 255.0) as u8),
+            angle: angle as f32,
+            blur_x: blur_x as f32,
+            blur_y: blur_y as f32,
+            distance: distance as f32,
+            hide_object,
+            inner,
+            knockout,
+            strength: strength.clamp(0, 255) as u8,
+            quality: quality.clamp(1, 15) as u8,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        activation.avm2().classes().dropshadowfilter.construct(
+            activation,
+            &[
+                self.distance.into(),
+                self.angle.into(),
+                self.color.to_rgb().into(),
+                (f64::from(self.color.a) / 255.0).into(),
+                self.blur_x.into(),
+                self.blur_y.into(),
+                self.strength.into(),
+                self.quality.into(),
+                self.inner.into(),
+                self.knockout.into(),
+                self.hide_object.into(),
             ],
         )
     }
