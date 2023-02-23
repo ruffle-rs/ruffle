@@ -1,6 +1,7 @@
 use crate::avm2::error::type_error;
 use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
-use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
+use ruffle_render::filters::{BevelFilter, BevelFilterType, BlurFilter, ColorMatrixFilter, Filter};
+use swf::Color;
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -19,6 +20,11 @@ impl FilterAvm2Ext for Filter {
         activation: &mut Activation<'_, 'gc>,
         object: Object<'gc>,
     ) -> Result<Filter, Error<'gc>> {
+        let bevel_filter = activation.avm2().classes().bevelfilter;
+        if object.is_of_type(bevel_filter, activation) {
+            return BevelFilter::from_avm2_object(activation, object);
+        }
+
         let color_matrix_filter = activation.avm2().classes().colormatrixfilter;
         if object.is_of_type(color_matrix_filter, activation) {
             return ColorMatrixFilter::from_avm2_object(activation, object);
@@ -43,9 +49,100 @@ impl FilterAvm2Ext for Filter {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self {
+            Filter::BevelFilter(filter) => filter.as_avm2_object(activation),
             Filter::BlurFilter(filter) => filter.as_avm2_object(activation),
             Filter::ColorMatrixFilter(filter) => filter.as_avm2_object(activation),
         }
+    }
+}
+
+impl FilterAvm2Ext for BevelFilter {
+    fn from_avm2_object<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        object: Object<'gc>,
+    ) -> Result<Filter, Error<'gc>> {
+        let angle = object
+            .get_public_property("angle", activation)?
+            .coerce_to_number(activation)?;
+        let blur_x = object
+            .get_public_property("blurX", activation)?
+            .coerce_to_number(activation)?;
+        let blur_y = object
+            .get_public_property("blurY", activation)?
+            .coerce_to_number(activation)?;
+        let distance = object
+            .get_public_property("distance", activation)?
+            .coerce_to_number(activation)?;
+        let highlight_alpha = object
+            .get_public_property("highlightAlpha", activation)?
+            .coerce_to_number(activation)?;
+        let highlight_color = object
+            .get_public_property("highlightColor", activation)?
+            .coerce_to_u32(activation)?;
+        let knockout = object
+            .get_public_property("knockout", activation)?
+            .coerce_to_boolean();
+        let quality = object
+            .get_public_property("quality", activation)?
+            .coerce_to_u32(activation)?;
+        let shadow_alpha = object
+            .get_public_property("shadowAlpha", activation)?
+            .coerce_to_number(activation)?;
+        let shadow_color = object
+            .get_public_property("shadowColor", activation)?
+            .coerce_to_u32(activation)?;
+        let strength = object
+            .get_public_property("strength", activation)?
+            .coerce_to_u32(activation)?;
+        let bevel_type = object
+            .get_public_property("type", activation)?
+            .coerce_to_string(activation)?;
+        Ok(Filter::BevelFilter(BevelFilter {
+            shadow_color: Color::from_rgb(shadow_color, (shadow_alpha * 255.0) as u8),
+            highlight_color: Color::from_rgb(highlight_color, (highlight_alpha * 255.0) as u8),
+            blur_x: blur_x as f32,
+            blur_y: blur_y as f32,
+            angle: angle as f32,
+            distance: distance as f32,
+            strength: strength.clamp(0, 255) as u8,
+            bevel_type: if &bevel_type == b"inner" {
+                BevelFilterType::Inner
+            } else if &bevel_type == b"outer" {
+                BevelFilterType::Outer
+            } else {
+                BevelFilterType::Full
+            },
+            knockout,
+            quality: quality.clamp(1, 15) as u8,
+        }))
+    }
+
+    fn as_avm2_object<'gc>(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        activation.avm2().classes().bevelfilter.construct(
+            activation,
+            &[
+                self.distance.into(),
+                self.angle.into(),
+                self.highlight_color.to_rgb().into(),
+                (f64::from(self.highlight_color.a) / 255.0).into(),
+                self.shadow_color.to_rgb().into(),
+                (f64::from(self.shadow_color.a) / 255.0).into(),
+                self.blur_x.into(),
+                self.blur_y.into(),
+                self.strength.into(),
+                self.quality.into(),
+                match self.bevel_type {
+                    BevelFilterType::Inner => "inner",
+                    BevelFilterType::Outer => "outer",
+                    BevelFilterType::Full => "full",
+                }
+                .into(),
+                self.knockout.into(),
+            ],
+        )
     }
 }
 

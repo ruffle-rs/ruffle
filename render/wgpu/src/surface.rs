@@ -396,6 +396,19 @@ impl Surface {
                 source_size,
                 &filter,
             ),
+            _ => {
+                tracing::warn!("Unsupported filter {filter:?}");
+                // Apply a default color matrix - it's essentially a blit
+                self.apply_color_matrix(
+                    descriptors,
+                    texture_pool,
+                    draw_encoder,
+                    source_texture,
+                    source_point,
+                    source_size,
+                    &Default::default(),
+                )
+            }
         };
 
         // We're about to perform a copy, so make sure that we've applied
