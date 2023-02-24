@@ -1,5 +1,5 @@
-// List is ordered alphabetically, except where superclasses
-// need to come before subclasses.
+// List is ordered alphabetically, except where superclasses/interfaces
+// need to come before subclasses and implementations.
 
 include "Error.as"
 
