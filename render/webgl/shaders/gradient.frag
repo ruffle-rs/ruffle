@@ -128,7 +128,7 @@ void main() {
         color = vec4(linear_to_srgb(vec3(color)), color.a);
     }
 
-    color = mult_color * color + add_color;
+    color = clamp(mult_color * color + add_color, 0.0, 1.0);
     float alpha = clamp(color.a, 0.0, 1.0);
     gl_FragColor = vec4(color.rgb * alpha, alpha);
 }
