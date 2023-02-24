@@ -2625,6 +2625,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if value1 == value2 {
             self.push_stack(true);
         } else {
+            // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
             if let Some(xml1) = value1.as_object().and_then(|obj| obj.as_xml_object()) {
                 if let Some(xml2) = value2.as_object().and_then(|obj| obj.as_xml_object()) {
                     self.push_stack(E4XNode::ptr_eq(*xml1.node(), *xml2.node()));
