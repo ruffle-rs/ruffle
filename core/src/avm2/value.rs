@@ -869,6 +869,13 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    pub fn as_object_ref(&self) -> Option<&Object<'gc>> {
+        match self {
+            Value::Object(o) => Some(o),
+            _ => None,
+        }
+    }
+
     /// Unwrap the value's object, if present, and otherwise report an error
     /// if the value is not a callable object (class or function).
     ///

@@ -30,6 +30,7 @@ mod class;
 mod domain;
 pub mod error;
 mod events;
+mod extract;
 mod function;
 pub mod globals;
 mod method;

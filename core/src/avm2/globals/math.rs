@@ -5,19 +5,17 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use rand::Rng;
+use ruffle_macros::native;
 
 macro_rules! wrap_std {
     ($name:ident, $std:expr) => {
+        #[native]
         pub fn $name<'gc>(
-            activation: &mut Activation<'_, 'gc>,
+            _activation: &mut Activation<'_, 'gc>,
             _this: Option<Object<'gc>>,
-            args: &[Value<'gc>],
+            input: f64,
         ) -> Result<Value<'gc>, Error<'gc>> {
-            if let Some(input) = args.get(0) {
-                Ok($std(input.coerce_to_number(activation)?).into())
-            } else {
-                Ok(f64::NAN.into())
-            }
+            Ok($std(input).into())
         }
     };
 }
