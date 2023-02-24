@@ -1,10 +1,13 @@
 //! XMLList builtin and prototype
 
 pub use crate::avm2::object::xml_list_allocator;
-use crate::avm2::{
-    e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
-    object::E4XOrXml,
-    Activation, Error, Object, TObject, Value,
+use crate::{
+    avm2::{
+        e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
+        object::E4XOrXml,
+        Activation, Error, Object, TObject, Value,
+    },
+    avm2_stub_method,
 };
 
 fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
@@ -62,6 +65,7 @@ pub fn to_string<'gc>(
     if has_simple_content_inner(&children) {
         Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
     } else {
+        avm2_stub_method!(activation, "XMLList", "toString", "non-simple content");
         Err("XMLList.toString() for non-simple content: not yet implemented".into())
     }
 }
