@@ -966,7 +966,7 @@ fn shutdown() {
     }
 }
 
-fn main() -> Result<(), Error> {
+fn main() {
     init();
     let opt = Opt::parse();
     let result = if opt.timedemo {
@@ -974,7 +974,11 @@ fn main() -> Result<(), Error> {
     } else {
         App::new(opt).map(|app| app.run())
     };
-    if let Err(ref error) = result { eprintln!("{:?}", error) }
+    let mut code = 0;
+    if let Err(ref error) = result { 
+        eprintln!("{:?}", error);
+        code = 1;
+    }
     shutdown();
-    result
+    std::process::exit(code);
 }
