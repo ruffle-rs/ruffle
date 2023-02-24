@@ -13,12 +13,16 @@
 					</soap:Envelope>;
 					
 			trace(soapXML.localName()); // Envelope
+			trace(XML.prototype.localName.call(soapXML));
 			
 			var simpleXML:XML = <outerElem><innerElem><p>Hello world</p></innerElem></outerElem>;
 			trace("simpleXML.innerElem.p = " + simpleXML.innerElem.p);
 			
+			trace("XML.prototype.toString() = " + XML.prototype.toString());
+			
 			var noArgs = new XML();
 			trace("noArgs.toString() = " + noArgs.toString());
+			trace("XML.prototype.toString.call(noArgs): " + XML.prototype.toString.call(noArgs));
 			trace("noArgs.toXMLString() = " + noArgs.toXMLString());
 			
 			var nullArg = new XML(null);

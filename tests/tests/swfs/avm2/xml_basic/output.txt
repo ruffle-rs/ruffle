@@ -1,6 +1,9 @@
 Envelope
+Envelope
 simpleXML.innerElem.p = Hello world
+XML.prototype.toString() = 
 noArgs.toString() = 
+XML.prototype.toString.call(noArgs): 
 noArgs.toXMLString() = 
 nullArg.toString() = 
 nullArg.toString() = 
