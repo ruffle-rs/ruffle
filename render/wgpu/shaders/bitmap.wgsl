@@ -41,8 +41,8 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Unmultiply alpha, apply color transform, remultiply alpha.
     if( color.a > 0.0 ) {
         color = vec4<f32>(color.rgb / color.a, color.a);
-        color = color * colorTransforms.mult_color + colorTransforms.add_color;
-        let alpha = clamp(color.a, 0.0, 1.0);
+        color = saturate(color * colorTransforms.mult_color + colorTransforms.add_color);
+        let alpha = saturate(color.a);
         color = vec4<f32>(color.rgb * alpha, alpha);
     }
     return color;
