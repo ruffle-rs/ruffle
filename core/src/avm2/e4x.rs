@@ -147,7 +147,7 @@ impl<'gc> E4XNode<'gc> {
         // outside of this body.
         fn push_childless_node<'gc>(
             node: E4XNode<'gc>,
-            open_tags: &mut Vec<E4XNode<'gc>>,
+            open_tags: &mut [E4XNode<'gc>],
             top_level: &mut Vec<E4XNode<'gc>>,
             depth: usize,
             activation: &mut Activation<'_, 'gc>,
