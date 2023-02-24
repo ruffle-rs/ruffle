@@ -478,16 +478,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    // package `flash.display`
-    avm2_system_class!(
-        graphics,
-        activation,
-        flash::display::graphics::create_class(activation),
-        script
-    );
-
-    // package `flash.geom`
-
     // package `flash.text`
     avm2_system_class!(
         textformat,
@@ -605,6 +595,7 @@ fn load_playerglobal<'gc>(
             ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
+            ("flash.display", "Graphics", graphics),
             ("flash.display", "LoaderInfo", loaderinfo),
             ("flash.display", "MovieClip", movieclip),
             ("flash.display", "Shape", shape),

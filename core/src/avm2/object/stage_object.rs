@@ -102,7 +102,7 @@ impl<'gc> StageObject<'gc> {
         ));
         this.install_instance_slots(activation);
 
-        class.call_native_init(Some(this.into()), &[], activation)?;
+        // note: for Graphics, there's no need to call init.
 
         Ok(this)
     }
