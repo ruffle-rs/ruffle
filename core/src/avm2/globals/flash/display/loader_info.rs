@@ -2,31 +2,18 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{loaderinfo_allocator, DomainObject, LoaderStream, Object, TObject};
+use crate::avm2::object::{DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
-use gc_arena::GcCell;
 use swf::{write_swf, Compression};
+
+pub use crate::avm2::object::loader_info_allocator;
 
 // FIXME - Throw an actual 'Error' with the proper code
 const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
-
-/// Implements `flash.display.LoaderInfo`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("LoaderInfo cannot be constructed".into())
-}
 
 /// Implements `flash.display.LoaderInfo`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -41,17 +28,8 @@ pub fn native_instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.LoaderInfo`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// `actionScriptVersion` getter
-pub fn action_script_version<'gc>(
+pub fn get_action_script_version<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -77,7 +55,7 @@ pub fn action_script_version<'gc>(
 }
 
 /// `applicationDomain` getter
-pub fn application_domain<'gc>(
+pub fn get_application_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -107,7 +85,7 @@ pub fn application_domain<'gc>(
 }
 
 /// `bytesTotal` getter
-pub fn bytes_total<'gc>(
+pub fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -130,7 +108,7 @@ pub fn bytes_total<'gc>(
 }
 
 /// `bytesLoaded` getter
-pub fn bytes_loaded<'gc>(
+pub fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -157,7 +135,7 @@ pub fn bytes_loaded<'gc>(
 }
 
 /// `content` getter
-pub fn content<'gc>(
+pub fn get_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -182,7 +160,7 @@ pub fn content<'gc>(
 }
 
 /// `contentType` getter
-pub fn content_type<'gc>(
+pub fn get_content_type<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -205,7 +183,7 @@ pub fn content_type<'gc>(
 }
 
 /// `frameRate` getter
-pub fn frame_rate<'gc>(
+pub fn get_frame_rate<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -230,7 +208,7 @@ pub fn frame_rate<'gc>(
 }
 
 /// `height` getter
-pub fn height<'gc>(
+pub fn get_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -255,7 +233,7 @@ pub fn height<'gc>(
 }
 
 /// `isURLInaccessible` getter
-pub fn is_url_inaccessible<'gc>(
+pub fn get_is_url_inaccessible<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -265,7 +243,7 @@ pub fn is_url_inaccessible<'gc>(
 }
 
 /// `parentAllowsChild` getter
-pub fn parent_allows_child<'gc>(
+pub fn get_parent_allows_child<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -275,7 +253,7 @@ pub fn parent_allows_child<'gc>(
 }
 
 /// `swfVersion` getter
-pub fn swf_version<'gc>(
+pub fn get_swf_version<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -300,7 +278,7 @@ pub fn swf_version<'gc>(
 }
 
 /// `url` getter
-pub fn url<'gc>(
+pub fn get_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -326,7 +304,7 @@ pub fn url<'gc>(
 }
 
 /// `width` getter
-pub fn width<'gc>(
+pub fn get_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -351,7 +329,7 @@ pub fn width<'gc>(
 }
 
 /// `bytes` getter
-pub fn bytes<'gc>(
+pub fn get_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -408,7 +386,7 @@ pub fn bytes<'gc>(
 }
 
 /// `loader` getter
-pub fn loader<'gc>(
+pub fn get_loader<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -421,7 +399,7 @@ pub fn loader<'gc>(
 }
 
 /// `loaderURL` getter
-pub fn loader_url<'gc>(
+pub fn get_loader_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -445,7 +423,7 @@ pub fn loader_url<'gc>(
 }
 
 /// `parameters` getter
-pub fn parameters<'gc>(
+pub fn get_parameters<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -481,7 +459,7 @@ pub fn parameters<'gc>(
 }
 
 /// `sharedEvents` getter
-pub fn shared_events<'gc>(
+pub fn get_shared_events<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -493,7 +471,7 @@ pub fn shared_events<'gc>(
 }
 
 /// `uncaughtErrorEvents` getter
-pub fn uncaught_error_events<'gc>(
+pub fn get_uncaught_error_events<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -502,62 +480,4 @@ pub fn uncaught_error_events<'gc>(
         return Ok(loader_info.uncaught_error_events().into());
     }
     Ok(Value::Undefined)
-}
-
-/// Construct `LoaderInfo`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "LoaderInfo"),
-        Some(Multiname::new(
-            Namespace::package("flash.events", mc),
-            "EventDispatcher",
-        )),
-        Method::from_builtin(instance_init, "<LoaderInfo instance initializer>", mc),
-        Method::from_builtin(class_init, "<LoaderInfo class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_allocator(loaderinfo_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<LoaderInfo native instance initializer>",
-        mc,
-    ));
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("actionScriptVersion", Some(action_script_version), None),
-        ("applicationDomain", Some(application_domain), None),
-        ("bytesLoaded", Some(bytes_loaded), None),
-        ("bytesTotal", Some(bytes_total), None),
-        ("content", Some(content), None),
-        ("contentType", Some(content_type), None),
-        ("frameRate", Some(frame_rate), None),
-        ("height", Some(height), None),
-        ("isURLInaccessible", Some(is_url_inaccessible), None),
-        ("parentAllowsChild", Some(parent_allows_child), None),
-        ("swfVersion", Some(swf_version), None),
-        ("url", Some(url), None),
-        ("width", Some(width), None),
-        ("bytes", Some(bytes), None),
-        ("loader", Some(loader), None),
-        ("loaderURL", Some(loader_url), None),
-        ("parameters", Some(parameters), None),
-        ("sharedEvents", Some(shared_events), None),
-        ("uncaughtErrorEvents", Some(uncaught_error_events), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    class
 }

@@ -1,29 +1,14 @@
 //! `flash.display.DisplayObjectContainer` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::error::range_error;
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
-use gc_arena::GcCell;
 use std::cmp::min;
-
-/// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("You cannot construct DisplayObjectContainer directly.".into())
-}
 
 /// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -35,15 +20,6 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
     }
 
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.display.DisplayObjectContainer`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -272,7 +248,7 @@ pub fn remove_child<'gc>(
 }
 
 /// Implements `DisplayObjectContainer.numChildren`
-pub fn num_children<'gc>(
+pub fn get_num_children<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -624,7 +600,7 @@ pub fn are_inaccessible_objects_under_point<'gc>(
     Ok(false.into())
 }
 
-pub fn mouse_children<'gc>(
+pub fn get_mouse_children<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -659,7 +635,7 @@ pub fn set_mouse_children<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn tab_children<'gc>(
+pub fn get_tab_children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -685,81 +661,4 @@ pub fn set_tab_children<'gc>(
     );
 
     Ok(Value::Undefined)
-}
-
-/// Construct `DisplayObjectContainer`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(
-            Namespace::package("flash.display", mc),
-            "DisplayObjectContainer",
-        ),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "InteractiveObject",
-        )),
-        Method::from_builtin(
-            instance_init,
-            "<DisplayObjectContainer instance initializer>",
-            mc,
-        ),
-        Method::from_builtin(class_init, "<DisplayObjectContainer class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<DisplayObjectContainer native instance initializer>",
-        mc,
-    ));
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("numChildren", Some(num_children), None),
-        (
-            "mouseChildren",
-            Some(mouse_children),
-            Some(set_mouse_children),
-        ),
-        ("tabChildren", Some(tab_children), Some(set_tab_children)),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("getChildAt", get_child_at),
-        ("getChildByName", get_child_by_name),
-        ("addChild", add_child),
-        ("addChildAt", add_child_at),
-        ("removeChild", remove_child),
-        ("contains", contains),
-        ("getChildIndex", get_child_index),
-        ("removeChildAt", remove_child_at),
-        ("removeChildren", remove_children),
-        ("setChildIndex", set_child_index),
-        ("swapChildrenAt", swap_children_at),
-        ("swapChildren", swap_children),
-        ("stopAllMovieClips", stop_all_movie_clips),
-        ("getObjectsUnderPoint", get_objects_under_point),
-        (
-            "areInaccessibleObjectsUnderPoint",
-            are_inaccessible_objects_under_point,
-        ),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

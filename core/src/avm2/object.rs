@@ -58,7 +58,7 @@ mod vertex_buffer_3d_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
-pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDataObject};
+pub use crate::avm2::object::bitmapdata_object::{bitmap_data_allocator, BitmapDataObject};
 pub use crate::avm2::object::bytearray_object::{byte_array_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::context3d_object::Context3DObject;
@@ -71,7 +71,7 @@ pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
 pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
 pub use crate::avm2::object::loaderinfo_object::{
-    loaderinfo_allocator, LoaderInfoObject, LoaderStream,
+    loader_info_allocator, LoaderInfoObject, LoaderStream,
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};

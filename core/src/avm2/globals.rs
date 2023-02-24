@@ -478,96 +478,37 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    class(
-        flash::events::ieventdispatcher::create_interface(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        eventdispatcher,
-        activation,
-        flash::events::eventdispatcher::create_class(activation),
-        script
-    );
-
     // package `flash.display`
-    class(
-        flash::display::ibitmapdrawable::create_interface(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        display_object,
-        activation,
-        flash::display::displayobject::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        shape,
-        activation,
-        flash::display::shape::create_class(activation),
-        script
-    );
-    class(
-        flash::display::interactiveobject::create_class(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        simplebutton,
-        activation,
-        flash::display::simplebutton::create_class(activation),
-        script
-    );
-    class(
-        flash::display::displayobjectcontainer::create_class(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        sprite,
-        activation,
-        flash::display::sprite::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        movieclip,
-        activation,
-        flash::display::movieclip::create_class(activation),
-        script
-    );
     avm2_system_class!(
         graphics,
         activation,
         flash::display::graphics::create_class(activation),
         script
     );
-    avm2_system_class!(
-        loaderinfo,
-        activation,
-        flash::display::loaderinfo::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        stage,
-        activation,
-        flash::display::stage::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmap,
-        activation,
-        flash::display::bitmap::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmapdata,
-        activation,
-        flash::display::bitmapdata::create_class(activation),
-        script
-    );
 
     // package `flash.geom`
+
+    // package `flash.text`
+    avm2_system_class!(
+        textformat,
+        activation,
+        flash::text::textformat::create_class(activation),
+        script
+    );
+    class(
+        flash::text::font::create_class(activation),
+        script,
+        activation,
+    )?;
+
+    // Inside this call, the macro `avm2_system_classes_playerglobal`
+    // triggers classloading. Therefore, we run `load_playerglobal`
+    // relative late, so that it can access classes defined before
+    // this call.
+    load_playerglobal(activation, domain)?;
+
+    // Everything after the `load_playerglobal` call needs classes
+    // defined in the playerglobal swf.
 
     // package `flash.media`
     class(
@@ -592,31 +533,6 @@ pub fn load_player_globals<'gc>(
         flash::media::soundchannel::create_class(activation),
         script
     );
-
-    // package `flash.text`
-    avm2_system_class!(
-        textfield,
-        activation,
-        flash::text::textfield::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        textformat,
-        activation,
-        flash::text::textformat::create_class(activation),
-        script
-    );
-    class(
-        flash::text::font::create_class(activation),
-        script,
-        activation,
-    )?;
-
-    // Inside this call, the macro `avm2_system_classes_playerglobal`
-    // triggers classloading. Therefore, we run `load_playerglobal`
-    // relative late, so that it can access classes defined before
-    // this call.
-    load_playerglobal(activation, domain)?;
 
     Ok(())
 }
@@ -685,8 +601,16 @@ fn load_playerglobal<'gc>(
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("flash.display", "Bitmap", bitmap),
+            ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
+            ("flash.display", "LoaderInfo", loaderinfo),
+            ("flash.display", "MovieClip", movieclip),
+            ("flash.display", "Shape", shape),
+            ("flash.display", "SimpleButton", simplebutton),
+            ("flash.display", "Sprite", sprite),
+            ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
@@ -700,6 +624,7 @@ fn load_playerglobal<'gc>(
             ("flash.errors", "IOError", ioerror),
             ("flash.errors", "EOFError", eoferror),
             ("flash.events", "Event", event),
+            ("flash.events", "EventDispatcher", eventdispatcher),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
             ("flash.events", "KeyboardEvent", keyboardevent),
@@ -717,6 +642,7 @@ fn load_playerglobal<'gc>(
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
+            ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
     );

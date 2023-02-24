@@ -2,38 +2,11 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
 use crate::string::{AvmString, WString};
-use gc_arena::GcCell;
-
-/// Implements `flash.display.MovieClip`'s instance constructor.
-pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-    }
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.display.MovieClip`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
 
 /// Implements `addFrameScript`, an undocumented method of `MovieClip` used to
 /// specify what methods of a clip's class run on which frames.
@@ -64,7 +37,7 @@ pub fn add_frame_script<'gc>(
 }
 
 /// Implements `currentFrame`.
-pub fn current_frame<'gc>(
+pub fn get_current_frame<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -89,7 +62,7 @@ pub fn current_frame<'gc>(
 }
 
 /// Implements `currentFrameLabel`.
-pub fn current_frame_label<'gc>(
+pub fn get_current_frame_label<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -114,7 +87,7 @@ pub fn current_frame_label<'gc>(
 }
 
 /// Implements `currentLabel`.
-pub fn current_label<'gc>(
+pub fn get_current_label<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -169,7 +142,7 @@ fn labels_for_scene<'gc>(
 }
 
 /// Implements `currentLabels`.
-pub fn current_labels<'gc>(
+pub fn get_current_labels<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -190,7 +163,7 @@ pub fn current_labels<'gc>(
 }
 
 /// Implements `currentScene`.
-pub fn current_scene<'gc>(
+pub fn get_current_scene<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -220,7 +193,7 @@ pub fn current_scene<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn enabled<'gc>(
+pub fn get_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -253,7 +226,7 @@ pub fn set_enabled<'gc>(
 }
 
 /// Implements `scenes`.
-pub fn scenes<'gc>(
+pub fn get_scenes<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -298,7 +271,7 @@ pub fn scenes<'gc>(
 }
 
 /// Implements `framesLoaded`.
-pub fn frames_loaded<'gc>(
+pub fn get_frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -314,7 +287,7 @@ pub fn frames_loaded<'gc>(
 }
 
 /// Implements `isPlaying`.
-pub fn is_playing<'gc>(
+pub fn get_is_playing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -330,7 +303,7 @@ pub fn is_playing<'gc>(
 }
 
 /// Implements `totalFrames`.
-pub fn total_frames<'gc>(
+pub fn get_total_frames<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -407,10 +380,10 @@ pub fn goto_frame<'gc>(
                     .wrapping_add(scene)
                     .saturating_add(1)
             } else {
-                if let Some(scene) = args.get(1).cloned() {
+                if !matches!(args[1], Value::Null) {
                     //If the user specified a scene, we need to validate that
                     //the requested frame exists within that scene.
-                    let scene = scene.coerce_to_string(activation)?;
+                    let scene = args[1].coerce_to_string(activation)?;
                     if !mc.frame_exists_within_scene(&frame_or_label, &scene, &activation.context) {
                         return Err(format!(
                             "ArgumentError: Frame label {frame_or_label} not found in scene {scene}",
@@ -545,62 +518,4 @@ pub fn next_scene<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `MovieClip`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "MovieClip"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "Sprite",
-        )),
-        Method::from_builtin(instance_init, "<MovieClip instance initializer>", mc),
-        Method::from_builtin(class_init, "<MovieClip class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("currentFrame", Some(current_frame), None),
-        ("currentFrameLabel", Some(current_frame_label), None),
-        ("currentLabel", Some(current_label), None),
-        ("currentLabels", Some(current_labels), None),
-        ("currentScene", Some(current_scene), None),
-        ("enabled", Some(enabled), Some(set_enabled)),
-        ("scenes", Some(scenes), None),
-        ("framesLoaded", Some(frames_loaded), None),
-        ("isPlaying", Some(is_playing), None),
-        ("totalFrames", Some(total_frames), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("addFrameScript", add_frame_script),
-        ("gotoAndPlay", goto_and_play),
-        ("gotoAndStop", goto_and_stop),
-        ("stop", stop),
-        ("play", play),
-        ("prevFrame", prev_frame),
-        ("nextFrame", next_frame),
-        ("prevScene", prev_scene),
-        ("nextScene", next_scene),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

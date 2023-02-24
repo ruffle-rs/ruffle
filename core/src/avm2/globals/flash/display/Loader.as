@@ -50,7 +50,7 @@ package flash.display {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
-		override public function removeChild(child:DisplayObject, index:int):DisplayObject {
+		override public function removeChild(child:DisplayObject):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 

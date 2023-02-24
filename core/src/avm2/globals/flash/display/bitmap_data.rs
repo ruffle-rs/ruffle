@@ -1,17 +1,12 @@
 //! `flash.display.BitmapData` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::argument_error;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{
-    bitmapdata_allocator, BitmapDataObject, ByteArrayObject, Object, TObject,
-};
+use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
@@ -23,6 +18,8 @@ use gc_arena::GcCell;
 use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
+
+pub use crate::avm2::object::bitmap_data_allocator;
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -43,8 +40,8 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
         );
 }
 
-/// Implements `flash.display.BitmapData`'s instance constructor.
-pub fn instance_init<'gc>(
+/// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -125,17 +122,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.BitmapData`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `BitmapData.width`'s getter.
-pub fn width<'gc>(
+pub fn get_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -149,7 +137,7 @@ pub fn width<'gc>(
 }
 
 /// Implements `BitmapData.height`'s getter.
-pub fn height<'gc>(
+pub fn get_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -163,7 +151,7 @@ pub fn height<'gc>(
 }
 
 /// Implements `BitmapData.transparent`'s getter.
-pub fn transparent<'gc>(
+pub fn get_transparent<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -731,6 +719,15 @@ pub fn lock<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn unlock<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.BitmapData", "unlock");
+    Ok(Value::Undefined)
+}
+
 /// Implements `BitmapData.draw`
 pub fn draw<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -776,7 +773,7 @@ pub fn draw<'gc>(
         let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
         if !matches!(clip_rect_val, Value::Null) {
             let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
-            clip_rect = Some(super::displayobject::object_to_rectangle(
+            clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
             )?);
@@ -856,7 +853,7 @@ pub fn draw_with_quality<'gc>(
         let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
         if !matches!(clip_rect_val, Value::Null) {
             let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
-            clip_rect = Some(super::displayobject::object_to_rectangle(
+            clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
             )?);
@@ -965,7 +962,7 @@ pub fn dispose<'gc>(
 }
 
 /// Implement `BitmapData.rect`
-pub fn rect<'gc>(
+pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1022,7 +1019,7 @@ pub fn apply_filter<'gc>(
         };
         let source_rect = args[1]
             .as_object()
-            .and_then(|o| super::displayobject::object_to_rectangle(activation, o).ok())
+            .and_then(|o| super::display_object::object_to_rectangle(activation, o).ok())
             .ok_or_else(|| {
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Rectangle.", args[1].coerce_to_string(activation).unwrap_or_default()))
             })?;
@@ -1322,74 +1319,4 @@ pub fn perlin_noise<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `BitmapData`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "BitmapData"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<BitmapData instance initializer>", mc),
-        Method::from_builtin(class_init, "<BitmapData class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_allocator(bitmapdata_allocator);
-
-    write.implements(Multiname::new(
-        Namespace::package("flash.display", mc),
-        "IBitmapDrawable",
-    ));
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("width", Some(width), None),
-        ("height", Some(height), None),
-        ("rect", Some(rect), None),
-        ("transparent", Some(transparent), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("getPixels", get_pixels),
-        ("getPixel", get_pixel),
-        ("getPixel32", get_pixel32),
-        ("setPixel", set_pixel),
-        ("setPixel32", set_pixel32),
-        ("setPixels", set_pixels),
-        ("copyChannel", copy_channel),
-        ("floodFill", flood_fill),
-        ("noise", noise),
-        ("colorTransform", color_transform),
-        ("getColorBoundsRect", get_color_bounds_rect),
-        ("scroll", scroll),
-        ("lock", lock),
-        ("unlock", lock), // sic, it's a noop (TODO)
-        ("copyPixels", copy_pixels),
-        ("draw", draw),
-        ("drawWithQuality", draw_with_quality),
-        ("fillRect", fill_rect),
-        ("dispose", dispose),
-        ("applyFilter", apply_filter),
-        ("clone", clone),
-        ("perlinNoise", perlin_noise),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

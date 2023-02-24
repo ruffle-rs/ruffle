@@ -1,30 +1,14 @@
 //! `flash.display.Stage` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::GcCell;
 use swf::Color;
-
-/// Implements `flash.display.Stage`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("You cannot construct new instances of the Stage.".into())
-}
 
 /// Implements `flash.display.Stage`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -36,15 +20,6 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, args)?;
     }
 
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.display.Stage`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
 }
 
@@ -139,7 +114,7 @@ pub fn set_mouse_enabled<'gc>(
 }
 
 /// Overrides `name`'s getter.
-pub fn name<'gc>(
+pub fn get_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -175,7 +150,7 @@ pub fn set_rotation<'gc>(
 }
 
 /// Overrides `scale9Grid`'s setter.
-pub fn set_scale_nine_grid<'gc>(
+pub fn set_scale9grid<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -265,7 +240,7 @@ pub fn set_y<'gc>(
 }
 
 /// Implement `align`'s getter
-pub fn align<'gc>(
+pub fn get_align<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -313,7 +288,7 @@ pub fn set_align<'gc>(
 }
 
 /// Implement `browserZoomFactor`'s getter
-pub fn browser_zoom_factor<'gc>(
+pub fn get_browser_zoom_factor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -335,7 +310,7 @@ pub fn browser_zoom_factor<'gc>(
 }
 
 /// Implement `color`'s getter
-pub fn color<'gc>(
+pub fn get_color<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -375,7 +350,7 @@ pub fn set_color<'gc>(
 }
 
 /// Implement `contentsScaleFactor`'s getter
-pub fn contents_scale_factor<'gc>(
+pub fn get_contents_scale_factor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -397,7 +372,7 @@ pub fn contents_scale_factor<'gc>(
 }
 
 /// Implement `displayState`'s getter
-pub fn display_state<'gc>(
+pub fn get_display_state<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -440,7 +415,7 @@ pub fn set_display_state<'gc>(
 }
 
 /// Implement `focus`'s getter
-pub fn focus<'gc>(
+pub fn get_focus<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -476,7 +451,7 @@ pub fn set_focus<'gc>(
 }
 
 /// Implement `frameRate`'s getter
-pub fn frame_rate<'gc>(
+pub fn get_frame_rate<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -500,7 +475,7 @@ pub fn set_frame_rate<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn show_default_context_menu<'gc>(
+pub fn get_show_default_context_menu<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -522,7 +497,7 @@ pub fn set_show_default_context_menu<'gc>(
 }
 
 /// Implement `scaleMode`'s getter
-pub fn scale_mode<'gc>(
+pub fn get_scale_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -562,7 +537,7 @@ pub fn set_scale_mode<'gc>(
 /// Implement `stageFocusRect`'s getter
 ///
 /// This setting is currently ignored in Ruffle.
-pub fn stage_focus_rect<'gc>(
+pub fn get_stage_focus_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -597,7 +572,7 @@ pub fn set_stage_focus_rect<'gc>(
 }
 
 /// Implement `stageWidth`'s getter
-pub fn stage_width<'gc>(
+pub fn get_stage_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -623,7 +598,7 @@ pub fn set_stage_width<'gc>(
 }
 
 /// Implement `stageHeight`'s getter
-pub fn stage_height<'gc>(
+pub fn get_stage_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -649,7 +624,7 @@ pub fn set_stage_height<'gc>(
 }
 
 /// Implement `allowsFullScreen`'s getter
-pub fn allows_full_screen<'gc>(
+pub fn get_allows_full_screen<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -659,7 +634,7 @@ pub fn allows_full_screen<'gc>(
 }
 
 /// Implement `allowsFullScreenInteractive`'s getter
-pub fn allows_full_screen_interactive<'gc>(
+pub fn get_allows_full_screen_interactive<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -673,7 +648,7 @@ pub fn allows_full_screen_interactive<'gc>(
 }
 
 /// Implement `quality`'s getter
-pub fn quality<'gc>(
+pub fn get_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -704,7 +679,7 @@ pub fn set_quality<'gc>(
 }
 
 /// Implement `stage3Ds`'s getter
-pub fn stage3ds<'gc>(
+pub fn get_stage3ds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -742,7 +717,7 @@ pub fn invalidate<'gc>(
 }
 
 /// Stage.fullScreenSourceRect's getter
-pub fn full_screen_source_rect<'gc>(
+pub fn get_full_screen_source_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -759,136 +734,4 @@ pub fn set_full_screen_source_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
-}
-
-/// Construct `Stage`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "Stage"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "DisplayObjectContainer",
-        )),
-        Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
-        Method::from_builtin(class_init, "<Stage class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<Stage native instance initializer>",
-        mc,
-    ));
-
-    const PUBLIC_OVERRIDE_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        (
-            "accessibilityProperties",
-            None,
-            Some(set_accessibility_properties),
-        ),
-        ("alpha", None, Some(set_alpha)),
-        ("blendMode", None, Some(set_blend_mode)),
-        ("cacheAsBitmap", None, Some(set_cache_as_bitmap)),
-        ("contextMenu", None, Some(set_context_menu)),
-        ("filters", None, Some(set_filters)),
-        ("focusRect", None, Some(set_focus_rect)),
-        ("loaderInfo", None, Some(set_loader_info)),
-        ("mask", None, Some(set_mask)),
-        ("mouseEnabled", None, Some(set_mouse_enabled)),
-        ("name", Some(name), Some(set_name)),
-        ("opaqueBackground", None, Some(set_opaque_background)),
-        ("rotation", None, Some(set_rotation)),
-        ("scale9Grid", None, Some(set_scale_nine_grid)),
-        ("scaleX", None, Some(set_scale_x)),
-        ("scaleY", None, Some(set_scale_y)),
-        ("scrollRect", None, Some(set_scroll_rect)),
-        ("tabEnabled", None, Some(set_tab_enabled)),
-        ("tabIndex", None, Some(set_tab_index)),
-        ("transform", None, Some(set_transform)),
-        ("visible", None, Some(set_visible)),
-        ("x", None, Some(set_x)),
-        ("y", None, Some(set_y)),
-    ];
-    for &(name, getter, setter) in PUBLIC_OVERRIDE_INSTANCE_PROPERTIES {
-        if let Some(getter) = getter {
-            write.define_instance_trait(
-                Trait::from_getter(
-                    QName::new(activation.avm2().public_namespace, name),
-                    Method::from_builtin(getter, name, mc),
-                )
-                .with_override(),
-            );
-        }
-        if let Some(setter) = setter {
-            write.define_instance_trait(
-                Trait::from_setter(
-                    QName::new(activation.avm2().public_namespace, name),
-                    Method::from_builtin(setter, name, mc),
-                )
-                .with_override(),
-            );
-        }
-    }
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("align", Some(align), Some(set_align)),
-        ("browserZoomFactor", Some(browser_zoom_factor), None),
-        ("color", Some(color), Some(set_color)),
-        ("contentsScaleFactor", Some(contents_scale_factor), None),
-        ("displayState", Some(display_state), Some(set_display_state)),
-        ("focus", Some(focus), Some(set_focus)),
-        ("frameRate", Some(frame_rate), Some(set_frame_rate)),
-        (
-            "fullScreenSourceRect",
-            Some(full_screen_source_rect),
-            Some(set_full_screen_source_rect),
-        ),
-        ("scaleMode", Some(scale_mode), Some(set_scale_mode)),
-        (
-            "showDefaultContextMenu",
-            Some(show_default_context_menu),
-            Some(set_show_default_context_menu),
-        ),
-        ("stageWidth", Some(stage_width), Some(set_stage_width)),
-        ("stageHeight", Some(stage_height), Some(set_stage_height)),
-        (
-            "stageFocusRect",
-            Some(stage_focus_rect),
-            Some(set_stage_focus_rect),
-        ),
-        ("allowsFullScreen", Some(allows_full_screen), None),
-        (
-            "allowsFullScreenInteractive",
-            Some(allows_full_screen_interactive),
-            None,
-        ),
-        ("quality", Some(quality), Some(set_quality)),
-        ("stage3Ds", Some(stage3ds), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("invalidate", invalidate)];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

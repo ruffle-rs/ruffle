@@ -1,22 +1,19 @@
 //! `flash.display.SimpleButton` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::flash::media::soundmixer::{set_sound_transform, sound_transform};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
 use crate::vminterface::Instantiator;
-use gc_arena::GcCell;
 use swf::ButtonState;
 
-/// Implements `flash.display.SimpleButton`'s instance constructor.
-pub fn instance_init<'gc>(
+pub use crate::avm2::globals::flash::media::soundmixer::{
+    get_sound_transform, set_sound_transform,
+};
+
+/// Implements `flash.display.SimpleButton`'s 'init' method. which is called from the constructor
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -68,17 +65,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.SimpleButton`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `downState`'s getter.
-pub fn down_state<'gc>(
+pub fn get_down_state<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -120,7 +108,7 @@ pub fn set_down_state<'gc>(
 }
 
 /// Implements `overState`'s getter.
-pub fn over_state<'gc>(
+pub fn get_over_state<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -162,7 +150,7 @@ pub fn set_over_state<'gc>(
 }
 
 /// Implements `hitTestState`'s getter.
-pub fn hit_test_state<'gc>(
+pub fn get_hit_test_state<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -204,7 +192,7 @@ pub fn set_hit_test_state<'gc>(
 }
 
 /// Implements `upState`'s getter.
-pub fn up_state<'gc>(
+pub fn get_up_state<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -246,7 +234,7 @@ pub fn set_up_state<'gc>(
 }
 
 /// Implements `trackAsMenu`'s getter
-pub fn track_as_menu<'gc>(
+pub fn get_track_as_menu<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -286,7 +274,7 @@ pub fn set_track_as_menu<'gc>(
 }
 
 /// Implements `enabled`'s getter
-pub fn enabled<'gc>(
+pub fn get_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -324,7 +312,7 @@ pub fn set_enabled<'gc>(
 }
 
 /// Implements `useHandCursor`'s getter
-pub fn use_hand_cursor<'gc>(
+pub fn get_use_hand_cursor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -359,57 +347,4 @@ pub fn set_use_hand_cursor<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `SimpleButton`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "SimpleButton"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "InteractiveObject",
-        )),
-        Method::from_builtin(instance_init, "<SimpleButton instance initializer>", mc),
-        Method::from_builtin(class_init, "<SimpleButton class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("downState", Some(down_state), Some(set_down_state)),
-        ("enabled", Some(enabled), Some(set_enabled)),
-        (
-            "hitTestState",
-            Some(hit_test_state),
-            Some(set_hit_test_state),
-        ),
-        ("overState", Some(over_state), Some(set_over_state)),
-        ("trackAsMenu", Some(track_as_menu), Some(set_track_as_menu)),
-        ("upState", Some(up_state), Some(set_up_state)),
-        (
-            "useHandCursor",
-            Some(use_hand_cursor),
-            Some(set_use_hand_cursor),
-        ),
-        (
-            "soundTransform",
-            Some(sound_transform),
-            Some(set_sound_transform),
-        ),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    class
 }

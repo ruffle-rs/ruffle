@@ -1,14 +1,11 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{stage_allocator, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
@@ -18,19 +15,11 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::GcCell;
 use std::str::FromStr;
 use swf::Twips;
 use swf::{BlendMode, Rectangle};
 
-/// Implements `flash.display.DisplayObject`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("You cannot construct DisplayObject directly.".into())
-}
+pub use crate::avm2::object::stage_allocator as display_object_allocator;
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -86,17 +75,8 @@ pub fn native_instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.DisplayObject`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `alpha`'s getter.
-pub fn alpha<'gc>(
+pub fn get_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -127,7 +107,7 @@ pub fn set_alpha<'gc>(
 }
 
 /// Implements `height`'s getter.
-pub fn height<'gc>(
+pub fn get_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -161,7 +141,7 @@ pub fn set_height<'gc>(
 }
 
 /// Implements `scaleY`'s getter.
-pub fn scale_y<'gc>(
+pub fn get_scale_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -192,7 +172,7 @@ pub fn set_scale_y<'gc>(
 }
 
 /// Implements `width`'s getter.
-pub fn width<'gc>(
+pub fn get_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -226,7 +206,7 @@ pub fn set_width<'gc>(
 }
 
 /// Implements `scaleX`'s getter.
-pub fn scale_x<'gc>(
+pub fn get_scale_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -256,7 +236,7 @@ pub fn set_scale_x<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn filters<'gc>(
+pub fn get_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -322,7 +302,7 @@ pub fn set_filters<'gc>(
 }
 
 /// Implements `x`'s getter.
-pub fn x<'gc>(
+pub fn get_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -354,7 +334,7 @@ pub fn set_x<'gc>(
 }
 
 /// Implements `y`'s getter.
-pub fn y<'gc>(
+pub fn get_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -385,7 +365,7 @@ pub fn set_y<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn z<'gc>(
+pub fn get_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -403,7 +383,7 @@ pub fn set_z<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn rotation_x<'gc>(
+pub fn get_rotation_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -421,7 +401,7 @@ pub fn set_rotation_x<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn rotation_y<'gc>(
+pub fn get_rotation_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -439,7 +419,7 @@ pub fn set_rotation_y<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn rotation_z<'gc>(
+pub fn get_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -457,7 +437,7 @@ pub fn set_rotation_z<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn scale_z<'gc>(
+pub fn get_scale_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -476,7 +456,7 @@ pub fn set_scale_z<'gc>(
 }
 
 /// Implements `rotation`'s getter.
-pub fn rotation<'gc>(
+pub fn get_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -515,7 +495,7 @@ pub fn set_rotation<'gc>(
 }
 
 /// Implements `name`'s getter.
-pub fn name<'gc>(
+pub fn get_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -554,7 +534,7 @@ pub fn set_name<'gc>(
 }
 
 /// Implements `parent`.
-pub fn parent<'gc>(
+pub fn get_parent<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -570,7 +550,7 @@ pub fn parent<'gc>(
 }
 
 /// Implements `root`.
-pub fn root<'gc>(
+pub fn get_root<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -586,7 +566,7 @@ pub fn root<'gc>(
 }
 
 /// Implements `stage`.
-pub fn stage<'gc>(
+pub fn get_stage<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -602,7 +582,7 @@ pub fn stage<'gc>(
 }
 
 /// Implements `visible`'s getter.
-pub fn visible<'gc>(
+pub fn get_visible<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -634,7 +614,7 @@ pub fn set_visible<'gc>(
 }
 
 /// Implements `mouseX`.
-pub fn mouse_x<'gc>(
+pub fn get_mouse_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -649,7 +629,7 @@ pub fn mouse_x<'gc>(
 }
 
 /// Implements `mouseY`.
-pub fn mouse_y<'gc>(
+pub fn get_mouse_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -732,7 +712,7 @@ pub fn hit_test_object<'gc>(
 }
 
 /// Implements `loaderInfo` getter
-pub fn loader_info<'gc>(
+pub fn get_loader_info<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -752,7 +732,7 @@ pub fn loader_info<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn transform<'gc>(
+pub fn get_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -801,7 +781,7 @@ pub fn set_transform<'gc>(
 }
 
 /// Implements `DisplayObject.blendMode`'s getter.
-pub fn blend_mode<'gc>(
+pub fn get_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -853,7 +833,7 @@ fn new_rectangle<'gc>(
         .construct(activation, args)
 }
 
-fn scroll_rect<'gc>(
+pub fn get_scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -888,7 +868,7 @@ pub fn object_to_rectangle<'gc>(
     })
 }
 
-fn set_scroll_rect<'gc>(
+pub fn set_scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -919,7 +899,7 @@ fn set_scroll_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-fn local_to_global<'gc>(
+pub fn local_to_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -951,7 +931,7 @@ fn local_to_global<'gc>(
     Ok(Value::Undefined)
 }
 
-fn global_to_local<'gc>(
+pub fn global_to_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -983,7 +963,7 @@ fn global_to_local<'gc>(
     Ok(Value::Undefined)
 }
 
-fn get_bounds<'gc>(
+pub fn get_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -1017,7 +997,7 @@ fn get_bounds<'gc>(
     Ok(Value::Undefined)
 }
 
-fn get_rect<'gc>(
+pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -1027,7 +1007,7 @@ fn get_rect<'gc>(
     get_bounds(activation, this, args)
 }
 
-fn mask<'gc>(
+pub fn get_mask<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1038,7 +1018,7 @@ fn mask<'gc>(
     Ok(Value::Undefined)
 }
 
-fn set_mask<'gc>(
+pub fn set_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -1063,7 +1043,7 @@ fn set_mask<'gc>(
     Ok(Value::Undefined)
 }
 
-fn cache_as_bitmap<'gc>(
+pub fn get_cache_as_bitmap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1074,7 +1054,7 @@ fn cache_as_bitmap<'gc>(
     Ok(Value::Undefined)
 }
 
-fn set_cache_as_bitmap<'gc>(
+pub fn set_cache_as_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -1087,7 +1067,7 @@ fn set_cache_as_bitmap<'gc>(
 }
 
 /// `opaqueBackground`'s getter.
-pub fn opaque_background<'gc>(
+pub fn get_opaque_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -1112,97 +1092,4 @@ pub fn set_opaque_background<'gc>(
         "opaqueBackground"
     );
     Ok(Value::Undefined)
-}
-
-/// Construct `DisplayObject`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "DisplayObject"),
-        Some(Multiname::new(
-            Namespace::package("flash.events", mc),
-            "EventDispatcher",
-        )),
-        Method::from_builtin(instance_init, "<DisplayObject instance initializer>", mc),
-        Method::from_builtin(class_init, "<DisplayObject class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_instance_allocator(stage_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<DisplayObject native instance initializer>",
-        mc,
-    ));
-
-    write.implements(Multiname::new(
-        Namespace::package("flash.display", mc),
-        "IBitmapDrawable",
-    ));
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("alpha", Some(alpha), Some(set_alpha)),
-        ("blendMode", Some(blend_mode), Some(set_blend_mode)),
-        ("height", Some(height), Some(set_height)),
-        ("scaleY", Some(scale_y), Some(set_scale_y)),
-        ("width", Some(width), Some(set_width)),
-        ("scaleX", Some(scale_x), Some(set_scale_x)),
-        ("x", Some(x), Some(set_x)),
-        ("y", Some(y), Some(set_y)),
-        ("z", Some(z), Some(set_z)), //TODO: This property needs to be version-gated to SWF10+
-        ("rotation", Some(rotation), Some(set_rotation)),
-        ("rotationX", Some(rotation_x), Some(set_rotation_x)),
-        ("rotationY", Some(rotation_y), Some(set_rotation_y)),
-        ("rotationZ", Some(rotation_z), Some(set_rotation_z)),
-        ("scaleZ", Some(scale_z), Some(set_scale_z)),
-        ("name", Some(name), Some(set_name)),
-        ("parent", Some(parent), None),
-        ("root", Some(root), None),
-        ("stage", Some(stage), None),
-        ("visible", Some(visible), Some(set_visible)),
-        ("mouseX", Some(mouse_x), None),
-        ("mouseY", Some(mouse_y), None),
-        ("loaderInfo", Some(loader_info), None),
-        ("filters", Some(filters), Some(set_filters)),
-        ("transform", Some(transform), Some(set_transform)),
-        ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
-        ("mask", Some(mask), Some(set_mask)),
-        (
-            "opaqueBackground",
-            Some(opaque_background),
-            Some(set_opaque_background),
-        ),
-        (
-            "cacheAsBitmap",
-            Some(cache_as_bitmap),
-            Some(set_cache_as_bitmap),
-        ),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("hitTestPoint", hit_test_point),
-        ("hitTestObject", hit_test_object),
-        ("localToGlobal", local_to_global),
-        ("globalToLocal", global_to_local),
-        ("getBounds", get_bounds),
-        ("getRect", get_rect),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }
