@@ -22,7 +22,7 @@ void main() {
     // Unmultiply alpha before apply color transform.
     if( color.a > 0.0 ) {
         color.rgb /= color.a;
-        color = mult_color * color + add_color;
+        color = clamp(mult_color * color + add_color, 0.0, 1.0);
         float alpha = clamp(color.a, 0.0, 1.0);
         color = vec4(color.rgb * alpha, alpha);
     }
