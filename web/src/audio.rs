@@ -87,7 +87,7 @@ struct Buffer {
 impl Buffer {
     fn new(audio: &WebAudioBackend) -> Result<Arc<RwLock<Self>>, JsError> {
         let sample_rate = audio.context.sample_rate();
-        let buffer = Arc::new(RwLock::new(Buffer {
+        let buffer = Arc::new(RwLock::new(Self {
             context: audio.context.clone(),
             mixer_proxy: audio.mixer.proxy(),
             audio_node: None,
@@ -106,10 +106,10 @@ impl Buffer {
         buffer
             .write()
             .expect("Cannot reenter locks")
-            .on_ended_handler = Closure::wrap(Box::new(move || {
+            .on_ended_handler = Closure::new(move || {
             // Refill and schedule the buffer for playback.
             let _ = buffer_handle.write().expect("Cannot reenter locks").play();
-        }) as Box<dyn FnMut()>);
+        });
 
         Ok(buffer)
     }
