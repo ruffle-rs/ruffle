@@ -29,8 +29,6 @@ use swf::avm2::types::{
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
-use super::e4x::E4XNode;
-
 /// Represents a particular register set.
 ///
 /// This type exists primarily because SmallVec isn't garbage-collectable.
@@ -2621,19 +2619,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_strict_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
-
-        if value1 == value2 {
-            self.push_stack(true);
-        } else {
-            // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
-            if let Some(xml1) = value1.as_object().and_then(|obj| obj.as_xml_object()) {
-                if let Some(xml2) = value2.as_object().and_then(|obj| obj.as_xml_object()) {
-                    self.push_stack(E4XNode::ptr_eq(*xml1.node(), *xml2.node()));
-                    return Ok(FrameControl::Continue);
-                }
-            }
-            self.push_stack(false);
-        }
+        self.push_stack(value1.strict_eq(&value2));
 
         Ok(FrameControl::Continue)
     }
