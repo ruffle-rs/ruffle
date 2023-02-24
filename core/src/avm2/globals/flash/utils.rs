@@ -262,11 +262,14 @@ pub fn get_definition_by_name<'gc>(
     appdomain.get_defined_value(activation, qname)
 }
 
+// Implements `flash.utils.describeType`
 pub fn describe_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // This method is very incomplete, and should be fully implemented
+    // once we have a better way of constructing XML from the Rust side
     avm2_stub_method!(activation, "flash.utils", "describeType");
 
     let mut xml_string = String::new();
