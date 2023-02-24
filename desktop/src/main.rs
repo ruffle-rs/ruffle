@@ -224,12 +224,39 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
+fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
+    let mut min_x = 0;
+    let mut min_y = 0;
+    let mut max_x = 0;
+    let mut max_y = 0;
+
+    for monitor in event_loop.available_monitors() {
+        let size = monitor.size();
+        let position = monitor.position();
+        min_x = min_x.min(position.x);
+        min_y = min_y.min(position.y);
+        max_x = max_x.max(position.x + size.width as i32);
+        max_y = max_y.max(position.y + size.height as i32);
+    }
+
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+
+    if width <= 32 || height <= 32 {
+        return (i16::MAX as u32, i16::MAX as u32).into();
+    }
+
+    (width, height).into()
+}
+
 struct App {
     opt: Opt,
     window: Rc<Window>,
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     player: Arc<Mutex<Player>>,
+    min_window_size: LogicalSize<u32>,
+    max_window_size: PhysicalSize<u32>,
 }
 
 impl App {
@@ -258,11 +285,15 @@ impl App {
         let title = format!("Ruffle - {filename}");
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
+        let min_window_size = (16, 16).into();
+        let max_window_size = get_screen_size(&event_loop);
+
         let window = WindowBuilder::new()
             .with_visible(false)
             .with_title(title)
             .with_window_icon(Some(icon))
-            .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
+            .with_min_inner_size(min_window_size)
+            .with_max_inner_size(max_window_size)
             .build(&event_loop)?;
 
         let mut builder = PlayerBuilder::new();
@@ -341,6 +372,8 @@ impl App {
             event_loop,
             executor,
             player,
+            min_window_size,
+            max_window_size,
         })
     }
 
@@ -564,6 +597,14 @@ impl App {
                                 PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
                             }
                         };
+
+                        let window_size = Size::clamp(
+                            window_size,
+                            self.min_window_size.into(),
+                            self.max_window_size.into(),
+                            self.window.scale_factor(),
+                        );
+
                         self.window.set_inner_size(window_size);
                         self.window.set_fullscreen(if self.opt.fullscreen {
                             Some(Fullscreen::Borderless(None))
