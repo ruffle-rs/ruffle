@@ -974,6 +974,7 @@ fn main() -> Result<(), Error> {
     } else {
         App::new(opt).map(|app| app.run())
     };
+    if let Err(ref error) = result { eprintln!("{:?}", error) }
     shutdown();
     result
 }
