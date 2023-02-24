@@ -152,11 +152,8 @@ impl<'gc> E4XNode<'gc> {
             depth: usize,
             activation: &mut Activation<'_, 'gc>,
         ) -> Result<(), Error<'gc>> {
-            if !open_tags.is_empty() {
-                open_tags
-                    .last_mut()
-                    .unwrap()
-                    .append_child(activation.context.gc_context, node)?;
+            if let Some(current_tag) = open_tags.last_mut() {
+                current_tag.append_child(activation.context.gc_context, node)?;
             }
 
             if depth == 0 {
@@ -174,11 +171,8 @@ impl<'gc> E4XNode<'gc> {
                 Event::Start(bs) => {
                     let child = E4XNode::from_start_event(activation, bs)?;
 
-                    if !open_tags.is_empty() {
-                        open_tags
-                            .last_mut()
-                            .unwrap()
-                            .append_child(activation.context.gc_context, child)?;
+                    if let Some(current_tag) = open_tags.last_mut() {
+                        current_tag.append_child(activation.context.gc_context, child)?;
                     }
                     open_tags.push(child);
                     depth += 1;
