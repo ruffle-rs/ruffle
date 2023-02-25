@@ -963,7 +963,7 @@ impl<'gc> Value<'gc> {
 
         if let Ok(object) = self.coerce_to_object(activation) {
             if object.is_of_type(class, activation) {
-                return Ok(object.into());
+                return Ok(*self);
             }
 
             if let Some(vector) = object.as_vector_storage() {

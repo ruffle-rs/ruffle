@@ -3,7 +3,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error::type_error;
+use crate::avm2::error::{make_null_or_undefined_error, type_error};
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -2027,7 +2027,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let coerced = match value {
             Value::Undefined | Value::Null => Value::Null,
-            _ => value.coerce_to_object(self)?.into(),
+            _ => value,
         };
 
         self.push_stack(coerced);
@@ -2069,11 +2069,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_convert_o(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self
-            .pop_stack()
-            .coerce_to_object(self)
-            .map_err(|_| "Cannot convert null or undefined to object")?;
-
+        let value = self.pop_stack();
+        if matches!(value, Value::Null | Value::Undefined) {
+            return Err(make_null_or_undefined_error(self, value, None));
+        }
         self.push_stack(value);
 
         Ok(FrameControl::Continue)
