@@ -479,12 +479,6 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.text`
-    avm2_system_class!(
-        textformat,
-        activation,
-        flash::text::textformat::create_class(activation),
-        script
-    );
     class(
         flash::text::font::create_class(activation),
         script,
@@ -633,6 +627,7 @@ fn load_playerglobal<'gc>(
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
+            ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
