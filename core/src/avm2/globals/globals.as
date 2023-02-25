@@ -34,7 +34,10 @@ include "flash/display/Bitmap.as"
 include "flash/display/BitmapData.as"
 include "flash/display/InteractiveObject.as"
 include "flash/display/DisplayObjectContainer.as"
+  
+include "flash/errors/IllegalOperationError.as" // Stage is dependent on IllegalOperationError
 include "flash/display/Stage.as"
+
 include "flash/display/LoaderInfo.as"
 
 include "flash/display/ActionScriptVersion.as"
@@ -143,7 +146,6 @@ include "flash/events/VideoEvent.as"
 include "flash/events/VideoTextureEvent.as"
 include "flash/errors/IOError.as"
 include "flash/errors/EOFError.as"
-include "flash/errors/IllegalOperationError.as"
 include "flash/errors/InvalidSWFError.as"
 include "flash/errors/MemoryError.as"
 include "flash/errors/ScriptTimeoutError.as"
