@@ -606,7 +606,13 @@ impl<'gc> Value<'gc> {
             Value::Number(f) => !f.is_nan() && *f != 0.0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty(),
-            Value::Object(_) => true,
+            Value::Object(o) => {
+                if let Some(prim) = o.as_primitive() {
+                    prim.coerce_to_boolean()
+                } else {
+                    true
+                }
+            }
         }
     }
 
