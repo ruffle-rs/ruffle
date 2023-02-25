@@ -335,13 +335,12 @@ impl<'gc> ClassObject<'gc> {
                 queue.push(self.early_resolve_class(scope.domain(), superclass_name)?);
             }
         }
-        write.interfaces = interfaces.clone();
-
-        //At this point, we need to reresolve *all* interface traits.
-        //Otherwise we won't get overrides.
+        write.interfaces = interfaces;
         drop(write);
 
-        for interface in interfaces {
+        let read = self.0.read();
+
+        for interface in &read.interfaces {
             let iface_read = interface.read();
             for interface_trait in iface_read.instance_traits() {
                 if !interface_trait.name().namespace().is_public() {
