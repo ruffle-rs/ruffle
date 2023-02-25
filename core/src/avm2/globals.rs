@@ -468,6 +468,14 @@ pub fn load_player_globals<'gc>(
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
+    function(activation, "", "encodeURI", toplevel::encode_uri, script)?;
+    function(
+        activation,
+        "",
+        "encodeURIComponent",
+        toplevel::encode_uri_component,
+        script,
+    )?;
 
     avm2_system_class!(regexp, activation, regexp::create_class(activation), script);
     avm2_system_class!(vector, activation, vector::create_class(activation), script);
