@@ -10,7 +10,7 @@
         "dist/"
     ],
     "scripts": {
-        "build": "npm run build:wasm-vanilla && npm run build:wasm-extensions && npm run build:ts",
+        "prebuild": "npm run build:wasm-vanilla && npm run build:wasm-extensions",
 
         "//1": "# Setting ENABLE_WASM_EXTENSIONS=true causes a second module to be built as well, that utilizes WebAssembly extensions, instead of it just being a 'fake' - a copy of the 'vanilla' one.",
         "//2": "# Unfortunately, we have to set $RUSTFLAGS here, instead of in .cargo/config.toml (for example), because it's not possible to specify them per-profile; see cargo issue #7878.",
@@ -29,7 +29,9 @@
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"dist/${OUT_NAME}_bg.wasm\" -O -g \"dist/${OUT_NAME}_bg.wasm\" $WASM_OPT_FLAGS || npm run build:wasm-opt-failed",
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
 
-        "build:ts": "tsc --build && node tools/set_version.js",
+        "build": "tsc --build",
+        "postbuild": "node tools/set_version.js",
+
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
     },
