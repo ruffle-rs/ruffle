@@ -11,7 +11,6 @@ include "Date.as"
 
 include "flash/media/SoundTransform.as"
 include "flash/system/ApplicationDomain.as"
-include "flash/text/TextFormat.as"
 include "Function.as"
 include "Number.as"
 include "String.as"
