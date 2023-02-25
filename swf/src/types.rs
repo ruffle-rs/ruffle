@@ -472,7 +472,7 @@ bitflags! {
         const KEY_DOWN        = 1 << 6;
         const KEY_UP          = 1 << 7;
 
-        // Added in SWF6.
+        // Added in SWF6, but not version-gated.
         const DATA            = 1 << 8;
         const INITIALIZE      = 1 << 9;
         const PRESS           = 1 << 10;
