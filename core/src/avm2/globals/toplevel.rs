@@ -1,5 +1,7 @@
 //! Global scope built-ins
 
+use ruffle_wstr::Units;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
@@ -7,6 +9,7 @@ use crate::avm2::Error;
 use crate::string::{AvmString, WStr, WString};
 use crate::stub::Stub;
 use std::borrow::Cow;
+use std::fmt::Write;
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -262,4 +265,69 @@ pub fn escape<'gc>(
     }
 
     Ok(AvmString::new(activation.context.gc_context, output).into())
+}
+
+pub fn encode_uri<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    encode_utf8_with_exclusions(
+        activation,
+        args,
+        // Characters that are not escaped, sourced from as3 docs
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@;/?:@&=+$,#-_.!~*'()",
+    )
+}
+
+pub fn encode_uri_component<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    encode_utf8_with_exclusions(
+        activation,
+        args,
+        // Characters that are not escaped, sourced from as3 docs
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.!~*'()",
+    )
+}
+
+fn encode_utf8_with_exclusions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+    not_converted: &str,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = match args.first() {
+        None => return Ok("undefined".into()),
+        Some(Value::Undefined) => return Ok("null".into()),
+        Some(value) => value,
+    };
+
+    let mut output = String::new();
+
+    let input = value.coerce_to_string(activation)?;
+    let input_string = match input.units() {
+        // Latin-1 values map directly to unicode codepoints,
+        // so we can directly convert to a `char`
+        Units::Bytes(bytes) => bytes.iter().map(|b| *b as char).collect(),
+        Units::Wide(wide) => String::from_utf16_lossy(wide),
+    };
+
+    for x in input_string.chars() {
+        if not_converted.contains(x) {
+            output.push(x);
+        } else {
+            let mut bytes = [0; 4];
+            let utf8_bytes = x.encode_utf8(&mut bytes);
+            let mut encoded = String::new();
+            // Each byte in the utf-8 encoding is encoded as a hex value
+            for byte in utf8_bytes.bytes() {
+                write!(encoded, "%{x:02X}", x = byte).unwrap();
+            }
+            output.push_str(&encoded);
+        }
+    }
+
+    Ok(AvmString::new_utf8(activation.context.gc_context, output).into())
 }

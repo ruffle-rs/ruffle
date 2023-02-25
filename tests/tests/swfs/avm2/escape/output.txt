@@ -22,3 +22,51 @@ test
 // escape("😭")
 %uD83D%uDE2D
 
+// encodeURI()
+undefined
+
+// encodeURI(undefined)
+null
+
+// typeof(encodeURI(undefined))
+string
+
+// encodeURI(null)
+null
+
+// encodeURI("test")
+test
+
+// encodeURI("!"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:@~|ZXCVBNM<>?")
+!%22%C2%A3$%25%5E&*()1234567890qwertyuiop%5B%5Dasdfghjkl;'#zxcvbnm,./QWERTYUIOP%7B%7DASDFGHJKL:@~%7CZXCVBNM%3C%3E?%10
+
+// encodeURI("\x05")
+%05
+
+// encodeURI("😭")
+%F0%9F%98%AD
+
+// encodeURIComponent()
+undefined
+
+// encodeURIComponent(undefined)
+null
+
+// typeof(encodeURIComponent(undefined))
+string
+
+// encodeURIComponent(null)
+null
+
+// encodeURIComponent("test")
+test
+
+// encodeURIComponent("!"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:@~|ZXCVBNM<>?")
+!%22%C2%A3%24%25%5E%26*()1234567890qwertyuiop%5B%5Dasdfghjkl%3B'%23zxcvbnm%2C.%2FQWERTYUIOP%7B%7DASDFGHJKL%3A%40~%7CZXCVBNM%3C%3E%3F%10
+
+// encodeURIComponent("\x05")
+%05
+
+// encodeURIComponent("😭")
+%F0%9F%98%AD
+
