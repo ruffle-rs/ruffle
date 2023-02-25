@@ -437,19 +437,6 @@ impl<'gc> ClassObject<'gc> {
     pub fn has_class_in_chain(self, test_class: ClassObject<'gc>) -> bool {
         let mut my_class = Some(self);
 
-        // A `ClassObject` stores all of the interfaces it implements,
-        // including those from superinterfaces and superclasses (recursively).
-        // Therefore, we only need to check interfaces once, and we can skip
-        // checking them when we processing superclasses in the `while`
-        // further down in this method.
-        if test_class.inner_class_definition().read().is_interface() {
-            for interface in self.interfaces() {
-                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
-                    return true;
-                }
-            }
-        }
-
         while let Some(class) = my_class {
             if Object::ptr_eq(class, test_class) {
                 return true;
@@ -470,6 +457,19 @@ impl<'gc> ClassObject<'gc> {
             }
 
             my_class = class.superclass_object()
+        }
+
+        // A `ClassObject` stores all of the interfaces it implements,
+        // including those from superinterfaces and superclasses (recursively).
+        // Therefore, we only need to check interfaces once, and we can skip
+        // checking them when we processing superclasses in the `while`
+        // further down in this method.
+        if test_class.inner_class_definition().read().is_interface() {
+            for interface in self.interfaces() {
+                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                    return true;
+                }
+            }
         }
 
         false
