@@ -13,6 +13,7 @@ use crate::avm2::QName;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
@@ -85,8 +86,9 @@ pub struct Class<'gc> {
     /// The namespace that protected traits of this class are stored into.
     protected_namespace: Option<Namespace<'gc>>,
 
-    /// The list of interfaces this class implements.
-    interfaces: Vec<Multiname<'gc>>,
+    /// The list of interfaces this class directly implements. This does not include any
+    /// superinterfaces, nor interfaces implemented by the superclass.
+    direct_interfaces: Vec<Multiname<'gc>>,
 
     /// The instance allocator for this class.
     ///
@@ -180,7 +182,7 @@ impl<'gc> Class<'gc> {
                 super_class,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
-                interfaces: Vec::new(),
+                direct_interfaces: Vec::new(),
                 instance_allocator: None,
                 instance_init,
                 native_instance_init,
@@ -314,7 +316,7 @@ impl<'gc> Class<'gc> {
                 super_class,
                 attributes,
                 protected_namespace,
-                interfaces,
+                direct_interfaces: interfaces,
                 instance_allocator,
                 instance_init,
                 native_instance_init,
@@ -473,7 +475,7 @@ impl<'gc> Class<'gc> {
                 super_class: None,
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
-                interfaces: Vec::new(),
+                direct_interfaces: Vec::new(),
                 instance_allocator: None,
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -746,12 +748,12 @@ impl<'gc> Class<'gc> {
         self.specialized_class_init = specialized_init;
     }
 
-    pub fn interfaces(&self) -> &[Multiname<'gc>] {
-        &self.interfaces
+    pub fn direct_interfaces(&self) -> &[Multiname<'gc>] {
+        &self.direct_interfaces
     }
 
     pub fn implements(&mut self, iface: Multiname<'gc>) {
-        self.interfaces.push(iface)
+        self.direct_interfaces.push(iface)
     }
 
     /// Determine if this class is sealed (no dynamic properties)
@@ -776,5 +778,20 @@ impl<'gc> Class<'gc> {
 
     pub fn params(&self) -> &[GcCell<'gc, Class<'gc>>] {
         &self.params[..]
+    }
+}
+
+pub struct ClassHashWrapper<'gc>(pub GcCell<'gc, Class<'gc>>);
+
+impl<'gc> PartialEq for ClassHashWrapper<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        GcCell::ptr_eq(self.0, other.0)
+    }
+}
+impl<'gc> Eq for ClassHashWrapper<'gc> {}
+
+impl<'gc> Hash for ClassHashWrapper<'gc> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ptr().hash(state);
     }
 }

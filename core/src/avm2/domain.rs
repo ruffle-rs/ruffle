@@ -196,13 +196,8 @@ impl<'gc> Domain<'gc> {
         self.0.write(mc).defs.insert(name, script);
     }
 
-    pub fn export_class(
-        &self,
-        name: QName<'gc>,
-        class: GcCell<'gc, Class<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) {
-        self.0.write(mc).classes.insert(name, class);
+    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).classes.insert(class.read().name(), class);
     }
 
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
