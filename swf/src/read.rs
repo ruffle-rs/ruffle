@@ -2057,10 +2057,10 @@ impl<'a> Reader<'a> {
         let bits = if self.version >= 6 {
             self.read_u32().unwrap_or_default()
         } else {
-            // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
-            // with the 2nd byte reserved (all 0).
-            // This was expanded to 4 bytes in SWFv6.
-            (self.read_u16().unwrap_or_default() as u8).into()
+            // SWF19 pp. 48-50: For SWFv5, ClipEventFlags only had 2 bytes of flags. This was
+            // expanded to 4 bytes in SWFv6.
+            // The 2nd byte is documented to be reserved (all 0), but it's not enforced by Flash.
+            self.read_u16().unwrap_or_default().into()
         };
 
         ClipEventFlag::from_bits_truncate(bits)
