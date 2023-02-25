@@ -438,9 +438,11 @@ impl<'gc> ClassObject<'gc> {
         // Therefore, we only need to check interfaces once, and we can skip
         // checking them when we processing superclasses in the `while`
         // further down in this method.
-        for interface in self.interfaces() {
-            if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
-                return true;
+        if test_class.inner_class_definition().read().is_interface() {
+            for interface in self.interfaces() {
+                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                    return true;
+                }
             }
         }
 
