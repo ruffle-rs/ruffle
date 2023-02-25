@@ -340,6 +340,10 @@ impl<'gc> ClassObject<'gc> {
 
         let read = self.0.read();
 
+        // FIXME - we should only be copying properties for newly-implemented
+        // interfaces (i.e. those that were not already implemented by the superclass)
+        // Otherwise, our behavior diverges from Flash Player in certain cases.
+        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
         for interface in &read.interfaces {
             let iface_read = interface.read();
             for interface_trait in iface_read.instance_traits() {
