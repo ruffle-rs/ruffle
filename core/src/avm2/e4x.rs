@@ -40,6 +40,7 @@ impl<'gc> Debug for E4XNodeData<'gc> {
 #[collect(no_drop)]
 pub enum E4XNodeKind<'gc> {
     Text(AvmString<'gc>),
+    CData(AvmString<'gc>),
     Comment(AvmString<'gc>),
     ProcessingInstruction(AvmString<'gc>),
     Attribute(AvmString<'gc>),
@@ -188,7 +189,7 @@ impl<'gc> E4XNode<'gc> {
                         top_level.push(node);
                     }
                 }
-                Event::Text(bt) => {
+                Event::Text(bt) | Event::CData(bt) => {
                     let text = bt.unescaped()?;
                     let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
                     let is_whitespace_text = text.iter().all(is_whitespace_char);
@@ -199,7 +200,11 @@ impl<'gc> E4XNode<'gc> {
                             E4XNodeData {
                                 parent: None,
                                 local_name: None,
-                                kind: E4XNodeKind::Text(text),
+                                kind: match &event {
+                                    Event::Text(_) => E4XNodeKind::Text(text),
+                                    Event::CData(_) => E4XNodeKind::CData(text),
+                                    _ => unreachable!(),
+                                },
                             },
                         ));
                         push_childless_node(
@@ -241,7 +246,6 @@ impl<'gc> E4XNode<'gc> {
                     ))
                 }
                 Event::Eof => break,
-                _ => {}
             }
         }
 
@@ -322,7 +326,7 @@ impl<'gc> E4XNode<'gc> {
             E4XNodeKind::Element { children, .. } => children
                 .iter()
                 .all(|child| !matches!(&*child.kind(), E4XNodeKind::Element { .. })),
-            E4XNodeKind::Text(_) => true,
+            E4XNodeKind::Text(_) | E4XNodeKind::CData(_) => true,
             E4XNodeKind::Attribute(_) => true,
             E4XNodeKind::Comment(_) => false,
             E4XNodeKind::ProcessingInstruction(_) => false,
@@ -334,7 +338,7 @@ impl<'gc> E4XNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         match &self.0.read().kind {
-            E4XNodeKind::Text(text) => Ok(*text),
+            E4XNodeKind::Text(text) | E4XNodeKind::CData(text) => Ok(*text),
             E4XNodeKind::Attribute(text) => Ok(*text),
             E4XNodeKind::Element { children, .. } => {
                 if self.has_simple_content() {

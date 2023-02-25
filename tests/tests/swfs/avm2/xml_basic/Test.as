@@ -55,6 +55,13 @@
 			trace("Get 'name' property': " + weird.name);
 			trace("Get 'AS#::name' property': " + (typeof a.AS3::name));
 			
+			var cdata = <![CDATA[My
+Multiline
+CDATA
+]]>;
+			
+			trace(cdata);
+			
 			// FIXME - enable this when Ruffle throws coercion errors
 			//XML.prototype.name.apply(5);
 		}
