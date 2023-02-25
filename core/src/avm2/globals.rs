@@ -291,7 +291,7 @@ fn class<'gc>(
         activation.avm2().classes().class,
     );
     domain.export_definition(class_name, script, activation.context.gc_context);
-    domain.export_class(class_name, class_def, activation.context.gc_context);
+    domain.export_class(class_def, activation.context.gc_context);
 
     Ok(class_object)
 }
@@ -343,20 +343,24 @@ pub fn load_player_globals<'gc>(
     let object_classdef = object::create_class(activation);
     let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
     let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
+    domain.export_class(object_classdef, mc);
 
     let fn_classdef = function::create_class(activation);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
     let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
+    domain.export_class(fn_classdef, mc);
 
     let class_classdef = class::create_class(activation);
     let class_class =
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
     let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    domain.export_class(class_classdef, mc);
 
     let global_classdef = global_scope::create_class(activation);
     let global_class =
         ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
     let global_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    domain.export_class(global_classdef, mc);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;

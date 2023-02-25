@@ -468,7 +468,7 @@ impl<'gc> Script<'gc> {
             if let TraitKind::Class { class, .. } = newtrait.kind() {
                 write
                     .domain
-                    .export_class(newtrait.name(), *class, activation.context.gc_context);
+                    .export_class(*class, activation.context.gc_context);
             }
 
             write.traits.push(newtrait);
