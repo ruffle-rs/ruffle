@@ -1,4 +1,3 @@
-// This is a stub - the actual class is defined in `bitmapdata.rs`
 package flash.display {
     import flash.geom.Rectangle;
     import flash.geom.ColorTransform;
