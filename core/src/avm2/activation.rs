@@ -2619,8 +2619,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_strict_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
-
-        self.push_stack(value1 == value2);
+        self.push_stack(value1.strict_eq(&value2));
 
         Ok(FrameControl::Continue)
     }
@@ -2877,7 +2876,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             "object"
                         }
                     }
-                    Object::XmlObject(_) => {
+                    Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if is_not_subclass {
                             "xml"
                         } else {

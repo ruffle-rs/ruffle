@@ -58,6 +58,8 @@ bitflags! {
         /// Whether the name needs to be read at runtime before use
         /// This should only be set when lazy-initialized in Activation.
         const HAS_LAZY_NAME = 1 << 1;
+        /// Whether this was a 'MultinameA' - used for XML attribute lookups
+        const ATTRIBUTE = 1 << 2;
     }
 }
 
@@ -99,6 +101,11 @@ impl<'gc> Multiname<'gc> {
     #[inline(always)]
     pub fn has_lazy_component(&self) -> bool {
         self.has_lazy_ns() || self.has_lazy_name()
+    }
+
+    #[inline(always)]
+    pub fn is_attribute(&self) -> bool {
+        self.flags.contains(MultinameFlags::ATTRIBUTE)
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -146,7 +153,7 @@ impl<'gc> Multiname<'gc> {
         let abc = translation_unit.abc();
         let abc_multiname = Self::resolve_multiname_index(&abc, multiname_index)?;
 
-        Ok(match abc_multiname {
+        let mut multiname = match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, mc)?),
@@ -212,7 +219,19 @@ impl<'gc> Multiname<'gc> {
                 }
                 base
             }
-        })
+        };
+
+        if matches!(
+            abc_multiname,
+            AbcMultiname::QNameA { .. }
+                | AbcMultiname::RTQNameA { .. }
+                | AbcMultiname::RTQNameLA { .. }
+                | AbcMultiname::MultinameA { .. }
+                | AbcMultiname::MultinameLA { .. }
+        ) {
+            multiname.flags |= MultinameFlags::ATTRIBUTE;
+        }
+        Ok(multiname)
     }
 
     #[inline(never)]
