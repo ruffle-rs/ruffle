@@ -17,7 +17,7 @@ package flash.text {
         }
         
         public function getStyle(styleName:String):Object {
-            stub_method("flash.text.getStyle", "clear");
+            stub_method("flash.text.StyleSheet", "getStyle");
             return null;
         }
         
