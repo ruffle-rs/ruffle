@@ -96,6 +96,7 @@ pub enum OpCode {
 
     StoreRegister = 0x87,
     ConstantPool = 0x88,
+    StrictMode = 0x89,
 
     WaitForFrame = 0x8A,
     SetTarget = 0x8B,
