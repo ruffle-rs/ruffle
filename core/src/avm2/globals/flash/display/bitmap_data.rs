@@ -18,7 +18,7 @@ use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -48,17 +48,19 @@ fn get_rectangle_x_y_width_height<'gc>(
 /// `bd` is assumed to be an uninstantiated library symbol, associated with the
 /// class named by `name`.
 pub fn fill_bitmap_data_from_symbol<'gc>(
-    gc_context: MutationContext<'gc, '_>,
-    bitmap: Bitmap<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    bd: &Bitmap<'gc>,
 ) -> BitmapDataWrapper<'gc> {
-    let transparency = true;
-    let bitmap_data = BitmapData::new_with_pixels(
-        bitmap.width().into(),
-        bitmap.height().into(),
-        transparency,
-        bitmap.bitmap_data().read().pixels().to_vec(),
+    let new_bitmap_data = GcCell::allocate(
+        activation.context.gc_context,
+        BitmapData::new_with_pixels(
+            Bitmap::width(*bd).into(),
+            Bitmap::height(*bd).into(),
+            true,
+            bd.bitmap_data().read().pixels().to_vec(),
+        ),
     );
-    BitmapDataWrapper::new(GcCell::allocate(gc_context, bitmap_data))
+    BitmapDataWrapper::new(new_bitmap_data)
 }
 
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
@@ -68,64 +70,62 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
+        // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
+        // which makes custom classes see a disposed BitmapData before they call super()
+        let name = this.instance_of_class_definition().map(|c| c.read().name());
+        let character = this
+            .instance_of()
+            .and_then(|t| {
+                activation
+                    .context
+                    .library
+                    .avm2_class_registry()
+                    .class_symbol(t)
+            })
+            .and_then(|(movie, chara_id)| {
+                activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie)
+                    .character_by_id(chara_id)
+                    .cloned()
+            });
 
-        if this.as_bitmap_data().is_none() {
-            let name = this.instance_of_class_definition().map(|c| c.read().name());
-            let character = this
-                .instance_of()
-                .and_then(|t| {
-                    activation
-                        .context
-                        .library
-                        .avm2_class_registry()
-                        .class_symbol(t)
-                })
-                .and_then(|(movie, chara_id)| {
-                    activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie)
-                        .character_by_id(chara_id)
-                        .cloned()
-                });
+        let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
+            // Instantiating BitmapData from an Animate-style bitmap asset
+            fill_bitmap_data_from_symbol(activation, &bitmap)
+        } else {
+            if character.is_some() {
+                //TODO: Determine if mismatched symbols will still work as a
+                //regular BitmapData subclass, or if this should throw
+                tracing::warn!(
+                    "BitmapData subclass {:?} is associated with a non-bitmap symbol",
+                    name
+                );
+            }
 
-            let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
-                // Instantiating BitmapData from an Animate-style bitmap asset
-                fill_bitmap_data_from_symbol(activation.context.gc_context, bitmap)
-            } else {
-                if character.is_some() {
-                    //TODO: Determine if mismatched symbols will still work as a
-                    //regular BitmapData subclass, or if this should throw
-                    tracing::warn!(
-                        "BitmapData subclass {:?} is associated with a non-bitmap symbol",
-                        name
-                    );
-                }
+            let width = args.get_u32(activation, 0)?;
+            let height = args.get_u32(activation, 1)?;
+            let transparency = args.get_bool(2);
+            let fill_color = args.get_i32(activation, 3)?;
 
-                let width = args.get_u32(activation, 0)?;
-                let height = args.get_u32(activation, 1)?;
-                let transparency = args.get_bool(2);
-                let fill_color = args.get_i32(activation, 3)?;
+            if !is_size_valid(activation.context.swf.version(), width, height) {
+                return Err(Error::AvmError(argument_error(
+                    activation,
+                    "Error #2015: Invalid BitmapData.",
+                    2015,
+                )?));
+            }
 
-                if !is_size_valid(activation.context.swf.version(), width, height) {
-                    return Err(Error::AvmError(argument_error(
-                        activation,
-                        "Error #2015: Invalid BitmapData.",
-                        2015,
-                    )?));
-                }
+            let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
+            BitmapDataWrapper::new(GcCell::allocate(
+                activation.context.gc_context,
+                new_bitmap_data,
+            ))
+        };
 
-                let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    new_bitmap_data,
-                ))
-            };
-
-            new_bitmap_data.init_object2(activation.context.gc_context, this);
-            this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
-        }
+        new_bitmap_data.init_object2(activation.context.gc_context, this);
+        this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
     }
 
     Ok(Value::Undefined)
@@ -1026,7 +1026,7 @@ pub fn clone<'gc>(
             let new_bitmap_data = operations::clone(bitmap_data);
 
             let class = activation.avm2().classes().bitmapdata;
-            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data(
+            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
                 activation,
                 BitmapDataWrapper::new(GcCell::allocate(
                     activation.context.gc_context,
@@ -1292,7 +1292,7 @@ pub fn compare<'gc>(
     match operations::compare(this_bitmap_data, other_bitmap_data) {
         Some(bitmap_data) => {
             let class = activation.avm2().classes().bitmapdata;
-            Ok(BitmapDataObject::from_bitmap_data(
+            Ok(BitmapDataObject::from_bitmap_data_internal(
                 activation,
                 BitmapDataWrapper::new(GcCell::allocate(
                     activation.context.gc_context,

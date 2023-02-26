@@ -1,10 +1,12 @@
 //! `flash.display.Loader` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::ClassObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::{NavigationMethod, Request};
@@ -14,39 +16,38 @@ use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
 
-pub fn init<'gc>(
+pub fn loader_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut this) = this {
-        if this.as_display_object().is_none() {
-            let new_do =
-                LoaderDisplay::new_with_avm2(activation, this, activation.context.swf.clone());
-            this.init_display_object(&mut activation.context, new_do.into());
-        }
+) -> Result<Object<'gc>, Error<'gc>> {
+    // Loader does not have an associated `Character` variant, and can never be
+    // instantiated from the timeline.
+    let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
+    let mut loader = initialize_for_allocator(activation, display_object, class)?;
 
-        // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
-        // accessible, even before the 'init' event has fired. Using an empty movie gives
-        // us the correct value (0) for them.
-        let loader_info = LoaderInfoObject::not_yet_loaded(
-            activation,
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
-            Some(this),
-            None,
-            false,
-        )?;
-        this.set_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
-            loader_info.into(),
-            activation,
-        )?;
-    }
+    // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
+    // and not in the Loader constructor - subclasess of Loader can observe 'contentLoaderInfo'
+    // being set before super() is called.
 
-    Ok(Value::Undefined)
+    // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
+    // accessible, even before the 'init' event has fired. Using an empty movie gives
+    // us the correct value (0) for them.
+    let loader_info = LoaderInfoObject::not_yet_loaded(
+        activation,
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Some(loader),
+        None,
+        false,
+    )?;
+    loader.set_property(
+        &Multiname::new(
+            activation.avm2().flash_display_internal,
+            "_contentLoaderInfo",
+        ),
+        loader_info.into(),
+        activation,
+    )?;
+    Ok(loader)
 }
 
 pub fn load<'gc>(

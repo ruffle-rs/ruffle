@@ -1,17 +1,57 @@
 //! `flash.display.SimpleButton` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
-use crate::vminterface::Instantiator;
 use swf::ButtonState;
 
 pub use crate::avm2::globals::flash::media::sound_mixer::{
     get_sound_transform, set_sound_transform,
 };
 use crate::avm2::parameters::ParametersExt;
+
+pub fn simple_button_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    use crate::vminterface::Instantiator;
+
+    let simplebutton_cls = activation.avm2().classes().simplebutton;
+
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == simplebutton_cls {
+            let button = Avm2Button::empty_button(&mut activation.context);
+            // [NA] Buttons specifically need to PO'd
+            button.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
+            let display_object = button.into();
+            let obj = StageObject::for_display_object(activation, display_object, orig_class)?;
+            display_object.set_object2(&mut activation.context, obj.into());
+            return Ok(obj.into());
+        }
+
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
+    }
+    unreachable!("A SimpleButton subclass should have SimpleButton in superclass chain");
+}
 
 /// Implements `flash.display.SimpleButton`'s 'init' method. which is called from the constructor
 pub fn init<'gc>(
@@ -20,33 +60,42 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
-        if this.as_display_object().is_none() {
-            let new_do = Avm2Button::empty_button(&mut activation.context);
-
-            new_do.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-            this.init_display_object(&mut activation.context, new_do.into());
-
+        if let Some(new_do) = this
+            .as_display_object()
+            .and_then(|this| this.as_avm2_button())
+        {
             let up_state = args
                 .try_get_object(activation, 0)
                 .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
+            if up_state.is_some() {
+                new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
+            }
 
             let over_state = args
                 .try_get_object(activation, 1)
                 .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
+            if over_state.is_some() {
+                new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
+            }
 
             let down_state = args
                 .try_get_object(activation, 2)
                 .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
+            if down_state.is_some() {
+                new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
+            }
 
             let hit_state = args
                 .try_get_object(activation, 3)
                 .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
+            if hit_state.is_some() {
+                new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
+            }
+
+            // This performs the child state construction.
+            new_do.construct_frame(&mut activation.context);
+        } else {
+            unreachable!();
         }
     }
 

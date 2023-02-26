@@ -2,15 +2,11 @@ package flash.text {
     import flash.display.InteractiveObject;
     import __ruffle__.stub_setter;
     
+
+    [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
         internal var _styleSheet:StyleSheet;
         internal var _useRichTextClipboard:Boolean;
-    
-        public function TextField() {
-            this.init();
-        }
-
-        private native function init();
         
         public native function get alwaysShowSelection():Boolean;
         public native function set alwaysShowSelection(value:Boolean):void;

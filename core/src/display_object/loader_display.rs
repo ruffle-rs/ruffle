@@ -36,25 +36,22 @@ impl fmt::Debug for LoaderDisplay<'_> {
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: ChildContainer<'gc>,
-    avm2_object: Avm2Object<'gc>,
+    avm2_object: Option<Avm2Object<'gc>>,
     movie: Arc<SwfMovie>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn new_with_avm2(
-        activation: &mut Activation<'_, 'gc>,
-        avm2_object: Avm2Object<'gc>,
-        movie: Arc<SwfMovie>,
-    ) -> Self {
+    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
         let obj = LoaderDisplay(GcCell::allocate(
             activation.context.gc_context,
             LoaderDisplayData {
                 base: Default::default(),
                 container: ChildContainer::new(),
-                avm2_object,
+                avm2_object: None, // Set later after assignment
                 movie,
             },
         ));
+
         obj.set_placed_by_script(activation.context.gc_context, true);
         activation.context.avm2.add_orphan_obj(obj.into());
         obj
@@ -95,7 +92,15 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
-        self.0.read().avm2_object.into()
+        self.0
+            .read()
+            .avm2_object
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Null)
+    }
+
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).avm2_object = Some(to);
     }
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {

@@ -1,29 +1,44 @@
 //! `flash.display.Shape` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, StageObject, TObject};
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::display_object::Graphic;
 
-/// Implements `flash.display.Shape`'s 'init' method, which is called from the constructor
-pub fn init<'gc>(
+pub fn shape_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
+) -> Result<Object<'gc>, Error<'gc>> {
+    let shape_cls = activation.avm2().classes().shape;
 
-        if this.as_display_object().is_none() {
-            let new_do = Graphic::new_with_avm2(&mut activation.context, this);
-
-            this.init_display_object(&mut activation.context, new_do.into());
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == shape_cls {
+            let display_object = Graphic::empty(&mut activation.context).into();
+            return initialize_for_allocator(activation, display_object, orig_class);
         }
-    }
 
-    Ok(Value::Undefined)
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
+    }
+    unreachable!("A Shape subclass should have Shape in superclass chain");
 }
 
 /// Implements `graphics`.

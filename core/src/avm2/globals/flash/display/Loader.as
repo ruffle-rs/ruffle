@@ -1,4 +1,6 @@
 package flash.display {
+
+	[Ruffle(InstanceAllocator)]
 	public class Loader extends DisplayObjectContainer {
 		import flash.display.LoaderInfo;
 		import flash.display.DisplayObject;
@@ -12,12 +14,6 @@ package flash.display {
 
 		public function get contentLoaderInfo():LoaderInfo {
 			return this._contentLoaderInfo;
-		}
-
-		private native function init();
-
-		public function Loader() {
-			this.init()
 		}
 
 		public function get content():DisplayObject {

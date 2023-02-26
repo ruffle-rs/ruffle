@@ -2469,7 +2469,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if needs_construction {
                 self.construct_as_avm2_object(context);
                 self.on_construction_complete(context);
-            } else {
+            // If we're in the load frame and we were constructed by ActionScript,
+            // then we want to wait for the DisplayObject constructor to run
+            // 'construct_frame' on children. This is observable by ActionScript -
+            // before calling super(), 'this.numChildren' will show a non-zero number
+            // when we have children placed on the load frame, but 'this.getChildAt(0)'
+            // will return 'null' since the children haven't had their AVM2 objects
+            // constructed by `construct_frame` yet.
+            } else if !(is_load_frame && self.placed_by_script()) {
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {

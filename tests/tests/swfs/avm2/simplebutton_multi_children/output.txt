@@ -1,0 +1,20 @@
+upState: [object Sprite]
+Child 0: [object TextField] text: Up state child 1
+
+Child 1: [object TextField] text: Up state child 2
+
+downState: [object Sprite]
+Child 0: [object TextField] text: Down state child 1
+
+Child 1: [object TextField] text: Down state child 2
+
+overState: [object Sprite]
+Child 0: [object TextField] text: Over state child 1
+
+Child 1: [object TextField] text: Over state child 2
+
+hitTestState: [object Sprite]
+Child 0: [object TextField] text: Hit state child 1
+
+Child 1: [object TextField] text: Hit state child 2
+

@@ -1345,9 +1345,9 @@ pub trait TDisplayObject<'gc>:
     /// if possible, set a named property on the parent matching the name of
     /// the object.
     ///
-    /// If the child was placed by AVM2, this function is a no-op, since AVM2
-    /// will already trip these events. Objects that cannot be constructed by
-    /// the timeline do not need to call this method.
+    /// This still needs to be called for objects placed by AVM2, since we
+    /// need to stop the underlying MovieClip if the constructed class
+    /// does not extend MovieClip.
     ///
     /// Since we construct AVM2 display objects after they are allocated and
     /// placed on the render list, these steps have to be done by the child
@@ -1393,14 +1393,16 @@ pub trait TDisplayObject<'gc>:
         }
 
         if let Some(movie) = self.as_movie_clip() {
-            if let Some(obj) = movie.object2().as_object() {
-                let movieclip_class = context.avm2.classes().movieclip;
-                // It's possible to have a DefineSprite tag with multiple frames, but have
-                // the corresponding `SymbolClass` *not* extend `MovieClip` (e.g. extending `Sprite` directly.)
-                // When this occurs, Flash Player will run the first frame, and immediately stop.
-                if !obj.is_of_type(movieclip_class, context) {
-                    movie.stop(context);
-                }
+            let obj = movie
+                .object2()
+                .as_object()
+                .expect("MovieClip object should have been constructed");
+            let movieclip_class = context.avm2.classes().movieclip;
+            // It's possible to have a DefineSprite tag with multiple frames, but have
+            // the corresponding `SymbolClass` *not* extend `MovieClip` (e.g. extending `Sprite` directly.)
+            // When this occurs, Flash Player will run the first frame, and immediately stop.
+            if !obj.is_of_type(movieclip_class, context) {
+                movie.stop(context);
             }
         }
     }
