@@ -64,6 +64,8 @@ impl From<Degrees> for f64 {
 /// Extends the f64 type.
 pub trait F64Extension {
     fn clamp_also_nan(self, min: f64, max: f64) -> f64;
+
+    fn clamp_to_i32(self) -> i32;
 }
 
 impl F64Extension for f64 {
@@ -75,5 +77,14 @@ impl F64Extension for f64 {
     #[allow(clippy::manual_clamp)]
     fn clamp_also_nan(self, min: f64, max: f64) -> f64 {
         self.max(min).min(max)
+    }
+
+    fn clamp_to_i32(self) -> i32 {
+        // Clamp NaN and out-of-range (including infinite) values to `i32::MIN`.
+        if self >= i32::MIN.into() && self <= i32::MAX.into() {
+            self as i32
+        } else {
+            i32::MIN
+        }
     }
 }

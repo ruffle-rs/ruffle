@@ -4,21 +4,13 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
+use crate::types::F64Extension;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
-fn clamp_to_i32(value: f64) -> i32 {
-    // Values outside of `i32` range get clamped to `i32::MIN`.
-    if value.is_finite() && value >= i32::MIN.into() && value <= i32::MAX.into() {
-        value as i32
-    } else {
-        i32::MIN
-    }
-}
-
 #[inline]
 fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
-    let result = clamp_to_i32(lhs % f64::from(rhs));
+    let result = (lhs % f64::from(rhs)).clamp_to_i32();
     if result < 0 {
         result + rhs
     } else {
@@ -113,11 +105,11 @@ impl Date {
         let day = self.day();
         // Perform binary search to find the largest `year: i32` such that `Self::from_year(year) <= *self`.
         let mut low =
-            clamp_to_i32((day / if *self < Self::EPOCH { 365.0 } else { 366.0 }).floor()) + 1970;
+            ((day / if *self < Self::EPOCH { 365.0 } else { 366.0 }).floor()).clamp_to_i32() + 1970;
         let mut high =
-            clamp_to_i32((day / if *self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()) + 1970;
+            ((day / if *self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()).clamp_to_i32() + 1970;
         while low < high {
-            let pivot = clamp_to_i32((f64::from(low) + f64::from(high)) / 2.0);
+            let pivot = ((f64::from(low) + f64::from(high)) / 2.0).clamp_to_i32();
             if Self::from_year(pivot) <= *self {
                 if Self::from_year(pivot + 1) > *self {
                     return pivot;
@@ -155,7 +147,7 @@ impl Date {
 
     /// ECMA-262 DayWithinYear - Get days within year (0-365).
     fn day_within_year(&self) -> i32 {
-        clamp_to_i32(self.day() - Self::day_from_year(self.year().into()))
+        (self.day() - Self::day_from_year(self.year().into())).clamp_to_i32()
     }
 
     /// ECMA-262 DateFromTime - Get days within month (1-31).
@@ -234,8 +226,8 @@ impl Date {
     }
 
     fn day_from_month(year: f64, month: f64) -> f64 {
-        let year = clamp_to_i32(year);
-        let month = clamp_to_i32(month.floor());
+        let year = year.clamp_to_i32();
+        let month = month.floor().clamp_to_i32();
         if !(0..12).contains(&month) {
             return f64::NAN;
         }
@@ -283,7 +275,7 @@ impl fmt::Display for Date {
             "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ];
 
-        let timezone_offset = clamp_to_i32(-self.timezone_offset());
+        let timezone_offset = (-self.timezone_offset()).clamp_to_i32();
         write!(
             f,
             "{} {} {} {:02}:{:02}:{:02} GMT{}{:02}{:02} {}",
@@ -564,9 +556,9 @@ fn method<'gc>(
                 arg(SET_MILLISECONDS).unwrap_or_else(|| date.milliseconds().into());
             if index == SET_MINUTES {
                 // `setMinutes()` special case.
-                minutes = clamp_to_i32(minutes).into();
-                seconds = clamp_to_i32(seconds).into();
-                milliseconds = clamp_to_i32(milliseconds).into();
+                minutes = minutes.clamp_to_i32().into();
+                seconds = seconds.clamp_to_i32().into();
+                milliseconds = milliseconds.clamp_to_i32().into();
             }
             set_date(
                 date.day(),

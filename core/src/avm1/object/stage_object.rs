@@ -10,7 +10,7 @@ use crate::display_object::{
     DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::string::{AvmString, WStr};
-use crate::types::Percent;
+use crate::types::{F64Extension, Percent};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
@@ -725,8 +725,13 @@ fn set_sound_buf_time<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     avm_warn!(activation, "_soundbuftime is currently ignored by Ruffle");
-    if let Some(val) = property_coerce_to_i32(activation, val)? {
-        activation.context.audio_manager.set_stream_buffer_time(val);
+    let val = val.coerce_to_f64(activation)?;
+    // NaN/undefined/null are invalid values; do not set.
+    if !val.is_nan() {
+        activation
+            .context
+            .audio_manager
+            .set_stream_buffer_time(val.clamp_to_i32());
     }
     Ok(())
 }
@@ -773,26 +778,4 @@ fn property_coerce_to_number<'gc>(
 
     // Invalid value; do not set.
     Ok(None)
-}
-
-/// Coerces `value` to `i32` for use by a stage object property.
-///
-/// Values out of range of `i32` will be clamped to `i32::MIN`. Returns `None` if the value is
-/// invalid (NaN, null, or undefined).
-fn property_coerce_to_i32<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<Option<i32>, Error<'gc>> {
-    let n = value.coerce_to_f64(activation)?;
-    let ret = if n.is_nan() {
-        // NaN/undefined/null are invalid values; do not set.
-        None
-    } else if n >= i32::MIN as f64 && n <= i32::MAX as f64 {
-        Some(n as i32)
-    } else {
-        // Out of range of i32; snaps to `i32::MIN`.
-        Some(i32::MIN)
-    };
-
-    Ok(ret)
 }
