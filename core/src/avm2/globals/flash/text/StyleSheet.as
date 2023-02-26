@@ -5,9 +5,7 @@ package flash.text {
     import __ruffle__.stub_getter;
     
     public dynamic class StyleSheet {
-        public function StyleSheet() {
-            stub_constructor("flash.text", "StyleSheet");
-        }
+        public function StyleSheet() {}
         
         public function get styleNames():Array {
             stub_getter("flash.text.StyleSheet", "styleNames");
