@@ -7,6 +7,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::string::AvmString;
+use crate::types::F64Extension;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -127,17 +128,12 @@ fn to_string<'gc>(
         // Flash Player 6 returns a much more sane value of 0.
         // TODO: Allow configuration of player version.
 
-        // Values outside of `i32` range get clamped to `i32::MIN`.
-        let n = if number.is_finite() && number >= i32::MIN.into() && number <= i32::MAX.into() {
-            number as i32
-        } else {
-            i32::MIN
-        };
+        let number = number.clamp_to_i32();
 
         use std::cmp::Ordering;
-        let (mut n, is_negative) = match n.cmp(&0) {
-            Ordering::Less => (n.wrapping_neg(), true),
-            Ordering::Greater => (n, false),
+        let (mut number, is_negative) = match number.cmp(&0) {
+            Ordering::Less => (number.wrapping_neg(), true),
+            Ordering::Greater => (number, false),
             Ordering::Equal => {
                 // Bail out immediately if we're 0.
                 return Ok("0".into());
@@ -147,9 +143,9 @@ fn to_string<'gc>(
         // Max 32 digits in base 2 + negative sign.
         let mut digits = [0; 33];
         let mut i = digits.len();
-        while n != 0 {
-            let digit = n % radix;
-            n /= radix;
+        while number != 0 {
+            let digit = number % radix;
+            number /= radix;
 
             i -= 1;
             digits[i] = if digit < 10 {

@@ -8,6 +8,7 @@ use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
+use crate::types::F64Extension;
 use crate::{avm1_stub, avm_warn};
 use gc_arena::MutationContext;
 
@@ -286,9 +287,11 @@ fn set_pan<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
-    let pan = clamp_sound_transform_value(value);
-
+    let pan = args
+        .get(0)
+        .unwrap_or(&0.into())
+        .coerce_to_f64(activation)?
+        .clamp_to_i32();
     if let Some(sound) = this.as_sound_object() {
         if let Some(owner) = sound.owner() {
             let mut transform = owner.base().sound_transform().clone();
@@ -349,9 +352,11 @@ fn set_volume<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
-    let volume = clamp_sound_transform_value(value);
-
+    let volume = args
+        .get(0)
+        .unwrap_or(&0.into())
+        .coerce_to_f64(activation)?
+        .clamp_to_i32();
     if let Some(sound) = this.as_sound_object() {
         if let Some(owner) = sound.owner() {
             let transform = SoundTransform {
@@ -459,14 +464,4 @@ fn stop<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Used by methods like `Sound.setVolume` to clamp the parameter to i32 range.
-fn clamp_sound_transform_value(n: f64) -> i32 {
-    // Values outside of i32 range get clamped to i32::MIN.
-    if n.is_finite() && n >= i32::MIN.into() && n <= i32::MAX.into() {
-        n as i32
-    } else {
-        i32::MIN
-    }
 }

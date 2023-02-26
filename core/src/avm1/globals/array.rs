@@ -7,6 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
+use crate::types::F64Extension;
 use bitflags::bitflags;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
@@ -87,14 +88,8 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Number(length)] = *args {
-        let length = if length.is_finite() && length >= i32::MIN.into() && length <= i32::MAX.into()
-        {
-            length as i32
-        } else {
-            i32::MIN
-        };
         let array = ArrayObject::empty(activation);
-        array.set_length(activation, length)?;
+        array.set_length(activation, length.clamp_to_i32())?;
         Ok(array.into())
     } else {
         Ok(ArrayObject::new(
