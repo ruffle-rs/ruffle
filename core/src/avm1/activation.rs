@@ -1930,10 +1930,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
     
-    fn action_strict_mode(
-        &mut self,
-        _data: StrictMode,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_strict_mode(&mut self, _data: StrictMode) -> Result<FrameControl<'gc>, Error<'gc>> {
         // From the Open Flash documentation:
         //     "This AVM1 action only serves as a hint that the byte code was compiled using 'strict mode'. It has no runtime effect."
         Ok(FrameControl::Continue)
