@@ -214,7 +214,7 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
             .read_to_end(&mut buffer)
             .context("Couldn't read response from server")?;
 
-        SwfMovie::from_data(&buffer, Some(url.to_string()), None)
+        SwfMovie::from_data(&buffer, url.to_string(), None)
             .map_err(|e| anyhow!(e.to_string()))
             .context("Couldn't load swf")?
     };
