@@ -509,6 +509,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Action::SetVariable => self.action_set_variable(),
                 Action::StackSwap => self.action_stack_swap(),
                 Action::StartDrag => self.action_start_drag(),
+                Action::StrictMode(action) => self.action_strict_mode(action),
                 Action::Stop => self.action_stop(),
                 Action::StopSounds => self.action_stop_sounds(),
                 Action::StoreRegister(action) => self.action_store_register(action),
@@ -1926,6 +1927,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let val = self.context.avm1.pop();
         self.context.avm1.push(val);
         self.set_current_register(action.register, val);
+        Ok(FrameControl::Continue)
+    }
+    
+    fn action_strict_mode(
+        &mut self,
+        _data: StrictMode,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        // From the Open Flash documentation:
+        //     "This AVM1 action only serves as a hint that the byte code was compiled using 'strict mode'. It has no runtime effect."
         Ok(FrameControl::Continue)
     }
 

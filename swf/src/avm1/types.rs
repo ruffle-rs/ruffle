@@ -85,6 +85,7 @@ pub enum Action<'a> {
     StopSounds,
     StoreRegister(StoreRegister),
     StrictEquals,
+    StrictMode(StrictMode),
     StringAdd,
     StringEquals,
     StringExtract,
@@ -307,6 +308,11 @@ pub struct SetTarget<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StoreRegister {
     pub register: u8,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StrictMode {
+    pub data: u8,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

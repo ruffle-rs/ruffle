@@ -176,6 +176,7 @@ impl<'a> Reader<'a> {
                 OpCode::StopSounds => Action::StopSounds,
                 OpCode::StoreRegister => Action::StoreRegister(self.read_store_register()?),
                 OpCode::StrictEquals => Action::StrictEquals,
+                OpCode::StrictMode => Action::StrictMode(self.read_strict_mode()?),
                 OpCode::StringAdd => Action::StringAdd,
                 OpCode::StringEquals => Action::StringEquals,
                 OpCode::StringExtract => Action::StringExtract,
@@ -346,6 +347,12 @@ impl<'a> Reader<'a> {
     fn read_store_register(&mut self) -> Result<StoreRegister> {
         Ok(StoreRegister {
             register: self.read_u8()?,
+        })
+    }
+
+    fn read_strict_mode(&mut self) -> Result<StrictMode> {
+        Ok(StrictMode {
+            data: self.read_u8()?,
         })
     }
 

@@ -159,6 +159,7 @@ impl<W: Write> Writer<W> {
             Action::StopSounds => self.write_small_action(OpCode::StopSounds),
             Action::StoreRegister(action) => self.write_store_register(action),
             Action::StrictEquals => self.write_small_action(OpCode::StrictEquals),
+            Action::StrictMode(action) => self.write_strict_mode(action),
             Action::StringAdd => self.write_small_action(OpCode::StringAdd),
             Action::StringEquals => self.write_small_action(OpCode::StringEquals),
             Action::StringExtract => self.write_small_action(OpCode::StringExtract),
@@ -385,6 +386,12 @@ impl<W: Write> Writer<W> {
     fn write_store_register(&mut self, action: &StoreRegister) -> Result<()> {
         self.write_action_header(OpCode::StoreRegister, 1)?;
         self.write_u8(action.register)?;
+        Ok(())
+    }
+
+    fn write_strict_mode(&mut self, action: &StrictMode) -> Result<()> {
+        self.write_action_header(OpCode::StrictMode, 1)?;
+        self.write_u8(action.data)?;
         Ok(())
     }
 
