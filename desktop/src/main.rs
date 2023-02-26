@@ -383,52 +383,12 @@ impl App {
         let mut time = Instant::now();
         let mut next_frame_time = Instant::now();
         let mut minimized = false;
+        let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
 
         // Poll UI events.
         self.event_loop
             .run(move |event, _window_target, control_flow| {
-                // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                if let winit::event::Event::WindowEvent {
-                    event: WindowEvent::KeyboardInput { input, .. },
-                    ..
-                } = &event
-                {
-                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                    #[allow(deprecated)]
-                    match input {
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Return),
-                            modifiers,
-                            ..
-                        } if modifiers.alt() => {
-                            if !fullscreen_down {
-                                self.player.lock().expect("Cannot reenter").update(|uc| {
-                                    uc.stage.toggle_display_state(uc);
-                                });
-                            }
-                            fullscreen_down = true;
-                            return;
-                        }
-                        KeyboardInput {
-                            state: ElementState::Released,
-                            virtual_keycode: Some(VirtualKeyCode::Return),
-                            ..
-                        } if fullscreen_down => {
-                            fullscreen_down = false;
-                        }
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        } => self.player.lock().expect("Cannot reenter").update(|uc| {
-                            uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                        }),
-                        _ => (),
-                    }
-                }
-
                 match event {
                     winit::event::Event::LoopDestroyed => {
                         self.player
@@ -538,16 +498,46 @@ impl App {
                                 self.window.request_redraw();
                             }
                         }
-                        // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                        #[allow(deprecated)]
+                        WindowEvent::ModifiersChanged(new_modifiers) => {
+                            modifiers = new_modifiers;
+                        }
                         WindowEvent::KeyboardInput { input, .. } => {
+                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
+                            match input {
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if modifiers.alt() => {
+                                    if !fullscreen_down {
+                                        self.player.lock().expect("Cannot reenter").update(|uc| {
+                                            uc.stage.toggle_display_state(uc);
+                                        });
+                                    }
+                                    fullscreen_down = true;
+                                    return;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Released,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if fullscreen_down => {
+                                    fullscreen_down = false;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                } => self.player.lock().expect("Cannot reenter").update(|uc| {
+                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                                }),
+                                _ => (),
+                            }
+
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
-                                let key_char = winit_key_to_char(
-                                    key,
-                                    input.modifiers.contains(ModifiersState::SHIFT),
-                                );
+                                let key_char = winit_key_to_char(key, modifiers.shift());
                                 let event = match input.state {
                                     ElementState::Pressed => {
                                         PlayerEvent::KeyDown { key_code, key_char }
