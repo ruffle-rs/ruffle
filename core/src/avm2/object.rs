@@ -563,6 +563,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
+    /// Same as has_property, but constructs a public Multiname for you.
+    fn has_public_property(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> bool {
+        self.has_property(&Multiname::new(activation.avm2().public_namespace, name))
+    }
+
     /// Indicates whether or not a property or trait exists on an object and is
     /// not part of the prototype chain.
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -922,6 +931,33 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             self.has_prototype_in_chain(type_proto)
         } else {
             Ok(false)
+        }
+    }
+
+    /// Returns all public properties from this object's vtable, together with their values.
+    /// This includes normal fields, const fields, and getter methods
+    /// This is used for JSON serialization.
+    // FIXME - the order doesn't currently match Flash Player
+    fn public_vtable_properties(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Vec<(AvmString<'gc>, Value<'gc>)>, Error<'gc>> {
+        if let Some(vtable) = self.vtable() {
+            let mut values = Vec::new();
+            for (name, prop) in vtable.public_properties() {
+                match prop {
+                    Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
+                        values.push((name, self.base().get_slot(slot_id)?));
+                    }
+                    Property::Virtual { get: Some(get), .. } => {
+                        values.push((name, self.call_method(get, &[], activation)?))
+                    }
+                    _ => {}
+                }
+            }
+            Ok(values)
+        } else {
+            Ok(Vec::new())
         }
     }
 
