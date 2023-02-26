@@ -56,7 +56,10 @@
     "settings_saved": {
         "message": "設定完成"
     },
-    "warn_on_unsupported_content": {
+    "settings_warn_on_unsupported_content": {
         "message": "警告未支援項目"
     }
+    "settings_log_level": {
+        "message": "警告等級(用在於開發人員工具的主控台)"
+    },
 }
