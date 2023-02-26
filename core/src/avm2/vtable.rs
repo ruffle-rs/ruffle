@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 use std::ops::DerefMut;
@@ -489,6 +490,19 @@ impl<'gc> VTable<'gc> {
         if let Some(prop) = prop {
             write.resolved_traits.insert(interface_name, prop);
         }
+    }
+
+    pub fn public_properties(self) -> Vec<(AvmString<'gc>, Property)> {
+        let read = self.0.read();
+
+        let mut props = Vec::new();
+
+        for (name, ns, prop) in read.resolved_traits.iter() {
+            if ns.is_public() {
+                props.push((name, *prop));
+            }
+        }
+        props
     }
 }
 

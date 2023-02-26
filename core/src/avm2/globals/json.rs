@@ -117,13 +117,12 @@ impl<'gc> AvmSerializer<'gc> {
             (None, value)
         } else {
             let obj = value.as_object().unwrap();
-            let to_json = obj
-                .get_public_property("toJSON", activation)?
-                .as_object()
-                .and_then(|obj| obj.as_function_object());
-            if let Some(to_json) = to_json {
+            if obj.has_public_property("toJSON", activation) {
                 let key = key();
-                (Some(key), to_json.call(None, &[key.into()], activation)?)
+                (
+                    Some(key),
+                    obj.call_public_property("toJSON", &[key.into()], activation)?,
+                )
             } else {
                 (None, value)
             }
@@ -161,8 +160,16 @@ impl<'gc> AvmSerializer<'gc> {
                 }
             }
         } else {
+            for (name, val) in obj.public_vtable_properties(activation)? {
+                let mapped = self.map_value(activation, || name, val)?;
+                if !matches!(mapped, Value::Undefined) {
+                    js_obj.insert(
+                        name.to_utf8_lossy().into_owned(),
+                        self.serialize_value(activation, mapped)?,
+                    );
+                }
+            }
             for i in 1.. {
-                // TODO: We should get more than just enumerable properties
                 match obj.get_enumerant_name(i, activation)? {
                     Value::Undefined => break,
                     name_val => {

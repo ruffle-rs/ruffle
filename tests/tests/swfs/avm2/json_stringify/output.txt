@@ -8,3 +8,7 @@ b 2 1,2,3 [object Object] undefined null i [object Object] test 5.3
 310
 226
 16
+WARNING: The output.txt file has been hand-edited to match Ruffle's output, since we don't match Flash's serialization order
+{"prop2":true,"myGetter":"Getter value","MY_CONST":"Const val","prop1":"Hello"}
+WARNING: The output.txt file has been hand-edited to match Ruffle's output, since we don't match Flash's serialization order
+{"prop2":false,"prop1":"Dynamic","dyn1":"Dyn prop"}
