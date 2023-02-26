@@ -1,6 +1,21 @@
 {
+    "action_reload": {
+        "message": "重新整理並套用此設定"
+    },
+    "description": {
+        "message": "把 Flash 重新帶回現代瀏覽器。"
+    },
+    "open_settings_page": {
+        "message": "打開設定頁面"
+    },
+    "save_settings": {
+        "message": "儲存設定"
+    },
     "settings_ruffle_enable": {
         "message": "使用 Ruffle 播放 Flash 内容"
+    },
+    "settings_page": {
+        "message": "設定頁面"
     },
     "settings_page_ignore_optout": {
         "message": "即便網站禁用了 Ruffle 也可以播放 Flash 内容"
@@ -8,17 +23,23 @@
     "settings_ignore_optout": {
         "message": "忽略網站相容性警告"
     },
+    "settings_log_level": {
+        "message": "警告等級(用在於開發人員工具裡的主控台)"
+    },
+    "settings_saved": {
+        "message": "設定完成"
+    },
     "settings_show_swf_download": {
         "message": "顯示下載SWF檔案 (右鍵選單)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "警告未支援項目"
     },
     "status_init": {
         "message": "正在讀取目前標籤頁……"
     },
     "status_no_tabs": {
         "message": "沒有活動標籤頁。"
-    },
-    "status_tabs_error": {
-        "message": "尋找目前標籤頁時發生錯誤。"
     },
     "status_message_init": {
         "message": "在此標籤頁上檢查 Ruffle 狀態…"
@@ -38,28 +59,7 @@
     "status_result_protected": {
         "message": "Ruffle 無法在被瀏覽器保護的頁面中加載。"
     },
-    "action_reload": {
-        "message": "重新整理並套用此設定"
-    },
-    "open_settings_page": {
-        "message": "打開設定頁面"
-    },
-    "settings_page": {
-        "message": "設定頁面"
-    },
-    "description": {
-        "message": "把 Flash 重新帶回現代瀏覽器。"
-    },
-    "save_settings": {
-        "message": "儲存設定"
-    },
-    "settings_saved": {
-        "message": "設定完成"
-    },
-    "settings_warn_on_unsupported_content": {
-        "message": "警告未支援項目"
-    }
-    "settings_log_level": {
-        "message": "警告等級(用在於開發人員工具裡的主控台)"
+    "status_tabs_error": {
+        "message": "尋找目前標籤頁時發生錯誤。"
     },
 }
