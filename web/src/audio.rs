@@ -16,14 +16,32 @@ use web_sys::AudioContext;
 pub struct WebAudioBackend {
     mixer: AudioMixer,
     context: AudioContext,
+    /// The current length of both buffers, in frames (pairs of left/right samples).
+    buffer_size: Arc<RwLock<u32>>,
     buffers: Vec<Arc<RwLock<Buffer>>>,
+    /// When the last submitted buffer is expected to play out completely, in seconds.
     time: Arc<RwLock<f64>>,
-    position_resolution: Duration,
+    /// How many consecutive times we have filled the next buffer "at a sufficiently early time".
+    num_quick_fills: Arc<RwLock<u32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
 impl WebAudioBackend {
-    const BUFFER_SIZE: u32 = 4096;
+    /// These govern the adaptive buffer size algorithm, all are in number of frames (pairs of samples).
+    /// They must all be integer powers of 2 (due to how the algorithm works).
+    const INITIAL_BUFFER_SIZE: u32 = 2048; // 46.44 ms at 44.1 kHz
+    const MIN_BUFFER_SIZE: u32 = 1024; // 23.22 ms at 44.1 kHz
+    const MAX_BUFFER_SIZE: u32 = 16384; // 371.52 ms at 44.1 kHz
+
+    /// How many consecutive "quick fills" to wait before decreasing the buffer size.
+    /// A higher value is more conservative.
+    const NUM_QUICK_FILLS_THRESHOLD: u32 = 100;
+    /// The limit of playout ratio (progress) when filling the next buffer, under which it is
+    /// considered "quick". Must be in 0..1, and less than `0.5 * NORMAL_PROGRESS_RANGE_MAX`.
+    const NORMAL_PROGRESS_RANGE_MIN: f64 = 0.25;
+    /// The limit of playout ratio (progress) when filling the next buffer, over which buffer size
+    /// is increased immediately. Must be in 0..1, and greater than `2 * NORMAL_PROGRESS_RANGE_MIN`.
+    const NORMAL_PROGRESS_RANGE_MAX: f64 = 0.75;
 
     pub fn new(log_subscriber: Arc<Layered<WASMLayer, Registry>>) -> Result<Self, JsError> {
         let context = AudioContext::new().into_js_result()?;
@@ -31,11 +49,10 @@ impl WebAudioBackend {
         let mut audio = Self {
             context,
             mixer: AudioMixer::new(2, sample_rate as u32),
+            buffer_size: Arc::new(RwLock::new(Self::INITIAL_BUFFER_SIZE)),
             buffers: Vec::with_capacity(2),
             time: Arc::new(RwLock::new(0.0)),
-            position_resolution: Duration::from_secs_f64(
-                f64::from(Self::BUFFER_SIZE) / f64::from(sample_rate),
-            ),
+            num_quick_fills: Arc::new(RwLock::new(0u32)),
             log_subscriber,
         };
 
@@ -43,7 +60,7 @@ impl WebAudioBackend {
         // These buffers ping-pong as the audio stream plays.
         for _ in 0..2 {
             let buffer = Buffer::new(&audio)?;
-            let _ = buffer.write().expect("Cannot reenter locks").play();
+            buffer.write().expect("Cannot reenter locks").play()?;
             audio.buffers.push(buffer);
         }
 
@@ -68,7 +85,11 @@ impl AudioBackend for WebAudioBackend {
     }
 
     fn position_resolution(&self) -> Option<Duration> {
-        Some(self.position_resolution)
+        self.buffer_size.read().map_or(None, |bs| {
+            Some(Duration::from_secs_f64(
+                f64::from(*bs) / f64::from(self.context.sample_rate()),
+            ))
+        })
     }
 }
 
@@ -81,12 +102,13 @@ impl Drop for WebAudioBackend {
 struct Buffer {
     context: AudioContext,
     mixer_proxy: AudioMixerProxy,
+    buffer_size: Arc<RwLock<u32>>,
     audio_buffer: Vec<f32>,
     js_buffer: web_sys::AudioBuffer,
     audio_node: Option<web_sys::AudioBufferSourceNode>,
     on_ended_handler: Closure<dyn FnMut()>,
     time: Arc<RwLock<f64>>,
-    buffer_timestep: f64,
+    num_quick_fills: Arc<RwLock<u32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -96,15 +118,16 @@ impl Buffer {
         let buffer = Arc::new(RwLock::new(Self {
             context: audio.context.clone(),
             mixer_proxy: audio.mixer.proxy(),
-            audio_node: None,
-            audio_buffer: vec![0.0; 2 * WebAudioBackend::BUFFER_SIZE as usize],
+            buffer_size: audio.buffer_size.clone(),
+            audio_buffer: vec![0.0; 2 * WebAudioBackend::INITIAL_BUFFER_SIZE as usize],
             js_buffer: audio
                 .context
-                .create_buffer(2, WebAudioBackend::BUFFER_SIZE, sample_rate)
+                .create_buffer(2, WebAudioBackend::INITIAL_BUFFER_SIZE, sample_rate)
                 .into_js_result()?,
+            audio_node: None,
             on_ended_handler: Closure::new(|| {}),
             time: audio.time.clone(),
-            buffer_timestep: f64::from(WebAudioBackend::BUFFER_SIZE) / f64::from(sample_rate),
+            num_quick_fills: audio.num_quick_fills.clone(),
             log_subscriber: audio.log_subscriber.clone(),
         }));
 
@@ -124,6 +147,64 @@ impl Buffer {
     fn play(&mut self) -> Result<(), JsError> {
         let _subscriber = tracing::subscriber::set_default(self.log_subscriber.clone());
 
+        let mut time = self.time.write().expect("Cannot reenter locks");
+        let mut buffer_size = self.buffer_size.write().expect("Cannot reenter locks");
+        let mut num_quick_fills = self.num_quick_fills.write().expect("Cannot reenter locks");
+
+        let time_left = *time - self.context.current_time();
+        let mut buffer_timestep = f64::from(*buffer_size) / f64::from(self.context.sample_rate());
+
+        // How far along the other buffer is in playing out right now:
+        //  ~0: it has just started playing, we are well within time
+        // 0.25 .. 0.75: "optimal range"
+        //  ~1: we are just barely keeping up with feeding the output
+        //  >1: we are falling behind, audio stutters
+        let progress = (buffer_timestep - time_left) / buffer_timestep;
+        tracing::trace!(
+            "Audio buffer progress when filling the next one: {}%",
+            progress * 100.0
+        );
+
+        if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MIN {
+            // This fill is considered quick, let's count it.
+            *num_quick_fills += 1;
+        } else if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MAX {
+            // This fill is in the "normal" range, only resetting the "quick fill" counter.
+            *num_quick_fills = 0;
+        } else {
+            // This fill is considered slow (maybe even too slow), increasing the buffer size.
+            if progress >= 1.0 {
+                tracing::debug!("Audio underrun detected!");
+            }
+            *num_quick_fills = 0;
+            if *buffer_size < WebAudioBackend::MAX_BUFFER_SIZE {
+                *buffer_size *= 2;
+                tracing::debug!("Increased audio buffer size to {} frames", buffer_size);
+                *num_quick_fills = 0;
+            }
+        }
+
+        // If enough quick fills happened, we decrease the buffer size.
+        if *num_quick_fills > WebAudioBackend::NUM_QUICK_FILLS_THRESHOLD
+            && *buffer_size > WebAudioBackend::MIN_BUFFER_SIZE
+        {
+            *buffer_size /= 2;
+            tracing::debug!("Decreased audio buffer size to {} frames", buffer_size);
+            *num_quick_fills = 0;
+        }
+
+        // In case buffer_size changed above (or in the latest call in the other instance),
+        // we need to recaulculate/recreate/resize a couple of things that depend on it.
+        if self.js_buffer.length() != *buffer_size {
+            tracing::trace!("Recreating JS side buffer with new length");
+            buffer_timestep = f64::from(*buffer_size) / f64::from(self.context.sample_rate());
+            self.js_buffer = self
+                .context
+                .create_buffer(2, *buffer_size, self.context.sample_rate())
+                .into_js_result()?;
+            self.audio_buffer.resize(2 * *buffer_size as usize, 0.0);
+        }
+
         // Mix new audio into the output buffer and copy to JS.
         self.mixer_proxy.mix(&mut self.audio_buffer);
         copy_to_audio_buffer_interleaved(&self.js_buffer, &self.audio_buffer);
@@ -137,12 +218,11 @@ impl Buffer {
         audio_node.set_onended(Some(self.on_ended_handler.as_ref().unchecked_ref()));
 
         // Sanity: ensure our player time is not in the past. This can happen due to underruns.
-        let mut time = self.time.write().expect("Cannot reenter locks");
         *time = f64::max(*time, self.context.current_time());
 
         // Schedule this buffer for playback and advance the player time.
         audio_node.start_with_when(*time).into_js_result()?;
-        *time += self.buffer_timestep;
+        *time += buffer_timestep;
 
         self.audio_node = Some(audio_node);
         Ok(())
