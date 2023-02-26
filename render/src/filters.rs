@@ -26,7 +26,7 @@ impl From<swf::BlurFilter> for BlurFilter {
         Self {
             blur_x: value.blur_x.to_f32(),
             blur_y: value.blur_y.to_f32(),
-            quality: value.num_passes,
+            quality: value.num_passes(),
         }
     }
 }

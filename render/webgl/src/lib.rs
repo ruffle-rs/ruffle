@@ -946,6 +946,7 @@ impl RenderBackend for WebGlRenderBackend {
         _width: u32,
         _height: u32,
         _commands: CommandList,
+        _quality: StageQuality,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }

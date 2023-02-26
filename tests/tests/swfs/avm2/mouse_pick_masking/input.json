@@ -1,0 +1,163 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [
+            90,
+            282.8
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            90,
+            282.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            90,
+            282.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            176,
+            237
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            176,
+            237
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            176,
+            237
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            230,
+            254.8
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            230,
+            254.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            230,
+            254.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            234,
+            176.8
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            234,
+            176.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            234,
+            176.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            518,
+            244.8
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            518,
+            244.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            518,
+            244.8
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            580,
+            131.1
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            580,
+            131.1
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            580,
+            131.1
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            572,
+            139
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            572,
+            139
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            572,
+            139
+        ],
+        "btn": "Left"
+    }
+]

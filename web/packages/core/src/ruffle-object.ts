@@ -1,5 +1,4 @@
 import {
-    FLASH_ACTIVEX_CLASSID,
     isBuiltInContextMenuVisible,
     isFallbackElement,
     isScriptAccessAllowed,
@@ -9,6 +8,7 @@ import {
     workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
+import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
@@ -23,14 +23,14 @@ import { RuffleEmbed } from "./ruffle-embed";
  * @returns Value if found, else [[defaultValue]]
  */
 function findCaseInsensitive(
-    obj: { [key: string]: string | null },
+    obj: Record<string, string>,
     key: string,
     defaultValue: string | null
 ): string | null {
     key = key.toLowerCase();
-    for (const k in obj) {
-        if (Object.hasOwnProperty.call(obj, k) && key === k.toLowerCase()) {
-            return obj[k];
+    for (const [k, value] of Object.entries(obj)) {
+        if (k.toLowerCase() === key) {
+            return value;
         }
     }
     return defaultValue;
@@ -83,7 +83,7 @@ export class RuffleObject extends RufflePlayer {
      * @ignore
      * @internal
      */
-    connectedCallback(): void {
+    override connectedCallback(): void {
         super.connectedCallback();
 
         this.params = paramsOf(this);
@@ -91,8 +91,8 @@ export class RuffleObject extends RufflePlayer {
         let url = null;
         if (this.attributes.getNamedItem("data")) {
             url = this.attributes.getNamedItem("data")?.value;
-        } else if (this.params.movie) {
-            url = this.params.movie;
+        } else if (this.params["movie"]) {
+            url = this.params["movie"];
         }
 
         const allowScriptAccess = findCaseInsensitive(
@@ -159,7 +159,7 @@ export class RuffleObject extends RufflePlayer {
         }
     }
 
-    protected debugPlayerInfo(): string {
+    protected override debugPlayerInfo(): string {
         let errorText = super.debugPlayerInfo();
         errorText += "Player type: Object\n";
 
@@ -167,8 +167,8 @@ export class RuffleObject extends RufflePlayer {
 
         if (this.attributes.getNamedItem("data")) {
             url = this.attributes.getNamedItem("data")?.value;
-        } else if (this.params.movie) {
-            url = this.params.movie;
+        } else if (this.params["movie"]) {
+            url = this.params["movie"];
         }
         errorText += `SWF URL: ${url}\n`;
 
@@ -243,9 +243,9 @@ export class RuffleObject extends RufflePlayer {
                 return false;
             }
             isSwf = isSwfFilename(data);
-        } else if (params && params.movie) {
+        } else if (params && params["movie"]) {
             // Don't polyfill when the file is a Youtube Flash source.
-            if (isYoutubeFlashSource(params.movie)) {
+            if (isYoutubeFlashSource(params["movie"])) {
                 // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
                 const movie_elem = elem.querySelector("param[name='movie']");
                 if (movie_elem) {
@@ -259,7 +259,7 @@ export class RuffleObject extends RufflePlayer {
                 }
                 return false;
             }
-            isSwf = isSwfFilename(params.movie);
+            isSwf = isSwfFilename(params["movie"]);
         } else {
             // Don't polyfill when no file is specified.
             return false;

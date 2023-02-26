@@ -1,5 +1,6 @@
 //! Whole script representation
 
+use super::traits::TraitKind;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
@@ -461,11 +462,15 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            write.domain.export_definition(
-                newtrait.name(),
-                *self,
-                activation.context.gc_context,
-            )?;
+            write
+                .domain
+                .export_definition(newtrait.name(), *self, activation.context.gc_context);
+            if let TraitKind::Class { class, .. } = newtrait.kind() {
+                write
+                    .domain
+                    .export_class(*class, activation.context.gc_context);
+            }
+
             write.traits.push(newtrait);
         }
 

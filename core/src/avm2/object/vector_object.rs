@@ -236,7 +236,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
                 .map(|index| index.into())
                 .unwrap_or(Value::Undefined))
         } else {
-            Ok("".into())
+            Ok(Value::Undefined)
         }
     }
 

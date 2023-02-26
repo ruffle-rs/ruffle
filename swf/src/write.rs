@@ -1772,18 +1772,14 @@ impl<W: Write> Writer<W> {
         self.write_fixed16(filter.angle)?;
         self.write_fixed16(filter.distance)?;
         self.write_fixed8(filter.strength)?;
-        let mut bits = self.bits();
-        bits.write_bit(filter.is_inner)?;
-        bits.write_bit(filter.is_knockout)?;
-        bits.write_bit(true)?;
-        bits.write_ubits(5, filter.num_passes.into())?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
     fn write_blur_filter(&mut self, filter: &BlurFilter) -> Result<()> {
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
-        self.write_u8(filter.num_passes << 3)?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
@@ -1792,11 +1788,7 @@ impl<W: Write> Writer<W> {
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed8(filter.strength)?;
-        let mut bits = self.bits();
-        bits.write_bit(filter.is_inner)?;
-        bits.write_bit(filter.is_knockout)?;
-        bits.write_bit(true)?;
-        bits.write_ubits(5, filter.num_passes.into())?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
@@ -1808,12 +1800,7 @@ impl<W: Write> Writer<W> {
         self.write_fixed16(filter.angle)?;
         self.write_fixed16(filter.distance)?;
         self.write_fixed8(filter.strength)?;
-        let mut bits = self.bits();
-        bits.write_bit(filter.is_inner)?;
-        bits.write_bit(filter.is_knockout)?;
-        bits.write_bit(true)?;
-        bits.write_bit(filter.is_on_top)?;
-        bits.write_ubits(4, filter.num_passes.into())?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
@@ -1830,12 +1817,7 @@ impl<W: Write> Writer<W> {
         self.write_fixed16(filter.angle)?;
         self.write_fixed16(filter.distance)?;
         self.write_fixed8(filter.strength)?;
-        let mut bits = self.bits();
-        bits.write_bit(filter.is_inner)?;
-        bits.write_bit(filter.is_knockout)?;
-        bits.write_bit(true)?;
-        bits.write_bit(filter.is_on_top)?;
-        bits.write_ubits(4, filter.num_passes.into())?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 
@@ -1848,10 +1830,7 @@ impl<W: Write> Writer<W> {
             self.write_fixed16(*val)?;
         }
         self.write_rgba(&filter.default_color)?;
-        self.write_u8(
-            if filter.is_clamped { 0b10 } else { 0 }
-                | if filter.is_preserve_alpha { 0b1 } else { 0 },
-        )?;
+        self.write_u8(filter.flags.bits())?;
         Ok(())
     }
 

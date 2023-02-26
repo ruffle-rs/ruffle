@@ -16,13 +16,10 @@ interface OptionElement<T> {
 }
 
 class CheckboxOption implements OptionElement<boolean> {
-    private checkbox: HTMLInputElement;
-    readonly label: HTMLLabelElement;
-
-    constructor(checkbox: HTMLInputElement, label: HTMLLabelElement) {
-        this.checkbox = checkbox;
-        this.label = label;
-    }
+    constructor(
+        private readonly checkbox: HTMLInputElement,
+        readonly label: HTMLLabelElement
+    ) {}
 
     get input() {
         return this.checkbox;
@@ -38,13 +35,10 @@ class CheckboxOption implements OptionElement<boolean> {
 }
 
 class SelectOption implements OptionElement<string> {
-    private select: HTMLSelectElement;
-    readonly label: HTMLLabelElement;
-
-    constructor(select: HTMLSelectElement, label: HTMLLabelElement) {
-        this.select = select;
-        this.label = label;
-    }
+    constructor(
+        private readonly select: HTMLSelectElement,
+        readonly label: HTMLLabelElement
+    ) {}
 
     get input() {
         return this.select;
@@ -52,7 +46,7 @@ class SelectOption implements OptionElement<string> {
 
     get value() {
         const index = this.select.selectedIndex;
-        const option = this.select.options[index];
+        const option = this.select.options[index]!;
         return option.value;
     }
 
@@ -64,7 +58,7 @@ class SelectOption implements OptionElement<string> {
 }
 
 function getElement(option: Element): OptionElement<unknown> {
-    const [label] = option.getElementsByTagName("label");
+    const label = option.getElementsByTagName("label")[0]!;
 
     const [checkbox] = option.getElementsByTagName("input");
     if (checkbox && checkbox.type === "checkbox") {

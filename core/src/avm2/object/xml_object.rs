@@ -1,13 +1,17 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
+use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+use super::xml_list_object::E4XOrXml;
 
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
@@ -18,7 +22,10 @@ pub fn xml_allocator<'gc>(
 
     Ok(XmlObject(GcCell::allocate(
         activation.context.gc_context,
-        XmlObjectData { base },
+        XmlObjectData {
+            base,
+            node: E4XNode::dummy(activation.context.gc_context),
+        },
     ))
     .into())
 }
@@ -40,6 +47,35 @@ impl fmt::Debug for XmlObject<'_> {
 pub struct XmlObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
+
+    node: E4XNode<'gc>,
+}
+
+impl<'gc> XmlObject<'gc> {
+    pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
+        XmlObject(GcCell::allocate(
+            activation.context.gc_context,
+            XmlObjectData {
+                base: ScriptObjectData::new(activation.context.avm2.classes().xml),
+                node,
+            },
+        ))
+    }
+    pub fn set_node(&self, mc: MutationContext<'gc, '_>, node: E4XNode<'gc>) {
+        self.0.write(mc).node = node;
+    }
+
+    pub fn local_name(&self) -> Option<AvmString<'gc>> {
+        self.0.read().node.local_name()
+    }
+
+    pub fn matches_name(&self, multiname: &Multiname<'gc>) -> bool {
+        self.0.read().node.matches_name(multiname)
+    }
+
+    pub fn node(&self) -> Ref<'_, E4XNode<'gc>> {
+        Ref::map(self.0.read(), |data| &data.node)
+    }
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
@@ -59,7 +95,66 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_xml(&self) -> Option<Self> {
+    fn as_xml_object(&self) -> Option<Self> {
         Some(*self)
+    }
+
+    fn get_property_local(
+        self,
+        name: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
+        let read = self.0.read();
+
+        if name.contains_public_namespace() {
+            if let Some(local_name) = name.local_name() {
+                // The only supported numerical index is 0
+                if let Ok(index) = local_name.parse::<usize>() {
+                    if index == 0 {
+                        return Ok(self.into());
+                    } else {
+                        return Ok(Value::Undefined);
+                    }
+                }
+
+                let matched_children = if let E4XNodeKind::Element {
+                    children,
+                    attributes,
+                } = &*read.node.kind()
+                {
+                    let search_children = if name.is_attribute() {
+                        attributes
+                    } else {
+                        children
+                    };
+
+                    search_children
+                        .iter()
+                        .filter_map(|child| {
+                            if child.matches_name(name) {
+                                Some(E4XOrXml::E4X(*child))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                };
+                return Ok(XmlListObject::new(activation, matched_children).into());
+            }
+        }
+
+        read.base.get_property_local(name, activation)
+    }
+
+    fn set_property_local(
+        self,
+        _name: &Multiname<'gc>,
+        _value: Value<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        Err("Modifying an XML object is not yet implemented".into())
     }
 }

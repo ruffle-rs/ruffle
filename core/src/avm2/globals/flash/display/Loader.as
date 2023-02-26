@@ -37,6 +37,10 @@ package flash.display {
 			// https://github.com/ruffle-rs/ruffle/pull/8909
 			throw new Error("flash.display.Loader.unload - not yet implemented");
 		}
+		
+		public function close():void {
+			stub_method("flash.display.Loader", "close");
+		}
 
 		override public function addChild(child:DisplayObject):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
@@ -46,7 +50,7 @@ package flash.display {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 
-		override public function removeChild(child:DisplayObject, index:int):DisplayObject {
+		override public function removeChild(child:DisplayObject):DisplayObject {
 			throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
 		}
 

@@ -22,6 +22,7 @@ use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
 };
+use crate::display_object::Avm2MousePick;
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageScaleMode,
     TInteractiveObject, WindowMode,
@@ -326,10 +327,11 @@ impl Player {
     /// should destroy and recreate the player instance.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
         info!(
-            "Loaded SWF version {}, with a resolution of {}x{}",
+            "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),
-            movie.height()
+            movie.height(),
+            movie.frame_rate()
         );
 
         self.frame_rate = movie.frame_rate().into();
@@ -792,15 +794,6 @@ impl Player {
         })
     }
 
-    pub fn set_scale_mode(&mut self, scale_mode: &str) {
-        self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            if let Ok(scale_mode) = StageScaleMode::from_str(scale_mode) {
-                stage.set_scale_mode(context, scale_mode);
-            }
-        })
-    }
-
     pub fn set_window_mode(&mut self, window_mode: &str) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
@@ -1160,12 +1153,7 @@ impl Player {
                     let was_visible = display_object.visible();
                     display_object.set_visible(context.gc_context, false);
                     // Set _droptarget to the object the mouse is hovering over.
-                    let drop_target_object =
-                        context.stage.iter_render_list().rev().find_map(|level| {
-                            level
-                                .as_interactive()
-                                .and_then(|l| l.mouse_pick(context, *context.mouse_position, false))
-                        });
+                    let drop_target_object = run_mouse_pick(context, false);
                     movie_clip.set_drop_target(
                         context.gc_context,
                         drop_target_object.map(|d| d.as_displayobject()),
@@ -1184,12 +1172,7 @@ impl Player {
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
-            let new_over_object = context.stage.iter_render_list().rev().find_map(|level| {
-                level
-                    .as_interactive()
-                    .and_then(|l| l.mouse_pick(context, *context.mouse_position, true))
-            });
-
+            let new_over_object = run_mouse_pick(context, true);
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
 
@@ -1357,6 +1340,9 @@ impl Player {
                     let display_object = object.as_displayobject();
                     if !display_object.removed() {
                         object.handle_clip_event(context, event);
+                        if context.is_action_script_3() {
+                            object.event_dispatch_to_avm2(context, event);
+                        }
                     }
                     if !refresh && event.is_button_event() {
                         let is_button_mode = display_object.as_avm1_button().is_some()
@@ -1938,6 +1924,8 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    scale_mode: StageScaleMode,
+    forced_scale_mode: bool,
     fullscreen: bool,
     letterbox: Letterbox,
     max_execution_duration: Duration,
@@ -1971,6 +1959,8 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
+            scale_mode: StageScaleMode::ShowAll,
+            forced_scale_mode: false,
             fullscreen: false,
             // Disable script timeout in debug builds by default.
             letterbox: Letterbox::Fullscreen,
@@ -2086,6 +2076,14 @@ impl PlayerBuilder {
         self.viewport_width = width;
         self.viewport_height = height;
         self.viewport_scale_factor = dpi_scale_factor;
+        self
+    }
+
+    /// Sets the stage scale mode and optionally prevents movies from changing it.
+    #[inline]
+    pub fn with_scale_mode(mut self, scale: StageScaleMode, force: bool) -> Self {
+        self.scale_mode = scale;
+        self.forced_scale_mode = force;
         self
     }
 
@@ -2251,6 +2249,8 @@ impl PlayerBuilder {
             context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
+            stage.set_scale_mode(context, self.scale_mode);
+            stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
         });
@@ -2296,4 +2296,28 @@ pub struct DragObject<'gc> {
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]
     pub constraint: BoundingBox,
+}
+
+fn run_mouse_pick<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    require_button_mode: bool,
+) -> Option<InteractiveObject<'gc>> {
+    context.stage.iter_render_list().rev().find_map(|level| {
+        level.as_interactive().and_then(|l| {
+            if context.is_action_script_3() {
+                let mut res = None;
+                if let Avm2MousePick::Hit(target) =
+                    l.mouse_pick_avm2(context, *context.mouse_position, require_button_mode)
+                {
+                    // Flash Player appears to never target events at the root object
+                    if !target.as_displayobject().is_root() {
+                        res = Some(target);
+                    }
+                }
+                res
+            } else {
+                l.mouse_pick_avm1(context, *context.mouse_position, require_button_mode)
+            }
+        })
+    })
 }

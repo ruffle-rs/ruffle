@@ -1,24 +1,18 @@
 //! `flash.display.Sprite` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, StageObject, TObject};
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use crate::tag_utils::SwfMovie;
-use gc_arena::GcCell;
 use ruffle_render::bounding_box::BoundingBox;
 use std::sync::Arc;
 use swf::Twips;
 
-/// Implements `flash.display.Sprite`'s instance constructor.
-pub fn instance_init<'gc>(
+/// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -41,17 +35,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.Sprite`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `dropTarget`'s getter
-pub fn drop_target<'gc>(
+pub fn get_drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -68,7 +53,7 @@ pub fn drop_target<'gc>(
 }
 
 /// Implements `graphics`.
-pub fn graphics<'gc>(
+pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -77,13 +62,13 @@ pub fn graphics<'gc>(
         if let Some(dobj) = this.as_display_object() {
             // Lazily initialize the `Graphics` object in a hidden property.
             let graphics = match this.get_property(
-                &Multiname::new(activation.avm2().ruffle_private_namespace, "graphics"),
+                &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
                     let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
-                        &Multiname::new(activation.avm2().ruffle_private_namespace, "graphics"),
+                        &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
                         graphics,
                         activation,
                     )?;
@@ -99,7 +84,7 @@ pub fn graphics<'gc>(
 }
 
 /// Implements `soundTransform`'s getter
-pub fn sound_transform<'gc>(
+pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -134,7 +119,7 @@ pub fn set_sound_transform<'gc>(
 }
 
 /// Implements `buttonMode`'s getter
-pub fn button_mode<'gc>(
+pub fn get_button_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -192,8 +177,8 @@ pub fn start_drag<'gc>(
             (object_x - mouse_x, object_y - mouse_y)
         };
 
-        let constraint = if let Some(rect) = args.get(1) {
-            let rect = rect.coerce_to_object(activation)?;
+        let constraint = if !matches!(args[1], Value::Null) {
+            let rect = args[1].coerce_to_object(activation)?;
             let x = rect
                 .get_public_property("x", activation)?
                 .coerce_to_number(activation)?;
@@ -244,7 +229,7 @@ pub fn start_drag<'gc>(
     Ok(Value::Undefined)
 }
 
-fn stop_drag<'gc>(
+pub fn stop_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -261,7 +246,7 @@ fn stop_drag<'gc>(
 }
 
 /// Implements `useHandCursor`'s getter
-pub fn use_hand_cursor<'gc>(
+pub fn get_use_hand_cursor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -296,68 +281,4 @@ pub fn set_use_hand_cursor<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Sprite`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "Sprite"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "DisplayObjectContainer",
-        )),
-        Method::from_builtin(instance_init, "<Sprite instance initializer>", mc),
-        Method::from_builtin(class_init, "<Sprite class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("graphics", Some(graphics), None),
-        ("dropTarget", Some(drop_target), None),
-        (
-            "soundTransform",
-            Some(sound_transform),
-            Some(set_sound_transform),
-        ),
-        ("buttonMode", Some(button_mode), Some(set_button_mode)),
-        (
-            "useHandCursor",
-            Some(use_hand_cursor),
-            Some(set_use_hand_cursor),
-        ),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("startDrag", start_drag), ("stopDrag", stop_drag)];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    // Slot for lazy-initialized Graphics object.
-    write.define_instance_trait(Trait::from_slot(
-        QName::new(activation.avm2().ruffle_private_namespace, "graphics"),
-        Multiname::new(
-            Namespace::package("flash.display", activation.context.gc_context),
-            "Graphics",
-        ),
-        None,
-    ));
-
-    class
 }

@@ -45,7 +45,7 @@ pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
-pub use interactive::{InteractiveObject, TInteractiveObject};
+pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
@@ -1436,7 +1436,7 @@ pub trait TDisplayObject<'gc>:
         }
 
         println!(
-            "{} rel({},{}) abs({},{}) {} {} {}",
+            "{} rel({},{}) abs({},{}) {} {} {} id={} depth={}",
             " ".repeat(depth),
             self.x(),
             self.y(),
@@ -1444,7 +1444,9 @@ pub trait TDisplayObject<'gc>:
             bounds.y_min.to_pixels(),
             classname,
             self.name(),
-            self_str
+            self_str,
+            self.id(),
+            depth
         );
 
         if let Some(ctr) = self.as_container() {

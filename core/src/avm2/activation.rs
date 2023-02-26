@@ -3,7 +3,7 @@
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error::type_error;
+use crate::avm2::error::{make_null_or_undefined_error, type_error};
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -238,6 +238,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
+        } else if let Some(global) = self.global_scope() {
+            if global.base().has_own_dynamic_property(name) {
+                Ok(Some(global))
+            } else {
+                Ok(None)
+            }
         } else {
             Ok(None)
         }
@@ -254,6 +260,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Ok(Some(obj.get_property(name, self)?))
         } else if let Some(result) = outer_scope.resolve(name, self)? {
             Ok(Some(result))
+        } else if let Some(global) = self.global_scope() {
+            let prop = global.base().get_property_local(name, self)?;
+            if prop == Value::Undefined {
+                return Ok(None);
+            }
+            Ok(Some(prop))
         } else {
             Ok(None)
         }
@@ -2015,7 +2027,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let coerced = match value {
             Value::Undefined | Value::Null => Value::Null,
-            _ => value.coerce_to_object(self)?.into(),
+            _ => value,
         };
 
         self.push_stack(coerced);
@@ -2057,11 +2069,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_convert_o(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let value = self
-            .pop_stack()
-            .coerce_to_object(self)
-            .map_err(|_| "Cannot convert null or undefined to object")?;
-
+        let value = self.pop_stack();
+        if matches!(value, Value::Null | Value::Undefined) {
+            return Err(make_null_or_undefined_error(self, value, None));
+        }
         self.push_stack(value);
 
         Ok(FrameControl::Continue)
@@ -2607,8 +2618,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_strict_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
-
-        self.push_stack(value1 == value2);
+        self.push_stack(value1.strict_eq(&value2));
 
         Ok(FrameControl::Continue)
     }
@@ -2865,7 +2875,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             "object"
                         }
                     }
-                    Object::XmlObject(_) => {
+                    Object::XmlObject(_) | Object::XmlListObject(_) => {
                         if is_not_subclass {
                             "xml"
                         } else {

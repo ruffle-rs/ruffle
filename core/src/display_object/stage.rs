@@ -6,6 +6,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
+use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -84,6 +85,9 @@ pub struct StageData<'gc> {
     /// The scale mode of the stage.
     scale_mode: StageScaleMode,
 
+    /// Whether to prevent movies from changing the stage scale mode.
+    forced_scale_mode: bool,
+
     /// The display state of the stage.
     display_state: StageDisplayState,
 
@@ -147,6 +151,7 @@ impl<'gc> Stage<'gc> {
                 // This is updated in `build_matrices`
                 stage_size: (0, 0),
                 scale_mode: Default::default(),
+                forced_scale_mode: false,
                 display_state: if fullscreen {
                     StageDisplayState::FullScreen
                 } else {
@@ -289,8 +294,20 @@ impl<'gc> Stage<'gc> {
 
     /// Set the stage scale mode.
     pub fn set_scale_mode(self, context: &mut UpdateContext<'_, 'gc>, scale_mode: StageScaleMode) {
-        self.0.write(context.gc_context).scale_mode = scale_mode;
-        self.build_matrices(context);
+        if !self.forced_scale_mode() {
+            self.0.write(context.gc_context).scale_mode = scale_mode;
+            self.build_matrices(context);
+        }
+    }
+
+    /// Get whether movies are prevented from changing the stage scale mode.
+    pub fn forced_scale_mode(self) -> bool {
+        self.0.read().forced_scale_mode
+    }
+
+    /// Set whether movies are prevented from changing the stage scale mode.
+    pub fn set_forced_scale_mode(self, context: &mut UpdateContext<'_, 'gc>, force: bool) {
+        self.0.write(context.gc_context).forced_scale_mode = force;
     }
 
     fn is_fullscreen_state(display_state: StageDisplayState) -> bool {
@@ -854,12 +871,14 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
     fn event_dispatch(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
-        event: ClipEvent<'gc>,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        self.event_dispatch_to_avm2(context, event);
+        ClipEventResult::NotHandled
+    }
 
-        ClipEventResult::Handled
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        MouseCursor::Arrow
     }
 }
 
@@ -867,6 +886,7 @@ pub struct ParseEnumError;
 
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 pub enum StageScaleMode {

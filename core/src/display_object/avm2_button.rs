@@ -21,6 +21,8 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
+use super::interactive::Avm2MousePick;
+
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Avm2Button<'gc>(GcCell<'gc, Avm2ButtonData<'gc>>);
@@ -95,6 +97,7 @@ impl<'gc> Avm2Button<'gc> {
         button: &swf::Button,
         source_movie: &SwfSlice,
         context: &mut UpdateContext<'_, 'gc>,
+        construct_blank_states: bool,
     ) -> Self {
         let static_data = ButtonStatic {
             swf: source_movie.movie.clone(),
@@ -118,7 +121,7 @@ impl<'gc> Avm2Button<'gc> {
                 down_state: None,
                 class: context.avm2.classes().simplebutton,
                 object: None,
-                needs_frame_construction: true,
+                needs_frame_construction: construct_blank_states,
                 needs_avm2_initialization: false,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
@@ -142,7 +145,7 @@ impl<'gc> Avm2Button<'gc> {
             actions: Vec::new(),
         };
 
-        Self::from_swf_tag(&button_record, &movie.into(), context)
+        Self::from_swf_tag(&button_record, &movie.into(), context, false)
     }
 
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
@@ -818,16 +821,15 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         if old_state != new_state {
             self.set_state(context, new_state);
         }
-
-        self.event_dispatch_to_avm2(context, event)
+        ClipEventResult::Handled
     }
 
-    fn mouse_pick(
+    fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         point: (Twips, Twips),
         require_button_mode: bool,
-    ) -> Option<InteractiveObject<'gc>> {
+    ) -> Avm2MousePick<'gc> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() && self.mouse_enabled() {
             let state = self.0.read().state;
@@ -836,11 +838,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             if let Some(state_child) = state_child {
                 let mouse_pick = state_child
                     .as_interactive()
-                    .and_then(|c| c.mouse_pick(context, point, require_button_mode));
-                if mouse_pick.is_some() {
+                    .map(|c| c.mouse_pick_avm2(context, point, require_button_mode));
+                match mouse_pick {
+                    None | Some(Avm2MousePick::Miss) => {}
                     // Selecting a child of a button is equivalent to selecting the button itself
-                    return Some((*self).into());
-                }
+                    _ => return Avm2MousePick::Hit((*self).into()),
+                };
             }
 
             let hit_area = self.0.read().hit_area;
@@ -853,11 +856,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                     point = self.global_to_local(point);
                 }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some((*self).into());
+                    return Avm2MousePick::Hit((*self).into());
                 }
             }
         }
-        None
+        Avm2MousePick::Miss
     }
 
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {

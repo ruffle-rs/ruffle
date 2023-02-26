@@ -34,7 +34,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @ignore
      * @internal
      */
-    connectedCallback(): void {
+    override connectedCallback(): void {
         super.connectedCallback();
         const src = this.attributes.getNamedItem("src");
         if (src) {
@@ -50,9 +50,11 @@ export class RuffleEmbed extends RufflePlayer {
                     allowScriptAccess,
                     src.value
                 ),
-                parameters: this.attributes.getNamedItem("flashvars")?.value,
-                backgroundColor: this.attributes.getNamedItem("bgcolor")?.value,
-                base: this.attributes.getNamedItem("base")?.value,
+                parameters:
+                    this.attributes.getNamedItem("flashvars")?.value ?? null,
+                backgroundColor:
+                    this.attributes.getNamedItem("bgcolor")?.value ?? null,
+                base: this.attributes.getNamedItem("base")?.value ?? null,
                 menu: isBuiltInContextMenuVisible(menu),
                 salign: this.attributes.getNamedItem("salign")?.value ?? "",
                 quality:
@@ -96,7 +98,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @ignore
      * @internal
      */
-    static get observedAttributes(): string[] {
+    static override get observedAttributes(): string[] {
         return ["src", "width", "height"];
     }
 
@@ -104,24 +106,21 @@ export class RuffleEmbed extends RufflePlayer {
      * @ignore
      * @internal
      */
-    attributeChangedCallback(
+    override attributeChangedCallback(
         name: string,
         oldValue: string | undefined,
         newValue: string | undefined
     ): void {
         super.attributeChangedCallback(name, oldValue, newValue);
         if (this.isConnected && name === "src") {
-            let parameters;
-            const flashvars = this.attributes.getNamedItem("flashvars");
-            if (flashvars) {
-                parameters = flashvars.value;
-            }
             const src = this.attributes.getNamedItem("src");
             if (src) {
                 this.load({
                     url: src.value,
-                    parameters,
-                    base: this.attributes.getNamedItem("base")?.value,
+                    parameters:
+                        this.attributes.getNamedItem("flashvars")?.value ??
+                        null,
+                    base: this.attributes.getNamedItem("base")?.value ?? null,
                 });
             }
         }

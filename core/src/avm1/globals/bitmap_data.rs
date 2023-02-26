@@ -560,6 +560,7 @@ pub fn draw<'gc>(
                 smoothing,
                 blend_mode,
                 None,
+                activation.context.stage.quality(),
                 &mut activation.context,
             );
             return Ok(Value::Undefined);
@@ -1309,19 +1310,16 @@ pub fn load_bitmap<'gc>(
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    if let Some(Character::Bitmap {
-        bitmap: bitmap_object,
-    }) = character
-    {
+    if let Some(Character::Bitmap(bitmap)) = character {
         let new_bitmap_data = BitmapDataObject::empty_object(
             activation.context.gc_context,
             activation.context.avm1.prototypes().bitmap_data,
         );
 
-        let width = bitmap_object.width() as u32;
-        let height = bitmap_object.height() as u32;
+        let width = bitmap.width() as u32;
+        let height = bitmap.height() as u32;
 
-        let pixels: Vec<_> = bitmap_object.bitmap_data().read().pixels().to_vec();
+        let pixels: Vec<_> = bitmap.bitmap_data().read().pixels().to_vec();
 
         new_bitmap_data
             .as_bitmap_data_object()

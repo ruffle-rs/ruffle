@@ -12,26 +12,30 @@ jobs:
   create-nightly-release:
     name: Create Nightly Release
     runs-on: ubuntu-22.04
-    env:
-      GHA_REPO_ALIVE: "true"
-      
     outputs:
-      is_active: ${{ env.GHA_REPO_ALIVE }}
+      is_active: ${{ steps.activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
-    
+
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - id: check_activity
-        continue-on-error: true
-        name: Check for repo activity
-        if: ${{ github.event_name == 'schedule' }}
-        run: test -z "$(git rev-list --after="24 hours" --date=local ${{ github.sha }})" && echo "GHA_REPO_ALIVE=false" >> $GITHUB_ENV
+      - name: Check for repo activity
+        id: activity
+        run: |
+          # Skip activity check when manually triggered.
+          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            is_active=true
+          elif [ "$(git rev-list --after="24 hours" ${{ github.sha }})" ]; then
+            is_active=true
+          else
+            is_active=false
+          fi
+          echo "is_active=$is_active" >> $GITHUB_OUTPUT
 
       - name: Get current time with dashes
         uses: 1466587594/get-current-time@v2.0.2
@@ -46,7 +50,7 @@ jobs:
           format: YYYY_MM_DD
 
       - name: Create release
-        if: env.GHA_REPO_ALIVE == 'true'
+        if: steps.activity.outputs.is_active == 'true'
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -59,7 +63,7 @@ jobs:
   build:
     name: Build ${{ matrix.build_name }}
     needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active != 'false'
+    if: needs.create-nightly-release.outputs.is_active == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -271,7 +275,7 @@ jobs:
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active != 'false'
+    if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -307,21 +311,22 @@ jobs:
       - name: Install binaryen
         shell: bash -l {0}
         run: conda install -c conda-forge binaryen
-      
+
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
         run: |
           npm ci
-      
+
       - name: Seal version data
         shell: bash -l {0}
         working-directory: web
         env:
           BUILD_ID: ${{ github.run_number }}
           ENABLE_VERSION_SEAL: "true"
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
-      
+
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}

@@ -245,7 +245,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         filters: vec![Filter::BlurFilter(Box::new(BlurFilter {
                             blur_x: Fixed16::from_f32(5.0),
                             blur_y: Fixed16::from_f32(5.0),
-                            num_passes: 1,
+                            flags: BlurFilterFlags::from_passes(1),
                         }))],
                         blend_mode: BlendMode::Difference,
                     },
@@ -2133,10 +2133,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         angle: Fixed16::from_f64(0.7853851318359375),
                         distance: Fixed16::from_f32(5.0),
                         strength: Fixed8::ONE,
-                        is_inner: true,
-                        is_knockout: true,
-                        is_on_top: false,
-                        num_passes: 3,
+                        flags: GradientFilterFlags::INNER_SHADOW
+                            | GradientFilterFlags::KNOCKOUT
+                            | GradientFilterFlags::COMPOSITE_SOURCE
+                            | GradientFilterFlags::from_passes(3),
                     })),
                     Filter::GradientGlowFilter(Box::new(GradientFilter {
                         colors: vec![
@@ -2164,15 +2164,14 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         angle: Fixed16::from_f64(0.174530029296875),
                         distance: Fixed16::from_f32(5.0),
                         strength: Fixed8::from_f64(0.19921875),
-                        is_inner: false,
-                        is_knockout: false,
-                        is_on_top: true,
-                        num_passes: 1,
+                        flags: GradientFilterFlags::COMPOSITE_SOURCE
+                            | GradientFilterFlags::ON_TOP
+                            | GradientFilterFlags::from_passes(1),
                     })),
                     Filter::BlurFilter(Box::new(BlurFilter {
                         blur_x: Fixed16::from_f32(30.0),
                         blur_y: Fixed16::from_f32(20.0),
-                        num_passes: 2,
+                        flags: BlurFilterFlags::from_passes(2),
                     })),
                 ]),
                 background_color: Some(Color {

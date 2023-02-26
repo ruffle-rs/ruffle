@@ -1,15 +1,10 @@
 //! `flash.display.Bitmap` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::flash::display::bitmapdata::fill_bitmap_data_from_symbol;
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::globals::flash::display::bitmap_data::fill_bitmap_data_from_symbol;
 use crate::avm2::object::{BitmapDataObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
@@ -17,8 +12,8 @@ use crate::display_object::{Bitmap, TDisplayObject};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use gc_arena::GcCell;
 
-/// Implements `flash.display.Bitmap`'s instance constructor.
-pub fn instance_init<'gc>(
+/// Implements `flash.display.Bitmap`'s `init` method, which is called from the constructor
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -62,7 +57,7 @@ pub fn instance_init<'gc>(
                     .avm2_class_registry()
                     .class_symbol(b_class)
                 {
-                    if let Some(Character::Bitmap { bitmap }) = activation
+                    if let Some(Character::Bitmap(bitmap)) = activation
                         .context
                         .library
                         .library_for_movie_mut(movie)
@@ -115,17 +110,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.display.Bitmap`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `Bitmap.bitmapData`'s getter.
-pub fn bitmap_data<'gc>(
+pub fn get_bitmap_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -172,7 +158,7 @@ pub fn set_bitmap_data<'gc>(
 }
 
 /// Stub `Bitmap.pixelSnapping`'s getter
-pub fn pixel_snapping<'gc>(
+pub fn get_pixel_snapping<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -192,7 +178,7 @@ pub fn set_pixel_snapping<'gc>(
 }
 
 /// Implement `Bitmap.smoothing`'s getter
-pub fn smoothing<'gc>(
+pub fn get_smoothing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -222,44 +208,4 @@ pub fn set_smoothing<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Bitmap`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "Bitmap"),
-        Some(Multiname::new(
-            Namespace::package("flash.display", mc),
-            "DisplayObject",
-        )),
-        Method::from_builtin(instance_init, "<Bitmap instance initializer>", mc),
-        Method::from_builtin(class_init, "<Bitmap class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("bitmapData", Some(bitmap_data), Some(set_bitmap_data)),
-        (
-            "pixelSnapping",
-            Some(pixel_snapping),
-            Some(set_pixel_snapping),
-        ),
-        ("smoothing", Some(smoothing), Some(set_smoothing)),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    class
 }

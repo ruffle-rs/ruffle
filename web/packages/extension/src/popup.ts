@@ -50,7 +50,7 @@ async function queryTabStatus(
         return;
     }
 
-    activeTab = tabs[0];
+    activeTab = tabs[0]!;
     listener("status_message_init");
 
     let response;

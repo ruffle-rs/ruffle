@@ -14,6 +14,8 @@ use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
+use super::e4x::E4XNode;
+
 /// Indicate what kind of primitive coercion would be preferred when coercing
 /// objects.
 #[derive(Eq, PartialEq)]
@@ -604,7 +606,13 @@ impl<'gc> Value<'gc> {
             Value::Number(f) => !f.is_nan() && *f != 0.0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty(),
-            Value::Object(_) => true,
+            Value::Object(o) => {
+                if let Some(prim) = o.as_primitive() {
+                    prim.coerce_to_boolean()
+                } else {
+                    true
+                }
+            }
         }
     }
 
@@ -955,7 +963,7 @@ impl<'gc> Value<'gc> {
 
         if let Ok(object) = self.coerce_to_object(activation) {
             if object.is_of_type(class, activation) {
-                return Ok(object.into());
+                return Ok(*self);
             }
 
             if let Some(vector) = object.as_vector_storage() {
@@ -1040,6 +1048,21 @@ impl<'gc> Value<'gc> {
         if let Ok(o) = self.coerce_to_object(activation) {
             o.is_of_type(type_object, activation)
         } else {
+            false
+        }
+    }
+
+    /// Implements the strict-equality `===` check for AVM2.
+    pub fn strict_eq(&self, other: &Value<'gc>) -> bool {
+        if self == other {
+            true
+        } else {
+            // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
+            if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object()) {
+                if let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object()) {
+                    return E4XNode::ptr_eq(*xml1.node(), *xml2.node());
+                }
+            }
             false
         }
     }

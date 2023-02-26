@@ -447,8 +447,8 @@ pub trait TDisplayObjectContainer<'gc>:
 
             // Check if we need to pop off a mask.
             // This must be a while loop because multiple masks can be popped
-            // at the same dpeth.
-            while clip_depth > 0 && depth >= clip_depth {
+            // at the same depth.
+            while clip_depth > 0 && depth > clip_depth {
                 // Clear the mask stencil and pop the mask.
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
@@ -547,6 +547,8 @@ pub struct ChildContainer<'gc> {
     /// This should be more efficient than switching the render list to a `BTreeMap`,
     /// as it will usually be false
     has_pending_removals: bool,
+
+    mouse_children: bool,
 }
 
 impl<'gc> Default for ChildContainer<'gc> {
@@ -561,6 +563,7 @@ impl<'gc> ChildContainer<'gc> {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
             has_pending_removals: false,
+            mouse_children: true,
         }
     }
 
@@ -753,6 +756,14 @@ impl<'gc> ChildContainer<'gc> {
         self.render_list.len()
     }
 
+    pub fn mouse_children(&self) -> bool {
+        self.mouse_children
+    }
+
+    pub fn set_mouse_children(&mut self, mouse_children: bool) {
+        self.mouse_children = mouse_children;
+    }
+
     /// Insert a child at a given render list position.
     ///
     /// If the child is already a child of another container, you must remove
@@ -814,10 +825,12 @@ impl<'gc> ChildContainer<'gc> {
     ) {
         let prev_depth = child.depth();
         child.set_depth(gc_context, depth);
+        child.set_clip_depth(gc_context, 0);
         child.set_parent(gc_context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
             prev_child.set_depth(gc_context, prev_depth);
+            prev_child.set_clip_depth(gc_context, 0);
             prev_child.set_transformed_by_script(gc_context, true);
             self.depth_list.insert(prev_depth, prev_child);
 
@@ -955,6 +968,11 @@ impl<'gc> Iterator for RenderIter<'gc> {
 
         this
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.neg_i - self.i;
+        (len, Some(len))
+    }
 }
 
 impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
@@ -970,3 +988,5 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
         this
     }
 }
+
+impl<'gc> ExactSizeIterator for RenderIter<'gc> {}

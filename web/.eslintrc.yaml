@@ -5,10 +5,13 @@ extends:
   - eslint:recommended
   - plugin:prettier/recommended
 rules:
+  curly: error
   eqeqeq: error
+  no-constructor-return: error
   no-unused-vars:
     - error
     - argsIgnorePattern: ^_
+  prefer-const: error
 overrides:
   # TypeScript rules.
   - files:

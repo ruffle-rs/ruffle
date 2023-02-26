@@ -10,6 +10,8 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
 
+use super::class::Class;
+
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
 #[derive(Copy, Clone, Collect)]
@@ -21,6 +23,10 @@ pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.
     defs: PropertyMap<'gc, Script<'gc>>,
+
+    /// A map of all Clasess defined in this domain. Used by ClassObject
+    /// to perform early interface resolution.
+    classes: PropertyMap<'gc, GcCell<'gc, Class<'gc>>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -48,6 +54,7 @@ impl<'gc> Domain<'gc> {
             mc,
             DomainData {
                 defs: PropertyMap::new(),
+                classes: PropertyMap::new(),
                 parent: None,
                 domain_memory: None,
             },
@@ -67,6 +74,7 @@ impl<'gc> Domain<'gc> {
             activation.context.gc_context,
             DomainData {
                 defs: PropertyMap::new(),
+                classes: PropertyMap::new(),
                 parent: Some(parent),
                 domain_memory: None,
             },
@@ -121,6 +129,22 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
+    pub fn get_class(
+        self,
+        multiname: &Multiname<'gc>,
+    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+        let read = self.0.read();
+        if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
+            return Ok(Some(class));
+        }
+
+        if let Some(parent) = read.parent {
+            return parent.get_class(multiname);
+        }
+
+        Ok(None)
+    }
+
     /// Resolve a Multiname and return the script that provided it.
     ///
     /// If a name does not exist or cannot be resolved, an error will be thrown.
@@ -158,25 +182,22 @@ impl<'gc> Domain<'gc> {
 
     /// Export a definition from a script into the current application domain.
     ///
-    /// This returns an error if the name is already defined in the current or
-    /// any parent domains.
+    /// This does nothing if the definition already exists.
     pub fn export_definition(
         &mut self,
         name: QName<'gc>,
         script: Script<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error<'gc>> {
+    ) {
         if self.has_definition(name) {
-            return Err(format!(
-                "VerifyError: Attempted to redefine existing name {}",
-                name.local_name()
-            )
-            .into());
+            return;
         }
 
         self.0.write(mc).defs.insert(name, script);
+    }
 
-        Ok(())
+    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).classes.insert(class.read().name(), class);
     }
 
     pub fn domain_memory(&self) -> ByteArrayObject<'gc> {

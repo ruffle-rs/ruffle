@@ -61,12 +61,12 @@ async function fetchRuffle(
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
     const { default: init, Ruffle } = await (extensionsSupported
-        ? import("../pkg/ruffle_web-wasm_extensions")
-        : import("../pkg/ruffle_web"));
+        ? import("../dist/ruffle_web-wasm_extensions")
+        : import("../dist/ruffle_web"));
     let response;
     const wasmUrl = extensionsSupported
-        ? new URL("../pkg/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
-        : new URL("../pkg/ruffle_web_bg.wasm", import.meta.url);
+        ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
+        : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
     if (progressCallback) {
         const contentLength = wasmResponse.headers.get("content-length") || "";
@@ -83,8 +83,12 @@ async function fetchRuffle(
                     progressCallback(bytesLoaded, bytesTotal);
                     for (;;) {
                         const { done, value } = await reader.read();
-                        if (done) break;
-                        if (value?.byteLength) bytesLoaded += value?.byteLength;
+                        if (done) {
+                            break;
+                        }
+                        if (value?.byteLength) {
+                            bytesLoaded += value?.byteLength;
+                        }
                         controller.enqueue(value);
                         progressCallback(bytesLoaded, bytesTotal);
                     }
@@ -103,8 +107,8 @@ async function fetchRuffle(
 }
 
 type Ruffle =
-    | typeof import("../pkg/ruffle_web")["Ruffle"]
-    | typeof import("../pkg/ruffle_web-wasm_extensions")["Ruffle"];
+    | typeof import("../dist/ruffle_web")["Ruffle"]
+    | typeof import("../dist/ruffle_web-wasm_extensions")["Ruffle"];
 
 let lastLoaded: Promise<Ruffle> | null = null;
 

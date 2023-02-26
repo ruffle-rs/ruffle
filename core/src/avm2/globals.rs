@@ -218,7 +218,7 @@ fn function<'gc>(
     );
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
-    domain.export_definition(qname, script, mc)?;
+    domain.export_definition(qname, script, mc);
     global.install_const_late(mc, qname, as3fn, activation.avm2().classes().function);
 
     Ok(())
@@ -234,7 +234,7 @@ fn dynamic_class<'gc>(
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class
     class_class: ClassObject<'gc>,
-) -> Result<(), Error<'gc>> {
+) {
     let (_, mut global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
@@ -290,7 +290,8 @@ fn class<'gc>(
         class_object.into(),
         activation.avm2().classes().class,
     );
-    domain.export_definition(class_name, script, activation.context.gc_context)?;
+    domain.export_definition(class_name, script, activation.context.gc_context);
+    domain.export_class(class_def, activation.context.gc_context);
 
     Ok(class_object)
 }
@@ -342,20 +343,24 @@ pub fn load_player_globals<'gc>(
     let object_classdef = object::create_class(activation);
     let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
     let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
+    domain.export_class(object_classdef, mc);
 
     let fn_classdef = function::create_class(activation);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
     let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
+    domain.export_class(fn_classdef, mc);
 
     let class_classdef = class::create_class(activation);
     let class_class =
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
     let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    domain.export_class(class_classdef, mc);
 
     let global_classdef = global_scope::create_class(activation);
     let global_class =
         ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
     let global_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    domain.export_class(global_classdef, mc);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
@@ -396,9 +401,9 @@ pub fn load_player_globals<'gc>(
 
     // From this point, `globals` is safe to be modified
 
-    dynamic_class(mc, object_class, script, class_class)?;
-    dynamic_class(mc, fn_class, script, class_class)?;
-    dynamic_class(mc, class_class, script, class_class)?;
+    dynamic_class(mc, object_class, script, class_class);
+    dynamic_class(mc, fn_class, script, class_class);
+    dynamic_class(mc, class_class, script, class_class);
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
@@ -477,104 +482,23 @@ pub fn load_player_globals<'gc>(
         script
     );
 
+    // package `flash.text`
     class(
-        flash::events::ieventdispatcher::create_interface(activation),
+        flash::text::font::create_class(activation),
         script,
         activation,
     )?;
-    avm2_system_class!(
-        eventdispatcher,
-        activation,
-        flash::events::eventdispatcher::create_class(activation),
-        script
-    );
 
-    // package `flash.display`
-    class(
-        flash::display::ibitmapdrawable::create_interface(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        display_object,
-        activation,
-        flash::display::displayobject::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        shape,
-        activation,
-        flash::display::shape::create_class(activation),
-        script
-    );
-    class(
-        flash::display::interactiveobject::create_class(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        simplebutton,
-        activation,
-        flash::display::simplebutton::create_class(activation),
-        script
-    );
-    class(
-        flash::display::displayobjectcontainer::create_class(activation),
-        script,
-        activation,
-    )?;
-    avm2_system_class!(
-        sprite,
-        activation,
-        flash::display::sprite::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        movieclip,
-        activation,
-        flash::display::movieclip::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        graphics,
-        activation,
-        flash::display::graphics::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        loaderinfo,
-        activation,
-        flash::display::loaderinfo::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        stage,
-        activation,
-        flash::display::stage::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmap,
-        activation,
-        flash::display::bitmap::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        bitmapdata,
-        activation,
-        flash::display::bitmapdata::create_class(activation),
-        script
-    );
+    // Inside this call, the macro `avm2_system_classes_playerglobal`
+    // triggers classloading. Therefore, we run `load_playerglobal`
+    // relative late, so that it can access classes defined before
+    // this call.
+    load_playerglobal(activation, domain)?;
 
-    // package `flash.geom`
+    // Everything after the `load_playerglobal` call needs classes
+    // defined in the playerglobal swf.
 
     // package `flash.media`
-    avm2_system_class!(
-        video,
-        activation,
-        flash::media::video::create_class(activation),
-        script
-    );
     class(
         flash::media::sound::create_class(activation),
         script,
@@ -597,31 +521,6 @@ pub fn load_player_globals<'gc>(
         flash::media::soundchannel::create_class(activation),
         script
     );
-
-    // package `flash.text`
-    avm2_system_class!(
-        textfield,
-        activation,
-        flash::text::textfield::create_class(activation),
-        script
-    );
-    avm2_system_class!(
-        textformat,
-        activation,
-        flash::text::textformat::create_class(activation),
-        script
-    );
-    class(
-        flash::text::font::create_class(activation),
-        script,
-        activation,
-    )?;
-
-    // Inside this call, the macro `avm2_system_classes_playerglobal`
-    // triggers classloading. Therefore, we run `load_playerglobal`
-    // relative late, so that it can access classes defined before
-    // this call.
-    load_playerglobal(activation, domain)?;
 
     Ok(())
 }
@@ -690,8 +589,17 @@ fn load_playerglobal<'gc>(
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+            ("flash.display", "Bitmap", bitmap),
+            ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
+            ("flash.display", "Graphics", graphics),
+            ("flash.display", "LoaderInfo", loaderinfo),
+            ("flash.display", "MovieClip", movieclip),
+            ("flash.display", "Shape", shape),
+            ("flash.display", "SimpleButton", simplebutton),
+            ("flash.display", "Sprite", sprite),
+            ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
@@ -705,6 +613,7 @@ fn load_playerglobal<'gc>(
             ("flash.errors", "IOError", ioerror),
             ("flash.errors", "EOFError", eoferror),
             ("flash.events", "Event", event),
+            ("flash.events", "EventDispatcher", eventdispatcher),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
             ("flash.events", "KeyboardEvent", keyboardevent),
@@ -722,6 +631,8 @@ fn load_playerglobal<'gc>(
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
+            ("flash.text", "TextFormat", textformat),
+            ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
         ]
     );

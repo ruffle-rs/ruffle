@@ -13,6 +13,7 @@ use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
@@ -69,11 +70,10 @@ impl Color {
 
         let old_alpha = if transparency { self.alpha() } else { 255 };
 
-        let a = old_alpha as f64 / 255.0;
-
-        let r = (self.red() as f64 * a).round() as u8;
-        let g = (self.green() as f64 * a).round() as u8;
-        let b = (self.blue() as f64 * a).round() as u8;
+        let a = old_alpha as u32;
+        let r = ((self.red() as u32 * a + 127) / 255) as u8;
+        let g = ((self.green() as u32 * a + 127) / 255) as u8;
+        let b = ((self.blue() as u32 * a + 127) / 255) as u8;
 
         Self::argb(old_alpha, r, g, b)
     }
@@ -1343,6 +1343,7 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw(
         &mut self,
         mut source: IBitmapDrawable<'gc>,
@@ -1350,6 +1351,7 @@ impl<'gc> BitmapData<'gc> {
         smoothing: bool,
         blend_mode: BlendMode,
         clip_rect: Option<Rectangle<Twips>>,
+        quality: StageQuality,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         let bitmapdata_width = self.width();
@@ -1432,6 +1434,7 @@ impl<'gc> BitmapData<'gc> {
             bitmapdata_width,
             bitmapdata_height,
             commands,
+            quality,
         );
 
         match image {

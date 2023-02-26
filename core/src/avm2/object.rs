@@ -55,10 +55,11 @@ mod stage_object;
 mod textformat_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
+mod xml_list_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
-pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDataObject};
+pub use crate::avm2::object::bitmapdata_object::{bitmap_data_allocator, BitmapDataObject};
 pub use crate::avm2::object::bytearray_object::{byte_array_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::context3d_object::Context3DObject;
@@ -71,7 +72,7 @@ pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
 pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
 pub use crate::avm2::object::loaderinfo_object::{
-    loaderinfo_allocator, LoaderInfoObject, LoaderStream,
+    loader_info_allocator, LoaderInfoObject, LoaderStream,
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
@@ -87,6 +88,7 @@ pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
 pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
+pub use crate::avm2::object::xml_list_object::{xml_list_allocator, E4XOrXml, XmlListObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
@@ -106,6 +108,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         EventObject(EventObject<'gc>),
         DispatchObject(DispatchObject<'gc>),
         XmlObject(XmlObject<'gc>),
+        XmlListObject(XmlListObject<'gc>),
         RegExpObject(RegExpObject<'gc>),
         ByteArrayObject(ByteArrayObject<'gc>),
         LoaderInfoObject(LoaderInfoObject<'gc>),
@@ -165,6 +168,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.base().get_slot(slot_id)
             }
             Some(Property::Method { disp_id }) => {
+                // avmplus has a special case for XML and XMLList objects, so we need one as well
+                // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Toplevel.cpp#L629-L634
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
+                    && multiname.contains_public_namespace()
+                {
+                    return self.get_property_local(multiname, activation);
+                }
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
@@ -1207,7 +1217,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_xml(&self) -> Option<XmlObject<'gc>> {
+    fn as_xml_object(&self) -> Option<XmlObject<'gc>> {
+        None
+    }
+
+    fn as_xml_list_object(&self) -> Option<XmlListObject<'gc>> {
         None
     }
 

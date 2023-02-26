@@ -20,23 +20,23 @@ mod fixed;
 mod glow_filter;
 mod gradient_filter;
 mod matrix;
+mod point;
 mod rectangle;
 mod twips;
-mod twips_2d;
 
-pub use bevel_filter::BevelFilter;
-pub use blur_filter::BlurFilter;
+pub use bevel_filter::{BevelFilter, BevelFilterFlags};
+pub use blur_filter::{BlurFilter, BlurFilterFlags};
 pub use color::Color;
 pub use color_matrix_filter::ColorMatrixFilter;
-pub use convolution_filter::ConvolutionFilter;
-pub use drop_shadow_filter::DropShadowFilter;
+pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
+pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
 pub use fixed::{Fixed16, Fixed8};
-pub use glow_filter::GlowFilter;
-pub use gradient_filter::GradientFilter;
+pub use glow_filter::{GlowFilter, GlowFilterFlags};
+pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
+pub use point::Point;
 pub use rectangle::Rectangle;
 pub use twips::Twips;
-pub use twips_2d::Twips2d;
 
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::parse_swf` convenience method.
@@ -472,7 +472,7 @@ bitflags! {
         const KEY_DOWN        = 1 << 6;
         const KEY_UP          = 1 << 7;
 
-        // Added in SWF6.
+        // Added in SWF6, but not version-gated.
         const DATA            = 1 << 8;
         const INITIALIZE      = 1 << 9;
         const PRESS           = 1 << 10;

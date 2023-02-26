@@ -63,11 +63,12 @@ export function registerElement(
     elementName: string,
     elementClass: CustomElementConstructor
 ): string {
-    if (privateRegistry[elementName] !== undefined) {
-        if (privateRegistry[elementName].class !== elementClass) {
+    const registration = privateRegistry[elementName];
+    if (registration !== undefined) {
+        if (registration.class !== elementClass) {
             throw new Error("Internal naming conflict on " + elementName);
         } else {
-            return privateRegistry[elementName].name;
+            return registration.name;
         }
     }
 

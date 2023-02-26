@@ -85,7 +85,9 @@ describe("Version", function () {
             for (const test of testMatrix) {
                 for (const a of test) {
                     for (const otherTest of testMatrix) {
-                        if (test === otherTest) continue;
+                        if (test === otherTest) {
+                            continue;
+                        }
                         for (const b of otherTest) {
                             assert(
                                 !Version.fromSemver(a).isCompatibleWith(
@@ -106,15 +108,15 @@ describe("Version", function () {
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
-                        tests[a].indexOf("+") > -1 ||
-                        tests[b].indexOf("+") > -1
+                        tests[a]!.indexOf("+") > -1 ||
+                        tests[b]!.indexOf("+") > -1
                     ) {
                         // Skip "builds" for purposes of this test.
                         continue;
                     }
                     assert(
-                        Version.fromSemver(tests[a]).hasPrecedenceOver(
-                            Version.fromSemver(tests[b])
+                        Version.fromSemver(tests[a]!).hasPrecedenceOver(
+                            Version.fromSemver(tests[b]!)
                         ),
                         `${tests[a]} has precedence over ${tests[b]}`
                     );
@@ -126,15 +128,15 @@ describe("Version", function () {
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
-                        tests[a].indexOf("+") > -1 ||
-                        tests[b].indexOf("+") > -1
+                        tests[a]!.indexOf("+") > -1 ||
+                        tests[b]!.indexOf("+") > -1
                     ) {
                         // Skip "builds" for purposes of this test.
                         continue;
                     }
                     assert(
-                        !Version.fromSemver(tests[a]).hasPrecedenceOver(
-                            Version.fromSemver(tests[b])
+                        !Version.fromSemver(tests[a]!).hasPrecedenceOver(
+                            Version.fromSemver(tests[b]!)
                         ),
                         `${tests[a]} doesn't have precedence over ${tests[b]}`
                     );
@@ -160,17 +162,17 @@ describe("Version", function () {
             for (let a = 0; a < tests.length; a++) {
                 for (let b = a + 1; b < tests.length; b++) {
                     if (
-                        tests[a].indexOf("+") > -1 ||
-                        tests[b].indexOf("+") > -1 ||
-                        tests[a].indexOf("-") > -1 ||
-                        tests[b].indexOf("-") > -1
+                        tests[a]!.indexOf("+") > -1 ||
+                        tests[b]!.indexOf("+") > -1 ||
+                        tests[a]!.indexOf("-") > -1 ||
+                        tests[b]!.indexOf("-") > -1
                     ) {
                         // Skip "builds" and "identifiers" for purposes of this test.
                         continue;
                     }
                     assert(
-                        !Version.fromSemver(tests[a]).isEqual(
-                            Version.fromSemver(tests[b])
+                        !Version.fromSemver(tests[a]!).isEqual(
+                            Version.fromSemver(tests[b]!)
                         ),
                         `${tests[a]} does not equal ${tests[b]}`
                     );
@@ -208,7 +210,9 @@ describe("Version", function () {
             const tests = ["1-dev", "1.2-alpha", "1.2.3-beta1.build2"];
             for (const a of tests) {
                 for (const b of tests) {
-                    if (a === b) continue;
+                    if (a === b) {
+                        continue;
+                    }
                     assert(
                         !Version.fromSemver(a).isStableOrCompatiblePrerelease(
                             Version.fromSemver(b)

@@ -1,5 +1,5 @@
-// List is ordered alphabetically, except where superclasses
-// need to come before subclasses.
+// List is ordered alphabetically, except where superclasses/interfaces
+// need to come before subclasses and implementations.
 
 include "Error.as"
 
@@ -24,6 +24,20 @@ include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
+
+include "flash/events/IEventDispatcher.as"
+include "flash/events/EventDispatcher.as"
+
+include "flash/display/IBitmapDrawable.as"
+include "flash/display/DisplayObject.as"
+include "flash/display/Bitmap.as"
+include "flash/display/BitmapData.as"
+include "flash/display/Graphics.as"
+include "flash/display/InteractiveObject.as"
+include "flash/display/DisplayObjectContainer.as"
+include "flash/display/LoaderInfo.as"
+include "flash/display/Stage.as"
+
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
 include "flash/display/BitmapEncodingColorSpace.as"
@@ -49,7 +63,10 @@ include "flash/display/PNGEncoderOptions.as"
 include "flash/display/Scene.as"
 include "flash/display/ShaderParameterType.as"
 include "flash/display/ShaderPrecision.as"
+include "flash/display/Shape.as"
+include "flash/display/SimpleButton.as"
 include "flash/display/SpreadMethod.as"
+include "flash/display/Sprite.as"
 include "flash/display/Stage3D.as"
 include "flash/display/StageAlign.as"
 include "flash/display/StageDisplayState.as"
@@ -75,6 +92,8 @@ include "flash/display3D/Context3DWrapMode.as"
 include "flash/display3D/IndexBuffer3D.as"
 include "flash/display3D/Program3D.as"
 include "flash/display3D/VertexBuffer3D.as"
+
+include "flash/display/MovieClip.as"
 
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
@@ -123,7 +142,8 @@ include "flash/events/UncaughtErrorEvent.as"
 include "flash/events/UncaughtErrorEvents.as"
 include "flash/events/VideoEvent.as"
 include "flash/events/VideoTextureEvent.as"
-include "flash/errors/IOError.as"
+
+include "flash/errors/IOError.as" // IOError is a superclass of EOFError
 include "flash/errors/EOFError.as"
 include "flash/errors/IllegalOperationError.as"
 include "flash/errors/InvalidSWFError.as"
@@ -168,6 +188,7 @@ include "flash/media/SoundCodec.as"
 include "flash/media/SoundLoaderContext.as"
 include "flash/media/StageVideoAvailability.as"
 include "flash/media/StageVideoAvailabilityReason.as"
+include "flash/media/Video.as"
 include "flash/media/VideoCodec.as"
 include "flash/media/VideoStatus.as"
 
@@ -195,6 +216,9 @@ include "flash/net/URLRequestMethod.as"
 include "flash/net/URLVariables.as"
 
 include "flash/printing/PrintJobOrientation.as"
+
+include "flash/profiler.as"
+
 include "flash/security/CertificateStatus.as"
 include "flash/system/Capabilities.as"
 include "flash/system/IMEConversionMode.as"
@@ -215,8 +239,10 @@ include "flash/text/StaticText.as"
 include "flash/text/TextColorType.as"
 include "flash/text/TextDisplayMode.as"
 include "flash/text/TextExtent.as"
+include "flash/text/TextField.as"
 include "flash/text/TextFieldAutoSize.as"
 include "flash/text/TextFieldType.as"
+include "flash/text/TextFormat.as"
 include "flash/text/TextFormatAlign.as"
 include "flash/text/TextInteractionMode.as"
 include "flash/text/TextLineMetrics.as"
