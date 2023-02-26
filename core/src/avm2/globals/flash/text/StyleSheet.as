@@ -3,7 +3,6 @@ package flash.text {
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
-    import flash.text.TextFormat;
     
     public dynamic class StyleSheet {
         public function StyleSheet() {
