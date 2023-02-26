@@ -216,6 +216,9 @@ include "flash/net/URLRequestMethod.as"
 include "flash/net/URLVariables.as"
 
 include "flash/printing/PrintJobOrientation.as"
+
+include "flash/profiler.as"
+
 include "flash/security/CertificateStatus.as"
 include "flash/system/Capabilities.as"
 include "flash/system/IMEConversionMode.as"
