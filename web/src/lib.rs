@@ -255,7 +255,7 @@ impl Ruffle {
             segments.push(&swf_name);
         }
 
-        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), Some(url.to_string()), None)
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None)
             .map_err(|e| format!("Error loading movie: {e}"))?;
         movie.append_parameters(parse_movie_parameters(&parameters));
 

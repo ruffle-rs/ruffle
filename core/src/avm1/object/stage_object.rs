@@ -655,13 +655,10 @@ fn drop_target<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'g
 }
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.as_movie_clip()
-        .map(|mc| mc.movie())
-        .and_then(|mov| mov.url().map(|url| url.to_string()))
-        .map_or_else(
-            || "".into(),
-            |s| AvmString::new_utf8(activation.context.gc_context, s).into(),
-        )
+    this.as_movie_clip().map_or_else(
+        || "".into(),
+        |mc| AvmString::new_utf8(activation.context.gc_context, mc.movie().url()).into(),
+    )
 }
 
 fn high_quality<'gc>(

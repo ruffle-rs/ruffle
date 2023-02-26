@@ -19,23 +19,18 @@ pub fn domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.base_clip().movie();
 
-    let domain = if let Some(url) = movie.url() {
-        if let Ok(url) = url::Url::parse(url) {
-            if url.scheme() == "file" {
-                "localhost".into()
-            } else if let Some(domain) = url.domain() {
-                AvmString::new_utf8(activation.context.gc_context, domain)
-            } else {
-                // no domain?
-                "localhost".into()
-            }
+    let domain = if let Ok(url) = url::Url::parse(movie.url()) {
+        if url.scheme() == "file" {
+            "localhost".into()
+        } else if let Some(domain) = url.domain() {
+            AvmString::new_utf8(activation.context.gc_context, domain)
         } else {
-            tracing::error!("LocalConnection::domain: Unable to parse movie URL");
-            return Ok(Value::Null);
+            // no domain?
+            "localhost".into()
         }
     } else {
-        // No URL (loading local data).
-        "localhost".into()
+        tracing::error!("LocalConnection::domain: Unable to parse movie URL");
+        return Ok(Value::Null);
     };
 
     Ok(Value::String(domain))

@@ -292,11 +292,7 @@ pub fn get_url<'gc>(
                 LoaderStream::NotYetLoaded(_, _, false) => return Ok(Value::Null),
                 LoaderStream::NotYetLoaded(root, _, true) | LoaderStream::Swf(root, _) => root,
             };
-
-            let url = root.url().map_or(Value::Null, |url| {
-                AvmString::new_utf8(activation.context.gc_context, url).into()
-            });
-            return Ok(url);
+            return Ok(AvmString::new_utf8(activation.context.gc_context, root.url()).into());
         }
     }
 
@@ -414,7 +410,7 @@ pub fn get_loader_url<'gc>(
                 LoaderStream::Swf(root, _) => root,
             };
 
-            let loader_url = root.loader_url().or_else(|| root.url()).unwrap_or("");
+            let loader_url = root.loader_url().unwrap_or_else(|| root.url());
             return Ok(AvmString::new_utf8(activation.context.gc_context, loader_url).into());
         }
     }

@@ -571,8 +571,8 @@ fn load_playerglobal<'gc>(
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
 
-    let movie =
-        SwfMovie::from_data(PLAYERGLOBAL, None, None).expect("playerglobal.swf should be valid");
+    let movie = SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+        .expect("playerglobal.swf should be valid");
 
     let slice = SwfSlice::from(Arc::new(movie));
 

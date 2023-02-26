@@ -48,7 +48,7 @@ pub struct SwfMovie {
     data: Vec<u8>,
 
     /// The URL the SWF was downloaded from.
-    url: Option<String>,
+    url: String,
 
     /// The URL that triggered the SWF load.
     loader_url: Option<String>,
@@ -70,7 +70,7 @@ impl SwfMovie {
         Self {
             header: HeaderExt::default_with_swf_version(swf_version),
             data: vec![],
-            url: None,
+            url: "file:///".into(),
             loader_url: None,
             parameters: Vec::new(),
             encoding: swf::UTF_8,
@@ -89,13 +89,13 @@ impl SwfMovie {
         let abs_path = path.as_ref().canonicalize()?;
         let url = url::Url::from_file_path(abs_path).map_err(|()| Error::InvalidSwfUrl)?;
 
-        Self::from_data(&data, Some(url.into()), loader_url)
+        Self::from_data(&data, url.into(), loader_url)
     }
 
     /// Construct a movie based on the contents of the SWF datastream.
     pub fn from_data(
         swf_data: &[u8],
-        url: Option<String>,
+        url: String,
         loader_url: Option<String>,
     ) -> Result<Self, Error> {
         let compressed_len = swf_data.len();
@@ -144,11 +144,11 @@ impl SwfMovie {
     }
 
     /// Get the URL this SWF was fetched from.
-    pub fn url(&self) -> Option<&str> {
-        self.url.as_deref()
+    pub fn url(&self) -> &str {
+        &self.url
     }
 
-    pub fn set_url(&mut self, url: Option<String>) {
+    pub fn set_url(&mut self, url: String) {
         self.url = url;
     }
 

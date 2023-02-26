@@ -693,7 +693,7 @@ impl<'gc> Loader<'gc> {
                 .map(|u| u.to_string())
                 .unwrap_or(response.url);
 
-            let mut movie = SwfMovie::from_data(&response.body, Some(url), None)?;
+            let mut movie = SwfMovie::from_data(&response.body, url, None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().set_root_movie(movie);
@@ -748,8 +748,7 @@ impl<'gc> Loader<'gc> {
                 Ok(response) if replacing_root_movie => {
                     ContentType::sniff(&response.body).expect(ContentType::Swf)?;
 
-                    let movie =
-                        SwfMovie::from_data(&response.body, Some(response.url), loader_url)?;
+                    let movie = SwfMovie::from_data(&response.body, response.url, loader_url)?;
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
                 }
@@ -758,7 +757,7 @@ impl<'gc> Loader<'gc> {
                         handle,
                         player,
                         &response.body,
-                        Some(response.url),
+                        response.url,
                         loader_url,
                         false,
                     )?;
@@ -813,12 +812,12 @@ impl<'gc> Loader<'gc> {
             if replacing_root_movie {
                 ContentType::sniff(&bytes).expect(ContentType::Swf)?;
 
-                let movie = SwfMovie::from_data(&bytes, Some("file:///".into()), None)?;
+                let movie = SwfMovie::from_data(&bytes, "file:///".into(), None)?;
                 player.lock().unwrap().set_root_movie(movie);
                 return Ok(());
             }
 
-            Loader::movie_loader_data(handle, player, &bytes, Some("file:///".into()), None, true)
+            Loader::movie_loader_data(handle, player, &bytes, "file:///".into(), None, true)
         })
     }
 
@@ -1320,7 +1319,7 @@ impl<'gc> Loader<'gc> {
         handle: Handle,
         player: Arc<Mutex<Player>>,
         data: &[u8],
-        url: Option<String>,
+        url: String,
         loader_url: Option<String>,
         in_memory: bool,
     ) -> Result<(), Error> {

@@ -2264,7 +2264,7 @@ impl PlayerBuilder {
         });
         if let Some(mut movie) = self.movie {
             if let Some(url) = self.spoofed_url.clone() {
-                movie.set_url(Some(url));
+                movie.set_url(url);
             }
             player_lock.set_root_movie(movie);
         }
