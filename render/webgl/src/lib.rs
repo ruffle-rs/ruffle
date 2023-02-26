@@ -1,4 +1,3 @@
-#![allow(clippy::bool_to_int_with_if)]
 #![deny(clippy::unwrap_used)]
 // This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
 #![allow(clippy::extra_unused_type_parameters)]
