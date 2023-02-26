@@ -19,8 +19,6 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
         if !args.is_empty() {
             avm2_stub_constructor!(activation, "flash.media.Sound", "with arguments");
         }

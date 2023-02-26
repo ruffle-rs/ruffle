@@ -12,23 +12,6 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
-/// A class instance allocator that allocates Stage objects.
-pub fn stage_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
-
-    Ok(StageObject(GcCell::allocate(
-        activation.context.gc_context,
-        StageObjectData {
-            base,
-            display_object: None,
-        },
-    ))
-    .into())
-}
-
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);

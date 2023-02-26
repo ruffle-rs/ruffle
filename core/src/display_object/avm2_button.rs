@@ -227,17 +227,21 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
+        // We manually call `construct_frame` for `child` and `state_sprite` - normally
+        // this would be done in the `DisplayObject` constructor, but SimpleButton does
+        // not have children in the normal DisplayObjectContainer sense.
+
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
             child.set_parent(context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
             catchup_display_object_to_frame(context, child);
+            child.construct_frame(context);
 
             (child, false)
         } else {
             let state_sprite = MovieClip::new(movie, context.gc_context);
-
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context, Some(self.into()));
             catchup_display_object_to_frame(context, state_sprite.into());
@@ -252,7 +256,10 @@ impl<'gc> Avm2Button<'gc> {
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 catchup_display_object_to_frame(context, child);
                 child.set_parent(context, Some(state_sprite.into()));
+                child.construct_frame(context);
             }
+
+            state_sprite.construct_frame(context);
 
             (state_sprite.into(), true)
         }

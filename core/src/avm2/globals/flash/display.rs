@@ -8,6 +8,7 @@ pub mod graphics;
 pub mod interactive_object;
 pub mod loader;
 pub mod loader_info;
+pub mod morph_shape;
 pub mod movie_clip;
 pub mod shape;
 pub mod simple_button;

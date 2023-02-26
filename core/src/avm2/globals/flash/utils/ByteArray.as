@@ -25,11 +25,8 @@ package flash.utils {
 		public native function set position(value:uint):void;
 
 		public function ByteArray() {
-			this.init();
 			this.objectEncoding = _defaultObjectEncoding;
 		}
-
-		private native function init():void;
 
 		public native function clear():void;
 

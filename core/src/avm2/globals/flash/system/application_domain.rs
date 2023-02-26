@@ -18,8 +18,6 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
         let parent_domain = if matches!(args[0], Value::Null) {
             activation.avm2().global_domain()
         } else {

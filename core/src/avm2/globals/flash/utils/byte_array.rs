@@ -4,47 +4,12 @@ pub use crate::avm2::object::byte_array_allocator;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::character::Character;
 use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
-
-/// Implements `flash.utils.ByteArray`'s instance constructor.
-pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
-        let class_object = this
-            .instance_of()
-            .ok_or("Attempted to construct ByteArray on a bare object")?;
-        if let Some((movie, id)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class_object)
-        {
-            if let Some(lib) = activation.context.library.library_for_movie(movie) {
-                if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
-                    let mut byte_array = this
-                        .as_bytearray_mut(activation.context.gc_context)
-                        .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-                    byte_array.clear();
-                    byte_array.write_bytes(binary_data.as_ref())?;
-                    byte_array.set_position(0);
-                }
-            }
-        }
-    }
-
-    Ok(Value::Undefined)
-}
 
 /// Writes a single byte to the bytearray
 pub fn write_byte<'gc>(

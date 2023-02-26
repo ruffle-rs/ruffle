@@ -2,8 +2,9 @@
 
 use crate::avm1;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
+    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject, TObject,
+    Value as Avm2Value,
 };
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::{RenderContext, UpdateContext};
@@ -272,23 +273,40 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<avm1::Object<'gc>>,
-        _instantiated_by: Instantiator,
+        instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         if context.is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let bitmap = self
-                .avm2_bitmap_class()
-                .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                (*self).into(),
-                bitmap,
-            ) {
-                Ok(object) => {
-                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
-                }
-                Err(e) => tracing::error!("Got error when creating AVM2 side of bitmap: {}", e),
+            if !instantiated_by.is_avm() {
+                let bitmap_cls = self
+                    .avm2_bitmap_class()
+                    .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
+                let bitmapdata_cls = self
+                    .avm2_bitmapdata_class()
+                    .unwrap_or_else(|| activation.context.avm2.classes().bitmapdata);
+
+                let mc = activation.context.gc_context;
+
+                let bitmap = Avm2StageObject::for_display_object_childless(
+                    &mut activation,
+                    (*self).into(),
+                    bitmap_cls,
+                )
+                .expect("can't throw from post_instantiation -_-");
+                self.0.write(mc).avm2_object = Some(bitmap.into());
+
+                let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_internal(
+                    &mut activation,
+                    BitmapDataWrapper::dummy(mc),
+                    bitmapdata_cls,
+                )
+                .expect("can't throw from post_instantiation -_-");
+
+                self.set_bitmap_data(
+                    &mut activation.context,
+                    bitmap_data_obj.as_bitmap_data().unwrap(),
+                );
             }
 
             self.on_construction_complete(context);

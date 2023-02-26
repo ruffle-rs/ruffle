@@ -1,7 +1,8 @@
 //! `flash.text.TextField` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject, TextFormatObject};
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -11,24 +12,39 @@ use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::Color;
 
-/// Implements `flash.text.TextField`'s `init` method, which is called from the constructor.
-pub fn init<'gc>(
+pub fn text_field_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
+) -> Result<Object<'gc>, Error<'gc>> {
+    let textfield_cls = activation.avm2().classes().textfield;
 
-        if this.as_display_object().is_none() {
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == textfield_cls {
             let movie = activation.context.swf.clone();
-            let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
-
-            this.init_display_object(&mut activation.context, new_do.into());
+            let display_object =
+                EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+            return initialize_for_allocator(activation, display_object, orig_class);
         }
-    }
 
-    Ok(Value::Undefined)
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
+    }
+    unreachable!("A TextField subclass should have TextField in superclass chain");
 }
 
 pub fn get_always_show_selection<'gc>(

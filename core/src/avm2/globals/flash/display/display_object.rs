@@ -1,16 +1,15 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{argument_error, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
-pub use crate::avm2::object::stage_allocator as display_object_allocator;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
+use crate::avm2::{ClassObject, Error};
+use crate::avm2::{Multiname, StageObject};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -21,7 +20,48 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
-use swf::BlendMode;
+use swf::Twips;
+use swf::{BlendMode, Rectangle};
+
+pub fn display_object_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let class_name = class.inner_class_definition().read().name().local_name();
+
+    return Err(Error::AvmError(argument_error(
+        activation,
+        &format!("Error #2012: {class_name}$ class cannot be instantiated."),
+        2012,
+    )?));
+}
+
+/// Initializes a DisplayObject created from ActionScript.
+/// This should be called from the AVM2 class's native allocator
+/// (e.g. `sprite_allocator`)
+pub fn initialize_for_allocator<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    dobj: DisplayObject<'gc>,
+    class: ClassObject<'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
+    dobj.set_placed_by_script(activation.context.gc_context, true);
+    dobj.set_object2(&mut activation.context, obj.into());
+
+    // [NA] Should these run for everything?
+    dobj.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
+    catchup_display_object_to_frame(&mut activation.context, dobj);
+
+    // Movie clips created from ActionScript skip the next enterFrame,
+    // and consequently are observed to have their currentFrame lag one
+    // frame behind objects placed by the timeline (even if they were
+    // both placed in the same frame to begin with).
+    dobj.base_mut(activation.context.gc_context)
+        .set_skip_next_enter_frame(true);
+    dobj.on_construction_complete(&mut activation.context);
+
+    Ok(obj.into())
+}
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -31,49 +71,6 @@ pub fn native_instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
-
-        if this.as_display_object().is_none() {
-            let mut class_object = this.instance_of();
-
-            // Iterate the inheritance chain, starting from `this` and working backwards through `super`s
-            // This accounts for the cases where a super may be linked to symbol, but `this` may not be
-            while let Some(class) = class_object {
-                if let Some((movie, symbol)) = activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(class)
-                {
-                    let child = activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie)
-                        .instantiate_by_id(symbol, activation.context.gc_context)?;
-
-                    this.init_display_object(&mut activation.context, child);
-
-                    child.post_instantiation(
-                        &mut activation.context,
-                        None,
-                        Instantiator::Avm2,
-                        false,
-                    );
-                    catchup_display_object_to_frame(&mut activation.context, child);
-                    child.set_placed_by_script(activation.context.gc_context, true);
-
-                    // Movie clips created from ActionScript skip the next enterFrame,
-                    // and consequently are observed to have their currentFrame lag one
-                    // frame behind objects placed by the timeline (even if they were
-                    // both placed in the same frame to begin with).
-                    child
-                        .base_mut(activation.context.gc_context)
-                        .set_skip_next_enter_frame(true);
-                    child.on_construction_complete(&mut activation.context);
-                    break;
-                }
-                class_object = class.superclass_object();
-            }
-        }
 
         if let Some(dobj) = this.as_display_object() {
             if let Some(container) = dobj.as_container() {

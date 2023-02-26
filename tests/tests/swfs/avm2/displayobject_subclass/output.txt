@@ -1,0 +1,2 @@
+Caught err: ArgumentError: Error #2012: MyDisplayObjectSubclass$ class cannot be instantiated.
+Caught err: ArgumentError: Error #2012: DisplayObject$ class cannot be instantiated.

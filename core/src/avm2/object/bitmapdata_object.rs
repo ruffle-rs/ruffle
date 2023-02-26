@@ -21,7 +21,10 @@ pub fn bitmap_data_allocator<'gc>(
         activation.context.gc_context,
         BitmapDataObjectData {
             base,
-            bitmap_data: None,
+            // This always starts out as a dummy (invalid) BitmapDataWrapper, so
+            // that custom subclasses see a disposed BitmapData before they call super().
+            // The real BitmapDataWrapper is set by BitmapData.init()
+            bitmap_data: Some(BitmapDataWrapper::dummy(activation.context.gc_context)),
         },
     ))
     .into())
@@ -49,7 +52,16 @@ pub struct BitmapDataObjectData<'gc> {
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    pub fn from_bitmap_data(
+    // Constructs a BitmapData object from a BitmapDataWrapper.
+    // This is *not* used when explicitly constructing a BitmapData
+    // instance from ActionScript (e.g. `new BitmapData(100, 100)`,
+    // or `new MyBitmapDataSubclass(100, 100)`).
+    //
+    // Instead, this is used when constructing a `Bitmap` object,
+    // (from ActionScript or from the timeline), or when we need
+    // to produce a new BitmapData object from a `BitmapData` method
+    // like `clone()`
+    pub fn from_bitmap_data_internal(
         activation: &mut Activation<'_, 'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
@@ -64,7 +76,15 @@ impl<'gc> BitmapDataObject<'gc> {
 
         bitmap_data.init_object2(activation.context.gc_context, instance.into());
         instance.install_instance_slots(activation.context.gc_context);
-        class.call_native_init(Some(instance.into()), &[], activation)?;
+
+        // We call the custom BitmapData class with width and height...
+        // but, it always seems to be 1 in Flash Player when constructed from timeline?
+        // This will not actually cause us to create a BitmapData with dimensions (1, 1) -
+        // when the custom class makes a super() call, the BitmapData constructor will
+        // load in the real data from the linked SymbolClass.
+        if class != activation.avm2().classes().bitmapdata {
+            class.call_native_init(Some(instance.into()), &[1.into(), 1.into()], activation)?;
+        }
 
         Ok(instance.into())
     }

@@ -71,10 +71,7 @@ impl<'gc> Graphic<'gc> {
     }
 
     /// Construct an empty `Graphic`.
-    pub fn new_with_avm2(
-        context: &mut UpdateContext<'_, 'gc>,
-        avm2_object: Avm2Object<'gc>,
-    ) -> Self {
+    pub fn empty(context: &mut UpdateContext<'_, 'gc>) -> Self {
         let static_data = GraphicStatic {
             id: 0,
             bounds: Default::default(),
@@ -100,7 +97,7 @@ impl<'gc> Graphic<'gc> {
             GraphicData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
-                avm2_object: Some(avm2_object),
+                avm2_object: None,
                 drawing: Some(drawing),
             },
         ))

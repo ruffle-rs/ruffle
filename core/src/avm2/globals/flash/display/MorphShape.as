@@ -1,7 +1,8 @@
 package flash.display {
+    [Ruffle(InstanceAllocator)]
     public final class MorphShape extends DisplayObject {
         public function MorphShape() {
-            throw new ArgumentError("Error #2012: MorphShape$ class cannot be instantiated.", 2012)
+            // We throw an error in `morph_shape_allocator`
         }
     }
 }

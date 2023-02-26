@@ -121,7 +121,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
+            match Avm2StageObject::for_display_object_childless(
+                &mut activation,
+                (*self).into(),
+                class,
+            ) {
                 Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
                 Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
             };

@@ -1,29 +1,47 @@
 //! `flash.display.Sprite` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::avm2::{ClassObject, Error};
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use swf::{Rectangle, Twips};
 
-/// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
-pub fn init<'gc>(
+pub fn sprite_allocator<'gc>(
+    class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
+) -> Result<Object<'gc>, Error<'gc>> {
+    let sprite_cls = activation.avm2().classes().sprite;
 
-        if this.as_display_object().is_none() {
-            init_empty_sprite(activation, this)?;
+    let mut class_object = Some(class);
+    let orig_class = class;
+    while let Some(class) = class_object {
+        if class == sprite_cls {
+            let movie = activation.context.swf.clone();
+            let display_object = MovieClip::new(movie, activation.context.gc_context).into();
+            return initialize_for_allocator(activation, display_object, orig_class);
         }
-    }
 
-    Ok(Value::Undefined)
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let child = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return initialize_for_allocator(activation, child, orig_class);
+        }
+        class_object = class.superclass_object();
+    }
+    unreachable!("A Sprite subclass should have Sprite in superclass chain");
 }
 
 pub fn init_empty_sprite<'gc>(

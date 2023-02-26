@@ -63,8 +63,8 @@ pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
-    ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
-    TObject,
+    ArrayObject, BitmapDataObject, ClassObject, EventObject, Object, ScriptObject,
+    SoundChannelObject, StageObject, TObject,
 };
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;

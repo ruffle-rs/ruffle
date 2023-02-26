@@ -1504,7 +1504,7 @@ impl<'gc> Loader<'gc> {
                         bitmap_data,
                     ));
                     let bitmapdata_class = activation.context.avm2.classes().bitmapdata;
-                    let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data(
+                    let bitmapdata_avm2 = BitmapDataObject::from_bitmap_data_internal(
                         &mut activation,
                         bitmapdata_wrapper,
                         bitmapdata_class,

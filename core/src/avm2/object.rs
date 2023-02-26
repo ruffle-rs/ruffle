@@ -89,7 +89,7 @@ pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{sound_channel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
-pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
+pub use crate::avm2::object::stage_object::StageObject;
 pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
 pub use crate::avm2::object::texture_object::TextureObject;
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
