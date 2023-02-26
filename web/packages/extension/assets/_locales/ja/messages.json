@@ -11,6 +11,12 @@
     "settings_show_swf_download": {
         "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
+    "settings_warn_on_unsupported_content": {
+        "message": "サポートされていないコンテンツで警告を表示する"
+    },
+    "settings_log_level": {
+        "message": "ログレベル"
+    },
     "status_init": {
         "message": "現在のタブを読み込む..."
     },
@@ -48,7 +54,7 @@
         "message": "設定"
     },
     "description": {
-        "message": "Flashを元々使われていた場所に戻します。"
+        "message": "Flashを今までの場所に戻します。"
     },
     "save_settings": {
         "message": "設定を保存"
