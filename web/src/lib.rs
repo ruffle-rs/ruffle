@@ -80,7 +80,7 @@ struct RuffleInstance {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
-#[wasm_bindgen(module = "/packages/core/src/ruffle-player.ts")]
+#[wasm_bindgen(raw_module = "./ruffle-player")]
 extern "C" {
     #[wasm_bindgen(extends = EventTarget)]
     #[derive(Clone)]
