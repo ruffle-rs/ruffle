@@ -217,16 +217,8 @@ impl<'gc> E4XNode<'gc> {
 
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
-                Event::Decl(bd) => {
-                    return Err(Error::RustError(
-                        format!("XML declaration {bd:?} is not yet implemented").into(),
-                    ))
-                }
-                Event::DocType(bt) => {
-                    return Err(Error::RustError(
-                        format!("XML doctype {bt:?} is not yet implemented").into(),
-                    ))
-                }
+                // These are completely ignored by AVM2
+                Event::Decl(_) | Event::DocType(_) => {}
                 Event::Eof => break,
             }
         }
