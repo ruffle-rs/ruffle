@@ -1,13 +1,13 @@
 //! Array class
 
 use crate::avm1::activation::Activation;
+use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
-use crate::types::F64Extension;
 use bitflags::bitflags;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;

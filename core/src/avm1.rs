@@ -9,6 +9,7 @@ mod property_decl;
 
 mod activation;
 mod callable_value;
+mod clamp;
 mod debug;
 mod error;
 mod fscommand;

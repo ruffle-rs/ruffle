@@ -2,13 +2,13 @@
 //! TODO: Sound position, transform, loadSound
 
 use crate::avm1::activation::Activation;
+use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
-use crate::types::F64Extension;
 use crate::{avm1_stub, avm_warn};
 use gc_arena::MutationContext;
 
