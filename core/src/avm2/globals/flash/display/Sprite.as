@@ -1,5 +1,6 @@
 package flash.display {
 
+    import flash.display.Sprite;
     import flash.geom.Rectangle;
     import flash.media.SoundTransform;
 
@@ -24,5 +25,8 @@ package flash.display {
 
         public native function startDrag(lockCenter:Boolean = false, bounds:Rectangle = null):void;
         public native function stopDrag():void;
+
+        public native function get hitArea():Sprite;
+        public native function set hitArea(hitArea:Sprite):void;
     }
 }
