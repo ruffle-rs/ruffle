@@ -472,7 +472,7 @@ pub enum Op {
     Li8,
     LookupSwitch {
         default_offset: i32,
-        case_offsets: Vec<i32>,
+        case_offsets: Box<[i32]>,
     },
     LShift,
     Modulo,
