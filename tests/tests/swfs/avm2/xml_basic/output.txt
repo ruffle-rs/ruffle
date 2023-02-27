@@ -19,9 +19,7 @@ XML strict equal: true
 Get 'name' property': My Name
 Get 'AS#::name' property': function
 My
-
 Multiline
-
 CDATA
 
-
+Skipped everything else

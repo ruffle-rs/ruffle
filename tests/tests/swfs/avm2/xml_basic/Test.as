@@ -62,6 +62,9 @@ CDATA
 			
 			trace(cdata);
 			
+var declaration_doctype = new XML("<?xml version = \"1.0\" encoding = \"UTF-8\" standalone = \"yes\" ?> <!DOCTYPE person [<!ELEMENT name (#PCDATA)> ]> <p>Skipped everything else</p>");
+trace(declaration_doctype.toString());
+			
 			// FIXME - enable this when Ruffle throws coercion errors
 			//XML.prototype.name.apply(5);
 		}
