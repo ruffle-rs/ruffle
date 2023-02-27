@@ -1,11 +1,11 @@
 //! flash.filters.GlowFilter object
 
 use crate::avm1::activation::Activation;
+use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::types::F64Extension;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

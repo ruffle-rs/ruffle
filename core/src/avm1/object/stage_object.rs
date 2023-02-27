@@ -1,6 +1,7 @@
 //! AVM1 object type to represent objects on the stage.
 
 use crate::avm1::activation::Activation;
+use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
@@ -10,7 +11,7 @@ use crate::display_object::{
     DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::string::{AvmString, WStr};
-use crate::types::{F64Extension, Percent};
+use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
