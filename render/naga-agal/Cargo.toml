@@ -14,5 +14,5 @@ num-derive = "0.3.3"
 num-traits = "0.2.15"
 
 [dev-dependencies]
-insta = "1.26.0"
+insta = "1.28.0"
 naga = { git = "https://github.com/gfx-rs/naga", rev = "1be8024", features = ["wgsl-out", "validate"] }
