@@ -1,21 +1,19 @@
 use naga::valid::{Capabilities, ValidationFlags, Validator};
 use ruffle_render::backend::{Context3DTriangleFace, Context3DVertexBufferFormat};
 
-use wgpu::Buffer;
 use wgpu::{
     BindGroupEntry, BindingResource, BufferDescriptor, BufferUsages, FrontFace, SamplerBindingType,
     TextureView,
 };
-use wgpu::{
-    ColorTargetState, ColorWrites, RenderPipelineDescriptor, TextureFormat, VertexBufferLayout,
-    VertexState,
-};
+use wgpu::{Buffer, DepthStencilState, StencilFaceState};
+use wgpu::{ColorTargetState, ColorWrites, RenderPipelineDescriptor, TextureFormat, VertexState};
 
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
+use crate::context3d::VertexBufferWrapper;
 use crate::descriptors::Descriptors;
 
 use super::{ShaderModuleAgal, VertexAttributeInfo, MAX_VERTEX_ATTRIBUTES};
@@ -63,6 +61,14 @@ pub struct CurrentPipeline {
     pub vertex_shader_uniforms: Buffer,
     pub fragment_shader_uniforms: Buffer,
 
+    has_depth_texture: bool,
+
+    depth_mask: bool,
+    pass_compare_mode: wgpu::CompareFunction,
+
+    color_component: wgpu::BlendComponent,
+    alpha_component: wgpu::BlendComponent,
+
     dirty: Cell<bool>,
 }
 
@@ -95,6 +101,13 @@ impl CurrentPipeline {
             fragment_shader_uniforms,
             dirty: Cell::new(true),
             culling: Context3DTriangleFace::None,
+
+            has_depth_texture: false,
+
+            depth_mask: true,
+            pass_compare_mode: wgpu::CompareFunction::LessEqual,
+            color_component: wgpu::BlendComponent::REPLACE,
+            alpha_component: wgpu::BlendComponent::REPLACE,
         }
     }
     pub fn set_vertex_shader(&mut self, shader: Rc<ShaderModuleAgal>) {
@@ -126,6 +139,21 @@ impl CurrentPipeline {
     pub fn update_vertex_buffer_at(&mut self, _index: usize) {
         // FIXME - check if it's the same, so we can skip rebuilding the pipeline
         self.dirty.set(true);
+    }
+
+    pub fn update_depth(&mut self, depth_mask: bool, pass_compare_mode: wgpu::CompareFunction) {
+        if self.depth_mask != depth_mask || self.pass_compare_mode != pass_compare_mode {
+            self.dirty.set(true);
+        }
+        self.depth_mask = depth_mask;
+        self.pass_compare_mode = pass_compare_mode;
+    }
+
+    pub fn update_has_depth_texture(&mut self, has_depth_texture: bool) {
+        if self.has_depth_texture != has_depth_texture {
+            self.dirty.set(true);
+            self.has_depth_texture = has_depth_texture;
+        }
     }
 
     /// If the pipeline is dirty, recompiles it and returns `Some(freshly_compiled_pipeline`)
@@ -331,43 +359,63 @@ impl CurrentPipeline {
                     source: wgpu::ShaderSource::Naga(Cow::Owned(fragment_naga)),
                 });
 
-        let mut stride = 0;
+        struct BufferData {
+            buffer: Rc<VertexBufferWrapper>,
+            attrs: Vec<wgpu::VertexAttribute>,
+            total_size: usize,
+        }
 
-        let wgpu_attributes = vertex_attributes
-            .iter()
-            .enumerate()
-            .flat_map(|(i, attr)| {
-                if let Some(attr) = attr {
-                    let (format, entry_size_bytes) = match attr.format {
-                        Context3DVertexBufferFormat::Float4 => (
-                            wgpu::VertexFormat::Float32x4,
-                            4 * std::mem::size_of::<f32>(),
-                        ),
-                        Context3DVertexBufferFormat::Float3 => (
-                            wgpu::VertexFormat::Float32x3,
-                            3 * std::mem::size_of::<f32>(),
-                        ),
-                        Context3DVertexBufferFormat::Float2 => (
-                            wgpu::VertexFormat::Float32x2,
-                            2 * std::mem::size_of::<f32>(),
-                        ),
-                        Context3DVertexBufferFormat::Float1 => {
-                            (wgpu::VertexFormat::Float32, std::mem::size_of::<f32>())
-                        }
-                        Context3DVertexBufferFormat::Bytes4 => (wgpu::VertexFormat::Uint8x4, 4),
-                    };
-                    // FIXME - assert that this matches up with the AS3-supplied offset
-                    stride += entry_size_bytes;
-                    Some(wgpu::VertexAttribute {
-                        format,
-                        offset: attr.offset_in_32bit_units * 4,
-                        shader_location: i as u32,
-                    })
+        // The user can call Context3D.setVertexBufferAt with a a mixture of vertex buffers.
+        // We need to create one 'BufferData' struct for each distinct vertex buffer
+        // across all of the calls to 'setVertexBufferAt'. The 'BufferData' keeps track
+        // of all of the bound indices associated with that buffer.
+        let mut index_per_buffer: Vec<BufferData> = Vec::new();
+
+        for (i, attr) in vertex_attributes.iter().enumerate() {
+            if let Some(attr) = attr {
+                let (format, entry_size_bytes) = match attr.format {
+                    Context3DVertexBufferFormat::Float4 => (
+                        wgpu::VertexFormat::Float32x4,
+                        4 * std::mem::size_of::<f32>(),
+                    ),
+                    Context3DVertexBufferFormat::Float3 => (
+                        wgpu::VertexFormat::Float32x3,
+                        3 * std::mem::size_of::<f32>(),
+                    ),
+                    Context3DVertexBufferFormat::Float2 => (
+                        wgpu::VertexFormat::Float32x2,
+                        2 * std::mem::size_of::<f32>(),
+                    ),
+                    Context3DVertexBufferFormat::Float1 => {
+                        (wgpu::VertexFormat::Float32, std::mem::size_of::<f32>())
+                    }
+                    Context3DVertexBufferFormat::Bytes4 => (wgpu::VertexFormat::Uint8x4, 4),
+                };
+
+                let buffer_data = index_per_buffer
+                    .iter_mut()
+                    .find(|data| Rc::ptr_eq(&data.buffer, &attr.buffer));
+
+                let buffer_data = if let Some(buffer_data) = buffer_data {
+                    buffer_data
                 } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
+                    index_per_buffer.push(BufferData {
+                        buffer: attr.buffer.clone(),
+                        attrs: Vec::new(),
+                        total_size: 0,
+                    });
+                    index_per_buffer.last_mut().unwrap()
+                };
+
+                // FIXME - assert that this matches up with the AS3-supplied offset
+                buffer_data.total_size += entry_size_bytes;
+                buffer_data.attrs.push(wgpu::VertexAttribute {
+                    format,
+                    offset: attr.offset_in_32bit_units * 4,
+                    shader_location: i as u32,
+                })
+            }
+        }
 
         let cull_mode = match self.culling {
             Context3DTriangleFace::Back => Some(wgpu::Face::Back),
@@ -379,6 +427,48 @@ impl CurrentPipeline {
             Context3DTriangleFace::None => None,
         };
 
+        let depth_stencil = if self.has_depth_texture {
+            Some(DepthStencilState {
+                format: TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: self.depth_mask,
+                depth_compare: self.pass_compare_mode,
+                // FIXME - implement this
+                stencil: wgpu::StencilState {
+                    front: StencilFaceState::IGNORE,
+                    back: StencilFaceState::IGNORE,
+                    read_mask: !0,
+                    write_mask: !0,
+                },
+                bias: Default::default(),
+            })
+        } else {
+            None
+        };
+
+        let wgpu_vertex_buffers = index_per_buffer
+            .iter()
+            .map(|data| {
+                // This value is set when Context3D.createVertexBuffer is called.
+                // We may not all of the data associated with a single vertex
+                // (e.g. we might have 8 floats per vertex, but only
+                // call setVertexBufferAt once to bind the first 4 floats per vertex.
+                // However, the total size of the bindings can be at most the total
+                // amount of data per vertex. Verify that here
+                let data_bytes_per_vertex = (data.buffer.data_32_per_vertex * 4) as u64;
+                if data.total_size > data_bytes_per_vertex as usize {
+                    panic!("Total size of bound vertex attributes {:?} exceeds data_bytes_per_vertex {:?}", data.total_size,
+                    data_bytes_per_vertex);
+                }
+
+                let attrs = &data.attrs;
+                wgpu::VertexBufferLayout {
+                    array_stride: data_bytes_per_vertex,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: attrs,
+                }
+            })
+            .collect::<Vec<_>>();
+
         let compiled = descriptors
             .device
             .create_render_pipeline(&RenderPipelineDescriptor {
@@ -387,18 +477,17 @@ impl CurrentPipeline {
                 vertex: VertexState {
                     module: &vertex_module,
                     entry_point: naga_agal::SHADER_ENTRY_POINT,
-                    buffers: &[VertexBufferLayout {
-                        array_stride: stride as u64,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &wgpu_attributes,
-                    }],
+                    buffers: &wgpu_vertex_buffers,
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &fragment_module,
                     entry_point: naga_agal::SHADER_ENTRY_POINT,
                     targets: &[Some(ColorTargetState {
                         format: TextureFormat::Rgba8Unorm,
-                        blend: None,
+                        blend: Some(wgpu::BlendState {
+                            color: self.color_component,
+                            alpha: self.alpha_component,
+                        }),
                         write_mask: ColorWrites::all(),
                     })],
                 }),
@@ -409,8 +498,7 @@ impl CurrentPipeline {
                     cull_mode,
                     ..Default::default()
                 },
-                // FIXME - get this from AS3
-                depth_stencil: None,
+                depth_stencil,
                 multisample: Default::default(),
                 multiview: Default::default(),
             });
@@ -421,12 +509,23 @@ impl CurrentPipeline {
         self.culling = face;
         self.dirty.set(true);
     }
+
+    pub fn update_blend_factors(
+        &mut self,
+        color_component: wgpu::BlendComponent,
+        alpha_component: wgpu::BlendComponent,
+    ) {
+        if color_component != self.color_component || alpha_component != self.alpha_component {
+            self.color_component = color_component;
+            self.alpha_component = alpha_component;
+            self.dirty.set(true);
+        }
+    }
 }
 
 // This is useful for debugging shader issues
 #[allow(dead_code)]
 fn to_wgsl(module: &naga::Module) -> String {
-    eprintln!("To wgsl:\n{:#?}", module);
     let mut out = String::new();
 
     let mut validator = Validator::new(ValidationFlags::all(), Capabilities::all());

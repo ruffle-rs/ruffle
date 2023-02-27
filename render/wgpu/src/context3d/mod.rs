@@ -1,6 +1,7 @@
 use ruffle_render::backend::{
-    Context3D, Context3DCommand, Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer,
-    ProgramType, ShaderModule, VertexBuffer,
+    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
+    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, ShaderModule,
+    VertexBuffer,
 };
 use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
 use ruffle_render::error::Error;
@@ -56,6 +57,7 @@ pub struct WgpuContext3D {
     buffer_staging_belt: StagingBelt,
 
     texture_view: Option<wgpu::TextureView>,
+    depth_texture_view: Option<wgpu::TextureView>,
 
     // Note - the Context3D docs state that rendering should be double-buffered.
     // However, our Context3DCommand list already acts like a second buffer -
@@ -85,6 +87,7 @@ impl WgpuContext3D {
             compiled_pipeline: None,
             bind_group: None,
             vertex_attributes: std::array::from_fn(|_| None),
+            depth_texture_view: None,
         }
     }
     // Executes all of the given `commands` in response to a `Context3D.present` call.
@@ -136,21 +139,16 @@ impl WgpuContext3D {
                     stencil: _,
                     mask,
                 } => {
-                    if *mask != COLOR_MASK | DEPTH_MASK | STENCIL_MASK {
-                        tracing::warn!(
-                            "Context3D::present: Clear command with mask {:x} not implemeneted",
-                            mask
-                        );
-                    }
-
-                    clear_color = Some(wgpu::Color {
-                        r: *red,
-                        g: *green,
-                        b: *blue,
-                        a: *alpha,
-                    });
+                    clear_color = Some((
+                        wgpu::Color {
+                            r: *red,
+                            g: *green,
+                            b: *blue,
+                            a: *alpha,
+                        },
+                        *mask,
+                    ));
                     seen_clear_command = true;
-                    // FIXME - clear depth and stencil buffers once we implement them
 
                     // Finish the current render pass - our next DrawTriangles command will create
                     // a new RenderPass using our `clear_color`.
@@ -164,19 +162,14 @@ impl WgpuContext3D {
                     wants_best_resolution: _,
                     wants_best_resolution_on_browser_zoom: _,
                 } => {
-                    if *anti_alias != 1 {
-                        tracing::warn!(
-                            "configureBackBuffer: anti_alias={anti_alias} is not yet implemented"
-                        );
-                    }
-                    if *depth_and_stencil {
-                        tracing::warn!(
-                            "configureBackBuffer: depth_and_stencil is not yet implemented"
-                        );
-                    }
-
                     let texture_label = create_debug_label!("Render target texture");
                     let format = wgpu::TextureFormat::Rgba8Unorm;
+
+                    if *anti_alias != 1 {
+                        tracing::warn!(
+                            "Context3D::present: Anti-aliasing leve {anti_alias} not implemented"
+                        );
+                    }
 
                     let wgpu_texture =
                         self.descriptors
@@ -200,6 +193,30 @@ impl WgpuContext3D {
 
                     finish_render_pass!(render_pass);
                     self.texture_view = Some(wgpu_texture.create_view(&Default::default()));
+
+                    if *depth_and_stencil {
+                        let depth_texture =
+                            self.descriptors
+                                .device
+                                .create_texture(&wgpu::TextureDescriptor {
+                                    label: Some("Context3D depth texture"),
+                                    size: Extent3d {
+                                        width: *width,
+                                        height: *height,
+                                        depth_or_array_layers: 1,
+                                    },
+                                    mip_level_count: 1,
+                                    sample_count: 1,
+                                    dimension: TextureDimension::D2,
+                                    format: wgpu::TextureFormat::Depth24PlusStencil8,
+                                    view_formats: &[wgpu::TextureFormat::Depth24PlusStencil8],
+                                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                                });
+                        self.depth_texture_view =
+                            Some(depth_texture.create_view(&Default::default()));
+                    }
+                    self.current_pipeline
+                        .update_has_depth_texture(*depth_and_stencil);
 
                     self.raw_texture_handle = BitmapHandle(Arc::new(Texture {
                         texture: Arc::new(wgpu_texture),
@@ -247,7 +264,7 @@ impl WgpuContext3D {
                     self.buffer_staging_belt
                         .write_buffer(
                             &mut buffer_command_encoder,
-                            &buffer.0,
+                            &buffer.buffer,
                             (*start_vertex * *data_per_vertex * std::mem::size_of::<f32>()) as u64,
                             NonZeroU64::new(data.len() as u64).unwrap(),
                             &self.descriptors.device,
@@ -265,7 +282,8 @@ impl WgpuContext3D {
                         .downcast_ref::<IndexBufferWrapper>()
                         .unwrap();
 
-                    let indices = (*first_index as u32 * 3)..(*num_triangles as u32 * 3);
+                    let indices = (*first_index as u32)
+                        ..((*first_index as u32) + (*num_triangles as u32 * 3));
 
                     let new_pipeline = self
                         .current_pipeline
@@ -305,8 +323,6 @@ impl WgpuContext3D {
                     // Note - we need to unconditionally re-create the render pass, since we had to submit the
                     // buffer command encoder above.
 
-                    //if new_pipeline.is_some() || render_pass.is_none() {
-
                     if let Some((new_pipeline, new_bind_group)) = new_pipeline {
                         compiled_pipeline = Some(new_pipeline);
                         compiled_bind_group = Some(new_bind_group);
@@ -321,6 +337,7 @@ impl WgpuContext3D {
                         // will use a clear color of None. This ensures that by itself,
                         // re-creating the render pass has no effect on the output
                         clear_color.take(),
+                        self.depth_texture_view.as_ref(),
                     ));
 
                     let render_pass_mut = render_pass.as_mut().unwrap();
@@ -542,6 +559,85 @@ impl WgpuContext3D {
                     self.current_pipeline
                         .update_texture_at(*sampler as usize, bound_texture);
                 }
+                Context3DCommand::SetDepthTest {
+                    depth_mask,
+                    pass_compare_mode,
+                } => {
+                    let function = match pass_compare_mode {
+                        Context3DCompareMode::Always => wgpu::CompareFunction::Always,
+                        Context3DCompareMode::Equal => wgpu::CompareFunction::Equal,
+                        Context3DCompareMode::Greater => wgpu::CompareFunction::Greater,
+                        Context3DCompareMode::GreaterEqual => wgpu::CompareFunction::GreaterEqual,
+                        Context3DCompareMode::Less => wgpu::CompareFunction::Less,
+                        Context3DCompareMode::LessEqual => wgpu::CompareFunction::LessEqual,
+                        Context3DCompareMode::Never => wgpu::CompareFunction::Never,
+                        Context3DCompareMode::NotEqual => wgpu::CompareFunction::NotEqual,
+                    };
+                    self.current_pipeline.update_depth(*depth_mask, function);
+                }
+                Context3DCommand::SetBlendFactors {
+                    source_factor,
+                    destination_factor,
+                } => {
+                    // This returns (color_blend_factor, alpha_blend_factor)
+                    let convert_blend_factor =
+                        |factor: Context3DBlendFactor| -> (wgpu::BlendFactor, wgpu::BlendFactor) {
+                            match factor {
+                                Context3DBlendFactor::Zero => {
+                                    (wgpu::BlendFactor::Zero, wgpu::BlendFactor::Zero)
+                                }
+                                Context3DBlendFactor::One => {
+                                    (wgpu::BlendFactor::One, wgpu::BlendFactor::One)
+                                }
+                                Context3DBlendFactor::OneMinusSourceAlpha => (
+                                    wgpu::BlendFactor::OneMinusSrcAlpha,
+                                    wgpu::BlendFactor::OneMinusSrcAlpha,
+                                ),
+                                Context3DBlendFactor::SourceAlpha => {
+                                    (wgpu::BlendFactor::SrcAlpha, wgpu::BlendFactor::SrcAlpha)
+                                }
+                                Context3DBlendFactor::OneMinusDestinationAlpha => (
+                                    wgpu::BlendFactor::OneMinusDstAlpha,
+                                    wgpu::BlendFactor::OneMinusDstAlpha,
+                                ),
+                                Context3DBlendFactor::DestinationAlpha => {
+                                    (wgpu::BlendFactor::DstAlpha, wgpu::BlendFactor::DstAlpha)
+                                }
+
+                                Context3DBlendFactor::OneMinusSourceColor => (
+                                    wgpu::BlendFactor::OneMinusSrc,
+                                    wgpu::BlendFactor::OneMinusSrcAlpha,
+                                ),
+                                Context3DBlendFactor::SourceColor => {
+                                    (wgpu::BlendFactor::Src, wgpu::BlendFactor::SrcAlpha)
+                                }
+                                Context3DBlendFactor::OneMinusDestinationColor => (
+                                    wgpu::BlendFactor::OneMinusDst,
+                                    wgpu::BlendFactor::OneMinusDstAlpha,
+                                ),
+                                Context3DBlendFactor::DestinationColor => {
+                                    (wgpu::BlendFactor::Dst, wgpu::BlendFactor::DstAlpha)
+                                }
+                            }
+                        };
+                    let (source_blend_factor, source_alpha_blend_factor) =
+                        convert_blend_factor(*source_factor);
+                    let (destination_blend_factor, destination_alpha_blend_factor) =
+                        convert_blend_factor(*destination_factor);
+                    // The operation is always Add for Stage3D
+                    self.current_pipeline.update_blend_factors(
+                        wgpu::BlendComponent {
+                            src_factor: source_blend_factor,
+                            dst_factor: destination_blend_factor,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        wgpu::BlendComponent {
+                            src_factor: source_alpha_blend_factor,
+                            dst_factor: destination_alpha_blend_factor,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    );
+                }
             }
         }
 
@@ -571,9 +667,12 @@ impl WgpuContext3D {
 #[collect(require_static)]
 pub struct IndexBufferWrapper(wgpu::Buffer);
 
-#[derive(Collect)]
+#[derive(Collect, Debug)]
 #[collect(require_static)]
-pub struct VertexBufferWrapper(wgpu::Buffer);
+pub struct VertexBufferWrapper {
+    pub buffer: wgpu::Buffer,
+    pub data_32_per_vertex: u8,
+}
 
 #[derive(Collect)]
 #[collect(require_static)]
@@ -591,7 +690,7 @@ impl ruffle_render::backend::Texture for TextureWrapper {}
 // Context3D.setVertexBufferAt supports up to 8 vertex buffer attributes
 const MAX_VERTEX_ATTRIBUTES: usize = 8;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VertexAttributeInfo {
     // An offset in units of buffer entires (f32 or u8)
     offset_in_32bit_units: u64,
@@ -626,16 +725,19 @@ impl Context3D for WgpuContext3D {
         &mut self,
         _usage: ruffle_render::backend::BufferUsage,
         num_vertices: u32,
-        data_per_vertex: u32,
+        data_32_per_vertex: u8,
     ) -> Rc<dyn VertexBuffer> {
         let buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
             label: None,
             // Each data value is 4 bytes
-            size: num_vertices as u64 * data_per_vertex as u64 * 4,
+            size: num_vertices as u64 * data_32_per_vertex as u64 * 4,
             usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        Rc::new(VertexBufferWrapper(buffer))
+        Rc::new(VertexBufferWrapper {
+            buffer,
+            data_32_per_vertex,
+        })
     }
 
     fn disposed_index_buffer_handle(&self) -> Rc<dyn IndexBuffer> {
@@ -733,11 +835,39 @@ fn make_render_pass<'a>(
     command_encoder: &'a mut CommandEncoder,
     bind_group: &'a BindGroup,
     vertex_attributes: &'a [Option<VertexAttributeInfo>; MAX_VERTEX_ATTRIBUTES],
-    clear_color: Option<wgpu::Color>,
+    clear_color: Option<(wgpu::Color, u32)>,
+    depth_view: Option<&'a wgpu::TextureView>,
 ) -> RenderPass<'a> {
     let load = match clear_color {
-        Some(_) => wgpu::LoadOp::Clear(clear_color.unwrap()),
-        None => wgpu::LoadOp::Load,
+        Some((color, mask)) if mask & COLOR_MASK != 0 => wgpu::LoadOp::Clear(color),
+        _ => wgpu::LoadOp::Load,
+    };
+
+    let depth_load = match clear_color {
+        Some((_, mask)) if mask & DEPTH_MASK != 0 => wgpu::LoadOp::Clear(0.0),
+        _ => wgpu::LoadOp::Load,
+    };
+
+    let stencil_load = match clear_color {
+        Some((_, mask)) if mask & STENCIL_MASK != 0 => wgpu::LoadOp::Clear(0),
+        _ => wgpu::LoadOp::Load,
+    };
+
+    let depth_stencil_attachment = if let Some(depth_view) = depth_view {
+        Some(wgpu::RenderPassDepthStencilAttachment {
+            view: depth_view,
+            depth_ops: Some(wgpu::Operations {
+                load: depth_load,
+                store: false,
+            }),
+            stencil_ops: Some(wgpu::Operations {
+                // FIXME - are these write?
+                load: stencil_load,
+                store: true,
+            }),
+        })
+    } else {
+        None
     };
 
     let mut pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -747,12 +877,20 @@ fn make_render_pass<'a>(
             resolve_target: None,
             ops: wgpu::Operations { load, store: true },
         })],
-        depth_stencil_attachment: None,
+        depth_stencil_attachment,
     });
     pass.set_bind_group(0, bind_group, &[]);
-    for (i, attr) in vertex_attributes.iter().enumerate() {
-        if let Some(attr) = attr {
-            pass.set_vertex_buffer(i as u32, attr.buffer.0.slice(..));
+
+    let mut seen = Vec::new();
+
+    // Create a binding for each unique buffer that we encounter.
+    // TODO - deduplicate this with the similar logic in set_pipelines
+    let mut i = 0;
+    for attr in vertex_attributes.iter().flatten() {
+        if !seen.iter().any(|b| Rc::ptr_eq(b, &attr.buffer)) {
+            pass.set_vertex_buffer(i as u32, attr.buffer.buffer.slice(..));
+            seen.push(attr.buffer.clone());
+            i += 1;
         }
     }
     pass

@@ -6,6 +6,7 @@ use swf::{BlendMode, Color};
 
 pub trait CommandHandler {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool);
+    fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
     fn push_mask(&mut self);
@@ -35,6 +36,9 @@ impl CommandList {
                     smoothing,
                 } => handler.render_bitmap(bitmap, transform, smoothing),
                 Command::RenderShape { shape, transform } => handler.render_shape(shape, transform),
+                Command::RenderStage3D { bitmap, transform } => {
+                    handler.render_stage3d(bitmap, transform)
+                }
                 Command::DrawRect { color, matrix } => handler.draw_rect(color, matrix),
                 Command::PushMask => handler.push_mask(),
                 Command::ActivateMask => handler.activate_mask(),
@@ -53,6 +57,11 @@ impl CommandHandler for CommandList {
             transform,
             smoothing,
         });
+    }
+
+    fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
+        self.commands
+            .push(Command::RenderStage3D { bitmap, transform });
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
@@ -91,6 +100,10 @@ pub enum Command {
         bitmap: BitmapHandle,
         transform: Transform,
         smoothing: bool,
+    },
+    RenderStage3D {
+        bitmap: BitmapHandle,
+        transform: Transform,
     },
     RenderShape {
         shape: ShapeHandle,

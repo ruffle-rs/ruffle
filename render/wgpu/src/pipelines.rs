@@ -34,6 +34,9 @@ pub struct ShapePipeline {
 #[derive(Debug)]
 pub struct Pipelines {
     pub color: ShapePipeline,
+    /// Renders a bitmap without any blending, and sets
+    /// the output alpha to 1.0 unconditionally.
+    pub bitmap_opaque: ShapePipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
@@ -198,6 +201,18 @@ impl Pipelines {
             .try_into()
             .unwrap();
 
+        let bitmap_opaque = create_shape_pipeline(
+            "Bitmap opaque copy",
+            device,
+            format,
+            &shaders.bitmap_opaque_shader,
+            msaa_sample_count,
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &bitmap_blend_bindings,
+            TrivialBlend::Normal.blend_state(),
+            full_push_constants,
+        );
+
         let color_matrix_filter_bindings = if device.limits().max_push_constant_size > 0 {
             vec![
                 &bind_layouts.globals,
@@ -308,6 +323,7 @@ impl Pipelines {
         Self {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
+            bitmap_opaque,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
             color_matrix_filter,
