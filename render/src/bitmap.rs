@@ -69,7 +69,7 @@ impl Bitmap {
     /// Ensures that `data` is the correct size for the given `width` and `height`.
     pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
-        let expected_len = width as usize * height as usize * format.bytes_per_pixel();
+        let expected_len = format.length_for_size(width as usize, height as usize);
         if data.len() != expected_len {
             tracing::warn!(
                 "Incorrect bitmap data size, expected {} bytes, got {}",
@@ -152,10 +152,10 @@ pub enum BitmapFormat {
 
 impl BitmapFormat {
     #[inline]
-    pub fn bytes_per_pixel(self) -> usize {
+    pub fn length_for_size(self, width: usize, height: usize) -> usize {
         match self {
-            BitmapFormat::Rgb => 3,
-            BitmapFormat::Rgba => 4,
+            BitmapFormat::Rgb => width * height * 3,
+            BitmapFormat::Rgba => width * height * 4,
         }
     }
 }
