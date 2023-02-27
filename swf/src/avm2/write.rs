@@ -915,7 +915,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::LookupSwitch)?;
                 self.write_i24(default_offset)?;
                 self.write_u30(case_offsets.len() as u32 - 1)?;
-                for offset in case_offsets {
+                for offset in case_offsets.iter() {
                     self.write_i24(*offset)?;
                 }
             }
