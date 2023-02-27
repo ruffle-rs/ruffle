@@ -8,7 +8,7 @@ mod storage;
 mod ui;
 
 use generational_arena::{Arena, Index};
-use js_sys::{Array, Function, Object, Promise, Uint8Array};
+use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
@@ -78,15 +78,6 @@ struct RuffleInstance {
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_name = Error)]
-    type JsError;
-
-    #[wasm_bindgen(constructor, js_class = "Error")]
-    fn new(message: &str) -> JsError;
 }
 
 #[wasm_bindgen(module = "/packages/core/src/ruffle-player.ts")]
