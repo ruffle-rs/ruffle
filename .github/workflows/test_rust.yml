@@ -71,7 +71,10 @@ jobs:
         run: cargo run -p build_playerglobal -- lint
 
       - name: Check clippy
-        run: cargo clippy --all --all-features --tests -- -D warnings
+        # FIXME - run Clippy on nightly again once https://github.com/clap-rs/clap/issues/4733 is fixed
+        if: matrix.rust_version != 'nightly'
+        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
+        run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
