@@ -149,12 +149,33 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         read.base.get_property_local(name, activation)
     }
 
-    fn set_property_local(
-        self,
-        _name: &Multiname<'gc>,
-        _value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        Err("Modifying an XML object is not yet implemented".into())
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
+        let read = self.0.read();
+
+        // FIXME - see if we can deduplicate this with get_property_local in
+        // an efficient way
+        if name.contains_public_namespace() {
+            if let Some(local_name) = name.local_name() {
+                // The only supported numerical index is 0
+                if let Ok(index) = local_name.parse::<usize>() {
+                    return index == 0;
+                }
+
+                if let E4XNodeKind::Element {
+                    children,
+                    attributes,
+                } = &*read.node.kind()
+                {
+                    let search_children = if name.is_attribute() {
+                        attributes
+                    } else {
+                        children
+                    };
+
+                    return search_children.iter().any(|child| child.matches_name(name));
+                }
+            }
+        }
+        read.base.has_own_dynamic_property(name)
     }
 }

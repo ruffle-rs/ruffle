@@ -195,4 +195,35 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         Err("Modifying an XMLList object is not yet implemented".into())
     }
+
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<u32>, Error<'gc>> {
+        let read = self.0.read();
+        if (last_index as usize) < read.children.len() {
+            return Ok(Some(last_index + 1));
+        }
+        Ok(None)
+    }
+
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let children_len = self.0.read().children.len() as u32;
+        if children_len >= index {
+            Ok(index
+                .checked_sub(1)
+                .map(|index| index.into())
+                .unwrap_or(Value::Undefined))
+        } else {
+            Ok(self
+                .base()
+                .get_enumerant_name(index - children_len)
+                .unwrap_or(Value::Undefined))
+        }
+    }
 }

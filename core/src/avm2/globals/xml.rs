@@ -1,8 +1,8 @@
 //! XML builtin and prototype
 
-use crate::avm2::e4x::E4XNode;
+use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::{QNameObject, TObject};
+use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject};
 use crate::avm2::{Activation, Error, Object, QName, Value};
 use crate::avm2_stub_method;
 
@@ -80,4 +80,24 @@ pub fn to_xml_string<'gc>(
     let xml = this.unwrap().as_xml_object().unwrap();
     let node = xml.node();
     Ok(Value::String(node.xml_to_xml_string(activation)?))
+}
+
+pub fn children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        // FIXME - avoid clone
+        children.clone()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(
+        activation,
+        children.iter().map(|node| E4XOrXml::E4X(*node)).collect(),
+    )
+    .into())
 }

@@ -10,6 +10,8 @@ package {
         AS3 native function name():Object;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
+        AS3 native function children():XMLList;
+
 
         AS3 native function toString():String;
 
@@ -32,6 +34,11 @@ package {
             return self.AS3::toXMLString();
         };
 
+        prototype.children = function():String {
+            var self:XML = this;
+            return self.AS3::children();
+        };
+
         prototype.toString = function():String {
             if (this === prototype) {
                 return "";
@@ -39,6 +46,5 @@ package {
             var self:XML = this;
             return self.AS3::toString();
         };
-
     }
 }
