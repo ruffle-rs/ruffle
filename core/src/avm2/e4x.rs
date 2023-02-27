@@ -9,7 +9,7 @@ use quick_xml::{
     Reader,
 };
 
-use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, TObject, Value};
+use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
 
 /// The underlying XML node data, based on E4XNode in avmplus
 /// This wrapped by XMLObject when necessary (see `E4XOrXml`)
@@ -109,28 +109,10 @@ impl<'gc> E4XNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Vec<Self>, Error<'gc>> {
         let string = match value {
-            Value::Bool(_) | Value::Number(_) | Value::Integer(_) => {
-                value.coerce_to_string(activation)?
-            }
-            Value::String(string) => string,
-            Value::Object(obj) => {
-                if matches!(
-                    obj.as_primitive().as_deref(),
-                    Some(Value::Bool(_) | Value::Number(_) | Value::String(_))
-                ) {
-                    value.coerce_to_string(activation)?
-                } else if let Some(_xml) = obj.as_xml_object() {
-                    return Err(Error::RustError(
-                        "Deep clone of XML not yet implemented".into(),
-                    ));
-                } else {
-                    return Err(Error::RustError(
-                        format!("Could not convert value {value:?} to XML").into(),
-                    ));
-                }
-            }
             // The docs claim that this throws a TypeError, but it actually doesn't
             Value::Null | Value::Undefined => AvmString::default(),
+            // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
+            value => value.coerce_to_string(activation)?,
         };
 
         let data_utf8 = string.to_utf8_lossy();
