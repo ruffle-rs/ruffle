@@ -16,8 +16,8 @@ thiserror = "1.0"
 flate2 = "1.0.25"
 log = "0.4"
 
-h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0083f5933f173798dd308d1678f06d181a99975", optional = true }
-h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0083f5933f173798dd308d1678f06d181a99975", optional = true }
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "78d96c0034c519482c8f81e1042c86fc3684f7b3", optional = true }
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "78d96c0034c519482c8f81e1042c86fc3684f7b3", optional = true }
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
