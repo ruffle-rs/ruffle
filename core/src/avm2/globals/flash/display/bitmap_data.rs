@@ -734,9 +734,6 @@ pub fn draw<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
-        // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
-        bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
@@ -778,7 +775,6 @@ pub fn draw<'gc>(
             )?);
         }
 
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
 
         let source = args
@@ -794,7 +790,14 @@ pub fn draw<'gc>(
             return Err(format!("BitmapData.draw: unexpected source {source:?}").into());
         };
 
-        match bitmap_data.draw(
+        // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
+        // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
+        // if we're actually going to draw something.
+        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        // If the bitmapdata is invalid, it's fine to return early, since the pixels
+        // are inaccessible
+        bitmap_data.read().check_valid(activation)?;
+        match bitmap_data.write(activation.context.gc_context).draw(
             source,
             transform,
             smoothing,
@@ -807,7 +810,7 @@ pub fn draw<'gc>(
             Err(BitmapDataDrawError::Unimplemented) => {
                 return Err("Render backend does not support BitmapData.draw".into());
             }
-        }
+        };
     }
     Ok(Value::Undefined)
 }

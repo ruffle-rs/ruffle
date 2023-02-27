@@ -547,6 +547,8 @@ pub fn draw<'gc>(
                 return Ok(Value::Undefined);
             };
 
+            // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
+            // if we're actually going to draw something.
             let bmd = bitmap_data
                 .bitmap_data_wrapper()
                 .overwrite_cpu_pixels_from_gpu(&mut activation.context);
