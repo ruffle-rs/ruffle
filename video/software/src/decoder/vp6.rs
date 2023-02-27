@@ -156,6 +156,8 @@ impl VideoDecoder for Vp6Decoder {
 
         let (mut width, mut height) = frame.get_dimensions(0);
         let (chroma_width, chroma_height) = frame.get_dimensions(1);
+        debug_assert_eq!(chroma_width, (width + 1) / 2);
+        debug_assert_eq!(chroma_height, (height + 1) / 2);
 
         // We assume that there is no padding between rows
         debug_assert!(frame.get_stride(0) == frame.get_dimensions(0).0);
@@ -174,7 +176,6 @@ impl VideoDecoder for Vp6Decoder {
             &yuv[offsets.1..offsets.1 + chroma_width * chroma_height],
             &yuv[offsets.2..offsets.2 + chroma_width * chroma_height],
             width,
-            chroma_width,
         );
 
         // Adding in the alpha component, if present.

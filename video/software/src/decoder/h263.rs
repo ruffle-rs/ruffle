@@ -69,8 +69,9 @@ impl VideoDecoder for H263Decoder {
             .into_width_and_height()
             .ok_or(H263Error::MissingWidthHeight)?;
         let chroma_width = picture.chroma_samples_per_row();
+        debug_assert_eq!(chroma_width, (width as usize + 1) / 2);
         let (y, b, r) = picture.as_yuv();
-        let rgba = yuv420_to_rgba(y, b, r, width.into(), chroma_width);
+        let rgba = yuv420_to_rgba(y, b, r, width.into());
         Ok(DecodedFrame {
             width,
             height,
