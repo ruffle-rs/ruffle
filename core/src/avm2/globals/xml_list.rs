@@ -4,7 +4,7 @@ pub use crate::avm2::object::xml_list_allocator;
 use crate::{
     avm2::{
         e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
-        object::E4XOrXml,
+        object::{E4XOrXml, XmlListObject},
         Activation, Error, Object, TObject, Value,
     },
     avm2_stub_method,
@@ -78,4 +78,20 @@ pub fn length<'gc>(
     let list = this.unwrap().as_xml_list_object().unwrap();
     let children = list.children();
     Ok(children.len().into())
+}
+
+pub fn children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let children = list.children();
+    let mut sub_children = Vec::new();
+    for child in &*children {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
+        }
+    }
+    Ok(XmlListObject::new(activation, sub_children).into())
 }

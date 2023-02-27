@@ -1,0 +1,10 @@
+Children length: 3
+'child' in outer: true
+Child kind= A
+Child kind= B
+Child kind= A
+Inner child localName null
+Inner child localName null
+Inner child localName null
+Inner child localName p
+Empty children: 0

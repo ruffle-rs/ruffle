@@ -10,6 +10,7 @@ package {
 
         AS3 native function hasSimpleContent():Boolean;
         AS3 native function length():int
+        AS3 native function children():XMLList;
 
         public native function toString():String;
     }
