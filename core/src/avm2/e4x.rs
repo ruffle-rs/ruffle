@@ -120,7 +120,9 @@ impl<'gc> E4XNode<'gc> {
         let mut buf = Vec::new();
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
-        // FIXME - look this up from static property and settings
+        // FIXME - look these up from static property and settings
+        let ignore_comments = true;
+        let ignore_processing_instructions = true;
         let ignore_white = true;
 
         let mut top_level = vec![];
@@ -199,6 +201,11 @@ impl<'gc> E4XNode<'gc> {
                     }
                 }
                 Event::Comment(bt) | Event::PI(bt) => {
+                    if (matches!(event, Event::Comment(_)) && ignore_comments)
+                        || (matches!(event, Event::PI(_)) && ignore_processing_instructions)
+                    {
+                        continue;
+                    }
                     let text = bt.unescaped()?;
                     let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
                     let kind = match event {
