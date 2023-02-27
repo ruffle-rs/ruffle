@@ -148,7 +148,7 @@ impl Drop for Buffer {
     }
 }
 
-#[wasm_bindgen(raw_module = "./ruffle-imports.js")]
+#[wasm_bindgen(raw_module = "./ruffle-imports")]
 extern "C" {
     // Imported JS method to copy interleaved audio data into an `AudioBuffer`.
     #[wasm_bindgen(js_name = "copyToAudioBufferInterleaved")]
