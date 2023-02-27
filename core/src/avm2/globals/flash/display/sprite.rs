@@ -282,3 +282,41 @@ pub fn set_use_hand_cursor<'gc>(
 
     Ok(Value::Undefined)
 }
+
+/// Implements `hitArea`'s getter
+pub fn get_hit_area<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_movie_clip())
+        .and_then(|o| o.hit_area())
+    {
+        return Ok(mc.object2());
+    }
+
+    Ok(Value::Null)
+}
+
+/// Implements `hitArea`'s setter
+pub fn set_hit_area<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(mc) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_movie_clip())
+    {
+        mc.set_hit_area(
+            &mut activation.context,
+            args.get(0)
+                .and_then(|hit_area| hit_area.as_object())
+                .and_then(|hit_area| hit_area.as_display_object()),
+        );
+    }
+
+    Ok(Value::Undefined)
+}
