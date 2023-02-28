@@ -225,6 +225,10 @@ export class RufflePlayer extends HTMLElement {
         this.virtualKeyboard = <HTMLInputElement>(
             this.shadow.getElementById("virtual-keyboard")!
         );
+        this.virtualKeyboard.addEventListener(
+            "input",
+            this.virtualKeyboardInput.bind(this)
+        );
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         window.addEventListener("pointerdown", this.pointerDown.bind(this));
@@ -482,13 +486,12 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.unmuteAudioContext();
-        this.container.addEventListener("click", () =>
-            this.virtualKeyboard.blur()
-        );
-        this.virtualKeyboard.addEventListener(
-            "input",
-            this.virtualKeyboardInput.bind(this)
-        );
+        // On Android, the virtual keyboard needs to be dismissed as otherwise it re-focuses when clicking elsewhere
+        if (navigator.userAgent.toLowerCase().includes("android")) {
+            this.container.addEventListener("click", () =>
+                this.virtualKeyboard.blur()
+            );
+        }
 
         // Treat invalid values as `AutoPlay.Auto`.
         if (
@@ -831,17 +834,10 @@ export class RufflePlayer extends HTMLElement {
             console.error("SWF download failed");
         }
     }
-
     private virtualKeyboardInput() {
         const input = this.virtualKeyboard;
-        const initialValue = input.defaultValue;
-        const initialValueLength = initialValue.length;
-        const isBackspace = input.value.length <= initialValueLength;
-        const chars = isBackspace
-            ? ["Backspace"]
-            : [...input.value.slice(initialValueLength)];
-
-        for (const char of chars) {
+        const string = input.value;
+        for (const char of string) {
             for (const eventType of ["keydown", "keyup"]) {
                 this.dispatchEvent(
                     new KeyboardEvent(eventType, {
@@ -851,15 +847,18 @@ export class RufflePlayer extends HTMLElement {
                 );
             }
         }
-        input.value = initialValue;
+        input.value = "";
     }
     protected openVirtualKeyboard(): void {
-        // The Rust code that opens the virtual keyboard triggers before
-        // the TypeScript code that closes it, so slightly delay opening it
-        setTimeout(() => {
-            this.virtualKeyboard.setSelectionRange(-1, -1);
+        // On Android, the Rust code that opens the virtual keyboard triggers
+        // before the TypeScript code that closes it, so delay opening it
+        if (navigator.userAgent.toLowerCase().includes("android")) {
+            setTimeout(() => {
+                this.virtualKeyboard.focus({ preventScroll: true });
+            }, 100);
+        } else {
             this.virtualKeyboard.focus({ preventScroll: true });
-        }, 100);
+        }
     }
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
