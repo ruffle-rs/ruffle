@@ -1805,24 +1805,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_gradient_bevel_filter(&mut self, filter: &GradientBevelFilter) -> Result<()> {
-        self.write_u8(filter.colors.len() as u8)?;
-        for gradient_record in &filter.colors {
-            self.write_rgba(&gradient_record.color)?;
-        }
-        for gradient_record in &filter.colors {
-            self.write_u8(gradient_record.ratio)?;
-        }
-        self.write_fixed16(filter.blur_x)?;
-        self.write_fixed16(filter.blur_y)?;
-        self.write_fixed16(filter.angle)?;
-        self.write_fixed16(filter.distance)?;
-        self.write_fixed8(filter.strength)?;
-        self.write_u8(filter.flags.bits())?;
-        Ok(())
-    }
-
-    fn write_gradient_glow_filter(&mut self, filter: &GradientGlowFilter) -> Result<()> {
+    fn write_gradient_filter(&mut self, filter: &GradientFilter) -> Result<()> {
         self.write_u8(filter.colors.len() as u8)?;
         for gradient_record in &filter.colors {
             self.write_rgba(&gradient_record.color)?;
@@ -1879,7 +1862,7 @@ impl<W: Write> Writer<W> {
             }
             Filter::GradientGlowFilter(filter) => {
                 self.write_u8(4)?;
-                self.write_gradient_glow_filter(filter)
+                self.write_gradient_filter(filter)
             }
             Filter::ConvolutionFilter(filter) => {
                 self.write_u8(5)?;
@@ -1891,7 +1874,7 @@ impl<W: Write> Writer<W> {
             }
             Filter::GradientBevelFilter(filter) => {
                 self.write_u8(7)?;
-                self.write_gradient_bevel_filter(filter)
+                self.write_gradient_filter(filter)
             }
         }
     }

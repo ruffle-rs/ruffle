@@ -2,12 +2,11 @@ use ruffle_render::filters::{DisplacementMapFilter, DisplacementMapFilterMode, F
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
     ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
-    Fixed8, GlowFilter, GlowFilterFlags, GradientBevelFilter, GradientFilterFlags,
-    GradientGlowFilter, GradientRecord,
+    Fixed8, GlowFilter, GlowFilterFlags, GradientFilter, GradientFilterFlags, GradientRecord,
 };
 
 use crate::avm2::error::{argument_error, type_error};
-use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
+use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -63,12 +62,16 @@ impl FilterAvm2Ext for Filter {
 
         let gradient_bevel_filter = activation.avm2().classes().gradientbevelfilter;
         if object.is_of_type(gradient_bevel_filter, activation) {
-            return avm2_to_gradient_bevel_filter(activation, object);
+            return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
+                activation, object,
+            )?));
         }
 
         let gradient_glow_filter = activation.avm2().classes().gradientglowfilter;
         if object.is_of_type(gradient_glow_filter, activation) {
-            return avm2_to_gradient_glow_filter(activation, object);
+            return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
+                activation, object,
+            )?));
         }
 
         Err(Error::AvmError(type_error(
@@ -95,9 +98,13 @@ impl FilterAvm2Ext for Filter {
             Filter::DropShadowFilter(filter) => drop_shadow_filter_to_avm2(activation, filter),
             Filter::GlowFilter(filter) => glow_filter_to_avm2(activation, filter),
             Filter::GradientBevelFilter(filter) => {
-                gradient_bevel_filter_to_avm2(activation, filter)
+                let gradientbevelfilter = activation.avm2().classes().gradientbevelfilter;
+                gradient_filter_to_avm2(activation, filter, gradientbevelfilter)
             }
-            Filter::GradientGlowFilter(filter) => gradient_glow_filter_to_avm2(activation, filter),
+            Filter::GradientGlowFilter(filter) => {
+                let gradientglowfilter = activation.avm2().classes().gradientglowfilter;
+                gradient_filter_to_avm2(activation, filter, gradientglowfilter)
+            }
         }
     }
 }
@@ -614,10 +621,10 @@ fn glow_filter_to_avm2<'gc>(
     )
 }
 
-fn avm2_to_gradient_bevel_filter<'gc>(
+fn avm2_to_gradient_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
-) -> Result<Filter, Error<'gc>> {
+) -> Result<GradientFilter, Error<'gc>> {
     let angle = object
         .get_public_property("angle", activation)?
         .coerce_to_number(activation)?;
@@ -653,7 +660,7 @@ fn avm2_to_gradient_bevel_filter<'gc>(
         flags |= GradientFilterFlags::ON_TOP;
     }
     flags |= GradientFilterFlags::from_passes(quality.clamp(1, 15) as u8);
-    Ok(Filter::GradientBevelFilter(GradientBevelFilter {
+    Ok(GradientFilter {
         colors,
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),
         blur_y: Fixed16::from_f64(blur_y.max(0.0)),
@@ -661,12 +668,13 @@ fn avm2_to_gradient_bevel_filter<'gc>(
         distance: Fixed16::from_f64(distance),
         strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
         flags,
-    }))
+    })
 }
 
-fn gradient_bevel_filter_to_avm2<'gc>(
+fn gradient_filter_to_avm2<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    filter: &GradientBevelFilter,
+    filter: &GradientFilter,
+    class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let colors = ArrayObject::from_storage(
         activation,
@@ -688,7 +696,7 @@ fn gradient_bevel_filter_to_avm2<'gc>(
         activation,
         filter.colors.iter().map(|v| Value::from(v.ratio)).collect(),
     )?;
-    activation.avm2().classes().gradientbevelfilter.construct(
+    class.construct(
         activation,
         &[
             filter.distance.to_f64().into(),
@@ -713,104 +721,6 @@ fn gradient_bevel_filter_to_avm2<'gc>(
     )
 }
 
-fn avm2_to_gradient_glow_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: Object<'gc>,
-) -> Result<Filter, Error<'gc>> {
-    let angle = object
-        .get_public_property("angle", activation)?
-        .coerce_to_number(activation)?;
-    let blur_x = object
-        .get_public_property("blurX", activation)?
-        .coerce_to_number(activation)?;
-    let blur_y = object
-        .get_public_property("blurY", activation)?
-        .coerce_to_number(activation)?;
-    let distance = object
-        .get_public_property("distance", activation)?
-        .coerce_to_number(activation)?;
-    let knockout = object
-        .get_public_property("knockout", activation)?
-        .coerce_to_boolean();
-    let quality = object
-        .get_public_property("quality", activation)?
-        .coerce_to_u32(activation)?;
-    let strength = object
-        .get_public_property("strength", activation)?
-        .coerce_to_number(activation)?;
-    let glow_type = object
-        .get_public_property("type", activation)?
-        .coerce_to_string(activation)?;
-    let colors = get_gradient_colors(activation, object)?;
-    let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
-    if knockout {
-        flags |= GradientFilterFlags::KNOCKOUT;
-    }
-    if &glow_type == b"inner" {
-        flags |= GradientFilterFlags::INNER_SHADOW;
-    } else if &glow_type != b"outer" {
-        flags |= GradientFilterFlags::ON_TOP;
-    }
-    flags |= GradientFilterFlags::from_passes(quality.clamp(1, 15) as u8);
-    Ok(Filter::GradientGlowFilter(GradientGlowFilter {
-        colors,
-        blur_x: Fixed16::from_f64(blur_x.max(0.0)),
-        blur_y: Fixed16::from_f64(blur_y.max(0.0)),
-        angle: Fixed16::from_f64(angle.to_radians()),
-        distance: Fixed16::from_f64(distance),
-        strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
-        flags,
-    }))
-}
-
-fn gradient_glow_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    filter: &GradientGlowFilter,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let colors = ArrayObject::from_storage(
-        activation,
-        filter
-            .colors
-            .iter()
-            .map(|v| Value::from(v.color.to_rgb()))
-            .collect(),
-    )?;
-    let alphas = ArrayObject::from_storage(
-        activation,
-        filter
-            .colors
-            .iter()
-            .map(|v| Value::from(f64::from(v.color.a) / 255.0))
-            .collect(),
-    )?;
-    let ratios = ArrayObject::from_storage(
-        activation,
-        filter.colors.iter().map(|v| Value::from(v.ratio)).collect(),
-    )?;
-    activation.avm2().classes().gradientglowfilter.construct(
-        activation,
-        &[
-            filter.distance.to_f64().into(),
-            filter.angle.to_f64().to_degrees().into(),
-            colors.into(),
-            alphas.into(),
-            ratios.into(),
-            filter.blur_x.to_f64().into(),
-            filter.blur_y.to_f64().into(),
-            filter.strength.to_f64().into(),
-            filter.num_passes().into(),
-            if filter.is_on_top() {
-                "full"
-            } else if filter.is_inner() {
-                "inner"
-            } else {
-                "outer"
-            }
-            .into(),
-            filter.is_knockout().into(),
-        ],
-    )
-}
 fn get_gradient_colors<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
