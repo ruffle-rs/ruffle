@@ -1,9 +1,10 @@
-use ruffle_render::filters::{
-    BevelFilter, BitmapFilterType, BlurFilter, ColorMatrixFilter, ConvolutionFilter,
-    DisplacementMapFilter, DisplacementMapFilterMode, DropShadowFilter, Filter, GlowFilter,
-    GradientBevelFilter, GradientGlowFilter,
+use ruffle_render::filters::{DisplacementMapFilter, DisplacementMapFilterMode, Filter};
+use swf::{
+    BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
+    ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
+    Fixed8, GlowFilter, GlowFilterFlags, GradientBevelFilter, GradientFilterFlags,
+    GradientGlowFilter, GradientRecord,
 };
-use swf::{Color, GradientRecord};
 
 use crate::avm2::error::{argument_error, type_error};
 use crate::avm2::{Activation, ArrayObject, Error, Object, TObject, Value};
@@ -138,23 +139,25 @@ impl FilterAvm2Ext for BevelFilter {
         let bevel_type = object
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
+        let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
+        if &bevel_type == b"inner" {
+            flags |= BevelFilterFlags::INNER_SHADOW;
+        } else if &bevel_type != b"outer" {
+            flags |= BevelFilterFlags::ON_TOP;
+        }
+        if knockout {
+            flags |= BevelFilterFlags::KNOCKOUT;
+        }
+        flags |= BevelFilterFlags::from_passes(quality.clamp(1, 15) as u8);
         Ok(Filter::BevelFilter(BevelFilter {
             shadow_color: Color::from_rgb(shadow_color, (shadow_alpha * 255.0) as u8),
             highlight_color: Color::from_rgb(highlight_color, (highlight_alpha * 255.0) as u8),
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            angle: angle as f32,
-            distance: distance as f32,
-            strength: strength.clamp(0.0, 255.0) as f32,
-            bevel_type: if &bevel_type == b"inner" {
-                BitmapFilterType::Inner
-            } else if &bevel_type == b"outer" {
-                BitmapFilterType::Outer
-            } else {
-                BitmapFilterType::Full
-            },
-            knockout,
-            quality: quality.clamp(1, 15) as u8,
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            angle: Fixed16::from_f64(angle.to_radians()),
+            distance: Fixed16::from_f64(distance),
+            strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
+            flags,
         }))
     }
 
@@ -165,23 +168,25 @@ impl FilterAvm2Ext for BevelFilter {
         activation.avm2().classes().bevelfilter.construct(
             activation,
             &[
-                self.distance.into(),
-                self.angle.into(),
+                self.distance.to_f64().into(),
+                self.angle.to_f64().to_degrees().into(),
                 self.highlight_color.to_rgb().into(),
                 (f64::from(self.highlight_color.a) / 255.0).into(),
                 self.shadow_color.to_rgb().into(),
                 (f64::from(self.shadow_color.a) / 255.0).into(),
-                self.blur_x.into(),
-                self.blur_y.into(),
-                self.strength.into(),
-                self.quality.into(),
-                match self.bevel_type {
-                    BitmapFilterType::Inner => "inner",
-                    BitmapFilterType::Outer => "outer",
-                    BitmapFilterType::Full => "full",
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.strength.to_f64().into(),
+                self.num_passes().into(),
+                if self.is_on_top() {
+                    "full"
+                } else if self.is_inner() {
+                    "inner"
+                } else {
+                    "outer"
                 }
                 .into(),
-                self.knockout.into(),
+                self.is_knockout().into(),
             ],
         )
     }
@@ -202,9 +207,9 @@ impl FilterAvm2Ext for BlurFilter {
             .get_public_property("quality", activation)?
             .coerce_to_u32(activation)?;
         Ok(Filter::BlurFilter(BlurFilter {
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            quality: quality.clamp(1, 15) as u8,
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            flags: BlurFilterFlags::from_passes(quality.clamp(1, 15) as u8),
         }))
     }
 
@@ -214,7 +219,11 @@ impl FilterAvm2Ext for BlurFilter {
     ) -> Result<Object<'gc>, Error<'gc>> {
         activation.avm2().classes().blurfilter.construct(
             activation,
-            &[self.blur_x.into(), self.blur_y.into(), self.quality.into()],
+            &[
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.num_passes().into(),
+            ],
         )
     }
 }
@@ -269,11 +278,11 @@ impl FilterAvm2Ext for ConvolutionFilter {
         {
             if let Some(array) = matrix_object.as_array_storage() {
                 for value in array.iter() {
-                    matrix.push(
+                    matrix.push(Fixed16::from_f64(
                         value
                             .unwrap_or(Value::Undefined)
-                            .coerce_to_number(activation)? as f32,
-                    );
+                            .coerce_to_number(activation)?,
+                    ));
                 }
             }
         }
@@ -301,16 +310,22 @@ impl FilterAvm2Ext for ConvolutionFilter {
         let preserve_alpha = object
             .get_public_property("preserveAlpha", activation)?
             .coerce_to_boolean();
-        matrix.resize((matrix_x * matrix_y) as usize, 0.0);
+        let mut flags = ConvolutionFilterFlags::empty();
+        if clamp {
+            flags |= ConvolutionFilterFlags::CLAMP
+        };
+        if preserve_alpha {
+            flags |= ConvolutionFilterFlags::PRESERVE_ALPHA
+        };
+        matrix.resize((matrix_x * matrix_y) as usize, Fixed16::ZERO);
         Ok(Filter::ConvolutionFilter(ConvolutionFilter {
-            bias: bias as f32,
-            clamp,
+            bias: Fixed16::from_f64(bias),
             default_color: Color::from_rgb(color, (alpha * 255.0) as u8),
-            divisor: divisor as f32,
+            divisor: Fixed16::from_f64(divisor),
             matrix,
-            matrix_x: matrix_x.clamp(0, 255) as u8,
-            matrix_y: matrix_y.clamp(0, 255) as u8,
-            preserve_alpha,
+            num_matrix_cols: matrix_x.clamp(0, 255) as u8,
+            num_matrix_rows: matrix_y.clamp(0, 255) as u8,
+            flags,
         }))
     }
 
@@ -320,18 +335,21 @@ impl FilterAvm2Ext for ConvolutionFilter {
     ) -> Result<Object<'gc>, Error<'gc>> {
         let matrix = ArrayObject::from_storage(
             activation,
-            self.matrix.iter().map(|v| Value::from(*v)).collect(),
+            self.matrix
+                .iter()
+                .map(|v| Value::from(v.to_f64()))
+                .collect(),
         )?;
         activation.avm2().classes().convolutionfilter.construct(
             activation,
             &[
-                self.matrix_x.into(),
-                self.matrix_y.into(),
+                self.num_matrix_cols.into(),
+                self.num_matrix_rows.into(),
                 matrix.into(),
-                self.divisor.into(),
-                self.bias.into(),
-                self.preserve_alpha.into(),
-                self.clamp.into(),
+                self.divisor.to_f64().into(),
+                self.bias.to_f64().into(),
+                self.is_preserve_alpha().into(),
+                self.is_clamped().into(),
                 self.default_color.to_rgb().into(),
                 (f64::from(self.default_color.a) / 255.0).into(),
             ],
@@ -493,17 +511,25 @@ impl FilterAvm2Ext for DropShadowFilter {
         let strength = object
             .get_public_property("strength", activation)?
             .coerce_to_number(activation)?;
+        let mut flags = DropShadowFilterFlags::empty();
+        if !hide_object {
+            flags |= DropShadowFilterFlags::COMPOSITE_SOURCE
+        };
+        if inner {
+            flags |= DropShadowFilterFlags::INNER_SHADOW
+        };
+        if knockout {
+            flags |= DropShadowFilterFlags::KNOCKOUT
+        };
+        flags |= DropShadowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
         Ok(Filter::DropShadowFilter(DropShadowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
-            angle: angle as f32,
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            distance: distance as f32,
-            hide_object,
-            inner,
-            knockout,
-            strength: strength.clamp(0.0, 255.0) as f32,
-            quality: quality.clamp(1, 15) as u8,
+            angle: Fixed16::from_f64(angle.to_radians()),
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            distance: Fixed16::from_f64(distance),
+            strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
+            flags,
         }))
     }
 
@@ -514,17 +540,17 @@ impl FilterAvm2Ext for DropShadowFilter {
         activation.avm2().classes().dropshadowfilter.construct(
             activation,
             &[
-                self.distance.into(),
-                self.angle.into(),
+                self.distance.to_f64().into(),
+                self.angle.to_f64().to_degrees().into(),
                 self.color.to_rgb().into(),
                 (f64::from(self.color.a) / 255.0).into(),
-                self.blur_x.into(),
-                self.blur_y.into(),
-                self.strength.into(),
-                self.quality.into(),
-                self.inner.into(),
-                self.knockout.into(),
-                self.hide_object.into(),
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.strength.to_f64().into(),
+                self.num_passes().into(),
+                self.is_inner().into(),
+                self.is_knockout().into(),
+                self.hide_object().into(),
             ],
         )
     }
@@ -559,14 +585,20 @@ impl FilterAvm2Ext for GlowFilter {
         let strength = object
             .get_public_property("strength", activation)?
             .coerce_to_number(activation)?;
+        let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;
+        if inner {
+            flags |= GlowFilterFlags::INNER_GLOW
+        };
+        if knockout {
+            flags |= GlowFilterFlags::KNOCKOUT
+        };
+        flags |= GlowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
         Ok(Filter::GlowFilter(GlowFilter {
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            inner,
-            knockout,
-            strength: strength.clamp(0.0, 255.0) as f32,
-            quality: quality.clamp(1, 15) as u8,
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
+            flags,
         }))
     }
 
@@ -579,12 +611,12 @@ impl FilterAvm2Ext for GlowFilter {
             &[
                 self.color.to_rgb().into(),
                 (f64::from(self.color.a) / 255.0).into(),
-                self.blur_x.into(),
-                self.blur_y.into(),
-                self.strength.into(),
-                self.quality.into(),
-                self.inner.into(),
-                self.knockout.into(),
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.strength.to_f64().into(),
+                self.num_passes().into(),
+                self.is_inner().into(),
+                self.is_knockout().into(),
             ],
         )
     }
@@ -620,22 +652,24 @@ impl FilterAvm2Ext for GradientBevelFilter {
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
         let colors = get_gradient_colors(activation, object)?;
+        let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
+        if knockout {
+            flags |= GradientFilterFlags::KNOCKOUT;
+        }
+        if &bevel_type == b"inner" {
+            flags |= GradientFilterFlags::INNER_SHADOW;
+        } else if &bevel_type != b"outer" {
+            flags |= GradientFilterFlags::ON_TOP;
+        }
+        flags |= GradientFilterFlags::from_passes(quality.clamp(1, 15) as u8);
         Ok(Filter::GradientBevelFilter(GradientBevelFilter {
             colors,
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            angle: angle as f32,
-            distance: distance as f32,
-            strength: strength.clamp(0.0, 255.0) as f32,
-            bevel_type: if &bevel_type == b"inner" {
-                BitmapFilterType::Inner
-            } else if &bevel_type == b"outer" {
-                BitmapFilterType::Outer
-            } else {
-                BitmapFilterType::Full
-            },
-            knockout,
-            quality: quality.clamp(1, 15) as u8,
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            angle: Fixed16::from_f64(angle.to_radians()),
+            distance: Fixed16::from_f64(distance),
+            strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
+            flags,
         }))
     }
 
@@ -664,22 +698,24 @@ impl FilterAvm2Ext for GradientBevelFilter {
         activation.avm2().classes().gradientbevelfilter.construct(
             activation,
             &[
-                self.distance.into(),
-                self.angle.into(),
+                self.distance.to_f64().into(),
+                self.angle.to_f64().to_degrees().into(),
                 colors.into(),
                 alphas.into(),
                 ratios.into(),
-                self.blur_x.into(),
-                self.blur_y.into(),
-                self.strength.into(),
-                self.quality.into(),
-                match self.bevel_type {
-                    BitmapFilterType::Inner => "inner",
-                    BitmapFilterType::Outer => "outer",
-                    BitmapFilterType::Full => "full",
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.strength.to_f64().into(),
+                self.num_passes().into(),
+                if self.is_on_top() {
+                    "full"
+                } else if self.is_inner() {
+                    "inner"
+                } else {
+                    "outer"
                 }
                 .into(),
-                self.knockout.into(),
+                self.is_knockout().into(),
             ],
         )
     }
@@ -715,22 +751,24 @@ impl FilterAvm2Ext for GradientGlowFilter {
             .get_public_property("type", activation)?
             .coerce_to_string(activation)?;
         let colors = get_gradient_colors(activation, object)?;
+        let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
+        if knockout {
+            flags |= GradientFilterFlags::KNOCKOUT;
+        }
+        if &glow_type == b"inner" {
+            flags |= GradientFilterFlags::INNER_SHADOW;
+        } else if &glow_type != b"outer" {
+            flags |= GradientFilterFlags::ON_TOP;
+        }
+        flags |= GradientFilterFlags::from_passes(quality.clamp(1, 15) as u8);
         Ok(Filter::GradientGlowFilter(GradientGlowFilter {
             colors,
-            blur_x: blur_x.max(0.0) as f32,
-            blur_y: blur_y.max(0.0) as f32,
-            angle: angle as f32,
-            distance: distance as f32,
-            strength: strength.clamp(0.0, 255.0) as f32,
-            glow_type: if &glow_type == b"inner" {
-                BitmapFilterType::Inner
-            } else if &glow_type == b"outer" {
-                BitmapFilterType::Outer
-            } else {
-                BitmapFilterType::Full
-            },
-            knockout,
-            quality: quality.clamp(1, 15) as u8,
+            blur_x: Fixed16::from_f64(blur_x.max(0.0)),
+            blur_y: Fixed16::from_f64(blur_y.max(0.0)),
+            angle: Fixed16::from_f64(angle.to_radians()),
+            distance: Fixed16::from_f64(distance),
+            strength: Fixed8::from_f64(strength.clamp(0.0, 255.0)),
+            flags,
         }))
     }
 
@@ -759,22 +797,24 @@ impl FilterAvm2Ext for GradientGlowFilter {
         activation.avm2().classes().gradientglowfilter.construct(
             activation,
             &[
-                self.distance.into(),
-                self.angle.into(),
+                self.distance.to_f64().into(),
+                self.angle.to_f64().to_degrees().into(),
                 colors.into(),
                 alphas.into(),
                 ratios.into(),
-                self.blur_x.into(),
-                self.blur_y.into(),
-                self.strength.into(),
-                self.quality.into(),
-                match self.glow_type {
-                    BitmapFilterType::Inner => "inner",
-                    BitmapFilterType::Outer => "outer",
-                    BitmapFilterType::Full => "full",
+                self.blur_x.to_f64().into(),
+                self.blur_y.to_f64().into(),
+                self.strength.to_f64().into(),
+                self.num_passes().into(),
+                if self.is_on_top() {
+                    "full"
+                } else if self.is_inner() {
+                    "inner"
+                } else {
+                    "outer"
                 }
                 .into(),
-                self.knockout.into(),
+                self.is_knockout().into(),
             ],
         )
     }
