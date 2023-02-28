@@ -6,16 +6,34 @@ pub struct UrlRewriteRule {
     pub replacement: String,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct CompatibilityRules {
     swf_url_rewrite_rules: Vec<UrlRewriteRule>,
 }
 
-impl CompatibilityRules {
-    pub fn empty() -> Self {
-        Self::default()
+impl Default for CompatibilityRules {
+    #[cfg(feature = "default_compatibility_rules")]
+    fn default() -> Self {
+        Self::builtin_rules()
     }
 
+    #[cfg(not(feature = "default_compatibility_rules"))]
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl CompatibilityRules {
+    pub fn empty() -> Self {
+        Self {
+            swf_url_rewrite_rules: vec![],
+        }
+    }
+
+    /// Default rules for general SWF compatibility.
+    /// Rules that are added here must, to the best of our ability:
+    /// - Only affect content that cannot run anymore, such as requiring lost assets
+    /// - Not allow people to easily pirate or cheat games more than they can already
     pub fn builtin_rules() -> Self {
         Self {
             swf_url_rewrite_rules: vec![UrlRewriteRule {

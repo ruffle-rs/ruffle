@@ -1980,7 +1980,7 @@ impl PlayerBuilder {
             warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
-            compatibility_rules: CompatibilityRules::builtin_rules(),
+            compatibility_rules: CompatibilityRules::default(),
             player_version: None,
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,

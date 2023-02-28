@@ -67,6 +67,7 @@ mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
 known_stubs = ["linkme"]
+default_compatibility_rules = []
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }
