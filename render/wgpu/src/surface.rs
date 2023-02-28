@@ -13,9 +13,10 @@ use crate::{
     Transforms, UniformBuffer, DEFAULT_COLOR_ADJUSTMENTS,
 };
 use ruffle_render::commands::CommandList;
-use ruffle_render::filters::{BlurFilter, ColorMatrixFilter, Filter};
+use ruffle_render::filters::Filter;
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
+use swf::{BlurFilter, ColorMatrixFilter};
 use target::CommandTarget;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
@@ -639,8 +640,8 @@ impl Surface {
                 });
         let source_view = source_texture.texture.create_view(&Default::default());
         for i in 0..2 {
-            let blur_x = (filter.blur_x - 1.0).max(0.0);
-            let blur_y = (filter.blur_y - 1.0).max(0.0);
+            let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
+            let blur_y = (filter.blur_y.to_f32() - 1.0).max(0.0);
             let current = &targets[i % 2];
             let (previous_view, previous_transform, previous_width, previous_height) = if i == 0 {
                 (

@@ -2110,7 +2110,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_gradient_filter(&mut self) -> Result<GradientFilter> {
+    fn read_gradient_bevel_filter(&mut self) -> Result<GradientBevelFilter> {
         let num_colors = self.read_u8()?;
         let mut colors = Vec::with_capacity(num_colors as usize);
         for _ in 0..num_colors {
@@ -2123,7 +2123,31 @@ impl<'a> Reader<'a> {
                 ratio: self.read_u8()?,
             });
         }
-        Ok(GradientFilter {
+        Ok(GradientBevelFilter {
+            colors: gradient_records,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: GradientFilterFlags::from_bits_truncate(self.read_u8()?),
+        })
+    }
+
+    fn read_gradient_glow_filter(&mut self) -> Result<GradientGlowFilter> {
+        let num_colors = self.read_u8()?;
+        let mut colors = Vec::with_capacity(num_colors as usize);
+        for _ in 0..num_colors {
+            colors.push(self.read_rgba()?);
+        }
+        let mut gradient_records = Vec::with_capacity(num_colors as usize);
+        for color in colors {
+            gradient_records.push(GradientRecord {
+                color,
+                ratio: self.read_u8()?,
+            });
+        }
+        Ok(GradientGlowFilter {
             colors: gradient_records,
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
@@ -2169,10 +2193,10 @@ impl<'a> Reader<'a> {
             1 => Filter::BlurFilter(Box::new(self.read_blur_filter()?)),
             2 => Filter::GlowFilter(Box::new(self.read_glow_filter()?)),
             3 => Filter::BevelFilter(Box::new(self.read_bevel_filter()?)),
-            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_filter()?)),
+            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_glow_filter()?)),
             5 => Filter::ConvolutionFilter(Box::new(self.read_convolution_filter()?)),
             6 => Filter::ColorMatrixFilter(Box::new(self.read_color_matrix_filter()?)),
-            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_filter()?)),
+            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_bevel_filter()?)),
             _ => return Err(Error::invalid_data("Invalid filter type")),
         };
         Ok(filter)
