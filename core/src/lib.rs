@@ -44,6 +44,7 @@ mod vminterface;
 mod xml;
 
 pub mod backend;
+pub mod compatibility_rules;
 pub mod config;
 pub mod external;
 pub mod stub;
