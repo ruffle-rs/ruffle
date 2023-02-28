@@ -437,9 +437,6 @@ pub struct RenderContext<'a, 'gc> {
     /// that must occur during rendering.
     pub gc_context: MutationContext<'gc, 'a>,
 
-    /// The UI backend, used to detect user interactions.
-    pub ui: &'a mut dyn UiBackend,
-
     /// The library, which provides access to fonts and other definitions when rendering.
     pub library: &'a Library<'gc>,
 
@@ -451,9 +448,6 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
-
-    /// The stack of clip depths, used in masking.
-    pub clip_depth_stack: Vec<Depth>,
 
     /// Whether to allow pushing a new mask. A masker-inside-a-masker does not work in Flash, instead
     /// causing the inner mask to be included as part of the outer mask. Maskee-inside-a-maskee works as one expects.
