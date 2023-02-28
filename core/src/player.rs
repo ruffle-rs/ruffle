@@ -17,6 +17,7 @@ use crate::backend::{
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
 };
+use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
@@ -296,6 +297,9 @@ pub struct Player {
     /// The root SWF URL provided to ActionScript. If None,
     /// the actual loaded url will be used
     spoofed_url: Option<String>,
+
+    /// Any compatibility rules to apply for this movie.
+    compatibility_rules: CompatibilityRules,
 }
 
 impl Player {
@@ -1886,6 +1890,10 @@ impl Player {
         self.spoofed_url.as_deref()
     }
 
+    pub fn compatibility_rules(&self) -> &CompatibilityRules {
+        &self.compatibility_rules
+    }
+
     pub fn log_backend(&self) -> &Log {
         &self.log
     }
@@ -1931,6 +1939,7 @@ pub struct PlayerBuilder {
     warn_on_unsupported_content: bool,
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
+    compatibility_rules: CompatibilityRules,
     player_version: Option<u8>,
     quality: StageQuality,
     sandbox_type: SandboxType,
@@ -1971,6 +1980,7 @@ impl PlayerBuilder {
             warn_on_unsupported_content: true,
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
+            compatibility_rules: CompatibilityRules::builtin_rules(),
             player_version: None,
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
@@ -2198,6 +2208,7 @@ impl PlayerBuilder {
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
+                compatibility_rules: self.compatibility_rules.clone(),
                 stub_tracker: StubCollection::new(),
 
                 // GC data
