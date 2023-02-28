@@ -974,11 +974,10 @@ fn main() {
     } else {
         App::new(opt).map(|app| app.run())
     };
-    let mut code = 0;
     if let Err(ref error) = result { 
-        eprintln!("{:?}", error);
-        code = 1;
+        eprintln!("\n\n{:?}", error);
+        shutdown();
+        std::process::exit(1);
     }
     shutdown();
-    std::process::exit(code);
 }
