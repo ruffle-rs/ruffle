@@ -1479,8 +1479,6 @@ impl Player {
             });
         }
 
-        let (renderer, ui, transform_stack) =
-            (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
         let mut background_color = Color::WHITE;
 
         let commands = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
@@ -1488,15 +1486,13 @@ impl Player {
             let stage = root_data.stage;
 
             let mut render_context = RenderContext {
-                renderer: renderer.deref_mut(),
+                renderer: self.renderer.deref_mut(),
                 commands: CommandList::new(),
                 gc_context,
-                ui: ui.deref_mut(),
                 library: &root_data.library,
-                transform_stack,
+                transform_stack: &mut self.transform_stack,
                 is_offscreen: false,
                 stage,
-                clip_depth_stack: vec![],
                 allow_mask: true,
             };
 
@@ -1512,7 +1508,7 @@ impl Player {
             render_context.commands
         });
 
-        renderer.submit_frame(background_color, commands);
+        self.renderer.submit_frame(background_color, commands);
 
         self.needs_render = false;
     }

@@ -1365,12 +1365,10 @@ impl<'gc> BitmapData<'gc> {
             renderer: context.renderer,
             commands: CommandList::new(),
             gc_context: context.gc_context,
-            ui: context.ui,
             library: context.library,
             transform_stack: &mut transform_stack,
             is_offscreen: true,
             stage: context.stage,
-            clip_depth_stack: vec![],
             allow_mask: true,
         };
 
