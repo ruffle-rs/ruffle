@@ -155,9 +155,7 @@ fn avm2_to_bevel_filter<'gc>(
     } else if &bevel_type != b"outer" {
         flags |= BevelFilterFlags::ON_TOP;
     }
-    if knockout {
-        flags |= BevelFilterFlags::KNOCKOUT;
-    }
+    flags.set(BevelFilterFlags::KNOCKOUT, knockout);
     flags |= BevelFilterFlags::from_passes(quality.clamp(1, 15) as u8);
     Ok(Filter::BevelFilter(BevelFilter {
         shadow_color: Color::from_rgb(shadow_color, (shadow_alpha * 255.0) as u8),
@@ -315,12 +313,10 @@ fn avm2_to_convolution_filter<'gc>(
         .get_public_property("preserveAlpha", activation)?
         .coerce_to_boolean();
     let mut flags = ConvolutionFilterFlags::empty();
-    if clamp {
-        flags |= ConvolutionFilterFlags::CLAMP
-    };
+    flags.set(ConvolutionFilterFlags::CLAMP, clamp);
     if preserve_alpha {
-        flags |= ConvolutionFilterFlags::PRESERVE_ALPHA
-    };
+        flags |= ConvolutionFilterFlags::PRESERVE_ALPHA;
+    }
     matrix.resize((matrix_x * matrix_y) as usize, Fixed16::ZERO);
     Ok(Filter::ConvolutionFilter(ConvolutionFilter {
         bias: Fixed16::from_f64(bias),
@@ -515,14 +511,10 @@ fn avm2_to_drop_shadow_filter<'gc>(
         .coerce_to_number(activation)?;
     let mut flags = DropShadowFilterFlags::empty();
     if !hide_object {
-        flags |= DropShadowFilterFlags::COMPOSITE_SOURCE
-    };
-    if inner {
-        flags |= DropShadowFilterFlags::INNER_SHADOW
-    };
-    if knockout {
-        flags |= DropShadowFilterFlags::KNOCKOUT
-    };
+        flags |= DropShadowFilterFlags::COMPOSITE_SOURCE;
+    }
+    flags.set(DropShadowFilterFlags::INNER_SHADOW, inner);
+    flags.set(DropShadowFilterFlags::KNOCKOUT, knockout);
     flags |= DropShadowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
     Ok(Filter::DropShadowFilter(DropShadowFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
@@ -586,12 +578,8 @@ fn avm2_to_glow_filter<'gc>(
         .get_public_property("strength", activation)?
         .coerce_to_number(activation)?;
     let mut flags = GlowFilterFlags::COMPOSITE_SOURCE;
-    if inner {
-        flags |= GlowFilterFlags::INNER_GLOW
-    };
-    if knockout {
-        flags |= GlowFilterFlags::KNOCKOUT
-    };
+    flags.set(GlowFilterFlags::INNER_GLOW, inner);
+    flags.set(GlowFilterFlags::KNOCKOUT, knockout);
     flags |= GlowFilterFlags::from_passes(quality.clamp(1, 15) as u8);
     Ok(Filter::GlowFilter(GlowFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
@@ -651,9 +639,7 @@ fn avm2_to_gradient_filter<'gc>(
         .coerce_to_string(activation)?;
     let colors = get_gradient_colors(activation, object)?;
     let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
-    if knockout {
-        flags |= GradientFilterFlags::KNOCKOUT;
-    }
+    flags.set(GradientFilterFlags::KNOCKOUT, knockout);
     if &bevel_type == b"inner" {
         flags |= GradientFilterFlags::INNER_SHADOW;
     } else if &bevel_type != b"outer" {
