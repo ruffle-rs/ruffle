@@ -1014,7 +1014,7 @@ fn main() {
     } else {
         App::new(opt).map(|app| app.run())
     };
-    if let Err(ref error) = result { 
+    if let Err(ref error) = result {
         eprintln!("\n\n{:?}", error);
         shutdown();
         std::process::exit(1);
