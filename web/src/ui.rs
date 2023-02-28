@@ -82,4 +82,8 @@ impl UiBackend for WebUiBackend {
     fn message(&self, message: &str) {
         self.js_player.display_message(message);
     }
+
+    fn open_virtual_keyboard(&self) {
+        self.js_player.open_virtual_keyboard()
+    }
 }

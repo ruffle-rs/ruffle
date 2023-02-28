@@ -853,9 +853,13 @@ export class RufflePlayer extends HTMLElement {
         }
         input.value = initialValue;
     }
-    private openVirtualKeyboard(): void {
-        this.virtualKeyboard.setSelectionRange(-1, -1);
-        this.virtualKeyboard.focus({ preventScroll: true });
+    protected openVirtualKeyboard(): void {
+        // The Rust code that opens the virtual keyboard triggers before
+        // the TypeScript code that closes it, so slightly delay opening it
+        setTimeout(() => {
+            this.virtualKeyboard.setSelectionRange(-1, -1);
+            this.virtualKeyboard.focus({ preventScroll: true });
+        }, 100);
     }
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
@@ -919,13 +923,6 @@ export class RufflePlayer extends HTMLElement {
             });
         }
 
-        if (this.isTouch) {
-            items.push(null);
-            items.push({
-                text: "Show keyboard",
-                onClick: () => this.openVirtualKeyboard(),
-            });
-        }
         items.push(null);
 
         const extensionString = this.isExtension ? "extension" : "";

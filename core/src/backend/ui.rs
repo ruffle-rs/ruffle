@@ -28,6 +28,9 @@ pub trait UiBackend {
 
     // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
+
+    // Only used on web.
+    fn open_virtual_keyboard(&self);
 }
 
 /// A mouse cursor icon displayed by the Flash Player.
@@ -148,6 +151,8 @@ impl UiBackend for NullUiBackend {
     fn display_root_movie_download_failed_message(&self) {}
 
     fn message(&self, _message: &str) {}
+
+    fn open_virtual_keyboard(&self) {}
 }
 
 impl Default for NullUiBackend {

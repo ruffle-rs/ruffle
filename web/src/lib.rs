@@ -112,6 +112,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "setMetadata")]
     fn set_metadata(this: &JavascriptPlayer, metadata: JsValue);
+
+    #[wasm_bindgen(method, js_name = "openVirtualKeyboard")]
+    fn open_virtual_keyboard(this: &JavascriptPlayer);
 }
 
 struct JavascriptInterface {

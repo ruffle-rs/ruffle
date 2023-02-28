@@ -94,4 +94,7 @@ impl UiBackend for DesktopUiBackend {
             .set_buttons(MessageButtons::Ok);
         dialog.show();
     }
+
+    // Unused on desktop
+    fn open_virtual_keyboard(&self) {}
 }

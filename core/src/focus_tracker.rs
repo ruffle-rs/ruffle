@@ -22,6 +22,11 @@ impl<'gc> FocusTracker<'gc> {
         focused_element: Option<DisplayObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
+        if let Some(text_field) = focused_element.and_then(|e| e.as_edit_text()) {
+            if text_field.is_editable() {
+                context.ui.open_virtual_keyboard();
+            }
+        }
         let old = std::mem::replace(&mut *self.0.write(context.gc_context), focused_element);
 
         if old.is_none() && focused_element.is_none() {
