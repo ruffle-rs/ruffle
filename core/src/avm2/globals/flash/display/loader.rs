@@ -9,7 +9,7 @@ use crate::avm2::{Error, Object};
 use crate::backend::navigator::Request;
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
-use crate::loader::MovieLoaderEventHandler;
+use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
 
@@ -90,7 +90,10 @@ pub fn load<'gc>(
             Request::get(url.to_string()),
             Some(url.to_string()),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            context,
+            Some(Avm2LoaderData {
+                context,
+                default_domain: activation.caller_domain(),
+            }),
         );
         activation.context.navigator.spawn_future(future);
     }
@@ -125,13 +128,15 @@ pub fn load_bytes<'gc>(
             )?
             .as_object()
             .unwrap();
-
         let future = activation.context.load_manager.load_movie_into_clip_bytes(
             activation.context.player.clone(),
             content.into(),
             bytearray.bytes().to_vec(),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
-            context,
+            Some(Avm2LoaderData {
+                context,
+                default_domain: activation.caller_domain(),
+            }),
         );
         activation.context.navigator.spawn_future(future);
     }

@@ -255,7 +255,7 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         loader_url: Option<String>,
         event_handler: Option<MovieLoaderEventHandler<'gc>>,
-        context: Option<Avm2Object<'gc>>,
+        avm2_data: Option<Avm2LoaderData<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
@@ -263,7 +263,7 @@ impl<'gc> LoadManager<'gc> {
             event_handler,
             loader_status: LoaderStatus::Pending,
             movie: None,
-            context,
+            avm2_data,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -279,7 +279,7 @@ impl<'gc> LoadManager<'gc> {
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
         event_handler: Option<MovieLoaderEventHandler<'gc>>,
-        context: Option<Avm2Object<'gc>>,
+        avm2_data: Option<Avm2LoaderData<'gc>>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::Movie {
             self_handle: None,
@@ -287,7 +287,7 @@ impl<'gc> LoadManager<'gc> {
             event_handler,
             loader_status: LoaderStatus::Pending,
             movie: None,
-            context,
+            avm2_data,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
@@ -456,6 +456,16 @@ pub enum MovieLoaderEventHandler<'gc> {
     Avm2LoaderInfo(Avm2Object<'gc>),
 }
 
+#[derive(Collect, Clone, Copy)]
+#[collect(no_drop)]
+pub struct Avm2LoaderData<'gc> {
+    /// The context of the SWF being loaded.
+    pub context: Option<Avm2Object<'gc>>,
+
+    /// The default domain this SWF will use.
+    pub default_domain: Avm2Domain<'gc>,
+}
+
 /// A struct that holds garbage-collected pointers for asynchronous code.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -497,8 +507,8 @@ pub enum Loader<'gc> {
         /// until loading completes.
         movie: Option<Arc<SwfMovie>>,
 
-        /// The context of the SWF being loaded. (AVM2 only)
-        context: Option<Avm2Object<'gc>>,
+        /// AVM2 specific data for this SWF.
+        avm2_data: Option<Avm2LoaderData<'gc>>,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -1332,13 +1342,13 @@ impl<'gc> Loader<'gc> {
             }
         }
         player.lock().unwrap().update(|uc| {
-            let (clip, event_handler, context) = match uc.load_manager.get_loader(handle) {
+            let (clip, event_handler, avm2_data) = match uc.load_manager.get_loader(handle) {
                 Some(Loader::Movie {
                     target_clip,
                     event_handler,
-                    context,
+                    avm2_data,
                     ..
-                }) => (*target_clip, *event_handler, *context),
+                }) => (*target_clip, *event_handler, *avm2_data),
                 None => return Err(Error::Cancelled),
                 _ => unreachable!(),
             };
@@ -1383,22 +1393,31 @@ impl<'gc> Loader<'gc> {
                     }
 
                     let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                    let domain = context
-                        .and_then(|o| {
-                            o.get_public_property("applicationDomain", &mut activation)
-                                .ok()
-                        })
-                        .and_then(|v| v.coerce_to_object(&mut activation).ok())
-                        .and_then(|o| o.as_application_domain())
-                        .unwrap_or_else(|| {
-                            let parent_domain = activation.avm2().global_domain();
-                            Avm2Domain::movie_domain(&mut activation, parent_domain)
-                        });
-                    activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie.clone())
-                        .set_avm2_domain(domain);
+                    if let Some(avm2_data) = avm2_data {
+                        let domain = avm2_data
+                            .context
+                            .and_then(|o| {
+                                o.get_public_property("applicationDomain", &mut activation)
+                                    .ok()
+                            })
+                            .and_then(|v| v.coerce_to_object(&mut activation).ok())
+                            .and_then(|o| o.as_application_domain())
+                            .unwrap_or_else(|| {
+                                let parent_domain = avm2_data.default_domain;
+                                Avm2Domain::movie_domain(&mut activation, parent_domain)
+                            });
+
+                        activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone())
+                            .set_avm2_domain(domain);
+                    } else {
+                        activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone());
+                    }
 
                     if let Some(mut mc) = clip.as_movie_clip() {
                         let loader_info =
