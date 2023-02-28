@@ -1,14 +1,28 @@
-use regress::Regex;
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub struct UrlRewriteRule {
-    pub pattern: Regex,
+    pub host: String,
     pub replacement: String,
+}
+
+impl UrlRewriteRule {
+    pub fn new(host: impl ToString, replacement: impl ToString) -> Self {
+        Self {
+            host: host.to_string(),
+            replacement: replacement.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RuleSet {
+    swf_domain_rewrite_rules: Vec<UrlRewriteRule>,
 }
 
 #[derive(Debug, Clone)]
 pub struct CompatibilityRules {
-    swf_url_rewrite_rules: Vec<UrlRewriteRule>,
+    rule_sets: Vec<RuleSet>,
 }
 
 impl Default for CompatibilityRules {
@@ -25,9 +39,7 @@ impl Default for CompatibilityRules {
 
 impl CompatibilityRules {
     pub fn empty() -> Self {
-        Self {
-            swf_url_rewrite_rules: vec![],
-        }
+        Self { rule_sets: vec![] }
     }
 
     /// Default rules for general SWF compatibility.
@@ -35,26 +47,98 @@ impl CompatibilityRules {
     /// - Only affect content that cannot run anymore, such as requiring lost assets
     /// - Not allow people to easily pirate or cheat games more than they can already
     pub fn builtin_rules() -> Self {
+        let kongregate_sitelock = RuleSet {
+            swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
+                "*.konggames.com",
+                "kongregate.com",
+            )],
+        };
+
         Self {
-            swf_url_rewrite_rules: vec![UrlRewriteRule {
-                pattern: Regex::new(r"//game(\d+).konggames.com").expect("Regex must compile"),
-                replacement: "//kongregate.com".to_string(),
-            }],
+            rule_sets: vec![kongregate_sitelock],
         }
     }
 
     pub fn rewrite_swf_url(&self, original_url: String) -> String {
-        let mut url = original_url.clone();
-        for rule in &self.swf_url_rewrite_rules {
-            if let Some(found) = rule.pattern.find(&url) {
-                url.replace_range(found.range, &rule.replacement);
+        let mut url = match Url::parse(&original_url) {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::warn!("Couldn't rewrite swf url {original_url}: {e}");
+                return original_url;
+            }
+        };
+        let mut original_url = None;
+
+        for rule_set in &self.rule_sets {
+            for rule in &rule_set.swf_domain_rewrite_rules {
+                if let Some(host) = url.host_str() {
+                    if domain_matches(&rule.host, host) {
+                        if original_url.is_none() {
+                            original_url = Some(url.clone());
+                        }
+                        if let Err(e) = url.set_host(Some(&rule.replacement)) {
+                            tracing::warn!(
+                                "Couldn't rewrite swf host to {}: {e}",
+                                rule.replacement
+                            );
+                        }
+                    }
+                }
             }
         }
 
-        if original_url != url {
+        if let Some(original_url) = original_url {
             tracing::info!("Rewritten SWF url from {original_url} to {url}");
         }
 
-        url
+        url.to_string()
+    }
+}
+
+/// Tests that two domains match.
+///
+/// Expected string may start with `*.` to allow for any further subdomains.
+pub fn domain_matches(expected: &str, actual: &str) -> bool {
+    let mut expected_parts = expected.rsplit('.').peekable();
+    let mut actual_parts = actual.rsplit('.');
+    let mut allow_subdomains = false;
+
+    while let Some(test) = expected_parts.next() {
+        if test == "*" && expected_parts.peek().is_none() {
+            allow_subdomains = true;
+            continue;
+        }
+
+        match actual_parts.next() {
+            Some(actual) => {
+                if !test.eq_ignore_ascii_case(actual) {
+                    return false;
+                }
+            }
+            None => return false,
+        }
+    }
+
+    allow_subdomains || actual_parts.next().is_none()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::compatibility_rules::domain_matches;
+
+    #[test]
+    fn test_domain_matches() {
+        assert_eq!(true, domain_matches("foo.example.com", "foo.example.com"));
+        assert_eq!(true, domain_matches("*.example.com", "foo.example.com"));
+        assert_eq!(true, domain_matches("*.com", "foo.example.com"));
+        assert_eq!(true, domain_matches("*", "foo.example.com"));
+        assert_eq!(false, domain_matches("", "foo.example.com"));
+        assert_eq!(false, domain_matches("com", "foo.example.com"));
+        assert_eq!(false, domain_matches("example.com", "foo.example.com"));
+        assert_eq!(false, domain_matches("bar.example.com", "foo.example.com"));
+        assert_eq!(
+            false,
+            domain_matches("bar.foo.example.com", "foo.example.com")
+        );
     }
 }
