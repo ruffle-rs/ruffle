@@ -32,7 +32,7 @@ pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
 pub use fixed::{Fixed16, Fixed8};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
-pub use gradient_filter::{GradientBevelFilter, GradientFilterFlags, GradientGlowFilter};
+pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
 pub use point::Point;
 pub use rectangle::Rectangle;
@@ -366,10 +366,10 @@ pub enum Filter {
     BlurFilter(Box<BlurFilter>),
     GlowFilter(Box<GlowFilter>),
     BevelFilter(Box<BevelFilter>),
-    GradientGlowFilter(Box<GradientGlowFilter>),
+    GradientGlowFilter(Box<GradientFilter>),
     ConvolutionFilter(Box<ConvolutionFilter>),
     ColorMatrixFilter(Box<ColorMatrixFilter>),
-    GradientBevelFilter(Box<GradientBevelFilter>),
+    GradientBevelFilter(Box<GradientFilter>),
 }
 
 #[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum)]

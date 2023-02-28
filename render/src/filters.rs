@@ -10,8 +10,8 @@ pub enum Filter {
     DisplacementMapFilter(DisplacementMapFilter),
     DropShadowFilter(swf::DropShadowFilter),
     GlowFilter(swf::GlowFilter),
-    GradientBevelFilter(swf::GradientBevelFilter),
-    GradientGlowFilter(swf::GradientGlowFilter),
+    GradientBevelFilter(swf::GradientFilter),
+    GradientGlowFilter(swf::GradientFilter),
 }
 
 impl From<&swf::Filter> for Filter {

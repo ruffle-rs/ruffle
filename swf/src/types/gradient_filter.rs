@@ -2,7 +2,7 @@ use crate::{Fixed16, Fixed8, GradientRecord};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GradientBevelFilter {
+pub struct GradientFilter {
     pub colors: Vec<GradientRecord>,
     pub blur_x: Fixed16,
     pub blur_y: Fixed16,
@@ -12,40 +12,7 @@ pub struct GradientBevelFilter {
     pub flags: GradientFilterFlags,
 }
 
-impl GradientBevelFilter {
-    #[inline]
-    pub fn is_inner(&self) -> bool {
-        self.flags.contains(GradientFilterFlags::INNER_SHADOW)
-    }
-
-    #[inline]
-    pub fn is_knockout(&self) -> bool {
-        self.flags.contains(GradientFilterFlags::KNOCKOUT)
-    }
-
-    #[inline]
-    pub fn is_on_top(&self) -> bool {
-        self.flags.contains(GradientFilterFlags::ON_TOP)
-    }
-
-    #[inline]
-    pub fn num_passes(&self) -> u8 {
-        (self.flags & GradientFilterFlags::PASSES).bits()
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GradientGlowFilter {
-    pub colors: Vec<GradientRecord>,
-    pub blur_x: Fixed16,
-    pub blur_y: Fixed16,
-    pub angle: Fixed16,
-    pub distance: Fixed16,
-    pub strength: Fixed8,
-    pub flags: GradientFilterFlags,
-}
-
-impl GradientGlowFilter {
+impl GradientFilter {
     #[inline]
     pub fn is_inner(&self) -> bool {
         self.flags.contains(GradientFilterFlags::INNER_SHADOW)
