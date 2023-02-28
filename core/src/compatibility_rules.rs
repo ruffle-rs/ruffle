@@ -17,6 +17,7 @@ impl UrlRewriteRule {
 
 #[derive(Debug, Clone)]
 pub struct RuleSet {
+    name: String,
     swf_domain_rewrite_rules: Vec<UrlRewriteRule>,
 }
 
@@ -47,7 +48,9 @@ impl CompatibilityRules {
     /// - Only affect content that cannot run anymore, such as requiring lost assets
     /// - Not allow people to easily pirate or cheat games more than they can already
     pub fn builtin_rules() -> Self {
+        // Replaces konggames.com domains with kongregate.com to fool old sitelocks that no longer work.
         let kongregate_sitelock = RuleSet {
+            name: "kongregate_sitelock".to_string(),
             swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
                 "*.konggames.com",
                 "kongregate.com",
@@ -67,15 +70,15 @@ impl CompatibilityRules {
                 return original_url;
             }
         };
-        let mut original_url = None;
 
         for rule_set in &self.rule_sets {
             for rule in &rule_set.swf_domain_rewrite_rules {
                 if let Some(host) = url.host_str() {
                     if domain_matches(&rule.host, host) {
-                        if original_url.is_none() {
-                            original_url = Some(url.clone());
-                        }
+                        tracing::info!(
+                            "Rewriting swf url due to compatibility ruleset '{}'",
+                            rule_set.name
+                        );
                         if let Err(e) = url.set_host(Some(&rule.replacement)) {
                             tracing::warn!(
                                 "Couldn't rewrite swf host to {}: {e}",
@@ -85,10 +88,6 @@ impl CompatibilityRules {
                     }
                 }
             }
-        }
-
-        if let Some(original_url) = original_url {
-            tracing::info!("Rewritten SWF url from {original_url} to {url}");
         }
 
         url.to_string()
