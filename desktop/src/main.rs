@@ -1006,7 +1006,7 @@ fn shutdown() {
     }
 }
 
-fn main() {
+fn main() -> Result<(), anyhow::Error> {
     init();
     let opt = Opt::parse();
     let result = if opt.timedemo {
@@ -1014,10 +1014,11 @@ fn main() {
     } else {
         App::new(opt).map(|app| app.run())
     };
-    if let Err(ref error) = result {
-        eprintln!("\n\n{:?}", error);
-        shutdown();
-        std::process::exit(1);
+    if cfg!(windows) {
+        if let Err(error) = &result {
+            eprintln!("{:?}", error)
+        }
     }
     shutdown();
+    result
 }
