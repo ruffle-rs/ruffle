@@ -17,7 +17,8 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
+    Color, Player, PlayerBuilder, PlayerEvent, SandboxType, StageScaleMode, StaticCallstack,
+    ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -159,6 +160,9 @@ struct Config {
     quality: Option<String>,
 
     scale: Option<String>,
+
+    #[serde(rename = "forceScale")]
+    force_scale: bool,
 
     wmode: Option<String>,
 
@@ -336,8 +340,8 @@ impl Ruffle {
 
             // Clean up all event listeners.
             if let Some(mouse_move_callback) = &instance.mouse_move_callback {
-                let canvas_events: &EventTarget = instance.canvas.as_ref();
-                canvas_events
+                instance
+                    .canvas
                     .remove_event_listener_with_callback(
                         "pointermove",
                         mouse_move_callback.as_ref().unchecked_ref(),
@@ -346,8 +350,8 @@ impl Ruffle {
                 instance.mouse_move_callback = None;
             }
             if let Some(mouse_down_callback) = &instance.mouse_down_callback {
-                let canvas_events: &EventTarget = instance.canvas.as_ref();
-                canvas_events
+                instance
+                    .canvas
                     .remove_event_listener_with_callback(
                         "pointerdown",
                         mouse_down_callback.as_ref().unchecked_ref(),
@@ -356,8 +360,8 @@ impl Ruffle {
                 instance.mouse_down_callback = None;
             }
             if let Some(player_mouse_down_callback) = &instance.player_mouse_down_callback {
-                let js_player_events: &EventTarget = instance.js_player.as_ref();
-                js_player_events
+                instance
+                    .js_player
                     .remove_event_listener_with_callback(
                         "pointerdown",
                         player_mouse_down_callback.as_ref().unchecked_ref(),
@@ -377,8 +381,8 @@ impl Ruffle {
                 instance.window_mouse_down_callback = None;
             }
             if let Some(mouse_up_callback) = &instance.mouse_up_callback {
-                let canvas_events: &EventTarget = instance.canvas.as_ref();
-                canvas_events
+                instance
+                    .canvas
                     .remove_event_listener_with_callback(
                         "pointerup",
                         mouse_up_callback.as_ref().unchecked_ref(),
@@ -387,8 +391,8 @@ impl Ruffle {
                 instance.mouse_up_callback = None;
             }
             if let Some(mouse_wheel_callback) = &instance.mouse_wheel_callback {
-                let canvas_events: &EventTarget = instance.canvas.as_ref();
-                canvas_events
+                instance
+                    .canvas
                     .remove_event_listener_with_callback(
                         "wheel",
                         mouse_wheel_callback.as_ref().unchecked_ref(),
@@ -554,6 +558,13 @@ impl Ruffle {
                     .and_then(|q| StageQuality::from_str(&q).ok())
                     .unwrap_or(default_quality),
             )
+            .with_scale_mode(
+                config
+                    .scale
+                    .and_then(|s| StageScaleMode::from_str(&s).ok())
+                    .unwrap_or(StageScaleMode::ShowAll),
+                config.force_scale,
+            )
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)
             .build();
@@ -566,7 +577,6 @@ impl Ruffle {
             }
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
-            core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
             // Create the external interface.
@@ -614,12 +624,12 @@ impl Ruffle {
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
-            instance.animation_handler = Some(Closure::wrap(Box::new(move |timestamp: f64| {
+            instance.animation_handler = Some(Closure::new(move |timestamp| {
                 ruffle.tick(timestamp);
-            }) as Box<dyn FnMut(f64)>));
+            }));
 
             // Create mouse move handler.
-            let mouse_move_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
+            let mouse_move_callback = Closure::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance(move |instance| {
                     let event = PlayerEvent::MouseMove {
                         x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
@@ -632,20 +642,18 @@ impl Ruffle {
                         js_event.prevent_default();
                     }
                 });
-            }) as Box<dyn FnMut(PointerEvent)>);
+            });
 
-            let canvas_events: &EventTarget = canvas.as_ref();
-            canvas_events
+            canvas
                 .add_event_listener_with_callback(
                     "pointermove",
                     mouse_move_callback.as_ref().unchecked_ref(),
                 )
                 .warn_on_error();
-
             instance.mouse_move_callback = Some(mouse_move_callback);
 
             // Create mouse down handler.
-            let mouse_down_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
+            let mouse_down_callback = Closure::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance(move |instance| {
                     if let Some(target) = js_event.current_target() {
                         let _ = target
@@ -669,10 +677,9 @@ impl Ruffle {
 
                     js_event.prevent_default();
                 });
-            }) as Box<dyn FnMut(PointerEvent)>);
+            });
 
-            let canvas_events: &EventTarget = canvas.as_ref();
-            canvas_events
+            canvas
                 .add_event_listener_with_callback(
                     "pointerdown",
                     mouse_down_callback.as_ref().unchecked_ref(),
@@ -681,18 +688,16 @@ impl Ruffle {
             instance.mouse_down_callback = Some(mouse_down_callback);
 
             // Create player mouse down handler.
-            let player_mouse_down_callback =
-                Closure::wrap(Box::new(move |_js_event: PointerEvent| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        instance.has_focus = true;
-                        // Ensure the parent window gets focus. This is necessary for events
-                        // to be received when the player is inside a frame.
-                        instance.window.focus().warn_on_error();
-                    });
-                }) as Box<dyn FnMut(PointerEvent)>);
+            let player_mouse_down_callback = Closure::new(move |_js_event| {
+                let _ = ruffle.with_instance_mut(|instance| {
+                    instance.has_focus = true;
+                    // Ensure the parent window gets focus. This is necessary for events
+                    // to be received when the player is inside a frame.
+                    instance.window.focus().warn_on_error();
+                });
+            });
 
-            let js_player_events: &EventTarget = js_player.as_ref();
-            js_player_events
+            js_player
                 .add_event_listener_with_callback(
                     "pointerdown",
                     player_mouse_down_callback.as_ref().unchecked_ref(),
@@ -701,14 +706,13 @@ impl Ruffle {
             instance.player_mouse_down_callback = Some(player_mouse_down_callback);
 
             // Create window mouse down handler.
-            let window_mouse_down_callback =
-                Closure::wrap(Box::new(move |_js_event: PointerEvent| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        // If we actually clicked on the player, this will be reset to true
-                        // after the event bubbles down to the player.
-                        instance.has_focus = false;
-                    });
-                }) as Box<dyn FnMut(PointerEvent)>);
+            let window_mouse_down_callback = Closure::new(move |_js_event| {
+                let _ = ruffle.with_instance_mut(|instance| {
+                    // If we actually clicked on the player, this will be reset to true
+                    // after the event bubbles down to the player.
+                    instance.has_focus = false;
+                });
+            });
 
             window
                 .add_event_listener_with_callback_and_bool(
@@ -720,7 +724,7 @@ impl Ruffle {
             instance.window_mouse_down_callback = Some(window_mouse_down_callback);
 
             // Create mouse up handler.
-            let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
+            let mouse_up_callback = Closure::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance(|instance| {
                     if let Some(target) = js_event.current_target() {
                         let _ = target
@@ -745,10 +749,9 @@ impl Ruffle {
                         js_event.prevent_default();
                     }
                 });
-            }) as Box<dyn FnMut(PointerEvent)>);
+            });
 
-            let canvas_events: &EventTarget = canvas.as_ref();
-            canvas_events
+            canvas
                 .add_event_listener_with_callback(
                     "pointerup",
                     mouse_up_callback.as_ref().unchecked_ref(),
@@ -757,7 +760,7 @@ impl Ruffle {
             instance.mouse_up_callback = Some(mouse_up_callback);
 
             // Create mouse wheel handler.
-            let mouse_wheel_callback = Closure::wrap(Box::new(move |js_event: WheelEvent| {
+            let mouse_wheel_callback = Closure::new(move |js_event: WheelEvent| {
                 let _ = ruffle.with_instance(|instance| {
                     let delta = match js_event.delta_mode() {
                         WheelEvent::DOM_DELTA_LINE => MouseWheelDelta::Lines(-js_event.delta_y()),
@@ -771,22 +774,19 @@ impl Ruffle {
                         }
                     });
                 });
-            }) as Box<dyn FnMut(WheelEvent)>);
+            });
 
-            let canvas_events: &EventTarget = canvas.as_ref();
-            let mut options = AddEventListenerOptions::new();
-            options.passive(false);
-            canvas_events
+            canvas
                 .add_event_listener_with_callback_and_add_event_listener_options(
                     "wheel",
                     mouse_wheel_callback.as_ref().unchecked_ref(),
-                    &options,
+                    AddEventListenerOptions::new().passive(false),
                 )
                 .warn_on_error();
             instance.mouse_wheel_callback = Some(mouse_wheel_callback);
 
             // Create keydown event handler.
-            let key_down_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+            let key_down_callback = Closure::new(move |js_event: KeyboardEvent| {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
@@ -802,7 +802,7 @@ impl Ruffle {
                         js_event.prevent_default();
                     }
                 });
-            }) as Box<dyn FnMut(KeyboardEvent)>);
+            });
 
             window
                 .add_event_listener_with_callback(
@@ -813,7 +813,7 @@ impl Ruffle {
             instance.key_down_callback = Some(key_down_callback);
 
             // Create keyup event handler.
-            let key_up_callback = Closure::wrap(Box::new(move |js_event: KeyboardEvent| {
+            let key_up_callback = Closure::new(move |js_event: KeyboardEvent| {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
@@ -824,18 +824,18 @@ impl Ruffle {
                         js_event.prevent_default();
                     }
                 });
-            }) as Box<dyn FnMut(KeyboardEvent)>);
+            });
 
             window
                 .add_event_listener_with_callback("keyup", key_up_callback.as_ref().unchecked_ref())
                 .warn_on_error();
             instance.key_up_callback = Some(key_up_callback);
 
-            let unload_callback = Closure::wrap(Box::new(move |_| {
+            let unload_callback = Closure::new(move |_| {
                 let _ = ruffle.with_core_mut(|core| {
                     core.flush_shared_objects();
                 });
-            }) as Box<dyn FnMut(Event)>);
+            });
 
             window
                 .add_event_listener_with_callback(

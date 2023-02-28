@@ -4,38 +4,44 @@
 	}
 }
 
-trace("// escape()");
-trace(escape());
-trace("");
+import flash.utils.getDefinitionByName;
 
-trace("// escape(undefined)");
-trace(escape(undefined));
-trace("");
+var fns = ["escape", "encodeURI", "encodeURIComponent"];
+for each (var fnName in fns) {
+	var fn = getDefinitionByName(fnName);
+	trace("// " + fnName + "()");
+	trace(fn());
+	trace("");
 
-trace("// typeof(escape(undefined))");
-trace(typeof(escape(undefined)));
-trace("");
+	trace("// " + fnName + "(undefined)");
+	trace(fn(undefined));
+	trace("");
 
-trace("// escape(null)");
-trace(escape(null));
-trace("");
+	trace("// typeof(" + fnName + "(undefined))");
+	trace(typeof(fn(undefined)));
+	trace("");
 
-var input = "test";
-trace("// escape(\"" + input + "\")");
-trace(escape(input));
-trace("");
+	trace("// " + fnName + "(null)");
+	trace(fn(null));
+	trace("");
 
-var input = "!\"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#\zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:@~|ZXCVBNM<>?\u0010";
-trace("// escape(\"" + input + "\")");
-trace(escape(input));
-trace("");
+	var input = "test";
+	trace("// " + fnName + "(\"" + input + "\")");
+	trace(fn(input));
+	trace("");
 
-var input = "\x05";
-trace("// escape(\"\\x05\")");
-trace(escape(input));
-trace("");
+	var input = "!\"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#\zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:@~|ZXCVBNM<>?\u0010";
+	trace("// " + fnName + "(\"" + input + "\")");
+	trace(fn(input));
+	trace("");
 
-var input = "😭";
-trace("// escape(\"" + input + "\")");
-trace(escape(input));
-trace("");
+	var input = "\x05";
+	trace("// " + fnName + "(\"\\x05\")");
+	trace(fn(input));
+	trace("");
+
+	var input = "😭";
+	trace("// " + fnName + "(\"" + input + "\")");
+	trace(fn(input));
+	trace("");	
+}

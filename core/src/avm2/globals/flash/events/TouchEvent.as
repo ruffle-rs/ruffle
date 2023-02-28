@@ -6,6 +6,7 @@ package flash.events {
 
 import flash.utils.ByteArray;
 import flash.display.InteractiveObject;
+import __ruffle__.stub_method;
 
 public class TouchEvent extends Event {
     public static const PROXIMITY_BEGIN: String = "proximityBegin"; // [static] Defines the value of the type property of a PROXIMITY_BEGIN touch event object.

@@ -166,13 +166,8 @@ impl<'gc> ScopeChain<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<(Option<Namespace<'gc>>, Object<'gc>)>, Error<'gc>> {
         if let Some(container) = self.container {
-            for (depth, scope) in container.read().scopes.iter().enumerate().rev() {
-                // We search the dynamic properties if either conditions are met:
-                // 1. Scope is a `with` scope
-                // 2. We are at depth 0 (global scope)
-                //
-                // But no matter what, we always search traits first.
-
+            // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
+            for scope in container.read().scopes.iter().skip(1).rev() {
                 // NOTE: We are manually searching the vtable's traits so we can figure out which namespace the trait
                 // belongs to.
                 let values = scope.values();
@@ -182,8 +177,8 @@ impl<'gc> ScopeChain<'gc> {
                     }
                 }
 
-                // Wasn't in the objects traits, let's try dynamic properties if the conditions are right.
-                if (scope.with() || depth == 0) && values.has_own_property(multiname) {
+                // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.
+                if scope.with() && values.has_own_property(multiname) {
                     // NOTE: We return the QName as `None` to indicate that we should never cache this result.
                     // We NEVER cache the result of dynamic properties.
                     return Ok(Some((None, values)));
@@ -247,22 +242,22 @@ impl<'gc> ScopeChain<'gc> {
 /// Searches for a scope in the scope stack by a multiname.
 ///
 /// The `global` parameter indicates whether we are on global$init (script initializer).
-/// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
-/// searched for dynamic properties.
+/// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is skipped.
 pub fn search_scope_stack<'gc>(
     scopes: &[Scope<'gc>],
     multiname: &Multiname<'gc>,
     global: bool,
 ) -> Result<Option<Object<'gc>>, Error<'gc>> {
     for (depth, scope) in scopes.iter().enumerate().rev() {
+        if depth == 0 && global {
+            continue;
+        }
         let values = scope.values();
 
         if values.has_trait(multiname) {
             return Ok(Some(values));
-        } else if scope.with() || (global && depth == 0) {
-            // We search the dynamic properties if either conditions are met:
-            // 1. Scope is a `with` scope
-            // 2. We are at depth 0 AND we are at global$init (script initializer).
+        } else if scope.with() {
+            // We search the dynamic properties if this is a with scope.
             if values.has_own_property(multiname) {
                 return Ok(Some(values));
             }

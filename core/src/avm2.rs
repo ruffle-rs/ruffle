@@ -28,6 +28,7 @@ pub mod bytearray;
 mod call_stack;
 mod class;
 mod domain;
+mod e4x;
 pub mod error;
 mod events;
 mod function;
@@ -92,11 +93,11 @@ pub struct Avm2<'gc> {
     pub vector_public_namespace: Namespace<'gc>,
     pub vector_internal_namespace: Namespace<'gc>,
     pub proxy_namespace: Namespace<'gc>,
-    pub ruffle_private_namespace: Namespace<'gc>,
     // these are required to facilitate shared access between Rust and AS
     pub flash_display_internal: Namespace<'gc>,
     pub flash_utils_internal: Namespace<'gc>,
     pub flash_geom_internal: Namespace<'gc>,
+    pub flash_events_internal: Namespace<'gc>,
 
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -141,11 +142,11 @@ impl<'gc> Avm2<'gc> {
                 "http://www.adobe.com/2006/actionscript/flash/proxy",
                 mc,
             ),
-            ruffle_private_namespace: Namespace::private("", mc),
             // these are required to facilitate shared access between Rust and AS
             flash_display_internal: Namespace::internal("flash.display", mc),
             flash_utils_internal: Namespace::internal("flash.utils", mc),
             flash_geom_internal: Namespace::internal("flash.geom", mc),
+            flash_events_internal: Namespace::internal("flash.events", mc),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
@@ -340,7 +341,7 @@ impl<'gc> Avm2<'gc> {
 
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
-        for i in (0..num_scripts).rev() {
+        for i in 0..num_scripts {
             tunit.load_script(i as u32, context)?;
         }
 

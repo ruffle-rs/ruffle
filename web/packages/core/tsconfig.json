@@ -1,11 +1,12 @@
 {
-    "extends": "@tsconfig/recommended/tsconfig.json",
+    "extends": "@tsconfig/strictest/tsconfig.json",
     "compilerOptions": {
-        "target": "es2017",
+        "composite": true,
         "module": "es2020",
         "moduleResolution": "node",
-        "importsNotUsedAsValues": "error",
-        "outDir": "pkg",
+        "target": "es2017",
+        "rootDir": "src",
+        "outDir": "dist",
     },
     "include": ["src/**/*"],
 }

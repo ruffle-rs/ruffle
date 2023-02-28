@@ -1,0 +1,10 @@
+# This test uses the same FLA as the `masks` test.
+# The SWF's clipDepth values were edited in JPEXS.
+
+num_frames = 1
+
+[image_comparison]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }

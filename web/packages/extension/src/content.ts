@@ -114,7 +114,7 @@ function isXMLDocument(): boolean {
         !window.RufflePlayer &&
         (options.ignoreOptout || !pageOptout);
 
-    utils.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    utils.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (shouldLoad) {
             sendMessageToPage(message).then((response) => {
                 sendResponse({

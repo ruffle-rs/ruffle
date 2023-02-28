@@ -447,8 +447,8 @@ pub trait TDisplayObjectContainer<'gc>:
 
             // Check if we need to pop off a mask.
             // This must be a while loop because multiple masks can be popped
-            // at the same dpeth.
-            while clip_depth > 0 && depth >= clip_depth {
+            // at the same depth.
+            while clip_depth > 0 && depth > clip_depth {
                 // Clear the mask stencil and pop the mask.
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
@@ -825,10 +825,12 @@ impl<'gc> ChildContainer<'gc> {
     ) {
         let prev_depth = child.depth();
         child.set_depth(gc_context, depth);
+        child.set_clip_depth(gc_context, 0);
         child.set_parent(gc_context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
             prev_child.set_depth(gc_context, prev_depth);
+            prev_child.set_clip_depth(gc_context, 0);
             prev_child.set_transformed_by_script(gc_context, true);
             self.depth_list.insert(prev_depth, prev_child);
 

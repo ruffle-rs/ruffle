@@ -2057,33 +2057,24 @@ impl<'a> Reader<'a> {
         let bits = if self.version >= 6 {
             self.read_u32().unwrap_or_default()
         } else {
-            // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
-            // with the 2nd byte reserved (all 0).
-            // This was expanded to 4 bytes in SWFv6.
-            (self.read_u16().unwrap_or_default() as u8).into()
+            // SWF19 pp. 48-50: For SWFv5, ClipEventFlags only had 2 bytes of flags. This was
+            // expanded to 4 bytes in SWFv6.
+            // The 2nd byte is documented to be reserved (all 0), but it's not enforced by Flash.
+            self.read_u16().unwrap_or_default().into()
         };
 
         ClipEventFlag::from_bits_truncate(bits)
     }
 
     fn read_drop_shadow_filter(&mut self) -> Result<DropShadowFilter> {
-        let color = self.read_rgba()?;
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let angle = self.read_fixed16()?;
-        let distance = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(DropShadowFilter {
-            color,
-            blur_x,
-            blur_y,
-            angle,
-            distance,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            num_passes: flags & 0b0001_1111,
+            color: self.read_rgba()?,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: DropShadowFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
@@ -2091,48 +2082,30 @@ impl<'a> Reader<'a> {
         Ok(BlurFilter {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
-            num_passes: (self.read_u8()? & 0b1111_1000) >> 3,
+            flags: BlurFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
     fn read_glow_filter(&mut self) -> Result<GlowFilter> {
-        let color = self.read_rgba()?;
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(GlowFilter {
-            color,
-            blur_x,
-            blur_y,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            num_passes: flags & 0b0001_1111,
+            color: self.read_rgba()?,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: GlowFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
     fn read_bevel_filter(&mut self) -> Result<BevelFilter> {
-        let shadow_color = self.read_rgba()?;
-        let highlight_color = self.read_rgba()?;
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let angle = self.read_fixed16()?;
-        let distance = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(BevelFilter {
-            shadow_color,
-            highlight_color,
-            blur_x,
-            blur_y,
-            angle,
-            distance,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            is_on_top: flags & 0b0001_0000 != 0,
-            num_passes: flags & 0b0000_1111,
+            shadow_color: self.read_rgba()?,
+            highlight_color: self.read_rgba()?,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: BevelFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
@@ -2149,23 +2122,14 @@ impl<'a> Reader<'a> {
                 ratio: self.read_u8()?,
             });
         }
-        let blur_x = self.read_fixed16()?;
-        let blur_y = self.read_fixed16()?;
-        let angle = self.read_fixed16()?;
-        let distance = self.read_fixed16()?;
-        let strength = self.read_fixed8()?;
-        let flags = self.read_u8()?;
         Ok(GradientFilter {
             colors: gradient_records,
-            blur_x,
-            blur_y,
-            angle,
-            distance,
-            strength,
-            is_inner: flags & 0b1000_0000 != 0,
-            is_knockout: flags & 0b0100_0000 != 0,
-            is_on_top: flags & 0b0001_0000 != 0,
-            num_passes: flags & 0b0000_1111,
+            blur_x: self.read_fixed16()?,
+            blur_y: self.read_fixed16()?,
+            angle: self.read_fixed16()?,
+            distance: self.read_fixed16()?,
+            strength: self.read_fixed8()?,
+            flags: GradientFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 
@@ -2179,17 +2143,14 @@ impl<'a> Reader<'a> {
         for _ in 0..num_entries {
             matrix.push(self.read_fixed16()?);
         }
-        let default_color = self.read_rgba()?;
-        let flags = self.read_u8()?;
         Ok(ConvolutionFilter {
             num_matrix_cols,
             num_matrix_rows,
             divisor,
             bias,
             matrix,
-            default_color,
-            is_clamped: (flags & 0b10) != 0,
-            is_preserve_alpha: (flags & 0b1) != 0,
+            default_color: self.read_rgba()?,
+            flags: ConvolutionFilterFlags::from_bits_truncate(self.read_u8()?),
         })
     }
 

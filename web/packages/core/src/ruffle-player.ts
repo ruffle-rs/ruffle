@@ -1,4 +1,4 @@
-import type { Ruffle } from "../pkg/ruffle_web";
+import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
@@ -12,7 +12,6 @@ import {
     WindowMode,
 } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
-import type { InternalContextMenuItem } from "./context-menu";
 import { swfFileName } from "./swf-file-name";
 import { buildInfo } from "./build-info";
 import {
@@ -60,23 +59,23 @@ declare global {
 }
 
 /**
- * An item to show in Ruffle's custom context menu
+ * An item to show in Ruffle's custom context menu.
  */
 interface ContextMenuItem {
     /**
-     * The text to show to the user
+     * The text shown to the user.
      */
     text: string;
 
     /**
-     * The function to call when clicked
+     * The function to call when clicked.
      *
-     * @param event The mouse event that triggered the click
+     * @param event The mouse event that triggered the click.
      */
     onClick: (event: MouseEvent) => void;
 
     /**
-     * Whether the item is clickable
+     * Whether this item is clickable.
      *
      * @default true
      */
@@ -101,8 +100,8 @@ function sanitizeParameters(
     if (!(parameters instanceof URLSearchParams)) {
         parameters = new URLSearchParams(parameters);
     }
-    const output: Record<string, string> = {};
 
+    const output: Record<string, string> = {};
     for (const [key, value] of parameters) {
         // Every value must be type of string
         output[key] = value.toString();
@@ -134,6 +133,9 @@ export class RufflePlayer extends HTMLElement {
     // Whether this device is a touch device.
     // Set to true when a touch event is encountered.
     private isTouch = false;
+    // Whether this device sends contextmenu events.
+    // Set to true when a contextmenu event is seen.
+    private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
     private loadedConfig: Required<Config> = DEFAULT_CONFIG;
@@ -149,6 +151,7 @@ export class RufflePlayer extends HTMLElement {
     private _cachedDebugInfo: string | null = null;
 
     private isExtension = false;
+    private longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -220,8 +223,21 @@ export class RufflePlayer extends HTMLElement {
         this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
+        window.addEventListener("pointerdown", this.pointerDown.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
-        this.addEventListener("pointerdown", this.pointerDown.bind(this));
+        this.container.addEventListener(
+            "pointerdown",
+            this.startLongPressTimer.bind(this)
+        );
+        this.container.addEventListener(
+            "pointerup",
+            this.checkLongPress.bind(this)
+        );
+        this.container.addEventListener(
+            "pointercancel",
+            this.clearLongPressTimer.bind(this)
+        );
+
         this.addEventListener(
             "fullscreenchange",
             this.fullScreenChange.bind(this)
@@ -230,7 +246,6 @@ export class RufflePlayer extends HTMLElement {
             "webkitfullscreenchange",
             this.fullScreenChange.bind(this)
         );
-        window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
         this.onFSCommand = null;
@@ -240,8 +255,6 @@ export class RufflePlayer extends HTMLElement {
 
         this.lastActivePlayingState = false;
         this.setupPauseOnTabHidden();
-
-        return this;
     }
 
     /**
@@ -249,16 +262,17 @@ export class RufflePlayer extends HTMLElement {
      * this.instance.play() is called when the tab becomes visible only if the
      * the instance was not paused before tab became hidden.
      *
-     * See:
-     *      https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+     * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
-    setupPauseOnTabHidden(): void {
+    private setupPauseOnTabHidden(): void {
         document.addEventListener(
             "visibilitychange",
             () => {
-                if (!this.instance) return;
+                if (!this.instance) {
+                    return;
+                }
 
                 // Tab just changed to be inactive. Record whether instance was playing.
                 if (document.hidden) {
@@ -643,9 +657,9 @@ export class RufflePlayer extends HTMLElement {
                     options.swfFileName || "movie.swf"
                 );
             }
-        } catch (err) {
-            console.error(`Serious error occurred loading SWF file: ${err}`);
-            throw err;
+        } catch (e) {
+            console.error(`Serious error occurred loading SWF file: ${e}`);
+            throw e;
         }
     }
 
@@ -739,9 +753,9 @@ export class RufflePlayer extends HTMLElement {
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
      */
     enterFullscreen(): void {
-        const options = {
+        const options: FullscreenOptions = {
             navigationUI: "hide",
-        } as const;
+        };
         if (this.requestFullscreen) {
             this.requestFullscreen(options);
         } else if (this.webkitRequestFullscreen) {
@@ -772,8 +786,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private pointerDown(event: PointerEvent): void {
-        // Give option to disable context menu when touch support is being used
-        // to avoid a long press triggering the context menu. (#1972)
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
         }
@@ -814,10 +826,16 @@ export class RufflePlayer extends HTMLElement {
         const items = [];
 
         if (this.instance) {
-            const customItems: InternalContextMenuItem[] =
-                this.instance.prepare_context_menu();
+            const customItems: {
+                readonly caption: string;
+                readonly checked: boolean;
+                readonly enabled: boolean;
+                readonly separatorBefore: boolean;
+            }[] = this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
-                if (item.separatorBefore) items.push(null);
+                if (item.separatorBefore) {
+                    items.push(null);
+                }
                 items.push({
                     // TODO: better checkboxes
                     text:
@@ -873,6 +891,8 @@ export class RufflePlayer extends HTMLElement {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
         });
+        // Give option to disable context menu when touch support is being used
+        // to avoid a long press triggering the context menu. (#1972)
         if (this.isTouch) {
             items.push(null);
             items.push({
@@ -883,8 +903,52 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
-    private showContextMenu(e: MouseEvent): void {
-        e.preventDefault();
+    private clearLongPressTimer(): void {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+    }
+
+    private startLongPressTimer(): void {
+        const longPressTimeout = 800;
+        this.clearLongPressTimer();
+        this.longPressTimer = setTimeout(
+            () => this.clearLongPressTimer(),
+            longPressTimeout
+        );
+    }
+
+    private checkLongPress(event: PointerEvent): void {
+        if (this.longPressTimer) {
+            this.clearLongPressTimer();
+            // The pointerType condition is to ensure right-click does not trigger
+            // a context menu the wrong way the first time you right-click,
+            // before contextMenuSupported is set.
+        } else if (
+            !this.contextMenuSupported &&
+            event.pointerType !== "mouse"
+        ) {
+            this.showContextMenu(event);
+        }
+    }
+
+    private showContextMenu(event: MouseEvent | PointerEvent): void {
+        event.preventDefault();
+
+        if (event.type === "contextmenu") {
+            this.contextMenuSupported = true;
+            window.addEventListener("click", this.hideContextMenu.bind(this), {
+                once: true,
+            });
+        } else {
+            window.addEventListener(
+                "pointerup",
+                this.hideContextMenu.bind(this),
+                { once: true }
+            );
+            event.stopPropagation();
+        }
 
         if (
             this.loadedConfig.contextMenu === false ||
@@ -903,13 +967,19 @@ export class RufflePlayer extends HTMLElement {
         // Populate context menu items.
         for (const item of this.contextMenuItems()) {
             if (item === null) {
-                if (!this.contextMenuElement.lastElementChild) continue; // don't start with separators
+                // Don't start with separators.
+                if (!this.contextMenuElement.lastElementChild) {
+                    continue;
+                }
+
+                // Don't repeat separators.
                 if (
                     this.contextMenuElement.lastElementChild.classList.contains(
                         "menu_separator"
                     )
-                )
-                    continue; // don't repeat separators
+                ) {
+                    continue;
+                }
 
                 const menuSeparator = document.createElement("li");
                 menuSeparator.className = "menu_separator";
@@ -924,7 +994,10 @@ export class RufflePlayer extends HTMLElement {
                 this.contextMenuElement.appendChild(menuItem);
 
                 if (enabled !== false) {
-                    menuItem.addEventListener("click", onClick);
+                    menuItem.addEventListener(
+                        this.isTouch ? "pointerup" : "click",
+                        onClick
+                    );
                 } else {
                     menuItem.classList.add("disabled");
                 }
@@ -938,8 +1011,8 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement.style.display = "block";
 
         const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.x;
-        const y = e.clientY - rect.y;
+        const x = event.clientX - rect.x;
+        const y = event.clientY - rect.y;
         const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
         const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
 
@@ -994,7 +1067,9 @@ export class RufflePlayer extends HTMLElement {
      */
     private unmuteAudioContext(): void {
         // No need to play the dummy sound again once audio is unmuted.
-        if (isAudioContextUnmuted) return;
+        if (isAudioContextUnmuted) {
+            return;
+        }
 
         // TODO: Use `navigator.userAgentData` to detect the platform when support improves?
         if (navigator.maxTouchPoints < 1) {
@@ -1005,10 +1080,14 @@ export class RufflePlayer extends HTMLElement {
         this.container.addEventListener(
             "click",
             () => {
-                if (isAudioContextUnmuted) return;
+                if (isAudioContextUnmuted) {
+                    return;
+                }
 
                 const audioContext = this.instance?.audio_context();
-                if (!audioContext) return;
+                if (!audioContext) {
+                    return;
+                }
 
                 const audio = new Audio();
                 audio.src = (() => {
@@ -1046,34 +1125,33 @@ export class RufflePlayer extends HTMLElement {
      * Copies attributes and children from another element to this player element.
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      *
-     * @param elem The element to copy all attributes from.
+     * @param element The element to copy all attributes from.
      * @protected
      */
-    protected copyElement(elem: Element): void {
-        if (elem) {
-            for (let i = 0; i < elem.attributes.length; i++) {
-                const attrib = elem.attributes[i];
-                if (attrib.specified) {
+    protected copyElement(element: Element): void {
+        if (element) {
+            for (const attribute of element.attributes) {
+                if (attribute.specified) {
                     // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
                     if (
-                        attrib.name === "title" &&
-                        attrib.value === "Adobe Flash Player"
+                        attribute.name === "title" &&
+                        attribute.value === "Adobe Flash Player"
                     ) {
                         continue;
                     }
 
                     try {
-                        this.setAttribute(attrib.name, attrib.value);
+                        this.setAttribute(attribute.name, attribute.value);
                     } catch (err) {
                         // The embed may have invalid attributes, so handle these gracefully.
                         console.warn(
-                            `Unable to set attribute ${attrib.name} on Ruffle instance`
+                            `Unable to set attribute ${attribute.name} on Ruffle instance`
                         );
                     }
                 }
             }
 
-            for (const node of Array.from(elem.children)) {
+            for (const node of Array.from(element.children)) {
                 this.appendChild(node);
             }
         }
@@ -1095,7 +1173,7 @@ export class RufflePlayer extends HTMLElement {
         if (attribute) {
             const match = attribute.match(DIMENSION_REGEX);
             if (match) {
-                let out = match[1];
+                let out = match[1]!;
                 if (!match[3]) {
                     // Unitless -- add px for CSS.
                     out += "px";
@@ -1117,10 +1195,10 @@ export class RufflePlayer extends HTMLElement {
      * @internal
      * @ignore
      */
-    onCallbackAvailable(name: string): void {
+    protected onCallbackAvailable(name: string): void {
         const instance = this.instance;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this)[name] = (...args: any[]) => {
+        (<any>this)[name] = (...args: unknown[]) => {
             return instance?.call_exposed_callback(name, args);
         };
     }
@@ -1148,7 +1226,9 @@ export class RufflePlayer extends HTMLElement {
 
         dataArray.push("\n# Page Info\n");
         dataArray.push(`Page URL: ${document.location.href}\n`);
-        if (this.swfUrl) dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+        if (this.swfUrl) {
+            dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+        }
 
         dataArray.push("\n# Browser Info\n");
         dataArray.push(`User Agent: ${window.navigator.userAgent}\n`);
@@ -1186,7 +1266,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @param error The error, if any, that triggered this panic.
      */
-    panic(error: Error | null): void {
+    protected panic(error: Error | null): void {
         if (this.panicked) {
             // Only show the first major error, not any repeats - they aren't as important
             return;
@@ -1466,7 +1546,7 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
-    displayRootMovieDownloadFailedMessage(): void {
+    protected displayRootMovieDownloadFailedMessage(): void {
         if (
             this.isExtension &&
             window.location.origin !== this.swfUrl!.origin
@@ -1496,7 +1576,7 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
-    displayUnsupportedMessage(): void {
+    protected displayUnsupportedMessage(): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
         // TODO: Change link to https://ruffle.rs/faq or similar
@@ -1516,8 +1596,12 @@ export class RufflePlayer extends HTMLElement {
         };
     }
 
-    displayMessage(message: string): void {
-        // Show a dismissible message in front of the player
+    /**
+     * Show a dismissible message in front of the player.
+     *
+     * @param message The message shown to the user.
+     */
+    protected displayMessage(message: string): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
         div.innerHTML = `<div class="message">
@@ -1560,7 +1644,7 @@ export class RufflePlayer extends HTMLElement {
         this.container.classList.add("hidden");
     }
 
-    private setMetadata(metadata: MovieMetadata) {
+    protected setMetadata(metadata: MovieMetadata) {
         this._metadata = metadata;
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
@@ -1727,11 +1811,11 @@ export function isSwfFilename(filename: string | null): boolean {
 /**
  * Returns whether the given MIME type is a known flash type.
  *
- * @param mime The MIME type to test.
+ * @param mimeType The MIME type to test.
  * @returns True if the MIME type is a flash MIME type.
  */
-export function isSwfMimeType(mime: string): boolean {
-    switch (mime.toLowerCase()) {
+export function isSwfMimeType(mimeType: string): boolean {
+    switch (mimeType.toLowerCase()) {
         case FLASH_MIMETYPE.toLowerCase():
         case FUTURESPLASH_MIMETYPE.toLowerCase():
         case FLASH7_AND_8_MIMETYPE.toLowerCase():

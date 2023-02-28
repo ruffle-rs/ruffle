@@ -1,7 +1,7 @@
 //! Class object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Allocator, AllocatorFn, Class};
+use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
@@ -11,14 +11,15 @@ use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::{ClassBoundMethod, VTable};
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::TranslationUnit;
+use crate::avm2::{Domain, Error};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{BorrowError, Ref, RefMut};
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -83,8 +84,11 @@ pub struct ClassObjectData<'gc> {
     /// we get a param of `null`.
     applications: FnvHashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
 
-    /// Interfaces implemented by this class.
-    interfaces: Vec<ClassObject<'gc>>,
+    /// Interfaces implemented by this class, including interfaces
+    /// from parent classes and superinterfaces (recursively).
+    /// TODO - avoid cloning this when a subclass implements the
+    /// same interface as its superclass.
+    interfaces: Vec<GcCell<'gc, Class<'gc>>>,
 
     /// VTable used for instances of this class.
     instance_vtable: VTable<'gc>,
@@ -304,68 +308,73 @@ impl<'gc> ClassObject<'gc> {
         let class = write.class;
         let scope = write.class_scope;
 
-        let interface_names = class.read().interfaces().to_vec();
+        let interface_names = class.read().direct_interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
-        for interface_name in interface_names {
-            let interface = scope.resolve(&interface_name, activation)?;
 
-            if interface.is_none() {
-                return Err(format!("Could not resolve interface {interface_name:?}").into());
-            }
+        let mut dedup = HashSet::new();
+        let mut queue = vec![class];
+        while let Some(cls) = queue.pop() {
+            for interface_name in cls.read().direct_interfaces() {
+                let interface = self.early_resolve_class(scope.domain(), interface_name)?;
 
-            let iface_class = interface
-                .unwrap()
-                .as_object()
-                .and_then(|o| o.as_class_object())
-                .ok_or_else(|| Error::from("Object is not an interface"))?;
-            if !iface_class.inner_class_definition().read().is_interface() {
-                return Err(format!(
-                    "Class {:?} is not an interface and cannot be implemented by classes",
-                    iface_class
-                        .inner_class_definition()
-                        .read()
-                        .name()
-                        .local_name()
-                )
-                .into());
-            }
-            interfaces.push(iface_class);
-        }
+                if !interface.read().is_interface() {
+                    return Err(format!(
+                        "Class {:?} is not an interface and cannot be implemented by classes",
+                        interface.read().name().local_name()
+                    )
+                    .into());
+                }
 
-        if !interfaces.is_empty() {
-            write.interfaces = interfaces;
-        }
-
-        //At this point, we need to reresolve *all* interface traits.
-        //Otherwise we won't get overrides.
-        drop(write);
-
-        let mut class = Some(self);
-
-        while let Some(cls) = class {
-            for interface in cls.interfaces() {
-                let iface_static_class = interface.inner_class_definition();
-                let iface_read = iface_static_class.read();
-
-                for interface_trait in iface_read.instance_traits() {
-                    if !interface_trait.name().namespace().is_public() {
-                        let public_name = QName::new(
-                            activation.context.avm2.public_namespace,
-                            interface_trait.name().local_name(),
-                        );
-                        self.instance_vtable().copy_property_for_interface(
-                            activation.context.gc_context,
-                            public_name,
-                            interface_trait.name(),
-                        );
-                    }
+                if dedup.insert(ClassHashWrapper(interface)) {
+                    queue.push(interface);
+                    interfaces.push(interface);
                 }
             }
 
-            class = cls.superclass_object();
+            if let Some(superclass_name) = cls.read().super_class_name() {
+                queue.push(self.early_resolve_class(scope.domain(), superclass_name)?);
+            }
+        }
+        write.interfaces = interfaces;
+        drop(write);
+
+        let read = self.0.read();
+
+        // FIXME - we should only be copying properties for newly-implemented
+        // interfaces (i.e. those that were not already implemented by the superclass)
+        // Otherwise, our behavior diverges from Flash Player in certain cases.
+        // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
+        for interface in &read.interfaces {
+            let iface_read = interface.read();
+            for interface_trait in iface_read.instance_traits() {
+                if !interface_trait.name().namespace().is_public() {
+                    let public_name = QName::new(
+                        activation.context.avm2.public_namespace,
+                        interface_trait.name().local_name(),
+                    );
+                    self.instance_vtable().copy_property_for_interface(
+                        activation.context.gc_context,
+                        public_name,
+                        interface_trait.name(),
+                    );
+                }
+            }
         }
 
         Ok(())
+    }
+
+    // Looks up a class by name, without using `ScopeChain.resolve`
+    // This lets us look up an class before its `ClassObject` has been constructed,
+    // which is needed to resolve classes when constructing a (different) `ClassObject`.
+    fn early_resolve_class(
+        &self,
+        domain: Domain<'gc>,
+        class_name: &Multiname<'gc>,
+    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
+        domain
+            .get_class(class_name)?
+            .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
     /// Manually set the type of this `Class`.
@@ -433,12 +442,6 @@ impl<'gc> ClassObject<'gc> {
                 return true;
             }
 
-            for interface in class.interfaces() {
-                if Object::ptr_eq(interface, test_class) {
-                    return true;
-                }
-            }
-
             if let (Some(my_param), Some(test_param)) =
                 (class.as_class_params(), test_class.as_class_params())
             {
@@ -454,6 +457,19 @@ impl<'gc> ClassObject<'gc> {
             }
 
             my_class = class.superclass_object()
+        }
+
+        // A `ClassObject` stores all of the interfaces it implements,
+        // including those from superinterfaces and superclasses (recursively).
+        // Therefore, we only need to check interfaces once, and we can skip
+        // checking them when we processing superclasses in the `while`
+        // further down in this method.
+        if test_class.inner_class_definition().read().is_interface() {
+            for interface in self.interfaces() {
+                if GcCell::ptr_eq(interface, test_class.inner_class_definition()) {
+                    return true;
+                }
+            }
         }
 
         false
@@ -701,7 +717,7 @@ impl<'gc> ClassObject<'gc> {
         self.0.read().prototype.unwrap()
     }
 
-    pub fn interfaces(self) -> Vec<ClassObject<'gc>> {
+    pub fn interfaces(self) -> Vec<GcCell<'gc, Class<'gc>>> {
         self.0.read().interfaces.clone()
     }
 

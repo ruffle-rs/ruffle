@@ -11,3 +11,5 @@
 //Scene 4, Frame 3
 //gotoAndPlay("2", "Scene 5");
 //Scene 5, Frame 2
+//gotoAndPlay("5");
+//Scene 5, Frame 5

@@ -9,5 +9,11 @@ package flash.system {
         public static function get version(): String {
             return "LNX 32,0,0,465"
         }
+        public static function get manufacturer(): String {
+            return "Adobe Linux"
+        }
+        public static function get language(): String {
+            return "en"
+        }
     }
 }

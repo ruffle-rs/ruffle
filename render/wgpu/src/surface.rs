@@ -1,6 +1,7 @@
 mod commands;
 pub mod target;
 
+use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
@@ -18,6 +19,8 @@ use std::sync::Arc;
 use target::CommandTarget;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
+
+use self::commands::run_copy_pipeline;
 
 #[derive(Debug)]
 pub struct Surface {
@@ -62,7 +65,7 @@ impl Surface {
     pub fn draw_commands_to(
         &mut self,
         frame_view: &wgpu::TextureView,
-        clear_color: Option<wgpu::Color>,
+        render_target_mode: RenderTargetMode,
         descriptors: &Descriptors,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
@@ -88,7 +91,7 @@ impl Surface {
                 });
 
         let target = self.draw_commands(
-            clear_color.unwrap_or(wgpu::Color::TRANSPARENT),
+            render_target_mode.clone(),
             descriptors,
             meshes,
             commands,
@@ -99,91 +102,36 @@ impl Surface {
             None,
             texture_pool,
         );
+
+        // We're about to perform a copy, so make sure that we've applied
+        // a clear (in case no other draw commands were issued, we still need
+        // the background clear color applied)
+        target.ensure_cleared(&mut draw_encoder);
+
         let mut buffers = vec![draw_encoder.finish()];
 
-        let copy_bind_group = descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &descriptors.bind_layouts.bitmap,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: descriptors.quad.texture_transforms.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(target.color_view()),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(
-                            descriptors.bitmap_samplers.get_sampler(false, false),
-                        ),
-                    },
-                ],
-                label: create_debug_label!("Copy sRGB bind group").as_deref(),
-            });
-
-        let pipeline = if self.actual_surface_format == self.format {
-            descriptors.copy_pipeline(self.format)
-        } else {
-            descriptors.copy_srgb_pipeline(self.actual_surface_format)
-        };
-
-        let mut copy_encoder =
-            descriptors
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: create_debug_label!("Frame copy command encoder").as_deref(),
-                });
-
-        let load = match clear_color {
-            Some(color) => wgpu::LoadOp::Clear(color),
-            None => wgpu::LoadOp::Load,
-        };
-
-        let mut render_pass = copy_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: frame_view,
-                ops: wgpu::Operations { load, store: true },
-                resolve_target: None,
-            })],
-            depth_stencil_attachment: None,
-            label: create_debug_label!("Copy back to render target").as_deref(),
-        });
-
-        render_pass.set_pipeline(&pipeline);
-        render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-
-        if descriptors.limits.max_push_constant_size > 0 {
-            render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX,
-                0,
-                bytemuck::cast_slice(&[Transforms {
-                    world_matrix: [
-                        [self.size.width as f32, 0.0, 0.0, 0.0],
-                        [0.0, self.size.height as f32, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ],
-                }]),
+        if let RenderTargetMode::FreshBuffer(_) = render_target_mode {
+            let mut copy_encoder =
+                descriptors
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: create_debug_label!("Frame copy command encoder").as_deref(),
+                    });
+            run_copy_pipeline(
+                descriptors,
+                self.format,
+                self.actual_surface_format,
+                self.size,
+                frame_view,
+                target.color_view(),
+                target.whole_frame_bind_group(descriptors),
+                target.globals(),
+                1,
+                &mut copy_encoder,
             );
-            render_pass.set_bind_group(1, &copy_bind_group, &[]);
-        } else {
-            render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
-            render_pass.set_bind_group(2, &copy_bind_group, &[]);
+            buffers.push(copy_encoder.finish());
         }
 
-        render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
-        render_pass.set_index_buffer(
-            descriptors.quad.indices.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
-
-        render_pass.draw_indexed(0..6, 0, 0..1);
-        drop(render_pass);
-
-        buffers.push(copy_encoder.finish());
         buffers.insert(0, uniform_encoder.finish());
         uniform_buffer.finish();
         color_buffer.finish();
@@ -195,7 +143,7 @@ impl Surface {
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
-        clear_color: wgpu::Color,
+        render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -212,8 +160,10 @@ impl Surface {
             self.size,
             self.format,
             self.sample_count,
-            clear_color,
+            render_target_mode,
+            draw_encoder,
         );
+
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
         let chunks = chunk_blends(
@@ -308,7 +258,9 @@ impl Surface {
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 1,
-                                        resource: wgpu::BindingResource::TextureView(&texture.1),
+                                        resource: wgpu::BindingResource::TextureView(
+                                            texture.view(),
+                                        ),
                                     },
                                     wgpu::BindGroupEntry {
                                         binding: 2,
@@ -446,6 +398,11 @@ impl Surface {
             ),
         };
 
+        // We're about to perform a copy, so make sure that we've applied
+        // a clear (in case no other draw commands were issued, we still need
+        // the background clear color applied)
+        target.ensure_cleared(draw_encoder);
+
         draw_encoder.copy_texture_to_texture(
             wgpu::ImageCopyTexture {
                 texture: target.color_texture(),
@@ -492,7 +449,8 @@ impl Surface {
             },
             self.format,
             self.sample_count,
-            wgpu::Color::TRANSPARENT,
+            RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+            draw_encoder,
         );
         let texture_transform =
             descriptors
@@ -624,7 +582,8 @@ impl Surface {
                 },
                 self.format,
                 self.sample_count,
-                wgpu::Color::TRANSPARENT,
+                RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+                draw_encoder,
             ),
             CommandTarget::new(
                 descriptors,
@@ -636,7 +595,8 @@ impl Surface {
                 },
                 self.format,
                 self.sample_count,
-                wgpu::Color::TRANSPARENT,
+                RenderTargetMode::FreshBuffer(wgpu::Color::TRANSPARENT),
+                draw_encoder,
             ),
         ];
         let texture_transform =

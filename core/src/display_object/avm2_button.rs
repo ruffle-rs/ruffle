@@ -97,6 +97,7 @@ impl<'gc> Avm2Button<'gc> {
         button: &swf::Button,
         source_movie: &SwfSlice,
         context: &mut UpdateContext<'_, 'gc>,
+        construct_blank_states: bool,
     ) -> Self {
         let static_data = ButtonStatic {
             swf: source_movie.movie.clone(),
@@ -120,7 +121,7 @@ impl<'gc> Avm2Button<'gc> {
                 down_state: None,
                 class: context.avm2.classes().simplebutton,
                 object: None,
-                needs_frame_construction: true,
+                needs_frame_construction: construct_blank_states,
                 needs_avm2_initialization: false,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
@@ -144,7 +145,7 @@ impl<'gc> Avm2Button<'gc> {
             actions: Vec::new(),
         };
 
-        Self::from_swf_tag(&button_record, &movie.into(), context)
+        Self::from_swf_tag(&button_record, &movie.into(), context, false)
     }
 
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {

@@ -3,6 +3,6 @@
 import {
     installPlugin,
     FLASH_PLUGIN,
-} from "ruffle-core/pkg/plugin-polyfill.js";
+} from "ruffle-core/dist/plugin-polyfill.js";
 
 installPlugin(FLASH_PLUGIN);

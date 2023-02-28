@@ -1,0 +1,5 @@
+// new XML(byteArray).bar
+test
+
+// new XML(objWithToString).bar
+test

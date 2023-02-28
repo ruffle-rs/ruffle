@@ -141,7 +141,7 @@ export interface BaseLoadOptions {
      *
      * @default {}
      */
-    parameters?: URLSearchParams | string | Record<string, string>;
+    parameters?: URLSearchParams | string | Record<string, string> | null;
 
     /**
      * Controls the auto-play behaviour of Ruffle.
@@ -274,6 +274,13 @@ export interface BaseLoadOptions {
      * @default "showAll"
      */
     scale?: string;
+
+    /**
+     * If set to true, movies are prevented from changing the stage scale mode.
+     *
+     * @default false
+     */
+    forceScale?: boolean;
 
     /**
      * The window mode of the Ruffle player.

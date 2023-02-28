@@ -1,4 +1,5 @@
 package flash.events {
+	import __ruffle__.stub_method;
 	public class TimerEvent extends Event{
 		public static const TIMER:String = "timer";
 		public static const TIMER_COMPLETE:String = "timerComplete";

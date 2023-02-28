@@ -22,7 +22,7 @@ use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
-    PlayerEvent, StageDisplayState, StaticCallstack, ViewportDimensions,
+    PlayerEvent, StageDisplayState, StageScaleMode, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
@@ -94,6 +94,14 @@ struct Opt {
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
     quality: StageQuality,
+
+    /// The scale mode of the stage.
+    #[clap(long, short, default_value = "show-all")]
+    scale: StageScaleMode,
+
+    /// Prevent movies from changing the stage scale mode.
+    #[clap(long, action)]
+    force_scale: bool,
 
     /// Location to store a wgpu trace output
     #[clap(long)]
@@ -216,12 +224,39 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Error> {
     Ok(movie)
 }
 
+fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
+    let mut min_x = 0;
+    let mut min_y = 0;
+    let mut max_x = 0;
+    let mut max_y = 0;
+
+    for monitor in event_loop.available_monitors() {
+        let size = monitor.size();
+        let position = monitor.position();
+        min_x = min_x.min(position.x);
+        min_y = min_y.min(position.y);
+        max_x = max_x.max(position.x + size.width as i32);
+        max_y = max_y.max(position.y + size.height as i32);
+    }
+
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+
+    if width <= 32 || height <= 32 {
+        return (i16::MAX as u32, i16::MAX as u32).into();
+    }
+
+    (width, height).into()
+}
+
 struct App {
     opt: Opt,
     window: Rc<Window>,
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     player: Arc<Mutex<Player>>,
+    min_window_size: LogicalSize<u32>,
+    max_window_size: PhysicalSize<u32>,
 }
 
 impl App {
@@ -250,11 +285,15 @@ impl App {
         let title = format!("Ruffle - {filename}");
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
 
+        let min_window_size = (16, 16).into();
+        let max_window_size = get_screen_size(&event_loop);
+
         let window = WindowBuilder::new()
             .with_visible(false)
             .with_title(title)
             .with_window_icon(Some(icon))
-            .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
+            .with_min_inner_size(min_window_size)
+            .with_max_inner_size(max_window_size)
             .build(&event_loop)?;
 
         let mut builder = PlayerBuilder::new();
@@ -302,6 +341,7 @@ impl App {
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
+            .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
@@ -332,6 +372,8 @@ impl App {
             event_loop,
             executor,
             player,
+            min_window_size,
+            max_window_size,
         })
     }
 
@@ -341,52 +383,12 @@ impl App {
         let mut time = Instant::now();
         let mut next_frame_time = Instant::now();
         let mut minimized = false;
+        let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
 
         // Poll UI events.
         self.event_loop
             .run(move |event, _window_target, control_flow| {
-                // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                if let winit::event::Event::WindowEvent {
-                    event: WindowEvent::KeyboardInput { input, .. },
-                    ..
-                } = &event
-                {
-                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                    #[allow(deprecated)]
-                    match input {
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Return),
-                            modifiers,
-                            ..
-                        } if modifiers.alt() => {
-                            if !fullscreen_down {
-                                self.player.lock().expect("Cannot reenter").update(|uc| {
-                                    uc.stage.toggle_display_state(uc);
-                                });
-                            }
-                            fullscreen_down = true;
-                            return;
-                        }
-                        KeyboardInput {
-                            state: ElementState::Released,
-                            virtual_keycode: Some(VirtualKeyCode::Return),
-                            ..
-                        } if fullscreen_down => {
-                            fullscreen_down = false;
-                        }
-                        KeyboardInput {
-                            state: ElementState::Pressed,
-                            virtual_keycode: Some(VirtualKeyCode::Escape),
-                            ..
-                        } => self.player.lock().expect("Cannot reenter").update(|uc| {
-                            uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                        }),
-                        _ => (),
-                    }
-                }
-
                 match event {
                     winit::event::Event::LoopDestroyed => {
                         self.player
@@ -496,16 +498,46 @@ impl App {
                                 self.window.request_redraw();
                             }
                         }
-                        // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                        #[allow(deprecated)]
+                        WindowEvent::ModifiersChanged(new_modifiers) => {
+                            modifiers = new_modifiers;
+                        }
                         WindowEvent::KeyboardInput { input, .. } => {
+                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
+                            match input {
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if modifiers.alt() => {
+                                    if !fullscreen_down {
+                                        self.player.lock().expect("Cannot reenter").update(|uc| {
+                                            uc.stage.toggle_display_state(uc);
+                                        });
+                                    }
+                                    fullscreen_down = true;
+                                    return;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Released,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if fullscreen_down => {
+                                    fullscreen_down = false;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                } => self.player.lock().expect("Cannot reenter").update(|uc| {
+                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                                }),
+                                _ => (),
+                            }
+
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
-                                let key_char = winit_key_to_char(
-                                    key,
-                                    input.modifiers.contains(ModifiersState::SHIFT),
-                                );
+                                let key_char = winit_key_to_char(key, modifiers.shift());
                                 let event = match input.state {
                                     ElementState::Pressed => {
                                         PlayerEvent::KeyDown { key_code, key_char }
@@ -555,6 +587,14 @@ impl App {
                                 PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
                             }
                         };
+
+                        let window_size = Size::clamp(
+                            window_size,
+                            self.min_window_size.into(),
+                            self.max_window_size.into(),
+                            self.window.scale_factor(),
+                        );
+
                         self.window.set_inner_size(window_size);
                         self.window.set_fullscreen(if self.opt.fullscreen {
                             Some(Fullscreen::Borderless(None))

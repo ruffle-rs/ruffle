@@ -378,7 +378,7 @@ pub fn dispatch_event_to_target<'gc>(
     );
     let dispatch_list = dispatcher
         .get_property(
-            &Multiname::new(activation.avm2().ruffle_private_namespace, "dispatch_list"),
+            &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
             activation,
         )?
         .as_object();
@@ -435,7 +435,7 @@ pub fn dispatch_event<'gc>(
 ) -> Result<bool, Error<'gc>> {
     let target = this
         .get_property(
-            &Multiname::new(activation.avm2().ruffle_private_namespace, "target"),
+            &Multiname::new(activation.avm2().flash_events_internal, "_target"),
             activation,
         )?
         .as_object()

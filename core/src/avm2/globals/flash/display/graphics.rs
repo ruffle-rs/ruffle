@@ -1,53 +1,16 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{stage_allocator, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::WStr;
-use gc_arena::GcCell;
 use ruffle_render::shape_utils::DrawCommand;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
-
-/// Implements `flash.display.Graphics`'s instance constructor.
-fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Graphics cannot be constructed directly.".into())
-}
-
-/// Implements `flash.display.Graphics`'s native instance constructor.
-fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-    }
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.display.Graphics`'s class constructor.
-fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
 /// `alpha` is normalized from 0.0 - 1.0.
@@ -56,7 +19,7 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 }
 
 /// Implements `Graphics.beginFill`.
-fn begin_fill<'gc>(
+pub fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -82,7 +45,7 @@ fn begin_fill<'gc>(
 }
 
 /// Implements `Graphics.beginBitmapFill`.
-fn begin_bitmap_fill<'gc>(
+pub fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -92,7 +55,7 @@ fn begin_bitmap_fill<'gc>(
 }
 
 /// Implements `Graphics.beginGradientFill`.
-fn begin_gradient_fill<'gc>(
+pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -102,7 +65,7 @@ fn begin_gradient_fill<'gc>(
 }
 
 /// Implements `Graphics.clear`
-fn clear<'gc>(
+pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -117,7 +80,7 @@ fn clear<'gc>(
 }
 
 /// Implements `Graphics.curveTo`.
-fn curve_to<'gc>(
+pub fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -157,7 +120,7 @@ fn curve_to<'gc>(
 }
 
 /// Implements `Graphics.endFill`.
-fn end_fill<'gc>(
+pub fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -221,7 +184,7 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 }
 
 /// Implements `Graphics.lineStyle`.
-fn line_style<'gc>(
+pub fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -292,7 +255,7 @@ fn line_style<'gc>(
 }
 
 /// Implements `Graphics.lineTo`.
-fn line_to<'gc>(
+pub fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -320,7 +283,7 @@ fn line_to<'gc>(
 }
 
 /// Implements `Graphics.moveTo`.
-fn move_to<'gc>(
+pub fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -348,7 +311,7 @@ fn move_to<'gc>(
 }
 
 /// Implements `Graphics.drawRect`.
-fn draw_rect<'gc>(
+pub fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -659,7 +622,7 @@ fn draw_round_rect_internal(
 }
 
 /// Implements `Graphics.drawRoundRect`.
-fn draw_round_rect<'gc>(
+pub fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -713,7 +676,7 @@ fn draw_round_rect<'gc>(
 }
 
 /// Implements `Graphics.drawCircle`.
-fn draw_circle<'gc>(
+pub fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -752,7 +715,7 @@ fn draw_circle<'gc>(
 }
 
 /// Implements `Graphics.drawEllipse`.
-fn draw_ellipse<'gc>(
+pub fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -785,49 +748,4 @@ fn draw_ellipse<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `Graphics`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.display", mc), "Graphics"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<Graphics instance initializer>", mc),
-        Method::from_builtin(class_init, "<Graphics class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_allocator(stage_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<Graphics native instance initializer>",
-        mc,
-    ));
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("beginFill", begin_fill),
-        ("beginBitmapFill", begin_bitmap_fill),
-        ("beginGradientFill", begin_gradient_fill),
-        ("clear", clear),
-        ("curveTo", curve_to),
-        ("endFill", end_fill),
-        ("lineStyle", line_style),
-        ("lineTo", line_to),
-        ("moveTo", move_to),
-        ("drawRect", draw_rect),
-        ("drawRoundRect", draw_round_rect),
-        ("drawCircle", draw_circle),
-        ("drawEllipse", draw_ellipse),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

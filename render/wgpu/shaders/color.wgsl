@@ -33,7 +33,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     #if use_push_constants == true
         var colorTransforms = pc.colorTransforms;
     #endif
-    let color = in.color * colorTransforms.mult_color + colorTransforms.add_color;
-    let alpha = clamp(color.a, 0.0, 1.0);
+    let color = saturate(in.color * colorTransforms.mult_color + colorTransforms.add_color);
+    let alpha = saturate(color.a);
     return vec4<f32>(color.rgb * alpha, alpha);
 }

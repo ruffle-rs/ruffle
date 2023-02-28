@@ -102,6 +102,9 @@ pub struct MovieClipData<'gc> {
     /// Show a hand cursor when the clip is in button mode.
     use_hand_cursor: bool,
 
+    /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
+    hit_area: Option<DisplayObject<'gc>>,
+
     /// Force enable button mode, which causes all mouse-related events to
     /// trigger on this clip rather than any input-eligible children.
     button_mode: bool,
@@ -145,6 +148,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+                hit_area: None,
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
@@ -184,6 +188,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+                hit_area: None,
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
@@ -227,6 +232,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+                hit_area: None,
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
@@ -288,6 +294,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+                hit_area: None,
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
@@ -2173,6 +2180,18 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).use_hand_cursor = use_hand_cursor;
     }
 
+    pub fn hit_area(self) -> Option<DisplayObject<'gc>> {
+        self.0.read().hit_area
+    }
+
+    pub fn set_hit_area(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        hit_area: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.write(context.gc_context).hit_area = hit_area;
+    }
+
     pub fn tag_stream_len(&self) -> usize {
         self.0.read().tag_stream_len()
     }
@@ -3343,6 +3362,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 &swf_button,
                 &self.static_data.swf,
                 context,
+                true,
             ))
         } else {
             Character::Avm1Button(Avm1Button::from_swf_tag(
