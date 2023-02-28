@@ -9,6 +9,7 @@ mod ui;
 
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
+use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
@@ -142,6 +143,9 @@ struct Config {
 
     #[serde(rename = "upgradeToHttps")]
     upgrade_to_https: bool,
+
+    #[serde(rename = "compatibilityRules")]
+    compatibility_rules: bool,
 
     #[serde(rename = "base")]
     base_url: Option<String>,
@@ -546,6 +550,11 @@ impl Ruffle {
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .with_player_version(config.player_version)
+            .with_compatibility_rules(if config.compatibility_rules {
+                CompatibilityRules::default()
+            } else {
+                CompatibilityRules::empty()
+            })
             .with_quality(
                 config
                     .quality
