@@ -28,6 +28,9 @@ package flash.text {
         
         public native function get bottomScrollV():int;
         
+        public native function get condenseWhite():Boolean
+        public native function set condenseWhite(value:Boolean):void
+
         public native function get defaultTextFormat():TextFormat;
         public native function set defaultTextFormat(value:TextFormat):void;
         

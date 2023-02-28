@@ -223,6 +223,24 @@ pub fn set_border_color<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_condense_white<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.text.TextField", "condenseWhite");
+    Ok(Value::Bool(false))
+}
+
+pub fn set_condense_white<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.text.TextField", "condenseWhite");
+    Ok(Value::Undefined)
+}
+
 pub fn get_default_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
