@@ -24,6 +24,8 @@
 				s.addChild(someLoader);
 				someLoader.loadBytes((ByteArray)(myURLLoader.data), context); 
 				someLoader.contentLoaderInfo.addEventListener("init", init);
+				
+				
 			}
 		
 			function init(e) {
@@ -31,6 +33,18 @@
 				trace(getDefinitionByName("mx.events.PropertyChangeEvent"));
 				trace(getDefinitionByName("mx.core.ByteArrayAsset"));
 				trace(getDefinitionByName("Test"));
+				
+				// Try without context
+				var anotherLoader:Loader = new Loader();
+				s.addChild(anotherLoader);
+				anotherLoader.loadBytes((ByteArray)(myURLLoader.data));
+				anotherLoader.contentLoaderInfo.addEventListener("init", init2);
+			}
+		
+			function init2(e) {
+				// Confirm that the loaded movieclip still has access to it's parent domain despite 
+				// never specifying the domain.
+				trace(e.target.applicationDomain.getDefinition("Test"));
 			}
 
 		}
