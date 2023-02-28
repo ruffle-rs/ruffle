@@ -1006,7 +1006,7 @@ fn shutdown() {
     }
 }
 
-fn main() -> Result<(), anyhow::Error> {
+fn main() -> Result<(), Error> {
     init();
     let opt = Opt::parse();
     let result = if opt.timedemo {
