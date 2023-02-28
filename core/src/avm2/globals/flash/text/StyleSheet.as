@@ -22,7 +22,7 @@ package flash.text {
         }
         
         public function parseCSS(CSSText:String):void {
-            stub_method("flash.text.StyleSheet", "CSSText");
+            stub_method("flash.text.StyleSheet", "parseCSS");
         }
         
         public function setStyle(styleName:String, styleObject:Object):void {
