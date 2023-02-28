@@ -2117,6 +2117,12 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets the compatibility rules to use with this movie.
+    pub fn with_compatibility_rules(mut self, compatibility_rules: CompatibilityRules) -> Self {
+        self.compatibility_rules = compatibility_rules;
+        self
+    }
+
     // Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;

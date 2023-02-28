@@ -39,6 +39,7 @@ export const DEFAULT_CONFIG: Required<Config> = {
     letterbox: Letterbox.Fullscreen,
     unmuteOverlay: UnmuteOverlay.Visible,
     upgradeToHttps: true,
+    compatibilityRules: true,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,

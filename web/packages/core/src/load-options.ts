@@ -189,6 +189,17 @@ export interface BaseLoadOptions {
     upgradeToHttps?: boolean;
 
     /**
+     * Enable (true) or disable (false) Ruffle's built in compatibility rules.
+     *
+     * These are rules that may make some content work by deliberately changing
+     * behaviour, for example by rewriting requests or spoofing SWF urls if they
+     * rely on websites that no longer exist.
+     *
+     * @default true
+     */
+    compatibilityRules?: boolean;
+
+    /**
      * Whether or not to display an overlay with a warning when
      * loading a movie with unsupported content.
      *
