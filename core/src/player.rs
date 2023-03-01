@@ -488,7 +488,7 @@ impl Player {
                 let timer = Instant::now();
                 self.run_frame();
                 let elapsed = timer.elapsed().as_millis();
-                if frame > 0 && elapsed == 0 {
+                if elapsed == 0 {
                     // To make sure that `getTimer()` never returns the same value between frames,
                     // pretend that at least 1ms elapsed if we ran the frame too fast.
                     self.time_offset += 1;
