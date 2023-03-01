@@ -61,6 +61,9 @@ opt-level = 3
 [profile.dev.package.nihav_duck]
 opt-level = 3
 
+[profile.test]
+opt-level = 3
+
 # TODO: Set rustflags here instead of in web/core/package.json, when that
 # feature becomes stable. See: https://github.com/rust-lang/cargo/issues/10271
 # Until then, these custom profiles let cargo keep the build cache alive
