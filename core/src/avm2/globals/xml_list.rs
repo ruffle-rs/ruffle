@@ -93,7 +93,7 @@ pub fn children<'gc>(
             sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
-    Ok(XmlListObject::new(activation, sub_children).into())
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
 }
 
 pub fn attribute<'gc>(
@@ -136,7 +136,7 @@ pub fn attribute<'gc>(
             }
         }
     }
-    Ok(XmlListObject::new(activation, sub_children).into())
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
 }
 
 pub fn attributes<'gc>(
@@ -154,5 +154,5 @@ pub fn attributes<'gc>(
         }
     }
 
-    Ok(XmlListObject::new(activation, child_attrs).into())
+    Ok(XmlListObject::new(activation, child_attrs, Some(list.into())).into())
 }

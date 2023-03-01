@@ -21,6 +21,18 @@
 		
 			var empty = <myelem/>;
 			trace("Empty children: " + empty.children().length());
+		
+			var filterA = outer.child.(@kind == "A");
+			trace("filterA.length() = " + filterA.length());
+			trace("filterA[0].toString() = " + filterA[0].toString());
+			trace("filterA[1].name() = " + filterA[1].name());
+		
+			var filterB = outer.child.(@kind == "B");
+			trace("filterB.length() = " + filterB.length());
+			trace("filterB[0].toString() = " + filterB[0].toString());
+		
+			var filterC = outer.child.(@kind == "C");
+			trace("filterC.length() = " + filterC.length());
 		}
 	}
 }

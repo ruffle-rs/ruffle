@@ -8,3 +8,9 @@ Inner child localName null
 Inner child localName null
 Inner child localName p
 Empty children: 0
+filterA.length() = 2
+filterA[0].toString() = First Child
+filterA[1].name() = child
+filterB.length() = 1
+filterB[0].toString() = Second Child
+filterC.length() = 0
