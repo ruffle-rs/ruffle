@@ -127,18 +127,6 @@ impl Color {
     }
 
     #[must_use]
-    /// Unlike to_un_multiplied_alpha which trades accuracy for speed,
-    /// this method is slower but slightly more correct
-    pub fn to_un_multiplied_alpha_accurate(self) -> Self {
-        let a = self.alpha() as f64 / 255.0;
-
-        let r = (self.red() as f64 / a).round() as u8;
-        let g = (self.green() as f64 / a).round() as u8;
-        let b = (self.blue() as f64 / a).round() as u8;
-        Self::argb(self.alpha(), r, g, b)
-    }
-
-    #[must_use]
     pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
         Self(i32::from_le_bytes([blue, green, red, alpha]))
     }
@@ -885,8 +873,11 @@ impl<'gc> BitmapData<'gc> {
                     // there could be a faster or more accurate way to do this,
                     // (without converting to floats and back, twice),
                     // but for now this should suffice
-                    let intermediate_color = source_color
-                        .to_un_multiplied_alpha_accurate()
+                    let a = source_color.alpha() as f64 / 255.0;
+                    let r = (source_color.red() as f64 / a).round() as u8;
+                    let g = (source_color.green() as f64 / a).round() as u8;
+                    let b = (source_color.blue() as f64 / a).round() as u8;
+                    let intermediate_color = Color::argb(source_color.alpha(), r, g, b)
                         .with_alpha(final_alpha)
                         .to_premultiplied_alpha(true);
 
