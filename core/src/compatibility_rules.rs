@@ -127,18 +127,15 @@ mod tests {
 
     #[test]
     fn test_domain_matches() {
-        assert_eq!(true, domain_matches("foo.example.com", "foo.example.com"));
-        assert_eq!(true, domain_matches("*.example.com", "foo.example.com"));
-        assert_eq!(true, domain_matches("*.foo.example.com", "foo.example.com"));
-        assert_eq!(true, domain_matches("*.com", "foo.example.com"));
-        assert_eq!(true, domain_matches("*", "foo.example.com"));
-        assert_eq!(false, domain_matches("", "foo.example.com"));
-        assert_eq!(false, domain_matches("com", "foo.example.com"));
-        assert_eq!(false, domain_matches("example.com", "foo.example.com"));
-        assert_eq!(false, domain_matches("bar.example.com", "foo.example.com"));
-        assert_eq!(
-            false,
-            domain_matches("bar.foo.example.com", "foo.example.com")
-        );
+        assert!(domain_matches("foo.example.com", "foo.example.com"));
+        assert!(domain_matches("*.example.com", "foo.example.com"));
+        assert!(domain_matches("*.foo.example.com", "foo.example.com"));
+        assert!(domain_matches("*.com", "foo.example.com"));
+        assert!(domain_matches("*", "foo.example.com"));
+        assert!(!domain_matches("", "foo.example.com"));
+        assert!(!domain_matches("com", "foo.example.com"));
+        assert!(!domain_matches("example.com", "foo.example.com"));
+        assert!(!domain_matches("bar.example.com", "foo.example.com"));
+        assert!(!domain_matches("bar.foo.example.com", "foo.example.com"));
     }
 }
