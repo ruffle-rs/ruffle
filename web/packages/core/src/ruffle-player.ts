@@ -121,7 +121,7 @@ export class RufflePlayer extends HTMLElement {
     private container: HTMLElement;
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
-    private preloader: HTMLElement;
+    private splashScreen: HTMLElement;
     private virtualKeyboard: HTMLInputElement;
 
     // Firefox has a read-only "contextMenu" property,
@@ -221,7 +221,7 @@ export class RufflePlayer extends HTMLElement {
         this.playButton.addEventListener("click", () => this.play());
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
-        this.preloader = this.shadow.getElementById("preloader")!;
+        this.splashScreen = this.shadow.getElementById("splash-screen")!;
         this.virtualKeyboard = <HTMLInputElement>(
             this.shadow.getElementById("virtual-keyboard")!
         );
@@ -415,8 +415,11 @@ export class RufflePlayer extends HTMLElement {
     private async ensureFreshInstance(): Promise<void> {
         this.destroy();
 
-        if (this.loadedConfig.preloader !== false) {
-            this.showPreloader();
+        if (
+            this.loadedConfig.splashScreen !== false &&
+            this.loadedConfig.preloader !== false
+        ) {
+            this.showSplashScreen();
         }
         const ruffleConstructor = await loadRuffle(
             this.loadedConfig,
@@ -531,17 +534,17 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Uploads the preloader progress bar.
+     * Uploads the splash screen progress bar.
      *
      * @param bytesLoaded The size of the Ruffle WebAssembly file downloaded so far.
      * @param bytesTotal The total size of the Ruffle WebAssembly file.
      */
     private onRuffleDownloadProgress(bytesLoaded: number, bytesTotal: number) {
         const loadBar = <HTMLElement>(
-            this.preloader.querySelector(".loadbarInner")
+            this.splashScreen.querySelector(".loadbar-inner")
         );
         const outerLoadbar = <HTMLElement>(
-            this.preloader.querySelector(".loadbar")
+            this.splashScreen.querySelector(".loadbar")
         );
         if (Number.isNaN(bytesTotal)) {
             if (outerLoadbar) {
@@ -1312,7 +1315,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
         this.panicked = true;
-        this.hidePreloader();
+        this.hideSplashScreen();
 
         if (
             error instanceof Error &&
@@ -1591,7 +1594,7 @@ export class RufflePlayer extends HTMLElement {
             this.isExtension &&
             window.location.origin !== this.swfUrl!.origin
         ) {
-            this.hidePreloader();
+            this.hideSplashScreen();
             const div = document.createElement("div");
             div.id = "message_overlay";
             div.innerHTML = `<div class="message">
@@ -1674,13 +1677,13 @@ export class RufflePlayer extends HTMLElement {
         return result;
     }
 
-    private hidePreloader(): void {
-        this.preloader.classList.add("hidden");
+    private hideSplashScreen(): void {
+        this.splashScreen.classList.add("hidden");
         this.container.classList.remove("hidden");
     }
 
-    private showPreloader(): void {
-        this.preloader.classList.remove("hidden");
+    private showSplashScreen(): void {
+        this.splashScreen.classList.remove("hidden");
         this.container.classList.add("hidden");
     }
 
@@ -1688,7 +1691,7 @@ export class RufflePlayer extends HTMLElement {
         this._metadata = metadata;
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
-        this.hidePreloader();
+        this.hideSplashScreen();
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));

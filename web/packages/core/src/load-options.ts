@@ -231,11 +231,18 @@ export interface BaseLoadOptions {
     contextMenu?: boolean;
 
     /**
-     * Whether or not to show a preloader before the SWF has loaded with Ruffle.
+     * Whether or not to show a splash screen before the SWF has loaded with Ruffle (backwards-compatibility).
      *
      * @default true
      */
     preloader?: boolean;
+
+    /**
+     * Whether or not to show a splash screen before the SWF has loaded with Ruffle.
+     *
+     * @default true
+     */
+    splashScreen?: boolean;
 
     /**
      * Maximum amount of time a script can take before scripting
