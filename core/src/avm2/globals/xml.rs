@@ -95,15 +95,68 @@ pub fn children<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-        // FIXME - avoid clone
-        children.clone()
+        children.iter().map(|node| E4XOrXml::E4X(*node)).collect()
     } else {
         Vec::new()
     };
 
+    Ok(XmlListObject::new(activation, children).into())
+}
+
+pub fn attributes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let xml = this.as_xml_object().unwrap();
+    let attributes = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
+        attributes.iter().map(|node| E4XOrXml::E4X(*node)).collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(activation, attributes).into())
+}
+
+pub fn attribute<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let xml = this.as_xml_object().unwrap();
+    let name = args[0];
+    let qname = match name {
+        Value::String(s) => QName::new(activation.avm2().public_namespace, s),
+        Value::Object(o) => {
+            if let Some(qname) = o.as_qname_object() {
+                *qname.qname().unwrap()
+            } else {
+                QName::new(
+                    activation.avm2().public_namespace,
+                    name.coerce_to_string(activation)?,
+                )
+            }
+        }
+        _ => QName::new(
+            activation.avm2().public_namespace,
+            name.coerce_to_string(activation)?,
+        ),
+    };
+
+    let attribute = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
+        attributes
+            .iter()
+            .find(|node| node.matches_name(&qname.into()))
+            .copied()
+    } else {
+        None
+    };
+
     Ok(XmlListObject::new(
         activation,
-        children.iter().map(|node| E4XOrXml::E4X(*node)).collect(),
+        attribute.map_or(Vec::new(), |node| vec![E4XOrXml::E4X(node)]),
     )
     .into())
 }

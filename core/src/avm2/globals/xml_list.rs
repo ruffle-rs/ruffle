@@ -5,7 +5,7 @@ use crate::{
     avm2::{
         e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
         object::{E4XOrXml, XmlListObject},
-        Activation, Error, Object, TObject, Value,
+        Activation, Error, Object, QName, TObject, Value,
     },
     avm2_stub_method,
 };
@@ -94,4 +94,65 @@ pub fn children<'gc>(
         }
     }
     Ok(XmlListObject::new(activation, sub_children).into())
+}
+
+pub fn attribute<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let list = this.as_xml_list_object().unwrap();
+
+    let name = args[0];
+    let qname = match name {
+        Value::String(s) => QName::new(activation.avm2().public_namespace, s),
+        Value::Object(o) => {
+            if let Some(qname) = o.as_qname_object() {
+                *qname.qname().unwrap()
+            } else {
+                QName::new(
+                    activation.avm2().public_namespace,
+                    name.coerce_to_string(activation)?,
+                )
+            }
+        }
+        _ => QName::new(
+            activation.avm2().public_namespace,
+            name.coerce_to_string(activation)?,
+        ),
+    };
+
+    let children = list.children();
+    let mut sub_children = Vec::new();
+    for child in &*children {
+        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+            if let Some(found) = attributes
+                .iter()
+                .find(|node| node.matches_name(&qname.into()))
+                .copied()
+            {
+                sub_children.push(E4XOrXml::E4X(found));
+            }
+        }
+    }
+    Ok(XmlListObject::new(activation, sub_children).into())
+}
+
+pub fn attributes<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let list = this.as_xml_list_object().unwrap();
+
+    let mut child_attrs = Vec::new();
+    for child in list.children().iter() {
+        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+            child_attrs.extend(attributes.iter().map(|node| E4XOrXml::E4X(*node)));
+        }
+    }
+
+    Ok(XmlListObject::new(activation, child_attrs).into())
 }
