@@ -44,7 +44,9 @@ export const DEFAULT_CONFIG: Required<Config> = {
     logLevel: LogLevel.Error,
     showSwfDownload: false,
     contextMenu: true,
+    // Backwards-compatibility option
     preloader: true,
+    splashScreen: true,
     maxExecutionDuration: { secs: 15, nanos: 0 },
     base: null,
     menu: true,
