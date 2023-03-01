@@ -3,6 +3,7 @@
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Object, QName, Value};
 use crate::avm2_stub_method;
 
@@ -16,16 +17,21 @@ pub fn init<'gc>(
 
     match E4XNode::parse(value, activation) {
         Ok(nodes) => {
-            if nodes.len() != 1 {
-                return Err(Error::RustError(
-                    format!(
-                        "XML constructor must be called with a single node: found {:?}",
-                        nodes
-                    )
-                    .into(),
-                ));
-            }
-            this.set_node(activation.context.gc_context, nodes[0])
+            let node = match nodes.as_slice() {
+                // XML defaults to an empty text node when nothing was parsed
+                [] => E4XNode::text(activation.context.gc_context, AvmString::default()),
+                [node] => *node,
+                _ => {
+                    return Err(Error::RustError(
+                        format!(
+                            "XML constructor must be called with a single node: found {:?}",
+                            nodes
+                        )
+                        .into(),
+                    ))
+                }
+            };
+            this.set_node(activation.context.gc_context, node);
         }
         Err(e) => {
             return Err(Error::RustError(

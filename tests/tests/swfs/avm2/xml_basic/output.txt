@@ -24,3 +24,4 @@ CDATA
 
 Skipped everything else
 Text after comments and PI
+Empty lists: 0 0

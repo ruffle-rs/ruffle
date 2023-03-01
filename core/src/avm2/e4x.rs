@@ -65,6 +65,17 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    pub fn text(mc: MutationContext<'gc, '_>, text: AvmString<'gc>) -> Self {
+        E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: None,
+                local_name: None,
+                kind: E4XNodeKind::Text(text),
+            },
+        ))
+    }
+
     fn append_child(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -228,17 +239,6 @@ impl<'gc> E4XNode<'gc> {
                 Event::Decl(_) | Event::DocType(_) => {}
                 Event::Eof => break,
             }
-        }
-
-        if top_level.is_empty() {
-            top_level.push(E4XNode(GcCell::allocate(
-                activation.context.gc_context,
-                E4XNodeData {
-                    parent: None,
-                    local_name: None,
-                    kind: E4XNodeKind::Text(AvmString::default()),
-                },
-            )));
         }
         Ok(top_level)
     }

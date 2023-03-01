@@ -66,7 +66,11 @@ var declaration_doctype = new XML("<?xml version = \"1.0\" encoding = \"UTF-8\" 
 trace(declaration_doctype.toString());
 
 			var commentsAndPI = <wrapper><?display table-view?> <!-- Some comment -->Text after comments and PI</wrapper>
-			trace(commentsAndPI)
+			trace(commentsAndPI);
+			
+			var emptyList1 = new XMLList();
+			var emptyList2 = new XMLList("");
+			trace("Empty lists: " + emptyList1.length() + " " + emptyList2.length());
 			
 			// FIXME - enable this when Ruffle throws coercion errors
 			//XML.prototype.name.apply(5);
