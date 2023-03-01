@@ -100,7 +100,7 @@ pub fn children<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, children).into())
+    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
 }
 
 pub fn attributes<'gc>(
@@ -116,7 +116,7 @@ pub fn attributes<'gc>(
         Vec::new()
     };
 
-    Ok(XmlListObject::new(activation, attributes).into())
+    Ok(XmlListObject::new(activation, attributes, Some(xml.into())).into())
 }
 
 pub fn attribute<'gc>(
@@ -157,6 +157,7 @@ pub fn attribute<'gc>(
     Ok(XmlListObject::new(
         activation,
         attribute.map_or(Vec::new(), |node| vec![E4XOrXml::E4X(node)]),
+        Some(xml.into()),
     )
     .into())
 }
