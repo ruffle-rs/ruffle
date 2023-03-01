@@ -116,17 +116,17 @@ function sanitizeParameters(
  * This element will represent the rendered and intractable flash movie.
  */
 export class RufflePlayer extends HTMLElement {
-    private shadow: ShadowRoot;
-    private dynamicStyles: HTMLStyleElement;
-    private container: HTMLElement;
-    private playButton: HTMLElement;
-    private unmuteOverlay: HTMLElement;
-    private splashScreen: HTMLElement;
-    private virtualKeyboard: HTMLInputElement;
+    private readonly shadow: ShadowRoot;
+    private readonly dynamicStyles: HTMLStyleElement;
+    private readonly container: HTMLElement;
+    private readonly playButton: HTMLElement;
+    private readonly unmuteOverlay: HTMLElement;
+    private readonly splashScreen: HTMLElement;
+    private readonly virtualKeyboard: HTMLInputElement;
 
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
-    private contextMenuElement: HTMLElement;
+    private readonly contextMenuElement: HTMLElement;
 
     // Allows the user to permanently disable the context menu.
     private contextMenuForceDisabled = false;
