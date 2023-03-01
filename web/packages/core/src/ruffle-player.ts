@@ -421,6 +421,11 @@ export class RufflePlayer extends HTMLElement {
         ) {
             this.showSplashScreen();
         }
+        if (this.loadedConfig.preloader === false) {
+            console.warn(
+                "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration."
+            );
+        }
         const ruffleConstructor = await loadRuffle(
             this.loadedConfig,
             this.onRuffleDownloadProgress.bind(this)
