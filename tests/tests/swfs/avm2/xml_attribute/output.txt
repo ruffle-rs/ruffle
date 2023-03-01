@@ -1,0 +1,16 @@
+outer.attribute(new QName(null, "firstAttr")) = Hello
+outer.attribute("firstAttr") = Hello
+outer.attribute(customKey) = Hello
+outer.attribute("sharedAttr") = Outer level
+outer.attribute("missingAttr") = 
+Types: XMLList XMLList XMLList
+outer.attributes() = HelloOuter level
+outer.attributes().length() = 2
+outer.child.attributes() = Second childSecond child attrThird childThird child attr
+outer.child.attributes().length() = 4
+new XMLList().attributes().length() = 0
+outer.child.attribute(otherCustomKey) = Second childThird child
+outer.child.attribute(new QName(null, "sharedAttr")) = Second childThird child
+outer.child.attribute("sharedAttr") = Second childThird child
+outer.child.attribute("sharedAttr").length() = 2
+outer.child.attribute("missingAttr").length() = 0
