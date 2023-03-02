@@ -1,4 +1,6 @@
 ﻿package {
+	import flash.utils.getQualifiedClassName;
+	
 	public class Test {
 		public static function test() {
 			var outer = <outer>
@@ -33,6 +35,62 @@
 		
 			var filterC = outer.child.(@kind == "C");
 			trace("filterC.length() = " + filterC.length());
+		
+			var singleSimpleChild = filterB.children()
+			trace("filterB.split(' ') = " + filterB.split(' '));
+			trace("filterB.indexOf('e') = " + filterB.indexOf('e'));
+		
+			var normalList = new XMLList("<child name='First child'><nested>Normal Child</nested></child>");
+			trace("normalList.nested = " + normalList.nested);
+			
+			var weirdList = new XMLList("<child name='First child'><name>Weird child</name></child>");
+			trace("weirdList.name = " + weirdList.name);
+			trace("weirdList.name() = " + weirdList.name());
+			trace("weirdList.split.length() = " + weirdList.split.length());
+			
+			var otherWeirdList = new XMLList("<child name='First child'><split>Other weird child</split></child>");
+			trace("weirdList.name = " + weirdList.name);
+			trace("weirdList.name() = " + weirdList.name());
+		
+			// We're accessing this property, not calling it, so it shouldn't
+			// be a method
+			trace("getQualifiedClassName(filterB.split) = " + getQualifiedClassName(filterB.split));
+			
+			var simpleXML = new XML("My simple text");
+			trace("simpleXML.split(' ') = " + simpleXML.split(' '));
+			trace("getQualifiedClassName(simpleXML.split) = " + getQualifiedClassName(simpleXML.split));
+			
+			var xmlElement = new XML("<p>Inner content</p>");
+			trace("xmlElement.split(' ') = " + xmlElement.split(' '));
+			
+			var sameName = new XMLList("<child attr='Outer'><child attr='Inner'></child></child>");
+			trace("sameName.child.@attr = " + sameName.child.@attr);
+			
+			var weirdXML = new XML("<split>Weird content</split>");
+			trace("weirdXMl.split(' ') = " + weirdXML.split(" "));
+			
+			var emptyList = new XMLList();
+			try {
+				emptyList.name()
+			} catch (e) {
+				trace("emptyList.name() threw: " + e);
+			}
+		
+			var multiList = new XMLList("<p>First</p><p>Second</p>");
+			try {
+				multiList.name()
+			} catch (e) {
+				trace("multiList.name() threw: " + e);
+			}
+			
+			var complexXML = new XML("<wrapper><p>One Two</p><p>Three Four</p></wrapper>");
+			try {
+				trace("complexXML.split(' ') = " + complexXML.split(' '));
+			} catch (e) {
+				// FIXME - Ruffle does not throw an AVM exception for the above error.
+				// Uncomment this when it does
+				//trace("Caught exception: " + e);
+			}
 		}
 	}
 }

@@ -60,8 +60,29 @@ impl<'gc> XmlListObject<'gc> {
         ))
     }
 
+    pub fn length(&self) -> usize {
+        self.0.read().children.len()
+    }
+
+    pub fn xml_object_child(
+        &self,
+        index: usize,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Option<XmlObject<'gc>> {
+        let mut write = self.0.write(activation.context.gc_context);
+        if let Some(child) = write.children.get_mut(index) {
+            Some(child.get_or_create_xml(activation))
+        } else {
+            None
+        }
+    }
+
     pub fn children(&self) -> Ref<'_, Vec<E4XOrXml<'gc>>> {
         Ref::map(self.0.read(), |d| &d.children)
+    }
+
+    pub fn children_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, Vec<E4XOrXml<'gc>>> {
+        RefMut::map(self.0.write(mc), |d| &mut d.children)
     }
 
     pub fn set_children(&self, mc: MutationContext<'gc, '_>, children: Vec<E4XOrXml<'gc>>) {
@@ -206,6 +227,56 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         write.base.get_property_local(name, activation)
     }
 
+    fn call_property_local(
+        self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let method = self
+            .proto()
+            .expect("XMLList missing prototype")
+            .get_property(multiname, activation)?;
+
+        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L50
+        // in avmplus.
+        // If we have exactly one child, then we forward the method to the child,
+        // so long as none of our *children* have a property matching the method name
+        // (it doesn't matter if a child's *name* matches, because XMLList methods work
+        //  by running an operation on each child. For example,
+        // 'new XMLList('<child attr="Outer"><name attr="Inner"></name</child>').name'
+        // gives us back an XMLList with '<name attr=Inner></name>'
+        //
+        // It seems like it may be unnecessary to check if any of our children contain
+        // a property matching the method name:
+        // * XMLList defines all of the same methods as XML on its prototype (e.g. 'name', 'nodeType', etc.)
+        //   If we're attempting to call one of these XML-related methods, then we'll find it on the prototype
+        //   in the above check.
+        // * If we're calling a method that *doesn't* exist on the prototype, it must not be an XML-related
+        //   method. In that case, the method will only be callable on our XML child if the child has simple
+        //   content (as we'll automatically convert it to a String, and call the method on that String).
+        // * However, in order for a child to have a property matching the meethod name, it must be
+        //   a non-simple XML object (simple XML objects have no properties to match).
+        //
+        // Nevertheless, there may be some weird edge case where this actually matters.
+        // To be safe, we'll just perform exactly the same check that avmplus does.
+        if matches!(method, Value::Undefined) {
+            let prop = self.get_property_local(multiname, activation)?;
+            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
+                if list.length() == 0 && self.length() == 1 {
+                    let mut this = self.0.write(activation.context.gc_context);
+                    return this.children[0]
+                        .get_or_create_xml(activation)
+                        .call_property(multiname, arguments, activation);
+                }
+            }
+        }
+
+        return method
+            .as_callable(activation, Some(multiname), Some(self.into()))?
+            .call(Some(self.into()), arguments, activation);
+    }
+
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
@@ -252,7 +323,10 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         if (last_index as usize) < read.children.len() {
             return Ok(Some(last_index + 1));
         }
-        Ok(None)
+        // Return `Some(0)` instead of `None`, as we do *not* want to
+        // fall back to the prototype chain. XMLList is special, and enumeration
+        // *only* ever considers the XML children.
+        Ok(Some(0))
     }
 
     fn get_enumerant_value(

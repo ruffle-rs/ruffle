@@ -12,6 +12,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
+use super::PrimitiveObject;
 
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
@@ -149,6 +150,45 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         read.base.get_property_local(name, activation)
+    }
+
+    fn call_property_local(
+        self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let this = self.as_xml_object().unwrap();
+
+        let method = self
+            .proto()
+            .expect("XMLList misisng prototype")
+            .get_property(multiname, activation)?;
+
+        // If the method doesn't exist on the prototype, and we have simple content,
+        // then coerce this XML to a string and call the method on that.
+        // This lets things like `new XML("<p>Hello world</p>").split(" ")` work.
+        if matches!(method, Value::Undefined) {
+            // Checking if we have a child with the same name as the method is probably
+            // unecessary - if we had such a child, then we wouldn't have simple content,
+            // so we already would bail out before calling the method. Nevertheless,
+            // avmplus has this check, so we do it out of an abundance of caution.
+            // Compare to the very similar case in XMLListObject::call_property_local
+            let prop = self.get_property_local(multiname, activation)?;
+            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
+                if list.length() == 0 && this.node().has_simple_content() {
+                    let receiver = PrimitiveObject::from_primitive(
+                        this.node().xml_to_string(activation)?.into(),
+                        activation,
+                    )?;
+                    return receiver.call_property(multiname, arguments, activation);
+                }
+            }
+        }
+
+        return method
+            .as_callable(activation, Some(multiname), Some(self.into()))?
+            .call(Some(self.into()), arguments, activation);
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {

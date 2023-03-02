@@ -4,6 +4,7 @@ pub use crate::avm2::object::xml_list_allocator;
 use crate::{
     avm2::{
         e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
+        error::type_error,
         object::{E4XOrXml, XmlListObject},
         Activation, Error, Multiname, Object, TObject, Value,
     },
@@ -155,4 +156,27 @@ pub fn attributes<'gc>(
     }
 
     Ok(XmlListObject::new(activation, child_attrs, Some(list.into())).into())
+}
+
+pub fn name<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let list = this.as_xml_list_object().unwrap();
+
+    let mut children = list.children_mut(activation.context.gc_context);
+    match &mut children[..] {
+        [child] => {
+            child
+                .get_or_create_xml(activation)
+                .call_public_property("name", &[], activation)
+        }
+        _ => Err(Error::AvmError(type_error(
+            activation,
+            "Error #1086: The name method only works on lists containing one item.",
+            1086,
+        )?)),
+    }
 }
