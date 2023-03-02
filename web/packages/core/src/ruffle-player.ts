@@ -627,7 +627,6 @@ export class RufflePlayer extends HTMLElement {
         options: string | URLLoadOptions | DataLoadOptions
     ): Promise<void> {
         options = this.checkOptions(options);
-
         if (!this.isConnected || this.isUnusedFallbackObject()) {
             console.warn(
                 "Ignoring attempt to play a disconnected or suspended Ruffle element"
@@ -643,6 +642,7 @@ export class RufflePlayer extends HTMLElement {
         try {
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
+                ...(window.RufflePlayer?.extensionConfig ?? {}),
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,

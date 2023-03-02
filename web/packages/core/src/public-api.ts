@@ -12,7 +12,10 @@ declare global {
          * [[PublicAPI]] instance itself.
          */
         RufflePlayer?:
-            | { config?: DataLoadOptions | URLLoadOptions | object }
+            | {
+                  config?: DataLoadOptions | URLLoadOptions | object;
+                  extensionConfig?: DataLoadOptions | URLLoadOptions | object;
+              }
             | PublicAPI;
     }
 }
@@ -33,6 +36,7 @@ export class PublicAPI {
      * The configuration object used when Ruffle is instantiated.
      */
     config: DataLoadOptions | URLLoadOptions | object;
+    extensionConfig: DataLoadOptions | URLLoadOptions | object;
 
     private sources: Record<string, typeof SourceAPI>;
     private invoked: boolean;
@@ -58,6 +62,7 @@ export class PublicAPI {
     protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
         this.sources = {};
         this.config = {};
+        this.extensionConfig = {};
         this.invoked = false;
         this.newestName = null;
         this.conflict = null;
@@ -162,7 +167,8 @@ export class PublicAPI {
                 "polyfills" in this.config ? this.config.polyfills : true;
             if (polyfills !== false) {
                 this.sources[this.newestName]!.polyfill(
-                    this.newestName === "extension"
+                    this.newestName === "extension",
+                    this.config
                 );
             }
         }

@@ -196,9 +196,17 @@ export function pluginPolyfill(): void {
  * Polyfills legacy Flash content on the page.
  *
  * @param isExt Whether or not Ruffle is running as a browser's extension.
+ * @param extensionConfig The configuration sent by the PublicAPI, stored if this is the extension.
  */
-export function polyfill(isExt: boolean): void {
+export function polyfill(
+    isExt: boolean,
+    extensionConfig: URLLoadOptions | DataLoadOptions | object
+): void {
     isExtension = isExt;
+    window.RufflePlayer ||= {};
+    if (isExtension) {
+        window.RufflePlayer.extensionConfig = extensionConfig;
+    }
     polyfillFlashInstances();
     polyfillFrames();
     initMutationObserver();

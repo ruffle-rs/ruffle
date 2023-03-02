@@ -2,6 +2,7 @@ import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./register-element";
 import { RufflePlayer } from "./ruffle-player";
 import { buildInfo } from "./build-info";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 /**
  * Represents this particular version of Ruffle.
@@ -23,9 +24,13 @@ export const SourceAPI = {
      * Do not run polyfills for more than one Ruffle source at a time.
      *
      * @param isExt Whether or not Ruffle is running as a browser's extension.
+     * @param extensionConfig The configuration sent by the PublicAPI, stored if this is the extension.
      */
-    polyfill(isExt: boolean): void {
-        polyfill(isExt);
+    polyfill(
+        isExt: boolean,
+        extensionConfig: URLLoadOptions | DataLoadOptions | object
+    ): void {
+        polyfill(isExt, extensionConfig);
     },
 
     /**
