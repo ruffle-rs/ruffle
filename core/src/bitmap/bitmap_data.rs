@@ -579,6 +579,26 @@ impl<'gc> BitmapData<'gc> {
         Ok(result)
     }
 
+    pub fn get_vector(&self, x: i32, y: i32, width: i32, height: i32) -> Vec<Avm2Value<'gc>> {
+        let x0 = x.max(0) as u32;
+        let y0 = y.max(0) as u32;
+        let x1 = (x + width).clamp(0, self.width as i32) as u32;
+        let y1 = (y + height).clamp(0, self.height as i32) as u32;
+
+        let capacity = (y1 - y0) * (x1 - x0);
+        let mut result = Vec::with_capacity(capacity as usize);
+
+        for y in y0..y1 {
+            for x in x0..x1 {
+                let color = self.pixels[(x + y * self.width) as usize];
+                let color = color.to_un_multiplied_alpha().0 as u32;
+                result.push(color.into());
+            }
+        }
+
+        result
+    }
+
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         let current_alpha = self.get_pixel_raw(x, y).map(|p| p.alpha()).unwrap_or(0);
         self.set_pixel32(x as i32, y as i32, color.with_alpha(current_alpha));
