@@ -269,6 +269,9 @@ pub struct NativeMethod<'gc> {
     /// The parameter signature of the method.
     pub signature: Vec<ParamConfig<'gc>>,
 
+    /// The return type of this method.
+    pub return_type: Multiname<'gc>,
+
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
     pub is_variadic: bool,
@@ -318,6 +321,8 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature,
+                // FIXME - take in the real return type. This is needed for 'describeType'
+                return_type: Multiname::any(mc),
                 is_variadic,
             },
         ))
@@ -335,6 +340,8 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature: Vec::new(),
+                // FIXME - take in the real return type. This is needed for 'describeType'
+                return_type: Multiname::any(mc),
                 is_variadic: true,
             },
         ))
@@ -349,6 +356,13 @@ impl<'gc> Method<'gc> {
                 Err("Attempted to unwrap a native method as a user-defined one".into())
             }
             Method::Bytecode(bm) => Ok(bm),
+        }
+    }
+
+    pub fn return_type(&self) -> Multiname<'gc> {
+        match self {
+            Method::Native(nm) => nm.return_type.clone(),
+            Method::Bytecode(bm) => bm.return_type.clone(),
         }
     }
 

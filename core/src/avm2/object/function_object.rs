@@ -7,7 +7,7 @@ use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -31,6 +31,7 @@ pub fn function_allocator<'gc>(
             method: |_, _, _| Ok(Value::Undefined),
             name: "<Empty Function>",
             signature: vec![],
+            return_type: Multiname::any(activation.context.gc_context),
             is_variadic: true,
         },
     );

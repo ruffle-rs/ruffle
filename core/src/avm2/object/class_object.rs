@@ -692,6 +692,10 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
+    pub fn constructor(self) -> Method<'gc> {
+        self.0.read().constructor.clone()
+    }
+
     pub fn instance_vtable(self) -> VTable<'gc> {
         self.0.read().instance_vtable
     }

@@ -57,6 +57,15 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     let mut write = class_class.write(gc_context);
 
+    // 'length' is a weird undocumented constant in Class.
+    // We need to define it, since it shows up in 'describeType'
+    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS,
+        activation,
+    );
+
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,

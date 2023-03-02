@@ -1,4 +1,4 @@
-// compiled with mxmlc
+﻿// compiled with mxmlc
 
 package {
     import flash.display.MovieClip;
@@ -8,27 +8,79 @@ package {
     }
 }
 
-// note: this entire test is to be replaced by more comprehensive test
-// once XML gets implemented.
-// This test only checks that `type.@name` looks like a string containing the type name.
-
 import flash.utils.describeType;
+import flash.utils.getQualifiedClassName;
+import flash.utils.getQualifiedSuperclassName;
 import flash.utils.Dictionary;
-class C{}
-var o = {};
+import flash.display.DisplayObject;
 
-var name; // mxmlc disallows .@name.toString() for some reason
+// The order of elements in describeType(obj)) depends on the iteration order
+// of the internal avmplus Traits hashtable.
+// We don't currently reproduce this in Ruffle, so we can't just use 'toXMLString'
+// to print the output. Instead, we use this function to re-implement 'toXMLString',
+// and normalize the output by printing the children of an element in lexicographic
+// order (by their stringified value)
+function normalizeXML(data: XML, indent:uint = 0) {
+	var output = "";
+	for (var i = 0; i < indent; i++) {
+		output += " ";
+	};
+	output += "<" + data.name();
+	for each (var attr in data.attributes()) {
+		output += " " + attr.name() + "=\"" + attr + "\"";
+	}
+	if (data.children().length() == 0) {
+		output += "/>";
+		return output;
+	}
+	output += ">\n";
+	var childStrs = []
+	for each (var child in data.children()) {
+		childStrs.push(normalizeXML(child, indent + 2));
+	}
+	childStrs.sort()
+	for each (var childStr in childStrs) {
+		for (var i = 0 ; i < indent; i++) {
+			output += " ";
+		}
+		output += childStr;
+		output += "\n"
+	}
+	for (var i = 0; i < indent; i++) {
+		output += " ";
+	};
+	output += "</" + data.name() + ">";
+	return output;
+}
 
-trace(describeType(o).@name == "Object");
-name = describeType(o).@name;
-trace(name.toString() == "Object");
+function describeXMLNormalized(val: *) {
+	trace(normalizeXML(describeType(val)));
+}
 
-trace(describeType(C).@name);
-name = describeType(C).@name;
-trace(name.toString());
-trace(describeType(new C()).@name);
-trace(describeType(int).@name);
-trace(describeType(1).@name);
-trace(describeType(Class).@name);
-trace(describeType(Dictionary).@name);
-trace(describeType(new Dictionary()).@name);
+class C {}
+
+class Base {
+	public function Base(optParam:* = null) {}
+	public var baseProp:Object;
+	public function baseMethod(): Boolean { return true }
+	public function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
+	AS3 function as3Method() {}
+}
+
+class Subclass extends Base {
+	public var subProp:Object;
+	public function subMethod() {}
+	public override function overridenMethod(firstParam: *, secondParam: Dictionary, thirdParam: DisplayObject = null): Object { return null; }
+}
+
+describeXMLNormalized(Object);
+describeXMLNormalized(new Object());
+describeXMLNormalized(Subclass);
+describeXMLNormalized(new Subclass());
+describeXMLNormalized(C);
+describeXMLNormalized(new C());
+describeXMLNormalized(int);
+describeXMLNormalized(1);
+describeXMLNormalized(Class);
+describeXMLNormalized(Dictionary);
+describeXMLNormalized(new Dictionary());

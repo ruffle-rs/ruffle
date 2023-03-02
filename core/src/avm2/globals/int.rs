@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::globals::number::{print_with_precision, print_with_radix};
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
@@ -269,7 +269,17 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let class = Class::new(
         QName::new(activation.avm2().public_namespace, "int"),
         Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(instance_init, "<int instance initializer>", mc),
+        Method::from_builtin_and_params(
+            instance_init,
+            "<int instance initializer>",
+            vec![ParamConfig {
+                param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
+                param_type_name: Multiname::any(activation.context.gc_context),
+                default_value: Some(Value::Integer(0)),
+            }],
+            false,
+            mc,
+        ),
         Method::from_builtin(class_init, "<int class initializer>", mc),
         mc,
     );
@@ -283,7 +293,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     ));
 
-    const CLASS_CONSTANTS: &[(&str, i32)] = &[("MAX_VALUE", i32::MAX), ("MIN_VALUE", i32::MIN)];
+    // 'length' is a weird undocumented constant in int.
+    // We need to define it, since it shows up in 'describeType'
+    const CLASS_CONSTANTS: &[(&str, i32)] = &[
+        ("MAX_VALUE", i32::MAX),
+        ("MIN_VALUE", i32::MIN),
+        ("length", 1),
+    ];
     write.define_constant_int_class_traits(
         activation.avm2().public_namespace,
         CLASS_CONSTANTS,
