@@ -175,7 +175,7 @@ impl<'gc> Trait<'gc> {
         Trait {
             name,
             attributes: TraitAttributes::empty(),
-            kind: TraitKind::Slot {
+            kind: TraitKind::Const {
                 slot_id: 0,
                 default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
                 type_name,

@@ -375,7 +375,9 @@ impl<'gc> Multiname<'gc> {
         uri.push_str(&ns);
 
         if let Some(name) = self.name {
-            uri.push_str(WStr::from_units(b"::"));
+            if !uri.is_empty() {
+                uri.push_str(WStr::from_units(b"::"));
+            }
             uri.push_str(&name);
         } else {
             uri.push_str(WStr::from_units(b"::*"));
@@ -395,6 +397,16 @@ impl<'gc> Multiname<'gc> {
         }
 
         AvmString::new(mc, uri)
+    }
+
+    /// Like `to_qualified_name`, but returns `*` if `self.is_any()` is true.
+    /// This is used by `describeType`
+    pub fn to_qualified_name_or_star(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        if self.is_any() {
+            AvmString::new_utf8(mc, "*")
+        } else {
+            self.to_qualified_name(mc)
+        }
     }
 
     // note: I didn't look very deeply into how different exactly this should be

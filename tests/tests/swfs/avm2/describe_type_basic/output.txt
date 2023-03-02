@@ -1,10 +1,97 @@
-true
-true
-FilePrivateNS:Test::C
-FilePrivateNS:Test::C
-FilePrivateNS:Test::C
-int
-int
-Class
-flash.utils::Dictionary
-flash.utils::Dictionary
+<type name="Object" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="length" type="int"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="Object"/>
+</type>
+<type name="Object" isDynamic="true" isFinal="false" isStatic="false"/>
+<type name="Test.as$38::Subclass" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="Test.as$38::Subclass">
+      <extendsClass type="Object"/>
+      <extendsClass type="Test.as$38::Base"/>
+      <method name="baseMethod" declaredBy="Test.as$38::Base" returnType="Boolean"/>
+      <method name="overridenMethod" declaredBy="Test.as$38::Subclass" returnType="Object">
+          <parameter index="1" type="*" optional="false"/>
+          <parameter index="2" type="flash.utils::Dictionary" optional="false"/>
+          <parameter index="3" type="flash.display::DisplayObject" optional="true"/>
+    </method>
+      <method name="subMethod" declaredBy="Test.as$38::Subclass" returnType="*"/>
+      <variable name="baseProp" type="Object"/>
+      <variable name="subProp" type="Object"/>
+  </factory>
+</type>
+<type name="Test.as$38::Subclass" base="Test.as$38::Base" isDynamic="false" isFinal="false" isStatic="false">
+  <extendsClass type="Object"/>
+  <extendsClass type="Test.as$38::Base"/>
+  <method name="baseMethod" declaredBy="Test.as$38::Base" returnType="Boolean"/>
+  <method name="overridenMethod" declaredBy="Test.as$38::Subclass" returnType="Object">
+      <parameter index="1" type="*" optional="false"/>
+      <parameter index="2" type="flash.utils::Dictionary" optional="false"/>
+      <parameter index="3" type="flash.display::DisplayObject" optional="true"/>
+  </method>
+  <method name="subMethod" declaredBy="Test.as$38::Subclass" returnType="*"/>
+  <variable name="baseProp" type="Object"/>
+  <variable name="subProp" type="Object"/>
+</type>
+<type name="Test.as$38::C" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="Test.as$38::C">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="Test.as$38::C" base="Object" isDynamic="false" isFinal="false" isStatic="false">
+  <extendsClass type="Object"/>
+</type>
+<type name="int" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="MAX_VALUE" type="int"/>
+  <constant name="MIN_VALUE" type="int"/>
+  <constant name="length" type="int"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="int">
+      <constructor>
+          <parameter index="1" type="*" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="int" base="Object" isDynamic="false" isFinal="true" isStatic="false">
+  <constructor>
+      <parameter index="1" type="*" optional="true"/>
+  </constructor>
+  <extendsClass type="Object"/>
+</type>
+<type name="Class" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="length" type="int"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="Class">
+      <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.utils::Dictionary" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.utils::Dictionary">
+      <constructor>
+          <parameter index="1" type="Boolean" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.utils::Dictionary" base="Object" isDynamic="true" isFinal="false" isStatic="false">
+  <constructor>
+      <parameter index="1" type="Boolean" optional="true"/>
+  </constructor>
+  <extendsClass type="Object"/>
+</type>

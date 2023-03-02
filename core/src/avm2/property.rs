@@ -7,6 +7,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
+use gc_arena::MutationContext;
 use gc_arena::{Collect, Gc};
 
 #[derive(Debug, Collect, Clone, Copy)]
@@ -123,6 +124,14 @@ impl<'gc> PropertyClass<'gc> {
             // We have a type of '*' ("any"), so don't
             // perform any coercions
             Ok((value, changed))
+        }
+    }
+
+    pub fn get_name(&self, mc: MutationContext<'gc, '_>) -> Multiname<'gc> {
+        match self {
+            PropertyClass::Class(class) => class.inner_class_definition().read().name().into(),
+            PropertyClass::Name(gc) => gc.0.clone(),
+            PropertyClass::Any => Multiname::any(mc),
         }
     }
 }
