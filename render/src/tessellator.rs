@@ -8,6 +8,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
+use swf::GradientRecord;
 use tracing::instrument;
 
 pub struct ShapeTessellator {
@@ -255,6 +256,7 @@ pub struct Gradient {
     pub repeat_mode: swf::GradientSpread,
     pub focal_point: swf::Fixed8,
     pub interpolation: swf::GradientInterpolation,
+    pub records: Vec<GradientRecord>,
 }
 
 #[derive(Clone, Debug)]
@@ -379,6 +381,7 @@ fn swf_gradient_to_uniforms(
     let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
     let mut colors = Vec::with_capacity(num_colors);
     let mut ratios = Vec::with_capacity(num_colors);
+    let records = gradient.records.clone();
     for record in &gradient.records[..num_colors] {
         let mut color = [
             f32::from(record.color.r) / 255.0,
@@ -398,6 +401,7 @@ fn swf_gradient_to_uniforms(
 
     Gradient {
         matrix: swf_to_gl_matrix(gradient.matrix.into()),
+        records,
         gradient_type,
         ratios,
         colors,
