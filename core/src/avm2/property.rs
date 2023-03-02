@@ -158,7 +158,7 @@ fn resolve_class_private<'gc>(
     // this means that the property can have a value of `Undefined`.
     // If the type is `Object`, then a value of `Undefind` gets coerced
     // to `Null`
-    if name.is_any() {
+    if name.is_any_name() {
         Ok(ResolveOutcome::Any)
     } else {
         // First, check the domain for an exported (non-private) class.

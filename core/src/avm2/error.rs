@@ -83,7 +83,7 @@ pub fn make_reference_error<'gc>(
     multiname: &Multiname<'gc>,
     object_class: Option<ClassObject<'gc>>,
 ) -> Error<'gc> {
-    let qualified_name = multiname.to_error_qualified_name(activation.context.gc_context);
+    let qualified_name = multiname.as_uri(activation.context.gc_context);
     let class_name = object_class
         .map(|cls| {
             cls.inner_class_definition()

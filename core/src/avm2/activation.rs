@@ -288,7 +288,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         type_name: &Multiname<'gc>,
     ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
-        if type_name.is_any() {
+        if type_name.is_any_name() {
             return Ok(None);
         }
 
@@ -339,7 +339,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Cow::Borrowed(value)
         } else if let Some(default) = &param_config.default_value {
             Cow::Borrowed(default)
-        } else if param_config.param_type_name.is_any() {
+        } else if param_config.param_type_name.is_any_name() {
             return Ok(Value::Undefined);
         } else {
             return Err(format!(

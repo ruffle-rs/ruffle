@@ -4,8 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::AvmString;
 use crate::avm2::Error;
-use crate::avm2::QName;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -19,7 +21,10 @@ pub fn qname_allocator<'gc>(
 
     Ok(QNameObject(GcCell::allocate(
         activation.context.gc_context,
-        QNameObjectData { base, qname: None },
+        QNameObjectData {
+            base,
+            name: Multiname::any(activation.context.gc_context),
+        },
     ))
     .into())
 }
@@ -43,15 +48,15 @@ pub struct QNameObjectData<'gc> {
     /// All normal script data.
     base: ScriptObjectData<'gc>,
 
-    /// The QName name this object is associated with.
-    qname: Option<QName<'gc>>,
+    /// The Multiname this object is associated with.
+    name: Multiname<'gc>,
 }
 
 impl<'gc> QNameObject<'gc> {
-    /// Box a QName into an object.
-    pub fn from_qname(
+    /// Box a Multiname into an object.
+    pub fn from_name(
         activation: &mut Activation<'_, 'gc>,
-        qname: QName<'gc>,
+        name: impl Into<Multiname<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
@@ -60,26 +65,59 @@ impl<'gc> QNameObject<'gc> {
             activation.context.gc_context,
             QNameObjectData {
                 base,
-                qname: Some(qname),
+                name: name.into(),
             },
         ))
         .into();
         this.install_instance_slots(activation);
 
-        class.call_native_init(Some(this), &[], activation)?;
-
         Ok(this)
     }
 
-    pub fn qname(&self) -> Option<Ref<QName<'gc>>> {
+    pub fn name(&self) -> Ref<Multiname<'gc>> {
         let read = self.0.read();
-        read.qname.as_ref()?;
 
-        Some(Ref::map(read, |r| r.qname.as_ref().unwrap()))
+        Ref::map(read, |r| &r.name)
     }
 
-    pub fn init_qname(self, mc: MutationContext<'gc, '_>, qname: QName<'gc>) {
-        self.0.write(mc).qname = Some(qname);
+    pub fn set_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
+        let mut write = self.0.write(mc);
+
+        write.name.set_single_namespace(namespace);
+    }
+
+    pub fn set_local_name(&self, mc: MutationContext<'gc, '_>, local: AvmString<'gc>) {
+        let mut write = self.0.write(mc);
+
+        write.name.set_local_name(local);
+    }
+
+    pub fn local_name(&self) -> AvmString<'gc> {
+        let name = self.name();
+
+        name.local_name().unwrap_or("*".into())
+    }
+
+    pub fn uri(&self) -> Option<AvmString<'gc>> {
+        let read = self.0.read();
+
+        if read.name.is_any_namespace() {
+            None
+        } else if read.name.namespace_set().len() > 1 {
+            Some("".into())
+        } else {
+            Some(
+                read.name
+                    .namespace_set()
+                    .first()
+                    .expect("Malformed multiname")
+                    .as_uri(),
+            )
+        }
+    }
+
+    pub fn init_name(self, mc: MutationContext<'gc, '_>, name: impl Into<Multiname<'gc>>) {
+        self.0.write(mc).name = name.into();
     }
 }
 

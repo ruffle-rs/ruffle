@@ -221,7 +221,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             .into());
         }
 
-        if !name.is_any() && !name.is_attribute() {
+        if !name.is_any_name() && !name.is_attribute() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
                     if index >= write.children.len() {
