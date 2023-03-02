@@ -53,7 +53,7 @@ pub fn name<'gc>(
         avm2_stub_method!(activation, "XML", "name", "namespaces");
         // FIXME - use namespace
         let namespace = activation.avm2().public_namespace;
-        Ok(QNameObject::from_qname(activation, QName::new(namespace, local_name))?.into())
+        Ok(QNameObject::from_name(activation, QName::new(namespace, local_name))?.into())
     } else {
         Ok(Value::Null)
     }
@@ -127,28 +127,30 @@ pub fn attribute<'gc>(
     let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
     let name = args[0];
-    let qname = match name {
-        Value::String(s) => QName::new(activation.avm2().public_namespace, s),
+    let multiname = match name {
+        Value::String(s) => QName::new(activation.avm2().public_namespace, s).into(),
         Value::Object(o) => {
             if let Some(qname) = o.as_qname_object() {
-                *qname.qname().unwrap()
+                qname.name().clone()
             } else {
                 QName::new(
                     activation.avm2().public_namespace,
                     name.coerce_to_string(activation)?,
                 )
+                .into()
             }
         }
         _ => QName::new(
             activation.avm2().public_namespace,
             name.coerce_to_string(activation)?,
-        ),
+        )
+        .into(),
     };
 
     let attribute = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
         attributes
             .iter()
-            .find(|node| node.matches_name(&qname.into()))
+            .find(|node| node.matches_name(&multiname))
             .copied()
     } else {
         None

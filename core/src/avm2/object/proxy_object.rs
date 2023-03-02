@@ -4,9 +4,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::{AvmString, Error};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -66,34 +65,13 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // NOTE: This is incorrect behavior.
-        // `QName` should instead store the whole multiname's namespace set,
-        // so that it can be used to index other objects using the same
-        // namespace set.
-        if let Some(local_name) = multiname.local_name() {
-            for namespace in multiname.namespace_set() {
-                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname =
-                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
+        let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-                    return self.call_property(
-                        &Multiname::new(activation.avm2().proxy_namespace, "getProperty"),
-                        &[qname.into()],
-                        activation,
-                    );
-                }
-            }
-        }
-
-        if !self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false)
-        {
-            return Ok(Value::Undefined);
-        }
-
-        Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into())
+        self.call_property(
+            &Multiname::new(activation.avm2().proxy_namespace, "getProperty"),
+            &[qname.into()],
+            activation,
+        )
     }
 
     fn set_property_local(
@@ -102,40 +80,15 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        // NOTE: This is incorrect behavior.
-        // `QName` should instead store the whole multiname's namespace set,
-        // so that it can be used to index other objects using the same
-        // namespace set.
-        if let Some(local_name) = multiname.local_name() {
-            for namespace in multiname.namespace_set() {
-                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname =
-                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
+        let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-                    self.call_property(
-                        &Multiname::new(activation.avm2().proxy_namespace, "setProperty"),
-                        &[qname.into(), value],
-                        activation,
-                    )?;
+        self.call_property(
+            &Multiname::new(activation.avm2().proxy_namespace, "setProperty"),
+            &[qname.into(), value],
+            activation,
+        )?;
 
-                    return Ok(());
-                }
-            }
-        }
-
-        if !self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false)
-        {
-            let local_name: Result<AvmString<'gc>, Error<'gc>> = multiname
-                .local_name()
-                .ok_or_else(|| "Cannot set undefined property using any name".into());
-            let _ = local_name?;
-            Ok(())
-        } else {
-            Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
-        }
+        Ok(())
     }
 
     fn call_property_local(
@@ -144,33 +97,15 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // NOTE: This is incorrect behavior.
-        // `QName` should instead store the whole multiname's namespace set,
-        // so that it can be used to index other objects using the same
-        // namespace set.
-        if let Some(local_name) = multiname.local_name() {
-            for namespace in multiname.namespace_set() {
-                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname =
-                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
+        let qname = QNameObject::from_name(activation, multiname.clone())?;
+        let mut args = vec![qname.into()];
+        args.extend_from_slice(arguments);
 
-                    let mut args = vec![qname.into()];
-                    args.extend_from_slice(arguments);
-
-                    return self.call_property(
-                        &Multiname::new(activation.avm2().proxy_namespace, "callProperty"),
-                        &args[..],
-                        activation,
-                    );
-                }
-            }
-        }
-
-        Err(format!(
-            "Attempted to call undefined property {:?}",
-            multiname.local_name()
+        self.call_property(
+            &Multiname::new(activation.avm2().proxy_namespace, "callProperty"),
+            &args,
+            activation,
         )
-        .into())
     }
 
     fn delete_property_local(
@@ -178,32 +113,15 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        // NOTE: This is incorrect behavior.
-        // `QName` should instead store the whole multiname's namespace set,
-        // so that it can be used to index other objects using the same
-        // namespace set.
-        if let Some(local_name) = multiname.local_name() {
-            for namespace in multiname.namespace_set() {
-                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname =
-                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
+        let qname = QNameObject::from_name(activation, multiname.clone())?;
 
-                    return Ok(self
-                        .call_property(
-                            &Multiname::new(activation.avm2().proxy_namespace, "deleteProperty"),
-                            &[qname.into()],
-                            activation,
-                        )?
-                        .coerce_to_boolean());
-                }
-            }
-        }
-
-        // Unknown properties on a dynamic class delete successfully.
-        return Ok(!self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false));
+        Ok(self
+            .call_property(
+                &Multiname::new(activation.avm2().proxy_namespace, "deleteProperty"),
+                &[qname.into()],
+                activation,
+            )?
+            .coerce_to_boolean())
     }
 
     fn has_property_via_in(
@@ -214,8 +132,10 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         Ok(self
             .call_property(
                 &Multiname::new(activation.avm2().proxy_namespace, "hasProperty"),
-                // this should probably pass the multiname as-is? See above
-                &[name.local_name().unwrap().into()],
+                &[name
+                    .local_name()
+                    .map(Value::from)
+                    .unwrap_or_else(|| "*".into())],
                 activation,
             )?
             .coerce_to_boolean())

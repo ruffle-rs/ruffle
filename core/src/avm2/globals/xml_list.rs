@@ -105,22 +105,24 @@ pub fn attribute<'gc>(
     let list = this.as_xml_list_object().unwrap();
 
     let name = args[0];
-    let qname = match name {
-        Value::String(s) => QName::new(activation.avm2().public_namespace, s),
+    let multiname = match name {
+        Value::String(s) => QName::new(activation.avm2().public_namespace, s).into(),
         Value::Object(o) => {
             if let Some(qname) = o.as_qname_object() {
-                *qname.qname().unwrap()
+                qname.name().clone()
             } else {
                 QName::new(
                     activation.avm2().public_namespace,
                     name.coerce_to_string(activation)?,
                 )
+                .into()
             }
         }
         _ => QName::new(
             activation.avm2().public_namespace,
             name.coerce_to_string(activation)?,
-        ),
+        )
+        .into(),
     };
 
     let children = list.children();
@@ -129,7 +131,7 @@ pub fn attribute<'gc>(
         if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
             if let Some(found) = attributes
                 .iter()
-                .find(|node| node.matches_name(&qname.into()))
+                .find(|node| node.matches_name(&multiname))
                 .copied()
             {
                 sub_children.push(E4XOrXml::E4X(found));

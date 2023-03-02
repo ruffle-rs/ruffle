@@ -246,7 +246,7 @@ impl<'gc> BytecodeMethod<'gc> {
         }
 
         for param in self.signature() {
-            if !param.param_type_name.is_any() || param.default_value.is_some() {
+            if !param.param_type_name.is_any_name() || param.default_value.is_some() {
                 return false;
             }
         }

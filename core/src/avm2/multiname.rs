@@ -116,9 +116,9 @@ impl<'gc> Multiname<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
         if namespace_set_index.0 == 0 {
-            //TODO: What is namespace set zero?
-            let result = NamespaceSet::multiple(vec![], mc);
-            return Ok(result);
+            return Err(Error::RustError(
+                "Multiname namespace set must not be null".into(),
+            ));
         }
 
         let actual_index = namespace_set_index.0 as usize - 1;
@@ -234,23 +234,6 @@ impl<'gc> Multiname<'gc> {
         Ok(multiname)
     }
 
-    #[inline(never)]
-    #[cold]
-    pub fn try_replace_with_qname(
-        &self,
-        obj: Object<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Option<Self> {
-        if let Object::QNameObject(qname_object) = obj {
-            if self.has_lazy_ns() {
-                let _ = activation.pop_stack(); // ignore the ns component
-            }
-            let qname = qname_object.qname().expect("Empty QName");
-            return Some((*qname).into());
-        }
-        None
-    }
-
     pub fn fill_with_runtime_params(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -258,10 +241,12 @@ impl<'gc> Multiname<'gc> {
         let name = if self.has_lazy_name() {
             let name_value = activation.pop_stack();
 
-            if let Value::Object(name_obj) = name_value {
-                if let Some(result) = self.try_replace_with_qname(name_obj, activation) {
-                    return Ok(result);
+            if let Value::Object(Object::QNameObject(qname_object)) = name_value {
+                if self.has_lazy_ns() {
+                    let _ = activation.pop_stack(); // ignore the ns component
                 }
+                let name = qname_object.name();
+                return Ok(name.clone());
             }
 
             Some(name_value.coerce_to_string(activation)?)
@@ -339,13 +324,17 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
-    /// Indicates if this multiname matches any type in any namespace.
-    pub fn is_any(&self) -> bool {
+    /// Indicates if this multiname matches any type.
+    pub fn is_any_name(&self) -> bool {
         self.name.is_none()
-            && match self.ns {
-                NamespaceSet::Single(ns) => ns.is_any(),
-                NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_any()),
-            }
+    }
+
+    /// Indicates if this multiname matches any namespace.
+    pub fn is_any_namespace(&self) -> bool {
+        match self.ns {
+            NamespaceSet::Single(ns) => ns.is_any(),
+            NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_any()),
+        }
     }
 
     /// Determine if this multiname matches a given QName.
@@ -402,7 +391,7 @@ impl<'gc> Multiname<'gc> {
     /// Like `to_qualified_name`, but returns `*` if `self.is_any()` is true.
     /// This is used by `describeType`
     pub fn to_qualified_name_or_star(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        if self.is_any() {
+        if self.is_any_name() {
             AvmString::new_utf8(mc, "*")
         } else {
             self.to_qualified_name(mc)
@@ -411,7 +400,7 @@ impl<'gc> Multiname<'gc> {
 
     // note: I didn't look very deeply into how different exactly this should be
     // this is currently generally based on to_qualified_name, without params and leading ::
-    pub fn to_error_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
             Some(ns) if ns.is_any() => "*".into(),
@@ -431,6 +420,14 @@ impl<'gc> Multiname<'gc> {
         }
 
         AvmString::new(mc, uri)
+    }
+
+    pub fn set_single_namespace(&mut self, namespace: Namespace<'gc>) {
+        self.ns = NamespaceSet::Single(namespace);
+    }
+
+    pub fn set_local_name(&mut self, name: AvmString<'gc>) {
+        self.name = Some(name);
     }
 }
 
