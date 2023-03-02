@@ -3,8 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject};
+use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
@@ -337,6 +338,41 @@ pub fn get_pixels<'gc>(
             bitmap_data.read().get_pixels(x, y, width, height)?,
         )?;
         return Ok(bytearray.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        bitmap_data.read().check_valid(activation)?;
+        let rectangle = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_i32(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_i32(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_i32(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_i32(activation)?;
+
+        let pixels = bitmap_data.read().get_vector(x, y, width, height);
+
+        let value_type = activation.avm2().classes().uint;
+        let new_storage = VectorStorage::from_values(pixels, false, value_type);
+
+        return Ok(VectorObject::from_vector(new_storage, activation)?.into());
     }
 
     Ok(Value::Undefined)
