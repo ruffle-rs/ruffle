@@ -14,3 +14,19 @@ filterA[1].name() = child
 filterB.length() = 1
 filterB[0].toString() = Second Child
 filterC.length() = 0
+filterB.split(' ') = Second,Child
+filterB.indexOf('e') = 1
+normalList.nested = Normal Child
+weirdList.name = Weird child
+weirdList.name() = child
+weirdList.split.length() = 0
+weirdList.name = Weird child
+weirdList.name() = child
+getQualifiedClassName(filterB.split) = XMLList
+simpleXML.split(' ') = My,simple,text
+getQualifiedClassName(simpleXML.split) = XMLList
+xmlElement.split(' ') = Inner,content
+sameName.child.@attr = Inner
+weirdXMl.split(' ') = Weird,content
+emptyList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
+multiList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
