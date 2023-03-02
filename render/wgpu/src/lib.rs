@@ -16,7 +16,7 @@ use enum_map::Enum;
 use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
-use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
+use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
 use std::cell::Cell;
 use std::sync::Arc;
 pub use wgpu;
@@ -141,35 +141,15 @@ impl From<TessVertex> for PosColorVertex {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GradientUniforms {
-    colors: [[f32; 4]; 16],
-    ratios: [f32; 16],
-    gradient_type: i32,
-    num_colors: u32,
-    interpolation: i32,
     focal_point: f32,
+    interpolation: i32,
 }
 
 impl From<TessGradient> for GradientUniforms {
     fn from(gradient: TessGradient) -> Self {
-        let mut ratios = [0.0; 16];
-        let mut colors = [[0.0; 4]; 16];
-
-        for i in 0..gradient.num_colors {
-            ratios[i] = gradient.ratios[i];
-            colors[i].copy_from_slice(&gradient.colors[i]);
-        }
-
         Self {
-            colors,
-            ratios,
-            gradient_type: match gradient.gradient_type {
-                GradientType::Linear => 0,
-                GradientType::Radial => 1,
-                GradientType::Focal => 2,
-            },
-            num_colors: gradient.num_colors as u32,
-            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
+            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
         }
     }
 }

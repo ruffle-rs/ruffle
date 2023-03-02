@@ -16,32 +16,24 @@ struct VertexOutput {
 #endif
 
 struct Gradient {
-    colors: array<vec4<f32>, 16>,
-    ratios: array<vec4<f32>, 4u>, // secretly array<f32; 16> but this let's us squeeze it into alignment
-    gradient_type: i32,
-    num_colors: u32,
-    interpolation: i32,
     focal_point: f32,
+    interpolation: i32,
 };
 
 #if use_push_constants == true
     @group(1) @binding(1) var<uniform> gradient: Gradient;
+    @group(1) @binding(2) var texture: texture_2d<f32>;
+    @group(1) @binding(3) var texture_sampler: sampler;
 #else
     @group(3) @binding(1) var<uniform> gradient: Gradient;
+    @group(3) @binding(2) var texture: texture_2d<f32>;
+    @group(3) @binding(3) var texture_sampler: sampler;
 #endif
-
-fn ratio(i: u32) -> f32 {
-    return gradient.ratios[i / 4u][i % 4u];
-}
 
 fn find_t(focal_point: f32, uv: vec2<f32>) -> f32 {
     return 0.0;
 }
 
-/// FIXME: We should import VertexInput from 'common', but a naga_oil bug prevents
-/// us from importing 'common' in both this file and the invidual gradient shaders (like 'linear.wgsl')
-/// Currently, importing 'common' in that way will cause all of the definitions from 'common' to be duplicated,
-/// result in a WGSL parse error.
 struct GradientVertexInput {
     /// The position of the vertex in object space.
     @location(0) position: vec2<f32>,
@@ -63,23 +55,11 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     #if use_push_constants == true
         var colorTransforms = pc.colorTransforms;
     #endif
-    let last = gradient.num_colors - 1u;
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
     var t: f32 = find_t(gradient.focal_point, in.uv);
 
-    t = clamp(t, ratio(0u), ratio(last));
-
-    // Find the two gradient colors bordering our position.
-    var j: u32;
-    for( j = 1u; j < 16u && t > ratio(j); j = j + 1u) {
-        // Noop
-    }
-    let i = j - 1u;
-
-    // Lerp between the two colors.
-    let a = (t - ratio(i)) / (ratio(j) - ratio(i));
-    var color: vec4<f32> = mix(gradient.colors[i], gradient.colors[j], a);
+    var color = textureSample(texture, texture_sampler, vec2<f32>(t, 0.0));
     if( gradient.interpolation != 0 ) {
         color = common::linear_to_srgb(color);
     }

@@ -4,6 +4,7 @@ use crate::{
     as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
 };
 use std::ops::Range;
+use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::RenderBackend;
@@ -11,7 +12,10 @@ use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{
     Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient, GradientType,
 };
-use swf::{CharacterId, GradientSpread};
+use swf::{CharacterId, GradientInterpolation, GradientSpread};
+
+/// How big to make gradient textures. Larger will keep more detail, but be slower and use more memory.
+const GRADIENT_SIZE: usize = 256;
 
 #[derive(Debug)]
 pub struct Mesh {
@@ -79,9 +83,13 @@ impl PendingDraw {
         let index_count = draw.indices.len() as u32;
         let draw_type = match draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
-            TessDrawType::Gradient(gradient) => {
-                PendingDrawType::gradient(gradient, shape_id, draw_id, uniform_buffer)
-            }
+            TessDrawType::Gradient(gradient) => PendingDrawType::gradient(
+                backend.descriptors(),
+                gradient,
+                shape_id,
+                draw_id,
+                uniform_buffer,
+            ),
             TessDrawType::Bitmap(bitmap) => {
                 PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
             }
@@ -106,6 +114,7 @@ pub enum PendingDrawType {
         spread: GradientSpread,
         mode: GradientType,
         bind_group_label: Option<String>,
+        colors: wgpu::TextureView,
     },
     Bitmap {
         texture_transforms_index: wgpu::BufferAddress,
@@ -116,19 +125,96 @@ pub enum PendingDrawType {
     },
 }
 
+/// Converts an RGBA color from sRGB space to linear color space.
+fn srgb_to_linear(color: f32) -> f32 {
+    if color <= 0.04045 {
+        color / 12.92
+    } else {
+        f32::powf((color + 0.055) / 1.055, 2.4)
+    }
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t
+}
+
 impl PendingDrawType {
     pub fn color() -> Self {
         PendingDrawType::Color
     }
 
     pub fn gradient(
+        descriptors: &Descriptors,
         gradient: Gradient,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffers: &mut BufferBuilder,
     ) -> Self {
         let tex_transforms_index = create_texture_transforms(&gradient.matrix, uniform_buffers);
+        let colors = if gradient.records.is_empty() {
+            [0; GRADIENT_SIZE * 4]
+        } else {
+            let mut last = 0;
+            let mut next = 0;
+            let mut colors = [0; GRADIENT_SIZE * 4];
 
+            let convert = if gradient.interpolation == GradientInterpolation::LinearRgb {
+                |c| srgb_to_linear(c / 255.0) * 255.0
+            } else {
+                |c| c
+            };
+
+            for t in 0..GRADIENT_SIZE {
+                let mut last_record = &gradient.records[last];
+                let mut next_record = &gradient.records[next];
+                if t as u8 >= next_record.ratio && next + 1 < gradient.records.len() {
+                    last = next;
+                    next += 1;
+                    last_record = next_record;
+                    next_record = &gradient.records[next];
+                }
+                let a = (t as u8 - last_record.ratio) as f32
+                    / (next_record.ratio - last_record.ratio) as f32;
+                colors[t * 4] = lerp(
+                    convert(last_record.color.r as f32),
+                    convert(next_record.color.r as f32),
+                    a,
+                ) as u8;
+                colors[(t * 4) + 1] = lerp(
+                    convert(last_record.color.g as f32),
+                    convert(next_record.color.g as f32),
+                    a,
+                ) as u8;
+                colors[(t * 4) + 2] = lerp(
+                    convert(last_record.color.b as f32),
+                    convert(next_record.color.b as f32),
+                    a,
+                ) as u8;
+                colors[(t * 4) + 3] =
+                    lerp(last_record.color.a as f32, next_record.color.a as f32, a) as u8;
+            }
+
+            colors
+        };
+        let texture = descriptors.device.create_texture_with_data(
+            &descriptors.queue,
+            &wgpu::TextureDescriptor {
+                label: None,
+                size: wgpu::Extent3d {
+                    width: GRADIENT_SIZE as u32,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[],
+            },
+            &colors[..],
+        );
+        let view = texture.create_view(&Default::default());
         let spread = gradient.repeat_mode;
         let mode = gradient.gradient_type;
 
@@ -144,6 +230,7 @@ impl PendingDrawType {
             spread,
             mode,
             bind_group_label,
+            colors: view,
         }
     }
 
@@ -180,6 +267,7 @@ impl PendingDrawType {
                 spread,
                 mode,
                 bind_group_label,
+                colors,
             } => {
                 let bind_group = descriptors
                     .device
@@ -205,6 +293,16 @@ impl PendingDrawType {
                                         std::mem::size_of::<GradientUniforms>() as u64,
                                     ),
                                 }),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 2,
+                                resource: wgpu::BindingResource::TextureView(&colors),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 3,
+                                resource: wgpu::BindingResource::Sampler(
+                                    descriptors.bitmap_samplers.get_sampler(false, true),
+                                ),
                             },
                         ],
                         label: bind_group_label.as_deref(),
