@@ -16,9 +16,10 @@ use enum_map::Enum;
 use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
-use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
+use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
 use std::cell::Cell;
 use std::sync::Arc;
+use swf::GradientSpread;
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
@@ -143,6 +144,8 @@ impl From<TessVertex> for PosColorVertex {
 struct GradientUniforms {
     focal_point: f32,
     interpolation: i32,
+    shape: i32,
+    repeat: i32,
 }
 
 impl From<TessGradient> for GradientUniforms {
@@ -150,6 +153,16 @@ impl From<TessGradient> for GradientUniforms {
         Self {
             focal_point: gradient.focal_point.to_f32(),
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
+            shape: match gradient.gradient_type {
+                GradientType::Linear => 1,
+                GradientType::Radial => 2,
+                GradientType::Focal => 3,
+            },
+            repeat: match gradient.repeat_mode {
+                GradientSpread::Pad => 1,
+                GradientSpread::Reflect => 2,
+                GradientSpread::Repeat => 3,
+            },
         }
     }
 }

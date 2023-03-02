@@ -3,16 +3,14 @@ use enum_map::{enum_map, EnumMap};
 use naga_oil::compose::{
     ComposableModuleDescriptor, Composer, ComposerError, NagaModuleDescriptor, ShaderDefValue,
 };
-use ruffle_render::tessellator::GradientType;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use swf::GradientSpread;
 
 #[derive(Debug)]
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
     pub bitmap_shader: wgpu::ShaderModule,
-    pub gradient_shaders: EnumMap<GradientType, EnumMap<GradientSpread, wgpu::ShaderModule>>,
+    pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
@@ -70,6 +68,13 @@ impl Shaders {
             "filter/blur.wgsl",
             include_str!("../shaders/filter/blur.wgsl"),
         );
+        let gradient_shader = make_shader(
+            device,
+            &mut composer,
+            &shader_defs,
+            "gradient.wgsl",
+            include_str!("../shaders/gradient.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Lighten => make_shader(device, &mut composer, &shader_defs, "blend/lighten.wgsl", include_str!("../shaders/blend/lighten.wgsl")),
@@ -82,16 +87,10 @@ impl Shaders {
             ComplexBlend::HardLight => make_shader(device, &mut composer, &shader_defs, "blend/hardlight.wgsl", include_str!("../shaders/blend/hardlight.wgsl")),
         };
 
-        let gradient_shaders = enum_map! {
-            GradientType::Focal => create_gradient_shaders(device, &mut composer, &shader_defs, "focal", include_str!("../shaders/gradient/mode/focal.wgsl")),
-            GradientType::Linear => create_gradient_shaders(device, &mut composer, &shader_defs, "linear", include_str!("../shaders/gradient/mode/linear.wgsl")),
-            GradientType::Radial => create_gradient_shaders(device, &mut composer, &shader_defs, "radial", include_str!("../shaders/gradient/mode/radial.wgsl")),
-        };
-
         Self {
             color_shader,
             bitmap_shader,
-            gradient_shaders,
+            gradient_shader,
             copy_srgb_shader,
             copy_shader,
             blend_shaders,
@@ -109,11 +108,6 @@ fn composer() -> Result<Composer, ComposerError> {
     composer.add_composable_module(ComposableModuleDescriptor {
         source: include_str!("../shaders/common.wgsl"),
         file_path: "common.wgsl",
-        ..Default::default()
-    })?;
-    composer.add_composable_module(ComposableModuleDescriptor {
-        source: include_str!("../shaders/gradient/common.wgsl"),
-        file_path: "gradient/common.wgsl",
         ..Default::default()
     })?;
     composer.add_composable_module(ComposableModuleDescriptor {
@@ -150,30 +144,4 @@ fn make_shader(
                 }),
         )),
     })
-}
-
-fn create_gradient_shaders(
-    device: &wgpu::Device,
-    composer: &mut Composer,
-    shader_defs: &HashMap<String, ShaderDefValue>,
-    name: &'static str,
-    source: &'static str,
-) -> EnumMap<GradientSpread, wgpu::ShaderModule> {
-    enum_map! {
-        GradientSpread::Reflect => {
-            let mut temporary_defs = shader_defs.clone();
-            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(1));
-            make_shader(device, composer, &temporary_defs, &format!("gradient/{name}.wgsl with reflect"), source)
-        },
-        GradientSpread::Repeat => {
-            let mut temporary_defs = shader_defs.clone();
-            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(2));
-            make_shader(device, composer, &temporary_defs, &format!("gradient/{name}.wgsl with repeat"), source)
-        },
-        GradientSpread::Pad => {
-            let mut temporary_defs = shader_defs.clone();
-            temporary_defs.insert("gradient_repeat_mode".to_owned(), ShaderDefValue::Int(3));
-            make_shader(device, composer, &temporary_defs,&format!("gradient/{name}.wgsl with pad"), source)
-        },
-    }
 }
