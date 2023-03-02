@@ -1496,12 +1496,29 @@ struct Gradient {
 
 impl From<TessGradient> for Gradient {
     fn from(gradient: TessGradient) -> Self {
+        // TODO: Support more than MAX_GRADIENT_COLORS.
+        let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
         let mut ratios = [0.0; MAX_GRADIENT_COLORS];
         let mut colors = [[0.0; 4]; MAX_GRADIENT_COLORS];
-        ratios[..gradient.num_colors].copy_from_slice(&gradient.ratios[..gradient.num_colors]);
-        colors[..gradient.num_colors].copy_from_slice(&gradient.colors[..gradient.num_colors]);
+        for i in 0..num_colors {
+            let record = &gradient.records[i];
+            let mut color = [
+                f32::from(record.color.r) / 255.0,
+                f32::from(record.color.g) / 255.0,
+                f32::from(record.color.b) / 255.0,
+                f32::from(record.color.a) / 255.0,
+            ];
+            // Convert to linear color space if this is a linear-interpolated gradient.
+            match gradient.interpolation {
+                swf::GradientInterpolation::Rgb => {}
+                swf::GradientInterpolation::LinearRgb => srgb_to_linear(&mut color),
+            }
 
-        for i in gradient.num_colors..MAX_GRADIENT_COLORS {
+            colors[i] = color;
+            ratios[i] = f32::from(record.ratio) / 255.0;
+        }
+
+        for i in num_colors..MAX_GRADIENT_COLORS {
             ratios[i] = ratios[i - 1];
             colors[i] = colors[i - 1];
         }
@@ -1723,5 +1740,16 @@ impl GlExt for Gl2 {
             Self::NO_ERROR => Ok(()),
             error => Err(Error::GLError(error_msg, error)),
         }
+    }
+}
+
+/// Converts an RGBA color from sRGB space to linear color space.
+fn srgb_to_linear(color: &mut [f32; 4]) {
+    for n in &mut color[..3] {
+        *n = if *n <= 0.04045 {
+            *n / 12.92
+        } else {
+            f32::powf((*n + 0.055) / 1.055, 2.4)
+        };
     }
 }
