@@ -250,9 +250,6 @@ impl DrawType {
 pub struct Gradient {
     pub matrix: [[f32; 3]; 3],
     pub gradient_type: GradientType,
-    pub ratios: Vec<f32>,
-    pub colors: Vec<[f32; 4]>,
-    pub num_colors: usize,
     pub repeat_mode: swf::GradientSpread,
     pub focal_point: swf::Fixed8,
     pub interpolation: swf::GradientInterpolation,
@@ -369,57 +366,19 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
     builder.build()
 }
 
-const MAX_GRADIENT_COLORS: usize = 15;
-
 /// Converts a gradient to the uniforms used by the shader.
 fn swf_gradient_to_uniforms(
     gradient_type: GradientType,
     gradient: &swf::Gradient,
     focal_point: swf::Fixed8,
 ) -> Gradient {
-    // TODO: Support more than MAX_GRADIENT_COLORS.
-    let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
-    let mut colors = Vec::with_capacity(num_colors);
-    let mut ratios = Vec::with_capacity(num_colors);
-    let records = gradient.records.clone();
-    for record in &gradient.records[..num_colors] {
-        let mut color = [
-            f32::from(record.color.r) / 255.0,
-            f32::from(record.color.g) / 255.0,
-            f32::from(record.color.b) / 255.0,
-            f32::from(record.color.a) / 255.0,
-        ];
-        // Convert to linear color space if this is a linear-interpolated gradient.
-        match gradient.interpolation {
-            swf::GradientInterpolation::Rgb => {}
-            swf::GradientInterpolation::LinearRgb => srgb_to_linear(&mut color),
-        }
-        colors.push(color);
-
-        ratios.push(f32::from(record.ratio) / 255.0);
-    }
-
     Gradient {
         matrix: swf_to_gl_matrix(gradient.matrix.into()),
-        records,
+        records: gradient.records.clone(),
         gradient_type,
-        ratios,
-        colors,
-        num_colors,
         repeat_mode: gradient.spread,
         focal_point,
         interpolation: gradient.interpolation,
-    }
-}
-
-/// Converts an RGBA color from sRGB space to linear color space.
-fn srgb_to_linear(color: &mut [f32; 4]) {
-    for n in &mut color[..3] {
-        *n = if *n <= 0.04045 {
-            *n / 12.92
-        } else {
-            f32::powf((*n + 0.055) / 1.055, 2.4)
-        };
     }
 }
 
