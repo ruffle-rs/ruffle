@@ -16,9 +16,8 @@ use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::tessellator::GradientType;
 use ruffle_render::transform::Transform;
-use swf::{BlendMode, Color, Fixed8, GradientSpread};
+use swf::{BlendMode, Color, Fixed8};
 use wgpu::CommandEncoder;
 
 use super::target::PoolOrArcTexture;
@@ -112,18 +111,13 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn prep_gradient(
-        &mut self,
-        bind_group: &'pass wgpu::BindGroup,
-        mode: GradientType,
-        spread: GradientSpread,
-    ) {
+    pub fn prep_gradient(&mut self, bind_group: &'pass wgpu::BindGroup) {
         if self.needs_depth {
             self.render_pass
-                .set_pipeline(self.pipelines.gradients[mode][spread].pipeline_for(self.mask_state));
+                .set_pipeline(self.pipelines.gradients.pipeline_for(self.mask_state));
         } else {
             self.render_pass
-                .set_pipeline(self.pipelines.gradients[mode][spread].depthless_pipeline());
+                .set_pipeline(self.pipelines.gradients.depthless_pipeline());
         }
 
         self.render_pass.set_bind_group(
@@ -310,13 +304,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 DrawType::Color => {
                     self.prep_color();
                 }
-                DrawType::Gradient {
-                    bind_group,
-                    spread,
-                    mode,
-                    ..
-                } => {
-                    self.prep_gradient(bind_group, *mode, *spread);
+                DrawType::Gradient { bind_group, .. } => {
+                    self.prep_gradient(bind_group);
                 }
                 DrawType::Bitmap { binds, .. } => {
                     self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal);

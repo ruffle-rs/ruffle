@@ -3,9 +3,7 @@ use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
-use ruffle_render::tessellator::GradientType;
 use std::mem;
-use swf::GradientSpread;
 use wgpu::vertex_attr_array;
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
@@ -37,7 +35,7 @@ pub struct ShapePipeline {
 pub struct Pipelines {
     pub color: ShapePipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
-    pub gradients: EnumMap<GradientType, EnumMap<GradientSpread, ShapePipeline>>,
+    pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
     pub color_matrix_filter: wgpu::RenderPipeline,
     pub blur_filter: wgpu::RenderPipeline,
@@ -133,21 +131,17 @@ impl Pipelines {
             ]
         };
 
-        let gradient_pipelines = enum_map! {
-            mode => enum_map! {
-                spread => create_shape_pipeline(
-                    &format!("Gradient - {mode:?} {spread:?}"),
-                    device,
-                    format,
-                    &shaders.gradient_shaders[mode][spread],
-                    msaa_sample_count,
-                    &VERTEX_BUFFERS_DESCRIPTION_POS,
-                    &gradient_bindings,
-                    wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-                    full_push_constants,
-                )
-            }
-        };
+        let gradient_pipeline = create_shape_pipeline(
+            "Gradient",
+            device,
+            format,
+            &shaders.gradient_shader,
+            msaa_sample_count,
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &gradient_bindings,
+            wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+            full_push_constants,
+        );
 
         let complex_blend_bindings = if device.limits().max_push_constant_size > 0 {
             vec![&bind_layouts.globals, &bind_layouts.blend]
@@ -314,7 +308,7 @@ impl Pipelines {
         Self {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
-            gradients: gradient_pipelines,
+            gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
             color_matrix_filter,
             blur_filter,

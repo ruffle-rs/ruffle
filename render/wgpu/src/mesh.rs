@@ -9,10 +9,8 @@ use wgpu::util::DeviceExt;
 use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapSource;
-use ruffle_render::tessellator::{
-    Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient, GradientType,
-};
-use swf::{CharacterId, GradientInterpolation, GradientSpread};
+use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
+use swf::{CharacterId, GradientInterpolation};
 
 /// How big to make gradient textures. Larger will keep more detail, but be slower and use more memory.
 const GRADIENT_SIZE: usize = 256;
@@ -111,8 +109,6 @@ pub enum PendingDrawType {
     Gradient {
         texture_transforms_index: wgpu::BufferAddress,
         gradient: wgpu::BufferAddress,
-        spread: GradientSpread,
-        mode: GradientType,
         bind_group_label: Option<String>,
         colors: wgpu::TextureView,
     },
@@ -215,8 +211,6 @@ impl PendingDrawType {
             &colors[..],
         );
         let view = texture.create_view(&Default::default());
-        let spread = gradient.repeat_mode;
-        let mode = gradient.gradient_type;
 
         let gradient = uniform_buffers
             .add(&[GradientUniforms::from(gradient)])
@@ -227,8 +221,6 @@ impl PendingDrawType {
         PendingDrawType::Gradient {
             texture_transforms_index: tex_transforms_index,
             gradient,
-            spread,
-            mode,
             bind_group_label,
             colors: view,
         }
@@ -264,8 +256,6 @@ impl PendingDrawType {
             PendingDrawType::Gradient {
                 texture_transforms_index,
                 gradient,
-                spread,
-                mode,
                 bind_group_label,
                 colors,
             } => {
@@ -307,11 +297,7 @@ impl PendingDrawType {
                         ],
                         label: bind_group_label.as_deref(),
                     });
-                DrawType::Gradient {
-                    bind_group,
-                    spread,
-                    mode,
-                }
+                DrawType::Gradient { bind_group }
             }
             PendingDrawType::Bitmap {
                 texture_transforms_index,
@@ -342,14 +328,8 @@ impl PendingDrawType {
 #[derive(Debug)]
 pub enum DrawType {
     Color,
-    Gradient {
-        bind_group: wgpu::BindGroup,
-        spread: GradientSpread,
-        mode: GradientType,
-    },
-    Bitmap {
-        binds: BitmapBinds,
-    },
+    Gradient { bind_group: wgpu::BindGroup },
+    Bitmap { binds: BitmapBinds },
 }
 
 #[derive(Debug)]
