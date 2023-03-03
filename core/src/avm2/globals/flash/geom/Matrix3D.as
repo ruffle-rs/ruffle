@@ -179,6 +179,13 @@ package flash.geom {
 		this._rawData[15] = m141 * m214 + m142 * m224 + m143 * m234 + m144 * m244;
 	}
 
+	// Based on https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L307
+	public function appendScale(xScale:Number, yScale:Number, zScale:Number):void {
+		this.append(new Matrix3D(Vector.<Number>([
+			xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
+		])));
+    }
+
 	public function clone():Matrix3D {
 		return new Matrix3D(this.rawData.concat());
 	}
