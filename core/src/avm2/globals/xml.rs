@@ -4,7 +4,7 @@ use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, Error, Object, QName, Value};
+use crate::avm2::{Activation, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
 
 pub fn init<'gc>(
@@ -53,7 +53,7 @@ pub fn name<'gc>(
         avm2_stub_method!(activation, "XML", "name", "namespaces");
         // FIXME - use namespace
         let namespace = activation.avm2().public_namespace;
-        Ok(QNameObject::from_name(activation, QName::new(namespace, local_name))?.into())
+        Ok(QNameObject::from_name(activation, Multiname::new(namespace, local_name))?.into())
     } else {
         Ok(Value::Null)
     }
@@ -128,23 +128,21 @@ pub fn attribute<'gc>(
     let xml = this.as_xml_object().unwrap();
     let name = args[0];
     let multiname = match name {
-        Value::String(s) => QName::new(activation.avm2().public_namespace, s).into(),
+        Value::String(s) => Multiname::new(activation.avm2().public_namespace, s),
         Value::Object(o) => {
             if let Some(qname) = o.as_qname_object() {
                 qname.name().clone()
             } else {
-                QName::new(
+                Multiname::new(
                     activation.avm2().public_namespace,
                     name.coerce_to_string(activation)?,
                 )
-                .into()
             }
         }
-        _ => QName::new(
+        _ => Multiname::new(
             activation.avm2().public_namespace,
             name.coerce_to_string(activation)?,
-        )
-        .into(),
+        ),
     };
 
     let attribute = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {

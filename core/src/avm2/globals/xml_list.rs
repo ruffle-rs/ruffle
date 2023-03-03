@@ -5,7 +5,7 @@ use crate::{
     avm2::{
         e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
         object::{E4XOrXml, XmlListObject},
-        Activation, Error, Object, QName, TObject, Value,
+        Activation, Error, Multiname, Object, TObject, Value,
     },
     avm2_stub_method,
 };
@@ -106,23 +106,21 @@ pub fn attribute<'gc>(
 
     let name = args[0];
     let multiname = match name {
-        Value::String(s) => QName::new(activation.avm2().public_namespace, s).into(),
+        Value::String(s) => Multiname::new(activation.avm2().public_namespace, s),
         Value::Object(o) => {
             if let Some(qname) = o.as_qname_object() {
                 qname.name().clone()
             } else {
-                QName::new(
+                Multiname::new(
                     activation.avm2().public_namespace,
                     name.coerce_to_string(activation)?,
                 )
-                .into()
             }
         }
-        _ => QName::new(
+        _ => Multiname::new(
             activation.avm2().public_namespace,
             name.coerce_to_string(activation)?,
-        )
-        .into(),
+        ),
     };
 
     let children = list.children();
