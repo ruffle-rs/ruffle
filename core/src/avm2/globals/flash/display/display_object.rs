@@ -18,8 +18,7 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
-use swf::Twips;
-use swf::{BlendMode, Rectangle};
+use swf::BlendMode;
 
 pub use crate::avm2::object::stage_allocator as display_object_allocator;
 
@@ -827,7 +826,7 @@ pub fn set_blend_mode<'gc>(
 
 fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    rectangle: BoundingBox,
+    rectangle: Rectangle<Twips>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
     let y = rectangle.y_min.to_pixels();
@@ -848,7 +847,7 @@ pub fn get_scroll_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         if dobj.has_scroll_rect() {
-            return Ok(new_rectangle(activation, dobj.next_scroll_rect().into())?.into());
+            return Ok(new_rectangle(activation, dobj.next_scroll_rect())?.into());
         } else {
             return Ok(Value::Null);
         }
@@ -993,8 +992,7 @@ pub fn get_bounds<'gc>(
                 // the final matrix, but this matches Flash's behavior.
                 let to_global_matrix = dobj.local_to_global_matrix();
                 let to_target_matrix = target.global_to_local_matrix();
-                let bounds_transform = to_target_matrix * to_global_matrix;
-                bounds.transform(&bounds_transform)
+                to_target_matrix * to_global_matrix * bounds
             };
 
             return Ok(new_rectangle(activation, out_bounds)?.into());

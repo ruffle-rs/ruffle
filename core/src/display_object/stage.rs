@@ -106,7 +106,7 @@ pub struct StageData<'gc> {
 
     /// The bounds of the current viewport in twips, used for culling.
     #[collect(require_static)]
-    view_bounds: BoundingBox,
+    view_bounds: Rectangle<Twips>,
 
     /// The window mode of the viewport.
     ///
@@ -398,7 +398,7 @@ impl<'gc> Stage<'gc> {
         self.0.write(context.gc_context).window_mode = window_mode;
     }
 
-    pub fn view_bounds(self) -> BoundingBox {
+    pub fn view_bounds(self) -> Rectangle<Twips> {
         self.0.read().view_bounds.clone()
     }
 
@@ -514,12 +514,11 @@ impl<'gc> Stage<'gc> {
 
         self.0.write(context.gc_context).view_bounds = if self.should_letterbox() {
             // Letterbox: movie area
-            BoundingBox {
+            Rectangle {
                 x_min: Twips::ZERO,
                 y_min: Twips::ZERO,
                 x_max: Twips::from_pixels(movie_width),
                 y_max: Twips::from_pixels(movie_height),
-                valid: true,
             }
         } else {
             // No letterbox: full visible stage area
@@ -527,12 +526,11 @@ impl<'gc> Stage<'gc> {
             let margin_right = (width_delta - tx) / scale_x;
             let margin_top = ty / scale_y;
             let margin_bottom = (height_delta - ty) / scale_y;
-            BoundingBox {
+            Rectangle {
                 x_min: Twips::from_pixels(-margin_left),
                 y_min: Twips::from_pixels(-margin_top),
                 x_max: Twips::from_pixels(movie_width + margin_right),
                 y_max: Twips::from_pixels(movie_height + margin_bottom),
-                valid: true,
             }
         };
 
@@ -763,7 +761,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         u16::MAX
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         Default::default()
     }
 

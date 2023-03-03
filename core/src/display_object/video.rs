@@ -12,7 +12,6 @@ use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
-use ruffle_render::bounding_box::BoundingBox;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_video::error::Error;
@@ -425,17 +424,15 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
-        let mut bounding_box = BoundingBox::default();
-
+    fn self_bounds(&self) -> Rectangle<Twips> {
         match (*self.0.read().source.read()).borrow() {
-            VideoSource::Swf { streamdef, .. } => {
-                bounding_box.set_width(Twips::from_pixels(streamdef.width as f64));
-                bounding_box.set_height(Twips::from_pixels(streamdef.height as f64));
-            }
+            VideoSource::Swf { streamdef, .. } => Rectangle {
+                x_min: Twips::ZERO,
+                y_min: Twips::ZERO,
+                x_max: Twips::from_pixels_i32(streamdef.width.into()),
+                y_max: Twips::from_pixels_i32(streamdef.height.into()),
+            },
         }
-
-        bounding_box
     }
 
     fn render(&self, context: &mut RenderContext) {

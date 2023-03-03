@@ -50,7 +50,7 @@ impl<'gc> Text<'gc> {
                     TextStatic {
                         swf,
                         id: tag.id,
-                        bounds: (&tag.bounds).into(),
+                        bounds: tag.bounds.clone(),
                         text_transform: tag.matrix.into(),
                         text_blocks: tag.records.clone(),
                     },
@@ -163,7 +163,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         self.0.read().static_data.bounds.clone()
     }
 
@@ -215,8 +215,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             matrix.invert();
                             let point = matrix * point;
                             let glyph_shape = glyph.as_shape();
-                            let glyph_bounds: BoundingBox = (&glyph_shape.shape_bounds).into();
-                            if glyph_bounds.contains(point)
+                            if glyph_shape.shape_bounds.contains(point)
                                 && ruffle_render::shape_utils::shape_hit_test(
                                     &glyph_shape,
                                     point,
@@ -281,7 +280,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 struct TextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    bounds: BoundingBox,
+    bounds: Rectangle<Twips>,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
 }
