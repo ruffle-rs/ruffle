@@ -6,6 +6,7 @@ use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, ViewportDimensions};
 use ruffle_render::quality::StageQuality;
+use ruffle_render_wgpu::wgpu;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -118,21 +119,23 @@ impl PlayerOptions {
             use ruffle_render_wgpu::target::TextureTarget;
 
             if let Some(descriptors) = WGPU.clone() {
-                let target = TextureTarget::new(&descriptors.device, (width, height))
-                    .map_err(|e| anyhow!(e.to_string()))?;
+                if render_options.is_supported(&descriptors.adapter) {
+                    let target = TextureTarget::new(&descriptors.device, (width, height))
+                        .map_err(|e| anyhow!(e.to_string()))?;
 
-                player_builder = player_builder
-                    .with_quality(match render_options.sample_count {
-                        16 => StageQuality::High16x16,
-                        8 => StageQuality::High8x8,
-                        4 => StageQuality::High,
-                        2 => StageQuality::Medium,
-                        _ => StageQuality::Low,
-                    })
-                    .with_renderer(
-                        WgpuRenderBackend::new(descriptors, target)
-                            .map_err(|e| anyhow!(e.to_string()))?,
-                    );
+                    player_builder = player_builder
+                        .with_quality(match render_options.sample_count {
+                            16 => StageQuality::High16x16,
+                            8 => StageQuality::High8x8,
+                            4 => StageQuality::High,
+                            2 => StageQuality::Medium,
+                            _ => StageQuality::Low,
+                        })
+                        .with_renderer(
+                            WgpuRenderBackend::new(descriptors, target)
+                                .map_err(|e| anyhow!(e.to_string()))?,
+                        );
+                }
             }
         }
 
@@ -147,9 +150,12 @@ impl PlayerOptions {
         if let Some(render) = &self.with_renderer {
             // If we don't actually want to check the renderer (ie we're just listing potential tests),
             // don't spend the cost to create it
-            let has_renderer = !check_renderer || WGPU.is_some();
-            if !render.optional && !has_renderer {
-                return false;
+            if check_renderer && !render.optional {
+                if let Some(wgpu) = WGPU.as_deref() {
+                    if !render.is_supported(&wgpu.adapter) {
+                        return false;
+                    }
+                }
             }
         }
         true
@@ -245,6 +251,7 @@ impl ImageComparison {
 pub struct RenderOptions {
     optional: bool,
     sample_count: u32,
+    exclude_warp: bool,
 }
 
 impl Default for RenderOptions {
@@ -252,6 +259,18 @@ impl Default for RenderOptions {
         Self {
             optional: false,
             sample_count: 1,
+            exclude_warp: false,
         }
+    }
+}
+
+impl RenderOptions {
+    pub fn is_supported(&self, adapter: &wgpu::Adapter) -> bool {
+        let info = adapter.get_info();
+        // 5140 & 140 is WARP, https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi#new-info-about-enumerating-adapters-for-windows-8
+        if self.exclude_warp && cfg!(windows) && info.vendor == 5140 && info.device == 140 {
+            return false;
+        }
+        true
     }
 }
