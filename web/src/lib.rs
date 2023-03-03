@@ -520,7 +520,7 @@ impl Ruffle {
             .append_child(&canvas.clone().into())
             .into_js_result()?;
 
-        if let Ok(audio) = audio::WebAudioBackend::new() {
+        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber.clone()) {
             builder = builder.with_audio(audio);
         } else {
             tracing::error!("Unable to create audio backend. No audio will be played.");
