@@ -1,13 +1,13 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::Object;
+use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -123,6 +123,9 @@ pub struct BytecodeMethod<'gc> {
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
+    /// The associated activation class. None if not needed. Initialized lazily.
+    pub activation_class: Option<GcCell<'gc, Option<ClassObject<'gc>>>>,
+
     /// Whether or not this method was declared as a free-standing function.
     ///
     /// A free-standing function corresponds to the `Function` trait type, and
@@ -152,6 +155,12 @@ impl<'gc> BytecodeMethod<'gc> {
                 .deref()
                 .clone();
 
+            let activation_class = if method.flags.contains(AbcMethodFlags::NEED_ACTIVATION) {
+                Some(GcCell::allocate(activation.context.gc_context, None))
+            } else {
+                None
+            };
+
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {
                     return Ok(Self {
@@ -162,6 +171,7 @@ impl<'gc> BytecodeMethod<'gc> {
                         signature,
                         return_type,
                         is_function,
+                        activation_class,
                     });
                 }
             }
@@ -175,6 +185,7 @@ impl<'gc> BytecodeMethod<'gc> {
             signature,
             return_type: Multiname::any(activation.context.gc_context),
             is_function,
+            activation_class: None,
         })
     }
 
