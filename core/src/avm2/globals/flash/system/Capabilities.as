@@ -15,5 +15,8 @@ package flash.system {
         public static function get language(): String {
             return "en"
         }
+        public static function get isDebugger(): Boolean {
+            return false
+        }
     }
 }

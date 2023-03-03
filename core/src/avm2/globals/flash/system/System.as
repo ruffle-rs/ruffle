@@ -11,5 +11,9 @@ package flash.system {
         }
 
         public static native function setClipboard(string:String): void;
+
+        public static function disposeXML(node:XML):void {
+            stub_method("flash.system.System", "disposeXML");
+        }
     }
 }
