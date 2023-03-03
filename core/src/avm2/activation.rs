@@ -434,23 +434,31 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
         *local_registers.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
 
-        let activation_class = if method
-            .method()
-            .flags
-            .contains(AbcMethodFlags::NEED_ACTIVATION)
-        {
-            let translation_unit = method.translation_unit();
-            let abc_method = method.method();
-            let mut dummy_activation = Activation::from_nothing(context.reborrow());
-            dummy_activation.set_outer(outer);
-            let activation_class =
-                Class::for_activation(&mut dummy_activation, translation_unit, abc_method, body)?;
-            let activation_class_object =
-                ClassObject::from_class(&mut dummy_activation, activation_class, None)?;
+        let activation_class = if let Some(class_cache) = method.activation_class {
+            let cached_cls = class_cache.read();
+            let activation_class = if let Some(cls) = *cached_cls {
+                cls
+            } else {
+                drop(cached_cls);
+                let translation_unit = method.translation_unit();
+                let abc_method = method.method();
+                let mut dummy_activation = Activation::from_nothing(context.reborrow());
+                dummy_activation.set_outer(outer);
+                let activation_class = Class::for_activation(
+                    &mut dummy_activation,
+                    translation_unit,
+                    abc_method,
+                    body,
+                )?;
+                let activation_class_object =
+                    ClassObject::from_class(&mut dummy_activation, activation_class, None)?;
+                drop(dummy_activation);
 
-            drop(dummy_activation);
+                *class_cache.write(context.gc_context) = Some(activation_class_object);
+                activation_class_object
+            };
 
-            Some(activation_class_object)
+            Some(activation_class)
         } else {
             None
         };
