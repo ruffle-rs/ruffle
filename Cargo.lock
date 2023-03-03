@@ -3500,6 +3500,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "thiserror",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
  "tracing-wasm",
  "url",
