@@ -32,10 +32,10 @@ impl Point {
     /// ```rust
     /// let point = swf::Point::new(40, 40);
     /// ```
-    pub fn new<T: Into<i32>>(x: T, y: T) -> Self {
+    pub const fn new(x: i32, y: i32) -> Self {
         Self {
-            x: Twips::new(x.into()),
-            y: Twips::new(y.into()),
+            x: Twips::new(x),
+            y: Twips::new(y),
         }
     }
 

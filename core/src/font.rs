@@ -271,7 +271,7 @@ impl<'gc> Font<'gc> {
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
-                let mut advance = Twips::new(glyph.advance);
+                let mut advance = Twips::new(glyph.advance.into());
                 if has_kerning_info && params.kerning {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);

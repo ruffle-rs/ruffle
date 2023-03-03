@@ -1163,7 +1163,7 @@ impl<'a> Reader<'a> {
             } else {
                 self.read_u8()?.into()
             },
-            adjustment: Twips::new(self.read_i16()?),
+            adjustment: Twips::new(self.read_i16()?.into()),
         })
     }
 
@@ -1328,8 +1328,8 @@ impl<'a> Reader<'a> {
     }
 
     fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
-        let start_width = Twips::new(self.read_u16()?);
-        let end_width = Twips::new(self.read_u16()?);
+        let start_width = Twips::new(self.read_u16()?.into());
+        let end_width = Twips::new(self.read_u16()?.into());
         if shape_version < 2 {
             let start_color = self.read_rgba()?;
             let end_color = self.read_rgba()?;
@@ -1646,7 +1646,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_line_style(&mut self, shape_version: u8) -> Result<LineStyle> {
-        let width = Twips::new(self.read_u16()?);
+        let width = Twips::new(self.read_u16()?.into());
         if shape_version < 4 {
             // LineStyle1
             let color = if shape_version >= 3 {
@@ -2302,17 +2302,17 @@ impl<'a> Reader<'a> {
             None
         };
         let x_offset = if flags & 0b1 != 0 {
-            Some(Twips::new(self.read_i16()?))
+            Some(Twips::new(self.read_i16()?.into()))
         } else {
             None
         };
         let y_offset = if flags & 0b10 != 0 {
-            Some(Twips::new(self.read_i16()?))
+            Some(Twips::new(self.read_i16()?.into()))
         } else {
             None
         };
         let height = if flags & 0b1000 != 0 {
-            Some(Twips::new(self.read_u16()?))
+            Some(Twips::new(self.read_u16()?.into()))
         } else {
             None
         };
@@ -2354,7 +2354,7 @@ impl<'a> Reader<'a> {
         let height = if flags.intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS) {
             // SWF19 errata: The specs say this field is only present if the HasFont flag is set,
             // but it's also present when the HasFontClass flag is set.
-            Twips::new(self.read_u16()?)
+            Twips::new(self.read_u16()?.into())
         } else {
             Twips::ZERO
         };
@@ -2372,10 +2372,10 @@ impl<'a> Reader<'a> {
             TextLayout {
                 align: TextAlign::from_u8(self.read_u8()?)
                     .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
-                left_margin: Twips::new(self.read_u16()?),
-                right_margin: Twips::new(self.read_u16()?),
-                indent: Twips::new(self.read_u16()?),
-                leading: Twips::new(self.read_i16()?),
+                left_margin: Twips::new(self.read_u16()?.into()),
+                right_margin: Twips::new(self.read_u16()?.into()),
+                indent: Twips::new(self.read_u16()?.into()),
+                leading: Twips::new(self.read_i16()?.into()),
             }
         } else {
             TextLayout {
