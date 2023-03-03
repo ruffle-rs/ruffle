@@ -6,6 +6,10 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
+use std::sync::Arc;
+use tracing_subscriber::layer::Layered;
+use tracing_subscriber::Registry;
+use tracing_wasm::WASMLayer;
 use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
@@ -14,6 +18,7 @@ use web_sys::{
 };
 
 pub struct WebNavigatorBackend {
+    log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
     upgrade_to_https: bool,
     base_url: Option<Url>,
@@ -24,6 +29,7 @@ impl WebNavigatorBackend {
         allow_script_access: bool,
         upgrade_to_https: bool,
         base_url: Option<String>,
+        log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -62,6 +68,7 @@ impl WebNavigatorBackend {
             allow_script_access,
             upgrade_to_https,
             base_url,
+            log_subscriber,
         }
     }
 
@@ -227,7 +234,9 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
+        let subscriber = self.log_subscriber.clone();
         spawn_local(async move {
+            let _subscriber = tracing::subscriber::set_default(subscriber);
             if let Err(e) = future.await {
                 tracing::error!("Asynchronous error occurred: {}", e);
             }
