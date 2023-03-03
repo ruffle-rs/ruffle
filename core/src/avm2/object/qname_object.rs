@@ -56,17 +56,14 @@ impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.
     pub fn from_name(
         activation: &mut Activation<'_, 'gc>,
-        name: impl Into<Multiname<'gc>>,
+        name: Multiname<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = QNameObject(GcCell::allocate(
             activation.context.gc_context,
-            QNameObjectData {
-                base,
-                name: name.into(),
-            },
+            QNameObjectData { base, name },
         ))
         .into();
         this.install_instance_slots(activation);
@@ -116,8 +113,8 @@ impl<'gc> QNameObject<'gc> {
         }
     }
 
-    pub fn init_name(self, mc: MutationContext<'gc, '_>, name: impl Into<Multiname<'gc>>) {
-        self.0.write(mc).name = name.into();
+    pub fn init_name(self, mc: MutationContext<'gc, '_>, name: Multiname<'gc>) {
+        self.0.write(mc).name = name;
     }
 }
 
