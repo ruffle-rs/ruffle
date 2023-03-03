@@ -46,8 +46,8 @@ impl Twips {
     ///
     /// let twips = Twips::new(40);
     /// ```
-    pub fn new<T: Into<i32>>(twips: T) -> Self {
-        Self(twips.into())
+    pub const fn new(twips: i32) -> Self {
+        Self(twips)
     }
 
     /// Returns the number of twips.
