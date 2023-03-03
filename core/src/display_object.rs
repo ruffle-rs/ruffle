@@ -18,7 +18,7 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
-use swf::{BlendMode, Fixed8, Rectangle};
+use swf::{BlendMode, Fixed8};
 
 mod avm1_button;
 mod avm2_button;
@@ -648,20 +648,20 @@ pub trait TDisplayObject<'gc>:
     /// Implementors must override this method.
     /// Leaf DisplayObjects should return their bounds.
     /// Composite DisplayObjects that only contain children should return `&Default::default()`
-    fn self_bounds(&self) -> BoundingBox;
+    fn self_bounds(&self) -> Rectangle<Twips>;
 
     /// The untransformed bounding box of this object including children.
-    fn bounds(&self) -> BoundingBox {
+    fn bounds(&self) -> Rectangle<Twips> {
         self.bounds_with_transform(&Matrix::default())
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
-    fn local_bounds(&self) -> BoundingBox {
+    fn local_bounds(&self) -> Rectangle<Twips> {
         self.bounds_with_transform(self.base().matrix())
     }
 
     /// The world bounding box of this object including children, relative to the stage.
-    fn world_bounds(&self) -> BoundingBox {
+    fn world_bounds(&self) -> Rectangle<Twips> {
         self.bounds_with_transform(&self.local_to_global_matrix())
     }
 
@@ -669,26 +669,25 @@ pub trait TDisplayObject<'gc>:
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
-    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+    fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
-            return BoundingBox {
-                x_min: Twips::from_pixels(0.0),
-                y_min: Twips::from_pixels(0.0),
-                x_max: scroll_rect.width(),
-                y_max: scroll_rect.height(),
-                valid: true,
-            }
-            .transform(matrix);
+            return *matrix
+                * Rectangle {
+                    x_min: Twips::ZERO,
+                    y_min: Twips::ZERO,
+                    x_max: scroll_rect.width(),
+                    y_max: scroll_rect.height(),
+                };
         }
 
-        let mut bounds = self.self_bounds().transform(matrix);
+        let mut bounds = *matrix * self.self_bounds();
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
                 let matrix = *matrix * *child.base().matrix();
-                bounds.union(&child.bounds_with_transform(&matrix));
+                bounds = bounds.union(&child.bounds_with_transform(&matrix));
             }
         }
 

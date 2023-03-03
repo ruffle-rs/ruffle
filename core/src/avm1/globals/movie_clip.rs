@@ -1205,8 +1205,7 @@ fn get_bounds<'gc>(
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
             let to_target_matrix = target.global_to_local_matrix();
-            let bounds_transform = to_target_matrix * to_global_matrix;
-            bounds.transform(&bounds_transform)
+            to_target_matrix * to_global_matrix * bounds
         };
 
         let out = ScriptObject::new(

@@ -1,6 +1,4 @@
-#![allow(clippy::suspicious_operation_groupings)]
-
-use swf::{Fixed16, Twips};
+use swf::{Fixed16, Rectangle, Twips};
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -159,6 +157,27 @@ impl std::ops::Mul<(Twips, Twips)> for Matrix {
         let out_x = round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get());
         let out_y = round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get());
         (Twips::new(out_x), Twips::new(out_y))
+    }
+}
+
+impl std::ops::Mul<Rectangle<Twips>> for Matrix {
+    type Output = Rectangle<Twips>;
+
+    fn mul(self, rhs: Rectangle<Twips>) -> Self::Output {
+        if !rhs.is_valid() {
+            return Default::default();
+        }
+
+        let (x0, y0) = self * (rhs.x_min, rhs.y_min);
+        let (x1, y1) = self * (rhs.x_min, rhs.y_max);
+        let (x2, y2) = self * (rhs.x_max, rhs.y_min);
+        let (x3, y3) = self * (rhs.x_max, rhs.y_max);
+        Rectangle {
+            x_min: x0.min(x1).min(x2).min(x3),
+            x_max: x0.max(x1).max(x2).max(x3),
+            y_min: y0.min(y1).min(y2).min(y3),
+            y_max: y0.max(y1).max(y2).max(y3),
+        }
     }
 }
 

@@ -242,13 +242,12 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.0.read().id
     }
 
-    fn self_bounds(&self) -> BoundingBox {
-        BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
+        Rectangle {
             x_min: Twips::ZERO,
             y_min: Twips::ZERO,
             x_max: Twips::from_pixels(Bitmap::width(*self).into()),
             y_max: Twips::from_pixels(Bitmap::height(*self).into()),
-            valid: true,
         }
     }
 

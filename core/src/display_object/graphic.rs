@@ -47,7 +47,7 @@ impl<'gc> Graphic<'gc> {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
         let static_data = GraphicStatic {
             id: swf_shape.id,
-            bounds: (&swf_shape.shape_bounds).into(),
+            bounds: swf_shape.shape_bounds.clone(),
             render_handle: Some(context.renderer.register_shape(
                 (&swf_shape).into(),
                 &MovieLibrarySource {
@@ -134,9 +134,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.read().static_data.id
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         if let Some(drawing) = &self.0.read().drawing {
-            drawing.self_bounds()
+            drawing.self_bounds().clone()
         } else {
             self.0.read().static_data.bounds.clone()
         }
@@ -269,6 +269,6 @@ struct GraphicStatic {
     id: CharacterId,
     shape: swf::Shape,
     render_handle: Option<ShapeHandle>,
-    bounds: BoundingBox,
+    bounds: Rectangle<Twips>,
     movie: Arc<SwfMovie>,
 }

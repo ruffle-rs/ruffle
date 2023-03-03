@@ -2483,8 +2483,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(&self) -> BoundingBox {
-        self.0.read().drawing.self_bounds()
+    fn self_bounds(&self) -> Rectangle<Twips> {
+        self.0.read().drawing.self_bounds().clone()
     }
 
     fn hit_test_shape(

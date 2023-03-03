@@ -644,20 +644,20 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
-        BoundingBox::default()
+        Default::default()
     }
 
-    fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+    fn bounds_with_transform(&self, matrix: &Matrix) -> Rectangle<Twips> {
         // Get self bounds
-        let mut bounds = self.self_bounds().transform(matrix);
+        let mut bounds = *matrix * self.self_bounds();
 
         // Add the bounds of the child, dictated by current state
         let state = self.0.read().state;
         if let Some(child) = self.get_state_child(state.into()) {
             let child_bounds = child.bounds_with_transform(matrix);
-            bounds.union(&child_bounds);
+            bounds = bounds.union(&child_bounds);
         }
 
         bounds

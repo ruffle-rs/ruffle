@@ -2763,7 +2763,15 @@ pub mod tests {
         let buf = [0b00000_000];
         let mut reader = Reader::new(&buf[..], 1);
         let rectangle = reader.read_rectangle().unwrap();
-        assert_eq!(rectangle, Default::default());
+        assert_eq!(
+            rectangle,
+            Rectangle {
+                x_min: Twips::ZERO,
+                y_min: Twips::ZERO,
+                x_max: Twips::ZERO,
+                y_max: Twips::ZERO,
+            }
+        );
     }
 
     #[test]

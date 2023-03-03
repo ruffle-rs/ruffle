@@ -7,9 +7,8 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use crate::tag_utils::SwfMovie;
-use ruffle_render::bounding_box::BoundingBox;
 use std::sync::Arc;
-use swf::Twips;
+use swf::{Rectangle, Twips};
 
 /// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
@@ -215,8 +214,7 @@ pub fn start_drag<'gc>(
                 std::mem::swap(&mut y_min, &mut y_max);
             }
 
-            BoundingBox {
-                valid: true,
+            Rectangle {
                 x_min,
                 y_min,
                 x_max,

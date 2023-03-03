@@ -109,7 +109,7 @@ pub struct EditTextData<'gc> {
 
     /// The current intrinsic bounds of the text field.
     #[collect(require_static)]
-    bounds: BoundingBox,
+    bounds: Rectangle<Twips>,
 
     /// The AVM1 object handle
     object: Option<AvmObject<'gc>>,
@@ -219,13 +219,11 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
-        let bounds: BoundingBox = swf_tag.bounds().into();
-
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
-            bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
+            swf_tag.bounds().width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
             swf_tag.is_word_wrap(),
             !swf_tag.use_outlines(),
         );
@@ -233,8 +231,8 @@ impl<'gc> EditText<'gc> {
 
         let mut base = InteractiveObjectBase::default();
 
-        base.base.matrix_mut().tx = bounds.x_min;
-        base.base.matrix_mut().ty = bounds.y_min;
+        base.base.matrix_mut().tx = swf_tag.bounds().x_min;
+        base.base.matrix_mut().ty = swf_tag.bounds().y_min;
 
         let variable = if !swf_tag.variable_name().is_empty() {
             Some(swf_tag.variable_name())
@@ -275,7 +273,7 @@ impl<'gc> EditText<'gc> {
                 object: None,
                 layout,
                 intrinsic_bounds,
-                bounds,
+                bounds: swf_tag.bounds().clone(),
                 autosize,
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
@@ -735,7 +733,7 @@ impl<'gc> EditText<'gc> {
                     AutoSizeMode::Right => edit_text.bounds.x_max - width,
                     AutoSizeMode::None => unreachable!(),
                 };
-                edit_text.bounds.set_x(new_x);
+                edit_text.bounds.x_min = new_x;
                 edit_text.bounds.set_width(width);
             } else {
                 let width = edit_text.static_data.bounds.width();
@@ -1570,7 +1568,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.write(mc).object = Some(to.into());
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         self.0.read().bounds.clone()
     }
 
@@ -1607,9 +1605,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn width(&self) -> f64 {
         let edit_text = self.0.read();
-        edit_text
-            .bounds
-            .transform(&edit_text.base.base.transform.matrix)
+        (edit_text.base.base.transform.matrix * edit_text.bounds.clone())
             .width()
             .to_pixels()
     }
@@ -1626,9 +1622,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn height(&self) -> f64 {
         let edit_text = self.0.read();
-        edit_text
-            .bounds
-            .transform(&edit_text.base.base.transform.matrix)
+        (edit_text.base.base.transform.matrix * edit_text.bounds.clone())
             .height()
             .to_pixels()
     }

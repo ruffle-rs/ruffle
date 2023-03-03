@@ -108,7 +108,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(&self) -> BoundingBox {
+    fn self_bounds(&self) -> Rectangle<Twips> {
         let this = self.0.read();
         let ratio = this.ratio;
         let static_data = this.static_data;
@@ -148,7 +148,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 struct Frame {
     shape_handle: Option<ShapeHandle>,
     shape: swf::Shape,
-    bounds: BoundingBox,
+    bounds: Rectangle<Twips>,
 }
 
 /// Static data shared between all instances of a morph shape.
@@ -331,7 +331,7 @@ impl MorphShapeStatic {
         Frame {
             shape_handle: None,
             shape,
-            bounds: bounds.into(),
+            bounds,
         }
     }
 

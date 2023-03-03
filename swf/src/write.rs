@@ -2594,18 +2594,23 @@ mod tests {
 
     #[test]
     fn write_rectangle_zero() {
-        let rect: Rectangle<Twips> = Default::default();
+        let rectangle = Rectangle {
+            x_min: Twips::ZERO,
+            y_min: Twips::ZERO,
+            x_max: Twips::ZERO,
+            y_max: Twips::ZERO,
+        };
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            writer.write_rectangle(&rect).unwrap();
+            writer.write_rectangle(&rectangle).unwrap();
         }
         assert_eq!(buf, [0]);
     }
 
     #[test]
     fn write_rectangle_signed() {
-        let rect = Rectangle {
+        let rectangle = Rectangle {
             x_min: Twips::from_pixels(-1.0),
             x_max: Twips::from_pixels(1.0),
             y_min: Twips::from_pixels(-1.0),
@@ -2614,7 +2619,7 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
-            writer.write_rectangle(&rect).unwrap();
+            writer.write_rectangle(&rectangle).unwrap();
         }
         assert_eq!(buf, [0b_00110_101, 0b100_01010, 0b0_101100_0, 0b_10100_000]);
     }

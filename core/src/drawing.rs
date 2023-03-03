@@ -2,18 +2,17 @@ use crate::context::RenderContext;
 use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
-use ruffle_render::bounding_box::BoundingBox;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use std::cell::Cell;
-use swf::{FillStyle, LineStyle, Twips};
+use swf::{FillStyle, LineStyle, Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct Drawing {
     render_handle: Cell<Option<ShapeHandle>>,
-    shape_bounds: BoundingBox,
-    edge_bounds: BoundingBox,
+    shape_bounds: Rectangle<Twips>,
+    edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
     paths: Vec<DrawingPath>,
     bitmaps: Vec<BitmapInfo>,
@@ -34,8 +33,8 @@ impl Drawing {
     pub fn new() -> Self {
         Self {
             render_handle: Cell::new(None),
-            shape_bounds: BoundingBox::default(),
-            edge_bounds: BoundingBox::default(),
+            shape_bounds: Default::default(),
+            edge_bounds: Default::default(),
             dirty: Cell::new(false),
             paths: Vec::new(),
             bitmaps: Vec::new(),
@@ -50,8 +49,8 @@ impl Drawing {
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: Cell::new(None),
-            shape_bounds: (&shape.shape_bounds).into(),
-            edge_bounds: (&shape.edge_bounds).into(),
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
             dirty: Cell::new(true),
             paths: Vec::new(),
             bitmaps: Vec::new(),
@@ -132,8 +131,8 @@ impl Drawing {
         self.pending_lines.clear();
         self.paths.clear();
         self.bitmaps.clear();
-        self.edge_bounds = BoundingBox::default();
-        self.shape_bounds = BoundingBox::default();
+        self.edge_bounds = Default::default();
+        self.shape_bounds = Default::default();
         self.dirty.set(true);
         self.cursor = (Twips::ZERO, Twips::ZERO);
         self.fill_start = (Twips::ZERO, Twips::ZERO);
@@ -192,11 +191,11 @@ impl Drawing {
                     x: self.cursor.0,
                     y: self.cursor.1,
                 };
-                stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
-                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::ZERO);
+                self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
+                self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
             }
-            stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
-            stretch_bounding_box(&mut self.edge_bounds, &command, Twips::ZERO);
+            self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
+            self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
         }
 
         self.cursor = command.end_point();
@@ -296,8 +295,8 @@ impl Drawing {
         }
     }
 
-    pub fn self_bounds(&self) -> BoundingBox {
-        self.shape_bounds.clone()
+    pub fn self_bounds(&self) -> &Rectangle<Twips> {
+        &self.shape_bounds
     }
 
     pub fn hit_test(
@@ -432,26 +431,24 @@ enum DrawingPath {
     Line(DrawingLine),
 }
 
-fn stretch_bounding_box(
-    bounding_box: &mut BoundingBox,
+fn stretch_bounds(
+    bounds: &Rectangle<Twips>,
     command: &DrawCommand,
     stroke_width: Twips,
-) {
+) -> Rectangle<Twips> {
     let radius = stroke_width / 2;
+    let bounds = bounds.clone();
     match *command {
-        DrawCommand::MoveTo { x, y } => {
-            bounding_box.encompass(x - radius, y - radius);
-            bounding_box.encompass(x + radius, y + radius);
-        }
-        DrawCommand::LineTo { x, y } => {
-            bounding_box.encompass(x - radius, y - radius);
-            bounding_box.encompass(x + radius, y + radius);
-        }
-        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-            bounding_box.encompass(x1 - radius, y1 - radius);
-            bounding_box.encompass(x1 + radius, y1 + radius);
-            bounding_box.encompass(x2 - radius, y2 - radius);
-            bounding_box.encompass(x2 + radius, y2 + radius);
-        }
+        DrawCommand::MoveTo { x, y } => bounds
+            .encompass(x - radius, y - radius)
+            .encompass(x + radius, y + radius),
+        DrawCommand::LineTo { x, y } => bounds
+            .encompass(x - radius, y - radius)
+            .encompass(x + radius, y + radius),
+        DrawCommand::CurveTo { x1, y1, x2, y2 } => bounds
+            .encompass(x1 - radius, y1 - radius)
+            .encompass(x1 + radius, y1 + radius)
+            .encompass(x2 - radius, y2 - radius)
+            .encompass(x2 + radius, y2 + radius),
     }
 }

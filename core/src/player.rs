@@ -2308,7 +2308,7 @@ pub struct DragObject<'gc> {
 
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]
-    pub constraint: BoundingBox,
+    pub constraint: Rectangle<Twips>,
 }
 
 fn run_mouse_pick<'gc>(

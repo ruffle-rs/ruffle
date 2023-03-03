@@ -18,14 +18,13 @@ use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use instant::Instant;
 use rand::Rng;
-use ruffle_render::bounding_box::BoundingBox;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::min;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
-use swf::Twips;
+use swf::{Rectangle, Twips};
 use url::form_urlencoded;
 
 use super::object_reference::MovieClipReference;
@@ -3067,8 +3066,7 @@ pub fn start_drag<'gc>(
         if y_max.get() < y_min.get() {
             std::mem::swap(&mut y_min, &mut y_max);
         }
-        BoundingBox {
-            valid: true,
+        Rectangle {
             x_min,
             y_min,
             x_max,

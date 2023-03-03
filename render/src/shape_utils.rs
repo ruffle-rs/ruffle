@@ -1,7 +1,6 @@
-use crate::bounding_box::BoundingBox;
 use crate::matrix::Matrix;
 use smallvec::SmallVec;
-use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
+use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
@@ -80,8 +79,8 @@ pub enum DrawPath<'a> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
-    pub shape_bounds: BoundingBox,
-    pub edge_bounds: BoundingBox,
+    pub shape_bounds: Rectangle<Twips>,
+    pub edge_bounds: Rectangle<Twips>,
     pub id: CharacterId,
 }
 
@@ -89,8 +88,8 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
-            shape_bounds: (&shape.shape_bounds).into(),
-            edge_bounds: (&shape.edge_bounds).into(),
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
             id: shape.id,
         }
     }
