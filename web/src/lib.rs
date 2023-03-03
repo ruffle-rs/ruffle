@@ -494,6 +494,12 @@ impl Ruffle {
         js_player: JavascriptPlayer,
         config: Config,
     ) -> Result<Ruffle, Box<dyn Error>> {
+        // Redirect Log to Tracing if it isn't already
+        let _ = tracing_log::LogTracer::builder()
+            // wgpu crates are extremely verbose
+            .ignore_crate("wgpu_hal")
+            .ignore_crate("wgpu_core")
+            .init();
         let log_subscriber = Arc::new(
             Registry::default().with(WASMLayer::new(
                 WASMLayerConfigBuilder::new()
