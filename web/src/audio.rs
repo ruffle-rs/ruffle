@@ -6,6 +6,9 @@ use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+use tracing_subscriber::layer::Layered;
+use tracing_subscriber::Registry;
+use tracing_wasm::WASMLayer;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::AudioContext;
 
@@ -16,12 +19,13 @@ pub struct WebAudioBackend {
     buffers: Vec<Arc<RwLock<Buffer>>>,
     time: Arc<RwLock<f64>>,
     position_resolution: Duration,
+    log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
 impl WebAudioBackend {
     const BUFFER_SIZE: u32 = 4096;
 
-    pub fn new() -> Result<Self, JsError> {
+    pub fn new(log_subscriber: Arc<Layered<WASMLayer, Registry>>) -> Result<Self, JsError> {
         let context = AudioContext::new().into_js_result()?;
         let sample_rate = context.sample_rate();
         let mut audio = Self {
@@ -32,6 +36,7 @@ impl WebAudioBackend {
             position_resolution: Duration::from_secs_f64(
                 f64::from(Self::BUFFER_SIZE) / f64::from(sample_rate),
             ),
+            log_subscriber,
         };
 
         // Create and start the audio buffers.
@@ -82,6 +87,7 @@ struct Buffer {
     on_ended_handler: Closure<dyn FnMut()>,
     time: Arc<RwLock<f64>>,
     buffer_timestep: f64,
+    log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
 impl Buffer {
@@ -99,6 +105,7 @@ impl Buffer {
             on_ended_handler: Closure::new(|| {}),
             time: audio.time.clone(),
             buffer_timestep: f64::from(WebAudioBackend::BUFFER_SIZE) / f64::from(sample_rate),
+            log_subscriber: audio.log_subscriber.clone(),
         }));
 
         // Swap in the onended handler.
@@ -115,6 +122,8 @@ impl Buffer {
     }
 
     fn play(&mut self) -> Result<(), JsError> {
+        let _subscriber = tracing::subscriber::set_default(self.log_subscriber.clone());
+
         // Mix new audio into the output buffer and copy to JS.
         self.mixer_proxy.mix(&mut self.audio_buffer);
         copy_to_audio_buffer_interleaved(&self.js_buffer, &self.audio_buffer);
