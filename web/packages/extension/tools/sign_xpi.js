@@ -4,6 +4,52 @@ import tempDir from "temp-dir";
 import { signAddon } from "sign-addon";
 import { Client as AMOClient } from "sign-addon/lib/amo-client.js";
 
+/**
+ * Find a version of a given extension.
+ *
+ * The name is snarky because Mozilla's API really *should* hand us version IDs
+ * automatically, but it doesn't. In A.M.O's defense we ARE mixing incompatible
+ * API versions...
+ *
+ * Explicitly uses all_with_unlisted, which means this requires authentication
+ * using a token that owns the extension in question.
+ *
+ * @param {AMOClient} client The client to use. Must have auth tokens.
+ * @param {String} extensionId The extension ID to search. Must be wrapped in
+ * curly braces.
+ *
+ * @param {String} version The version number to look for.
+ *
+ * @returns An A.M.O. version struct if found, otherwise null.
+ */
+async function find_the_version_we_just_submitted(
+    client,
+    extensionId,
+    version
+) {
+    var page = 1;
+    var result = {};
+
+    while (page === 1 || result.count > 0) {
+        result = await client.get({
+            url: `/addons/addon/${encodeURIComponent(extensionId)}/versions`,
+            qs: {
+                filter: "all_with_unlisted",
+                page: page,
+            },
+        });
+        page += 1;
+
+        for (var i = 0; i < result.results.length; i += 1) {
+            if (result.results[i].version === version) {
+                return result.results[i];
+            }
+        }
+    }
+
+    return null;
+}
+
 async function sign(
     apiKey,
     apiSecret,
@@ -22,20 +68,27 @@ async function sign(
         downloadDir: tempDir,
     });
 
-    if (result.id !== null) {
-        //Since sign-addon doesn't support source upload, let's make the request
-        //ourselves.
-        const client = new AMOClient({
-            apiKey,
-            apiSecret,
-            apiUrlPrefix: "https://addons.mozilla.org/api/v5",
-            downloadDir: tempDir,
-        });
+    //Since sign-addon doesn't support source upload, let's make the request
+    //ourselves.
+    const client = new AMOClient({
+        apiKey,
+        apiSecret,
+        apiUrlPrefix: "https://addons.mozilla.org/api/v5",
+        downloadDir: tempDir,
+    });
 
-        client.post({
+    const submittedVersion = await find_the_version_we_just_submitted(
+        client,
+        extensionId,
+        version
+    );
+    if (submittedVersion !== null) {
+        console.debug(`Our version ID is ${submittedVersion.id}`);
+        //NOTE: The extension ID is already wrapped in curly braces in GitHub
+        var sourceCodeUpload = client.patch({
             url: `/addons/addon/${encodeURIComponent(
                 extensionId
-            )}/versions/${encodeURIComponent(result.id)}`,
+            )}/versions/${encodeURIComponent(submittedVersion.id)}/`,
             formData: {
                 source: this._fs.createReadStream(sourcePath),
             },
@@ -43,10 +96,10 @@ async function sign(
 
         const build_date = new Date().toISOString();
 
-        client.patch({
+        var notesUpload = client.patch({
             url: `/addons/addon/${encodeURIComponent(
                 extensionId
-            )}/versions/${encodeURIComponent(result.id)}`,
+            )}/versions/${encodeURIComponent(submittedVersion.id)}/`,
             json: {
                 approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/nightly-${build_date.substr(
                     0,
@@ -71,6 +124,15 @@ The compiled version of this extension was built on Ubuntu 22.04 by our CI runne
 As this is indeed a complicated build process, please let me know if there is anything I can do to assist.`,
             },
         });
+
+        try {
+            await Promise.all(sourceCodeUpload, notesUpload);
+            console.log("Successfully uploaded source code and approval notes");
+        } catch (e) {
+            console.error(`Got exception when uploading submission data: ${e}`);
+        }
+    } else {
+        console.error(`Version ${version} not found on addons.mozilla.org!`);
     }
 
     if (!result.success) {
