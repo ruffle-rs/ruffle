@@ -503,6 +503,7 @@ impl Ruffle {
         let log_subscriber = Arc::new(
             Registry::default().with(WASMLayer::new(
                 WASMLayerConfigBuilder::new()
+                    .set_report_logs_in_timings(cfg!(feature = "profiling"))
                     .set_max_level(config.log_level)
                     .build(),
             )),
