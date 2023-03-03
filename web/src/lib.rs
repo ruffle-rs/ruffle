@@ -523,6 +523,7 @@ impl Ruffle {
             allow_script_access,
             config.upgrade_to_https,
             config.base_url,
+            log_subscriber.clone(),
         ));
 
         match window.local_storage() {
