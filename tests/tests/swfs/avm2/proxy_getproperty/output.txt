@@ -51,6 +51,22 @@ proxy_var
 ///name.uri
 
 This is a proxy var
+///p.*
+///attempted to get property: *::*
+///type of name is QName
+///name.localName
+*
+///name.uri
+null
+This is a proxy var
+///p.*::proxy_var
+///attempted to get property: *::proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+null
+This is a proxy var
 ///p.proxy_fn
 ///attempted to get property: proxy_fn
 ///type of name is QName
