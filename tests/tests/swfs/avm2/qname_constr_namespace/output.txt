@@ -15,3 +15,10 @@ var qname_rescoped = new QName(ns_ruffle, qname_public);
 name
 ///qname_rescoped.uri
 https://ruffle.rs/AS3/tests/qname
+var qname_any_name = new QName(ns_ruffle, "*");
+///qname_any_name.localName
+*
+///qname_any_name.uri
+https://ruffle.rs/AS3/tests/qname
+///qname_any_name
+https://ruffle.rs/AS3/tests/qname::*

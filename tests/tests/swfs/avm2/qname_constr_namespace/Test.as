@@ -34,3 +34,14 @@ trace(qname_rescoped.localName);
 
 trace("///qname_rescoped.uri");
 trace(qname_rescoped.uri);
+
+trace("var qname_any_name = new QName(ns_ruffle, \"*\");");
+var qname_any_name = new QName(ns_ruffle, "*");
+trace("///qname_any_name.localName");
+trace(qname_any_name.localName);
+
+trace("///qname_any_name.uri");
+trace(qname_any_name.uri);
+
+trace("///qname_any_name");
+trace(qname_any_name);
