@@ -138,21 +138,22 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         blend_mode: TrivialBlend,
         render_stage3d: bool,
     ) {
-        if self.needs_depth {
-            if render_stage3d {
-                panic!("Cannot combine render_stage3d with depth");
+        match (self.needs_depth, render_stage3d) {
+            (true, true) => {
+                self.render_pass
+                    .set_pipeline(&self.pipelines.bitmap_opaque_dummy_depth);
             }
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
-        } else if render_stage3d {
-            // When rendering a Stage3D buffer bitmap, we need to use a special shader
-            // that sets the output alpha to 1.0 (ignoring the input alpha), and doesn't
-            // perform any blending.
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap_opaque.depthless_pipeline());
-        } else {
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+            (true, false) => {
+                self.render_pass
+                    .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
+            }
+            (false, true) => {
+                self.render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
+            }
+            (false, false) => {
+                self.render_pass
+                    .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+            }
         }
 
         self.render_pass.set_bind_group(

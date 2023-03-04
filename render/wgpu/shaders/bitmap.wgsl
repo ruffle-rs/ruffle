@@ -41,9 +41,15 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Unmultiply alpha, apply color transform, remultiply alpha.
     if( color.a > 0.0 ) {
         color = vec4<f32>(color.rgb / color.a, color.a);
-        color = saturate(color * colorTransforms.mult_color + colorTransforms.add_color);
+        color = color * colorTransforms.mult_color + colorTransforms.add_color;
+        // Apply 'saturate' *after* we re-multiply. If we get a non-premultiplied
+        // color like (1.0, 1.0. 1.0, 0.5) from a Stage3D texture, we want
+        // this shader to have no effect if we're applying a no-op colorTransforms.
+        // By applying the saturation after dividing and multiply by the alpha,
+        // we avoid saturing if the intermediate 'unmultiplied' color is temporarily
+        // out of range.
         let alpha = saturate(color.a);
-        color = vec4<f32>(color.rgb * alpha, alpha);
+        color = vec4<f32>(saturate(color.rgb * alpha), alpha);
     }
     return color;
 }

@@ -10,8 +10,6 @@ use std::collections::HashMap;
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
     pub bitmap_shader: wgpu::ShaderModule,
-    /// This is only used when copying a final Stage3D texture
-    pub bitmap_opaque_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
@@ -41,13 +39,6 @@ impl Shaders {
             &shader_defs,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
-        );
-        let bitmap_opaque_shader = make_shader(
-            device,
-            &mut composer,
-            &shader_defs,
-            "bitmap_opaque.wgsl",
-            include_str!("../shaders/bitmap_opaque.wgsl"),
         );
         let copy_srgb_shader = make_shader(
             device,
@@ -99,7 +90,6 @@ impl Shaders {
         Self {
             color_shader,
             bitmap_shader,
-            bitmap_opaque_shader,
             gradient_shader,
             copy_srgb_shader,
             copy_shader,

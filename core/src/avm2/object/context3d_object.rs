@@ -14,11 +14,10 @@ use ruffle_render::backend::{
     Texture,
 };
 use ruffle_render::bitmap::{Bitmap, BitmapFormat};
-use ruffle_render::commands::{CommandHandler, CommandList};
+use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
-use swf::BlendMode;
 
 use super::program_3d_object::Program3DObject;
 use super::texture_object::TextureObject;
@@ -315,13 +314,11 @@ impl<'gc> Context3DObject<'gc> {
         if context3d.should_render() {
             let handle = context3d.bitmap_handle();
 
-            let mut normal_blend = CommandList::new();
-            normal_blend.render_stage3d(
+            context.commands.render_stage3d(
                 handle,
                 // FIXME - apply x and y translation from Stage3D
                 Transform::default(),
             );
-            context.commands.blend(normal_blend, BlendMode::Normal);
         }
     }
 
