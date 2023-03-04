@@ -88,6 +88,12 @@ undefined
 // clip.clip.getBounds('clip.clip')
 undefined
 
+// mc.getBounds()
+6710886.35
+6710886.35
+6710886.35
+6710886.35
+
 // clip.clip.getRect()
 -50
 -112
@@ -177,4 +183,10 @@ undefined
 
 // clip.clip.getRect('clip.clip')
 undefined
+
+// mc.getRect()
+6710886.35
+6710886.35
+6710886.35
+6710886.35
 
