@@ -9,7 +9,6 @@ use core::fmt;
 use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
-use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
@@ -17,7 +16,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
-use swf::{BlendMode, Fixed8, Rectangle, Twips};
+use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -821,13 +820,13 @@ impl<'gc> BitmapData<'gc> {
         y_min: u32,
         x_max: u32,
         y_max: u32,
-        color_transform: ColorTransform,
+        color_transform: &ColorTransform,
     ) {
         // Flash bug: applying a color transform with only an alpha multiplier > 1 has no effect.
-        if color_transform.r_mult != Fixed8::ONE
-            || color_transform.g_mult != Fixed8::ONE
-            || color_transform.b_mult != Fixed8::ONE
-            || color_transform.a_mult < Fixed8::ONE
+        if color_transform.r_multiply != Fixed8::ONE
+            || color_transform.g_multiply != Fixed8::ONE
+            || color_transform.b_multiply != Fixed8::ONE
+            || color_transform.a_multiply < Fixed8::ONE
             || color_transform.r_add != 0
             || color_transform.g_add != 0
             || color_transform.b_add != 0

@@ -5,8 +5,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
-use ruffle_render::color_transform::ColorTransform;
-use swf::Fixed8;
+use swf::{ColorTransform, Fixed8};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -38,10 +37,10 @@ impl<'gc> ColorTransformObject {
         color_transform: ColorTransform,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
-            color_transform.r_mult.to_f64().into(),
-            color_transform.g_mult.to_f64().into(),
-            color_transform.b_mult.to_f64().into(),
-            color_transform.a_mult.to_f64().into(),
+            color_transform.r_multiply.to_f64().into(),
+            color_transform.g_multiply.to_f64().into(),
+            color_transform.b_multiply.to_f64().into(),
+            color_transform.a_multiply.to_f64().into(),
             color_transform.r_add.into(),
             color_transform.g_add.into(),
             color_transform.b_add.into(),
@@ -68,10 +67,10 @@ impl<'gc> ColorTransformObject {
 impl From<ColorTransformObject> for ColorTransform {
     fn from(object: ColorTransformObject) -> Self {
         Self {
-            r_mult: Fixed8::from_f64(object.red_multiplier),
-            g_mult: Fixed8::from_f64(object.green_multiplier),
-            b_mult: Fixed8::from_f64(object.blue_multiplier),
-            a_mult: Fixed8::from_f64(object.alpha_multiplier),
+            r_multiply: Fixed8::from_f64(object.red_multiplier),
+            g_multiply: Fixed8::from_f64(object.green_multiplier),
+            b_multiply: Fixed8::from_f64(object.blue_multiplier),
+            a_multiply: Fixed8::from_f64(object.alpha_multiplier),
             r_add: object.red_offset as i16,
             g_add: object.green_offset as i16,
             b_add: object.blue_offset as i16,

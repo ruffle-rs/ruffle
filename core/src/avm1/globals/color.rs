@@ -95,22 +95,22 @@ fn get_transform<'gc>(
         );
         out.set(
             "ra",
-            (color_transform.r_mult.to_f64() * 100.0).into(),
+            (color_transform.r_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
             "ga",
-            (color_transform.g_mult.to_f64() * 100.0).into(),
+            (color_transform.g_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
             "ba",
-            (color_transform.b_mult.to_f64() * 100.0).into(),
+            (color_transform.b_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set(
             "aa",
-            (color_transform.a_mult.to_f64() * 100.0).into(),
+            (color_transform.a_multiply.to_f64() * 100.0).into(),
             activation,
         )?;
         out.set("rb", color_transform.r_add.into(), activation)?;
@@ -139,9 +139,9 @@ fn set_rgb<'gc>(
 
         let mut base = target.base_mut(activation.context.gc_context);
         let mut color_transform = base.color_transform_mut();
-        color_transform.r_mult = Fixed8::ZERO;
-        color_transform.g_mult = Fixed8::ZERO;
-        color_transform.b_mult = Fixed8::ZERO;
+        color_transform.r_multiply = Fixed8::ZERO;
+        color_transform.g_multiply = Fixed8::ZERO;
+        color_transform.b_multiply = Fixed8::ZERO;
         color_transform.r_add = r.into();
         color_transform.g_add = g.into();
         color_transform.b_add = b.into();
@@ -196,10 +196,10 @@ fn set_transform<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation);
-        set_color_mult(activation, transform, "ra", &mut color_transform.r_mult)?;
-        set_color_mult(activation, transform, "ga", &mut color_transform.g_mult)?;
-        set_color_mult(activation, transform, "ba", &mut color_transform.b_mult)?;
-        set_color_mult(activation, transform, "aa", &mut color_transform.a_mult)?;
+        set_color_mult(activation, transform, "ra", &mut color_transform.r_multiply)?;
+        set_color_mult(activation, transform, "ga", &mut color_transform.g_multiply)?;
+        set_color_mult(activation, transform, "ba", &mut color_transform.b_multiply)?;
+        set_color_mult(activation, transform, "aa", &mut color_transform.a_multiply)?;
         set_color_add(activation, transform, "rb", &mut color_transform.r_add)?;
         set_color_add(activation, transform, "gb", &mut color_transform.g_add)?;
         set_color_add(activation, transform, "bb", &mut color_transform.b_add)?;

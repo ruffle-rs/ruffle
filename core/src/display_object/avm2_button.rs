@@ -171,7 +171,7 @@ impl<'gc> Avm2Button<'gc> {
         // It applies color transforms to every character in a button, in sequence(?).
         for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
         {
-            record.color_transform = color_transform.clone();
+            record.color_transform = *color_transform;
         }
     }
 
@@ -210,10 +210,7 @@ impl<'gc> Avm2Button<'gc> {
                         child.set_depth(context.gc_context, record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
-                            child.set_color_transform(
-                                context.gc_context,
-                                record.color_transform.clone().into(),
-                            );
+                            child.set_color_transform(context.gc_context, record.color_transform);
                         }
 
                         children.push((child, record.depth));

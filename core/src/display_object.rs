@@ -18,7 +18,7 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
-use swf::{BlendMode, Fixed8};
+use swf::{BlendMode, ColorTransform, Fixed8};
 
 mod avm1_button;
 mod avm2_button;
@@ -354,12 +354,12 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn alpha(&self) -> f64 {
-        f64::from(self.color_transform().a_mult)
+        f64::from(self.color_transform().a_multiply)
     }
 
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.color_transform_mut().a_mult = Fixed8::from_f64(value)
+        self.color_transform_mut().a_multiply = Fixed8::from_f64(value);
     }
 
     fn clip_depth(&self) -> Depth {
@@ -1559,7 +1559,7 @@ pub trait TDisplayObject<'gc>:
                 self.set_matrix(context.gc_context, matrix.into());
             }
             if let Some(color_transform) = &place_object.color_transform {
-                self.set_color_transform(context.gc_context, color_transform.clone().into());
+                self.set_color_transform(context.gc_context, *color_transform);
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {

@@ -15,7 +15,6 @@ use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, RgbaBufRead, SyncHandle};
-use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
 use std::cell::Cell;
@@ -92,15 +91,11 @@ pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
     add_color: [0.0, 0.0, 0.0, 0.0],
 };
 
-impl From<ColorTransform> for ColorAdjustments {
-    fn from(transform: ColorTransform) -> Self {
-        if transform == ColorTransform::IDENTITY {
-            DEFAULT_COLOR_ADJUSTMENTS
-        } else {
-            Self {
-                mult_color: transform.mult_rgba_normalized(),
-                add_color: transform.add_rgba_normalized(),
-            }
+impl From<&swf::ColorTransform> for ColorAdjustments {
+    fn from(transform: &swf::ColorTransform) -> Self {
+        Self {
+            mult_color: transform.mult_rgba_normalized(),
+            add_color: transform.add_rgba_normalized(),
         }
     }
 }

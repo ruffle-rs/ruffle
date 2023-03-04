@@ -636,7 +636,7 @@ pub fn color_transform<'gc>(
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .color_transform(x_min, y_min, x_max, y_max, color_transform.into());
+                    .color_transform(x_min, y_min, x_max, y_max, &color_transform.into());
             }
         }
     }
