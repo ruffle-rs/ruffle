@@ -23,3 +23,10 @@ var qname_null = new QName(null, "name");
 name
 ///qname_null.uri
 null
+var qname_any = new QName("*");
+///qname_any.localName
+*
+///qname_any.uri
+null
+///qname_any
+*::*

@@ -46,3 +46,15 @@ trace(qname_null.localName);
 
 trace("///qname_null.uri");
 trace(qname_null.uri);
+
+trace("var qname_any = new QName(\"*\");");
+var qname_any = new QName("*");
+
+trace("///qname_any.localName");
+trace(qname_any.localName);
+
+trace("///qname_any.uri");
+trace(qname_any.uri);
+
+trace("///qname_any");
+trace(qname_any);
