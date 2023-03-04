@@ -6,6 +6,7 @@ package flash.events
         public static const KEY_UP:String = "keyUp";
         private var _charCode:uint;
         private var _keyCode:uint;
+        private var _keyLocation:uint;
         private var _ctrlKey:Boolean;
         private var _altKey:Boolean;
         private var _shiftKey:Boolean;
@@ -26,6 +27,7 @@ package flash.events
             super(type,bubbles,cancelable);
             this._charCode = charCodeValue;
             this._keyCode = keyCodeValue;
+            this._keyLocation = keyLocationValue;
             this._ctrlKey = ctrlKeyValue;
             this._altKey = altKeyValue;
             this._shiftKey = shiftKeyValue;
@@ -44,6 +46,13 @@ package flash.events
         }
         public function set keyCode(val:uint) {
             this._keyCode = val;
+        }
+
+        public function get keyLocation():uint {
+            return this._keyLocation;
+        }
+        public function set keyLocation(val:uint):void {
+            this._keyLocation = val;
         }
 
         public function get ctrlKey():Boolean {
