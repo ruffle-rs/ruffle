@@ -200,15 +200,37 @@ script
     debugline           71
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("proxy_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getproperty         Multiname("proxy_var", [PrivateNamespace("Test.as$38"), PackageNamespace(""), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           72
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///p.*"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
     debugline           73
     findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    getproperty         QName(null, null)
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           73
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///p.*::proxy_var"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           75
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    getproperty         QName(null, "proxy_var")
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           76
+    findpropstrict      QName(PackageNamespace(""), "trace")
     pushstring          "///p.proxy_fn"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           74
+    debugline           77
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
     getproperty         Multiname("proxy_fn", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
