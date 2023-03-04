@@ -31,7 +31,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::{Color, Twips};
+use swf::{Color, ColorTransform, Twips};
 
 use super::interactive::Avm2MousePick;
 
@@ -898,7 +898,7 @@ impl<'gc> EditText<'gc> {
                             // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
-                                color_transform: ColorTransform::default(),
+                                color_transform: ColorTransform::IDENTITY,
                             });
                         }
                         _ => {

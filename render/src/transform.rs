@@ -1,5 +1,5 @@
-use crate::color_transform::ColorTransform;
 use crate::matrix::Matrix;
+use swf::ColorTransform;
 
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.

@@ -612,8 +612,7 @@ pub fn color_transform<'gc>(
                     color_transform,
                     activation,
                 )?;
-
-            bitmap_data.color_transform(x_min, y_min, x_max, y_max, color_transform);
+            bitmap_data.color_transform(x_min, y_min, x_max, y_max, &color_transform);
         }
     }
 
