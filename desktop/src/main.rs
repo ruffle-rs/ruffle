@@ -1014,6 +1014,10 @@ fn main() -> Result<(), Error> {
     } else {
         App::new(opt).map(|app| app.run())
     };
+    #[cfg(windows)]
+    if let Err(error) = &result {
+        eprintln!("{:?}", error)
+    }
     shutdown();
     result
 }
