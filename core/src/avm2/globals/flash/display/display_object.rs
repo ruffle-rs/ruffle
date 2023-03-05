@@ -59,6 +59,7 @@ pub fn native_instance_init<'gc>(
                         false,
                     );
                     catchup_display_object_to_frame(&mut activation.context, child);
+                    break;
                 }
                 class_object = class.superclass_object();
             }
