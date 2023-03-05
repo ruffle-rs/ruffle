@@ -69,7 +69,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        public function set scale9Grid(value:Rectangle):void {
+        override public function set scale9Grid(value:Rectangle):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
