@@ -1,0 +1,4 @@
+SubClass before super(): this.target_from_subclass = null this.target_from_superclass=null
+SuperClass before super(): this.target_from_superclass=null
+SuperClass after  super(): this.target_from_superclass=null
+SubClass after  super(): this.target_from_subclass = [object TargetClip] this.target_from_superclass=null
