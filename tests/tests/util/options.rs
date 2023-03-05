@@ -155,6 +155,8 @@ impl PlayerOptions {
                     if !render.is_supported(&wgpu.adapter) {
                         return false;
                     }
+                } else {
+                    return false;
                 }
             }
         }
