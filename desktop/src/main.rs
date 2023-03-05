@@ -340,6 +340,7 @@ impl App {
             .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
+            .with_quality(opt.quality)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
