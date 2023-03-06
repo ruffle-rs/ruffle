@@ -596,7 +596,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        return Ok(Value::from(this))
+        return Ok(Value::from(this));
     }
     Ok(Value::Undefined)
 }
