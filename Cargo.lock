@@ -357,9 +357,9 @@ checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
 
 [[package]]
 name = "bytemuck"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c041d3eab048880cb0b86b256447da3f18859a163c3b8d8893f4e6368abe6393"
+checksum = "17febce684fd15d89027105661fec94afb475cb995fbc59d2865198446ba2eea"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -2403,12 +2403,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "naga"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5eafe22a23b797c9bc227c6c896419b26b5bb88fa903417a3adaed08778850d5"
+dependencies = [
+ "bit-set",
+ "bitflags",
+ "indexmap",
+ "log",
+ "num-traits",
+ "rustc-hash",
+ "thiserror",
+]
+
+[[package]]
 name = "naga-agal"
 version = "0.1.0"
 dependencies = [
  "bitflags",
  "insta",
- "naga",
+ "naga 0.10.0",
  "num-derive",
  "num-traits",
 ]
@@ -2421,7 +2436,7 @@ dependencies = [
  "bit-set",
  "codespan-reporting",
  "data-encoding",
- "naga",
+ "naga 0.10.0",
  "once_cell",
  "regex",
  "regex-syntax",
@@ -3124,9 +3139,9 @@ dependencies = [
 
 [[package]]
 name = "rayon"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db3a213adf02b3bcfd2d3846bb41cb22857d131789e01df434fb7e7bc0759b7"
+checksum = "1d2df5196e37bcc87abebc0053e20787d73847bb33134a69841207dd0a47f03b"
 dependencies = [
  "either",
  "rayon-core",
@@ -3134,9 +3149,9 @@ dependencies = [
 
 [[package]]
 name = "rayon-core"
-version = "1.10.2"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "356a0625f1954f730c0201cdab48611198dc6ce21f4acff55089b5a78e6e835b"
+checksum = "4b8f95bd6966f5c87776639160a66bd8ab9895d9d4ab01ddba9fc60661aebe8d"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-deque",
@@ -3216,9 +3231,9 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 
 [[package]]
 name = "rfd"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fe3bae427b011620cf4436d5dd7405c1a86dce3dfcdc0cda12b41fd31569ac3"
+checksum = "b344b73e5688c6ad9389095d8e78a877637078f490ae17259937371113ebcb67"
 dependencies = [
  "block",
  "dispatch",
@@ -3418,7 +3433,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
- "naga",
+ "naga 0.11.0",
  "naga-agal",
  "naga_oil",
  "once_cell",
@@ -3594,9 +3609,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5583e89e108996506031660fe09baa5011b9dd0341b89029313006d1fb508d70"
+checksum = "4f3208ce4d8448b3f3e7d168a73f5e0c43a61e32930de3bceeccedb388b6bf06"
 
 [[package]]
 name = "ryu"
@@ -4611,7 +4626,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
  "log",
- "naga",
+ "naga 0.10.0",
  "parking_lot",
  "profiling",
  "raw-window-handle",
@@ -4637,7 +4652,7 @@ dependencies = [
  "codespan-reporting",
  "fxhash",
  "log",
- "naga",
+ "naga 0.10.0",
  "parking_lot",
  "profiling",
  "raw-window-handle",
@@ -4676,7 +4691,7 @@ dependencies = [
  "libloading",
  "log",
  "metal",
- "naga",
+ "naga 0.10.0",
  "objc",
  "parking_lot",
  "profiling",
@@ -4863,9 +4878,9 @@ checksum = "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd"
 
 [[package]]
 name = "winit"
-version = "0.28.1"
+version = "0.28.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c4755d4ba0e3d30fc7beef2095e246b1e6a6fad0717608bcb87a2df4b003bcf"
+checksum = "9d38e7dc904dda347b54dbec3b2d4bf534794f4fb4e6df0be91a264f4f2ed1cf"
 dependencies = [
  "android-activity",
  "bitflags",
