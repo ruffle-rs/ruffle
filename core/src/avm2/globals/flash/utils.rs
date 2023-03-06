@@ -260,7 +260,7 @@ pub fn get_definition_by_name<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
     let qname = QName::from_qualified_name(name, activation);
-    appdomain.get_defined_value(activation, qname)
+    appdomain.get_defined_value_handling_vector(activation, qname)
 }
 
 // Implements `flash.utils.describeType`

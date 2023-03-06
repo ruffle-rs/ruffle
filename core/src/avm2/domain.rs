@@ -11,6 +11,7 @@ use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use super::class::Class;
+use super::string::AvmString;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
@@ -178,6 +179,49 @@ impl<'gc> Domain<'gc> {
         let globals = script.globals(&mut activation.context)?;
 
         globals.get_property(&name.into(), activation)
+    }
+
+    /// Retrieve a value from this domain, with special handling for 'Vector.<SomeType>'.
+    /// This is used by `getQualifiedClassName, ApplicationDomain.getDefinition, and ApplicationDomain.hasDefinition`.
+    pub fn get_defined_value_handling_vector(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        mut name: QName<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // Special-case lookups of `Vector.<SomeType>` - these get internally converted
+        // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
+        let mut type_name = None;
+        if (name.namespace() == activation.avm2().vector_public_namespace
+            || name.namespace() == activation.avm2().vector_internal_namespace)
+            && (name.local_name().starts_with(b"Vector.<".as_slice())
+                && name.local_name().ends_with(b">".as_slice()))
+        {
+            let local_name = name.local_name();
+            type_name = Some(AvmString::new(
+                activation.context.gc_context,
+                &local_name["Vector.<".len()..(local_name.len() - 1)],
+            ));
+            name = QName::new(
+                name.namespace(),
+                AvmString::new_utf8(activation.context.gc_context, "Vector"),
+            );
+        }
+        let (name, mut script) = self.find_defining_script(activation, &name.into())?;
+        let globals = script.globals(&mut activation.context)?;
+
+        let res = globals.get_property(&name.into(), activation);
+        if let Some(type_name) = type_name {
+            let type_qname = QName::from_qualified_name(type_name, activation);
+            let type_class = self.get_defined_value(activation, type_qname)?;
+            if let Ok(res) = res {
+                let class = res
+                    .as_object()
+                    .and_then(|obj| obj.as_class_object())
+                    .expect("Found non-ClassObject for Vector class");
+                return class.apply(activation, &[type_class]).map(|obj| obj.into());
+            }
+        }
+        res
     }
 
     /// Export a definition from a script into the current application domain.

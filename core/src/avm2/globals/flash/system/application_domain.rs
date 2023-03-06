@@ -72,23 +72,7 @@ pub fn get_definition<'gc>(
             .unwrap_or_else(|| "".into())
             .coerce_to_string(activation)?;
         let name = QName::from_qualified_name(name, activation);
-        let (qname, mut defined_script) = match appdomain.get_defining_script(&name.into())? {
-            Some(data) => data,
-            None => {
-                return Err(Error::AvmError(crate::avm2::error::reference_error(
-                    activation,
-                    &format!(
-                        "Error #1065: Variable {} is not defined.",
-                        name.local_name()
-                    ),
-                    1065,
-                )?))
-            }
-        };
-        let globals = defined_script.globals(&mut activation.context)?;
-        let definition = globals.get_property(&qname.into(), activation)?;
-
-        return Ok(definition);
+        return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
     Ok(Value::Undefined)
@@ -109,7 +93,10 @@ pub fn has_definition<'gc>(
 
         let qname = QName::from_qualified_name(name, activation);
 
-        return Ok(appdomain.has_definition(qname).into());
+        return Ok(appdomain
+            .get_defined_value_handling_vector(activation, qname)
+            .is_ok()
+            .into());
     }
 
     Ok(Value::Undefined)

@@ -19,6 +19,8 @@ use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
 };
 
+use super::string::AvmString;
+
 bitflags! {
     /// All possible attributes for a given class.
     pub struct ClassAttributes: u8 {
@@ -217,6 +219,26 @@ impl<'gc> Class<'gc> {
         new_class.attributes.remove(ClassAttributes::GENERIC);
         new_class.class_init = new_class.specialized_class_init.clone();
         new_class.class_initializer_called = false;
+
+        if params.len() > 1 {
+            panic!(
+                "More than one type parameter is unsupported: {:?}",
+                self.name()
+            );
+        }
+
+        // FIXME - we should store a `Multiname` instead of a `QName`, and use the
+        // `params` field. For now, this is good enough to get tests passing
+        let name_with_params = format!(
+            "{}.<{}>",
+            new_class.name.local_name(),
+            params[0].read().name().to_qualified_name(mc)
+        );
+
+        new_class.name = QName::new(
+            new_class.name.namespace(),
+            AvmString::new_utf8(mc, name_with_params),
+        );
 
         GcCell::allocate(mc, new_class)
     }
