@@ -2873,25 +2873,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            // In AVM2, mouse_enabled should only impact the ability to select the current clip
-            // but it should still be possible to select any children where child.mouse_enabled() is
-            // true.
-            // InteractiveObject.mouseEnabled:
-            // "Any children of this instance on the display list are not affected."
-            if self.mouse_enabled() && self.world_bounds().contains(point) {
-                // This MovieClip operates in "button mode" if it has a mouse handler,
-                // either via on(..) or via property mc.onRelease, etc.
-                let is_button_mode = self.is_button_mode(context);
-
-                if is_button_mode {
-                    let mut options = HitTestOptions::SKIP_INVISIBLE;
-                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-                    if self.hit_test_shape(context, point, options) {
-                        return Avm2MousePick::Hit(this);
-                    }
-                }
-            }
-
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
             let mut options = HitTestOptions::SKIP_INVISIBLE;
@@ -2985,7 +2966,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.mouse_enabled() {
+            if self.mouse_enabled() && self.world_bounds().contains(point) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
 

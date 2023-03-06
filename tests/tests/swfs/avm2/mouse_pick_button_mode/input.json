@@ -1,0 +1,30 @@
+[
+  {
+    "type": "MouseMove",
+    "pos": [240, 183]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [240, 183],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [240, 183],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [262, 229]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [262, 229],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [262, 229],
+    "btn": "Left"
+  }
+]
