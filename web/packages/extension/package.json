@@ -16,7 +16,7 @@
     "devDependencies": {
         "@tsconfig/strictest": "^1.0.2",
         "@types/chrome": "^0.0.212",
-        "@types/firefox-webext-browser": "^94.0.0",
+        "@types/firefox-webext-browser": "^111.0.0",
         "archiver": "^5.3.1",
         "json5": "^2.2.2",
         "sign-addon": "^5.2.0",
