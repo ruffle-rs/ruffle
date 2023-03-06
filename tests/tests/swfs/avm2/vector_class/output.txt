@@ -1,0 +1,8 @@
+Vector.<int> name: __AS3__.vec::Vector.<int>
+Vector.<int>: [class Vector.<int>]
+Vector.<uint> name: __AS3__.vec::Vector.<uint>
+Vector.<uint>: [class Vector.<uint>]
+Vector.<Number> name: __AS3__.vec::Vector.<Number>
+Vector.<Number>: [class Vector.<Number>]
+Vector.<Object> name: __AS3__.vec::Vector.<Object>
+Vector.<Object>: [class Vector.<Object>]

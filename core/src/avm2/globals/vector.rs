@@ -96,6 +96,7 @@ pub fn class_init<'gc>(
         let mut globals = activation.global_scope().unwrap();
         let mut domain = activation.domain();
 
+        let vector_public_namespace = activation.avm2().vector_public_namespace;
         let vector_internal_namespace = activation.avm2().vector_internal_namespace;
 
         //We have to grab Object's defining script instead of our own, because
@@ -111,7 +112,8 @@ pub fn class_init<'gc>(
         let class_class = activation.avm2().classes().class;
         let int_class = activation.avm2().classes().int;
         let int_vector_class = this.apply(activation, &[int_class.into()])?;
-        let int_vector_name = QName::new(vector_internal_namespace, "Vector$int");
+        let int_vector_name = QName::new(vector_public_namespace, "Vector.<int>");
+        let int_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$int");
         int_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -123,11 +125,23 @@ pub fn class_init<'gc>(
             int_vector_class.into(),
             class_class,
         );
+        globals.install_const_late(
+            activation.context.gc_context,
+            int_vector_name_legacy,
+            int_vector_class.into(),
+            class_class,
+        );
         domain.export_definition(int_vector_name, script, activation.context.gc_context);
+        domain.export_definition(
+            int_vector_name_legacy,
+            script,
+            activation.context.gc_context,
+        );
 
         let uint_class = activation.avm2().classes().uint;
         let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
-        let uint_vector_name = QName::new(vector_internal_namespace, "Vector$uint");
+        let uint_vector_name = QName::new(vector_public_namespace, "Vector.<uint>");
+        let uint_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$uint");
         uint_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -139,11 +153,23 @@ pub fn class_init<'gc>(
             uint_vector_class.into(),
             class_class,
         );
+        globals.install_const_late(
+            activation.context.gc_context,
+            uint_vector_name_legacy,
+            uint_vector_class.into(),
+            class_class,
+        );
         domain.export_definition(uint_vector_name, script, activation.context.gc_context);
+        domain.export_definition(
+            uint_vector_name_legacy,
+            script,
+            activation.context.gc_context,
+        );
 
         let number_class = activation.avm2().classes().number;
         let number_vector_class = this.apply(activation, &[number_class.into()])?;
-        let number_vector_name = QName::new(vector_internal_namespace, "Vector$double");
+        let number_vector_name = QName::new(vector_public_namespace, "Vector.<Number>");
+        let number_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$double");
         number_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -155,10 +181,24 @@ pub fn class_init<'gc>(
             number_vector_class.into(),
             class_class,
         );
+        globals.install_const_late(
+            activation.context.gc_context,
+            number_vector_name_legacy,
+            number_vector_class.into(),
+            class_class,
+        );
         domain.export_definition(number_vector_name, script, activation.context.gc_context);
+        domain.export_definition(
+            number_vector_name_legacy,
+            script,
+            activation.context.gc_context,
+        );
 
-        let object_vector_class = this.apply(activation, &[Value::Null])?;
-        let object_vector_name = QName::new(vector_internal_namespace, "Vector$object");
+        let object_class = activation.avm2().classes().object;
+        let object_vector_class = this.apply(activation, &[object_class.into()])?;
+        let plain_vector_class = this.apply(activation, &[Value::Null])?;
+        let object_vector_name = QName::new(vector_public_namespace, "Vector.<Object>");
+        let object_vector_name_legacy = QName::new(vector_internal_namespace, "Vector$object");
         object_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
@@ -170,7 +210,18 @@ pub fn class_init<'gc>(
             object_vector_class.into(),
             class_class,
         );
+        globals.install_const_late(
+            activation.context.gc_context,
+            object_vector_name_legacy,
+            plain_vector_class.into(),
+            class_class,
+        );
         domain.export_definition(object_vector_name, script, activation.context.gc_context);
+        domain.export_definition(
+            object_vector_name_legacy,
+            script,
+            activation.context.gc_context,
+        );
     }
 
     Ok(Value::Undefined)
