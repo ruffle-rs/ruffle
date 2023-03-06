@@ -591,7 +591,7 @@ fn to_lower_case<'gc>(
 
 /// Implements `String.toString`
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
