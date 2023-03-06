@@ -606,10 +606,6 @@ impl<'gc> Loader<'gc> {
         let mc = mc.as_movie_clip().unwrap();
 
         let did_finish = mc.preload(context, limit);
-        if did_finish {
-            mc.post_instantiation(context, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(context, mc.into());
-        }
 
         Loader::movie_loader_progress(
             handle,
@@ -657,6 +653,12 @@ impl<'gc> Loader<'gc> {
                 // clip does not yet exist.
                 loader.insert_at_index(&mut activation.context, mc.into(), 0);
             }
+
+            // We call these methods after we initialize the `LoaderInfo` and add the loaded clip
+            // as a child. This may run an 'addedToStage' handler in the loaded movie,
+            // which should be able to access 'this.stage' and 'this.parent'
+            mc.post_instantiation(context, None, Instantiator::Movie, false);
+            catchup_display_object_to_frame(context, mc.into());
 
             Loader::movie_loader_complete(handle, context)?;
         }
