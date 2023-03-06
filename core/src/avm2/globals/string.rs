@@ -589,6 +589,18 @@ fn to_lower_case<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.toString`
+fn to_string<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        return Ok(Value::from(this));
+    }
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.toUpperCase`
 fn to_upper_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -652,6 +664,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("toLocaleLowerCase", to_lower_case),
         ("toLocaleUpperCase", to_upper_case),
         ("toLowerCase", to_lower_case),
+        ("toString", to_string),
         ("toUpperCase", to_upper_case),
     ];
     write.define_builtin_instance_methods(
