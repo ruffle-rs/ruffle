@@ -207,7 +207,7 @@ impl<'gc> Avm2<'gc> {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc_context);
+                    .push_global_init(init_activation.context.gc_context, script);
                 let r = (method.method)(&mut init_activation, Some(scope), &[]);
                 init_activation
                     .context
@@ -219,7 +219,7 @@ impl<'gc> Avm2<'gc> {
                 init_activation
                     .context
                     .avm2
-                    .push_global_init(init_activation.context.gc_context);
+                    .push_global_init(init_activation.context.gc_context, script);
                 let r = init_activation.run_actions(method);
                 init_activation
                     .context
@@ -408,6 +408,7 @@ impl<'gc> Avm2<'gc> {
     pub fn do_abc(
         context: &mut UpdateContext<'_, 'gc>,
         data: &[u8],
+        name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -425,7 +426,7 @@ impl<'gc> Avm2<'gc> {
         };
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc, domain, name, context.gc_context);
         for i in 0..num_scripts {
             tunit.load_script(i as u32, context)?;
         }
@@ -450,8 +451,8 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&self, mc: MutationContext<'gc, '_>) {
-        self.call_stack.write(mc).push_global_init()
+    pub fn push_global_init(&self, mc: MutationContext<'gc, '_>, script: Script<'gc>) {
+        self.call_stack.write(mc).push_global_init(script)
     }
 
     /// Pops an executable off the call stack

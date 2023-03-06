@@ -592,8 +592,14 @@ fn load_playerglobal<'gc>(
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::do_abc(&mut activation.context, do_abc.data, do_abc.flags, domain)
-                .expect("playerglobal.swf should be valid");
+            Avm2::do_abc(
+                &mut activation.context,
+                do_abc.data,
+                None,
+                do_abc.flags,
+                domain,
+            )
+            .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }

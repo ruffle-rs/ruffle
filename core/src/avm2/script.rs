@@ -41,9 +41,12 @@ pub struct TranslationUnit<'gc>(GcCell<'gc, TranslationUnitData<'gc>>);
 /// constructing the appropriate runtime object for that item.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct TranslationUnitData<'gc> {
+struct TranslationUnitData<'gc> {
     /// The domain that all scripts in the translation unit export defs to.
     domain: Domain<'gc>,
+
+    /// The name from the original `DoAbc2` tag, or `None` if this came from a `DoAbc` tag
+    name: Option<AvmString<'gc>>,
 
     /// The ABC file that all of the following loaded data comes from.
     #[collect(require_static)]
@@ -74,7 +77,12 @@ pub struct TranslationUnitData<'gc> {
 impl<'gc> TranslationUnit<'gc> {
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
-    pub fn from_abc(abc: AbcFile, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
+    pub fn from_abc(
+        abc: AbcFile,
+        domain: Domain<'gc>,
+        name: Option<AvmString<'gc>>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Self {
         let classes = vec![None; abc.classes.len()];
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
@@ -86,6 +94,7 @@ impl<'gc> TranslationUnit<'gc> {
             mc,
             TranslationUnitData {
                 domain,
+                name,
                 abc: Rc::new(abc),
                 classes,
                 methods,
@@ -99,6 +108,11 @@ impl<'gc> TranslationUnit<'gc> {
 
     pub fn domain(self) -> Domain<'gc> {
         self.0.read().domain
+    }
+
+    // Retrieve the name associated with the original `DoAbc2` tag
+    pub fn name(self) -> Option<AvmString<'gc>> {
+        self.0.read().name
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
@@ -342,7 +356,7 @@ pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-struct ScriptData<'gc> {
+pub struct ScriptData<'gc> {
     /// The global object for the script.
     globals: Object<'gc>,
 
@@ -360,6 +374,9 @@ struct ScriptData<'gc> {
 
     /// Whether or not script initialization occurred.
     initialized: bool,
+
+    /// The `TranslationUnit` this script was loaded from.
+    translation_unit: Option<TranslationUnit<'gc>>,
 }
 
 impl<'gc> Script<'gc> {
@@ -391,6 +408,7 @@ impl<'gc> Script<'gc> {
                 traits: Vec::new(),
                 traits_loaded: true,
                 initialized: false,
+                translation_unit: None,
             },
         ))
     }
@@ -429,6 +447,7 @@ impl<'gc> Script<'gc> {
                 traits: Vec::new(),
                 traits_loaded: false,
                 initialized: false,
+                translation_unit: Some(unit),
             },
         )))
     }
@@ -481,6 +500,14 @@ impl<'gc> Script<'gc> {
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
         (read.init.clone(), read.globals, read.domain)
+    }
+
+    pub fn domain(self) -> Domain<'gc> {
+        self.0.read().domain
+    }
+
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        self.0.read().translation_unit
     }
 
     /// Return the global scope for the script.
