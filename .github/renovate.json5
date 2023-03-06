@@ -33,5 +33,8 @@
             "groupName": "Github Actions dependencies",
             "extends": ["schedule:monthly"],
         },
-    ]
+    ],
+    "lockFileMaintenance": {
+        "enabled": true
+    }
 }
