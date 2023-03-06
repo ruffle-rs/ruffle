@@ -82,7 +82,8 @@ impl<'gc> MovieClipReference<'gc> {
                 ),
             })
         } else if activation.swf_version() <= 5 {
-            let display_object = Self::process_swf5_references(activation, display_object);
+            let display_object = Self::process_swf5_references(activation, display_object)?;
+
             let stage_object = display_object
                 .object()
                 .coerce_to_object(activation)
@@ -105,16 +106,20 @@ impl<'gc> MovieClipReference<'gc> {
     fn process_swf5_references(
         activation: &mut Activation<'_, 'gc>,
         mut display_object: DisplayObject<'gc>,
-    ) -> DisplayObject<'gc> {
+    ) -> Option<DisplayObject<'gc>> {
         // In swfv5 paths resolve to the first MovieClip parent if the target isn't a movieclip
         if activation.swf_version() <= 5 {
             while display_object.as_movie_clip().is_none() {
                 if let Some(p) = display_object.avm1_parent() {
                     display_object = p;
+                } else {
+                    // Somehow we have gotten an object that has no MovieClip up the chain
+                    return None;
                 }
             }
         }
-        display_object
+
+        Some(display_object)
     }
 
     /// Resolve this reference to an object
@@ -131,7 +136,7 @@ impl<'gc> MovieClipReference<'gc> {
                 // We have to fallback to manual path-walking if the object is removed
                 if !mc.read().display_object.avm1_removed() {
                     let display_object = mc.read().display_object;
-                    let display_object = Self::process_swf5_references(activation, display_object);
+                    let display_object = Self::process_swf5_references(activation, display_object)?;
 
                     // Note that there is a bug here but this *is* how it works in Flash:
                     // If we are using the cached DisplayObject, we return it's path, which can be changed by modifying `_name`
@@ -175,7 +180,7 @@ impl<'gc> MovieClipReference<'gc> {
         }
 
         if let Some(start) = start {
-            let display_object = Self::process_swf5_references(activation, start);
+            let display_object = Self::process_swf5_references(activation, start)?;
 
             Some((
                 false,
