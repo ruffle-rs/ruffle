@@ -743,7 +743,13 @@ impl<'gc> MovieClip<'gc> {
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
             // DoAbc tag seems to be equivalent to a DoAbc2 with Lazy flag set
-            if let Err(e) = Avm2::do_abc(context, data, swf::DoAbc2Flag::LAZY_INITIALIZE, domain) {
+            if let Err(e) = Avm2::do_abc(
+                context,
+                data,
+                None,
+                swf::DoAbc2Flag::LAZY_INITIALIZE,
+                domain,
+            ) {
                 tracing::warn!("Error loading ABC file: {}", e);
             }
         }
@@ -767,7 +773,10 @@ impl<'gc> MovieClip<'gc> {
             let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            if let Err(e) = Avm2::do_abc(context, do_abc.data, do_abc.flags, domain) {
+            let name = do_abc.name.to_str_lossy(reader.encoding());
+            let name = AvmString::new_utf8(context.gc_context, name);
+
+            if let Err(e) = Avm2::do_abc(context, do_abc.data, Some(name), do_abc.flags, domain) {
                 tracing::warn!("Error loading ABC file: {}", e);
             }
         }
