@@ -1,0 +1,60 @@
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[rotation] = 0
+Setting clip[rotation] = NaN gave: NaN
+Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[rotation] = 0
+Setting clip[rotation] = NaN gave: NaN
+Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Initial value: clip[rotation] = 0
+Setting clip[rotation] = NaN gave: NaN
+Matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[x] = 5
+Setting clip[x] = NaN gave: 0
+Matrix: (a=2, b=0, c=4, d=0, tx=0, ty=6)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[x] = 5
+Setting clip[x] = NaN gave: 0
+Matrix: (a=2, b=0, c=4, d=0, tx=0, ty=6)
+Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Initial value: clip[x] = 11
+Setting clip[x] = NaN gave: 0
+Matrix: (a=7, b=0, c=9, d=0, tx=0, ty=12)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[y] = 6
+Setting clip[y] = NaN gave: 0
+Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=0)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[y] = 6
+Setting clip[y] = NaN gave: 0
+Matrix: (a=2, b=0, c=4, d=0, tx=5, ty=0)
+Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Initial value: clip[y] = 12
+Setting clip[y] = NaN gave: 0
+Matrix: (a=7, b=0, c=9, d=0, tx=11, ty=0)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[scaleX] = 2
+Setting clip[scaleX] = NaN gave: NaN
+Matrix: (a=0, b=0, c=4, d=0, tx=5, ty=6)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[scaleX] = 2
+Setting clip[scaleX] = NaN gave: NaN
+Matrix: (a=0, b=0, c=4, d=0, tx=5, ty=6)
+Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Initial value: clip[scaleX] = 7
+Setting clip[scaleX] = NaN gave: NaN
+Matrix: (a=0, b=0, c=9, d=0, tx=11, ty=12)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[scaleY] = 4
+Setting clip[scaleY] = NaN gave: NaN
+Matrix: (a=2, b=0, c=0, d=0, tx=5, ty=6)
+Setting initial matrix: (a=2, b=0, c=4, d=0, tx=5, ty=6)
+Initial value: clip[scaleY] = 4
+Setting clip[scaleY] = NaN gave: NaN
+Matrix: (a=2, b=0, c=0, d=0, tx=5, ty=6)
+Setting initial matrix: (a=7, b=0, c=9, d=0, tx=11, ty=12)
+Initial value: clip[scaleY] = 9
+Setting clip[scaleY] = NaN gave: NaN
+Matrix: (a=7, b=0, c=0, d=0, tx=11, ty=12)
