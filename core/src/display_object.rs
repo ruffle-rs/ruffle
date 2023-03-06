@@ -262,6 +262,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.rotation = degrees;
+
+        // FIXME - this isn't quite correct. In Flash player,
+        // trying to set rotation to NaN does nothing if the current
+        // matrix 'b' and 'd' terms are both zero. However, if one
+        // of those terms is non-zero, then the entire matrix gets
+        // modified in a way that depends on its starting values.
+        // I haven't been able to figure out how to reproduce those
+        // values, so for now, we never modify the matrix if the
+        // rotation is NaN. Hopefully, there are no SWFs depending
+        // on the weird behavior when b or d is non-zero.
+        if degrees.into_radians().is_nan() {
+            return;
+        }
+
         let cos_x = f64::cos(degrees.into_radians());
         let sin_x = f64::sin(degrees.into_radians());
         let cos_y = f64::cos(degrees.into_radians() + self.skew);
@@ -278,10 +292,18 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_x
     }
 
-    fn set_scale_x(&mut self, value: Percent) {
+    fn set_scale_x(&mut self, mut value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_x = value;
+
+        // Note - in order to match Flash's behavior, the 'scale_x' field is set to NaN
+        // (which gets reported back to ActionScript), but we treat it as 0 for
+        // the purposes of updating the matrix
+        if value.percent().is_nan() {
+            value = 0.0.into();
+        }
+
         let cos = f64::cos(self.rotation.into_radians());
         let sin = f64::sin(self.rotation.into_radians());
         let mut matrix = &mut self.transform.matrix;
@@ -294,10 +316,18 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.scale_y
     }
 
-    fn set_scale_y(&mut self, value: Percent) {
+    fn set_scale_y(&mut self, mut value: Percent) {
         self.set_transformed_by_script(true);
         self.cache_scale_rotation();
         self.scale_y = value;
+
+        // Note - in order to match Flash's behavior, the 'scale_y' field is set to NaN
+        // (which gets reported back to ActionScript), but we treat it as 0 for
+        // the purposes of updating the matrix
+        if value.percent().is_nan() {
+            value = 0.0.into();
+        }
+
         let cos = f64::cos(self.rotation.into_radians() + self.skew);
         let sin = f64::sin(self.rotation.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
