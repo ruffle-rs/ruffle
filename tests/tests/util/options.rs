@@ -88,6 +88,7 @@ pub struct PlayerOptions {
     viewport_dimensions: Option<ViewportDimensions>,
     with_renderer: Option<RenderOptions>,
     with_audio: bool,
+    with_video: bool,
 }
 
 impl PlayerOptions {
@@ -141,6 +142,12 @@ impl PlayerOptions {
 
         if self.with_audio {
             player_builder = player_builder.with_audio(TestAudioBackend::new());
+        }
+
+        #[cfg(feature = "imgtests")]
+        if self.with_video {
+            use ruffle_video_software::backend::SoftwareVideoBackend;
+            player_builder = player_builder.with_video(SoftwareVideoBackend::new())
         }
 
         Ok(player_builder)

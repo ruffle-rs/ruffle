@@ -30,12 +30,13 @@ number_patterns = [] # A list of regex patterns with capture groups to additiona
 epsilon = 0.0 # The upper bound of any rounding errors. Default is the difference between 1.0 and the next largest representable number
 max_relative = 0.0 # The default relative tolerance for testing values that are far-apart. Default is the difference between 1.0 and the next largest representable number
 
-# Options for the player used to run this swf 
+# Options for the player used to run this swf
 [player_options]
 max_execution_duration = { secs = 15, nanos = 0} # How long can actionscript execute for before being forcefully stopped
 viewport_dimensions = { width = 100, height = 100, scale_factor = 1 } # The size of the player. Defaults to the swfs stage size
 with_renderer = { optional = false, sample_count = 4, exclude_warp = false } # If this test requires a renderer to run. Optional will enable the renderer where available.
 with_audio = false # If this test requires an audio backend to run.
+with_video = false # If this test requires a video decoder backend to run.
 
 # Whether or not to compare the image rendered with an expected image
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled
