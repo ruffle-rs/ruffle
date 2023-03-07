@@ -35,6 +35,7 @@ package flash.display {
         public native function getColorBoundsRect(mask:uint, color:uint, findColor:Boolean = true):Rectangle;
         public native function scroll(x:int, y:int):void;
         public native function lock():void;
+        public native function hitTest(firstPoint:Point, firstAlphaThreshold:uint, secondObject:Object, secondBitmapDataPoint:Point = null, secondAlphaThreshold:uint = 1):Boolean;
         public native function unlock(changeRect:Rectangle = null):void;
         public native function copyPixels(
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, alphaBitmapData:BitmapData = null, alphaPoint:Point = null, mergeAlpha:Boolean = false

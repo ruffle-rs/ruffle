@@ -763,6 +763,15 @@ pub fn unlock<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn hit_test<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.BitmapData", "hitTest");
+    Ok(false.into())
+}
+
 /// Implements `BitmapData.draw`
 pub fn draw<'gc>(
     activation: &mut Activation<'_, 'gc>,
