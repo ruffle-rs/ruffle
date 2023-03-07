@@ -3,6 +3,14 @@
 [object SelfRef]
 ///SelfRef.field
 [object SelfRef]
+///SelfRef.self_ref_const
+[object SelfRef]
+///self_ref.self_ref_method(self_ref)
+[object SelfRef]
+///SelfRefSubClass.self_ref_base
+[object SelfRef]
+///SelfRefSubClass.self_ref_sub_iface
+[object SelfRefSubClass]
 ///any_var
 undefined
 ///object_var

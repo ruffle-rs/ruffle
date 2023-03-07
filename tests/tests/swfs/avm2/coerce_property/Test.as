@@ -13,8 +13,27 @@ class Second {
 	var prop2:First;
 }
 
-class SelfRef {
-	static var field:SelfRef = new SelfRef()
+interface BaseInterface {}
+interface SubInterface {}
+
+class SelfRef implements BaseInterface {
+	static var field:SelfRef = new SelfRef();
+	static const self_ref_const:SelfRef = make_it();
+	
+	static function make_it():SelfRef {
+		var foo:SelfRef = new SelfRef();
+		var other:BaseInterface = foo;
+		return foo;
+	}
+	
+	function self_ref_method(param:SelfRef): SelfRef {
+		return param;
+	}
+}
+
+class SelfRefSubClass implements SubInterface {
+	static const self_ref_base:SelfRef = SelfRef.make_it();
+	static const self_ref_sub_iface:SubInterface = new SelfRefSubClass();
 }
 
 trace("///var self_ref:SelfRef = new SelfRef();");
@@ -24,6 +43,18 @@ trace(self_ref);
 
 trace("///SelfRef.field");
 trace(SelfRef.field);
+
+trace("///SelfRef.self_ref_const");
+trace(SelfRef.self_ref_const);
+
+trace("///self_ref.self_ref_method(self_ref)");
+trace(self_ref.self_ref_method(self_ref));
+
+trace("///SelfRefSubClass.self_ref_base");
+trace(SelfRefSubClass.self_ref_base);
+
+trace("///SelfRefSubClass.self_ref_sub_iface");
+trace(SelfRefSubClass.self_ref_sub_iface);
 
 var any_var:* = undefined;
 trace("///any_var");

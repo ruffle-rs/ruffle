@@ -2975,7 +2975,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
         let type_name = self.pool_multiname_static_any(method, index)?;
-        let param_type = self.resolve_type(&type_name)?;
+
+        let param_type = match self.resolve_type(&type_name) {
+            Ok(param_type) => param_type,
+            Err(e) => {
+                // While running a class initializer, we might need to resolve the class
+                // itself. For example, a static/const can run a static method, which does
+                // `var foo:ClassBeingInitialized = new ClassBeingInitialized();`
+                //
+                // Since the class initializer is running, we won't be able to resolve the
+                // ClassObject yet. If the normal `resolve_type` lookup fails, then
+                // try resolving the class through `domain().get_class`, and check if the
+                // object's class matches directly (not considering superclasses or interfaces).
+                // Any superclasses or superinterfaces will already have been initialized,
+                // so the `resolve_type` lookup will succeed for them.
+                if let Some(obj) = val.as_object() {
+                    if let Ok(Some(resolved_class)) = self.domain().get_class(&type_name) {
+                        if let Some(obj_class) = obj.instance_of_class_definition() {
+                            if GcCell::ptr_eq(resolved_class, obj_class) {
+                                self.push_stack(val);
+                                return Ok(FrameControl::Continue);
+                            }
+                        }
+                    }
+                }
+                return Err(e);
+            }
+        };
 
         let x = if let Some(param_type) = param_type {
             val.coerce_to_type(self, param_type)?
