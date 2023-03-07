@@ -16,6 +16,8 @@ include "SyntaxError.as"
 include "URIError.as"
 include "VerifyError.as"
 
+include "avmplus.as"
+
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/crypto.as"
 include "flash/utils/IDataInput.as"

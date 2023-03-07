@@ -8,3 +8,13 @@ flash.utils::ByteArray
 String
 null
 void
+Test
+flash.utils::ByteArray
+com.very.long.namespace::example
+com.very.long.namespace::example
+int
+String
+flash.utils::ByteArray
+String
+null
+void
