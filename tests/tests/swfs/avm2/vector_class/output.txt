@@ -19,3 +19,11 @@ Vector.<Test> name: __AS3__.vec::Vector.<Test>
 Vector.<Test>: [class Vector.<Test>]
 ApplicationDomain.hasDefinition Vector.<Test>: true
 ApplicationDomain.getDefinition Vector.<Test>: [class Vector.<Test>]
+Vector.<rs.ruffle.CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+__AS3__.vec::Vector.<rs.ruffle.CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+Vector.<CustomClass> name: __AS3__.vec::Vector.<rs.ruffle::CustomClass>
+Vector.<CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+ApplicationDomain.hasDefinition Vector.<CustomClass>: true
+ApplicationDomain.getDefinition Vector.<CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+Vector.<Number> without namespace[class Vector.<Number>]
+Caught error: ReferenceError: Error #1065: Variable Vector is not defined.

@@ -3,6 +3,8 @@
 	import flash.utils.getQualifiedClassName;
 	import flash.system.ApplicationDomain;
 	
+
+	
 	public class Test {
 		public function Test() {
 			var vec;
@@ -43,6 +45,27 @@
 			trace("Vector.<Test>: " + getDefinitionByName(name));
 			trace("ApplicationDomain.hasDefinition Vector.<Test>: " + ApplicationDomain.currentDomain.hasDefinition(name));
 			trace("ApplicationDomain.getDefinition Vector.<Test>: " + ApplicationDomain.currentDomain.getDefinition(name));
+
+			import rs.ruffle.CustomClass;
+			
+			trace("Vector.<rs.ruffle.CustomClass>: " + getDefinitionByName("Vector.<rs.ruffle.CustomClass>"));
+			trace("__AS3__.vec::Vector.<rs.ruffle.CustomClass>: " + getDefinitionByName("__AS3__.vec::Vector.<rs.ruffle.CustomClass>"));
+			
+			vec = new Vector.<CustomClass>([]);	
+		
+			name = getQualifiedClassName(vec);
+			trace("Vector.<CustomClass> name: " + name);
+			trace("Vector.<CustomClass>: " + getDefinitionByName(name));
+			trace("ApplicationDomain.hasDefinition Vector.<CustomClass>: " + ApplicationDomain.currentDomain.hasDefinition(name));
+			trace("ApplicationDomain.getDefinition Vector.<CustomClass>: " + ApplicationDomain.currentDomain.getDefinition(name));
+			
+			trace("Vector.<Number> without namespace" + getDefinitionByName("Vector.<Number>"));
+			try {
+				trace("Vector without namespace: " + getDefinitionByName("Vector"));
+			} catch (e) {
+				trace("Caught error: " + e);
+			}
+			
 		}
 	}
 }

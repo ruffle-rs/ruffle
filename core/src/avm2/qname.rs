@@ -79,9 +79,28 @@ impl<'gc> QName<'gc> {
     /// LOCAL_NAME (Use the public namespace)
     pub fn from_qualified_name(name: AvmString<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         let mc = activation.context.gc_context;
-        let parts = name
-            .rsplit_once(WStr::from_units(b"::"))
-            .or_else(|| name.rsplit_once(WStr::from_units(b".")));
+        // If we have a type like 'some::namespace::Vector.<other::namespace::MyType>',
+        // we want to look at 'some::namespace::Vector' when splitting out the namespace
+        let before_type_param = if let Some(type_param_start) = name.find(WStr::from_units(b".<")) {
+            &name[..type_param_start]
+        } else {
+            &name
+        };
+
+        // We unfortunately can't use 'rsplit' here, because we would need to split
+        // the entire string, but only before the first '.<'
+        //
+        // Get the last '::' or '.', only considering the string before '.<' (if any).
+        // This will ignore any namespaces that are part of a type parameter (e.g 'Vector.<other::namespace::MyType>').
+        // The type parameter will stay combined with the type name (so we'll have 'Vector.<other::namespace::MyType>')
+        // in some namespace, depending on whether or not anything comes before 'Vector')
+        let parts = if let Some(last_separator) = before_type_param.rfind(WStr::from_units(b"::")) {
+            Some((&name[..last_separator], &name[(last_separator + 2)..]))
+        } else if let Some(last_separator) = before_type_param.rfind(b".".as_slice()) {
+            Some((&name[..last_separator], &name[(last_separator + 1)..]))
+        } else {
+            None
+        };
 
         if let Some((package_name, local_name)) = parts {
             Self {
