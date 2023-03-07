@@ -118,6 +118,39 @@ export const enum WindowMode {
 }
 
 /**
+ * The render backend of a Ruffle player.
+ */
+export const enum RenderBackend {
+    /*
+     * A draft API that is currently unavailable, but will be preferred if available in the future.
+     * Should behave the same as wgpu-webgl, except with lower overhead and thus better performance.
+     */
+    WebGpu = "webgpu",
+
+    /*
+     * The most featureful and currently preferred backend.
+     * Rendering is done the same way as in the desktop app, then translated to WebGL on-the-fly.
+     */
+    WgpuWebgl = "wgpu-webgl",
+
+    /*
+     * A vanilla WebGL backend. Was previously the default backend,
+     * but is now used as a fallback for devices that do not support WebGL 2.
+     * Supports fewer features and has a faster initialization time;
+     * may be useful for content that does not need advanced features like bitmap drawing or blend modes.
+     */
+    Webgl = "webgl",
+
+    /*
+     * The slowest and most basic backend, used as a fallback when all else fails.
+     * However, this is currently the only backend that accurately scales hairline strokes.
+     * If you notice excessively thick strokes in specific content,
+     * you may want to use the canvas renderer for that content until the issue is resolved.
+     */
+    Canvas = "canvas",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -325,6 +358,20 @@ export interface BaseLoadOptions {
      * @default null
      */
     playerVersion?: number | null;
+
+    /**
+     * The preferred render backend of the Ruffle player.
+     *
+     * This option should only be used for testing;
+     * The available backends may change in future releases.
+     * By default, Ruffle chooses the most featureful backend supported by the user's system,
+     * falling back to more basic backends if necessary.
+     * The available values in order of default preference are:
+     * "webgpu", "wgpu-webgl", "webgl", "canvas".
+     *
+     * @default null
+     */
+    preferredRenderer?: RenderBackend | null;
 
     /**
      * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
