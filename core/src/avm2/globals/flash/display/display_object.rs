@@ -102,6 +102,26 @@ fn create_display_object<'gc>(
     ));
 }
 
+pub fn setup_display_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+) -> Result<DisplayObject<'gc>, Error<'gc>> {
+    let (display_object, post_instantiate, catchup) = create_display_object(
+        activation,
+        this.instance_of()
+            .expect("Something that inherits DisplayObject should have a class"),
+    )?;
+    this.init_display_object(&mut activation.context, display_object);
+    display_object.set_object2(&mut activation.context, this);
+    if post_instantiate {
+        display_object.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
+    }
+    if catchup {
+        catchup_display_object_to_frame(&mut activation.context, display_object);
+    }
+    Ok(display_object)
+}
+
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -112,24 +132,7 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let (display_object, post_instantiate, catchup) = create_display_object(
-                activation,
-                this.instance_of()
-                    .expect("Something that inherits DisplayObject should have a class"),
-            )?;
-            this.init_display_object(&mut activation.context, display_object);
-            display_object.set_object2(&mut activation.context, this);
-            if post_instantiate {
-                display_object.post_instantiation(
-                    &mut activation.context,
-                    None,
-                    Instantiator::Avm2,
-                    false,
-                );
-            }
-            if catchup {
-                catchup_display_object_to_frame(&mut activation.context, display_object);
-            }
+            setup_display_object(activation, this)?;
         }
 
         if let Some(dobj) = this.as_display_object() {

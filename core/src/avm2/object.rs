@@ -1140,6 +1140,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Get this object's `DisplayObject`, if it has one.
+    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
+        None
+    }
+
     /// Associate this object with a display object, if it can support such an
     /// association.
     ///

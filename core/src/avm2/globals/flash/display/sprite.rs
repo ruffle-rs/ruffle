@@ -5,9 +5,7 @@ use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
-use crate::tag_utils::SwfMovie;
-use std::sync::Arc;
+use crate::display_object::{SoundTransform, TDisplayObject};
 use swf::{Rectangle, Twips};
 
 /// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
@@ -21,26 +19,6 @@ pub fn init<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn init_empty_sprite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-) -> Result<(), Error<'gc>> {
-    let class_object = this
-        .instance_of()
-        .ok_or("Attempted to construct Sprite on a bare object")?;
-    let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-    let new_do = MovieClip::new_with_avm2(
-        movie,
-        Some(this),
-        class_object,
-        activation.context.gc_context,
-    );
-
-    this.init_display_object(&mut activation.context, new_do.into());
-
-    Ok(())
 }
 
 /// Implements `dropTarget`'s getter

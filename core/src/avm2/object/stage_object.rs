@@ -1,6 +1,7 @@
 //! AVM2 object impl for the display hierarchy.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::flash::display::display_object::setup_display_object;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -107,6 +108,17 @@ impl<'gc> StageObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn get_or_create_display_object(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<DisplayObject<'gc>, Error<'gc>> {
+        if let Some(display_object) = self.0.read().display_object {
+            return Ok(display_object);
+        }
+        // Not an else as it'll keep self.0 locked
+        setup_display_object(activation, (*self).into())
+    }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
@@ -124,6 +136,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
+    }
+
+    fn as_stage_object(&self) -> Option<StageObject<'gc>> {
+        Some(*self)
     }
 
     fn init_display_object(&self, context: &mut UpdateContext<'_, 'gc>, obj: DisplayObject<'gc>) {

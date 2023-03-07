@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::range_error;
-use crate::avm2::globals::flash::display::sprite::init_empty_sprite;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
@@ -182,17 +181,10 @@ pub fn add_child<'gc>(
                 .unwrap_or(Value::Undefined)
                 .as_object()
                 .ok_or("ArgumentError: Child not a valid display object")?;
-            if child.as_display_object().is_none() {
-                let sprite = activation.avm2().classes().sprite;
-                if child.is_of_type(sprite, activation) {
-                    // [NA] Hack to make Haxe work - they call addChild before super()
-                    // This will create an empty sprite the same way sprite's constructor will.
-                    init_empty_sprite(activation, child)?;
-                }
-            }
             let child = child
-                .as_display_object()
-                .ok_or("ArgumentError: Child not a valid display object")?;
+                .as_stage_object()
+                .ok_or("ArgumentError: Child not a valid display object")?
+                .get_or_create_display_object(activation)?;
             let target_index = ctr.num_children();
 
             validate_add_operation(activation, parent, child, target_index)?;
