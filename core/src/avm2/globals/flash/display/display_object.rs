@@ -8,8 +8,9 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
-    Avm2Button, DisplayObject, HitTestOptions, LoaderDisplay, MovieClip, TDisplayObject,
+    Avm2Button, Bitmap, DisplayObject, HitTestOptions, LoaderDisplay, MovieClip, TDisplayObject,
 };
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -18,6 +19,7 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -70,6 +72,13 @@ fn create_display_object<'gc>(
             true,
         )));
     }
+
+    if class_object.has_class_in_chain(activation.avm2().classes().bitmap) {
+        let bitmap_data = GcCell::allocate(activation.context.gc_context, BitmapData::dummy());
+        let bitmap = Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, false);
+        return Ok(Some((bitmap.into(), true, true)));
+    }
+
     if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
         let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         return Ok(Some((
