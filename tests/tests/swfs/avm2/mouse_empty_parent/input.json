@@ -1,0 +1,94 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [
+            58,
+            59
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            58,
+            59
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            58,
+            59
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            188,
+            51
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            188,
+            51
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            188,
+            51
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            356,
+            5
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            356,
+            55
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            356,
+            55
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [
+            454,
+            57
+        ]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [
+            454,
+            57
+        ],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [
+            454,
+            57
+        ],
+        "btn": "Left"
+    }
+]

@@ -2977,10 +2977,13 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 let mut res = if let Some(child) = child.as_interactive() {
                     child.mouse_pick_avm2(context, point, require_button_mode)
                 } else if child.as_interactive().is_none()
-                    && self.mouse_enabled()
                     && child.hit_test_shape(context, point, options)
                 {
-                    Avm2MousePick::Hit(this)
+                    if self.mouse_enabled() {
+                        Avm2MousePick::Hit(this)
+                    } else {
+                        Avm2MousePick::PropagateToParent
+                    }
                 } else {
                     Avm2MousePick::Miss
                 };
@@ -3022,12 +3025,16 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.mouse_enabled() && self.world_bounds().contains(point) {
+            if self.world_bounds().contains(point) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
 
                 if self.0.read().drawing.hit_test(point, &local_matrix) {
-                    return Avm2MousePick::Hit((*self).into());
+                    return if self.mouse_enabled() {
+                        Avm2MousePick::Hit((*self).into())
+                    } else {
+                        Avm2MousePick::PropagateToParent
+                    };
                 }
             }
         }

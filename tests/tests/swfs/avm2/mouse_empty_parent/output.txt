@@ -1,0 +1,4 @@
+mouseDown: target=Outer stageX= 58 stageY=59
+mouseDown: target=null stageX= 188 stageY=51
+mouseDown: target=Outer2 stageX= 356 stageY=55
+mouseDown: target=null stageX= 454 stageY=57
