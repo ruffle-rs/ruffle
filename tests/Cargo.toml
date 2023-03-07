@@ -13,6 +13,7 @@ ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug",
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_render = { path = "../render" }
 ruffle_input_format = { path = "input-format" }
+ruffle_video_software = { path = "../video/software", optional = true }
 image = { version = "0.24.5", default-features = false, features = ["png"] }
 regex = "1.7.1"
 
@@ -20,7 +21,7 @@ regex = "1.7.1"
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = []
+imgtests = ["ruffle_video_software"]
 
 [dev-dependencies]
 approx = "0.5.1"
