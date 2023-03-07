@@ -10,7 +10,8 @@ use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
-    Avm2Button, Bitmap, DisplayObject, HitTestOptions, LoaderDisplay, MovieClip, TDisplayObject,
+    Avm2Button, Bitmap, DisplayObject, Graphic, HitTestOptions, LoaderDisplay, MovieClip,
+    TDisplayObject,
 };
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -77,6 +78,14 @@ fn create_display_object<'gc>(
         let bitmap_data = GcCell::allocate(activation.context.gc_context, BitmapData::dummy());
         let bitmap = Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, false);
         return Ok(Some((bitmap.into(), true, true)));
+    }
+
+    if class_object.has_class_in_chain(activation.avm2().classes().shape) {
+        return Ok(Some((
+            Graphic::new_with_avm2(&mut activation.context).into(),
+            true,
+            true,
+        )));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().sprite) {

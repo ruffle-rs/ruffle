@@ -5,7 +5,6 @@ use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
-use crate::display_object::Graphic;
 
 /// Implements `flash.display.Shape`'s 'init' method, which is called from the constructor
 pub fn init<'gc>(
@@ -15,12 +14,6 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
-
-        if this.as_display_object().is_none() {
-            let new_do = Graphic::new_with_avm2(&mut activation.context, this);
-
-            this.init_display_object(&mut activation.context, new_do.into());
-        }
     }
 
     Ok(Value::Undefined)
