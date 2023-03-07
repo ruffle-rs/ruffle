@@ -4,12 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject, TextFormatObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
+use crate::display_object::{AutoSizeMode, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use std::sync::Arc;
 use swf::Color;
 
 /// Implements `flash.text.TextField`'s `init` method, which is called from the constructor.
@@ -20,13 +18,6 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
-
-        if this.as_display_object().is_none() {
-            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
-
-            this.init_display_object(&mut activation.context, new_do.into());
-        }
     }
 
     Ok(Value::Undefined)

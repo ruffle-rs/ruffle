@@ -10,7 +10,7 @@ use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
-    Avm2Button, Bitmap, DisplayObject, Graphic, HitTestOptions, LoaderDisplay, MovieClip,
+    Avm2Button, Bitmap, DisplayObject, EditText, Graphic, HitTestOptions, LoaderDisplay, MovieClip,
     TDisplayObject,
 };
 use crate::ecma_conversions::round_to_even;
@@ -86,6 +86,12 @@ fn create_display_object<'gc>(
             true,
             true,
         )));
+    }
+
+    if class_object.has_class_in_chain(activation.avm2().classes().textfield) {
+        let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+        let edit_text = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
+        return Ok(Some((edit_text.into(), false, false)));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
