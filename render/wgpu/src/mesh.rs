@@ -150,8 +150,6 @@ impl PendingDrawType {
         let colors = if gradient.records.is_empty() {
             [0; GRADIENT_SIZE * 4]
         } else {
-            let mut last = 0;
-            let mut next = 0;
             let mut colors = [0; GRADIENT_SIZE * 4];
 
             let convert = if gradient.interpolation == GradientInterpolation::LinearRgb {
@@ -161,16 +159,28 @@ impl PendingDrawType {
             };
 
             for t in 0..GRADIENT_SIZE {
-                let mut last_record = &gradient.records[last];
-                let mut next_record = &gradient.records[next];
-                if t as u8 >= next_record.ratio && next + 1 < gradient.records.len() {
-                    last = next;
-                    next += 1;
-                    last_record = next_record;
-                    next_record = &gradient.records[next];
+                let mut last = 0;
+                let mut next = 0;
+
+                for (i, record) in gradient.records.iter().enumerate().rev() {
+                    if (record.ratio as usize) < t {
+                        last = i;
+                        next = (i + 1).min(gradient.records.len() - 1);
+                        break;
+                    }
                 }
-                let a = (t as u8 - last_record.ratio) as f32
-                    / (next_record.ratio - last_record.ratio) as f32;
+                assert!(last == next || last + 1 == next);
+
+                let last_record = &gradient.records[last];
+                let next_record = &gradient.records[next];
+
+                let a = if next == last {
+                    // this can happen if we are before the first gradient record, or after the last one
+                    0.0
+                } else {
+                    (t as f32 - last_record.ratio as f32)
+                        / (next_record.ratio as f32 - last_record.ratio as f32)
+                };
                 colors[t * 4] = lerp(
                     convert(last_record.color.r as f32),
                     convert(next_record.color.r as f32),
