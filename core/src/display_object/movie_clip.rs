@@ -2929,6 +2929,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
 
+            if self.maskee().is_some() {
+                // If we're masking another object, we can't be hit.
+                return Avm2MousePick::Miss;
+            }
+
             // Maybe we could skip recursing down at all if !world_bounds.contains(point),
             // but a child button can have an invisible hit area outside the parent's bounds.
             let mut options = HitTestOptions::SKIP_INVISIBLE;
