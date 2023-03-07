@@ -1,0 +1,7 @@
+The .swf file was manually edited using JPEXS ffdec, setting the gradient ratios to:
+
+top row: 64 - 128 - 192
+middle row: 70 - 70 - 140 - 140
+bottom row: 0 - 0 - 255 - 255
+
+This tests some special cases that happen in real content, but are not covered by the simple gradient tests.
