@@ -1,0 +1,11 @@
+TimerEvent.TIMER: timer.running=true timer.currentCount=1 timer.repeatCount=2
+TimerEvent.TIMER: timer.running=true timer.currentCount=2 timer.repeatCount=2
+TimerEvent.TIMER_COMPLETE: timer.running=false timer.currentCount=2 timer.repeatCount=2
+After 300ms: timer.running=false timer.currentCount=2 timer.repeatCount=2
+Starting timer again
+TimerEvent.TIMER: timer.running=true timer.currentCount=3 timer.repeatCount=2
+TimerEvent.TIMER_COMPLETE: timer.running=false timer.currentCount=3 timer.repeatCount=2
+After 200ms: timer.running=false timer.currentCount=3 timer.repeatCount=2
+Stopping/Starting timer again
+TimerEvent.TIMER: timer.running=true timer.currentCount=4 timer.repeatCount=2
+TimerEvent.TIMER_COMPLETE: timer.running=false timer.currentCount=4 timer.repeatCount=2
