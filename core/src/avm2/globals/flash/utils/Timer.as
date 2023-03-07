@@ -49,7 +49,7 @@ package flash.utils {
 		}
 
 		public function get running(): Boolean {
-			return this._timerId != -1 && (this.repeatCount == 0 || this._currentCount < this._repeatCount);
+			return this._timerId != -1;
 		}
 
 		public function reset():void {
@@ -65,6 +65,8 @@ package flash.utils {
 			this._currentCount += 1;
 			this.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
 			if (this.repeatCount != 0 && this._currentCount >= this._repeatCount) {
+				// This will make 'running' return false in a TIMER_COMPLETE event handler
+				this._timerId = -1;
 				this.dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE, false, false));
 				return true;
 			}
