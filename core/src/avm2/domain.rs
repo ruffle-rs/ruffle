@@ -201,10 +201,7 @@ impl<'gc> Domain<'gc> {
                 activation.context.gc_context,
                 &local_name["Vector.<".len()..(local_name.len() - 1)],
             ));
-            name = QName::new(
-                name.namespace(),
-                AvmString::new_utf8(activation.context.gc_context, "Vector"),
-            );
+            name = QName::new(name.namespace(), "Vector");
         }
         let res = self.get_defined_value(activation, name);
 
