@@ -2653,9 +2653,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
-            child.unload(context);
+            child.avm1_unload(context);
         }
 
         if let Some(node) = self.maskee() {
@@ -2683,11 +2683,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // If this clip is currently pending removal, then it unload event will have already been dispatched
-        if !self.pending_removal() {
+        if !self.avm1_pending_removal() {
             self.event_dispatch(context, ClipEvent::Unload);
         }
 
-        self.set_removed(context.gc_context, true);
+        self.set_avm1_removed(context.gc_context, true);
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {

@@ -264,7 +264,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         if let Some(s) = this.as_stage_object() {
             let d_o = s.as_display_object().unwrap();
 
-            if d_o.removed() {
+            if d_o.avm1_removed() {
                 return Ok(Value::Undefined);
             }
         }

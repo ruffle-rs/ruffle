@@ -1198,7 +1198,7 @@ pub fn remove_display_object<'gc>(this: DisplayObject<'gc>, activation: &mut Act
     // Generally this prevents you from removing non-dynamically created clips,
     // although you can get around it with swapDepths.
     // TODO: Figure out the derivation of this range.
-    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.removed() {
+    if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.avm1_removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
             parent.remove_child(&mut activation.context, this);

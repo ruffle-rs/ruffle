@@ -179,7 +179,7 @@ impl<'gc> Scope<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let removed = if let Some(s) = self.values.as_stage_object() {
-            s.as_display_object().unwrap().removed()
+            s.as_display_object().unwrap().avm1_removed()
         } else {
             false
         };

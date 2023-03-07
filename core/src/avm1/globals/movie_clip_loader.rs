@@ -101,7 +101,7 @@ fn unload_clip<'gc>(
             _ => None,
         };
         if let Some(target) = target {
-            target.unload(&mut activation.context);
+            target.avm1_unload(&mut activation.context);
             if let Some(mut mc) = target.as_movie_clip() {
                 mc.replace_with_movie(&mut activation.context, None, None);
             }

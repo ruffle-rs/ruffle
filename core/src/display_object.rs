@@ -386,12 +386,12 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.next_avm1_clip = node;
     }
 
-    fn removed(&self) -> bool {
-        self.flags.contains(DisplayObjectFlags::REMOVED)
+    fn avm1_removed(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::AVM1_REMOVED)
     }
 
-    fn set_removed(&mut self, value: bool) {
-        self.flags.set(DisplayObjectFlags::REMOVED, value);
+    fn set_avm1_removed(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::AVM1_REMOVED, value);
     }
 
     fn scale_rotation_cached(&self) -> bool {
@@ -1126,16 +1126,18 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).next_scroll_rect = rectangle;
     }
 
-    fn removed(&self) -> bool {
-        self.base().removed()
+    /// Whether this object has been removed. Only applies to AVM1.
+    fn avm1_removed(&self) -> bool {
+        self.base().avm1_removed()
     }
 
-    fn set_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(gc_context).set_removed(value)
+    // Sets whethe this object has been removed. Only applies to AVM1
+    fn set_avm1_removed(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context).set_avm1_removed(value)
     }
 
     /// Is this object waiting to be removed on the start of the next frame
-    fn pending_removal(&self) -> bool {
+    fn avm1_pending_removal(&self) -> bool {
         self.depth() < 0
     }
 
@@ -1487,11 +1489,11 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         // Unload children.
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
-                child.unload(context);
+                child.avm1_unload(context);
             }
         }
 
@@ -1508,7 +1510,7 @@ pub trait TDisplayObject<'gc>:
             }
         }
 
-        self.set_removed(context.gc_context, true);
+        self.set_avm1_removed(context.gc_context, true);
     }
 
     fn as_stage(&self) -> Option<Stage<'gc>> {
@@ -1796,7 +1798,7 @@ bitflags! {
     struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
-        const REMOVED                  = 1 << 0;
+        const AVM1_REMOVED                  = 1 << 0;
 
         /// If this object is visible (`_visible` property).
         const VISIBLE                  = 1 << 1;

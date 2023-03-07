@@ -404,7 +404,7 @@ impl<'gc> Avm1<'gc> {
     ) {
         if let Some(parent) = obj.as_container() {
             for child in parent.iter_render_list() {
-                if child.pending_removal() {
+                if child.avm1_pending_removal() {
                     out.push(child);
                 }
 
@@ -454,7 +454,7 @@ impl<'gc> Avm1<'gc> {
         let mut next = context.avm1.clip_exec_list;
         while let Some(clip) = next {
             next = clip.next_avm1_clip();
-            if clip.removed() {
+            if clip.avm1_removed() {
                 // Clean up removed clips from this frame or a previous frame.
                 if let Some(prev) = prev {
                     prev.set_next_avm1_clip(context.gc_context, next);

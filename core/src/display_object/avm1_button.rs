@@ -388,7 +388,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.write(gc_context).has_focus = focused;
     }
 
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         let had_focus = self.0.read().has_focus;
         if had_focus {
             let tracker = context.focus_tracker;
@@ -399,7 +399,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         } else if let Some(node) = self.masker() {
             node.set_maskee(context.gc_context, None, true);
         }
-        self.set_removed(context.gc_context, true);
+        self.set_avm1_removed(context.gc_context, true);
     }
 }
 

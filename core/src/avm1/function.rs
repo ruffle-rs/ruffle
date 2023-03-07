@@ -357,7 +357,7 @@ impl<'gc> Executable<'gc> {
         let target = activation.target_clip_or_root();
         let is_closure = activation.swf_version() >= 6;
         let base_clip =
-            if (is_closure || reason == ExecutionReason::Special) && !af.base_clip.removed() {
+            if (is_closure || reason == ExecutionReason::Special) && !af.base_clip.avm1_removed() {
                 af.base_clip
             } else {
                 this_obj

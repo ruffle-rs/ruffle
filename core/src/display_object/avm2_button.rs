@@ -331,7 +331,6 @@ impl<'gc> Avm2Button<'gc> {
         }
 
         if let Some(old_state_child) = old_state_child {
-            old_state_child.unload(context);
             old_state_child.set_parent(context, None);
         }
 
@@ -729,20 +728,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
     fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
         self.0.write(gc_context).has_focus = focused;
-    }
-
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let had_focus = self.0.read().has_focus;
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
-        if let Some(node) = self.maskee() {
-            node.set_masker(context.gc_context, None, true);
-        } else if let Some(node) = self.masker() {
-            node.set_maskee(context.gc_context, None, true);
-        }
-        self.set_removed(context.gc_context, true);
     }
 }
 

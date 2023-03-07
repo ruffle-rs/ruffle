@@ -211,7 +211,9 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_depth(context.gc_context, depth);
 
         if let Some(removed_child) = removed_child {
-            removed_child.unload(context);
+            if !context.is_action_script_3() {
+                removed_child.avm1_unload(context);
+            }
             removed_child.set_parent(context, None);
         }
 
@@ -272,7 +274,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
         child.set_place_frame(context.gc_context, 0);
         child.set_parent(context, Some(this));
-        child.set_removed(context.gc_context, false);
+        if !context.is_action_script_3() {
+            child.set_avm1_removed(context.gc_context, false);
+        }
 
         self.raw_container_mut(context.gc_context)
             .insert_at_id(child, index);
@@ -352,7 +356,9 @@ pub trait TDisplayObjectContainer<'gc>:
         drop(write);
 
         if removed_from_render_list {
-            child.unload(context);
+            if !context.is_action_script_3() {
+                child.avm1_unload(context);
+            }
 
             //TODO: This is an awful, *awful* hack to deal with the fact
             //that unloaded AVM1 clips see their parents, while AVM2 clips
@@ -404,7 +410,9 @@ pub trait TDisplayObjectContainer<'gc>:
 
             drop(write);
 
-            removed.unload(context);
+            if !context.is_action_script_3() {
+                removed.avm1_unload(context);
+            }
 
             if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
@@ -871,7 +879,7 @@ impl<'gc> ChildContainer<'gc> {
 
     /// Check for pending removals and update the pending removals flag
     pub fn update_pending_removals(&mut self) {
-        self.has_pending_removals = self.depth_list.values().any(|c| c.pending_removal());
+        self.has_pending_removals = self.depth_list.values().any(|c| c.avm1_pending_removal());
     }
 
     /// Set the pending_removals flag
