@@ -4,10 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
+use crate::avm2::{ClassObject, Error};
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -22,6 +22,34 @@ use swf::BlendMode;
 
 pub use crate::avm2::object::stage_allocator as display_object_allocator;
 
+fn create_display_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_object: ClassObject<'gc>,
+) -> Result<Option<(DisplayObject<'gc>, bool, bool)>, Error<'gc>> {
+    // Iterate the inheritance chain, starting from `this` and working backwards through `super`s
+    // This accounts for the cases where a super may be linked to symbol, but `this` may not be
+    let mut current_class = Some(class_object);
+    while let Some(class) = current_class {
+        if let Some((movie, symbol)) = activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(class)
+        {
+            let display_object = activation
+                .context
+                .library
+                .library_for_movie_mut(movie)
+                .instantiate_by_id(symbol, activation.context.gc_context)?;
+
+            return Ok(Some((display_object, true, true)));
+        }
+        current_class = class.superclass_object();
+    }
+
+    Ok(None)
+}
+
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -32,35 +60,24 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let mut class_object = this.instance_of();
-
-            // Iterate the inheritance chain, starting from `this` and working backwards through `super`s
-            // This accounts for the cases where a super may be linked to symbol, but `this` may not be
-            while let Some(class) = class_object {
-                if let Some((movie, symbol)) = activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(class)
-                {
-                    let child = activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie)
-                        .instantiate_by_id(symbol, activation.context.gc_context)?;
-
-                    this.init_display_object(&mut activation.context, child);
-
-                    child.post_instantiation(
+            if let Some((display_object, post_instantiate, catchup)) = create_display_object(
+                activation,
+                this.instance_of()
+                    .expect("Something that inherits DisplayObject should have a class"),
+            )? {
+                this.init_display_object(&mut activation.context, display_object);
+                display_object.set_object2(&mut activation.context, this);
+                if post_instantiate {
+                    display_object.post_instantiation(
                         &mut activation.context,
                         None,
                         Instantiator::Avm2,
                         false,
                     );
-                    catchup_display_object_to_frame(&mut activation.context, child);
-                    break;
                 }
-                class_object = class.superclass_object();
+                if catchup {
+                    catchup_display_object_to_frame(&mut activation.context, display_object);
+                }
             }
         }
 
