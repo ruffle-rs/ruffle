@@ -1,0 +1,4 @@
+// removeChild(null);
+Error 2007
+// removeChild(undefined);
+Error 2007
