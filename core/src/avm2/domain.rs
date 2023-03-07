@@ -192,7 +192,8 @@ impl<'gc> Domain<'gc> {
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
         let mut type_name = None;
         if (name.namespace() == activation.avm2().vector_public_namespace
-            || name.namespace() == activation.avm2().vector_internal_namespace)
+            || name.namespace() == activation.avm2().vector_internal_namespace
+            || name.namespace() == activation.avm2().public_namespace)
             && (name.local_name().starts_with(b"Vector.<".as_slice())
                 && name.local_name().ends_with(b">".as_slice()))
         {
@@ -201,7 +202,7 @@ impl<'gc> Domain<'gc> {
                 activation.context.gc_context,
                 &local_name["Vector.<".len()..(local_name.len() - 1)],
             ));
-            name = QName::new(name.namespace(), "Vector");
+            name = QName::new(activation.avm2().vector_public_namespace, "Vector");
         }
         let res = self.get_defined_value(activation, name);
 
