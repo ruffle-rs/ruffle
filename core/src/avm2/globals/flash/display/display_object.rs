@@ -8,7 +8,9 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
-use crate::display_object::{Avm2Button, DisplayObject, HitTestOptions, MovieClip, TDisplayObject};
+use crate::display_object::{
+    Avm2Button, DisplayObject, HitTestOptions, LoaderDisplay, MovieClip, TDisplayObject,
+};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
@@ -49,6 +51,18 @@ fn create_display_object<'gc>(
         current_class = class.superclass_object();
     }
 
+    if class_object.has_class_in_chain(activation.avm2().classes().loader) {
+        return Ok(Some((
+            LoaderDisplay::new_with_avm2(
+                activation.context.gc_context,
+                activation.context.swf.clone(),
+            )
+            .into(),
+            false,
+            false,
+        )));
+    }
+
     if class_object.has_class_in_chain(activation.avm2().classes().simplebutton) {
         return Ok(Some((
             Avm2Button::empty_button(&mut activation.context).into(),
@@ -56,7 +70,6 @@ fn create_display_object<'gc>(
             true,
         )));
     }
-
     if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
         let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         return Ok(Some((

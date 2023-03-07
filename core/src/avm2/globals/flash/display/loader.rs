@@ -7,7 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::Request;
-use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
 use crate::tag_utils::SwfMovie;
@@ -19,15 +18,6 @@ pub fn init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
-        if this.as_display_object().is_none() {
-            let new_do = LoaderDisplay::new_with_avm2(
-                activation.context.gc_context,
-                this,
-                activation.context.swf.clone(),
-            );
-            this.init_display_object(&mut activation.context, new_do.into());
-        }
-
         // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
         // accessible, even before the 'init' event has fired. Using an empty movie gives
         // us the correct value (0) for them.

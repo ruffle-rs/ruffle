@@ -34,22 +34,18 @@ impl fmt::Debug for LoaderDisplay<'_> {
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: ChildContainer<'gc>,
-    avm2_object: Avm2Object<'gc>,
+    avm2_object: Option<Avm2Object<'gc>>,
     movie: Arc<SwfMovie>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn new_with_avm2(
-        gc_context: MutationContext<'gc, '_>,
-        avm2_object: Avm2Object<'gc>,
-        movie: Arc<SwfMovie>,
-    ) -> Self {
+    pub fn new_with_avm2(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
         LoaderDisplay(GcCell::allocate(
             gc_context,
             LoaderDisplayData {
                 base: Default::default(),
                 container: ChildContainer::new(),
-                avm2_object,
+                avm2_object: None,
                 movie,
             },
         ))
@@ -86,7 +82,11 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
-        self.0.read().avm2_object.into()
+        self.0
+            .read()
+            .avm2_object
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Null)
     }
 
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
