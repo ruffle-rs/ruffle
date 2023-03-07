@@ -1,0 +1,3 @@
+mouseDown: target=Target stageX=34 stageY=37
+mouseDown: target=null stageX=14 stageY=13
+mouseDown: target=null stageX=68 stageY=55
