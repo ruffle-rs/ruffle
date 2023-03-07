@@ -8,7 +8,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
-use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
+use crate::display_object::{DisplayObject, HitTestOptions, MovieClip, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
@@ -18,9 +18,11 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
+use std::sync::Arc;
 use swf::BlendMode;
 
 pub use crate::avm2::object::stage_allocator as display_object_allocator;
+use crate::tag_utils::SwfMovie;
 
 fn create_display_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -45,6 +47,16 @@ fn create_display_object<'gc>(
             return Ok(Some((display_object, true, true)));
         }
         current_class = class.superclass_object();
+    }
+
+    if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
+        let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+        return Ok(Some((
+            MovieClip::new_with_avm2(movie, None, class_object, activation.context.gc_context)
+                .into(),
+            false,
+            false,
+        )));
     }
 
     Ok(None)

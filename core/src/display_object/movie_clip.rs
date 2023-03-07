@@ -174,7 +174,7 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn new_with_avm2(
         movie: Arc<SwfMovie>,
-        this: Avm2Object<'gc>,
+        this: Option<Avm2Object<'gc>>,
         class: Avm2ClassObject<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
@@ -187,7 +187,7 @@ impl<'gc> MovieClip<'gc> {
                 current_frame: 0,
                 audio_stream: None,
                 container: ChildContainer::new(),
-                object: Some(this.into()),
+                object: this.map(|this| this.into()),
                 clip_event_handlers: Vec::new(),
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),

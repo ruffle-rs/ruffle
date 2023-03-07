@@ -18,10 +18,6 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
-
-        if this.as_display_object().is_none() {
-            init_empty_sprite(activation, this)?;
-        }
     }
 
     Ok(Value::Undefined)
@@ -35,7 +31,12 @@ pub fn init_empty_sprite<'gc>(
         .instance_of()
         .ok_or("Attempted to construct Sprite on a bare object")?;
     let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-    let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
+    let new_do = MovieClip::new_with_avm2(
+        movie,
+        Some(this),
+        class_object,
+        activation.context.gc_context,
+    );
 
     this.init_display_object(&mut activation.context, new_do.into());
 
