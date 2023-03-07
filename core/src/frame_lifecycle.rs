@@ -14,6 +14,7 @@
 use crate::avm2::Avm2;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
+use fnv::FnvHashSet;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -85,6 +86,8 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 
     stage.enter_frame(context);
 
+    let mut ran_framescript = FnvHashSet::default();
+
     Avm2::each_orphan_movie(context, |movie, context| {
         if movie.initialized() {
             // Orphan frame scripts run in a really weird place.
@@ -93,6 +96,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
             // (but is updated when we call an enterFrame listener)
             movie.run_frame_scripts(context);
             movie.enter_frame(context);
+            ran_framescript.insert(movie.downgrade().as_ptr());
         }
     });
 
@@ -101,6 +105,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     Avm2::each_orphan_movie(context, |movie, context| {
         if !movie.initialized() {
             movie.run_frame_scripts(context);
+            ran_framescript.insert(movie.downgrade().as_ptr());
         }
     });
 
@@ -108,6 +113,9 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 
     Avm2::each_orphan_movie(context, |movie, context| {
         movie.construct_frame(context);
+        if !ran_framescript.contains(&movie.downgrade().as_ptr()) {
+            movie.run_frame_scripts(context);
+        }
     });
 
     stage.frame_constructed(context);
