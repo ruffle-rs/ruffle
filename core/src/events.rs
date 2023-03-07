@@ -1,7 +1,7 @@
 use crate::display_object::InteractiveObject;
 use swf::ClipEventFlag;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum PlayerEvent {
     KeyDown {
         key_code: KeyCode,
