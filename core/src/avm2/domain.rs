@@ -206,18 +206,17 @@ impl<'gc> Domain<'gc> {
                 AvmString::new_utf8(activation.context.gc_context, "Vector"),
             );
         }
-        let (name, mut script) = self.find_defining_script(activation, &name.into())?;
-        let globals = script.globals(&mut activation.context)?;
+        let res = self.get_defined_value(activation, name);
 
-        let res = globals.get_property(&name.into(), activation);
         if let Some(type_name) = type_name {
             let type_qname = QName::from_qualified_name(type_name, activation);
             let type_class = self.get_defined_value(activation, type_qname)?;
             if let Ok(res) = res {
-                let class = res
-                    .as_object()
-                    .and_then(|obj| obj.as_class_object())
-                    .expect("Found non-ClassObject for Vector class");
+                let class = res.as_object().ok_or_else(|| {
+                    Error::RustError(
+                        format!("Vector type argument {:?} was not a class", type_class).into(),
+                    )
+                })?;
                 return class.apply(activation, &[type_class]).map(|obj| obj.into());
             }
         }
