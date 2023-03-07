@@ -4,8 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
-use crate::vminterface::Instantiator;
+use crate::display_object::{ButtonTracking, TDisplayObject};
 use swf::ButtonState;
 
 pub use crate::avm2::globals::flash::media::soundmixer::{
@@ -21,43 +20,50 @@ pub fn init<'gc>(
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
-        if this.as_display_object().is_none() {
-            let new_do = Avm2Button::empty_button(&mut activation.context);
-
-            new_do.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-            this.init_display_object(&mut activation.context, new_do.into());
-
-            let up_state = args
+        if let Some(button) = this.as_display_object().and_then(|d| d.as_avm2_button()) {
+            if let Some(up_state) = args
                 .get(0)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .as_object()
-                .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
+                .and_then(|v| v.as_object())
+                .and_then(|o| o.as_display_object())
+            {
+                button.set_state_child(&mut activation.context, ButtonState::UP, Some(up_state));
+            }
 
-            let over_state = args
+            if let Some(over_state) = args
                 .get(1)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .as_object()
-                .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
+                .and_then(|v| v.as_object())
+                .and_then(|o| o.as_display_object())
+            {
+                button.set_state_child(
+                    &mut activation.context,
+                    ButtonState::OVER,
+                    Some(over_state),
+                );
+            }
 
-            let down_state = args
+            if let Some(down_state) = args
                 .get(2)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .as_object()
-                .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
+                .and_then(|v| v.as_object())
+                .and_then(|o| o.as_display_object())
+            {
+                button.set_state_child(
+                    &mut activation.context,
+                    ButtonState::DOWN,
+                    Some(down_state),
+                );
+            }
 
-            let hit_state = args
+            if let Some(hit_state) = args
                 .get(3)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .as_object()
-                .and_then(|o| o.as_display_object());
-            new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
+                .and_then(|v| v.as_object())
+                .and_then(|o| o.as_display_object())
+            {
+                button.set_state_child(
+                    &mut activation.context,
+                    ButtonState::HIT_TEST,
+                    Some(hit_state),
+                );
+            }
         }
     }
 

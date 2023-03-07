@@ -8,7 +8,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
-use crate::display_object::{DisplayObject, HitTestOptions, MovieClip, TDisplayObject};
+use crate::display_object::{Avm2Button, DisplayObject, HitTestOptions, MovieClip, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
@@ -47,6 +47,14 @@ fn create_display_object<'gc>(
             return Ok(Some((display_object, true, true)));
         }
         current_class = class.superclass_object();
+    }
+
+    if class_object.has_class_in_chain(activation.avm2().classes().simplebutton) {
+        return Ok(Some((
+            Avm2Button::empty_button(&mut activation.context).into(),
+            true,
+            true,
+        )));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
