@@ -1735,7 +1735,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         false
     }
 
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         let had_focus = self.0.read().flags.contains(EditTextFlag::HAS_FOCUS);
         if had_focus {
             let tracker = context.focus_tracker;
@@ -1765,7 +1765,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
         }
 
-        self.set_removed(context.gc_context, true);
+        self.set_avm1_removed(context.gc_context, true);
     }
 
     fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {

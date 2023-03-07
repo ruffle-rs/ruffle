@@ -1120,7 +1120,9 @@ impl Player {
         if let PlayerEvent::MouseWheel { delta } = event {
             self.mutate_with_update_context(|context| {
                 if let Some(over_object) = context.mouse_over_object {
-                    if !over_object.as_displayobject().removed() {
+                    if context.is_action_script_3()
+                        || !over_object.as_displayobject().avm1_removed()
+                    {
                         over_object.handle_clip_event(context, ClipEvent::MouseWheel { delta });
                     }
                 } else {
@@ -1135,9 +1137,10 @@ impl Player {
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
         let (mouse_x, mouse_y) = *context.mouse_position;
+        let is_action_script_3 = context.is_action_script_3();
         if let Some(drag_object) = &mut context.drag_object {
             let display_object = drag_object.display_object;
-            if drag_object.display_object.removed() {
+            if !is_action_script_3 && drag_object.display_object.avm1_removed() {
                 // Be sure to clear the drag if the object was removed.
                 *context.drag_object = None;
             } else {
@@ -1189,12 +1192,12 @@ impl Player {
 
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
-                if hovered.as_displayobject().removed() {
+                if !context.is_action_script_3() && hovered.as_displayobject().avm1_removed() {
                     context.mouse_over_object = None;
                 }
             }
             if let Some(pressed) = context.mouse_down_object {
-                if pressed.as_displayobject().removed() {
+                if !context.is_action_script_3() && pressed.as_displayobject().avm1_removed() {
                     context.mouse_down_object = None;
                 }
             }
@@ -1342,7 +1345,7 @@ impl Player {
                 let mut refresh = false;
                 for (object, event) in events {
                     let display_object = object.as_displayobject();
-                    if !display_object.removed() {
+                    if !display_object.avm1_removed() {
                         object.handle_clip_event(context, event);
                         if context.is_action_script_3() {
                             object.event_dispatch_to_avm2(context, event);
@@ -1572,7 +1575,10 @@ impl Player {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed (or scheduled to be removed) after it queued the action.
-            if !action.is_unload && (action.clip.removed() || action.clip.pending_removal()) {
+            if !action.is_unload
+                && (!context.is_action_script_3()
+                    && (action.clip.avm1_removed() || action.clip.avm1_pending_removal()))
+            {
                 continue;
             }
 

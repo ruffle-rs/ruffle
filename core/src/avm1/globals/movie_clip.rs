@@ -1100,7 +1100,7 @@ fn swap_depths<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-    if movie_clip.removed() {
+    if movie_clip.avm1_removed() {
         return Ok(Value::Undefined);
     }
 
@@ -1118,7 +1118,7 @@ fn swap_depths<'gc>(
         activation.resolve_target_display_object(movie_clip.into(), arg, false)?
     {
         if let Some(target_parent) = target.avm1_parent() {
-            if DisplayObject::ptr_eq(target_parent, parent.into()) && !target.removed() {
+            if DisplayObject::ptr_eq(target_parent, parent.into()) && !target.avm1_removed() {
                 depth = Some(target.depth())
             } else {
                 avm_warn!(
@@ -1356,7 +1356,7 @@ fn unload_movie<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    target.unload(&mut activation.context);
+    target.avm1_unload(&mut activation.context);
     target.replace_with_movie(&mut activation.context, None, None);
 
     Ok(Value::Undefined)

@@ -1,0 +1,3 @@
+Initial: first.mask: Second
+After add: first.mask: Second
+After remove: first.mask: Second

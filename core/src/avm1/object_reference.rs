@@ -129,7 +129,7 @@ impl<'gc> MovieClipReference<'gc> {
             // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
             if let Some(mc) = cache.upgrade(activation.context.gc_context) {
                 // We have to fallback to manual path-walking if the object is removed
-                if !mc.read().display_object.removed() {
+                if !mc.read().display_object.avm1_removed() {
                     let display_object = mc.read().display_object;
                     let display_object = Self::process_swf5_references(activation, display_object);
 

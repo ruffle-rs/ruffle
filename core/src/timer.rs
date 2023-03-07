@@ -114,7 +114,7 @@ impl<'gc> Timers<'gc> {
                         let d_o = s.as_display_object().unwrap();
                         if let DisplayObject::MovieClip(mc) = d_o {
                             // Note that we don't want to fire the timer here
-                            if mc.removed() {
+                            if mc.avm1_removed() {
                                 removed = true;
                             }
                         }

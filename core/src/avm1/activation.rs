@@ -253,7 +253,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             constant_pool,
             base_clip,
             target_clip: Some(base_clip),
-            base_clip_unloaded: base_clip.removed(),
+            base_clip_unloaded: base_clip.avm1_removed(),
             this,
             callee,
             local_registers: None,
@@ -304,7 +304,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             constant_pool: context.avm1.constant_pool(),
             base_clip,
             target_clip: Some(base_clip),
-            base_clip_unloaded: base_clip.removed(),
+            base_clip_unloaded: base_clip.avm1_removed(),
             this: context.avm1.global_object().into(),
             callee: None,
             local_registers: None,
@@ -1901,7 +1901,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let target = self.context.avm1.pop();
 
         let base_clip = self.base_clip();
-        if base_clip.removed() {
+        if base_clip.avm1_removed() {
             self.set_target_clip(None);
             return Ok(FrameControl::Continue);
         }
@@ -2863,7 +2863,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Changes the target clip.
     pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
         // The target should revert to `None` if the clip is removed.
-        self.target_clip = value.filter(|clip| !clip.removed());
+        self.target_clip = value.filter(|clip| !clip.avm1_removed());
     }
 
     /// Define a local property on the activation.
@@ -2947,7 +2947,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // has already been removed. If this activation started with the base clip already removed,
         // this is an unload handler, so allow the code to run regardless.
         // (This may no longer be necessary once #1535 is fixed.)
-        if !self.base_clip_unloaded && self.base_clip.removed() {
+        if !self.base_clip_unloaded && self.base_clip.avm1_removed() {
             Ok(FrameControl::Return(ReturnType::Explicit(Value::Undefined)))
         } else {
             Ok(FrameControl::Continue)
@@ -2964,14 +2964,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if let Some(clip) = self
             .resolve_target_path(root, start, target, false)?
             .and_then(|o| o.as_display_object())
-            .filter(|_| !self.base_clip.removed())
+            .filter(|_| !self.base_clip.avm1_removed())
         // All properties invalid if base clip is removed.
         {
             new_target_clip = Some(clip);
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
-            let path = if base_clip.removed() {
+            let path = if base_clip.avm1_removed() {
                 None
             } else {
                 Some(base_clip.path())

@@ -754,7 +754,10 @@ impl<'gc> Loader<'gc> {
                 replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
 
                 if let Some(mut mc) = clip.as_movie_clip() {
-                    mc.unload(uc);
+                    if !uc.is_action_script_3() {
+                        mc.avm1_unload(uc);
+                    }
+
                     mc.replace_with_movie(uc, None, None);
                 }
 
@@ -817,7 +820,9 @@ impl<'gc> Loader<'gc> {
                 replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
 
                 if let Some(mut mc) = clip.as_movie_clip() {
-                    mc.unload(uc);
+                    if !uc.is_action_script_3() {
+                        mc.avm1_unload(uc);
+                    }
                     mc.replace_with_movie(uc, None, None);
                 }
 
