@@ -32,7 +32,7 @@ use crate::tag_utils::SwfMovie;
 fn create_display_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_object: ClassObject<'gc>,
-) -> Result<Option<(DisplayObject<'gc>, bool, bool)>, Error<'gc>> {
+) -> Result<(DisplayObject<'gc>, bool, bool), Error<'gc>> {
     // Iterate the inheritance chain, starting from `this` and working backwards through `super`s
     // This accounts for the cases where a super may be linked to symbol, but `this` may not be
     let mut current_class = Some(class_object);
@@ -49,13 +49,13 @@ fn create_display_object<'gc>(
                 .library_for_movie_mut(movie)
                 .instantiate_by_id(symbol, activation.context.gc_context)?;
 
-            return Ok(Some((display_object, true, true)));
+            return Ok((display_object, true, true));
         }
         current_class = class.superclass_object();
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().loader) {
-        return Ok(Some((
+        return Ok((
             LoaderDisplay::new_with_avm2(
                 activation.context.gc_context,
                 activation.context.swf.clone(),
@@ -63,48 +63,43 @@ fn create_display_object<'gc>(
             .into(),
             false,
             false,
-        )));
+        ));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().simplebutton) {
-        return Ok(Some((
+        return Ok((
             Avm2Button::empty_button(&mut activation.context).into(),
             true,
-            true,
-        )));
+            false,
+        ));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().bitmap) {
         let bitmap_data = GcCell::allocate(activation.context.gc_context, BitmapData::dummy());
         let bitmap = Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, false);
-        return Ok(Some((bitmap.into(), true, true)));
+        return Ok((bitmap.into(), false, false));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().shape) {
-        return Ok(Some((
+        return Ok((
             Graphic::new_with_avm2(&mut activation.context).into(),
-            true,
-            true,
-        )));
+            false,
+            false,
+        ));
     }
 
     if class_object.has_class_in_chain(activation.avm2().classes().textfield) {
         let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let edit_text = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
-        return Ok(Some((edit_text.into(), false, false)));
+        return Ok((edit_text.into(), false, false));
     }
 
-    if class_object.has_class_in_chain(activation.avm2().classes().sprite) {
-        let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-        return Ok(Some((
-            MovieClip::new_with_avm2(movie, None, class_object, activation.context.gc_context)
-                .into(),
-            false,
-            false,
-        )));
-    }
-
-    Ok(None)
+    let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+    return Ok((
+        MovieClip::new_with_avm2(movie, None, class_object, activation.context.gc_context).into(),
+        false,
+        false,
+    ));
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
@@ -117,24 +112,23 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            if let Some((display_object, post_instantiate, catchup)) = create_display_object(
+            let (display_object, post_instantiate, catchup) = create_display_object(
                 activation,
                 this.instance_of()
                     .expect("Something that inherits DisplayObject should have a class"),
-            )? {
-                this.init_display_object(&mut activation.context, display_object);
-                display_object.set_object2(&mut activation.context, this);
-                if post_instantiate {
-                    display_object.post_instantiation(
-                        &mut activation.context,
-                        None,
-                        Instantiator::Avm2,
-                        false,
-                    );
-                }
-                if catchup {
-                    catchup_display_object_to_frame(&mut activation.context, display_object);
-                }
+            )?;
+            this.init_display_object(&mut activation.context, display_object);
+            display_object.set_object2(&mut activation.context, this);
+            if post_instantiate {
+                display_object.post_instantiation(
+                    &mut activation.context,
+                    None,
+                    Instantiator::Avm2,
+                    false,
+                );
+            }
+            if catchup {
+                catchup_display_object_to_frame(&mut activation.context, display_object);
             }
         }
 
