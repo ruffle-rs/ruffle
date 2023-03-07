@@ -17,6 +17,7 @@ use std::sync::Arc;
 use swf::TagCode;
 
 mod array;
+mod avmplus;
 mod boolean;
 mod class;
 mod date;
