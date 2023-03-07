@@ -16,7 +16,8 @@ pub fn add_frame_script<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this
-        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_stage_object())
+        .and_then(|o| o.get_or_create_display_object(activation).ok())
         .and_then(|dobj| dobj.as_movie_clip())
     {
         for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
