@@ -1,0 +1,28 @@
+Valid sequences
+unescape("%32%33")
+23
+unescape("aa %32%33")
+aa 23
+unescape("%32 aa %33")
+2 aa 3
+unescape("%32%33 aa")
+23 aa
+unescape(escape("😊"))
+😊
+unescape(escape("&& 😊 😊 😊 😊 😊bb"))
+&& 😊 😊 😊 😊 😊bb
+Invalid sequences
+unescape("%32%3")
+2%3
+unescape("%%3")
+%%3
+unescape("%G3")
+%G3 %
+unescape("%u")
+%u
+unescape("%u33")
+%u33
+unescape("%U3333")
+%U3333
+unescape("%u333G")
+%u333G
