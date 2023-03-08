@@ -58,6 +58,15 @@ pub fn native_instance_init<'gc>(
                         false,
                     );
                     catchup_display_object_to_frame(&mut activation.context, child);
+                    child.set_placed_by_script(activation.context.gc_context, true);
+
+                    // Movie clips created from ActionScript skip the next enterFrame,
+                    // and consequently are observed to have their currentFrame lag one
+                    // frame behind objects placed by the timeline (even if they were
+                    // both placed in the same frame to begin with).
+                    if let Some(clip) = child.as_movie_clip() {
+                        clip.set_skip_next_enter_frame(activation.context.gc_context, true);
+                    }
                     break;
                 }
                 class_object = class.superclass_object();

@@ -263,10 +263,33 @@ impl<'gc> Avm2<'gc> {
     /// that have been garbage collected, or are no longer orphans
     /// (they've since acquired a parent).
     pub fn cleanup_dead_orphans(context: &mut UpdateContext<'_, 'gc>) {
-        context
-            .avm2
-            .orphan_movies
-            .retain(|m| valid_orphan(*m, context.gc_context).is_some());
+        context.avm2.orphan_movies.retain(|m| {
+            if let Some(movie) = valid_orphan(*m, context.gc_context) {
+                // All clips that become orphaned (have their parent removed, or start out with no parent)
+                // get added to the orphan list. However, there's a distinction between clips
+                // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
+                //
+                // Clips removed from a RemoveObject tag only stay on the orphan list until the end
+                // of the frame - this lets them run a framescript (with 'this.parent == null')
+                // before they're removed. After that, they're removed from the orphan list,
+                // and will not be run in any way.
+                //
+                // Clips removed from ActionScript stay on the orphan list, and will be run
+                // indefinitely (if there are no remaining strong references, they will eventually
+                // be garbage collected).
+                //
+                // To detect this, we check 'placed_by_script'. This flag get set to 'true'
+                // for objects constructed from ActionScript, and for objects moved around
+                // in the timeline (add/remove child, swap depths) by ActionScript. A
+                // RemoveObject tag will only affect objects instantiated by the timeline,
+                // which have not been moved in the displaylist by ActionScript. Therefore,
+                // any orphan we see that has 'placed_by_script()' should stay on the orphan
+                // list, because it was not removed by a RemoveObject tag.
+                movie.placed_by_script()
+            } else {
+                false
+            }
+        });
     }
 
     /// Dispatch an event on an object.

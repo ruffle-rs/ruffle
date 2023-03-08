@@ -911,6 +911,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing()
     }
 
+    pub fn set_skip_next_enter_frame(self, mc: MutationContext<'gc, '_>, skip: bool) {
+        self.0.write(mc).set_skip_next_enter_frame(skip);
+    }
+
     pub fn programmatically_played(self) -> bool {
         self.0.read().programmatically_played()
     }
@@ -2356,6 +2360,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             child.enter_frame(context);
         }
 
+        if self.0.read().skip_next_enter_frame() {
+            self.0
+                .write(context.gc_context)
+                .set_skip_next_enter_frame(false);
+            return;
+        }
+
         if context.is_action_script_3() {
             let is_playing = self.playing();
 
@@ -3078,6 +3089,14 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_playing(&mut self, value: bool) {
         self.flags.set(MovieClipFlags::PLAYING, value);
+    }
+
+    pub fn set_skip_next_enter_frame(&mut self, value: bool) {
+        self.flags.set(MovieClipFlags::SKIP_NEXT_ENTER_FRAME, value);
+    }
+
+    fn skip_next_enter_frame(&self) -> bool {
+        self.flags.contains(MovieClipFlags::SKIP_NEXT_ENTER_FRAME)
     }
 
     fn programmatically_played(&self) -> bool {
@@ -4420,6 +4439,13 @@ bitflags! {
         const LOOP_QUEUED = 1 << 4;
 
         const IS_BUTTON_STATE = 1 << 5;
+
+        /// Flag set when we should skip running our next 'enterFrame'
+        /// for ourself *only* (we still run children).
+        /// This is set for objects constructed from ActionScript,
+        /// which are observed to lag behind objects placed by the timeline
+        /// (even if they are both placed in the same frame)
+        const SKIP_NEXT_ENTER_FRAME          = 1 << 6;
     }
 }
 
