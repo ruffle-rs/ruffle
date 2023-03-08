@@ -184,8 +184,7 @@ pub fn copy_pixels<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
 
-        let rectangle_class = activation.avm2().classes().rectangle;
-        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
         let src_min_x = source_rect
             .get_public_property("x", activation)?
@@ -200,8 +199,7 @@ pub fn copy_pixels<'gc>(
             .get_public_property("height", activation)?
             .coerce_to_i32(activation)?;
 
-        let point_class = activation.avm2().classes().point;
-        let dest_point = args.get_object_of_class(activation, 2, "destPoint", point_class)?;
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
 
         let dest_x = dest_point
             .get_public_property("x", activation)?
@@ -238,9 +236,7 @@ pub fn copy_pixels<'gc>(
                     let mut x = 0;
                     let mut y = 0;
 
-                    if let Some(alpha_point) =
-                        args.try_get_object_of_class(activation, 4, point_class)?
-                    {
+                    if let Some(alpha_point) = args.try_get_object(activation, 4) {
                         x = alpha_point
                             .get_public_property("x", activation)?
                             .coerce_to_i32(activation)?;
@@ -290,8 +286,7 @@ pub fn get_pixels<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let rectangle_class = activation.avm2().classes().rectangle;
-        let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+        let rectangle = args.get_object(activation, 0, "rect")?;
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
@@ -321,8 +316,7 @@ pub fn get_vector<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let rectangle_class = activation.avm2().classes().rectangle;
-        let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+        let rectangle = args.get_object(activation, 0, "rect")?;
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
@@ -421,8 +415,7 @@ pub fn set_pixels<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let rectangle_class = activation.avm2().classes().rectangle;
-    let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+    let rectangle = args.get_object(activation, 0, "rect")?;
 
     let bytearray = args
         .get(1)
@@ -482,11 +475,9 @@ pub fn copy_channel<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
 
-        let rectangle_class = activation.avm2().classes().rectangle;
-        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
 
-        let point_class = activation.avm2().classes().point;
-        let dest_point = args.get_object_of_class(activation, 2, "destPoint", point_class)?;
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
 
         let dest_x = dest_point
             .get_public_property("x", activation)?
@@ -594,11 +585,8 @@ pub fn color_transform<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
-            let rectangle_class = activation.avm2().classes().rectangle;
-            let color_transform_class = activation.avm2().classes().colortransform;
-
             // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
-            let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+            let rectangle = args.get_object(activation, 0, "rect")?;
             let x = rectangle
                 .get_public_property("x", activation)?
                 .coerce_to_i32(activation)?;
@@ -617,8 +605,7 @@ pub fn color_transform<'gc>(
             let y_min = y.max(0) as u32;
             let y_max = (y + height) as u32;
 
-            let color_transform =
-                args.get_object_of_class(activation, 1, "colorTransform", color_transform_class)?;
+            let color_transform = args.get_object(activation, 1, "colorTransform")?;
             let color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
                     color_transform,
@@ -697,16 +684,12 @@ pub fn draw<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        let matrix_class = activation.avm2().classes().matrix;
-        if let Some(matrix) = args.try_get_object_of_class(activation, 1, matrix_class)? {
+        if let Some(matrix) = args.try_get_object(activation, 1) {
             transform.matrix =
                 crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        let color_transform_class = activation.avm2().classes().colortransform;
-        if let Some(color_transform) =
-            args.try_get_object_of_class(activation, 2, color_transform_class)?
-        {
+        if let Some(color_transform) = args.try_get_object(activation, 2) {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
                     color_transform,
@@ -725,8 +708,7 @@ pub fn draw<'gc>(
 
         let mut clip_rect = None;
 
-        let rectangle_class = activation.avm2().classes().rectangle;
-        if let Some(clip_rect_obj) = args.try_get_object_of_class(activation, 4, rectangle_class)? {
+        if let Some(clip_rect_obj) = args.try_get_object(activation, 4) {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
@@ -783,16 +765,12 @@ pub fn draw_with_quality<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        let matrix_class = activation.avm2().classes().matrix;
-        if let Some(matrix) = args.try_get_object_of_class(activation, 1, matrix_class)? {
+        if let Some(matrix) = args.try_get_object(activation, 1) {
             transform.matrix =
                 crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        let color_transform_class = activation.avm2().classes().colortransform;
-        if let Some(color_transform) =
-            args.try_get_object_of_class(activation, 2, color_transform_class)?
-        {
+        if let Some(color_transform) = args.try_get_object(activation, 2) {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
                     color_transform,
@@ -811,8 +789,7 @@ pub fn draw_with_quality<'gc>(
 
         let mut clip_rect = None;
 
-        let rectangle_class = activation.avm2().classes().rectangle;
-        if let Some(clip_rect_obj) = args.try_get_object_of_class(activation, 4, rectangle_class)? {
+        if let Some(clip_rect_obj) = args.try_get_object(activation, 4) {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
@@ -872,8 +849,7 @@ pub fn fill_rect<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let rectangle_class = activation.avm2().classes().rectangle;
-    let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+    let rectangle = args.get_object(activation, 0, "rect")?;
 
     let color = args.get_i32(activation, 1)?;
 
@@ -961,8 +937,7 @@ pub fn apply_filter<'gc>(
                 return Ok(Value::Undefined);
             }
         };
-        let rectangle_class = activation.avm2().classes().rectangle;
-        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
         let source_point = (
             source_rect.x_min.to_pixels().floor() as u32,
@@ -972,8 +947,7 @@ pub fn apply_filter<'gc>(
             source_rect.width().to_pixels().ceil() as u32,
             source_rect.height().to_pixels().ceil() as u32,
         );
-        let point_class = activation.avm2().classes().point;
-        let dest_point = args.get_object_of_class(activation, 2, "dstPoint", point_class)?;
+        let dest_point = args.get_object(activation, 2, "dstPoint")?;
         let dest_point = (
             dest_point
                 .get_public_property("x", activation)?
@@ -982,8 +956,7 @@ pub fn apply_filter<'gc>(
                 .get_public_property("x", activation)?
                 .coerce_to_u32(activation)?,
         );
-        let filter_class = activation.avm2().classes().bitmapfilter;
-        let filter = args.get_object_of_class(activation, 3, "filter", filter_class)?;
+        let filter = args.get_object(activation, 3, "filter")?;
         let filter = Filter::from_avm2_object(activation, filter)?;
         let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
         dest_bitmap_data.apply_filter(

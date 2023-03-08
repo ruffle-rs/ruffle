@@ -1000,9 +1000,17 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        let name = class.inner_class_definition().read().name();
+        let name = class
+            .inner_class_definition()
+            .read()
+            .name()
+            .to_qualified_name_err_message(activation.context.gc_context);
 
-        Err(format!("Cannot coerce {self:?} to an {name:?}").into())
+        Err(Error::AvmError(type_error(
+            activation,
+            &format!("Type Coercion failed: cannot convert {self:?} to {name}."),
+            1034,
+        )?))
     }
 
     /// Determine if this value is any kind of number.

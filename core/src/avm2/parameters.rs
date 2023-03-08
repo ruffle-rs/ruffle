@@ -1,8 +1,7 @@
 use crate::avm2::error::type_error;
 use crate::avm2::object::PrimitiveObject;
-use crate::avm2::object::TObject;
 use crate::avm2::Object;
-use crate::avm2::{Activation, ClassObject, Error, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
 pub trait ParametersExt<'gc> {
@@ -24,29 +23,6 @@ pub trait ParametersExt<'gc> {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>>;
-
-    /// Gets the value at the given index and coerces it to an Object of the given class.
-    ///
-    /// If the value does not exist, is null, or is undefined, a TypeError 2007 is raised.
-    /// If the object cannot be coerced to the specified class, a TypeError 1034 is raised.
-    fn get_object_of_class(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        name: &'static str,
-        class: ClassObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>>;
-
-    /// Tries to get the value at the given index and coerce it to an Object.
-    ///
-    /// If the value does not exist, is null, or is undefined, Ok(None) is returned.
-    /// If the object cannot be coerced to the specified class, a TypeError 1034 is raised.
-    fn try_get_object_of_class(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        class: ClassObject<'gc>,
-    ) -> Result<Option<Object<'gc>>, Error<'gc>>;
 
     /// Gets the value at the given index and coerces it to an f64.
     ///
@@ -137,54 +113,6 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         }
     }
 
-    fn get_object_of_class(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        name: &'static str,
-        class: ClassObject<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let object = self.get_object(activation, index, name)?;
-        if object.is_of_type(class, activation) {
-            Ok(object)
-        } else {
-            Err(type_coercion_error(
-                activation,
-                class
-                    .inner_class_definition()
-                    .read()
-                    .name()
-                    .to_qualified_name_err_message(activation.context.gc_context),
-                object.instance_of_class_name(activation.context.gc_context),
-            ))
-        }
-    }
-
-    fn try_get_object_of_class(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        index: usize,
-        class: ClassObject<'gc>,
-    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
-        if let Some(object) = self.try_get_object(activation, index) {
-            if object.is_of_type(class, activation) {
-                Ok(Some(object))
-            } else {
-                Err(type_coercion_error(
-                    activation,
-                    class
-                        .inner_class_definition()
-                        .read()
-                        .name()
-                        .to_qualified_name_err_message(activation.context.gc_context),
-                    object.instance_of_class_name(activation.context.gc_context),
-                ))
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
     fn get_f64(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -253,22 +181,6 @@ fn null_parameter_error<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -
         activation,
         &format!("Parameter {name} must be non-null."),
         2007,
-    );
-    match error {
-        Err(e) => e,
-        Ok(e) => Error::AvmError(e),
-    }
-}
-
-fn type_coercion_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    expected: AvmString<'gc>,
-    actual: AvmString<'gc>,
-) -> Error<'gc> {
-    let error = type_error(
-        activation,
-        &format!("Type Coercion failed: cannot convert {actual} to {expected}."),
-        1034,
     );
     match error {
         Err(e) => e,
