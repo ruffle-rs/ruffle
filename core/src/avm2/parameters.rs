@@ -4,6 +4,10 @@ use crate::avm2::Object;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
+/// Extensions over parameters that are passed into AS-defined, Rust-implemented methods.
+///
+/// It is expected that the AS signature is correct and you only operate on values defined from it.
+/// These values will be `expect()`ed to exist, and any method here will panic if they're missing.  
 pub trait ParametersExt<'gc> {
     /// Gets the value at the given index and coerces it to an Object.
     ///
@@ -88,13 +92,10 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
         name: &'static str,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        match self
-            .get(index)
-            .expect("Value must be Some() from AS definition")
-        {
+        match self[index] {
             Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
-            Value::Object(o) => Ok(*o),
-            primitive => Ok(PrimitiveObject::from_primitive(*primitive, activation)
+            Value::Object(o) => Ok(o),
+            primitive => Ok(PrimitiveObject::from_primitive(primitive, activation)
                 .expect("Primitive object is infallible at this point")),
         }
     }
@@ -104,14 +105,11 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>> {
-        match self
-            .get(index)
-            .expect("Value must be Some() from AS definition")
-        {
+        match self[index] {
             Value::Null | Value::Undefined => None,
-            Value::Object(o) => Some(*o),
+            Value::Object(o) => Some(o),
             primitive => Some(
-                PrimitiveObject::from_primitive(*primitive, activation)
+                PrimitiveObject::from_primitive(primitive, activation)
                     .expect("Primitive object is infallible at this point"),
             ),
         }
@@ -122,9 +120,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<f64, Error<'gc>> {
-        self.get(index)
-            .expect("Value must be Some() from AS definition")
-            .coerce_to_number(activation)
+        self[index].coerce_to_number(activation)
     }
 
     fn get_u32(
@@ -132,9 +128,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<u32, Error<'gc>> {
-        self.get(index)
-            .expect("Value must be Some() from AS definition")
-            .coerce_to_u32(activation)
+        self[index].coerce_to_u32(activation)
     }
 
     fn get_i32(
@@ -142,15 +136,11 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<i32, Error<'gc>> {
-        self.get(index)
-            .expect("Value must be Some() from AS definition")
-            .coerce_to_i32(activation)
+        self[index].coerce_to_i32(activation)
     }
 
     fn get_bool(&self, index: usize) -> bool {
-        self.get(index)
-            .expect("Value must be Some() from AS definition")
-            .coerce_to_boolean()
+        self[index].coerce_to_boolean()
     }
 
     fn get_string(
@@ -158,9 +148,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.get(index)
-            .expect("Value must be Some() from AS definition")
-            .coerce_to_string(activation)
+        self[index].coerce_to_string(activation)
     }
 
     fn try_get_string(
@@ -168,10 +156,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        match self
-            .get(index)
-            .expect("Value must be Some() from AS definition")
-        {
+        match self[index] {
             Value::Null | Value::Undefined => Ok(None),
             other => Ok(Some(other.coerce_to_string(activation)?)),
         }
