@@ -7,7 +7,7 @@ use crate::string::AvmString;
 pub trait ParametersExt<'gc> {
     /// Gets the value at the given index and coerces it to an Object.
     ///
-    /// If the value does not exist, is null, or is undefined, a TypeError 2007 is raised.
+    /// If the value is null or is undefined, a TypeError 2007 is raised.
     fn get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -17,7 +17,7 @@ pub trait ParametersExt<'gc> {
 
     /// Tries to get the value at the given index and coerce it to an Object.
     ///
-    /// If the value does not exist, is null, or is undefined, None is returned.
+    /// If the value is null or is undefined, None is returned.
     fn try_get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -26,7 +26,7 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index and coerces it to an f64.
     ///
-    /// If the value does not exist, is null, or is undefined, 0.0 is returned.
+    /// If the value is null or is undefined, 0.0 is returned.
     /// If the object cannot be coerced to an f64, a TypeError 1050 is raised.
     fn get_f64(
         &self,
@@ -36,7 +36,7 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index and coerces it to a u32.
     ///
-    /// If the value does not exist, is null, or is undefined, 0 is returned.
+    /// If the value is null or is undefined, 0 is returned.
     /// If the object cannot be coerced to a u32, a TypeError 1050 is raised.
     fn get_u32(
         &self,
@@ -46,7 +46,7 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index and coerces it to a i32.
     ///
-    /// If the value does not exist, is null, or is undefined, 0 is returned.
+    /// If the value is null or is undefined, 0 is returned.
     /// If the object cannot be coerced to an i32, a TypeError 1050 is raised.
     fn get_i32(
         &self,
@@ -56,12 +56,12 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index and coerces it to a bool.
     ///
-    /// If the value does not exist, is null, or is undefined, false is returned.
+    /// If the value is null or is undefined, false is returned.
     fn get_bool(&self, index: usize) -> bool;
 
     /// Gets the value at the given index and coerces it to an AvmString.
     ///
-    /// If the value does not exist or is undefined, "undefined" is returned.
+    /// If the value is undefined, "undefined" is returned.
     /// If the value is null, "null" is returned.
     /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
     fn get_string(
@@ -72,7 +72,7 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index and coerces it to an AvmString.
     ///
-    /// If the value does not exist, is null, or is undefined, Ok(None) is returned.
+    /// If the value is null or is undefined, Ok(None) is returned.
     /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
     fn try_get_string(
         &self,
@@ -88,12 +88,13 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
         name: &'static str,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        match self.get(index) {
-            None | Some(Value::Null) | Some(Value::Undefined) => {
-                Err(null_parameter_error(activation, name))
-            }
-            Some(Value::Object(o)) => Ok(*o),
-            Some(primitive) => Ok(PrimitiveObject::from_primitive(*primitive, activation)
+        match self
+            .get(index)
+            .expect("Value must be Some() from AS definition")
+        {
+            Value::Null | Value::Undefined => Err(null_parameter_error(activation, name)),
+            Value::Object(o) => Ok(*o),
+            primitive => Ok(PrimitiveObject::from_primitive(*primitive, activation)
                 .expect("Primitive object is infallible at this point")),
         }
     }
@@ -103,10 +104,13 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>> {
-        match self.get(index) {
-            None | Some(Value::Null) | Some(Value::Undefined) => None,
-            Some(Value::Object(o)) => Some(*o),
-            Some(primitive) => Some(
+        match self
+            .get(index)
+            .expect("Value must be Some() from AS definition")
+        {
+            Value::Null | Value::Undefined => None,
+            Value::Object(o) => Some(*o),
+            primitive => Some(
                 PrimitiveObject::from_primitive(*primitive, activation)
                     .expect("Primitive object is infallible at this point"),
             ),
@@ -119,8 +123,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
     ) -> Result<f64, Error<'gc>> {
         self.get(index)
-            .copied()
-            .unwrap_or(Value::Undefined)
+            .expect("Value must be Some() from AS definition")
             .coerce_to_number(activation)
     }
 
@@ -130,8 +133,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
     ) -> Result<u32, Error<'gc>> {
         self.get(index)
-            .copied()
-            .unwrap_or(Value::Undefined)
+            .expect("Value must be Some() from AS definition")
             .coerce_to_u32(activation)
     }
 
@@ -141,15 +143,13 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
     ) -> Result<i32, Error<'gc>> {
         self.get(index)
-            .copied()
-            .unwrap_or(Value::Undefined)
+            .expect("Value must be Some() from AS definition")
             .coerce_to_i32(activation)
     }
 
     fn get_bool(&self, index: usize) -> bool {
         self.get(index)
-            .copied()
-            .unwrap_or(Value::Undefined)
+            .expect("Value must be Some() from AS definition")
             .coerce_to_boolean()
     }
 
@@ -159,8 +159,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.get(index)
-            .copied()
-            .unwrap_or(Value::Undefined)
+            .expect("Value must be Some() from AS definition")
             .coerce_to_string(activation)
     }
 
@@ -169,9 +168,12 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
         activation: &mut Activation<'_, 'gc>,
         index: usize,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        match self.get(index) {
-            None | Some(Value::Null) | Some(Value::Undefined) => Ok(None),
-            Some(other) => Ok(Some(other.coerce_to_string(activation)?)),
+        match self
+            .get(index)
+            .expect("Value must be Some() from AS definition")
+        {
+            Value::Null | Value::Undefined => Ok(None),
+            other => Ok(Some(other.coerce_to_string(activation)?)),
         }
     }
 }
