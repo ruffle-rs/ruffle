@@ -39,6 +39,7 @@ mod method;
 mod multiname;
 mod namespace;
 pub mod object;
+mod parameters;
 mod property;
 mod property_map;
 mod qname;

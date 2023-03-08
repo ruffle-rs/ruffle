@@ -20,6 +20,7 @@ use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
 pub use crate::avm2::object::bitmap_data_allocator;
+use crate::avm2::parameters::ParametersExt;
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -85,23 +86,10 @@ pub fn init<'gc>(
                     );
                 }
 
-                let width = args
-                    .get(0)
-                    .unwrap_or(&Value::Undefined)
-                    .coerce_to_i32(activation)? as u32;
-                let height = args
-                    .get(1)
-                    .unwrap_or(&Value::Undefined)
-                    .coerce_to_i32(activation)? as u32;
-                let transparency = args
-                    .get(2)
-                    .unwrap_or(&Value::Bool(true))
-                    .coerce_to_boolean();
-                let fill_color = if let Some(value) = args.get(3) {
-                    value.coerce_to_u32(activation)?
-                } else {
-                    0xFFFFFFFF
-                };
+                let width = args.get_u32(activation, 0)?;
+                let height = args.get_u32(activation, 1)?;
+                let transparency = args.get_bool(2);
+                let fill_color = args.get_u32(activation, 3)?;
 
                 if !is_size_valid(activation.context.swf.version(), width, height) {
                     return Err("Bitmap size is not valid".into());
@@ -172,14 +160,8 @@ pub fn scroll<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let x = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let y = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let x = args.get_i32(activation, 0)?;
+        let y = args.get_i32(activation, 1)?;
 
         bitmap_data
             .write(activation.context.gc_context)
@@ -202,10 +184,8 @@ pub fn copy_pixels<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
 
-        let source_rect = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
 
         let src_min_x = source_rect
             .get_public_property("x", activation)?
@@ -220,10 +200,8 @@ pub fn copy_pixels<'gc>(
             .get_public_property("height", activation)?
             .coerce_to_i32(activation)?;
 
-        let dest_point = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let point_class = activation.avm2().classes().point;
+        let dest_point = args.get_object_of_class(activation, 2, "destPoint", point_class)?;
 
         let dest_x = dest_point
             .get_public_property("x", activation)?
@@ -260,10 +238,8 @@ pub fn copy_pixels<'gc>(
                     let mut x = 0;
                     let mut y = 0;
 
-                    if let Ok(alpha_point) = args
-                        .get(4)
-                        .unwrap_or(&Value::Undefined)
-                        .coerce_to_object(activation)
+                    if let Some(alpha_point) =
+                        args.try_get_object_of_class(activation, 4, point_class)?
                     {
                         x = alpha_point
                             .get_public_property("x", activation)?
@@ -277,10 +253,7 @@ pub fn copy_pixels<'gc>(
                 }
             }
 
-            let merge_alpha = args
-                .get(5)
-                .unwrap_or(&Value::Bool(false))
-                .coerce_to_boolean();
+            let merge_alpha = args.get_bool(5);
 
             if let Some((alpha_bitmap, alpha_point)) = alpha_source {
                 bitmap_data
@@ -317,10 +290,8 @@ pub fn get_pixels<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let rectangle = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
@@ -350,10 +321,8 @@ pub fn get_vector<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let rectangle = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
@@ -386,14 +355,8 @@ pub fn get_pixel<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let x = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let y = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let x = args.get_i32(activation, 0)?;
+        let y = args.get_i32(activation, 1)?;
         return Ok((bitmap_data.read().get_pixel(x, y) as u32).into());
     }
 
@@ -407,14 +370,8 @@ pub fn get_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let y = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let x = args.get_i32(activation, 0)?;
+        let y = args.get_i32(activation, 1)?;
         let pixel = i32::from(bitmap_data.read().get_pixel32(x, y));
         return Ok((pixel as u32).into());
     }
@@ -429,18 +386,9 @@ pub fn set_pixel<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let y = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let color = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let x = args.get_u32(activation, 0)?;
+        let y = args.get_u32(activation, 1)?;
+        let color = args.get_i32(activation, 2)?;
         bitmap_data
             .write(activation.context.gc_context)
             .set_pixel(x, y, color.into());
@@ -456,18 +404,9 @@ pub fn set_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let y = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let color = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let x = args.get_i32(activation, 0)?;
+        let y = args.get_i32(activation, 1)?;
+        let color = args.get_i32(activation, 2)?;
         bitmap_data
             .write(activation.context.gc_context)
             .set_pixel32(x, y, color.into());
@@ -482,10 +421,8 @@ pub fn set_pixels<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let rectangle = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
+    let rectangle_class = activation.avm2().classes().rectangle;
+    let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
 
     let bytearray = args
         .get(1)
@@ -545,15 +482,11 @@ pub fn copy_channel<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
 
-        let source_rect = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
 
-        let dest_point = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let point_class = activation.avm2().classes().point;
+        let dest_point = args.get_object_of_class(activation, 2, "destPoint", point_class)?;
 
         let dest_x = dest_point
             .get_public_property("x", activation)?
@@ -562,15 +495,9 @@ pub fn copy_channel<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_u32(activation)?;
 
-        let source_channel = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let source_channel = args.get_i32(activation, 3)?;
 
-        let dest_channel = args
-            .get(4)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let dest_channel = args.get_i32(activation, 4)?;
 
         if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
             //TODO: what if source is disposed
@@ -622,18 +549,14 @@ pub fn flood_fill<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
-            if let (Some(x_val), Some(y_val), Some(color_val)) =
-                (args.get(0), args.get(1), args.get(2))
-            {
-                let x = x_val.coerce_to_u32(activation)?;
-                let y = y_val.coerce_to_u32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+            let x = args.get_u32(activation, 0)?;
+            let y = args.get_u32(activation, 1)?;
+            let color = args.get_i32(activation, 2)?;
 
-                let color: Color = color.into();
-                let color: Color = color.to_premultiplied_alpha(bitmap_data.transparency());
+            let color: Color = color.into();
+            let color: Color = color.to_premultiplied_alpha(bitmap_data.transparency());
 
-                bitmap_data.flood_fill(x, y, color);
-            }
+            bitmap_data.flood_fill(x, y, color);
         }
     }
 
@@ -645,28 +568,19 @@ pub fn noise<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let low = args.get(1).unwrap_or(&0.into()).coerce_to_u32(activation)? as u8;
+    let low = args.get_u32(activation, 1)? as u8;
 
-    let high = args
-        .get(2)
-        .unwrap_or(&0xFF.into())
-        .coerce_to_u32(activation)? as u8;
+    let high = args.get_u32(activation, 2)? as u8;
 
-    let channel_options = if let Some(c) = args.get(3) {
-        ChannelOptions::from_bits_truncate(c.coerce_to_u32(activation)? as u8)
-    } else {
-        ChannelOptions::RGB
-    };
+    let channel_options = ChannelOptions::from_bits_truncate(args.get_u32(activation, 3)? as u8);
 
-    let gray_scale = args.get(4).unwrap_or(&false.into()).coerce_to_boolean();
+    let gray_scale = args.get_bool(4);
 
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
-            if let Some(random_seed_val) = args.get(0) {
-                let random_seed = random_seed_val.coerce_to_i32(activation)?;
-                bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale)
-            }
+            let random_seed = args.get_i32(activation, 0)?;
+            bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale)
         }
     }
     Ok(Value::Undefined)
@@ -680,35 +594,38 @@ pub fn color_transform<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
         if !bitmap_data.disposed() {
-            if let [rectangle, color_transform, ..] = args {
-                // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
-                let rectangle = rectangle.coerce_to_object(activation)?;
-                let x = rectangle
-                    .get_public_property("x", activation)?
-                    .coerce_to_i32(activation)?;
-                let y = rectangle
-                    .get_public_property("y", activation)?
-                    .coerce_to_i32(activation)?;
-                let width = rectangle
-                    .get_public_property("width", activation)?
-                    .coerce_to_i32(activation)?;
-                let height = rectangle
-                    .get_public_property("height", activation)?
-                    .coerce_to_i32(activation)?;
+            let rectangle_class = activation.avm2().classes().rectangle;
+            let color_transform_class = activation.avm2().classes().colortransform;
 
-                let x_min = x.max(0) as u32;
-                let x_max = (x + width) as u32;
-                let y_min = y.max(0) as u32;
-                let y_max = (y + height) as u32;
+            // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
+            let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
+            let x = rectangle
+                .get_public_property("x", activation)?
+                .coerce_to_i32(activation)?;
+            let y = rectangle
+                .get_public_property("y", activation)?
+                .coerce_to_i32(activation)?;
+            let width = rectangle
+                .get_public_property("width", activation)?
+                .coerce_to_i32(activation)?;
+            let height = rectangle
+                .get_public_property("height", activation)?
+                .coerce_to_i32(activation)?;
 
-                let color_transform =
-                    crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                        color_transform.coerce_to_object(activation)?,
-                        activation,
-                    )?;
+            let x_min = x.max(0) as u32;
+            let x_max = (x + width) as u32;
+            let y_min = y.max(0) as u32;
+            let y_max = (y + height) as u32;
 
-                bitmap_data.color_transform(x_min, y_min, x_max, y_max, color_transform);
-            }
+            let color_transform =
+                args.get_object_of_class(activation, 1, "colorTransform", color_transform_class)?;
+            let color_transform =
+                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
+                    color_transform,
+                    activation,
+                )?;
+
+            bitmap_data.color_transform(x_min, y_min, x_max, y_max, color_transform);
         }
     }
 
@@ -723,22 +640,20 @@ pub fn get_color_bounds_rect<'gc>(
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         let bitmap_data = bitmap_data.read();
         if !bitmap_data.disposed() {
-            let find_color = args.get(2).unwrap_or(&true.into()).coerce_to_boolean();
+            let find_color = args.get_bool(2);
 
-            if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {
-                let mask = mask_val.coerce_to_i32(activation)?;
-                let color = color_val.coerce_to_i32(activation)?;
+            let mask = args.get_i32(activation, 0)?;
+            let color = args.get_i32(activation, 1)?;
 
-                let (x, y, w, h) = bitmap_data.color_bounds_rect(find_color, mask, color);
+            let (x, y, w, h) = bitmap_data.color_bounds_rect(find_color, mask, color);
 
-                let rect = activation
-                    .avm2()
-                    .classes()
-                    .rectangle
-                    .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?
-                    .into();
-                return Ok(rect);
-            }
+            let rect = activation
+                .avm2()
+                .classes()
+                .rectangle
+                .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?
+                .into();
+            return Ok(rect);
         }
     }
 
@@ -782,26 +697,25 @@ pub fn draw<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        let matrix = args.get(1).unwrap_or(&Value::Null);
-        if !matches!(matrix, Value::Null) {
-            transform.matrix = crate::avm2::globals::flash::geom::transform::object_to_matrix(
-                matrix.coerce_to_object(activation)?,
-                activation,
-            )?;
+        let matrix_class = activation.avm2().classes().matrix;
+        if let Some(matrix) = args.try_get_object_of_class(activation, 1, matrix_class)? {
+            transform.matrix =
+                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        let color_transform = args.get(2).unwrap_or(&Value::Null);
-        if !matches!(color_transform, Value::Null) {
+        let color_transform_class = activation.avm2().classes().colortransform;
+        if let Some(color_transform) =
+            args.try_get_object_of_class(activation, 2, color_transform_class)?
+        {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform.coerce_to_object(activation)?,
+                    color_transform,
                     activation,
                 )?;
         }
 
-        let mode = args.get(3).unwrap_or(&Value::Null);
-        if !matches!(mode, Value::Null) {
-            if let Ok(mode) = BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string()) {
+        if let Some(mode) = args.try_get_string(activation, 3)? {
+            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
@@ -811,21 +725,17 @@ pub fn draw<'gc>(
 
         let mut clip_rect = None;
 
-        let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
-        if !matches!(clip_rect_val, Value::Null) {
-            let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        if let Some(clip_rect_obj) = args.try_get_object_of_class(activation, 4, rectangle_class)? {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
             )?);
         }
 
-        let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
+        let smoothing = args.get_bool(5);
 
-        let source = args
-            .get(0)
-            .and_then(|v| v.as_object())
-            .ok_or_else(|| format!("BitmapData.draw: source {:?} is not an Object", args.get(0)))?;
+        let source = args.get_object(activation, 0, "source")?;
 
         let source = if let Some(source_object) = source.as_display_object() {
             IBitmapDrawable::DisplayObject(source_object)
@@ -873,26 +783,25 @@ pub fn draw_with_quality<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        let matrix = args.get(1).unwrap_or(&Value::Null);
-        if !matches!(matrix, Value::Null) {
-            transform.matrix = crate::avm2::globals::flash::geom::transform::object_to_matrix(
-                matrix.coerce_to_object(activation)?,
-                activation,
-            )?;
+        let matrix_class = activation.avm2().classes().matrix;
+        if let Some(matrix) = args.try_get_object_of_class(activation, 1, matrix_class)? {
+            transform.matrix =
+                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        let color_transform = args.get(2).unwrap_or(&Value::Null);
-        if !matches!(color_transform, Value::Null) {
+        let color_transform_class = activation.avm2().classes().colortransform;
+        if let Some(color_transform) =
+            args.try_get_object_of_class(activation, 2, color_transform_class)?
+        {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform.coerce_to_object(activation)?,
+                    color_transform,
                     activation,
                 )?;
         }
 
-        let mode = args.get(3).unwrap_or(&Value::Null);
-        if !matches!(mode, Value::Null) {
-            if let Ok(mode) = BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string()) {
+        if let Some(mode) = args.try_get_string(activation, 3)? {
+            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
@@ -902,9 +811,8 @@ pub fn draw_with_quality<'gc>(
 
         let mut clip_rect = None;
 
-        let clip_rect_val = args.get(4).unwrap_or(&Value::Null);
-        if !matches!(clip_rect_val, Value::Null) {
-            let clip_rect_obj = clip_rect_val.coerce_to_object(activation)?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        if let Some(clip_rect_obj) = args.try_get_object_of_class(activation, 4, rectangle_class)? {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
@@ -912,14 +820,9 @@ pub fn draw_with_quality<'gc>(
         }
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
+        let smoothing = args.get_bool(5);
 
-        let source = args.get(0).and_then(|v| v.as_object()).ok_or_else(|| {
-            format!(
-                "BitmapData.drawWithQuality: source {:?} is not an Object",
-                args.get(0)
-            )
-        })?;
+        let source = args.get_object(activation, 0, "source")?;
 
         let source = if let Some(source_object) = source.as_display_object() {
             IBitmapDrawable::DisplayObject(source_object)
@@ -930,8 +833,8 @@ pub fn draw_with_quality<'gc>(
         };
 
         // Unknown quality defaults to stage's quality
-        let quality = if let Some(quality) = args.get(6) {
-            match quality.coerce_to_string(activation)?.parse() {
+        let quality = if let Some(quality) = args.try_get_string(activation, 6)? {
+            match quality.parse() {
                 Ok(quality) => quality,
                 Err(_) => {
                     return Err(Error::AvmError(argument_error(
@@ -969,15 +872,10 @@ pub fn fill_rect<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let rectangle = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
+    let rectangle_class = activation.avm2().classes().rectangle;
+    let rectangle = args.get_object_of_class(activation, 0, "rect", rectangle_class)?;
 
-    let color = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_u32(activation)? as i32;
+    let color = args.get_i32(activation, 1)?;
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         let x = rectangle
@@ -1045,22 +943,11 @@ pub fn apply_filter<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let args = if args.len() == 4 {
-        [
-            args.get(0).expect("Infallible"),
-            args.get(1).expect("Infallible"),
-            args.get(2).expect("Infallible"),
-            args.get(3).expect("Infallible"),
-        ]
-    } else {
-        return Err("ArgumentError: Error #1063: Argument count mismatch on flash.display::BitmapData/applyFilter(). Expected 4, got 0.".into());
-    };
     if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         dest_bitmap_data.read().check_valid(activation)?;
-        let source_bitmap = args[0]
-            .as_object()
-            .and_then(|o| o.as_bitmap_data())
+        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
+            .as_bitmap_data()
             .ok_or_else(|| {
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
             })?;
@@ -1074,12 +961,9 @@ pub fn apply_filter<'gc>(
                 return Ok(Value::Undefined);
             }
         };
-        let source_rect = args[1]
-            .as_object()
-            .and_then(|o| super::display_object::object_to_rectangle(activation, o).ok())
-            .ok_or_else(|| {
-                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Rectangle.", args[1].coerce_to_string(activation).unwrap_or_default()))
-            })?;
+        let rectangle_class = activation.avm2().classes().rectangle;
+        let source_rect = args.get_object_of_class(activation, 1, "sourceRect", rectangle_class)?;
+        let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
         let source_point = (
             source_rect.x_min.to_pixels().floor() as u32,
             source_rect.y_min.to_pixels().floor() as u32,
@@ -1088,11 +972,8 @@ pub fn apply_filter<'gc>(
             source_rect.width().to_pixels().ceil() as u32,
             source_rect.height().to_pixels().ceil() as u32,
         );
-        let dest_point = args[2]
-            .as_object()
-            .ok_or_else(|| {
-                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.geom.Point.", args[2].coerce_to_string(activation).unwrap_or_default()))
-            })?;
+        let point_class = activation.avm2().classes().point;
+        let dest_point = args.get_object_of_class(activation, 2, "dstPoint", point_class)?;
         let dest_point = (
             dest_point
                 .get_public_property("x", activation)?
@@ -1101,11 +982,8 @@ pub fn apply_filter<'gc>(
                 .get_public_property("x", activation)?
                 .coerce_to_u32(activation)?,
         );
-        let filter = args[3]
-            .as_object()
-            .ok_or_else(|| {
-                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.filters.BitmapFilter.", args[1].coerce_to_string(activation).unwrap_or_default()))
-            })?;
+        let filter_class = activation.avm2().classes().bitmapfilter;
+        let filter = args.get_object_of_class(activation, 3, "filter", filter_class)?;
         let filter = Filter::from_avm2_object(activation, filter)?;
         let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
         dest_bitmap_data.apply_filter(
@@ -1157,38 +1035,20 @@ pub fn perlin_noise<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         if !bitmap_data.read().disposed() {
-            let base_x = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_number(activation)?;
-            let base_y = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_number(activation)?;
-            let num_octaves = args
-                .get(2)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_u32(activation)? as usize;
-            let seed = args
-                .get(3)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)? as i64;
-            let stitch = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
-            let fractal_noise = args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
-            let channel_options = if let Some(c) = args.get(6) {
-                ChannelOptions::from_bits_truncate(c.coerce_to_i32(activation)? as u8)
-            } else {
-                ChannelOptions::RGB
-            };
-            let grayscale = args.get(7).unwrap_or(&Value::Undefined).coerce_to_boolean();
-            let offsets = args
-                .get(8)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+            let base_x = args.get_f64(activation, 0)?;
+            let base_y = args.get_f64(activation, 1)?;
+            let num_octaves = args.get_u32(activation, 2)? as usize;
+            let seed = args.get_i32(activation, 3)? as i64;
+            let stitch = args.get_bool(4);
+            let fractal_noise = args.get_bool(5);
+            let channel_options =
+                ChannelOptions::from_bits_truncate(args.get_i32(activation, 6)? as u8);
+            let grayscale = args.get_bool(7);
+            let offsets = args.try_get_object(activation, 8);
 
             let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
                 .map(|i| {
-                    if let Ok(offsets) = offsets {
+                    if let Some(offsets) = offsets {
                         if let Some(offsets) = offsets.as_array_storage() {
                             if let Some(Value::Object(e)) = offsets.get(i) {
                                 let x = e
