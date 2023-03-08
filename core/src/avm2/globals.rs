@@ -502,6 +502,7 @@ pub fn load_player_globals<'gc>(
         toplevel::encode_uri_component,
         script,
     )?;
+    function(activation, "", "unescape", toplevel::unescape, script)?;
 
     avm2_system_class!(regexp, activation, regexp::create_class(activation), script);
     avm2_system_class!(vector, activation, vector::create_class(activation), script);
