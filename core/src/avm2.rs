@@ -561,12 +561,7 @@ fn valid_orphan<'gc>(
     mc: MutationContext<'gc, '_>,
 ) -> Option<MovieClip<'gc>> {
     if let Some(clip) = clip.upgrade(mc) {
-        // Note - SimpleButton is extremely weird, and treating button
-        // state clips as normal orphans results in
-        // the 'avm2/simplebutton_childevents' and 'avm2/simplebutton_structure'
-        // tests having incorrect output. As a result, button states are never
-        // considered valid orphans.
-        if clip.parent().is_none() && !clip.is_button_state() {
+        if clip.parent().is_none() {
             return Some(clip);
         }
     }

@@ -2241,26 +2241,6 @@ impl<'gc> MovieClip<'gc> {
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
     }
 
-    /// If `true`, this clip was instantiated by Avm2Button
-    /// from an SWF tag. Currently, this flag
-    /// is used to opt out of orphan handling in `avm2::valid_orphan`
-    pub fn is_button_state(&self) -> bool {
-        self.0
-            .read()
-            .flags
-            .intersects(MovieClipFlags::IS_BUTTON_STATE)
-    }
-
-    /// Permanently marks this clip as being used as one of the four
-    /// `ButtonState`s for an `Avm2Button`. This should only be called
-    /// within `avm2_button`
-    pub fn set_is_button_state(&self, gc_context: MutationContext<'gc, '_>) {
-        self.0
-            .write(gc_context)
-            .flags
-            .set(MovieClipFlags::IS_BUTTON_STATE, true)
-    }
-
     pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if self.forced_button_mode()
             || self
@@ -4438,14 +4418,12 @@ bitflags! {
         /// that happen while those tags run should cancel the loop.
         const LOOP_QUEUED = 1 << 4;
 
-        const IS_BUTTON_STATE = 1 << 5;
-
         /// Flag set when we should skip running our next 'enterFrame'
         /// for ourself *only* (we still run children).
         /// This is set for objects constructed from ActionScript,
         /// which are observed to lag behind objects placed by the timeline
         /// (even if they are both placed in the same frame)
-        const SKIP_NEXT_ENTER_FRAME          = 1 << 6;
+        const SKIP_NEXT_ENTER_FRAME          = 1 << 5;
     }
 }
 
