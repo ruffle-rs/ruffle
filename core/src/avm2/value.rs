@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
+use crate::avm2::error::type_error;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
@@ -659,7 +660,14 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                Err("TypeError: cannot convert object to string".into())
+                Err(Error::AvmError(type_error(
+                    activation,
+                    &format!(
+                        "Cannot convert {} to primitive.",
+                        o.instance_of_class_name(activation.context.gc_context)
+                    ),
+                    1050,
+                )?))
             }
             Value::Object(o) if hint == Hint::Number => {
                 let mut prim = *self;
@@ -681,7 +689,14 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                Err("TypeError: cannot convert object to number".into())
+                Err(Error::AvmError(type_error(
+                    activation,
+                    &format!(
+                        "Cannot convert {} to primitive.",
+                        o.instance_of_class_name(activation.context.gc_context)
+                    ),
+                    1050,
+                )?))
             }
             _ => Ok(*self),
         }
