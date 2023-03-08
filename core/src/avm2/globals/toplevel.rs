@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{AvmString, WStr, WString};
 use crate::stub::Stub;
+use ruffle_wstr::Integer;
 use std::borrow::Cow;
 use std::fmt::Write;
 
@@ -264,6 +265,53 @@ pub fn escape<'gc>(
         }
     }
 
+    Ok(AvmString::new(activation.context.gc_context, output).into())
+}
+
+pub fn unescape<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = match args.first() {
+        None => return Ok("undefined".into()),
+        Some(Value::Undefined) => return Ok("null".into()),
+        Some(value) => value.coerce_to_string(activation)?,
+    };
+
+    let mut output = WString::new();
+    let mut index = 0;
+    while let Some(byte) = value.get(index) {
+        index += 1;
+        if byte != b'%' as u16 {
+            output.push(byte);
+            continue;
+        }
+
+        let prev_index = index;
+        let len = match value.get(index) {
+            // 0x75 == 'u'
+            Some(0x75) => {
+                // increment one to consume the 'u'
+                index += 1;
+                4
+            }
+            _ => 2,
+        };
+
+        if let Some(x) = value
+            .slice(index..)
+            .and_then(|v| v.slice(..len))
+            .and_then(|v| u32::from_wstr_radix(v, 16).ok())
+        {
+            // NOTE: Yes, unpaired surrogates are allowed
+            output.push(x as u16);
+            index += len;
+        } else {
+            output.push(b'%' as u16);
+            index = prev_index;
+        }
+    }
     Ok(AvmString::new(activation.context.gc_context, output).into())
 }
 
