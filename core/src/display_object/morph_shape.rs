@@ -204,7 +204,7 @@ impl MorphShapeStatic {
                 gc_context: context.gc_context,
             };
             let shape = DistilledShape::from_shape(&frame.shape, &bitmap_source, context.renderer);
-            let handle = context.renderer.register_shape(shape, &bitmap_source);
+            let handle = context.renderer.register_shape(shape);
             frame.shape_handle = Some(handle);
             handle
         }

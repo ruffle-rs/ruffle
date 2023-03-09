@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
@@ -19,17 +19,8 @@ pub trait RenderBackend: Downcast {
     // Do not call this method directly - use `player.set_viewport_dimensions`,
     // which will ensure that the stage is properly updated as well.
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions);
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle;
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    );
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle);
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
     /// Creates a new `RenderBackend` which renders directly

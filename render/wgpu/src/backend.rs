@@ -13,7 +13,7 @@ use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
@@ -373,11 +373,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
         let meshes = self.register_shape_internal(shape);
         self.meshes.push(meshes);
@@ -385,12 +381,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
         let mesh = self.register_shape_internal(shape);
         self.meshes[handle.0] = mesh;
     }

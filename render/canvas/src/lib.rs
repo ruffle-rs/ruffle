@@ -5,9 +5,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
-};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
@@ -436,23 +434,14 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
         let data = swf_shape_to_canvas_commands(shape, self);
         self.shapes.push(data);
         handle
     }
 
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
         let data = swf_shape_to_canvas_commands(shape, self);
         self.shapes[handle.0] = data;
     }
@@ -462,16 +451,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         let (fills, strokes) =
             ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
 
-        self.register_shape(
-            DistilledShape {
-                fills,
-                strokes,
-                shape_bounds: shape.shape_bounds.clone(),
-                edge_bounds: shape.edge_bounds.clone(),
-                id: shape.id,
-            },
-            &NullBitmapSource,
-        )
+        self.register_shape(DistilledShape {
+            fills,
+            strokes,
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
+            id: shape.id,
+        })
     }
 
     fn render_offscreen(

@@ -10,9 +10,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
-};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
@@ -981,11 +979,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.viewport_scale_factor = dimensions.scale_factor
     }
 
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
         match self.register_shape_internal(shape) {
             Ok(mesh) => self.meshes.push(mesh),
@@ -994,12 +988,7 @@ impl RenderBackend for WebGlRenderBackend {
         handle
     }
 
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
+    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
         self.delete_mesh(&self.meshes[handle.0]);
         match self.register_shape_internal(shape) {
             Ok(mesh) => self.meshes[handle.0] = mesh,

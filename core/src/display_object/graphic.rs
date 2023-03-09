@@ -54,7 +54,7 @@ impl<'gc> Graphic<'gc> {
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
-            render_handle: Some(context.renderer.register_shape(shape, &bitmap_source)),
+            render_handle: Some(context.renderer.register_shape(shape)),
             shape: swf_shape,
             movie,
         };

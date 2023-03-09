@@ -43,20 +43,10 @@ impl RenderBackend for NullRenderer {
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         self.dimensions = dimensions;
     }
-    fn register_shape(
-        &mut self,
-        _shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape(&mut self, _shape: DistilledShape) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn replace_shape(
-        &mut self,
-        _shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-        _handle: ShapeHandle,
-    ) {
-    }
+    fn replace_shape(&mut self, _shape: DistilledShape, _handle: ShapeHandle) {}
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }

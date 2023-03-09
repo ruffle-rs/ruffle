@@ -239,10 +239,10 @@ impl Drawing {
                 id: 0,
             };
             if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, self, handle);
+                context.renderer.replace_shape(shape, handle);
             } else {
                 self.render_handle
-                    .set(Some(context.renderer.register_shape(shape, self)));
+                    .set(Some(context.renderer.register_shape(shape)));
             }
         }
 
