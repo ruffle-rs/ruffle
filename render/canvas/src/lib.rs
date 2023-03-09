@@ -839,7 +839,7 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
-    for path in &shape.paths {
+    for path in [&shape.fills, &shape.strokes].into_iter().flatten() {
         match path {
             DrawPath::Fill {
                 commands, style, ..

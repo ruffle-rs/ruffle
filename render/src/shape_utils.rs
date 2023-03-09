@@ -78,7 +78,8 @@ pub enum DrawPath<'a> {
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DistilledShape<'a> {
-    pub paths: Vec<DrawPath<'a>>,
+    pub fills: Vec<DrawPath<'a>>,
+    pub strokes: Vec<DrawPath<'a>>,
     pub shape_bounds: Rectangle<Twips>,
     pub edge_bounds: Rectangle<Twips>,
     pub id: CharacterId,
@@ -86,8 +87,10 @@ pub struct DistilledShape<'a> {
 
 impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
+        let (fills, strokes) = ShapeConverter::from_shape(shape).into_commands();
         Self {
-            paths: ShapeConverter::from_shape(shape).into_commands(),
+            fills,
+            strokes,
             shape_bounds: shape.shape_bounds.clone(),
             edge_bounds: shape.edge_bounds.clone(),
             id: shape.id,
@@ -338,7 +341,8 @@ pub struct ShapeConverter<'a> {
     strokes: Vec<PendingPath>,
 
     // Output.
-    commands: Vec<DrawPath<'a>>,
+    fill_commands: Vec<DrawPath<'a>>,
+    stroke_commands: Vec<DrawPath<'a>>,
 }
 
 impl<'a> ShapeConverter<'a> {
@@ -361,11 +365,12 @@ impl<'a> ShapeConverter<'a> {
             fills: vec![PendingPath::new(); shape.styles.fill_styles.len()],
             strokes: vec![PendingPath::new(); shape.styles.line_styles.len()],
 
-            commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
+            fill_commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
+            stroke_commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
         }
     }
 
-    fn into_commands(mut self) -> Vec<DrawPath<'a>> {
+    fn into_commands(mut self) -> (Vec<DrawPath<'a>>, Vec<DrawPath<'a>>) {
         // As u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
         let mut num_fill_styles = self.fill_styles.len() as u32;
         let mut num_line_styles = self.line_styles.len() as u32;
@@ -469,7 +474,7 @@ impl<'a> ShapeConverter<'a> {
 
         // Flush any open paths.
         self.flush_layer();
-        self.commands
+        (self.fill_commands, self.stroke_commands)
     }
 
     /// Adds a point to the current path for the active fills/strokes.
@@ -500,7 +505,6 @@ impl<'a> ShapeConverter<'a> {
     fn flush_layer(&mut self) {
         self.flush_paths();
 
-        // Draw fills, and then strokes.
         // Paths are drawn in order of style id, not based on the order of the draw commands.
         for (i, path) in self.fills.iter_mut().enumerate() {
             // These invariants are checked above (any invalid/empty fill ID should not have been added).
@@ -509,14 +513,13 @@ impl<'a> ShapeConverter<'a> {
                 continue;
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
-            self.commands.push(DrawPath::Fill {
+            self.fill_commands.push(DrawPath::Fill {
                 style,
                 commands: path.to_draw_commands().collect(),
             });
             path.segments.clear();
         }
 
-        // Strokes are drawn last because they always appear on top of fills in the same layer.
         // Because path segments can either be open or closed, we convert each stroke segment into
         // a separate draw command.
         for (i, path) in self.strokes.iter_mut().enumerate() {
@@ -526,7 +529,7 @@ impl<'a> ShapeConverter<'a> {
                 if segment.is_empty() {
                     continue;
                 }
-                self.commands.push(DrawPath::Stroke {
+                self.stroke_commands.push(DrawPath::Stroke {
                     style,
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
@@ -595,7 +598,7 @@ mod tests {
                 delta_y: Twips::from_pixels(-100.0),
             },
         ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
@@ -621,7 +624,8 @@ mod tests {
                 },
             ],
         }];
-        assert_eq!(commands, expected);
+        assert_eq!(fills, expected);
+        assert_eq!(strokes, vec![]);
     }
 
     /// A solid square with one edge flipped (fillstyle0 instead of fillstyle1).
@@ -659,7 +663,7 @@ mod tests {
                 delta_y: Twips::from_pixels(100.0),
             },
         ]);
-        let commands = ShapeConverter::from_shape(&shape).into_commands();
+        let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![DrawPath::Fill {
             style: &FILL_STYLES[0],
             commands: vec![
@@ -685,7 +689,8 @@ mod tests {
                 },
             ],
         }];
-        assert_eq!(commands, expected);
+        assert_eq!(fills, expected);
+        assert_eq!(strokes, vec![]);
     }
 }
 

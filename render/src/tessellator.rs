@@ -40,7 +40,7 @@ impl ShapeTessellator {
     ) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
-        for path in shape.paths {
+        for path in [shape.fills, shape.strokes].into_iter().flatten() {
             let (fill_style, lyon_path, next_is_stroke) = match &path {
                 DrawPath::Fill { style, commands } => {
                     (*style, ruffle_path_to_lyon_path(commands, true), false)

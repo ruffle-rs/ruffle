@@ -62,7 +62,7 @@ impl Drawing {
         };
 
         let shape: DistilledShape = shape.into();
-        for path in shape.paths {
+        for path in [shape.fills, shape.strokes].into_iter().flatten() {
             match path {
                 DrawPath::Stroke {
                     style,
@@ -211,18 +211,19 @@ impl Drawing {
     pub fn render(&self, context: &mut RenderContext) {
         if self.dirty.get() {
             self.dirty.set(false);
-            let mut paths = Vec::with_capacity(self.paths.len());
+            let mut fills = Vec::with_capacity(self.paths.len());
+            let mut strokes = Vec::with_capacity(self.paths.len());
 
             for path in &self.paths {
                 match path {
                     DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
+                        fills.push(DrawPath::Fill {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
                         });
                     }
                     DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
+                        strokes.push(DrawPath::Stroke {
                             style: &line.style,
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
@@ -232,7 +233,7 @@ impl Drawing {
             }
 
             if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
+                fills.push(DrawPath::Fill {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
                 })
@@ -249,7 +250,7 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                paths.push(DrawPath::Stroke {
+                strokes.push(DrawPath::Stroke {
                     style: &line.style,
                     commands,
                     is_closed,
@@ -267,7 +268,7 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                paths.push(DrawPath::Stroke {
+                strokes.push(DrawPath::Stroke {
                     style: &line.style,
                     commands,
                     is_closed,
@@ -275,7 +276,8 @@ impl Drawing {
             }
 
             let shape = DistilledShape {
-                paths,
+                fills,
+                strokes,
                 shape_bounds: self.shape_bounds.clone(),
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
