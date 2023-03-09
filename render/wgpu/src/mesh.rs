@@ -16,10 +16,77 @@ use swf::{CharacterId, GradientInterpolation};
 const GRADIENT_SIZE: usize = 256;
 
 #[derive(Debug)]
+pub struct ShapeMeshes {
+    pub fill: Mesh,
+    pub stroke: Mesh,
+}
+
+#[derive(Debug)]
 pub struct Mesh {
     pub draws: Vec<Draw>,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+}
+
+impl Mesh {
+    pub fn build<T: RenderTarget>(
+        backend: &mut WgpuRenderBackend<T>,
+        bitmap_source: &dyn BitmapSource,
+        lyon_mesh: &[LyonDraw],
+        shape_id: CharacterId,
+    ) -> Self {
+        let mut draws = Vec::with_capacity(lyon_mesh.len());
+        let mut uniform_buffer = BufferBuilder::new(
+            backend
+                .descriptors()
+                .limits
+                .min_uniform_buffer_offset_alignment as usize,
+        );
+        let mut vertex_buffer = BufferBuilder::new(0);
+        let mut index_buffer = BufferBuilder::new(0);
+        for draw in lyon_mesh {
+            let draw_id = draws.len();
+            if let Some(draw) = PendingDraw::new(
+                backend,
+                bitmap_source,
+                draw,
+                shape_id,
+                draw_id,
+                &mut uniform_buffer,
+                &mut vertex_buffer,
+                &mut index_buffer,
+            ) {
+                draws.push(draw);
+            }
+        }
+
+        let uniform_buffer = uniform_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} uniforms", shape_id),
+            wgpu::BufferUsages::UNIFORM,
+        );
+        let vertex_buffer = vertex_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} vertices", shape_id),
+            wgpu::BufferUsages::VERTEX,
+        );
+        let index_buffer = index_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} indices", shape_id),
+            wgpu::BufferUsages::INDEX,
+        );
+
+        let draws = draws
+            .into_iter()
+            .map(|d| d.finish(backend.descriptors(), &uniform_buffer))
+            .collect();
+
+        Self {
+            draws,
+            vertex_buffer,
+            index_buffer,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -57,7 +124,7 @@ impl PendingDraw {
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
-        draw: LyonDraw,
+        draw: &LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffer: &mut BufferBuilder,
@@ -65,21 +132,17 @@ impl PendingDraw {
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
         let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
-            let vertices: Vec<_> = draw
-                .vertices
-                .into_iter()
-                .map(PosColorVertex::from)
-                .collect();
+            let vertices: Vec<_> = draw.vertices.iter().map(PosColorVertex::from).collect();
             vertex_buffer.add(&vertices)
         } else {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+            let vertices: Vec<_> = draw.vertices.iter().map(PosVertex::from).collect();
             vertex_buffer.add(&vertices)
         };
 
         let indices = index_buffer.add(&draw.indices);
 
         let index_count = draw.indices.len() as u32;
-        let draw_type = match draw.draw_type {
+        let draw_type = match &draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
             TessDrawType::Gradient(gradient) => PendingDrawType::gradient(
                 backend.descriptors(),
@@ -141,7 +204,7 @@ impl PendingDrawType {
 
     pub fn gradient(
         descriptors: &Descriptors,
-        gradient: Gradient,
+        gradient: &Gradient,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffers: &mut BufferBuilder,
@@ -237,7 +300,7 @@ impl PendingDrawType {
     }
 
     pub fn bitmap(
-        bitmap: Bitmap,
+        bitmap: &Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
         source: &dyn BitmapSource,

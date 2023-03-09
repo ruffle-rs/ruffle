@@ -110,8 +110,8 @@ struct PosVertex {
     position: [f32; 2],
 }
 
-impl From<TessVertex> for PosVertex {
-    fn from(vertex: TessVertex) -> Self {
+impl From<&TessVertex> for PosVertex {
+    fn from(vertex: &TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
         }
@@ -125,8 +125,8 @@ struct PosColorVertex {
     color: [f32; 4],
 }
 
-impl From<TessVertex> for PosColorVertex {
-    fn from(vertex: TessVertex) -> Self {
+impl From<&TessVertex> for PosColorVertex {
+    fn from(vertex: &TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
             color: [
@@ -148,8 +148,8 @@ struct GradientUniforms {
     repeat: i32,
 }
 
-impl From<TessGradient> for GradientUniforms {
-    fn from(gradient: TessGradient) -> Self {
+impl From<&TessGradient> for GradientUniforms {
+    fn from(gradient: &TessGradient) -> Self {
         Self {
             focal_point: gradient.focal_point.to_f32().clamp(-0.98, 0.98),
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,

@@ -1,7 +1,6 @@
-use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
-use crate::mesh::{Mesh, PendingDraw};
+use crate::mesh::{Mesh, ShapeMeshes};
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
@@ -36,7 +35,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     color_buffers_storage: BufferStorage<ColorAdjustments>,
     target: T,
     surface: Surface,
-    meshes: Vec<Mesh>,
+    meshes: Vec<ShapeMeshes>,
     fill_tessellator: ShapeFillTessellator,
     stroke_tessellator: ShapeStrokeTessellator,
     // This is currently unused - we just store it to report in
@@ -223,64 +222,18 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
-    ) -> Mesh {
+    ) -> ShapeMeshes {
         let shape_id = shape.id;
-        let mut lyon_mesh = self
+        let fill_mesh = self
             .fill_tessellator
             .tessellate_shape(&shape, bitmap_source);
-        lyon_mesh.append(
-            &mut self
-                .stroke_tessellator
-                .tessellate_shape(&shape, bitmap_source),
-        );
+        let stroke_mesh = self
+            .stroke_tessellator
+            .tessellate_shape(&shape, bitmap_source);
 
-        let mut draws = Vec::with_capacity(lyon_mesh.len());
-        let mut uniform_buffer = BufferBuilder::new(
-            self.descriptors.limits.min_uniform_buffer_offset_alignment as usize,
-        );
-        let mut vertex_buffer = BufferBuilder::new(0);
-        let mut index_buffer = BufferBuilder::new(0);
-        for draw in lyon_mesh {
-            let draw_id = draws.len();
-            if let Some(draw) = PendingDraw::new(
-                self,
-                bitmap_source,
-                draw,
-                shape_id,
-                draw_id,
-                &mut uniform_buffer,
-                &mut vertex_buffer,
-                &mut index_buffer,
-            ) {
-                draws.push(draw);
-            }
-        }
-
-        let uniform_buffer = uniform_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} uniforms", shape_id),
-            wgpu::BufferUsages::UNIFORM,
-        );
-        let vertex_buffer = vertex_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} vertices", shape_id),
-            wgpu::BufferUsages::VERTEX,
-        );
-        let index_buffer = index_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} indices", shape_id),
-            wgpu::BufferUsages::INDEX,
-        );
-
-        let draws = draws
-            .into_iter()
-            .map(|d| d.finish(&self.descriptors, &uniform_buffer))
-            .collect();
-
-        Mesh {
-            draws,
-            vertex_buffer,
-            index_buffer,
+        ShapeMeshes {
+            fill: Mesh::build(self, bitmap_source, &fill_mesh, shape_id),
+            stroke: Mesh::build(self, bitmap_source, &stroke_mesh, shape_id),
         }
     }
 
@@ -432,8 +385,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes.push(mesh);
+        let meshes = self.register_shape_internal(shape, bitmap_source);
+        self.meshes.push(meshes);
         handle
     }
 

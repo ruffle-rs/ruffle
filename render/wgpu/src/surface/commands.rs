@@ -3,7 +3,7 @@ use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::TexturePool;
 use crate::globals::Globals;
-use crate::mesh::{DrawType, Mesh};
+use crate::mesh::{DrawType, Mesh, ShapeMeshes};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
@@ -24,7 +24,7 @@ use super::target::PoolOrArcTexture;
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
-    meshes: &'global Vec<Mesh>,
+    meshes: &'global Vec<ShapeMeshes>,
     descriptors: &'global Descriptors,
     num_masks: u32,
     mask_state: MaskState,
@@ -39,7 +39,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'frame Pipelines,
-        meshes: &'global Vec<Mesh>,
+        meshes: &'global Vec<ShapeMeshes>,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
@@ -304,16 +304,24 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
 
         let mesh = &self.meshes[shape.0];
+
+        self.draw_mesh(transform, &mesh.fill);
+
+        // Omit strokes when drawing a mask stencil.
+        if self.mask_state != MaskState::DrawMaskStencil
+            && self.mask_state != MaskState::ClearMaskStencil
+        {
+            self.draw_mesh(transform, &mesh.stroke);
+        }
+
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
+    }
+
+    fn draw_mesh(&mut self, transform: &Transform, mesh: &'pass Mesh) {
         for draw in &mesh.draws {
-            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
-                && self.mask_state != MaskState::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
+            if draw.num_indices == 0 {
                 continue;
             }
 
@@ -333,11 +341,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.draw(
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
                 mesh.index_buffer.slice(draw.indices.clone()),
-                num_indices,
+                draw.num_indices,
             );
-        }
-        if cfg!(feature = "render_debug_labels") {
-            self.render_pass.pop_debug_group();
         }
     }
 
@@ -457,7 +462,7 @@ pub fn chunk_blends<'a>(
     color_buffers: &mut UniformBuffer<'a, ColorAdjustments>,
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
-    meshes: &'a Vec<Mesh>,
+    meshes: &'a Vec<ShapeMeshes>,
     quality: StageQuality,
     width: u32,
     height: u32,
