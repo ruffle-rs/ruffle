@@ -178,7 +178,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
+    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
         // Noop
     }
 
@@ -233,10 +233,10 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
-        }
 
-        if run_frame {
-            self.run_frame(context);
+            if run_frame {
+                self.run_frame_avm1(context);
+            }
         }
     }
 

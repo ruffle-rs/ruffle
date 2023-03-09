@@ -348,10 +348,6 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
-        if let Some(child) = child {
-            child.run_frame_avm2(context);
-        }
-
         if is_cur_state {
             if let Some(child) = child {
                 child.run_frame_scripts(context);
@@ -426,13 +422,9 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         self.set_default_instance_name(context);
-
-        if run_frame {
-            self.run_frame_avm2(context);
-        }
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
@@ -555,13 +547,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 self.set_state(context, ButtonState::Up);
 
-                //NOTE: Yes, we do have to run these in a different order from the
-                //regular run_frame method.
-                up_state.run_frame_avm2(context);
-                over_state.run_frame_avm2(context);
-                down_state.run_frame_avm2(context);
-                hit_area.run_frame_avm2(context);
-
                 up_state.run_frame_scripts(context);
                 over_state.run_frame_scripts(context);
                 down_state.run_frame_scripts(context);
@@ -585,33 +570,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                     tracing::error!("Got {} when constructing AVM2 side of button", e);
                 }
             }
-        }
-    }
-
-    fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if self.0.read().skip_current_frame {
-            self.0.write(context.gc_context).skip_current_frame = false;
-            return;
-        }
-
-        let hit_area = self.0.read().hit_area;
-        if let Some(hit_area) = hit_area {
-            hit_area.run_frame_avm2(context);
-        }
-
-        let up_state = self.0.read().up_state;
-        if let Some(up_state) = up_state {
-            up_state.run_frame_avm2(context);
-        }
-
-        let down_state = self.0.read().down_state;
-        if let Some(down_state) = down_state {
-            down_state.run_frame_avm2(context);
-        }
-
-        let over_state = self.0.read().over_state;
-        if let Some(over_state) = over_state {
-            over_state.run_frame_avm2(context);
         }
     }
 

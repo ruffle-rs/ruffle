@@ -444,10 +444,10 @@ impl<'gc> Avm1<'gc> {
         // Remove pending objects
         Self::remove_pending(context);
 
-        // In AVM1, we only ever execute the update phase, and all the work that
+        // In AVM1, we only ever execute the idle phase, and all the work that
         // would ordinarily be phased is instead run all at once in whatever order
         // the SWF requests it.
-        *context.frame_phase = FramePhase::Update;
+        *context.frame_phase = FramePhase::Idle;
 
         // AVM1 execution order is determined by the global execution list, based on instantiation order.
         let mut prev: Option<DisplayObject<'gc>> = None;
@@ -463,7 +463,7 @@ impl<'gc> Avm1<'gc> {
                 }
                 clip.set_next_avm1_clip(context.gc_context, None);
             } else {
-                clip.run_frame(context);
+                clip.run_frame_avm1(context);
                 prev = Some(clip);
             }
         }

@@ -393,8 +393,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         self.seek(context, starting_seek);
 
-        if run_frame {
-            self.run_frame(context);
+        if !context.is_action_script_3() && run_frame {
+            self.run_frame_avm1(context);
         }
     }
 

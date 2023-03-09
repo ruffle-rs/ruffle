@@ -1578,7 +1578,7 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
                     if !movie.is_action_script_3() {
-                        child.run_frame(context);
+                        child.run_frame_avm1(context);
                     }
                 }
 
@@ -1970,7 +1970,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.write(activation.context.gc_context).object = Some(object.into());
 
                     if run_frame {
-                        self.run_frame(&mut activation.context);
+                        self.run_frame_avm1(&mut activation.context);
                     }
 
                     if let Some(init_object) = init_object {
@@ -1997,7 +1997,7 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).object = Some(object.into());
 
             if run_frame {
-                self.run_frame(context);
+                self.run_frame_avm1(context);
             }
 
             if let Some(init_object) = init_object {
@@ -2045,7 +2045,7 @@ impl<'gc> MovieClip<'gc> {
                 false,
             );
         } else if run_frame {
-            self.run_frame(context);
+            self.run_frame_avm1(context);
         }
 
         // If this text field has a variable set, initialize text field binding.
@@ -2415,7 +2415,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn run_frame_avm1(&self, context: &mut UpdateContext<'_, 'gc>) {
         if !context.is_action_script_3() {
             // Run my load/enterFrame clip event.
             let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
