@@ -3,10 +3,11 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, FillPath, StrokePath};
-use std::borrow::Cow;
+use ruffle_render::shape_utils::{
+    DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, StrokePath,
+};
 use std::cell::Cell;
-use swf::{FillStyle, LineStyle, Rectangle, Twips};
+use swf::{Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -45,44 +46,6 @@ impl Drawing {
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
         }
-    }
-
-    pub fn from_swf_shape(shape: &swf::Shape) -> Self {
-        let mut this = Self {
-            render_handle: Cell::new(None),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
-            dirty: Cell::new(true),
-            paths: Vec::new(),
-            bitmaps: Vec::new(),
-            current_fill: None,
-            current_line: None,
-            pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
-        };
-
-        let shape: DistilledShape = shape.into();
-        for path in shape.fills {
-            this.set_fill_style(Some(path.style.into_owned()));
-
-            for command in path.commands {
-                this.draw_command(command);
-            }
-
-            this.set_fill_style(None);
-        }
-        for path in shape.strokes {
-            this.set_line_style(Some(path.style.into_owned()));
-
-            for command in path.commands {
-                this.draw_command(command);
-            }
-
-            this.set_line_style(None);
-        }
-
-        this
     }
 
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
@@ -211,13 +174,13 @@ impl Drawing {
                 match path {
                     DrawingPath::Fill(fill) => {
                         fills.push(FillPath {
-                            style: Cow::Borrowed(&fill.style),
+                            style: fill.style.to_owned(),
                             commands: fill.commands.to_owned(),
                         });
                     }
                     DrawingPath::Line(line) => {
                         strokes.push(StrokePath {
-                            style: Cow::Borrowed(&line.style),
+                            style: line.style.to_owned(),
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
                         });
@@ -227,7 +190,7 @@ impl Drawing {
 
             if let Some(fill) = &self.current_fill {
                 fills.push(FillPath {
-                    style: Cow::Borrowed(&fill.style),
+                    style: fill.style.to_owned(),
                     commands: fill.commands.to_owned(),
                 })
             }
@@ -244,7 +207,7 @@ impl Drawing {
                     self.cursor == self.fill_start
                 };
                 strokes.push(StrokePath {
-                    style: Cow::Borrowed(&line.style),
+                    style: line.style.to_owned(),
                     commands,
                     is_closed,
                 })
@@ -262,7 +225,7 @@ impl Drawing {
                     self.cursor == self.fill_start
                 };
                 strokes.push(StrokePath {
-                    style: Cow::Borrowed(&line.style),
+                    style: line.style.to_owned(),
                     commands,
                     is_closed,
                 })

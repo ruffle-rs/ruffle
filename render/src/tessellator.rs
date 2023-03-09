@@ -1,5 +1,5 @@
-use crate::bitmap::BitmapSource;
-use crate::shape_utils::{DistilledShape, DrawCommand};
+use crate::bitmap::BitmapHandle;
+use crate::shape_utils::{DistilledShape, DrawCommand, FillStyle};
 use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -8,7 +8,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use swf::{Color, FillStyle, GradientRecord};
+use swf::{Color, GradientRecord};
 use tracing::instrument;
 
 pub struct ShapeFillTessellator {
@@ -27,11 +27,7 @@ impl ShapeFillTessellator {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub fn tessellate_shape(
-        &mut self,
-        shape: &DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> Mesh {
+    pub fn tessellate_shape(&mut self, shape: &DistilledShape) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
         for path in &shape.fills {
@@ -39,7 +35,7 @@ impl ShapeFillTessellator {
                 (&path.style, ruffle_path_to_lyon_path(&path.commands, true));
 
             let (draw, color, needs_flush) =
-                if let Some((draw, color, needs_flush)) = fill_to_draw(bitmap_source, fill_style) {
+                if let Some((draw, color, needs_flush)) = fill_to_draw(fill_style) {
                     (draw, color, needs_flush)
                 } else {
                     continue;
@@ -113,22 +109,18 @@ impl ShapeStrokeTessellator {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub fn tessellate_shape(
-        &mut self,
-        shape: &DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> Mesh {
+    pub fn tessellate_shape(&mut self, shape: &DistilledShape) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
 
         for path in &shape.strokes {
             let (fill_style, lyon_path) = (
-                path.style.fill_style(),
+                &path.style.fill_style,
                 ruffle_path_to_lyon_path(&path.commands, path.is_closed),
             );
 
             let (draw, color, needs_flush) =
-                if let Some((draw, color, needs_flush)) = fill_to_draw(bitmap_source, fill_style) {
+                if let Some((draw, color, needs_flush)) = fill_to_draw(fill_style) {
                     (draw, color, needs_flush)
                 } else {
                     continue;
@@ -262,9 +254,9 @@ pub struct Vertex {
 #[derive(Clone, Debug)]
 pub struct Bitmap {
     pub matrix: [[f32; 3]; 3],
-    pub bitmap_id: u16,
     pub is_smoothed: bool,
     pub is_repeating: bool,
+    pub handle: Option<BitmapHandle>,
 }
 
 #[allow(clippy::many_single_char_names)]
@@ -409,13 +401,10 @@ pub enum GradientType {
     Focal,
 }
 
-fn fill_to_draw(
-    bitmap_source: &dyn BitmapSource,
-    fill_style: &FillStyle,
-) -> Option<(DrawType, Color, bool)> {
+fn fill_to_draw(fill_style: &FillStyle) -> Option<(DrawType, Color, bool)> {
     match fill_style {
-        swf::FillStyle::Color(color) => Some((DrawType::Color, color.clone(), false)),
-        swf::FillStyle::LinearGradient(gradient) => Some((
+        FillStyle::Color(color) => Some((DrawType::Color, color.clone(), false)),
+        FillStyle::LinearGradient(gradient) => Some((
             DrawType::Gradient(swf_gradient_to_uniforms(
                 GradientType::Linear,
                 gradient,
@@ -424,7 +413,7 @@ fn fill_to_draw(
             swf::Color::WHITE,
             true,
         )),
-        swf::FillStyle::RadialGradient(gradient) => Some((
+        FillStyle::RadialGradient(gradient) => Some((
             DrawType::Gradient(swf_gradient_to_uniforms(
                 GradientType::Radial,
                 gradient,
@@ -433,7 +422,7 @@ fn fill_to_draw(
             swf::Color::WHITE,
             true,
         )),
-        swf::FillStyle::FocalGradient {
+        FillStyle::FocalGradient {
             gradient,
             focal_point,
         } => Some((
@@ -445,13 +434,14 @@ fn fill_to_draw(
             swf::Color::WHITE,
             true,
         )),
-        swf::FillStyle::Bitmap {
-            id,
+        FillStyle::Bitmap {
+            size,
+            handle,
             matrix,
             is_smoothed,
             is_repeating,
         } => {
-            if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
+            if let Some(bitmap) = size {
                 Some((
                     DrawType::Bitmap(Bitmap {
                         matrix: swf_bitmap_to_gl_matrix(
@@ -459,7 +449,7 @@ fn fill_to_draw(
                             bitmap.width.into(),
                             bitmap.height.into(),
                         ),
-                        bitmap_id: *id,
+                        handle: handle.to_owned(),
                         is_smoothed: *is_smoothed,
                         is_repeating: *is_repeating,
                     }),

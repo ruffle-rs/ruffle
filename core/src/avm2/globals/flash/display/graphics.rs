@@ -8,9 +8,9 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::WStr;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::shape_utils::{DrawCommand, FillStyle, LineStyle};
 use std::f64::consts::FRAC_1_SQRT_2;
-use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
+use swf::{Color, Fixed8, LineCapStyle, LineJoinStyle, Twips};
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
 /// `alpha` is normalized from 0.0 - 1.0.

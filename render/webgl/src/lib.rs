@@ -16,7 +16,7 @@ use ruffle_render::bitmap::{
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::shape_utils::{DistilledShape, ShapeConverter};
 use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeFillTessellator, ShapeStrokeTessellator,
     Vertex as TessVertex,
@@ -576,21 +576,11 @@ impl WebGlRenderBackend {
         Ok(())
     }
 
-    fn register_shape_internal(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> Result<Mesh, Error> {
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> Result<Mesh, Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
-        let mut lyon_mesh = self
-            .fill_tessellator
-            .tessellate_shape(&shape, bitmap_source);
-        lyon_mesh.append(
-            &mut self
-                .stroke_tessellator
-                .tessellate_shape(&shape, bitmap_source),
-        );
+        let mut lyon_mesh = self.fill_tessellator.tessellate_shape(&shape);
+        lyon_mesh.append(&mut self.stroke_tessellator.tessellate_shape(&shape));
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
@@ -687,7 +677,7 @@ impl WebGlRenderBackend {
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
-                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),
+                        handle: bitmap.handle,
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
                     }),
@@ -994,10 +984,10 @@ impl RenderBackend for WebGlRenderBackend {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        match self.register_shape_internal(shape, bitmap_source) {
+        match self.register_shape_internal(shape) {
             Ok(mesh) => self.meshes.push(mesh),
             Err(e) => log::error!("Couldn't register shape: {:?}", e),
         }
@@ -1007,11 +997,11 @@ impl RenderBackend for WebGlRenderBackend {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
         self.delete_mesh(&self.meshes[handle.0]);
-        match self.register_shape_internal(shape, bitmap_source) {
+        match self.register_shape_internal(shape) {
             Ok(mesh) => self.meshes[handle.0] = mesh,
             Err(e) => log::error!("Couldn't replace shape: {:?}", e),
         }
@@ -1020,7 +1010,16 @@ impl RenderBackend for WebGlRenderBackend {
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        match self.register_shape_internal((&shape).into(), &NullBitmapSource) {
+        let (fills, strokes) =
+            ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
+
+        match self.register_shape_internal(DistilledShape {
+            fills,
+            strokes,
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
+            id: shape.id,
+        }) {
             Ok(mesh) => self.meshes.push(mesh),
             Err(e) => log::error!("Couldn't register glyph shape: {:?}", e),
         }

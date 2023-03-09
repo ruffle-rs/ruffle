@@ -10,6 +10,7 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use gc_arena::MutationContext;
+use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
@@ -17,7 +18,7 @@ use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::shape_utils::{DistilledShape, ShapeConverter};
 use ruffle_render::tessellator::{ShapeFillTessellator, ShapeStrokeTessellator};
 use std::borrow::Cow;
 use std::cell::Cell;
@@ -218,22 +219,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         Ok((adapter, device, queue))
     }
 
-    fn register_shape_internal(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> ShapeMeshes {
+    fn register_shape_internal(&mut self, shape: DistilledShape) -> ShapeMeshes {
         let shape_id = shape.id;
-        let fill_mesh = self
-            .fill_tessellator
-            .tessellate_shape(&shape, bitmap_source);
-        let stroke_mesh = self
-            .stroke_tessellator
-            .tessellate_shape(&shape, bitmap_source);
+        let fill_mesh = self.fill_tessellator.tessellate_shape(&shape);
+        let stroke_mesh = self.stroke_tessellator.tessellate_shape(&shape);
 
         ShapeMeshes {
-            fill: Mesh::build(self, bitmap_source, &fill_mesh, shape_id),
-            stroke: Mesh::build(self, bitmap_source, &stroke_mesh, shape_id),
+            fill: Mesh::build(self, &fill_mesh, shape_id),
+            stroke: Mesh::build(self, &stroke_mesh, shape_id),
             stroke_shape: shape.into_strokes(),
         }
     }
@@ -383,10 +376,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let meshes = self.register_shape_internal(shape, bitmap_source);
+        let meshes = self.register_shape_internal(shape);
         self.meshes.push(meshes);
         handle
     }
@@ -395,10 +388,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let mesh = self.register_shape_internal(shape, bitmap_source);
+        let mesh = self.register_shape_internal(shape);
         self.meshes[handle.0] = mesh;
     }
 
@@ -406,10 +399,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(
-            (&shape).into(),
-            &ruffle_render::backend::null::NullBitmapSource,
-        );
+        let (fills, strokes) =
+            ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
+
+        let mesh = self.register_shape_internal(DistilledShape {
+            fills,
+            strokes,
+            shape_bounds: shape.shape_bounds.clone(),
+            edge_bounds: shape.edge_bounds.clone(),
+            id: shape.id,
+        });
         self.meshes.push(mesh);
         handle
     }

@@ -7,8 +7,6 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
-use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
@@ -20,7 +18,7 @@ const GRADIENT_SIZE: usize = 256;
 pub struct ShapeMeshes {
     pub fill: Mesh,
     pub stroke: Mesh,
-    pub stroke_shape: DistilledShape<'static>,
+    pub stroke_shape: DistilledShape,
 }
 
 #[derive(Debug)]
@@ -33,7 +31,6 @@ pub struct Mesh {
 impl Mesh {
     pub fn build<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
-        bitmap_source: &dyn BitmapSource,
         lyon_mesh: &[LyonDraw],
         shape_id: CharacterId,
     ) -> Self {
@@ -50,7 +47,6 @@ impl Mesh {
             let draw_id = draws.len();
             if let Some(draw) = PendingDraw::new(
                 backend,
-                bitmap_source,
                 draw,
                 shape_id,
                 draw_id,
@@ -125,7 +121,6 @@ impl PendingDraw {
     #[allow(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
-        source: &dyn BitmapSource,
         draw: &LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
@@ -154,7 +149,7 @@ impl PendingDraw {
                 uniform_buffer,
             ),
             TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
+                PendingDrawType::bitmap(bitmap, shape_id, draw_id, uniform_buffer)?
             }
         };
         Some(PendingDraw {
@@ -305,24 +300,26 @@ impl PendingDrawType {
         bitmap: &Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
-        source: &dyn BitmapSource,
-        backend: &mut dyn RenderBackend,
         uniform_buffers: &mut BufferBuilder,
     ) -> Option<Self> {
-        let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
-        let texture = as_texture(&handle);
-        let texture_view = texture.texture.create_view(&Default::default());
-        let texture_transforms_index = create_texture_transforms(&bitmap.matrix, uniform_buffers);
-        let bind_group_label =
-            create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
+        if let Some(handle) = &bitmap.handle {
+            let texture = as_texture(handle);
+            let texture_view = texture.texture.create_view(&Default::default());
+            let texture_transforms_index =
+                create_texture_transforms(&bitmap.matrix, uniform_buffers);
+            let bind_group_label =
+                create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
 
-        Some(PendingDrawType::Bitmap {
-            texture_transforms_index,
-            texture_view,
-            is_repeating: bitmap.is_repeating,
-            is_smoothed: bitmap.is_smoothed,
-            bind_group_label,
-        })
+            Some(PendingDrawType::Bitmap {
+                texture_transforms_index,
+                texture_view,
+                is_repeating: bitmap.is_repeating,
+                is_smoothed: bitmap.is_smoothed,
+                bind_group_label,
+            })
+        } else {
+            None
+        }
     }
 
     pub fn finish(self, descriptors: &Descriptors, uniform_buffer: &wgpu::Buffer) -> DrawType {

@@ -28,7 +28,7 @@ use chrono::Utc;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::shape_utils::{DrawCommand, FillStyle, LineStyle};
 use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, Twips};
@@ -643,7 +643,7 @@ impl<'gc> EditText<'gc> {
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
             let line_style = write.flags.contains(EditTextFlag::BORDER).then_some(
-                swf::LineStyle::new()
+                LineStyle::new()
                     .with_width(Twips::new(1))
                     .with_color(write.border_color.clone()),
             );
@@ -652,7 +652,7 @@ impl<'gc> EditText<'gc> {
             let fill_style = write
                 .flags
                 .contains(EditTextFlag::HAS_BACKGROUND)
-                .then_some(swf::FillStyle::Color(write.background_color.clone()));
+                .then_some(FillStyle::Color(write.background_color.clone()));
             write.drawing.set_fill_style(fill_style);
 
             let width = write.bounds.width();

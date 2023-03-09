@@ -13,6 +13,7 @@ use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::DistilledShape;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -45,16 +46,15 @@ impl<'gc> Graphic<'gc> {
         movie: Arc<SwfMovie>,
     ) -> Self {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
+        let bitmap_source = MovieLibrarySource {
+            library,
+            gc_context: context.gc_context,
+        };
+        let shape = DistilledShape::from_shape(&swf_shape, &bitmap_source, context.renderer);
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
-            render_handle: Some(context.renderer.register_shape(
-                (&swf_shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            )),
+            render_handle: Some(context.renderer.register_shape(shape, &bitmap_source)),
             shape: swf_shape,
             movie,
         };

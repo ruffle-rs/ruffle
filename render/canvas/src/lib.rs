@@ -13,7 +13,9 @@ use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
+use ruffle_render::shape_utils::{
+    DistilledShape, DrawCommand, FillStyle, LineScaleMode, LineScales, ShapeConverter,
+};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
@@ -437,10 +439,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
+        let data = swf_shape_to_canvas_commands(shape, self);
         self.shapes.push(data);
         handle
     }
@@ -448,16 +450,28 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        _bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
+        let data = swf_shape_to_canvas_commands(shape, self);
         self.shapes[handle.0] = data;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into(), &NullBitmapSource)
+        let (fills, strokes) =
+            ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
+
+        self.register_shape(
+            DistilledShape {
+                fills,
+                strokes,
+                shape_bounds: shape.shape_bounds.clone(),
+                edge_bounds: shape.edge_bounds.clone(),
+                id: shape.id,
+            },
+            &NullBitmapSource,
+        )
     }
 
     fn render_offscreen(
@@ -822,11 +836,10 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 }
 
 fn swf_shape_to_canvas_commands(
-    shape: &DistilledShape,
-    bitmap_source: &dyn BitmapSource,
+    shape: DistilledShape,
     backend: &mut WebCanvasRenderBackend,
 ) -> ShapeData {
-    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
+    use swf::{LineCapStyle, LineJoinStyle};
 
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
@@ -838,14 +851,14 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
-    for path in &shape.fills {
+    for path in shape.fills {
         let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
         canvas_path.add_path_with_transformation(
             &draw_commands_to_path2d(&path.commands, false),
             bounds_viewbox_matrix.unchecked_ref(),
         );
 
-        let fill_style = match path.style.as_ref() {
+        let fill_style = match &path.style {
             FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
             FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
                 create_linear_gradient(&backend.context, gradient, true)
@@ -863,17 +876,17 @@ fn swf_shape_to_canvas_commands(
                     .expect("Couldn't create radial gradient"),
             ),
             FillStyle::Bitmap {
-                id,
+                size: _,
+                handle,
                 matrix,
                 is_smoothed,
                 is_repeating,
             } => {
                 let bitmap = if let Some(bitmap) = create_bitmap_pattern(
-                    *id,
+                    handle.to_owned(),
                     *matrix,
                     *is_smoothed,
                     *is_repeating,
-                    bitmap_source,
                     backend,
                 ) {
                     bitmap
@@ -910,17 +923,17 @@ fn swf_shape_to_canvas_commands(
                 focal_point,
             } => CanvasStrokeStyle::Gradient(gradient.clone(), Some(focal_point.to_f64())),
             FillStyle::Bitmap {
-                id,
+                size: _,
+                handle,
                 matrix,
                 is_smoothed,
                 is_repeating,
             } => {
                 let bitmap = if let Some(bitmap) = create_bitmap_pattern(
-                    *id,
+                    handle.to_owned(),
                     *matrix,
                     *is_smoothed,
                     *is_repeating,
-                    bitmap_source,
                     backend,
                 ) {
                     bitmap
@@ -1157,14 +1170,13 @@ fn swf_to_canvas_gradient(
 
 /// Converts an SWF bitmap fill to a canvas pattern.
 fn create_bitmap_pattern(
-    id: swf::CharacterId,
+    handle: Option<BitmapHandle>,
     matrix: swf::Matrix,
     is_smoothed: bool,
     is_repeating: bool,
-    bitmap_source: &dyn BitmapSource,
     backend: &mut WebCanvasRenderBackend,
 ) -> Option<CanvasBitmap> {
-    if let Some(handle) = bitmap_source.bitmap_handle(id, backend) {
+    if let Some(handle) = handle {
         let bitmap = as_bitmap_data(&handle);
         let repeat = if !is_repeating {
             // NOTE: The WebGL backend does clamping in this case, just like
@@ -1180,7 +1192,7 @@ fn create_bitmap_pattern(
         {
             Ok(Some(pattern)) => pattern,
             _ => {
-                log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
+                log::warn!("Unable to create bitmap pattern for bitmap");
                 return None;
             }
         };
@@ -1191,7 +1203,7 @@ fn create_bitmap_pattern(
             smoothed: is_smoothed,
         })
     } else {
-        log::warn!("Couldn't fill shape with unknown bitmap {}", id);
+        log::warn!("Couldn't fill shape with unknown bitmap");
         None
     }
 }

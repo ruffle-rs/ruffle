@@ -1,7 +1,11 @@
+use crate::backend::RenderBackend;
+use crate::bitmap::{BitmapHandle, BitmapSize, BitmapSource};
 use crate::matrix::Matrix;
 use smallvec::SmallVec;
-use std::borrow::Cow;
-use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
+use swf::{
+    CharacterId, Color, Fixed8, Gradient, LineCapStyle, LineJoinStyle, LineStyleFlag, Rectangle,
+    Shape, ShapeRecord, Twips,
+};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
@@ -59,12 +63,239 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
     bounds
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum FillStyle {
+    Color(Color),
+    LinearGradient(Gradient),
+    RadialGradient(Gradient),
+    FocalGradient {
+        gradient: Gradient,
+        focal_point: Fixed8,
+    },
+    Bitmap {
+        size: Option<BitmapSize>,
+        handle: Option<BitmapHandle>,
+        matrix: swf::Matrix,
+        is_smoothed: bool,
+        is_repeating: bool,
+    },
+}
+
+impl FillStyle {
+    fn from_swf(
+        style: &swf::FillStyle,
+        bitmap_source: &dyn BitmapSource,
+        render_backend: &mut dyn RenderBackend,
+    ) -> Self {
+        match style {
+            swf::FillStyle::Color(color) => Self::Color(color.to_owned()),
+            swf::FillStyle::LinearGradient(gradient) => Self::LinearGradient(gradient.to_owned()),
+            swf::FillStyle::RadialGradient(gradient) => Self::RadialGradient(gradient.to_owned()),
+            swf::FillStyle::FocalGradient {
+                gradient,
+                focal_point,
+            } => Self::FocalGradient {
+                gradient: gradient.to_owned(),
+                focal_point: focal_point.to_owned(),
+            },
+            swf::FillStyle::Bitmap {
+                id,
+                matrix,
+                is_smoothed,
+                is_repeating,
+            } => Self::Bitmap {
+                size: bitmap_source.bitmap_size(*id),
+                handle: bitmap_source.bitmap_handle(*id, render_backend),
+                matrix: *matrix,
+                is_smoothed: *is_smoothed,
+                is_repeating: *is_repeating,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LineStyle {
+    pub width: Twips,
+    pub fill_style: FillStyle,
+    pub flags: LineStyleFlag,
+    pub miter_limit: Fixed8,
+}
+
+impl Default for LineStyle {
+    #[inline]
+    fn default() -> Self {
+        // Hairline black stroke.
+        Self {
+            width: Twips::ZERO,
+            fill_style: FillStyle::Color(Color::BLACK),
+            flags: Default::default(),
+            miter_limit: Default::default(),
+        }
+    }
+}
+
+impl LineStyle {
+    fn from_swf(
+        style: &swf::LineStyle,
+        bitmap_source: &dyn BitmapSource,
+        render_backend: &mut dyn RenderBackend,
+    ) -> Self {
+        Self {
+            width: style.width(),
+            fill_style: FillStyle::from_swf(style.fill_style(), bitmap_source, render_backend),
+            flags: style.flags(),
+            miter_limit: style.miter_limit(),
+        }
+    }
+
+    #[inline]
+    pub fn new() -> LineStyle {
+        Default::default()
+    }
+
+    #[inline]
+    pub fn allow_close(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_CLOSE)
+    }
+
+    #[inline]
+    pub fn with_allow_close(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_CLOSE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn allow_scale_x(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_H_SCALE)
+    }
+
+    #[inline]
+    pub fn with_allow_scale_x(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_H_SCALE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn allow_scale_y(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_V_SCALE)
+    }
+
+    #[inline]
+    pub fn with_allow_scale_y(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_V_SCALE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn is_pixel_hinted(&self) -> bool {
+        self.flags.contains(LineStyleFlag::PIXEL_HINTING)
+    }
+
+    #[inline]
+    pub fn with_is_pixel_hinted(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::PIXEL_HINTING, val);
+        self
+    }
+
+    #[inline]
+    pub fn start_cap(&self) -> LineCapStyle {
+        let cap = (self.flags & LineStyleFlag::START_CAP_STYLE).bits() >> 6;
+        LineCapStyle::from_u8(cap as u8).expect("Infallible")
+    }
+
+    #[inline]
+    pub fn with_start_cap(mut self, val: LineCapStyle) -> Self {
+        self.flags -= LineStyleFlag::START_CAP_STYLE;
+        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 6);
+        self
+    }
+
+    #[inline]
+    pub fn end_cap(&self) -> LineCapStyle {
+        let cap = (self.flags & LineStyleFlag::END_CAP_STYLE).bits() >> 8;
+        LineCapStyle::from_u8(cap as u8).expect("Infallible")
+    }
+
+    #[inline]
+    pub fn with_end_cap(mut self, val: LineCapStyle) -> Self {
+        self.flags -= LineStyleFlag::END_CAP_STYLE;
+        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 8);
+        self
+    }
+
+    #[inline]
+    pub fn join_style(&self) -> LineJoinStyle {
+        match self.flags & LineStyleFlag::JOIN_STYLE {
+            LineStyleFlag::ROUND => LineJoinStyle::Round,
+            LineStyleFlag::BEVEL => LineJoinStyle::Bevel,
+            LineStyleFlag::MITER => LineJoinStyle::Miter(self.miter_limit),
+            _ => unreachable!(),
+        }
+    }
+
+    #[inline]
+    pub fn with_join_style(mut self, val: LineJoinStyle) -> Self {
+        self.flags -= LineStyleFlag::JOIN_STYLE;
+        self.flags |= match val {
+            LineJoinStyle::Round => LineStyleFlag::ROUND,
+            LineJoinStyle::Bevel => LineStyleFlag::BEVEL,
+            LineJoinStyle::Miter(miter_limit) => {
+                self.miter_limit = miter_limit;
+                LineStyleFlag::MITER
+            }
+        };
+        self
+    }
+
+    #[inline]
+    pub fn fill_style(&self) -> &FillStyle {
+        &self.fill_style
+    }
+
+    #[inline]
+    pub fn with_fill_style(mut self, val: FillStyle) -> Self {
+        self.flags
+            .set(LineStyleFlag::HAS_FILL, !matches!(val, FillStyle::Color(_)));
+        self.fill_style = val;
+        self
+    }
+
+    #[inline]
+    pub fn with_color(mut self, val: Color) -> Self {
+        self.flags.remove(LineStyleFlag::HAS_FILL);
+        self.fill_style = FillStyle::Color(val);
+        self
+    }
+
+    #[inline]
+    pub fn width(&self) -> Twips {
+        self.width
+    }
+
+    #[inline]
+    pub fn with_width(mut self, val: Twips) -> Self {
+        self.width = val;
+        self
+    }
+
+    #[inline]
+    pub fn flags(&self) -> LineStyleFlag {
+        self.flags
+    }
+
+    #[inline]
+    pub fn miter_limit(&self) -> Fixed8 {
+        self.miter_limit
+    }
+}
+
 /// `StrokePath` represents a stroke.
 /// Strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StrokePath<'a> {
-    pub style: Cow<'a, LineStyle>,
+#[derive(Clone, Debug, PartialEq)]
+pub struct StrokePath {
+    pub style: LineStyle,
     pub is_closed: bool,
     pub commands: Vec<DrawCommand>,
 }
@@ -72,52 +303,47 @@ pub struct StrokePath<'a> {
 /// `StrokePath` represents a solid fill.
 /// Fills are always closed paths.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FillPath<'a> {
-    pub style: Cow<'a, FillStyle>,
+#[derive(Clone, Debug, PartialEq)]
+pub struct FillPath {
+    pub style: FillStyle,
     pub commands: Vec<DrawCommand>,
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DistilledShape<'a> {
-    pub fills: Vec<FillPath<'a>>,
-    pub strokes: Vec<StrokePath<'a>>,
+#[derive(Clone, Debug, PartialEq)]
+pub struct DistilledShape {
+    pub fills: Vec<FillPath>,
+    pub strokes: Vec<StrokePath>,
     pub shape_bounds: Rectangle<Twips>,
     pub edge_bounds: Rectangle<Twips>,
     pub id: CharacterId,
 }
 
-impl<'a> DistilledShape<'a> {
-    pub fn into_strokes(self) -> DistilledShape<'static> {
-        DistilledShape {
-            fills: vec![],
-            strokes: self
-                .strokes
-                .into_iter()
-                .map(|s| StrokePath {
-                    style: Cow::Owned(s.style.into_owned()),
-                    is_closed: s.is_closed,
-                    commands: s.commands,
-                })
-                .collect(),
-            shape_bounds: self.shape_bounds,
-            edge_bounds: self.edge_bounds,
-            id: self.id,
-        }
-    }
-}
-
-impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
-    fn from(shape: &'a Shape) -> Self {
-        let (fills, strokes) = ShapeConverter::from_shape(shape).into_commands();
+impl DistilledShape {
+    pub fn from_shape(
+        shape: &Shape,
+        bitmap_source: &dyn BitmapSource,
+        renderer: &mut dyn RenderBackend,
+    ) -> Self {
+        let (fills, strokes) =
+            ShapeConverter::from_shape(shape, bitmap_source, renderer).into_commands();
         Self {
             fills,
             strokes,
             shape_bounds: shape.shape_bounds.clone(),
             edge_bounds: shape.edge_bounds.clone(),
             id: shape.id,
+        }
+    }
+
+    pub fn into_strokes(self) -> DistilledShape {
+        DistilledShape {
+            fills: vec![],
+            strokes: self.strokes,
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: self.id,
         }
     }
 }
@@ -346,6 +572,8 @@ impl ActivePath {
 pub struct ShapeConverter<'a> {
     // SWF shape commands.
     iter: std::slice::Iter<'a, swf::ShapeRecord>,
+    bitmap_source: &'a dyn BitmapSource,
+    renderer: &'a mut dyn RenderBackend,
 
     // Pen position.
     x: Twips,
@@ -365,16 +593,22 @@ pub struct ShapeConverter<'a> {
     strokes: Vec<PendingPath>,
 
     // Output.
-    fill_commands: Vec<FillPath<'a>>,
-    stroke_commands: Vec<StrokePath<'a>>,
+    fill_commands: Vec<FillPath>,
+    stroke_commands: Vec<StrokePath>,
 }
 
 impl<'a> ShapeConverter<'a> {
     const DEFAULT_CAPACITY: usize = 512;
 
-    fn from_shape(shape: &'a swf::Shape) -> Self {
+    pub fn from_shape(
+        shape: &'a swf::Shape,
+        bitmap_source: &'a dyn BitmapSource,
+        renderer: &'a mut dyn RenderBackend,
+    ) -> Self {
         ShapeConverter {
             iter: shape.shape.iter(),
+            bitmap_source,
+            renderer,
 
             x: Twips::ZERO,
             y: Twips::ZERO,
@@ -394,7 +628,7 @@ impl<'a> ShapeConverter<'a> {
         }
     }
 
-    fn into_commands(mut self) -> (Vec<FillPath<'a>>, Vec<StrokePath<'a>>) {
+    pub fn into_commands(mut self) -> (Vec<FillPath>, Vec<StrokePath>) {
         // As u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
         let mut num_fill_styles = self.fill_styles.len() as u32;
         let mut num_line_styles = self.line_styles.len() as u32;
@@ -538,7 +772,7 @@ impl<'a> ShapeConverter<'a> {
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
             self.fill_commands.push(FillPath {
-                style: Cow::Borrowed(style),
+                style: FillStyle::from_swf(style, self.bitmap_source, self.renderer),
                 commands: path.to_draw_commands().collect(),
             });
             path.segments.clear();
@@ -554,7 +788,7 @@ impl<'a> ShapeConverter<'a> {
                     continue;
                 }
                 self.stroke_commands.push(StrokePath {
-                    style: Cow::Borrowed(style),
+                    style: LineStyle::from_swf(style, self.bitmap_source, self.renderer),
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
                 });
@@ -567,15 +801,24 @@ impl<'a> ShapeConverter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::backend::null::{NullBitmapSource, NullRenderer};
+    use crate::backend::ViewportDimensions;
 
-    const FILL_STYLES: [FillStyle; 1] = [FillStyle::Color(swf::Color {
+    const FILL_STYLES: [swf::FillStyle; 1] = [swf::FillStyle::Color(swf::Color {
         r: 255,
         g: 0,
         b: 0,
         a: 255,
     })];
 
-    const LINE_STYLES: [LineStyle; 0] = [];
+    const FINAL_FILL_STYLE: FillStyle = FillStyle::Color(swf::Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    });
+
+    const LINE_STYLES: [swf::LineStyle; 0] = [];
 
     /// Convenience method to quickly make a shape,
     fn build_shape(records: Vec<ShapeRecord>) -> swf::Shape {
@@ -622,9 +865,16 @@ mod tests {
                 delta_y: Twips::from_pixels(-100.0),
             },
         ]);
-        let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
+        let mut render_backend = NullRenderer::new(ViewportDimensions {
+            width: 100,
+            height: 100,
+            scale_factor: 1.0,
+        });
+        let bitmap_source = NullBitmapSource;
+        let (fills, strokes) =
+            ShapeConverter::from_shape(&shape, &bitmap_source, &mut render_backend).into_commands();
         let expected = vec![FillPath {
-            style: Cow::Borrowed(&FILL_STYLES[0]),
+            style: FINAL_FILL_STYLE,
             commands: vec![
                 DrawCommand::MoveTo {
                     x: Twips::from_pixels(100.0),
@@ -687,9 +937,16 @@ mod tests {
                 delta_y: Twips::from_pixels(100.0),
             },
         ]);
-        let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
+        let mut render_backend = NullRenderer::new(ViewportDimensions {
+            width: 100,
+            height: 100,
+            scale_factor: 1.0,
+        });
+        let bitmap_source = NullBitmapSource;
+        let (fills, strokes) =
+            ShapeConverter::from_shape(&shape, &bitmap_source, &mut render_backend).into_commands();
         let expected = vec![FillPath {
-            style: Cow::Borrowed(&FILL_STYLES[0]),
+            style: FINAL_FILL_STYLE,
             commands: vec![
                 DrawCommand::MoveTo {
                     x: Twips::from_pixels(100.0),

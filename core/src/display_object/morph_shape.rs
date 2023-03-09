@@ -7,6 +7,7 @@ use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::DistilledShape;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8, Twips};
@@ -198,13 +199,12 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
+            let bitmap_source = MovieLibrarySource {
+                library,
+                gc_context: context.gc_context,
+            };
+            let shape = DistilledShape::from_shape(&frame.shape, &bitmap_source, context.renderer);
+            let handle = context.renderer.register_shape(shape, &bitmap_source);
             frame.shape_handle = Some(handle);
             handle
         }

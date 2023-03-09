@@ -939,6 +939,16 @@ impl LineStyle {
         self.width = val;
         self
     }
+
+    #[inline]
+    pub fn flags(&self) -> LineStyleFlag {
+        self.flags
+    }
+
+    #[inline]
+    pub fn miter_limit(&self) -> Fixed8 {
+        self.miter_limit
+    }
 }
 
 impl Default for LineStyle {
