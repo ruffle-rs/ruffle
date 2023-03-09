@@ -895,21 +895,33 @@ impl<'gc> MovieClip<'gc> {
                 .unwrap_or_else(|| static_data.total_frames + 1);
 
             let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
-            static_data.scene_labels.insert(
-                label.clone(),
-                Scene {
-                    name: label,
-                    start,
-                    length: end - start,
-                },
-            );
+            let scene = Scene {
+                name: label.clone(),
+                start,
+                length: end - start,
+            };
+            static_data.scene_labels.push(scene.clone());
+            if let std::collections::hash_map::Entry::Vacant(v) =
+                static_data.scene_labels_map.entry(label.clone())
+            {
+                v.insert(scene);
+            } else {
+                tracing::warn!("Movie clip {}: Duplicated scene label", self.id());
+            }
         }
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
-            static_data.frame_labels.insert(
-                WString::from_utf8(&label.to_string_lossy(reader.encoding())),
-                frame_num as u16 + 1,
-            );
+            let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
+            static_data
+                .frame_labels
+                .push((frame_num as u16 + 1, label.clone()));
+            if let std::collections::hash_map::Entry::Vacant(v) =
+                static_data.frame_labels_map.entry(label)
+            {
+                v.insert(frame_num as u16 + 1);
+            } else {
+                tracing::warn!("Movie clip {}: Duplicated frame label", self.id());
+            }
         }
 
         Ok(())
@@ -1108,14 +1120,7 @@ impl<'gc> MovieClip<'gc> {
     ///
     /// Scenes will be sorted in playback order.
     pub fn scenes(self) -> Vec<Scene> {
-        let mut out: Vec<_> = self
-            .0
-            .read()
-            .static_data
-            .scene_labels
-            .values()
-            .cloned()
-            .collect();
+        let mut out: Vec<_> = self.0.read().static_data.scene_labels.clone();
         out.sort_unstable_by(|Scene { start: a, .. }, Scene { start: b, .. }| a.cmp(b));
         out
     }
@@ -1129,7 +1134,7 @@ impl<'gc> MovieClip<'gc> {
         let read = self.0.read();
         let mut best: Option<&Scene> = None;
 
-        for (_, scene) in read.static_data.scene_labels.iter() {
+        for scene in read.static_data.scene_labels.iter() {
             if cond(best, scene) {
                 best = Some(scene);
             }
@@ -1144,7 +1149,7 @@ impl<'gc> MovieClip<'gc> {
         let current_frame = read.current_frame();
         let mut best: Option<(&WString, FrameNumber)> = None;
 
-        for (label, frame) in read.static_data.frame_labels.iter() {
+        for (frame, label) in read.static_data.frame_labels.iter() {
             if *frame > current_frame {
                 continue;
             }
@@ -1171,8 +1176,8 @@ impl<'gc> MovieClip<'gc> {
             .static_data
             .frame_labels
             .iter()
-            .filter(|(_label, frame)| **frame >= from && **frame < to)
-            .map(|(label, frame)| (label.clone(), *frame))
+            .filter(|(frame, _label)| *frame >= from && *frame < to)
+            .map(|(frame, label)| (label.clone(), *frame))
             .collect();
 
         values.sort_unstable_by(|(_, framea), (_, frameb)| framea.cmp(frameb));
@@ -1269,12 +1274,17 @@ impl<'gc> MovieClip<'gc> {
             self.0
                 .read()
                 .static_data
-                .frame_labels
+                .frame_labels_map
                 .get(frame_label)
                 .copied()
         } else {
             let label = frame_label.to_ascii_lowercase();
-            self.0.read().static_data.frame_labels.get(&label).copied()
+            self.0
+                .read()
+                .static_data
+                .frame_labels_map
+                .get(&label)
+                .copied()
         }
     }
 
@@ -1283,7 +1293,7 @@ impl<'gc> MovieClip<'gc> {
         self.0
             .read()
             .static_data
-            .scene_labels
+            .scene_labels_map
             .get(&WString::from(scene_label))
             .map(|Scene { start, .. }| start)
             .copied()
@@ -1307,13 +1317,10 @@ impl<'gc> MovieClip<'gc> {
 
         if scene <= frame {
             let mut end = self.total_frames();
-            for (
-                _label,
-                Scene {
-                    start: new_scene_start,
-                    ..
-                },
-            ) in self.0.read().static_data.scene_labels.iter()
+            for Scene {
+                start: new_scene_start,
+                ..
+            } in self.0.read().static_data.scene_labels.iter()
             {
                 if *new_scene_start < end && *new_scene_start > scene {
                     end = *new_scene_start;
@@ -3785,6 +3792,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
         static_data: &mut MovieClipStatic<'gc>,
         context: &UpdateContext<'_, 'gc>,
     ) -> Result<(), Error> {
+        // This tag is ignored if scene labels exist.
+        if !static_data.scene_labels.is_empty() {
+            return Ok(());
+        }
+
         let frame_label = reader.read_frame_label()?;
         let mut label = frame_label
             .label
@@ -3796,7 +3808,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
             label.make_ascii_lowercase();
         }
         let label = WString::from_utf8_owned(label);
-        if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
+        static_data.frame_labels.push((cur_frame, label.clone()));
+        if let std::collections::hash_map::Entry::Vacant(v) =
+            static_data.frame_labels_map.entry(label)
         {
             v.insert(cur_frame);
         } else {
@@ -4108,7 +4122,7 @@ impl Default for Scene {
     fn default() -> Self {
         Scene {
             name: WString::default(),
-            start: 0,
+            start: 1,
             length: u16::MAX,
         }
     }
@@ -4150,9 +4164,13 @@ struct MovieClipStatic<'gc> {
     id: CharacterId,
     swf: SwfSlice,
     #[collect(require_static)]
-    frame_labels: HashMap<WString, FrameNumber>,
+    frame_labels: Vec<(FrameNumber, WString)>,
     #[collect(require_static)]
-    scene_labels: HashMap<WString, Scene>,
+    frame_labels_map: HashMap<WString, FrameNumber>,
+    #[collect(require_static)]
+    scene_labels: Vec<Scene>,
+    #[collect(require_static)]
+    scene_labels_map: HashMap<WString, Scene>,
     #[collect(require_static)]
     audio_stream_info: Option<swf::SoundStreamHead>,
     #[collect(require_static)]
@@ -4194,8 +4212,10 @@ impl<'gc> MovieClipStatic<'gc> {
             id,
             swf,
             total_frames,
-            frame_labels: HashMap::new(),
-            scene_labels: HashMap::new(),
+            frame_labels: Vec::new(),
+            frame_labels_map: HashMap::new(),
+            scene_labels: Vec::new(),
+            scene_labels_map: HashMap::new(),
             audio_stream_info: None,
             audio_stream_handle: None,
             exported_name: GcCell::allocate(gc_context, None),
