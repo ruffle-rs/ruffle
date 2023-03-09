@@ -54,6 +54,8 @@ pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode
 pub use text::Text;
 pub use video::Video;
 
+use self::loader_display::LoaderDisplayWeak;
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
@@ -1782,6 +1784,14 @@ impl<'gc> DisplayObject<'gc> {
     pub fn option_ptr_eq(a: Option<DisplayObject<'gc>>, b: Option<DisplayObject<'gc>>) -> bool {
         a.map(|o| o.as_ptr()) == b.map(|o| o.as_ptr())
     }
+
+    pub fn downgrade(self) -> DisplayObjectWeak<'gc> {
+        match self {
+            DisplayObject::MovieClip(mc) => DisplayObjectWeak::MovieClip(mc.downgrade()),
+            DisplayObject::LoaderDisplay(l) => DisplayObjectWeak::LoaderDisplay(l.downgrade()),
+            _ => panic!("Downgrade not yet implemented for {:?}", self),
+        }
+    }
 }
 
 bitflags! {
@@ -2000,6 +2010,33 @@ impl Default for SoundTransform {
             left_to_right: 0,
             right_to_left: 0,
             right_to_right: 100,
+        }
+    }
+}
+
+/// A version of `DisplayObject` that holds weak pointers.
+/// Currently, this is only used by orphan handling, so we only
+/// need two variants. If other use cases arise, feel free
+/// to add more variants.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub enum DisplayObjectWeak<'gc> {
+    MovieClip(MovieClipWeak<'gc>),
+    LoaderDisplay(LoaderDisplayWeak<'gc>),
+}
+
+impl<'gc> DisplayObjectWeak<'gc> {
+    pub fn as_ptr(&self) -> *const DisplayObjectPtr {
+        match self {
+            DisplayObjectWeak::MovieClip(mc) => mc.as_ptr(),
+            DisplayObjectWeak::LoaderDisplay(ld) => ld.as_ptr(),
+        }
+    }
+
+    pub fn upgrade(&self, mc: MutationContext<'gc, '_>) -> Option<DisplayObject<'gc>> {
+        match self {
+            DisplayObjectWeak::MovieClip(movie) => movie.upgrade(mc).map(|m| m.into()),
+            DisplayObjectWeak::LoaderDisplay(ld) => ld.upgrade(mc).map(|ld| ld.into()),
         }
     }
 }

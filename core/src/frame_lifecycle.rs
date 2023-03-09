@@ -72,27 +72,27 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     let stage = context.stage;
 
     *context.frame_phase = FramePhase::Enter;
-    Avm2::each_orphan_movie(context, |movie, context| {
-        movie.enter_frame(context);
+    Avm2::each_orphan_obj(context, |orphan, context| {
+        orphan.enter_frame(context);
     });
     stage.enter_frame(context);
 
     *context.frame_phase = FramePhase::Construct;
-    Avm2::each_orphan_movie(context, |movie, context| {
-        movie.construct_frame(context);
+    Avm2::each_orphan_obj(context, |orphan, context| {
+        orphan.construct_frame(context);
     });
     stage.construct_frame(context);
     stage.frame_constructed(context);
 
     *context.frame_phase = FramePhase::FrameScripts;
-    Avm2::each_orphan_movie(context, |movie, context| {
-        movie.run_frame_scripts(context);
+    Avm2::each_orphan_obj(context, |orphan, context| {
+        orphan.run_frame_scripts(context);
     });
     stage.run_frame_scripts(context);
 
     *context.frame_phase = FramePhase::Exit;
-    Avm2::each_orphan_movie(context, |movie, context| {
-        movie.on_exit_frame(context);
+    Avm2::each_orphan_obj(context, |orphan, context| {
+        orphan.on_exit_frame(context);
     });
     stage.exit_frame(context);
 

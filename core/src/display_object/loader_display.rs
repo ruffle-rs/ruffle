@@ -1,3 +1,4 @@
+use crate::avm2::Activation;
 use crate::avm2::Object as Avm2Object;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
@@ -11,6 +12,7 @@ use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
+use gc_arena::GcWeakCell;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
@@ -40,19 +42,26 @@ pub struct LoaderDisplayData<'gc> {
 
 impl<'gc> LoaderDisplay<'gc> {
     pub fn new_with_avm2(
-        gc_context: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc>,
         avm2_object: Avm2Object<'gc>,
         movie: Arc<SwfMovie>,
     ) -> Self {
-        LoaderDisplay(GcCell::allocate(
-            gc_context,
+        let obj = LoaderDisplay(GcCell::allocate(
+            activation.context.gc_context,
             LoaderDisplayData {
                 base: Default::default(),
                 container: ChildContainer::new(),
                 avm2_object,
                 movie,
             },
-        ))
+        ));
+        obj.set_placed_by_script(activation.context.gc_context, true);
+        activation.context.avm2.add_orphan_obj(obj.into());
+        obj
+    }
+
+    pub fn downgrade(self) -> LoaderDisplayWeak<'gc> {
+        LoaderDisplayWeak(GcCell::downgrade(self.0))
     }
 }
 
@@ -118,6 +127,17 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 
     fn movie(&self) -> Arc<SwfMovie> {
         self.0.read().movie.clone()
+    }
+
+    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
+        let had_parent = self.parent().is_some();
+        self.base_mut(context.gc_context)
+            .set_parent_ignoring_orphan_list(parent);
+        let has_parent = self.parent().is_some();
+
+        if context.is_action_script_3() && had_parent && !has_parent {
+            context.avm2.add_orphan_obj((*self).into())
+        }
     }
 }
 
@@ -193,5 +213,19 @@ impl<'gc> TDisplayObjectContainer<'gc> for LoaderDisplay<'gc> {
         gc_context: MutationContext<'gc, '_>,
     ) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
+    }
+}
+
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct LoaderDisplayWeak<'gc>(GcWeakCell<'gc, LoaderDisplayData<'gc>>);
+
+impl<'gc> LoaderDisplayWeak<'gc> {
+    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<LoaderDisplay<'gc>> {
+        self.0.upgrade(mc).map(LoaderDisplay)
+    }
+
+    pub fn as_ptr(self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
     }
 }
