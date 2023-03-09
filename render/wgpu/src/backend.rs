@@ -652,7 +652,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         match texture_offscreen {
             Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
                 index,
-                size: target.size,
                 buffer: texture_offscreen.buffer.clone(),
                 buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
                 descriptors: self.descriptors.clone(),
@@ -728,7 +727,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         match texture_offscreen {
             Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
                 index,
-                size: target.size,
                 buffer: texture_offscreen.buffer.clone(),
                 buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
                 descriptors: self.descriptors.clone(),

@@ -118,14 +118,13 @@ impl BufferDimensions {
     }
 }
 
-pub fn buffer_to_image(
+pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     device: &wgpu::Device,
     buffer: &wgpu::Buffer,
     dimensions: &BufferDimensions,
     index: Option<wgpu::SubmissionIndex>,
-    size: wgpu::Extent3d,
-    premultiplied_alpha: bool,
-) -> image::RgbaImage {
+    with_rgba: F,
+) -> R {
     let (sender, receiver) = std::sync::mpsc::channel();
     let buffer_slice = buffer.slice(..);
     buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
@@ -138,23 +137,36 @@ pub fn buffer_to_image(
     );
     let _ = receiver.recv().expect("MPSC channel must not fail");
     let map = buffer_slice.get_mapped_range();
-    let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
-
-    for chunk in map.chunks(dimensions.padded_bytes_per_row.get() as usize) {
-        bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
-    }
-
-    // The image copied from the GPU uses premultiplied alpha, so
-    // convert to straight alpha if requested by the user.
-    if !premultiplied_alpha {
-        unmultiply_alpha_rgba(&mut bytes);
-    }
-
-    let image = image::RgbaImage::from_raw(size.width, size.height, bytes)
-        .expect("Retrieved texture buffer must be a valid RgbaImage");
+    let result = with_rgba(&map, dimensions.padded_bytes_per_row.get());
     drop(map);
     buffer.unmap();
-    image
+    result
+}
+
+pub fn buffer_to_image(
+    device: &wgpu::Device,
+    buffer: &wgpu::Buffer,
+    dimensions: &BufferDimensions,
+    index: Option<wgpu::SubmissionIndex>,
+    size: wgpu::Extent3d,
+    premultiplied_alpha: bool,
+) -> image::RgbaImage {
+    capture_image(device, buffer, dimensions, index, |rgba, _buffer_width| {
+        let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
+
+        for chunk in rgba.chunks(dimensions.padded_bytes_per_row.get() as usize) {
+            bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
+        }
+
+        // The image copied from the GPU uses premultiplied alpha, so
+        // convert to straight alpha if requested by the user.
+        if !premultiplied_alpha {
+            unmultiply_alpha_rgba(&mut bytes);
+        }
+
+        image::RgbaImage::from_raw(size.width, size.height, bytes)
+            .expect("Retrieved texture buffer must be a valid RgbaImage")
+    })
 }
 
 pub fn supported_sample_count(

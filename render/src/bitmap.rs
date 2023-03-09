@@ -35,9 +35,14 @@ pub trait BitmapSource {
     fn bitmap_handle(&self, id: u16, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle>;
 }
 
+pub type RgbaBufRead<'a> = Box<dyn FnOnce(&[u8], u32) + 'a>;
+
 pub trait SyncHandle: Downcast + Debug {
     /// Retrieves the rendered pixels from a previous `render_offscreen` call
-    fn retrieve_offscreen_texture(self: Box<Self>) -> Result<Bitmap, crate::error::Error>;
+    fn retrieve_offscreen_texture(
+        self: Box<Self>,
+        with_rgba: RgbaBufRead,
+    ) -> Result<(), crate::error::Error>;
 }
 impl_downcast!(SyncHandle);
 

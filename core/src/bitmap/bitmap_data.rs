@@ -296,10 +296,11 @@ mod wrapper {
             let mut write = unsafe { self.0.borrow_mut() };
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
                 DirtyState::GpuModified(sync_handle) => {
-                    let image = sync_handle
-                        .retrieve_offscreen_texture()
+                    sync_handle
+                        .retrieve_offscreen_texture(Box::new(|buffer, buffer_width| {
+                            copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width)
+                        }))
                         .expect("Failed to sync BitmapData");
-                    copy_pixels_to_bitmapdata(&mut write, image.data());
                     write.dirty_state = DirtyState::Clean
                 }
                 old_state => write.dirty_state = old_state,
@@ -1513,21 +1514,22 @@ pub enum IBitmapDrawable<'gc> {
 }
 
 #[instrument(level = "debug", skip_all)]
-fn copy_pixels_to_bitmapdata(write: &mut BitmapData, bytes: &[u8]) {
+fn copy_pixels_to_bitmapdata(write: &mut BitmapData, buffer: &[u8], buffer_width: u32) {
     let height = write.height();
     let width = write.width();
+    let buffer_width_pixels = buffer_width / 4;
 
     for y in 0..height {
         for x in 0..width {
             // note: this order of conversions helps llvm realize the index is 4-byte-aligned
-            let ind = ((x + y * width) as usize) * 4;
+            let ind = ((x + y * buffer_width_pixels) as usize) * 4;
 
             // TODO(mid): optimize this A LOT
-            let r = bytes[ind];
-            let g = bytes[ind + 1usize];
-            let b = bytes[ind + 2usize];
+            let r = buffer[ind];
+            let g = buffer[ind + 1usize];
+            let b = buffer[ind + 2usize];
             let a = if write.transparency() {
-                bytes[ind + 3usize]
+                buffer[ind + 3usize]
             } else {
                 255
             };

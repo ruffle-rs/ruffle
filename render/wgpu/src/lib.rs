@@ -8,13 +8,13 @@ use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{
-    buffer_to_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
+    capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
 };
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, SyncHandle};
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, RgbaBufRead, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::tessellator::{Gradient as TessGradient, GradientType, Vertex as TessVertex};
 use std::cell::Cell;
@@ -173,7 +173,6 @@ pub enum QueueSyncHandle {
         index: wgpu::SubmissionIndex,
         buffer: Arc<wgpu::Buffer>,
         buffer_dimensions: BufferDimensions,
-        size: wgpu::Extent3d,
         descriptors: Arc<Descriptors>,
     },
     NotCopied {
@@ -186,33 +185,27 @@ pub enum QueueSyncHandle {
 impl SyncHandle for QueueSyncHandle {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
-    ) -> Result<ruffle_render::bitmap::Bitmap, ruffle_render::error::Error> {
-        let image = self.capture();
-        Ok(Bitmap::new(
-            image.dimensions().0,
-            image.dimensions().1,
-            ruffle_render::bitmap::BitmapFormat::Rgba,
-            image.into_raw(),
-        ))
+        with_rgba: RgbaBufRead,
+    ) -> Result<(), ruffle_render::error::Error> {
+        self.capture(|buf, buf_width| with_rgba(buf, buf_width));
+        Ok(())
     }
 }
 
 impl QueueSyncHandle {
-    pub fn capture(self) -> image::RgbaImage {
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F) -> R {
         match self {
             QueueSyncHandle::AlreadyCopied {
                 index,
                 buffer,
                 buffer_dimensions,
-                size,
                 descriptors,
-            } => buffer_to_image(
+            } => capture_image(
                 &descriptors.device,
                 &buffer,
                 &buffer_dimensions,
                 Some(index),
-                size,
-                true,
+                with_rgba,
             ),
             QueueSyncHandle::NotCopied {
                 handle,
@@ -257,13 +250,12 @@ impl QueueSyncHandle {
                 );
                 let index = descriptors.queue.submit(Some(encoder.finish()));
 
-                let image = buffer_to_image(
+                let image = capture_image(
                     &descriptors.device,
                     &buffer,
                     &buffer_dimensions,
                     Some(index),
-                    size,
-                    true,
+                    with_rgba,
                 );
 
                 // After we've read pixels from a texture enough times, we'll store this buffer so that
