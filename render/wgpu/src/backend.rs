@@ -19,7 +19,7 @@ use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::tessellator::ShapeTessellator;
+use ruffle_render::tessellator::{ShapeFillTessellator, ShapeStrokeTessellator};
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::mem;
@@ -37,7 +37,8 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     target: T,
     surface: Surface,
     meshes: Vec<Mesh>,
-    shape_tessellator: ShapeTessellator,
+    fill_tessellator: ShapeFillTessellator,
+    stroke_tessellator: ShapeStrokeTessellator,
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
@@ -183,7 +184,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             target,
             surface,
             meshes: Vec::new(),
-            shape_tessellator: ShapeTessellator::new(),
+            fill_tessellator: ShapeFillTessellator::new(),
+            stroke_tessellator: ShapeStrokeTessellator::new(),
             viewport_scale_factor: 1.0,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
@@ -223,9 +225,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
         let shape_id = shape.id;
-        let lyon_mesh = self
-            .shape_tessellator
-            .tessellate_shape(shape, bitmap_source);
+        let mut lyon_mesh = self
+            .fill_tessellator
+            .tessellate_shape(&shape, bitmap_source);
+        lyon_mesh.append(
+            &mut self
+                .stroke_tessellator
+                .tessellate_shape(&shape, bitmap_source),
+        );
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         let mut uniform_buffer = BufferBuilder::new(

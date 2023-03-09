@@ -18,7 +18,8 @@ use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
-    Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
+    Gradient as TessGradient, GradientType, ShapeFillTessellator, ShapeStrokeTessellator,
+    Vertex as TessVertex,
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
@@ -128,7 +129,8 @@ pub struct WebGlRenderBackend {
     bitmap_program: ShaderProgram,
     gradient_program: ShaderProgram,
 
-    shape_tessellator: ShapeTessellator,
+    fill_tessellator: ShapeFillTessellator,
+    stroke_tessellator: ShapeStrokeTessellator,
 
     meshes: Vec<Mesh>,
 
@@ -307,7 +309,8 @@ impl WebGlRenderBackend {
             gradient_program,
             bitmap_program,
 
-            shape_tessellator: ShapeTessellator::new(),
+            fill_tessellator: ShapeFillTessellator::new(),
+            stroke_tessellator: ShapeStrokeTessellator::new(),
 
             meshes: vec![],
             color_quad_shape: ShapeHandle(0),
@@ -580,9 +583,14 @@ impl WebGlRenderBackend {
     ) -> Result<Mesh, Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
-        let lyon_mesh = self
-            .shape_tessellator
-            .tessellate_shape(shape, bitmap_source);
+        let mut lyon_mesh = self
+            .fill_tessellator
+            .tessellate_shape(&shape, bitmap_source);
+        lyon_mesh.append(
+            &mut self
+                .stroke_tessellator
+                .tessellate_shape(&shape, bitmap_source),
+        );
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {

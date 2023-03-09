@@ -11,18 +11,16 @@ use lyon::tessellation::{FillOptions, StrokeOptions};
 use swf::{Color, FillStyle, GradientRecord};
 use tracing::instrument;
 
-pub struct ShapeTessellator {
+pub struct ShapeFillTessellator {
     fill_tess: FillTessellator,
-    stroke_tess: StrokeTessellator,
     mesh: Vec<Draw>,
     lyon_mesh: VertexBuffers<Vertex, u32>,
 }
 
-impl ShapeTessellator {
+impl ShapeFillTessellator {
     pub fn new() -> Self {
         Self {
             fill_tess: FillTessellator::new(),
-            stroke_tess: StrokeTessellator::new(),
             mesh: Vec::new(),
             lyon_mesh: VertexBuffers::new(),
         }
@@ -31,12 +29,12 @@ impl ShapeTessellator {
     #[instrument(level = "debug", skip_all)]
     pub fn tessellate_shape(
         &mut self,
-        shape: DistilledShape,
+        shape: &DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
-        for path in shape.fills {
+        for path in &shape.fills {
             let (fill_style, lyon_path) =
                 (path.style, ruffle_path_to_lyon_path(&path.commands, true));
 
@@ -49,7 +47,7 @@ impl ShapeTessellator {
 
             if needs_flush {
                 // We flush separate draw calls for non-solid color fills which require their own shader.
-                self.flush_draw(DrawType::Color, false);
+                self.flush_draw(DrawType::Color);
             }
 
             let mut buffers_builder =
@@ -63,7 +61,7 @@ impl ShapeTessellator {
                 Ok(_) => {
                     if needs_flush {
                         // Non-solid color fills are isolated draw calls; flush immediately.
-                        self.flush_draw(draw, false);
+                        self.flush_draw(draw);
                     }
                 }
                 Err(e) => {
@@ -72,9 +70,58 @@ impl ShapeTessellator {
                 }
             }
         }
-        self.flush_draw(DrawType::Color, false);
+        self.flush_draw(DrawType::Color);
 
-        for path in shape.strokes {
+        self.lyon_mesh = VertexBuffers::new();
+        std::mem::take(&mut self.mesh)
+    }
+
+    fn flush_draw(&mut self, draw: DrawType) {
+        if self.lyon_mesh.vertices.is_empty() || self.lyon_mesh.indices.len() < 3 {
+            // Ignore degenerate fills
+            return;
+        }
+        let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
+        self.mesh.push(Draw {
+            draw_type: draw,
+            mask_index_count: draw_mesh.indices.len() as u32,
+            vertices: draw_mesh.vertices,
+            indices: draw_mesh.indices,
+        });
+    }
+}
+
+impl Default for ShapeFillTessellator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct ShapeStrokeTessellator {
+    stroke_tess: StrokeTessellator,
+    mesh: Vec<Draw>,
+    lyon_mesh: VertexBuffers<Vertex, u32>,
+}
+
+impl ShapeStrokeTessellator {
+    pub fn new() -> Self {
+        Self {
+            stroke_tess: StrokeTessellator::new(),
+            mesh: Vec::new(),
+            lyon_mesh: VertexBuffers::new(),
+        }
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    pub fn tessellate_shape(
+        &mut self,
+        shape: &DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+    ) -> Mesh {
+        self.mesh = Vec::new();
+        self.lyon_mesh = VertexBuffers::new();
+
+        for path in &shape.strokes {
             let (fill_style, lyon_path) = (
                 path.style.fill_style(),
                 ruffle_path_to_lyon_path(&path.commands, path.is_closed),
@@ -92,7 +139,7 @@ impl ShapeTessellator {
                 // * Non-solid color fills which require their own shader.
                 // * Strokes followed by fills, because strokes need to be omitted
                 //   when using this shape as a mask.
-                self.flush_draw(DrawType::Color, true);
+                self.flush_draw(DrawType::Color);
             }
 
             let mut buffers_builder =
@@ -134,7 +181,7 @@ impl ShapeTessellator {
                 Ok(_) => {
                     if needs_flush {
                         // We flush separate draw calls for non-solid color fills which require their own shader.
-                        self.flush_draw(draw, true);
+                        self.flush_draw(draw);
                     }
                 }
                 Err(e) => {
@@ -143,13 +190,13 @@ impl ShapeTessellator {
                 }
             }
         }
-        self.flush_draw(DrawType::Color, true);
+        self.flush_draw(DrawType::Color);
 
         self.lyon_mesh = VertexBuffers::new();
         std::mem::take(&mut self.mesh)
     }
 
-    fn flush_draw(&mut self, draw: DrawType, is_stroke: bool) {
+    fn flush_draw(&mut self, draw: DrawType) {
         if self.lyon_mesh.vertices.is_empty() || self.lyon_mesh.indices.len() < 3 {
             // Ignore degenerate fills
             return;
@@ -157,18 +204,14 @@ impl ShapeTessellator {
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
         self.mesh.push(Draw {
             draw_type: draw,
-            mask_index_count: if is_stroke {
-                0
-            } else {
-                draw_mesh.indices.len() as u32
-            },
+            mask_index_count: 0,
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
         });
     }
 }
 
-impl Default for ShapeTessellator {
+impl Default for ShapeStrokeTessellator {
     fn default() -> Self {
         Self::new()
     }
