@@ -22,6 +22,8 @@
 		public var otherTimeline1:MyChild;
 		public var otherTimeline2:MyChild;
 		
+		public var removedTimelineChild:MyChild;
+		
 		// These come from ActionScript
 		
 		// We never add this orphan to the display list - it should
@@ -57,6 +59,10 @@
 			// Swapping two timeline-created children with each other will
 			// prevent them from getting removed
 			this.swapChildren(this.otherTimeline1, this.otherTimeline2);
+			
+			// When we remove a child placed by the timeline, it
+			// should be a regular orphan, and continue to tick.
+			this.removeChild(this.removedTimelineChild);
 			
 			this.addEventListener("enterFrame", function() {
 				if (MainTimeline.done) {

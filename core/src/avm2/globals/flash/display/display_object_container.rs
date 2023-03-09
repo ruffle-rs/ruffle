@@ -94,6 +94,7 @@ fn remove_child_from_displaylist<'gc>(
 ) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
+            child.set_placed_by_script(context.gc_context, true);
             ctr.remove_child(context, child);
         }
     }
@@ -360,6 +361,7 @@ pub fn remove_child_at<'gc>(
             }
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
+            child.set_placed_by_script(activation.context.gc_context, true);
 
             ctr.remove_child(&mut activation.context, child);
 
