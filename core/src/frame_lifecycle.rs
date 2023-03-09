@@ -78,6 +78,9 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     stage.enter_frame(context);
 
     *context.frame_phase = FramePhase::Construct;
+    Avm2::each_orphan_movie(context, |movie, context| {
+        movie.construct_frame(context);
+    });
     stage.construct_frame(context);
     stage.frame_constructed(context);
 
@@ -88,6 +91,9 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     stage.run_frame_scripts(context);
 
     *context.frame_phase = FramePhase::Exit;
+    Avm2::each_orphan_movie(context, |movie, context| {
+        movie.on_exit_frame(context);
+    });
     stage.exit_frame(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list

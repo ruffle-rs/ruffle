@@ -10,8 +10,14 @@
 		
 		private var grandChild:GrandChild;
 		
-		public function MyChild() {
+		public function MyChild(overrideName:String = null, printConstructorCall:Boolean = true) {
 			this.myId = MyChild.counter++;
+			if (overrideName != null) {
+				this.name = overrideName;
+			}
+			if (printConstructorCall) {
+				trace("Running child constructor: this.myId = " + this.myId + " this.parent=" + this.parent);
+			}
 			var child = this;
 			
 			this.addEventListener("enterFrame", function(e) {
@@ -35,8 +41,7 @@
 				trace("Child " + child.name + " child.myId = " + child.myId + " child.parent=" + child.parent + " in frameConstructed: child.currentFrame = " + child.currentFrame + " child.isPlaying = " + child.isPlaying);
 			});
 		
-			this.grandChild = new GrandChild();
-			
+			this.grandChild = new GrandChild("manualGrandchild", printConstructorCall);
 		}
 	}
 	
