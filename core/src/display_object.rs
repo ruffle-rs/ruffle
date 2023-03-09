@@ -1371,22 +1371,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Execute all other timeline actions on this object.
-    fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc>) {}
-
-    /// Execute all other timeline actions on this object and it's children.
-    ///
-    /// AVM2 operates recursively through children, so this also instructs
-    /// children to run a frame.
-    fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc>) {
-        // Children run first.
-        if let Some(container) = self.as_container() {
-            for child in container.iter_render_list() {
-                child.run_frame_avm2(context);
-            }
-        }
-
-        self.run_frame(context);
-    }
+    fn run_frame_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) {}
 
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
@@ -1640,8 +1625,8 @@ pub trait TDisplayObject<'gc>:
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if run_frame {
-            self.run_frame(context);
+        if run_frame && !context.is_action_script_3() {
+            self.run_frame_avm1(context);
         }
     }
 

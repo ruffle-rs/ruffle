@@ -196,7 +196,7 @@ impl<'gc> Avm1Button<'gc> {
         for (child, depth) in children {
             // Initialize new child.
             child.post_instantiation(context, None, Instantiator::Movie, false);
-            child.run_frame(context);
+            child.run_frame_avm1(context);
             let removed_child = self.replace_at_depth(context, child, depth.into());
             dispatch_added_event(self.into(), child, false, context);
             if let Some(removed_child) = removed_child {
@@ -277,12 +277,12 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             drop(mc);
 
             if run_frame {
-                self.run_frame(context);
+                self.run_frame_avm1(context);
             }
         }
     }
 
-    fn run_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn run_frame_avm1(&self, context: &mut UpdateContext<'_, 'gc>) {
         let self_display_object = (*self).into();
         let initialized = self.0.read().initialized;
 

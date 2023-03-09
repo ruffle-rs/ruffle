@@ -94,7 +94,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn run_frame(&self, _context: &mut UpdateContext) {
+    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
         // Noop
     }
 

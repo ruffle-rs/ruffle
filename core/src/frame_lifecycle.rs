@@ -19,7 +19,7 @@ use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
 ///
-/// AVM2 frames exist in one of five phases: `Enter`, `Construct`, `Update`,
+/// AVM2 frames exist in one of four phases: `Enter`, `Construct`,
 /// `FrameScripts`, or `Exit`. An additional `Idle` phase covers rendering and
 /// event processing.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -41,16 +41,6 @@ pub enum FramePhase {
     /// Once we construct the frame, we fire `frameConstructed` on the
     /// broadcast list.
     Construct,
-
-    /// We're updating all display objects on the stage.
-    ///
-    /// This roughly corresponds to `run_frame`; and should encompass all time
-    /// based display object changes that are not encompassed by the other
-    /// phases.
-    ///
-    /// This frame phase also exists in AVM1 frames. In AVM1, it does the work
-    /// of `Enter`, `FrameScripts` (`DoAction` tags), and `Construct`.
-    Update,
 
     /// We're running all queued frame scripts.
     ///
@@ -120,13 +110,6 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 
     stage.frame_constructed(context);
 
-    *context.frame_phase = FramePhase::Update;
-    stage.run_frame_avm2(context);
-
-    Avm2::each_orphan_movie(context, |movie, context| {
-        movie.run_frame_avm2(context);
-    });
-
     *context.frame_phase = FramePhase::FrameScripts;
 
     stage.run_frame_scripts(context);
@@ -168,14 +151,9 @@ pub fn catchup_display_object_to_frame<'gc>(
         FramePhase::Enter => {
             dobj.enter_frame(context);
         }
-        FramePhase::Construct => {
+        FramePhase::Construct | FramePhase::FrameScripts | FramePhase::Exit | FramePhase::Idle => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
-        }
-        FramePhase::Update | FramePhase::FrameScripts | FramePhase::Exit | FramePhase::Idle => {
-            dobj.enter_frame(context);
-            dobj.construct_frame(context);
-            dobj.run_frame_avm2(context);
         }
     }
 }
