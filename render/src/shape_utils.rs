@@ -58,28 +58,31 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
     bounds
 }
 
-/// `DrawPath` represents a solid fill or a stroke.
-/// Fills are always closed paths, while strokes may be open or closed.
+/// `StrokePath` represents a stroke.
+/// Strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DrawPath<'a> {
-    Stroke {
-        style: &'a LineStyle,
-        is_closed: bool,
-        commands: Vec<DrawCommand>,
-    },
-    Fill {
-        style: &'a FillStyle,
-        commands: Vec<DrawCommand>,
-    },
+pub struct StrokePath<'a> {
+    pub style: &'a LineStyle,
+    pub is_closed: bool,
+    pub commands: Vec<DrawCommand>,
+}
+
+/// `StrokePath` represents a solid fill.
+/// Fills are always closed paths.
+/// Closed paths will have the first point equal to the last point.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FillPath<'a> {
+    pub style: &'a FillStyle,
+    pub commands: Vec<DrawCommand>,
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DistilledShape<'a> {
-    pub fills: Vec<DrawPath<'a>>,
-    pub strokes: Vec<DrawPath<'a>>,
+    pub fills: Vec<FillPath<'a>>,
+    pub strokes: Vec<StrokePath<'a>>,
     pub shape_bounds: Rectangle<Twips>,
     pub edge_bounds: Rectangle<Twips>,
     pub id: CharacterId,
@@ -341,8 +344,8 @@ pub struct ShapeConverter<'a> {
     strokes: Vec<PendingPath>,
 
     // Output.
-    fill_commands: Vec<DrawPath<'a>>,
-    stroke_commands: Vec<DrawPath<'a>>,
+    fill_commands: Vec<FillPath<'a>>,
+    stroke_commands: Vec<StrokePath<'a>>,
 }
 
 impl<'a> ShapeConverter<'a> {
@@ -370,7 +373,7 @@ impl<'a> ShapeConverter<'a> {
         }
     }
 
-    fn into_commands(mut self) -> (Vec<DrawPath<'a>>, Vec<DrawPath<'a>>) {
+    fn into_commands(mut self) -> (Vec<FillPath<'a>>, Vec<StrokePath<'a>>) {
         // As u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
         let mut num_fill_styles = self.fill_styles.len() as u32;
         let mut num_line_styles = self.line_styles.len() as u32;
@@ -513,7 +516,7 @@ impl<'a> ShapeConverter<'a> {
                 continue;
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
-            self.fill_commands.push(DrawPath::Fill {
+            self.fill_commands.push(FillPath {
                 style,
                 commands: path.to_draw_commands().collect(),
             });
@@ -529,7 +532,7 @@ impl<'a> ShapeConverter<'a> {
                 if segment.is_empty() {
                     continue;
                 }
-                self.stroke_commands.push(DrawPath::Stroke {
+                self.stroke_commands.push(StrokePath {
                     style,
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
@@ -599,7 +602,7 @@ mod tests {
             },
         ]);
         let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
+        let expected = vec![FillPath {
             style: &FILL_STYLES[0],
             commands: vec![
                 DrawCommand::MoveTo {
@@ -664,7 +667,7 @@ mod tests {
             },
         ]);
         let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
-        let expected = vec![DrawPath::Fill {
+        let expected = vec![FillPath {
             style: &FILL_STYLES[0],
             commands: vec![
                 DrawCommand::MoveTo {

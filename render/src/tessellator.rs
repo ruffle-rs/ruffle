@@ -1,5 +1,5 @@
 use crate::bitmap::BitmapSource;
-use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use crate::shape_utils::{DistilledShape, DrawCommand};
 use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -8,7 +8,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use swf::GradientRecord;
+use swf::{Color, FillStyle, GradientRecord};
 use tracing::instrument;
 
 pub struct ShapeTessellator {
@@ -16,8 +16,6 @@ pub struct ShapeTessellator {
     stroke_tess: StrokeTessellator,
     mesh: Vec<Draw>,
     lyon_mesh: VertexBuffers<Vertex, u32>,
-    mask_index_count: Option<u32>,
-    is_stroke: bool,
 }
 
 impl ShapeTessellator {
@@ -27,8 +25,6 @@ impl ShapeTessellator {
             stroke_tess: StrokeTessellator::new(),
             mesh: Vec::new(),
             lyon_mesh: VertexBuffers::new(),
-            mask_index_count: None,
-            is_stroke: false,
         }
     }
 
@@ -40,147 +36,34 @@ impl ShapeTessellator {
     ) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
-        for path in [shape.fills, shape.strokes].into_iter().flatten() {
-            let (fill_style, lyon_path, next_is_stroke) = match &path {
-                DrawPath::Fill { style, commands } => {
-                    (*style, ruffle_path_to_lyon_path(commands, true), false)
-                }
-                DrawPath::Stroke {
-                    style,
-                    commands,
-                    is_closed,
-                } => (
-                    style.fill_style(),
-                    ruffle_path_to_lyon_path(commands, *is_closed),
-                    true,
-                ),
-            };
+        for path in shape.fills {
+            let (fill_style, lyon_path) =
+                (path.style, ruffle_path_to_lyon_path(&path.commands, true));
 
-            let (draw, color, needs_flush) = match fill_style {
-                swf::FillStyle::Color(color) => (DrawType::Color, color.clone(), false),
-                swf::FillStyle::LinearGradient(gradient) => (
-                    DrawType::Gradient(swf_gradient_to_uniforms(
-                        GradientType::Linear,
-                        gradient,
-                        swf::Fixed8::ZERO,
-                    )),
-                    swf::Color::WHITE,
-                    true,
-                ),
-                swf::FillStyle::RadialGradient(gradient) => (
-                    DrawType::Gradient(swf_gradient_to_uniforms(
-                        GradientType::Radial,
-                        gradient,
-                        swf::Fixed8::ZERO,
-                    )),
-                    swf::Color::WHITE,
-                    true,
-                ),
-                swf::FillStyle::FocalGradient {
-                    gradient,
-                    focal_point,
-                } => (
-                    DrawType::Gradient(swf_gradient_to_uniforms(
-                        GradientType::Focal,
-                        gradient,
-                        *focal_point,
-                    )),
-                    swf::Color::WHITE,
-                    true,
-                ),
-                swf::FillStyle::Bitmap {
-                    id,
-                    matrix,
-                    is_smoothed,
-                    is_repeating,
-                } => {
-                    if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
-                        (
-                            DrawType::Bitmap(Bitmap {
-                                matrix: swf_bitmap_to_gl_matrix(
-                                    (*matrix).into(),
-                                    bitmap.width.into(),
-                                    bitmap.height.into(),
-                                ),
-                                bitmap_id: *id,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            }),
-                            swf::Color::WHITE,
-                            true,
-                        )
-                    } else {
-                        // Missing bitmap -- incorrect character ID in SWF?
-                        continue;
-                    }
-                }
-            };
+            let (draw, color, needs_flush) =
+                if let Some((draw, color, needs_flush)) = fill_to_draw(bitmap_source, fill_style) {
+                    (draw, color, needs_flush)
+                } else {
+                    continue;
+                };
 
-            if needs_flush || (self.is_stroke && !next_is_stroke) {
-                // We flush separate draw calls in these cases:
-                // * Non-solid color fills which require their own shader.
-                // * Strokes followed by fills, because strokes need to be omitted
-                //   when using this shape as a mask.
-                self.flush_draw(DrawType::Color);
-            } else if !self.is_stroke && next_is_stroke {
-                // Bake solid color fills followed by strokes into a single draw call, and adjust
-                // the index count to omit the strokes when rendering this shape as a mask.
-                debug_assert!(self.mask_index_count.is_none());
-                self.mask_index_count = Some(self.lyon_mesh.indices.len() as u32);
+            if needs_flush {
+                // We flush separate draw calls for non-solid color fills which require their own shader.
+                self.flush_draw(DrawType::Color, false);
             }
-            self.is_stroke = next_is_stroke;
 
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
-            let result = match path {
-                DrawPath::Fill { .. } => self.fill_tess.tessellate_path(
-                    &lyon_path,
-                    &FillOptions::even_odd(),
-                    &mut buffers_builder,
-                ),
-                DrawPath::Stroke { style, .. } => {
-                    // TODO(Herschel): 0 width indicates "hairline".
-                    let width = (style.width().to_pixels() as f32).max(1.0);
-                    let mut stroke_options = StrokeOptions::default()
-                        .with_line_width(width)
-                        .with_start_cap(match style.start_cap() {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        })
-                        .with_end_cap(match style.end_cap() {
-                            swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                            swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                            swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                        });
-
-                    let line_join = match style.join_style() {
-                        swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
-                        swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
-                        swf::LineJoinStyle::Miter(limit) => {
-                            // Avoid lyon assert with small miter limits.
-                            let limit = limit.to_f32();
-                            if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
-                                stroke_options = stroke_options.with_miter_limit(limit);
-                                tessellation::LineJoin::MiterClip
-                            } else {
-                                tessellation::LineJoin::Bevel
-                            }
-                        }
-                    };
-                    stroke_options = stroke_options.with_line_join(line_join);
-                    self.stroke_tess.tessellate_path(
-                        &lyon_path,
-                        &stroke_options,
-                        &mut buffers_builder,
-                    )
-                }
-            };
+            let result = self.fill_tess.tessellate_path(
+                &lyon_path,
+                &FillOptions::even_odd(),
+                &mut buffers_builder,
+            );
             match result {
                 Ok(_) => {
                     if needs_flush {
                         // Non-solid color fills are isolated draw calls; flush immediately.
-                        self.flush_draw(draw);
+                        self.flush_draw(draw, false);
                     }
                 }
                 Err(e) => {
@@ -189,15 +72,84 @@ impl ShapeTessellator {
                 }
             }
         }
+        self.flush_draw(DrawType::Color, false);
 
-        // Flush the final pending draw.
-        self.flush_draw(DrawType::Color);
+        for path in shape.strokes {
+            let (fill_style, lyon_path) = (
+                path.style.fill_style(),
+                ruffle_path_to_lyon_path(&path.commands, path.is_closed),
+            );
+
+            let (draw, color, needs_flush) =
+                if let Some((draw, color, needs_flush)) = fill_to_draw(bitmap_source, fill_style) {
+                    (draw, color, needs_flush)
+                } else {
+                    continue;
+                };
+
+            if needs_flush {
+                // We flush separate draw calls in these cases:
+                // * Non-solid color fills which require their own shader.
+                // * Strokes followed by fills, because strokes need to be omitted
+                //   when using this shape as a mask.
+                self.flush_draw(DrawType::Color, true);
+            }
+
+            let mut buffers_builder =
+                BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
+            // TODO(Herschel): 0 width indicates "hairline".
+            let width = (path.style.width().to_pixels() as f32).max(1.0);
+            let mut stroke_options = StrokeOptions::default()
+                .with_line_width(width)
+                .with_start_cap(match path.style.start_cap() {
+                    swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                    swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                    swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                })
+                .with_end_cap(match path.style.end_cap() {
+                    swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                    swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                    swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                });
+
+            let line_join = match path.style.join_style() {
+                swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
+                swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
+                swf::LineJoinStyle::Miter(limit) => {
+                    // Avoid lyon assert with small miter limits.
+                    let limit = limit.to_f32();
+                    if limit >= StrokeOptions::MINIMUM_MITER_LIMIT {
+                        stroke_options = stroke_options.with_miter_limit(limit);
+                        tessellation::LineJoin::MiterClip
+                    } else {
+                        tessellation::LineJoin::Bevel
+                    }
+                }
+            };
+            stroke_options = stroke_options.with_line_join(line_join);
+            let result =
+                self.stroke_tess
+                    .tessellate_path(&lyon_path, &stroke_options, &mut buffers_builder);
+            match result {
+                Ok(_) => {
+                    if needs_flush {
+                        // We flush separate draw calls for non-solid color fills which require their own shader.
+                        self.flush_draw(draw, true);
+                    }
+                }
+                Err(e) => {
+                    // This may simply be a degenerate path.
+                    tracing::error!("Tessellation failure: {:?}", e);
+                }
+            }
+        }
+        self.flush_draw(DrawType::Color, true);
 
         self.lyon_mesh = VertexBuffers::new();
         std::mem::take(&mut self.mesh)
     }
 
-    fn flush_draw(&mut self, draw: DrawType) {
+    fn flush_draw(&mut self, draw: DrawType, is_stroke: bool) {
         if self.lyon_mesh.vertices.is_empty() || self.lyon_mesh.indices.len() < 3 {
             // Ignore degenerate fills
             return;
@@ -205,13 +157,14 @@ impl ShapeTessellator {
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
         self.mesh.push(Draw {
             draw_type: draw,
-            mask_index_count: self
-                .mask_index_count
-                .unwrap_or(draw_mesh.indices.len() as u32),
+            mask_index_count: if is_stroke {
+                0
+            } else {
+                draw_mesh.indices.len() as u32
+            },
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
         });
-        self.mask_index_count = None;
     }
 }
 
@@ -411,4 +364,69 @@ pub enum GradientType {
     Linear,
     Radial,
     Focal,
+}
+
+fn fill_to_draw(
+    bitmap_source: &dyn BitmapSource,
+    fill_style: &FillStyle,
+) -> Option<(DrawType, Color, bool)> {
+    match fill_style {
+        swf::FillStyle::Color(color) => Some((DrawType::Color, color.clone(), false)),
+        swf::FillStyle::LinearGradient(gradient) => Some((
+            DrawType::Gradient(swf_gradient_to_uniforms(
+                GradientType::Linear,
+                gradient,
+                swf::Fixed8::ZERO,
+            )),
+            swf::Color::WHITE,
+            true,
+        )),
+        swf::FillStyle::RadialGradient(gradient) => Some((
+            DrawType::Gradient(swf_gradient_to_uniforms(
+                GradientType::Radial,
+                gradient,
+                swf::Fixed8::ZERO,
+            )),
+            swf::Color::WHITE,
+            true,
+        )),
+        swf::FillStyle::FocalGradient {
+            gradient,
+            focal_point,
+        } => Some((
+            DrawType::Gradient(swf_gradient_to_uniforms(
+                GradientType::Focal,
+                gradient,
+                *focal_point,
+            )),
+            swf::Color::WHITE,
+            true,
+        )),
+        swf::FillStyle::Bitmap {
+            id,
+            matrix,
+            is_smoothed,
+            is_repeating,
+        } => {
+            if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
+                Some((
+                    DrawType::Bitmap(Bitmap {
+                        matrix: swf_bitmap_to_gl_matrix(
+                            (*matrix).into(),
+                            bitmap.width.into(),
+                            bitmap.height.into(),
+                        ),
+                        bitmap_id: *id,
+                        is_smoothed: *is_smoothed,
+                        is_repeating: *is_repeating,
+                    }),
+                    swf::Color::WHITE,
+                    true,
+                ))
+            } else {
+                // Missing bitmap -- incorrect character ID in SWF?
+                None
+            }
+        }
+    }
 }

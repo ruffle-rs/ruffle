@@ -3,7 +3,7 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, FillPath, StrokePath};
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Rectangle, Twips};
 
@@ -62,31 +62,23 @@ impl Drawing {
         };
 
         let shape: DistilledShape = shape.into();
-        for path in [shape.fills, shape.strokes].into_iter().flatten() {
-            match path {
-                DrawPath::Stroke {
-                    style,
-                    is_closed: _,
-                    commands,
-                } => {
-                    this.set_line_style(Some(style.clone()));
+        for path in shape.fills {
+            this.set_fill_style(Some(path.style.clone()));
 
-                    for command in commands {
-                        this.draw_command(command);
-                    }
-
-                    this.set_line_style(None);
-                }
-                DrawPath::Fill { style, commands } => {
-                    this.set_fill_style(Some(style.clone()));
-
-                    for command in commands {
-                        this.draw_command(command);
-                    }
-
-                    this.set_fill_style(None);
-                }
+            for command in path.commands {
+                this.draw_command(command);
             }
+
+            this.set_fill_style(None);
+        }
+        for path in shape.strokes {
+            this.set_line_style(Some(path.style.clone()));
+
+            for command in path.commands {
+                this.draw_command(command);
+            }
+
+            this.set_line_style(None);
         }
 
         this
@@ -217,13 +209,13 @@ impl Drawing {
             for path in &self.paths {
                 match path {
                     DrawingPath::Fill(fill) => {
-                        fills.push(DrawPath::Fill {
+                        fills.push(FillPath {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
                         });
                     }
                     DrawingPath::Line(line) => {
-                        strokes.push(DrawPath::Stroke {
+                        strokes.push(StrokePath {
                             style: &line.style,
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
@@ -233,7 +225,7 @@ impl Drawing {
             }
 
             if let Some(fill) = &self.current_fill {
-                fills.push(DrawPath::Fill {
+                fills.push(FillPath {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
                 })
@@ -250,7 +242,7 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                strokes.push(DrawPath::Stroke {
+                strokes.push(StrokePath {
                     style: &line.style,
                     commands,
                     is_closed,
@@ -268,7 +260,7 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                strokes.push(DrawPath::Stroke {
+                strokes.push(StrokePath {
                     style: &line.style,
                     commands,
                     is_closed,
