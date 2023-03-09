@@ -89,6 +89,26 @@ pub struct DistilledShape<'a> {
     pub id: CharacterId,
 }
 
+impl<'a> DistilledShape<'a> {
+    pub fn into_strokes(self) -> DistilledShape<'static> {
+        DistilledShape {
+            fills: vec![],
+            strokes: self
+                .strokes
+                .into_iter()
+                .map(|s| StrokePath {
+                    style: Cow::Owned(s.style.into_owned()),
+                    is_closed: s.is_closed,
+                    commands: s.commands,
+                })
+                .collect(),
+            shape_bounds: self.shape_bounds,
+            edge_bounds: self.edge_bounds,
+            id: self.id,
+        }
+    }
+}
+
 impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         let (fills, strokes) = ShapeConverter::from_shape(shape).into_commands();

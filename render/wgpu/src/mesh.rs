@@ -9,6 +9,7 @@ use wgpu::util::DeviceExt;
 use crate::buffer_builder::BufferBuilder;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapSource;
+use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
 
@@ -19,6 +20,7 @@ const GRADIENT_SIZE: usize = 256;
 pub struct ShapeMeshes {
     pub fill: Mesh,
     pub stroke: Mesh,
+    pub stroke_shape: DistilledShape<'static>,
 }
 
 #[derive(Debug)]

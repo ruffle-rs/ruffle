@@ -234,6 +234,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         ShapeMeshes {
             fill: Mesh::build(self, bitmap_source, &fill_mesh, shape_id),
             stroke: Mesh::build(self, bitmap_source, &stroke_mesh, shape_id),
+            stroke_shape: shape.into_strokes(),
         }
     }
 
