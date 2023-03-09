@@ -153,7 +153,7 @@ pub fn get_current_labels<'gc>(
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
             name: WString::default(),
-            start: 0,
+            start: 1,
             length: mc.total_frames(),
         });
         return Ok(labels_for_scene(activation, mc, &scene)?.2.into());
@@ -174,7 +174,7 @@ pub fn get_current_scene<'gc>(
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
             name: WString::default(),
-            start: 0,
+            start: 1,
             length: mc.total_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
@@ -239,7 +239,7 @@ pub fn get_scenes<'gc>(
         if mc.scenes().is_empty() {
             mc_scenes.push(Scene {
                 name: WString::default(),
-                start: 0,
+                start: 1,
                 length: mc.total_frames(),
             });
         }

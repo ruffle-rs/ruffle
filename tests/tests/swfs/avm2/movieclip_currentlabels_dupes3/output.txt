@@ -1,0 +1,68 @@
+//(contents of this.scenes)
+scene "" - 7 frames, 6 labels
+//(contents of this.currentLabels in frame 1)
+1
+frame1
+3
+frame3
+4
+CaseSensitiveFrameLabel
+5
+CASEsensitive
+6
+CaseSensitiveFrameLabel
+7
+Frame4
+//(contents of this.currentLabel and this.currentScene)
+frame1
+
+
+//(contents of this.currentLabels in frame 2)
+1
+frame1
+3
+frame3
+4
+CaseSensitiveFrameLabel
+5
+CASEsensitive
+6
+CaseSensitiveFrameLabel
+7
+Frame4
+//(contents of this.currentLabel and this.currentScene)
+frame1
+
+
+//(contents of this.currentLabel and this.currentScene in frame 3)
+frame3
+
+//(contents of this.currentLabel and this.currentScene in frame 4)
+CaseSensitiveFrameLabel
+
+//(contents of this.currentLabel and this.currentScene in frame 5)
+CASEsensitive
+
+//(contents of this.currentLabel and this.currentScene in frame 6)
+CaseSensitiveFrameLabel
+
+//(contents of this.currentLabels in frame 7)
+1
+frame1
+3
+frame3
+4
+CaseSensitiveFrameLabel
+5
+CASEsensitive
+6
+CaseSensitiveFrameLabel
+7
+Frame4
+//(contents of this.currentLabel and this.currentScene)
+Frame4
+
+
+//(contents of this.currentLabel and this.currentScene in frame 4)
+CaseSensitiveFrameLabel
+
