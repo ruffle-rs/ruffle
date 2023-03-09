@@ -845,7 +845,7 @@ fn swf_shape_to_canvas_commands(
             bounds_viewbox_matrix.unchecked_ref(),
         );
 
-        let fill_style = match path.style {
+        let fill_style = match path.style.as_ref() {
             FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
             FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
                 create_linear_gradient(&backend.context, gradient, true)

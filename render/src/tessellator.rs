@@ -36,7 +36,7 @@ impl ShapeFillTessellator {
         self.lyon_mesh = VertexBuffers::new();
         for path in &shape.fills {
             let (fill_style, lyon_path) =
-                (path.style, ruffle_path_to_lyon_path(&path.commands, true));
+                (&path.style, ruffle_path_to_lyon_path(&path.commands, true));
 
             let (draw, color, needs_flush) =
                 if let Some((draw, color, needs_flush)) = fill_to_draw(bitmap_source, fill_style) {

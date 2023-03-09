@@ -1,5 +1,6 @@
 use crate::matrix::Matrix;
 use smallvec::SmallVec;
+use std::borrow::Cow;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
@@ -63,7 +64,7 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 /// Closed paths will have the first point equal to the last point.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StrokePath<'a> {
-    pub style: &'a LineStyle,
+    pub style: Cow<'a, LineStyle>,
     pub is_closed: bool,
     pub commands: Vec<DrawCommand>,
 }
@@ -73,7 +74,7 @@ pub struct StrokePath<'a> {
 /// Closed paths will have the first point equal to the last point.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FillPath<'a> {
-    pub style: &'a FillStyle,
+    pub style: Cow<'a, FillStyle>,
     pub commands: Vec<DrawCommand>,
 }
 
@@ -517,7 +518,7 @@ impl<'a> ShapeConverter<'a> {
             }
             let style = unsafe { self.fill_styles.get_unchecked(i) };
             self.fill_commands.push(FillPath {
-                style,
+                style: Cow::Borrowed(style),
                 commands: path.to_draw_commands().collect(),
             });
             path.segments.clear();
@@ -533,7 +534,7 @@ impl<'a> ShapeConverter<'a> {
                     continue;
                 }
                 self.stroke_commands.push(StrokePath {
-                    style,
+                    style: Cow::Borrowed(style),
                     is_closed: segment.is_closed(),
                     commands: segment.to_draw_commands().collect(),
                 });
@@ -603,7 +604,7 @@ mod tests {
         ]);
         let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![FillPath {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo {
                     x: Twips::from_pixels(100.0),
@@ -668,7 +669,7 @@ mod tests {
         ]);
         let (fills, strokes) = ShapeConverter::from_shape(&shape).into_commands();
         let expected = vec![FillPath {
-            style: &FILL_STYLES[0],
+            style: Cow::Borrowed(&FILL_STYLES[0]),
             commands: vec![
                 DrawCommand::MoveTo {
                     x: Twips::from_pixels(100.0),
