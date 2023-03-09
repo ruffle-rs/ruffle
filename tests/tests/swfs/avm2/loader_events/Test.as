@@ -1,17 +1,31 @@
 ﻿package {
 	import flash.display.Stage;
-
+	import flash.display.Loader;
+	import flash.display.Loader;
+	import flash.net.URLRequest;
+	import flash.errors.IllegalOperationError;
+	import flash.display.Sprite;
+	import flash.events.Event;
+	import flash.events.ProgressEvent;
+			
 	public class Test {
+		var orphanLoader:Loader;
+		
 		public function Test(stage: Stage) {
-			import flash.display.Loader;
-			import flash.net.URLRequest;
-			import flash.errors.IllegalOperationError;
-			import flash.display.Sprite;
-			import flash.events.Event;
-			import flash.events.ProgressEvent;
 
+			var test = this;
+
+			var runOrphanLoader = function() {
+				trace("Starting orphan Loader");
+				this.orphanLoader = setupLoader(function() {});
+			};
+		
+			var childLoader = this.setupLoader(runOrphanLoader);
+			stage.addChild(childLoader);
+		}
+	
+		function setupLoader(done: Function) {
 			var loader = new Loader();
-			stage.addChild(loader);
 			trace("loader.content = " + loader.content);
 			trace("loader.contentLoaderInfo.content = " + loader.contentLoaderInfo.content);
 			trace("loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded);
@@ -53,9 +67,11 @@
 
 			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, function(e) {
 				dump(e);
+				done();
 			});
 
 			loader.load(new URLRequest("./loadable.swf"));
+			return loader;
 		}
 	}
 }

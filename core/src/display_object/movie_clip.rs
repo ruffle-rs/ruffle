@@ -2655,7 +2655,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to.into());
         if self.parent().is_none() {
-            context.avm2.add_orphan_movie(*self);
+            context.avm2.add_orphan_obj((*self).into());
         }
     }
 
@@ -2666,7 +2666,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         let has_parent = self.parent().is_some();
 
         if context.is_action_script_3() && had_parent && !has_parent {
-            context.avm2.add_orphan_movie(*self)
+            context.avm2.add_orphan_obj((*self).into())
         }
     }
 

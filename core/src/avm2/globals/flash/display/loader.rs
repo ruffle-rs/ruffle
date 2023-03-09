@@ -20,11 +20,8 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut this) = this {
         if this.as_display_object().is_none() {
-            let new_do = LoaderDisplay::new_with_avm2(
-                activation.context.gc_context,
-                this,
-                activation.context.swf.clone(),
-            );
+            let new_do =
+                LoaderDisplay::new_with_avm2(activation, this, activation.context.swf.clone());
             this.init_display_object(&mut activation.context, new_do.into());
         }
 

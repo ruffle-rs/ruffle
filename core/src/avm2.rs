@@ -6,7 +6,7 @@ use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
-use crate::display_object::{MovieClip, MovieClipWeak, TDisplayObject};
+use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -124,16 +124,16 @@ pub struct Avm2<'gc> {
     /// collector does not support weak references.
     broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
 
-    /// The list of 'orphan' movies - these movies have no parent,
+    /// The list of 'orphan' objects - these objects have no parent,
     /// so we need to manually run their frames in `run_all_phases_avm2` to match
     /// Flash's behavior. Clips are added to this list with `add_orphan_movie`.
     /// and are removed automatically by `cleanup_dead_orphans`.
     ///
-    /// We store `MovieClipWeak`, since we don't want to keep these movies
+    /// We store `DisplayObjectWeak`, since we don't want to keep these objects
     /// alive if they would otherwise be garbage-collected. The movie will
     /// stop ticking whenever garbage collection runs if there are no more
     /// strong references around (this matches Flash's behavior).
-    orphan_movies: Vec<MovieClipWeak<'gc>>,
+    orphan_objects: Vec<DisplayObjectWeak<'gc>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -171,7 +171,7 @@ impl<'gc> Avm2<'gc> {
             native_call_handler_table: Default::default(),
             broadcast_list: Default::default(),
 
-            orphan_movies: Vec::new(),
+            orphan_objects: Vec::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -237,28 +237,28 @@ impl<'gc> Avm2<'gc> {
     /// mutliple SWFS rely on this behavior, so we need to match Flash's
     /// behavior. This should not be called manually - `movie_clip` will
     /// call it when necessary.
-    pub fn add_orphan_movie(&mut self, movie: MovieClip<'gc>) {
+    pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {
         if self
-            .orphan_movies
+            .orphan_objects
             .iter()
-            .all(|m| m.as_ptr() != movie.as_ptr())
+            .all(|d| d.as_ptr() != dobj.as_ptr())
         {
-            self.orphan_movies.push(movie.downgrade());
+            self.orphan_objects.push(dobj.downgrade());
         }
     }
 
-    pub fn each_orphan_movie(
+    pub fn each_orphan_obj(
         context: &mut UpdateContext<'_, 'gc>,
-        mut f: impl FnMut(MovieClip<'gc>, &mut UpdateContext<'_, 'gc>),
+        mut f: impl FnMut(DisplayObject<'gc>, &mut UpdateContext<'_, 'gc>),
     ) {
         let mut i = 0;
         // FIXME - should we handle movies added while we're looping?
-        let total = context.avm2.orphan_movies.len();
+        let total = context.avm2.orphan_objects.len();
 
         // We cannot use an iterator, as it would conflict with the mutable borrow of `context`.
         while i < total {
-            if let Some(movie) = valid_orphan(context.avm2.orphan_movies[i], context.gc_context) {
-                f(movie.as_movie_clip().unwrap(), context);
+            if let Some(dobj) = valid_orphan(context.avm2.orphan_objects[i], context.gc_context) {
+                f(dobj, context);
             }
             i += 1;
         }
@@ -268,8 +268,8 @@ impl<'gc> Avm2<'gc> {
     /// that have been garbage collected, or are no longer orphans
     /// (they've since acquired a parent).
     pub fn cleanup_dead_orphans(context: &mut UpdateContext<'_, 'gc>) {
-        context.avm2.orphan_movies.retain(|m| {
-            if let Some(movie) = valid_orphan(*m, context.gc_context) {
+        context.avm2.orphan_objects.retain(|d| {
+            if let Some(dobj) = valid_orphan(*d, context.gc_context) {
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
                 // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
@@ -290,7 +290,7 @@ impl<'gc> Avm2<'gc> {
                 // which have not been moved in the displaylist by ActionScript. Therefore,
                 // any orphan we see that has 'placed_by_script()' should stay on the orphan
                 // list, because it was not removed by a RemoveObject tag.
-                movie.placed_by_script()
+                dobj.placed_by_script()
             } else {
                 false
             }
@@ -559,16 +559,16 @@ impl<'gc> Avm2<'gc> {
     pub const fn set_show_debug_output(&self, _visible: bool) {}
 }
 
-/// If the provided `MovieClipWeak` should have frames run, returns
+/// If the provided `DisplayObjectWeak` should have frames run, returns
 /// Some(clip) with an upgraded `MovieClip`.
 /// If this returns `None`, the entry should be removed from the orphan list.
 fn valid_orphan<'gc>(
-    clip: MovieClipWeak<'gc>,
+    dobj: DisplayObjectWeak<'gc>,
     mc: MutationContext<'gc, '_>,
-) -> Option<MovieClip<'gc>> {
-    if let Some(clip) = clip.upgrade(mc) {
-        if clip.parent().is_none() {
-            return Some(clip);
+) -> Option<DisplayObject<'gc>> {
+    if let Some(dobj) = dobj.upgrade(mc) {
+        if dobj.parent().is_none() {
+            return Some(dobj);
         }
     }
     None
