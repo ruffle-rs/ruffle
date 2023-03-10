@@ -130,8 +130,12 @@ package flash.display {
         public native function get frameRate():Number;
         public native function set frameRate(value:Number):void;
 
+        public native function get fullScreenHeight():uint;
+
         public native function get fullScreenSourceRect():Rectangle;
         public native function set fullScreenSourceRect(value:Rectangle):void;
+
+        public native function get fullScreenWidth():uint;
 
         public native function get scaleMode():String;
         public native function set scaleMode(value:String):void;
