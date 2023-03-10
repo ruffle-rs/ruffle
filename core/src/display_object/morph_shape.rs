@@ -103,10 +103,13 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         let this = self.0.read();
         let ratio = this.ratio;
         let static_data = this.static_data;
-        let shape_handle = static_data.get_shape(context, context.library, ratio);
+        let (fills, strokes) = static_data.get_shape(context, context.library, ratio);
         context
             .commands
-            .render_shape(shape_handle, context.transform_stack.transform());
+            .render_shape(fills, context.transform_stack.transform(), false);
+        context
+            .commands
+            .render_shape(strokes, context.transform_stack.transform(), true);
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
@@ -147,7 +150,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
 /// A precalculated intermediate frame for a morph shape.
 struct Frame {
-    shape_handle: Option<ShapeHandle>,
+    shape_handles: Option<(ShapeHandle, ShapeHandle)>,
     shape: swf::Shape,
     bounds: Rectangle<Twips>,
 }
@@ -186,17 +189,17 @@ impl MorphShapeStatic {
         })
     }
 
-    /// Retrieves the `ShapeHandle` for the given ratio.
+    /// Retrieves the fill & stroke `ShapeHandle`s for the given ratio.
     /// Lazily intializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,
         library: &Library<'gc>,
         ratio: u16,
-    ) -> ShapeHandle {
+    ) -> (ShapeHandle, ShapeHandle) {
         let mut frame = self.get_frame(ratio);
-        if let Some(handle) = frame.shape_handle {
-            handle
+        if let Some(handles) = frame.shape_handles {
+            handles
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
             let bitmap_source = MovieLibrarySource {
@@ -204,9 +207,14 @@ impl MorphShapeStatic {
                 gc_context: context.gc_context,
             };
             let shape = DistilledShape::from_shape(&frame.shape, &bitmap_source, context.renderer);
-            let handle = context.renderer.register_shape(shape);
-            frame.shape_handle = Some(handle);
-            handle
+            let fills = context
+                .renderer
+                .register_shape_fills(&shape.fills, shape.id);
+            let strokes = context
+                .renderer
+                .register_shape_strokes(&shape.strokes, shape.id);
+            frame.shape_handles = Some((fills, strokes));
+            (fills, strokes)
         }
     }
 
@@ -329,7 +337,7 @@ impl MorphShapeStatic {
         };
 
         Frame {
-            shape_handle: None,
+            shape_handles: None,
             shape,
             bounds,
         }

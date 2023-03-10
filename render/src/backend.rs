@@ -5,7 +5,7 @@ use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
 use crate::quality::StageQuality;
-use crate::shape_utils::DistilledShape;
+use crate::shape_utils::{ShapeFills, ShapeStrokes};
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_wstr::WStr;
@@ -13,14 +13,17 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::rc::Rc;
 use swf;
+use swf::CharacterId;
 
 pub trait RenderBackend: Downcast {
     fn viewport_dimensions(&self) -> ViewportDimensions;
     // Do not call this method directly - use `player.set_viewport_dimensions`,
     // which will ensure that the stage is properly updated as well.
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions);
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle;
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle);
+    fn register_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId) -> ShapeHandle;
+    fn replace_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId, handle: ShapeHandle);
+    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, id: CharacterId) -> ShapeHandle;
+    fn replace_shape_strokes(&mut self, shape: &ShapeStrokes, id: CharacterId, handle: ShapeHandle);
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
     /// Creates a new `RenderBackend` which renders directly

@@ -14,7 +14,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{DistilledShape, ShapeConverter};
+use ruffle_render::shape_utils::{ShapeConverter, ShapeFills, ShapeStrokes};
 use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeFillTessellator, ShapeStrokeTessellator,
     Vertex as TessVertex,
@@ -22,7 +22,7 @@ use ruffle_render::tessellator::{
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, CharacterId, Color};
 use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -434,7 +434,6 @@ impl WebGlRenderBackend {
                     buffer: index_buffer,
                 },
                 num_indices: 6,
-                num_mask_indices: 6,
             }],
         };
         Ok(quad_mesh)
@@ -574,16 +573,25 @@ impl WebGlRenderBackend {
         Ok(())
     }
 
-    fn register_shape_internal(&mut self, shape: DistilledShape) -> Result<Mesh, Error> {
-        use ruffle_render::tessellator::DrawType as TessDrawType;
+    fn register_shape_fills_internal(&mut self, shape: &ShapeFills) -> Result<Mesh, Error> {
+        let mesh = self.fill_tessellator.tessellate_shape(&shape.paths);
+        self.register_shape_mesh(mesh)
+    }
 
-        let mut lyon_mesh = self.fill_tessellator.tessellate_shape(&shape);
-        lyon_mesh.append(&mut self.stroke_tessellator.tessellate_shape(&shape));
+    fn register_shape_strokes_internal(&mut self, shape: &ShapeStrokes) -> Result<Mesh, Error> {
+        let mesh = self.stroke_tessellator.tessellate_shape(&shape.paths);
+        self.register_shape_mesh(mesh)
+    }
+
+    fn register_shape_mesh(
+        &mut self,
+        lyon_mesh: Vec<ruffle_render::tessellator::Draw>,
+    ) -> Result<Mesh, Error> {
+        use ruffle_render::tessellator::DrawType as TessDrawType;
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
             let num_indices = draw.indices.len() as i32;
-            let num_mask_indices = draw.mask_index_count as i32;
 
             let vao = self.create_vertex_array()?;
             let vertex_buffer = self.gl.create_buffer().ok_or(Error::UnableToCreateBuffer)?;
@@ -656,7 +664,6 @@ impl WebGlRenderBackend {
                         buffer: index_buffer,
                     },
                     num_indices,
-                    num_mask_indices,
                 },
                 TessDrawType::Gradient(gradient) => Draw {
                     draw_type: DrawType::Gradient(Box::new(Gradient::from(gradient))),
@@ -670,7 +677,6 @@ impl WebGlRenderBackend {
                         buffer: index_buffer,
                     },
                     num_indices,
-                    num_mask_indices,
                 },
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
@@ -689,7 +695,6 @@ impl WebGlRenderBackend {
                         buffer: index_buffer,
                     },
                     num_indices,
-                    num_mask_indices,
                 },
             });
 
@@ -979,35 +984,56 @@ impl RenderBackend for WebGlRenderBackend {
         self.viewport_scale_factor = dimensions.scale_factor
     }
 
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        match self.register_shape_internal(shape) {
+        match self.register_shape_fills_internal(shape) {
             Ok(mesh) => self.meshes.push(mesh),
-            Err(e) => log::error!("Couldn't register shape: {:?}", e),
+            Err(e) => log::error!("Couldn't register shape fills: {:?}", e),
         }
         handle
     }
 
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
+    fn replace_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId, handle: ShapeHandle) {
         self.delete_mesh(&self.meshes[handle.0]);
-        match self.register_shape_internal(shape) {
+        match self.register_shape_fills_internal(shape) {
             Ok(mesh) => self.meshes[handle.0] = mesh,
-            Err(e) => log::error!("Couldn't replace shape: {:?}", e),
+            Err(e) => log::error!("Couldn't replace shape fills: {:?}", e),
+        }
+    }
+
+    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, _id: CharacterId) -> ShapeHandle {
+        let handle = ShapeHandle(self.meshes.len());
+        match self.register_shape_strokes_internal(shape) {
+            Ok(mesh) => self.meshes.push(mesh),
+            Err(e) => log::error!("Couldn't register shape strokes: {:?}", e),
+        }
+        handle
+    }
+
+    fn replace_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        handle: ShapeHandle,
+    ) {
+        self.delete_mesh(&self.meshes[handle.0]);
+        match self.register_shape_strokes_internal(shape) {
+            Ok(mesh) => self.meshes[handle.0] = mesh,
+            Err(e) => log::error!("Couldn't replace shape strokes: {:?}", e),
         }
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let (fills, strokes) =
+        let (fills, _strokes) =
             ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
 
-        match self.register_shape_internal(DistilledShape {
-            fills,
-            strokes,
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
-            id: shape.id,
+        // TODO: Can glyphs have strokes?
+
+        match self.register_shape_fills_internal(&ShapeFills {
+            paths: fills,
+            bounds: shape.shape_bounds.clone(),
         }) {
             Ok(mesh) => self.meshes.push(mesh),
             Err(e) => log::error!("Couldn't register glyph shape: {:?}", e),
@@ -1230,7 +1256,14 @@ impl CommandHandler for WebGlRenderBackend {
             .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform, is_stroke: bool) {
+        let show_strokes = self.mask_state != MaskState::DrawMaskStencil
+            && self.mask_state != MaskState::ClearMaskStencil;
+        if !show_strokes && is_stroke {
+            // Ignore strokes when drawing a mask stencil.
+            return;
+        }
+
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
@@ -1250,15 +1283,7 @@ impl CommandHandler for WebGlRenderBackend {
 
         let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
-            // Ignore strokes when drawing a mask stencil.
-            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
-                && self.mask_state != MaskState::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
+            if draw.num_indices == 0 {
                 continue;
             }
 
@@ -1374,7 +1399,7 @@ impl CommandHandler for WebGlRenderBackend {
 
             // Draw the triangles.
             self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, num_indices, Gl::UNSIGNED_INT, 0);
+                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
         }
     }
 
@@ -1573,7 +1598,6 @@ struct Draw {
     index_buffer: Buffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,
-    num_mask_indices: i32,
 }
 
 enum DrawType {

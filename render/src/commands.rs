@@ -7,7 +7,7 @@ use swf::{BlendMode, Color};
 pub trait CommandHandler {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool);
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
-    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform, is_stroke: bool);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
@@ -35,10 +35,14 @@ impl CommandList {
                     transform,
                     smoothing,
                 } => handler.render_bitmap(bitmap, transform, smoothing),
-                Command::RenderShape { shape, transform } => handler.render_shape(shape, transform),
                 Command::RenderStage3D { bitmap, transform } => {
                     handler.render_stage3d(bitmap, transform)
                 }
+                Command::RenderShape {
+                    shape,
+                    transform,
+                    is_stroke,
+                } => handler.render_shape(shape, transform, is_stroke),
                 Command::DrawRect { color, matrix } => handler.draw_rect(color, matrix),
                 Command::PushMask => handler.push_mask(),
                 Command::ActivateMask => handler.activate_mask(),
@@ -64,9 +68,12 @@ impl CommandHandler for CommandList {
             .push(Command::RenderStage3D { bitmap, transform });
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        self.commands
-            .push(Command::RenderShape { shape, transform });
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform, is_stroke: bool) {
+        self.commands.push(Command::RenderShape {
+            shape,
+            transform,
+            is_stroke,
+        });
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
@@ -108,6 +115,7 @@ pub enum Command {
     RenderShape {
         shape: ShapeHandle,
         transform: Transform,
+        is_stroke: bool,
     },
     DrawRect {
         color: Color,

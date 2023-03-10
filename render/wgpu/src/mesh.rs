@@ -7,19 +7,11 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
-use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
 
 /// How big to make gradient textures. Larger will keep more detail, but be slower and use more memory.
 const GRADIENT_SIZE: usize = 256;
-
-#[derive(Debug)]
-pub struct ShapeMeshes {
-    pub fill: Mesh,
-    pub stroke: Mesh,
-    pub stroke_shape: DistilledShape,
-}
 
 #[derive(Debug)]
 pub struct Mesh {
@@ -31,7 +23,7 @@ pub struct Mesh {
 impl Mesh {
     pub fn build<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
-        lyon_mesh: &[LyonDraw],
+        lyon_mesh: Vec<LyonDraw>,
         shape_id: CharacterId,
     ) -> Self {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
@@ -93,7 +85,6 @@ pub struct PendingDraw {
     pub vertices: Range<wgpu::BufferAddress>,
     pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
-    pub num_mask_indices: u32,
 }
 
 impl PendingDraw {
@@ -103,7 +94,6 @@ impl PendingDraw {
             vertices: self.vertices,
             indices: self.indices,
             num_indices: self.num_indices,
-            num_mask_indices: self.num_mask_indices,
         }
     }
 }
@@ -114,14 +104,13 @@ pub struct Draw {
     pub vertices: Range<wgpu::BufferAddress>,
     pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
-    pub num_mask_indices: u32,
 }
 
 impl PendingDraw {
     #[allow(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
-        draw: &LyonDraw,
+        draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffer: &mut BufferBuilder,
@@ -139,7 +128,7 @@ impl PendingDraw {
         let indices = index_buffer.add(&draw.indices);
 
         let index_count = draw.indices.len() as u32;
-        let draw_type = match &draw.draw_type {
+        let draw_type = match draw.draw_type {
             TessDrawType::Color => PendingDrawType::color(),
             TessDrawType::Gradient(gradient) => PendingDrawType::gradient(
                 backend.descriptors(),
@@ -157,7 +146,6 @@ impl PendingDraw {
             vertices,
             indices,
             num_indices: index_count,
-            num_mask_indices: draw.mask_index_count,
         })
     }
 }
@@ -201,7 +189,7 @@ impl PendingDrawType {
 
     pub fn gradient(
         descriptors: &Descriptors,
-        gradient: &Gradient,
+        gradient: Gradient,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffers: &mut BufferBuilder,
@@ -297,7 +285,7 @@ impl PendingDrawType {
     }
 
     pub fn bitmap(
-        bitmap: &Bitmap,
+        bitmap: Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
         uniform_buffers: &mut BufferBuilder,

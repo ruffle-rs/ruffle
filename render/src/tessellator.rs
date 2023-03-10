@@ -1,5 +1,5 @@
 use crate::bitmap::BitmapHandle;
-use crate::shape_utils::{DistilledShape, DrawCommand, FillStyle};
+use crate::shape_utils::{DrawCommand, FillPath, FillStyle, StrokePath};
 use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -27,10 +27,10 @@ impl ShapeFillTessellator {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub fn tessellate_shape(&mut self, shape: &DistilledShape) -> Mesh {
+    pub fn tessellate_shape(&mut self, shape: &[FillPath]) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
-        for path in &shape.fills {
+        for path in shape {
             let (fill_style, lyon_path) =
                 (&path.style, ruffle_path_to_lyon_path(&path.commands, true));
 
@@ -80,7 +80,6 @@ impl ShapeFillTessellator {
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
         self.mesh.push(Draw {
             draw_type: draw,
-            mask_index_count: draw_mesh.indices.len() as u32,
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
         });
@@ -109,11 +108,11 @@ impl ShapeStrokeTessellator {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub fn tessellate_shape(&mut self, shape: &DistilledShape) -> Mesh {
+    pub fn tessellate_shape(&mut self, shape: &[StrokePath]) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
 
-        for path in &shape.strokes {
+        for path in shape {
             let (fill_style, lyon_path) = (
                 &path.style.fill_style,
                 ruffle_path_to_lyon_path(&path.commands, path.is_closed),
@@ -196,7 +195,6 @@ impl ShapeStrokeTessellator {
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
         self.mesh.push(Draw {
             draw_type: draw,
-            mask_index_count: 0,
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
         });
@@ -215,7 +213,6 @@ pub struct Draw {
     pub draw_type: DrawType,
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
-    pub mask_index_count: u32,
 }
 
 pub enum DrawType {

@@ -4,7 +4,7 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
-use crate::mesh::ShapeMeshes;
+use crate::mesh::Mesh;
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::{remove_srgb, supported_sample_count};
@@ -70,7 +70,7 @@ impl Surface {
         descriptors: &Descriptors,
         uniform_buffers_storage: &mut BufferStorage<Transforms>,
         color_buffers_storage: &mut BufferStorage<ColorAdjustments>,
-        meshes: &Vec<ShapeMeshes>,
+        meshes: &Vec<Mesh>,
         commands: CommandList,
         texture_pool: &mut TexturePool,
     ) -> Vec<wgpu::CommandBuffer> {
@@ -146,7 +146,7 @@ impl Surface {
         &mut self,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
-        meshes: &'global Vec<ShapeMeshes>,
+        meshes: &'global Vec<Mesh>,
         commands: CommandList,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,

@@ -3,7 +3,7 @@ use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::TexturePool;
 use crate::globals::Globals;
-use crate::mesh::{DrawType, Mesh, ShapeMeshes};
+use crate::mesh::{DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
@@ -24,7 +24,7 @@ use super::target::PoolOrArcTexture;
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
-    meshes: &'global Vec<ShapeMeshes>,
+    meshes: &'global Vec<Mesh>,
     descriptors: &'global Descriptors,
     num_masks: u32,
     mask_state: MaskState,
@@ -39,7 +39,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'frame Pipelines,
-        meshes: &'global Vec<ShapeMeshes>,
+        meshes: &'global Vec<Mesh>,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
@@ -93,7 +93,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform,
                 blend_mode,
             } => self.render_texture(transform, binds, *blend_mode),
-            DrawCommand::RenderShape { shape, transform } => self.render_shape(*shape, transform),
+            DrawCommand::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            } => self.render_shape(*shape, transform, *is_stroke),
             DrawCommand::DrawRect { color, matrix } => self.draw_rect(color, matrix),
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
@@ -297,22 +301,20 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform, is_stroke: bool) {
+        let show_strokes = self.mask_state != MaskState::DrawMaskStencil
+            && self.mask_state != MaskState::ClearMaskStencil;
+        if !show_strokes && is_stroke {
+            return;
+        }
+
         if cfg!(feature = "render_debug_labels") {
             self.render_pass
                 .push_debug_group(&format!("render_shape {}", shape.0));
         }
 
         let mesh = &self.meshes[shape.0];
-
-        self.draw_mesh(transform, &mesh.fill);
-
-        // Omit strokes when drawing a mask stencil.
-        if self.mask_state != MaskState::DrawMaskStencil
-            && self.mask_state != MaskState::ClearMaskStencil
-        {
-            self.draw_mesh(transform, &mesh.stroke);
-        }
+        self.draw_mesh(transform, mesh);
 
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.pop_debug_group();
@@ -441,6 +443,7 @@ pub enum DrawCommand {
     RenderShape {
         shape: ShapeHandle,
         transform: Transform,
+        is_stroke: bool,
     },
     DrawRect {
         color: Color,
@@ -462,7 +465,7 @@ pub fn chunk_blends<'a>(
     color_buffers: &mut UniformBuffer<'a, ColorAdjustments>,
     uniform_encoder: &mut wgpu::CommandEncoder,
     draw_encoder: &mut wgpu::CommandEncoder,
-    meshes: &'a Vec<ShapeMeshes>,
+    meshes: &'a Vec<Mesh>,
     quality: StageQuality,
     width: u32,
     height: u32,
@@ -580,9 +583,15 @@ pub fn chunk_blends<'a>(
                     render_stage3d: true,
                 })
             }
-            Command::RenderShape { shape, transform } => {
-                current.push(DrawCommand::RenderShape { shape, transform })
-            }
+            Command::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            } => current.push(DrawCommand::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            }),
             Command::DrawRect { color, matrix } => {
                 current.push(DrawCommand::DrawRect { color, matrix })
             }

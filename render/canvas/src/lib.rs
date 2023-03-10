@@ -12,13 +12,13 @@ use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, FillStyle, LineScaleMode, LineScales, ShapeConverter,
+    DrawCommand, FillStyle, LineScaleMode, LineScales, ShapeConverter, ShapeFills, ShapeStrokes,
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, CharacterId, Color};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
@@ -434,30 +434,49 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn register_shape(&mut self, shape: DistilledShape) -> ShapeHandle {
+    fn register_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data = swf_shape_to_canvas_commands(shape, self);
+        let data = swf_shape_fills_to_canvas_commands(shape, self);
         self.shapes.push(data);
         handle
     }
 
-    fn replace_shape(&mut self, shape: DistilledShape, handle: ShapeHandle) {
-        let data = swf_shape_to_canvas_commands(shape, self);
+    fn replace_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId, handle: ShapeHandle) {
+        let data = swf_shape_fills_to_canvas_commands(shape, self);
+        self.shapes[handle.0] = data;
+    }
+
+    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, _id: CharacterId) -> ShapeHandle {
+        let handle = ShapeHandle(self.shapes.len());
+        let data = swf_shape_strokes_to_canvas_commands(shape, self);
+        self.shapes.push(data);
+        handle
+    }
+
+    fn replace_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        handle: ShapeHandle,
+    ) {
+        let data = swf_shape_strokes_to_canvas_commands(shape, self);
         self.shapes[handle.0] = data;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        let (fills, strokes) =
+        let (fills, _strokes) =
             ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
 
-        self.register_shape(DistilledShape {
-            fills,
-            strokes,
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
-            id: shape.id,
-        })
+        // TODO: Can glyphs have strokes?
+
+        self.register_shape_fills(
+            &ShapeFills {
+                paths: fills,
+                bounds: shape.shape_bounds.clone(),
+            },
+            shape.id,
+        )
     }
 
     fn render_offscreen(
@@ -534,7 +553,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         panic!("Stage3D should not have been created on canvas backend")
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform, _is_stroke: bool) {
         match &self.mask_state {
             MaskState::DrawContent => {
                 let mut line_scale = LineScales::new(&transform.matrix);
@@ -821,12 +840,10 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
     path
 }
 
-fn swf_shape_to_canvas_commands(
-    shape: DistilledShape,
+fn swf_shape_fills_to_canvas_commands(
+    shape: &ShapeFills,
     backend: &mut WebCanvasRenderBackend,
 ) -> ShapeData {
-    use swf::{LineCapStyle, LineJoinStyle};
-
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
     // rendering altogether.
@@ -837,7 +854,7 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
-    for path in shape.fills {
+    for path in &shape.paths {
         let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
         canvas_path.add_path_with_transformation(
             &draw_commands_to_path2d(&path.commands, false),
@@ -889,7 +906,26 @@ fn swf_shape_to_canvas_commands(
         });
     }
 
-    for path in &shape.strokes {
+    canvas_data
+}
+
+fn swf_shape_strokes_to_canvas_commands(
+    shape: &ShapeStrokes,
+    backend: &mut WebCanvasRenderBackend,
+) -> ShapeData {
+    use swf::{LineCapStyle, LineJoinStyle};
+
+    // Some browsers will vomit if you try to load/draw an image with 0 width/height.
+    // TODO(Herschel): Might be better to just return None in this case and skip
+    // rendering altogether.
+
+    let mut canvas_data = ShapeData(vec![]);
+
+    let bounds_viewbox_matrix = DomMatrix::new().expect("DomMatrix constructor must succeed");
+    bounds_viewbox_matrix.set_a(1.0 / 20.0);
+    bounds_viewbox_matrix.set_d(1.0 / 20.0);
+
+    for path in &shape.paths {
         let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
         canvas_path.add_path_with_transformation(
             &draw_commands_to_path2d(&path.commands, path.is_closed),

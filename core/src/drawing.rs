@@ -4,7 +4,8 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, StrokePath,
+    DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, ShapeFills, ShapeStrokes,
+    StrokePath,
 };
 use std::cell::Cell;
 use swf::{Rectangle, Twips};
@@ -12,7 +13,8 @@ use swf::{Rectangle, Twips};
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct Drawing {
-    render_handle: Cell<Option<ShapeHandle>>,
+    fills_handle: Cell<Option<ShapeHandle>>,
+    strokes_handle: Cell<Option<ShapeHandle>>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
@@ -34,7 +36,8 @@ impl Default for Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: Cell::new(None),
+            fills_handle: Cell::new(None),
+            strokes_handle: Cell::new(None),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             dirty: Cell::new(false),
@@ -232,24 +235,44 @@ impl Drawing {
             }
 
             let shape = DistilledShape {
-                fills,
-                strokes,
-                shape_bounds: self.shape_bounds.clone(),
-                edge_bounds: self.edge_bounds.clone(),
+                fills: ShapeFills {
+                    paths: fills,
+                    bounds: self.shape_bounds.clone(),
+                },
+                strokes: ShapeStrokes {
+                    paths: strokes,
+                    bounds: self.edge_bounds.clone(),
+                },
                 id: 0,
             };
-            if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, handle);
+            if let Some(handle) = self.fills_handle.get() {
+                context
+                    .renderer
+                    .replace_shape_fills(&shape.fills, 0, handle);
             } else {
-                self.render_handle
-                    .set(Some(context.renderer.register_shape(shape)));
+                self.fills_handle
+                    .set(Some(context.renderer.register_shape_fills(&shape.fills, 0)));
+            }
+            if let Some(handle) = self.strokes_handle.get() {
+                context
+                    .renderer
+                    .replace_shape_strokes(&shape.strokes, 0, handle);
+            } else {
+                self.strokes_handle.set(Some(
+                    context.renderer.register_shape_strokes(&shape.strokes, 0),
+                ));
             }
         }
 
-        if let Some(handle) = self.render_handle.get() {
+        if let Some(handle) = self.fills_handle.get() {
             context
                 .commands
-                .render_shape(handle, context.transform_stack.transform());
+                .render_shape(handle, context.transform_stack.transform(), false);
+        }
+        if let Some(handle) = self.strokes_handle.get() {
+            context
+                .commands
+                .render_shape(handle, context.transform_stack.transform(), true);
         }
     }
 

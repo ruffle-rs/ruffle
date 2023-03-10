@@ -51,10 +51,20 @@ impl<'gc> Graphic<'gc> {
             gc_context: context.gc_context,
         };
         let shape = DistilledShape::from_shape(&swf_shape, &bitmap_source, context.renderer);
+
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
-            render_handle: Some(context.renderer.register_shape(shape)),
+            fills_handle: Some(
+                context
+                    .renderer
+                    .register_shape_fills(&shape.fills, shape.id),
+            ),
+            strokes_handle: Some(
+                context
+                    .renderer
+                    .register_shape_strokes(&shape.strokes, shape.id),
+            ),
             shape: swf_shape,
             movie,
         };
@@ -78,7 +88,8 @@ impl<'gc> Graphic<'gc> {
         let static_data = GraphicStatic {
             id: 0,
             bounds: Default::default(),
-            render_handle: None,
+            fills_handle: None,
+            strokes_handle: None,
             shape: swf::Shape {
                 version: 32,
                 id: 0,
@@ -190,10 +201,21 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = &self.0.read().drawing {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().static_data.render_handle {
-            context
-                .commands
-                .render_shape(render_handle, context.transform_stack.transform())
+        } else {
+            if let Some(render_handle) = self.0.read().static_data.fills_handle {
+                context.commands.render_shape(
+                    render_handle,
+                    context.transform_stack.transform(),
+                    false,
+                )
+            }
+            if let Some(render_handle) = self.0.read().static_data.strokes_handle {
+                context.commands.render_shape(
+                    render_handle,
+                    context.transform_stack.transform(),
+                    true,
+                )
+            }
         }
     }
 
@@ -268,7 +290,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 struct GraphicStatic {
     id: CharacterId,
     shape: swf::Shape,
-    render_handle: Option<ShapeHandle>,
+    fills_handle: Option<ShapeHandle>,
+    strokes_handle: Option<ShapeHandle>,
     bounds: Rectangle<Twips>,
     movie: Arc<SwfMovie>,
 }

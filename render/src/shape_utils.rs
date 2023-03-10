@@ -313,11 +313,21 @@ pub struct FillPath {
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
 #[derive(Clone, Debug, PartialEq)]
 pub struct DistilledShape {
-    pub fills: Vec<FillPath>,
-    pub strokes: Vec<StrokePath>,
-    pub shape_bounds: Rectangle<Twips>,
-    pub edge_bounds: Rectangle<Twips>,
+    pub fills: ShapeFills,
+    pub strokes: ShapeStrokes,
     pub id: CharacterId,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShapeFills {
+    pub paths: Vec<FillPath>,
+    pub bounds: Rectangle<Twips>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShapeStrokes {
+    pub paths: Vec<StrokePath>,
+    pub bounds: Rectangle<Twips>,
 }
 
 impl DistilledShape {
@@ -329,21 +339,15 @@ impl DistilledShape {
         let (fills, strokes) =
             ShapeConverter::from_shape(shape, bitmap_source, renderer).into_commands();
         Self {
-            fills,
-            strokes,
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
+            fills: ShapeFills {
+                paths: fills,
+                bounds: shape.shape_bounds.clone(),
+            },
+            strokes: ShapeStrokes {
+                paths: strokes,
+                bounds: shape.shape_bounds.clone(),
+            },
             id: shape.id,
-        }
-    }
-
-    pub fn into_strokes(self) -> DistilledShape {
-        DistilledShape {
-            fills: vec![],
-            strokes: self.strokes,
-            shape_bounds: self.shape_bounds,
-            edge_bounds: self.edge_bounds,
-            id: self.id,
         }
     }
 }
