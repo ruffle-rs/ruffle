@@ -522,3 +522,23 @@ pub fn set_full_screen_source_rect<'gc>(
     avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
+
+/// Stage.fullScreenHeight's getter
+pub fn get_full_screen_height<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenHeight");
+    Ok(768.into())
+}
+
+/// Stage.fullScreenWidth's getter
+pub fn get_full_screen_width<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenWidth");
+    Ok(1024.into())
+}
