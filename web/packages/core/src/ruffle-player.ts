@@ -122,6 +122,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly unmuteOverlay: HTMLElement;
     private readonly splashScreen: HTMLElement;
     private readonly virtualKeyboard: HTMLInputElement;
+    private readonly saveManager: HTMLDialogElement;
 
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
@@ -228,6 +229,27 @@ export class RufflePlayer extends HTMLElement {
             "input",
             this.virtualKeyboardInput.bind(this)
         );
+        this.saveManager = <HTMLDialogElement>(
+            this.shadow.getElementById("save-manager")!
+        );
+        const closeSaveManager = this.saveManager.querySelector("#close-modal");
+        if (closeSaveManager) {
+            closeSaveManager.addEventListener("click", () =>
+                this.saveManager.close()
+            );
+        }
+        const backupSaves = this.saveManager.querySelector("#backup-saves");
+        if (backupSaves) {
+            backupSaves.addEventListener("click", this.backupSaves.bind(this));
+        }
+        const restoreSave = this.saveManager.querySelector("#restore-save");
+        if (restoreSave) {
+            restoreSave.addEventListener("change", this.restoreSave.bind(this));
+        }
+        const deleteSave = this.saveManager.querySelector("#delete-save");
+        if (deleteSave) {
+            deleteSave.addEventListener("click", this.deleteSave.bind(this));
+        }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         window.addEventListener("pointerdown", this.pointerDown.bind(this));
@@ -818,6 +840,90 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Download base-64 string as file
+     *
+     * @param bytesBase64 The base-64 encoded SOL string
+     * @param mimeType The MIME type
+     * @param fileName The name to give the file
+     */
+    saveFile(bytesBase64: string, mimeType: string, fileName: string): void {
+        const fileUrl = "data:" + mimeType + ";base64," + bytesBase64;
+        fetch(fileUrl)
+            .then((response) => response.blob())
+            .then((blob) => {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.style.display = "none";
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            });
+    }
+
+    /**
+     * @returns If the string represent a base-64 encoded SOL file
+     * Check if string is a base-64 encoded SOL file
+     * @param solData The base-64 encoded SOL string
+     */
+    isB64SOL(solData: string): boolean {
+        try {
+            const decodedData = atob(solData);
+            return decodedData.slice(6, 10) === "TCSO";
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Restore save from SOL file.
+     *
+     * @param event The change event fired
+     */
+    async restoreSave(event: Event): Promise<void> {
+        const fileInput = <HTMLInputElement>(event.target);
+        if (
+            fileInput &&
+            fileInput.files &&
+            fileInput.files.length > 0 &&
+            fileInput.files[0]
+        ) {
+            const solData = await fileInput.files[0].text();
+			console.log(solData);
+			// Encoding this fails
+            //const encodedData = btoa(solData);
+        }
+        this.saveManager.close();
+    }
+
+    /**
+     * Delete local saves.
+     */
+    deleteSave(): void {
+        console.log("TESTING DELETE");
+        this.saveManager.close();
+    }
+
+    /**
+     * Gets the local save information as SOL files and downloads them.
+     */
+    backupSaves(): void {
+        Object.keys(localStorage).forEach((key) => {
+            const solName = key.split("/").pop();
+            const solData = localStorage.getItem(key);
+            if (solData && this.isB64SOL(solData)) {
+                this.saveFile(
+                    solData,
+                    "application/octet-stream",
+                    solName + ".sol"
+                );
+            }
+        });
+        this.saveManager.close();
+    }
+
+    /**
      * Fetches the loaded SWF and downloads it.
      */
     async downloadSwf(): Promise<void> {
@@ -939,6 +1045,10 @@ export class RufflePlayer extends HTMLElement {
                     navigator.clipboard.writeText(this.getPanicData()),
             });
         }
+        items.push({
+            text: "Open Save Manager",
+            onClick: () => this.saveManager.showModal(),
+        });
 
         items.push(null);
 
