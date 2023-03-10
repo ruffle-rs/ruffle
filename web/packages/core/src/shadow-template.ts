@@ -282,6 +282,23 @@ ruffleShadowTemplate.innerHTML = `
             width: 1px;
             height: 1px;
         }
+        #restore-save {
+            display: none;
+        }
+        .save-option {
+            padding: 3px 10px;
+            margin: 5px 2px;
+            cursor: pointer;
+            border-radius: 50px;
+            background-color: var(--ruffle-blue);
+            color: white;
+        }
+        #close-modal {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
     </style>
     <style id="dynamic_styles"></style>
 
@@ -298,5 +315,14 @@ ruffleShadowTemplate.innerHTML = `
         <div class="loadbar"><div class="loadbar-inner"></div></div>
     </div>
 
+    <dialog id="save-manager">
+        <span id="close-modal">&times;</span>
+        <span class="save-option" id="backup-saves">Backup saves (download sols)</span>
+        <p id="restore-save-paragraph">
+            <input type="file" accept=".sol" id="restore-save">
+            <label class="save-option" for="restore-save" id="restore-save-label">Restore save (upload sol) and reload page</label>
+        </p>
+        <span class="save-option" id="delete-save">Delete local save and reload page</span>
+    </dialog>
     <ul id="context-menu"></ul>
 `;
