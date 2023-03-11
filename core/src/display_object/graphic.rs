@@ -188,7 +188,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .library_for_movie_mut(self.movie())
             .get_graphic(id)
         {
-            self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
+            let mut write = self.0.write(context.gc_context);
+            write.static_data = new_graphic.0.read().static_data;
+            write.last_scale = (0.0, 0.0); // Force recreation of stroke
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
