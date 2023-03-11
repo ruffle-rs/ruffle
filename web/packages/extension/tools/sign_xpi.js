@@ -38,7 +38,7 @@ async function sign(
             extensionId
         )}/versions/${encodeURIComponent(version)}/`,
         formData: {
-            source: this._fs.createReadStream(sourcePath),
+            source: fs.createReadStream(sourcePath),
         },
     });
 
