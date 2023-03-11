@@ -4009,6 +4009,7 @@ dependencies = [
  "ruffle_input_format",
  "ruffle_render",
  "ruffle_render_wgpu",
+ "ruffle_video_software",
  "serde",
  "toml",
  "walkdir",

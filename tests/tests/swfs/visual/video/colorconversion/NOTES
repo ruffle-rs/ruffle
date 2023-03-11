@@ -1,0 +1,42 @@
+Creating the H.263 test SWF was straightforward:
+    $ ffmpeg -i testcard.png -vcodec flv1 test.swf
+
+
+The VP6 one was a bit more involved:
+
+    $ ffmpeg -i testcard.png -pix_fmt yuv420p testcard.y4m
+    $ nihav-encoder --input testcard.y4m --output testcard.avi \
+        --ostream0 encoder=vp6,key_int=1,quant=50
+    $ ffmpeg -i testcard.avi -vcodec copy testcard.flv
+    $ ffmpeg -i testcard.flv -vcodec copy -r 1 test.swf
+
+The dance through the FLV container is only needed to get over
+some VP6/VP60/VP6F codec ID mismatch, and the -r argument was
+probably because framerate as such was not entered anywhere
+before that, and the SWF muxer needs it.
+Also note that the output will be flipped vertically.
+
+
+The VP6A was even more complicated:
+
+First, a premultiplied version of the color frame was exported
+from GIMP (via a simple layer blending operation).
+Then both the premultiplied color and the alpha frames were
+encoded to SWFs with the method described above. Finally, the
+alpha frame was merged into the premultiplied color one using
+JPEXS ffdec and a regular hex editor, like this:
+ - The raw encoded data of the alpha frame was exported
+ - It was inserted after the encoded data of the premultiplied
+   color frame
+ - Three bytes were inserted before the color frame data,
+   encoding the length of just the color frame data as a 24-bit
+   big-endian number
+ - Both the tag length and the overall file length were increased
+   by 3 plus the length of the alpha frame data
+ - Finally, a background color tag was added at the beginning
+   in ffdec to better show transparency
+
+While this works fine for single frames, for longer sequences
+one has to make sure to uphold the restriction that for every
+color frame coded as a keyframe, the corresponding alpha frame
+also has to be a keyframe. Otherwise: artifacts when seeking.
