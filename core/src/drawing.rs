@@ -8,7 +8,8 @@ use ruffle_render::shape_utils::{
     DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, ShapeFills, ShapeStrokes,
     StrokePath,
 };
-use std::cell::Cell;
+use ruffle_render::transform::Transform;
+use std::cell::{Cell, RefCell};
 use swf::{Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
@@ -16,6 +17,8 @@ use swf::{Rectangle, Twips};
 pub struct Drawing {
     fills_handle: Cell<Option<ShapeHandle>>,
     strokes_handle: Cell<Option<ShapeHandle>>,
+    shape_strokes: RefCell<Option<ShapeStrokes>>,
+    last_scale: Cell<(f32, f32)>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
@@ -39,6 +42,8 @@ impl Drawing {
         Self {
             fills_handle: Cell::new(None),
             strokes_handle: Cell::new(None),
+            shape_strokes: RefCell::new(None),
+            last_scale: Cell::new((0.0, 0.0)),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             dirty: Cell::new(false),
@@ -254,18 +259,8 @@ impl Drawing {
                 self.fills_handle
                     .set(Some(context.renderer.register_shape_fills(&shape.fills, 0)));
             }
-            if let Some(handle) = self.strokes_handle.get() {
-                context
-                    .renderer
-                    .replace_shape_strokes(&shape.strokes, 0, Matrix::IDENTITY, handle);
-            } else {
-                self.strokes_handle
-                    .set(Some(context.renderer.register_shape_strokes(
-                        &shape.strokes,
-                        0,
-                        Matrix::IDENTITY,
-                    )));
-            }
+            *self.shape_strokes.borrow_mut() = Some(shape.strokes);
+            self.last_scale.set((0.0, 0.0)); // Force recreation of stroke
         }
 
         if let Some(handle) = self.fills_handle.get() {
@@ -273,10 +268,58 @@ impl Drawing {
                 .commands
                 .render_shape(handle, context.transform_stack.transform(), false);
         }
-        if let Some(handle) = self.strokes_handle.get() {
-            context
-                .commands
-                .render_shape(handle, context.transform_stack.transform(), true);
+
+        // Update the stroke if we're drawing it at a different scale than last time
+        let old_scale = self.last_scale.get();
+        let cur_matrix = context.transform_stack.transform().matrix;
+        let render_stroke_matrix = Matrix {
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            tx: cur_matrix.tx,
+            ty: cur_matrix.ty,
+        };
+        let cur_scale = (
+            f32::abs(cur_matrix.a + cur_matrix.c),
+            f32::abs(cur_matrix.b + cur_matrix.d),
+        );
+        if old_scale != cur_scale {
+            let build_stroke_matrix = Matrix {
+                a: cur_matrix.a,
+                b: cur_matrix.b,
+                c: cur_matrix.c,
+                d: cur_matrix.d,
+                tx: Default::default(),
+                ty: Default::default(),
+            };
+            let strokes = self.shape_strokes.borrow();
+            if let Some(strokes) = strokes.as_ref() {
+                if let Some(handle) = self.strokes_handle.get() {
+                    context
+                        .renderer
+                        .replace_shape_strokes(strokes, 0, build_stroke_matrix, handle);
+                } else {
+                    self.strokes_handle
+                        .set(Some(context.renderer.register_shape_strokes(
+                            strokes,
+                            0,
+                            build_stroke_matrix,
+                        )));
+                }
+            }
+            self.last_scale.set(cur_scale);
+        }
+
+        if let Some(render_handle) = self.strokes_handle.get() {
+            context.commands.render_shape(
+                render_handle,
+                Transform {
+                    matrix: render_stroke_matrix,
+                    color_transform: context.transform_stack.transform().color_transform,
+                },
+                true,
+            );
         }
     }
 
