@@ -188,6 +188,16 @@ impl LineStyle {
     }
 
     #[inline]
+    pub fn scale_mode(&self) -> LineScaleMode {
+        match (self.allow_scale_x(), self.allow_scale_y()) {
+            (false, false) => LineScaleMode::None,
+            (true, false) => LineScaleMode::Horizontal,
+            (false, true) => LineScaleMode::Vertical,
+            (true, true) => LineScaleMode::Both,
+        }
+    }
+
+    #[inline]
     pub fn is_pixel_hinted(&self) -> bool {
         self.flags.contains(LineStyleFlag::PIXEL_HINTING)
     }

@@ -989,12 +989,7 @@ fn swf_shape_strokes_to_canvas_commands(
             line_cap: line_cap.to_string(),
             line_join: line_join.to_string(),
             miter_limit: miter_limit as f64 / 20.0,
-            scale_mode: match (path.style.allow_scale_x(), path.style.allow_scale_y()) {
-                (false, false) => LineScaleMode::None,
-                (true, false) => LineScaleMode::Horizontal,
-                (false, true) => LineScaleMode::Vertical,
-                (true, true) => LineScaleMode::Both,
-            },
+            scale_mode: path.style.scale_mode(),
         });
     }
     canvas_data

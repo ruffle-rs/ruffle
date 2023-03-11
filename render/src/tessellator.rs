@@ -1,6 +1,6 @@
 use crate::bitmap::BitmapHandle;
 use crate::matrix::Matrix;
-use crate::shape_utils::{DrawCommand, FillPath, FillStyle, LineScaleMode, LineScales, StrokePath};
+use crate::shape_utils::{DrawCommand, FillPath, FillStyle, LineScales, StrokePath};
 use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -140,26 +140,22 @@ impl ShapeStrokeTessellator {
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
 
-            let mut stroke_options = StrokeOptions::default()
-                .with_line_width(scales.transform_width(
-                    path.style.width.to_pixels() as f32,
-                    match (path.style.allow_scale_x(), path.style.allow_scale_y()) {
-                        (false, false) => LineScaleMode::None,
-                        (true, false) => LineScaleMode::Horizontal,
-                        (false, true) => LineScaleMode::Vertical,
-                        (true, true) => LineScaleMode::Both,
-                    },
-                ))
-                .with_start_cap(match path.style.start_cap() {
-                    swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                    swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                    swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                })
-                .with_end_cap(match path.style.end_cap() {
-                    swf::LineCapStyle::None => tessellation::LineCap::Butt,
-                    swf::LineCapStyle::Round => tessellation::LineCap::Round,
-                    swf::LineCapStyle::Square => tessellation::LineCap::Square,
-                });
+            let mut stroke_options =
+                StrokeOptions::default()
+                    .with_line_width(scales.transform_width(
+                        path.style.width.to_pixels() as f32,
+                        path.style.scale_mode(),
+                    ))
+                    .with_start_cap(match path.style.start_cap() {
+                        swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                        swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                        swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                    })
+                    .with_end_cap(match path.style.end_cap() {
+                        swf::LineCapStyle::None => tessellation::LineCap::Butt,
+                        swf::LineCapStyle::Round => tessellation::LineCap::Round,
+                        swf::LineCapStyle::Square => tessellation::LineCap::Square,
+                    });
 
             let line_join = match path.style.join_style() {
                 swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
