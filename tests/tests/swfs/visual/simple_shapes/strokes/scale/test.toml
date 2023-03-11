@@ -1,8 +1,7 @@
 num_frames = 1
-ignore = true
 
 [image_comparison]
-tolerance = 0
+max_outliers = 3
 
 [player_options]
-with_renderer = { optional = true, sample_count = 1 }
+with_renderer = { optional = false, sample_count = 1 }
