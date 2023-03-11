@@ -32,6 +32,24 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_always_show_selection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.text.TextField", "alwaysShowSelection");
+    Ok(Value::Bool(false))
+}
+
+pub fn set_always_show_selection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.text.TextField", "alwaysShowSelection");
+    Ok(Value::Undefined)
+}
+
 pub fn get_auto_size<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,

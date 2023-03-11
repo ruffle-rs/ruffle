@@ -11,6 +11,9 @@ package flash.text {
 
         private native function init();
         
+        public native function get alwaysShowSelection():Boolean;
+        public native function set alwaysShowSelection(value:Boolean):void;
+
         public native function get autoSize():String;
         public native function set autoSize(value:String):void;
         
