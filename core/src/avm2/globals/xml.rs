@@ -88,6 +88,50 @@ pub fn to_xml_string<'gc>(
     Ok(Value::String(node.xml_to_xml_string(activation)?))
 }
 
+fn name_to_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &Value<'gc>,
+) -> Result<Multiname<'gc>, Error<'gc>> {
+    Ok(match name {
+        Value::String(s) => Multiname::new(activation.avm2().public_namespace, *s),
+        Value::Object(o) => {
+            if let Some(qname) = o.as_qname_object() {
+                qname.name().clone()
+            } else {
+                Multiname::new(
+                    activation.avm2().public_namespace,
+                    name.coerce_to_string(activation)?,
+                )
+            }
+        }
+        _ => Multiname::new(
+            activation.avm2().public_namespace,
+            name.coerce_to_string(activation)?,
+        ),
+    })
+}
+
+pub fn child<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0])?;
+    // FIXME: Support numerical indexes.
+    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children
+            .iter()
+            .filter(|node| node.matches_name(&multiname))
+            .map(|node| E4XOrXml::E4X(*node))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+}
+
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -96,6 +140,25 @@ pub fn children<'gc>(
     let xml = this.unwrap().as_xml_object().unwrap();
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children.iter().map(|node| E4XOrXml::E4X(*node)).collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+}
+
+pub fn elements<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children
+            .iter()
+            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Element { .. }))
+            .map(|node| E4XOrXml::E4X(*node))
+            .collect()
     } else {
         Vec::new()
     };
@@ -126,25 +189,7 @@ pub fn attribute<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let xml = this.as_xml_object().unwrap();
-    let name = args[0];
-    let multiname = match name {
-        Value::String(s) => Multiname::new(activation.avm2().public_namespace, s),
-        Value::Object(o) => {
-            if let Some(qname) = o.as_qname_object() {
-                qname.name().clone()
-            } else {
-                Multiname::new(
-                    activation.avm2().public_namespace,
-                    name.coerce_to_string(activation)?,
-                )
-            }
-        }
-        _ => Multiname::new(
-            activation.avm2().public_namespace,
-            name.coerce_to_string(activation)?,
-        ),
-    };
-
+    let multiname = name_to_multiname(activation, &args[0])?;
     let attribute = if let E4XNodeKind::Element { attributes, .. } = &*xml.node().kind() {
         attributes
             .iter()
