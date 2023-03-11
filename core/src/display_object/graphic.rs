@@ -40,7 +40,7 @@ pub struct GraphicData<'gc> {
     #[collect(require_static)]
     strokes_handle: Option<ShapeHandle>,
     #[collect(require_static)]
-    last_stroke_matrix: Option<Matrix>,
+    last_scale: (f32, f32),
 }
 
 impl<'gc> Graphic<'gc> {
@@ -78,7 +78,7 @@ impl<'gc> Graphic<'gc> {
                 avm2_object: None,
                 drawing: None,
                 strokes_handle: None,
-                last_stroke_matrix: None,
+                last_scale: (0.0, 0.0),
             },
         ))
     }
@@ -117,7 +117,7 @@ impl<'gc> Graphic<'gc> {
                 avm2_object: Some(avm2_object),
                 drawing: Some(drawing),
                 strokes_handle: None,
-                last_stroke_matrix: None,
+                last_scale: (0.0, 0.0),
             },
         ))
     }
@@ -216,34 +216,54 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
 
         // Update the stroke if we're drawing it at a different scale than last time
-        let old_matrix = self.0.read().last_stroke_matrix;
-        let matrix = context.transform_stack.transform().matrix;
-        if old_matrix != Some(matrix) {
+        let old_scale = self.0.read().last_scale;
+        let cur_matrix = context.transform_stack.transform().matrix;
+        let render_stroke_matrix = Matrix {
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            tx: cur_matrix.tx,
+            ty: cur_matrix.ty,
+        };
+        let cur_scale = (
+            f32::abs(cur_matrix.a + cur_matrix.c),
+            f32::abs(cur_matrix.b + cur_matrix.d),
+        );
+        if old_scale != cur_scale {
             let mut write = self.0.write(context.gc_context);
             if let Some(strokes) = &write.static_data.strokes {
+                let build_stroke_matrix = Matrix {
+                    a: cur_matrix.a,
+                    b: cur_matrix.b,
+                    c: cur_matrix.c,
+                    d: cur_matrix.d,
+                    tx: Default::default(),
+                    ty: Default::default(),
+                };
                 if let Some(handle) = write.strokes_handle {
                     context.renderer.replace_shape_strokes(
                         strokes,
                         write.static_data.id,
-                        matrix,
+                        build_stroke_matrix,
                         handle,
                     );
                 } else {
                     write.strokes_handle = Some(context.renderer.register_shape_strokes(
                         strokes,
                         write.static_data.id,
-                        matrix,
+                        build_stroke_matrix,
                     ));
                 }
             }
-            write.last_stroke_matrix = Some(matrix);
+            write.last_scale = cur_scale;
         }
 
         if let Some(render_handle) = self.0.read().strokes_handle {
             context.commands.render_shape(
                 render_handle,
                 Transform {
-                    matrix: Matrix::IDENTITY,
+                    matrix: render_stroke_matrix,
                     color_transform: context.transform_stack.transform().color_transform,
                 },
                 true,
