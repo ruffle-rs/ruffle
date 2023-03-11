@@ -210,9 +210,10 @@ impl MorphShapeStatic {
             let fills = context
                 .renderer
                 .register_shape_fills(&shape.fills, shape.id);
-            let strokes = context
-                .renderer
-                .register_shape_strokes(&shape.strokes, shape.id);
+            let strokes =
+                context
+                    .renderer
+                    .register_shape_strokes(&shape.strokes, shape.id, Matrix::IDENTITY);
             frame.shape_handles = Some((fills, strokes));
             (fills, strokes)
         }

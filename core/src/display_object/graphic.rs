@@ -14,6 +14,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, ShapeStrokes};
+use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -38,7 +39,8 @@ pub struct GraphicData<'gc> {
     drawing: Option<Drawing>,
     #[collect(require_static)]
     strokes_handle: Option<ShapeHandle>,
-    last_stroke_scale: (f32, f32),
+    #[collect(require_static)]
+    last_stroke_matrix: Option<Matrix>,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -76,7 +78,7 @@ impl<'gc> Graphic<'gc> {
                 avm2_object: None,
                 drawing: None,
                 strokes_handle: None,
-                last_stroke_scale: (0.0, 0.0),
+                last_stroke_matrix: None,
             },
         ))
     }
@@ -115,7 +117,7 @@ impl<'gc> Graphic<'gc> {
                 avm2_object: Some(avm2_object),
                 drawing: Some(drawing),
                 strokes_handle: None,
-                last_stroke_scale: (0.0, 0.0),
+                last_stroke_matrix: None,
             },
         ))
     }
@@ -214,31 +216,38 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
 
         // Update the stroke if we're drawing it at a different scale than last time
-        let old_scale = self.0.read().last_stroke_scale;
+        let old_matrix = self.0.read().last_stroke_matrix;
         let matrix = context.transform_stack.transform().matrix;
-        let cur_scale = (matrix.a, matrix.d);
-        if old_scale != cur_scale {
+        if old_matrix != Some(matrix) {
             let mut write = self.0.write(context.gc_context);
             if let Some(strokes) = &write.static_data.strokes {
                 if let Some(handle) = write.strokes_handle {
-                    context
-                        .renderer
-                        .replace_shape_strokes(strokes, write.static_data.id, handle);
-                } else {
-                    write.strokes_handle = Some(
-                        context
-                            .renderer
-                            .register_shape_strokes(strokes, write.static_data.id),
+                    context.renderer.replace_shape_strokes(
+                        strokes,
+                        write.static_data.id,
+                        matrix,
+                        handle,
                     );
+                } else {
+                    write.strokes_handle = Some(context.renderer.register_shape_strokes(
+                        strokes,
+                        write.static_data.id,
+                        matrix,
+                    ));
                 }
             }
-            write.last_stroke_scale = cur_scale;
+            write.last_stroke_matrix = Some(matrix);
         }
 
         if let Some(render_handle) = self.0.read().strokes_handle {
-            context
-                .commands
-                .render_shape(render_handle, context.transform_stack.transform(), true);
+            context.commands.render_shape(
+                render_handle,
+                Transform {
+                    matrix: Matrix::IDENTITY,
+                    color_transform: context.transform_stack.transform().color_transform,
+                },
+                true,
+            );
         }
     }
 

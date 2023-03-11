@@ -5,6 +5,7 @@ use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::matrix::Matrix;
 use crate::quality::StageQuality;
 use crate::shape_utils::{ShapeFills, ShapeStrokes};
 use gc_arena::MutationContext;
@@ -48,13 +49,19 @@ impl RenderBackend for NullRenderer {
     }
     fn replace_shape_fills(&mut self, _shape: &ShapeFills, _id: CharacterId, _handle: ShapeHandle) {
     }
-    fn register_shape_strokes(&mut self, _shape: &ShapeStrokes, _id: CharacterId) -> ShapeHandle {
+    fn register_shape_strokes(
+        &mut self,
+        _shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
+    ) -> ShapeHandle {
         ShapeHandle(0)
     }
     fn replace_shape_strokes(
         &mut self,
         _shape: &ShapeStrokes,
         _id: CharacterId,
+        _matrix: Matrix,
         _handle: ShapeHandle,
     ) {
     }

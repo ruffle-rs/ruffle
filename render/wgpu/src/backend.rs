@@ -17,6 +17,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapHandle, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{ShapeConverter, ShapeFills, ShapeStrokes};
 use ruffle_render::tessellator::{ShapeFillTessellator, ShapeStrokeTessellator};
@@ -228,8 +229,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &mut self,
         shape: &ShapeStrokes,
         shape_id: CharacterId,
+        matrix: Matrix,
     ) -> Mesh {
-        let mesh = self.stroke_tessellator.tessellate_shape(&shape.paths);
+        let mesh = self
+            .stroke_tessellator
+            .tessellate_shape(&shape.paths, matrix);
         Mesh::build(self, mesh, shape_id)
     }
 
@@ -389,9 +393,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, id: CharacterId) -> ShapeHandle {
+    fn register_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        id: CharacterId,
+        matrix: Matrix,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let meshes = self.register_shape_strokes_internal(shape, id);
+        let meshes = self.register_shape_strokes_internal(shape, id, matrix);
         self.meshes.push(meshes);
         handle
     }
@@ -401,9 +410,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         &mut self,
         shape: &ShapeStrokes,
         id: CharacterId,
+        matrix: Matrix,
         handle: ShapeHandle,
     ) {
-        let mesh = self.register_shape_strokes_internal(shape, id);
+        let mesh = self.register_shape_strokes_internal(shape, id, matrix);
         self.meshes[handle.0] = mesh;
     }
 

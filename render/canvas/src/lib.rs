@@ -446,7 +446,12 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.shapes[handle.0] = data;
     }
 
-    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, _id: CharacterId) -> ShapeHandle {
+    fn register_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
         let data = swf_shape_strokes_to_canvas_commands(shape, self);
         self.shapes.push(data);
@@ -457,6 +462,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         &mut self,
         shape: &ShapeStrokes,
         _id: CharacterId,
+        _matrix: Matrix,
         handle: ShapeHandle,
     ) {
         let data = swf_shape_strokes_to_canvas_commands(shape, self);

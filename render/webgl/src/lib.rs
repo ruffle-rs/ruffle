@@ -13,6 +13,7 @@ use ruffle_render::backend::{
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{ShapeConverter, ShapeFills, ShapeStrokes};
 use ruffle_render::tessellator::{
@@ -578,8 +579,14 @@ impl WebGlRenderBackend {
         self.register_shape_mesh(mesh)
     }
 
-    fn register_shape_strokes_internal(&mut self, shape: &ShapeStrokes) -> Result<Mesh, Error> {
-        let mesh = self.stroke_tessellator.tessellate_shape(&shape.paths);
+    fn register_shape_strokes_internal(
+        &mut self,
+        shape: &ShapeStrokes,
+        matrix: Matrix,
+    ) -> Result<Mesh, Error> {
+        let mesh = self
+            .stroke_tessellator
+            .tessellate_shape(&shape.paths, matrix);
         self.register_shape_mesh(mesh)
     }
 
@@ -1001,9 +1008,14 @@ impl RenderBackend for WebGlRenderBackend {
         }
     }
 
-    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, _id: CharacterId) -> ShapeHandle {
+    fn register_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        matrix: Matrix,
+    ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        match self.register_shape_strokes_internal(shape) {
+        match self.register_shape_strokes_internal(shape, matrix) {
             Ok(mesh) => self.meshes.push(mesh),
             Err(e) => log::error!("Couldn't register shape strokes: {:?}", e),
         }
@@ -1014,10 +1026,11 @@ impl RenderBackend for WebGlRenderBackend {
         &mut self,
         shape: &ShapeStrokes,
         _id: CharacterId,
+        matrix: Matrix,
         handle: ShapeHandle,
     ) {
         self.delete_mesh(&self.meshes[handle.0]);
-        match self.register_shape_strokes_internal(shape) {
+        match self.register_shape_strokes_internal(shape, matrix) {
             Ok(mesh) => self.meshes[handle.0] = mesh,
             Err(e) => log::error!("Couldn't replace shape strokes: {:?}", e),
         }

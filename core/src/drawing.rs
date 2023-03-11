@@ -3,6 +3,7 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{
     DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, ShapeFills, ShapeStrokes,
     StrokePath,
@@ -256,11 +257,14 @@ impl Drawing {
             if let Some(handle) = self.strokes_handle.get() {
                 context
                     .renderer
-                    .replace_shape_strokes(&shape.strokes, 0, handle);
+                    .replace_shape_strokes(&shape.strokes, 0, Matrix::IDENTITY, handle);
             } else {
-                self.strokes_handle.set(Some(
-                    context.renderer.register_shape_strokes(&shape.strokes, 0),
-                ));
+                self.strokes_handle
+                    .set(Some(context.renderer.register_shape_strokes(
+                        &shape.strokes,
+                        0,
+                        Matrix::IDENTITY,
+                    )));
             }
         }
 

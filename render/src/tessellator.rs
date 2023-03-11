@@ -1,5 +1,6 @@
 use crate::bitmap::BitmapHandle;
-use crate::shape_utils::{DrawCommand, FillPath, FillStyle, StrokePath};
+use crate::matrix::Matrix;
+use crate::shape_utils::{DrawCommand, FillPath, FillStyle, LineScaleMode, LineScales, StrokePath};
 use enum_map::Enum;
 use lyon::path::Path;
 use lyon::tessellation::{
@@ -31,8 +32,10 @@ impl ShapeFillTessellator {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
         for path in shape {
-            let (fill_style, lyon_path) =
-                (&path.style, ruffle_path_to_lyon_path(&path.commands, true));
+            let (fill_style, lyon_path) = (
+                &path.style,
+                ruffle_path_to_lyon_path(&path.commands, true, Matrix::IDENTITY),
+            );
 
             let (draw, color, needs_flush) =
                 if let Some((draw, color, needs_flush)) = fill_to_draw(fill_style) {
@@ -108,14 +111,15 @@ impl ShapeStrokeTessellator {
     }
 
     #[instrument(level = "debug", skip_all)]
-    pub fn tessellate_shape(&mut self, shape: &[StrokePath]) -> Mesh {
+    pub fn tessellate_shape(&mut self, shape: &[StrokePath], matrix: Matrix) -> Mesh {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
+        let mut scales = LineScales::new(&matrix);
 
         for path in shape {
             let (fill_style, lyon_path) = (
                 &path.style.fill_style,
-                ruffle_path_to_lyon_path(&path.commands, path.is_closed),
+                ruffle_path_to_lyon_path(&path.commands, path.is_closed, matrix),
             );
 
             let (draw, color, needs_flush) =
@@ -135,10 +139,17 @@ impl ShapeStrokeTessellator {
 
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
-            // TODO(Herschel): 0 width indicates "hairline".
-            let width = (path.style.width().to_pixels() as f32).max(1.0);
+
             let mut stroke_options = StrokeOptions::default()
-                .with_line_width(width)
+                .with_line_width(scales.transform_width(
+                    path.style.width.to_pixels() as f32,
+                    match (path.style.allow_scale_x(), path.style.allow_scale_y()) {
+                        (false, false) => LineScaleMode::None,
+                        (true, false) => LineScaleMode::Horizontal,
+                        (false, true) => LineScaleMode::Vertical,
+                        (true, true) => LineScaleMode::Both,
+                    },
+                ))
                 .with_start_cap(match path.style.start_cap() {
                     swf::LineCapStyle::None => tessellation::LineCap::Butt,
                     swf::LineCapStyle::Round => tessellation::LineCap::Round,
@@ -310,10 +321,11 @@ fn swf_bitmap_to_gl_matrix(
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
-    fn point(x: swf::Twips, y: swf::Twips) -> lyon::math::Point {
-        lyon::math::Point::new(x.to_pixels() as f32, y.to_pixels() as f32)
-    }
+fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool, matrix: Matrix) -> Path {
+    let point = |x: swf::Twips, y: swf::Twips| -> lyon::math::Point {
+        let point = matrix * (x, y);
+        lyon::math::Point::new(point.0.to_pixels() as f32, point.1.to_pixels() as f32)
+    };
 
     let mut builder = Path::builder();
     let mut move_to = Some((swf::Twips::default(), swf::Twips::default()));

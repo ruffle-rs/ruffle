@@ -4,6 +4,7 @@ use crate::bitmap::{Bitmap, BitmapHandle, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
+use crate::matrix::Matrix;
 use crate::quality::StageQuality;
 use crate::shape_utils::{ShapeFills, ShapeStrokes};
 use downcast_rs::{impl_downcast, Downcast};
@@ -22,8 +23,19 @@ pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions);
     fn register_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId) -> ShapeHandle;
     fn replace_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId, handle: ShapeHandle);
-    fn register_shape_strokes(&mut self, shape: &ShapeStrokes, id: CharacterId) -> ShapeHandle;
-    fn replace_shape_strokes(&mut self, shape: &ShapeStrokes, id: CharacterId, handle: ShapeHandle);
+    fn register_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        id: CharacterId,
+        matrix: Matrix,
+    ) -> ShapeHandle;
+    fn replace_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        id: CharacterId,
+        matrix: Matrix,
+        handle: ShapeHandle,
+    );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
     /// Creates a new `RenderBackend` which renders directly
