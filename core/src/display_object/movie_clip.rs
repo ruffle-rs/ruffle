@@ -2974,11 +2974,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     continue;
                 }
 
-                // Clicking static text is ignored
-                if matches!(child, DisplayObject::Text(_)) {
-                    continue;
-                }
-
                 let mut res = if let Some(child) = child.as_interactive() {
                     child.mouse_pick_avm2(context, point, require_button_mode)
                 } else if child.as_interactive().is_none()
