@@ -8,7 +8,7 @@
         "build": "npm run build:generic && npm run build:firefox",
         "build:generic": "webpack --env generic && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/ruffle_extension.zip",
         "build:firefox": "webpack --env firefox && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/firefox_unsigned.xpi && npm run sign-firefox",
-        "sign-firefox": "node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
+        "sign-firefox": "node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi ../../../reproducible-source.zip"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"

@@ -9,7 +9,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
-use crate::avm2_stub_getter;
+use crate::avm2_stub_method;
 use crate::character::Character;
 use crate::string::AvmString;
 use gc_arena::GcCell;
@@ -162,7 +162,7 @@ pub fn enumerate_fonts<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.Font", "enumerateFonts");
+    avm2_stub_method!(activation, "flash.text.Font", "enumerateFonts");
     Ok(ArrayObject::from_storage(activation, ArrayStorage::new(0))?.into())
 }
 
@@ -172,7 +172,7 @@ pub fn register_font<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.Font", "registerFont");
+    avm2_stub_method!(activation, "flash.text.Font", "registerFont");
     Ok(Value::Undefined)
 }
 
