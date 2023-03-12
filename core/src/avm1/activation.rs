@@ -315,7 +315,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
     pub fn from_stub(context: UpdateContext<'a, 'gc>, id: ActivationIdentifier<'a>) -> Self {
-        let level0 = context.stage.root_clip();
+        // [NA]: we have 3 options here:
+        // 1 - Don't execute anything (return None and handle that at the caller)
+        // 2 - Execute something with a temporary orphaned movie
+        // 3 - Execute something with no movie at all
+        // I have no idea if it's even possible to get into this situation as only AVM2 can remove
+        // the root movie (as far as I can tell). So, panic for now.
+        // When we see this panic happen in real world content, then let's see which approach it expects.
+        let level0 = context
+            .stage
+            .root_clip()
+            .expect("AVM1 should always have a root movie");
         Self::from_nothing(context, id, level0)
     }
 

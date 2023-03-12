@@ -30,7 +30,8 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let movie = if let DisplayObject::MovieClip(movie) = activation.context.stage.root_clip() {
+    let movie = if let Some(DisplayObject::MovieClip(movie)) = activation.context.stage.root_clip()
+    {
         movie
     } else {
         tracing::error!("SharedObject::get_local: Movie was None");

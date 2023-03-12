@@ -16,7 +16,10 @@ where
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
         let context = context.reborrow();
-        let root = context.stage.root_clip();
+        let root = context
+            .stage
+            .root_clip()
+            .expect("Root should exist for freshly made movie");
         let mut activation =
             Activation::from_nothing(context, ActivationIdentifier::root("[Test]"), root);
         let this = root.object().coerce_to_object(&mut activation);

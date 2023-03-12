@@ -630,10 +630,9 @@ impl<'gc> Stage<'gc> {
 
     /// Obtain the root movie on the stage.
     ///
-    /// `Stage` guarantees that there is always a movie clip at depth 0.
-    pub fn root_clip(self) -> DisplayObject<'gc> {
+    /// It is not a guarantee that the root clip exists, as it can be deliberately removed.
+    pub fn root_clip(self) -> Option<DisplayObject<'gc>> {
         self.child_by_depth(0)
-            .expect("Stage must always have a root movie")
     }
 
     /// Fires `Stage.onResize` in AVM1 or `Event.RESIZE` in AVM2.
@@ -641,13 +640,15 @@ impl<'gc> Stage<'gc> {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
         if !context.is_action_script_3() {
-            crate::avm1::Avm1::notify_system_listeners(
-                self.root_clip(),
-                context,
-                "Stage".into(),
-                "onResize".into(),
-                &[],
-            );
+            if let Some(root_clip) = self.root_clip() {
+                crate::avm1::Avm1::notify_system_listeners(
+                    root_clip,
+                    context,
+                    "Stage".into(),
+                    "onResize".into(),
+                    &[],
+                );
+            }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
@@ -678,13 +679,15 @@ impl<'gc> Stage<'gc> {
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
     pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc>) {
         if !context.is_action_script_3() {
-            crate::avm1::Avm1::notify_system_listeners(
-                self.root_clip(),
-                context,
-                "Stage".into(),
-                "onFullScreen".into(),
-                &[self.is_fullscreen().into()],
-            );
+            if let Some(root_clip) = self.root_clip() {
+                crate::avm1::Avm1::notify_system_listeners(
+                    root_clip,
+                    context,
+                    "Stage".into(),
+                    "onFullScreen".into(),
+                    &[self.is_fullscreen().into()],
+                );
+            }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let full_screen_event_cls = context.avm2.classes().fullscreenevent;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());

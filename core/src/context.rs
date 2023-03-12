@@ -188,12 +188,14 @@ pub struct UpdateContext<'a, 'gc> {
 /// Convenience methods for controlling audio.
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
     pub fn update_sounds(&mut self) {
-        self.audio_manager.update_sounds(
-            self.audio,
-            self.gc_context,
-            self.action_queue,
-            self.stage.root_clip(),
-        );
+        if let Some(root_clip) = self.stage.root_clip() {
+            self.audio_manager.update_sounds(
+                self.audio,
+                self.gc_context,
+                self.action_queue,
+                root_clip,
+            );
+        }
     }
 
     pub fn global_sound_transform(&self) -> &SoundTransform {
