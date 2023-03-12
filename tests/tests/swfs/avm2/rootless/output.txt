@@ -1,0 +1,33 @@
+/// Initial state
+// this
+[object Main]
+
+// stage
+[object Stage]
+
+// this.actualStage
+[object Stage]
+
+
+/// Removed root
+// this
+[object Main]
+
+// stage
+null
+
+// this.actualStage
+[object Stage]
+
+
+/// Attached root
+// this
+[object Main]
+
+// stage
+[object Stage]
+
+// this.actualStage
+[object Stage]
+
+
