@@ -294,7 +294,11 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
-        // FIXME - we need to handle namespaces heere
+        // FIXME - we need to handle namespaces here
+        if name.is_any_name() {
+            return true;
+        }
+
         if let Some(local_name) = self.local_name() {
             Some(local_name) == name.local_name()
         } else {
