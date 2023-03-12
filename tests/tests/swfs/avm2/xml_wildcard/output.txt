@@ -1,0 +1,4 @@
+attr: x
+attr: a
+child.id: 1
+child.id: 2
