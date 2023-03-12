@@ -87,6 +87,7 @@ impl SwapChainTarget {
             height,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: capabilities.alpha_modes[0],
+            view_formats: vec![format],
         };
         surface.configure(device, &surface_config);
         Self {
