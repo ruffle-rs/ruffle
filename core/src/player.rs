@@ -1857,16 +1857,17 @@ impl Player {
 
     pub fn flush_shared_objects(&mut self) {
         self.update(|context| {
-            let mut avm1_activation =
-                Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
-            for so in avm1_activation.context.avm1_shared_objects.clone().values() {
-                if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
-                    tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+            if let Some(mut avm1_activation) =
+                Activation::try_from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"))
+            {
+                for so in avm1_activation.context.avm1_shared_objects.clone().values() {
+                    if let Err(e) = crate::avm1::flush(&mut avm1_activation, *so, &[]) {
+                        tracing::error!("Error flushing AVM1 shared object `{:?}`: {:?}", so, e);
+                    }
                 }
             }
 
-            let mut avm2_activation =
-                Avm2Activation::from_nothing(avm1_activation.context.reborrow());
+            let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
                 if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
                     &mut avm2_activation,
