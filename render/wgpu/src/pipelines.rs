@@ -4,7 +4,7 @@ use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex, PushConstants, Transforms};
 use enum_map::{enum_map, Enum, EnumMap};
 use std::mem;
-use wgpu::vertex_attr_array;
+use wgpu::{vertex_attr_array, BlendState};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
     [wgpu::VertexBufferLayout {
@@ -34,6 +34,15 @@ pub struct ShapePipeline {
 #[derive(Debug)]
 pub struct Pipelines {
     pub color: ShapePipeline,
+    /// Renders a bitmap without any blending, and does
+    /// not write to the alpha channel. This is used for
+    /// drawing a finished Stage3D buffer onto the backgroud.
+    pub bitmap_opaque: wgpu::RenderPipeline,
+    /// Like `bitmap_opaque`, but with a no-op `DepthStencilState`.
+    /// This is used when we're inside a `RenderPass` that is
+    /// using a depth buffer, but we don't want to write to it
+    /// or use it any any way.
+    pub bitmap_opaque_dummy_depth: wgpu::RenderPipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
@@ -198,6 +207,56 @@ impl Pipelines {
             .try_into()
             .unwrap();
 
+        let bitmap_opaque_pipeline_layout_label =
+            create_debug_label!("Opaque bitmap pipeline layout");
+        let bitmap_opaque_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: bitmap_opaque_pipeline_layout_label.as_deref(),
+                bind_group_layouts: &bitmap_blend_bindings,
+                push_constant_ranges: full_push_constants,
+            });
+
+        let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(
+            create_debug_label!("Bitmap opaque copy").as_deref(),
+            &shaders.bitmap_shader,
+            &shaders.bitmap_shader,
+            &bitmap_opaque_pipeline_layout,
+            None,
+            &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::COLOR,
+            })],
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            msaa_sample_count,
+        ));
+
+        let bitmap_opaque_dummy_depth = device.create_render_pipeline(&create_pipeline_descriptor(
+            create_debug_label!("Bitmap opaque copy").as_deref(),
+            &shaders.bitmap_shader,
+            &shaders.bitmap_shader,
+            &bitmap_opaque_pipeline_layout,
+            Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Stencil8,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil: wgpu::StencilState {
+                    front: wgpu::StencilFaceState::IGNORE,
+                    back: wgpu::StencilFaceState::IGNORE,
+                    read_mask: 0,
+                    write_mask: 0,
+                },
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::COLOR,
+            })],
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            msaa_sample_count,
+        ));
+
         let color_matrix_filter_bindings = if device.limits().max_push_constant_size > 0 {
             vec![
                 &bind_layouts.globals,
@@ -308,6 +367,8 @@ impl Pipelines {
         Self {
             color: color_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
+            bitmap_opaque,
+            bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
             color_matrix_filter,

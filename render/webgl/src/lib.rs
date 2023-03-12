@@ -1382,6 +1382,10 @@ impl CommandHandler for WebGlRenderBackend {
         }
     }
 
+    fn render_stage3d(&mut self, _bitmap: BitmapHandle, _transform: Transform) {
+        panic!("Stage3D should not have been created on WebGL backend")
+    }
+
     fn draw_rect(&mut self, color: Color, matrix: ruffle_render::matrix::Matrix) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],

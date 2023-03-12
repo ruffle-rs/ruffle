@@ -1,0 +1,9 @@
+# This is the SWF from the https://code.tutsplus.com/tutorials/build-a-stage3d-shoot-em-up-sprite-test--active-11005
+# It performs Stage3D bitmap rendering, and uses multiple different VertexBuffers in the same pipeline
+num_frames = 50
+
+[image_comparison]
+tolerance = 2
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

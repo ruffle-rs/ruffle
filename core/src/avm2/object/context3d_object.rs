@@ -9,8 +9,9 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::{
-    BufferUsage, Context3D, Context3DCommand, Context3DTextureFormat, Context3DTriangleFace,
-    Context3DVertexBufferFormat, ProgramType, Texture,
+    BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
+    Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
+    Texture,
 };
 use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
@@ -126,7 +127,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn create_vertex_buffer(
         &self,
         num_vertices: u32,
-        data_per_vertex: u32,
+        data_32_per_vertex: u8,
         usage: BufferUsage,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,12 +137,12 @@ impl<'gc> Context3DObject<'gc> {
             .render_context
             .as_mut()
             .unwrap()
-            .create_vertex_buffer(usage, num_vertices, data_per_vertex);
+            .create_vertex_buffer(usage, num_vertices, data_32_per_vertex);
         Ok(Value::Object(VertexBuffer3DObject::from_handle(
             activation,
             *self,
             handle,
-            data_per_vertex as usize,
+            data_32_per_vertex as usize,
         )?))
     }
 
@@ -277,6 +278,20 @@ impl<'gc> Context3DObject<'gc> {
             .push(Context3DCommand::SetCulling { face });
     }
 
+    pub fn set_blend_factors(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        source_factor: Context3DBlendFactor,
+        destination_factor: Context3DBlendFactor,
+    ) {
+        self.0.write(activation.context.gc_context).commands.push(
+            Context3DCommand::SetBlendFactors {
+                source_factor,
+                destination_factor,
+            },
+        );
+    }
+
     pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let commands = std::mem::take(&mut write.commands);
@@ -298,11 +313,11 @@ impl<'gc> Context3DObject<'gc> {
 
         if context3d.should_render() {
             let handle = context3d.bitmap_handle();
-            context.commands.render_bitmap(
+
+            context.commands.render_stage3d(
                 handle,
                 // FIXME - apply x and y translation from Stage3D
                 Transform::default(),
-                false,
             );
         }
     }
@@ -370,6 +385,21 @@ impl<'gc> Context3DObject<'gc> {
                 sampler,
                 texture,
                 cube,
+            })
+    }
+
+    pub(crate) fn set_depth_test(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        depth_mask: bool,
+        pass_compare_mode: Context3DCompareMode,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .commands
+            .push(Context3DCommand::SetDepthTest {
+                depth_mask,
+                pass_compare_mode,
             })
     }
 

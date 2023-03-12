@@ -1,4 +1,6 @@
 use ruffle_render::backend::BufferUsage;
+use ruffle_render::backend::Context3DBlendFactor;
+use ruffle_render::backend::Context3DCompareMode;
 use ruffle_render::backend::Context3DTextureFormat;
 use ruffle_render::backend::Context3DTriangleFace;
 use ruffle_render::backend::Context3DVertexBufferFormat;
@@ -36,13 +38,18 @@ pub fn create_vertex_buffer<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        let data_per_vertex = args
+        let data_32_per_vertex = args
             .get(1)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
+
+        if data_32_per_vertex > 64 {
+            return Err("data_32_per_vertex is greater than 64".into());
+        }
+
         return context.create_vertex_buffer(
             num_vertices,
-            data_per_vertex,
+            data_32_per_vertex as u8,
             BufferUsage::DynamicDraw,
             activation,
         );
@@ -64,12 +71,25 @@ pub fn configure_back_buffer<'gc>(
             .get(1)
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
-        // FIXME - get other parameters
 
-        //let anti_alias = args.get(2).unwrap_or(&Value::Undefined).coerce_to_u32(activation)?;
-        //let enable_depth_and_stencil = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let anti_alias = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_u32(activation)?;
+        let enable_depth_and_stencil = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let wants_best_resolution = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let wants_best_resolution_on_browser_zoom =
+            args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
 
-        context.configure_back_buffer(activation, width, height, 0, true, true, true);
+        context.configure_back_buffer(
+            activation,
+            width,
+            height,
+            anti_alias,
+            enable_depth_and_stencil,
+            wants_best_resolution,
+            wants_best_resolution_on_browser_zoom,
+        );
     }
     Ok(Value::Undefined)
 }
@@ -101,7 +121,6 @@ pub fn set_vertex_buffer_at<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
 
-        // FIXME - use the format
         let format = args
             .get(3)
             .unwrap_or(&Value::Undefined)
@@ -486,6 +505,53 @@ pub fn set_texture_at<'gc>(
             Some(obj.as_texture().unwrap().handle())
         };
         context.set_texture_at(activation, sampler, texture, cube);
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_depth_test<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let depth_mask = args[0].coerce_to_boolean();
+        let pass_compare_mode = args[1].coerce_to_string(activation)?;
+        let pass_compare_mode =
+            if let Some(mode) = Context3DCompareMode::from_wstr(&pass_compare_mode) {
+                mode
+            } else {
+                return Err(format!("Unsupported depth test mode: {:?}", pass_compare_mode).into());
+            };
+        context.set_depth_test(activation, depth_mask, pass_compare_mode);
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_blend_factors<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let source_factor = args[0].coerce_to_string(activation)?;
+        let destination_factor = args[1].coerce_to_string(activation)?;
+
+        let source_factor = if let Some(factor) = Context3DBlendFactor::from_wstr(&source_factor) {
+            factor
+        } else {
+            return Err(format!("Unsupported source blend factor: {:?}", source_factor).into());
+        };
+        let destination_factor = if let Some(factor) =
+            Context3DBlendFactor::from_wstr(&destination_factor)
+        {
+            factor
+        } else {
+            return Err(format!("Unsupported dest blend factor: {:?}", destination_factor).into());
+        };
+        context.set_blend_factors(activation, source_factor, destination_factor);
     }
     Ok(Value::Undefined)
 }

@@ -530,6 +530,10 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.clear_color_filter();
     }
 
+    fn render_stage3d(&mut self, _bitmap: BitmapHandle, _transform: Transform) {
+        panic!("Stage3D should not have been created on canvas backend")
+    }
+
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         match &self.mask_state {
             MaskState::DrawContent => {

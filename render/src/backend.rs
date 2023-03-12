@@ -8,6 +8,7 @@ use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_wstr::WStr;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::rc::Rc;
@@ -114,6 +115,49 @@ pub enum Context3DTextureFormat {
     RgbaHalfFloat,
 }
 
+#[derive(Collect, Debug, Copy, Clone)]
+#[collect(require_static)]
+pub enum Context3DBlendFactor {
+    DestinationAlpha,
+    DestinationColor,
+    One,
+    OneMinusDestinationAlpha,
+    OneMinusDestinationColor,
+    OneMinusSourceAlpha,
+    OneMinusSourceColor,
+    SourceAlpha,
+    SourceColor,
+    Zero,
+}
+
+impl Context3DBlendFactor {
+    pub fn from_wstr(wstr: &WStr) -> Option<Context3DBlendFactor> {
+        if wstr == b"destinationAlpha" {
+            Some(Context3DBlendFactor::DestinationAlpha)
+        } else if wstr == b"destinationColor" {
+            Some(Context3DBlendFactor::DestinationColor)
+        } else if wstr == b"one" {
+            Some(Context3DBlendFactor::One)
+        } else if wstr == b"oneMinusDestinationAlpha" {
+            Some(Context3DBlendFactor::OneMinusDestinationAlpha)
+        } else if wstr == b"oneMinusDestinationColor" {
+            Some(Context3DBlendFactor::OneMinusDestinationColor)
+        } else if wstr == b"oneMinusSourceAlpha" {
+            Some(Context3DBlendFactor::OneMinusSourceAlpha)
+        } else if wstr == b"oneMinusSourceColor" {
+            Some(Context3DBlendFactor::OneMinusSourceColor)
+        } else if wstr == b"sourceAlpha" {
+            Some(Context3DBlendFactor::SourceAlpha)
+        } else if wstr == b"sourceColor" {
+            Some(Context3DBlendFactor::SourceColor)
+        } else if wstr == b"zero" {
+            Some(Context3DBlendFactor::Zero)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Collect)]
 #[collect(require_static)]
 pub enum BufferUsage {
@@ -148,7 +192,7 @@ pub trait Context3D: Collect + Downcast {
         &mut self,
         usage: BufferUsage,
         num_vertices: u32,
-        vertex_size: u32,
+        data_32_per_vertex: u8,
     ) -> Rc<dyn VertexBuffer>;
 
     fn create_texture(
@@ -186,6 +230,43 @@ pub enum Context3DTriangleFace {
     Back,
     Front,
     FrontAndBack,
+}
+
+#[derive(Collect, Copy, Clone, Debug)]
+#[collect(require_static)]
+pub enum Context3DCompareMode {
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always,
+}
+
+impl Context3DCompareMode {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"never" {
+            Some(Context3DCompareMode::Never)
+        } else if s == b"less" {
+            Some(Context3DCompareMode::Less)
+        } else if s == b"equal" {
+            Some(Context3DCompareMode::Equal)
+        } else if s == b"lessEqual" {
+            Some(Context3DCompareMode::LessEqual)
+        } else if s == b"greater" {
+            Some(Context3DCompareMode::Greater)
+        } else if s == b"notEqual" {
+            Some(Context3DCompareMode::NotEqual)
+        } else if s == b"greaterEqual" {
+            Some(Context3DCompareMode::GreaterEqual)
+        } else if s == b"always" {
+            Some(Context3DCompareMode::Always)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Collect)]
@@ -263,6 +344,14 @@ pub enum Context3DCommand<'gc> {
         sampler: u32,
         texture: Option<Rc<dyn Texture>>,
         cube: bool,
+    },
+    SetDepthTest {
+        depth_mask: bool,
+        pass_compare_mode: Context3DCompareMode,
+    },
+    SetBlendFactors {
+        source_factor: Context3DBlendFactor,
+        destination_factor: Context3DBlendFactor,
     },
 }
 

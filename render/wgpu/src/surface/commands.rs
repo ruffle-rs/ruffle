@@ -85,7 +85,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform,
                 smoothing,
                 blend_mode,
-            } => self.render_bitmap(bitmap, transform, *smoothing, *blend_mode),
+                render_stage3d,
+            } => self.render_bitmap(bitmap, transform, *smoothing, *blend_mode, *render_stage3d),
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
@@ -131,13 +132,28 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
     }
 
-    pub fn prep_bitmap(&mut self, bind_group: &'pass wgpu::BindGroup, blend_mode: TrivialBlend) {
-        if self.needs_depth {
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
-        } else {
-            self.render_pass
-                .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+    pub fn prep_bitmap(
+        &mut self,
+        bind_group: &'pass wgpu::BindGroup,
+        blend_mode: TrivialBlend,
+        render_stage3d: bool,
+    ) {
+        match (self.needs_depth, render_stage3d) {
+            (true, true) => {
+                self.render_pass
+                    .set_pipeline(&self.pipelines.bitmap_opaque_dummy_depth);
+            }
+            (true, false) => {
+                self.render_pass
+                    .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
+            }
+            (false, true) => {
+                self.render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
+            }
+            (false, false) => {
+                self.render_pass
+                    .set_pipeline(self.pipelines.bitmap[blend_mode].depthless_pipeline());
+            }
         }
 
         self.render_pass.set_bind_group(
@@ -221,6 +237,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         transform: &Transform,
         smoothing: bool,
         blend_mode: TrivialBlend,
+        render_stage3d: bool,
     ) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass
@@ -237,7 +254,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             bitmap.clone(),
             &descriptors.bitmap_samplers,
         );
-        self.prep_bitmap(&bind.bind_group, blend_mode);
+        self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
         self.apply_transform(
             &(transform.matrix
                 * Matrix {
@@ -267,7 +284,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("render_texture");
         }
-        self.prep_bitmap(bind_group, blend_mode);
+        self.prep_bitmap(bind_group, blend_mode, false);
         self.apply_transform(&transform.matrix, &transform.color_transform);
 
         self.draw(
@@ -308,7 +325,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     self.prep_gradient(bind_group);
                 }
                 DrawType::Bitmap { binds, .. } => {
-                    self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal);
+                    self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
                 }
             }
             self.apply_transform(&transform.matrix, &transform.color_transform);
@@ -408,6 +425,7 @@ pub enum DrawCommand {
         transform: Transform,
         smoothing: bool,
         blend_mode: TrivialBlend,
+        render_stage3d: bool,
     },
     RenderTexture {
         _texture: PoolOrArcTexture,
@@ -546,7 +564,17 @@ pub fn chunk_blends<'a>(
                 transform,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
+                render_stage3d: false,
             }),
+            Command::RenderStage3D { bitmap, transform } => {
+                current.push(DrawCommand::RenderBitmap {
+                    bitmap,
+                    transform,
+                    smoothing: false,
+                    blend_mode: TrivialBlend::Normal,
+                    render_stage3d: true,
+                })
+            }
             Command::RenderShape { shape, transform } => {
                 current.push(DrawCommand::RenderShape { shape, transform })
             }

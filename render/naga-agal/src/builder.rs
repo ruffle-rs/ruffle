@@ -1354,6 +1354,21 @@ impl<'a> NagaBuilder<'a> {
                 });
                 self.emit_dest_store(dest, dp3)?;
             }
+            Opcode::Dp4 => {
+                let source2 = source2.assert_source_field();
+
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2, true)?;
+
+                let dp3 = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Dot,
+                    arg: source1,
+                    arg1: Some(source2),
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, dp3)?;
+            }
             Opcode::Neg => {
                 let source = self.emit_source_field_load(source1, do_extend)?;
                 let neg = self.evaluate_expr(Expression::Unary {
