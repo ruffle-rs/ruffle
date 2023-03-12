@@ -2249,16 +2249,20 @@ impl<'gc> MovieClip<'gc> {
         {
             true
         } else {
-            let mut activation = Avm1Activation::from_stub(
-                context.reborrow(),
-                ActivationIdentifier::root("[Mouse Pick]"),
-            );
-            let object = self.object().coerce_to_object(&mut activation);
+            let object = self.object();
+            if let Avm1Value::Object(object) = object {
+                let mut activation = Avm1Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Mouse Pick]"),
+                );
 
-            ClipEvent::BUTTON_EVENT_METHODS
-                .iter()
-                .copied()
-                .any(|handler| object.has_property(&mut activation, handler.into()))
+                ClipEvent::BUTTON_EVENT_METHODS
+                    .iter()
+                    .copied()
+                    .any(|handler| object.has_property(&mut activation, handler.into()))
+            } else {
+                false
+            }
         }
     }
 

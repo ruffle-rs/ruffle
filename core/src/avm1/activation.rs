@@ -329,6 +329,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Self::from_nothing(context, id, level0)
     }
 
+    /// Construct an empty stack frame with no code running on the root move in
+    /// layer 0.
+    pub fn try_from_stub(
+        context: UpdateContext<'a, 'gc>,
+        id: ActivationIdentifier<'a>,
+    ) -> Option<Self> {
+        if let Some(level0) = context.stage.root_clip() {
+            Some(Self::from_nothing(context, id, level0))
+        } else {
+            None
+        }
+    }
+
     /// Add a stack frame that executes code in timeline scope
     pub fn run_child_frame_for_action<S: Into<Cow<'static, str>>>(
         &mut self,
