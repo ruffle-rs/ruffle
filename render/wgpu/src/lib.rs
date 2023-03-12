@@ -187,7 +187,7 @@ impl SyncHandle for QueueSyncHandle {
         self: Box<Self>,
         with_rgba: RgbaBufRead,
     ) -> Result<(), ruffle_render::error::Error> {
-        self.capture(|buf, buf_width| with_rgba(buf, buf_width));
+        self.capture(with_rgba);
         Ok(())
     }
 }
