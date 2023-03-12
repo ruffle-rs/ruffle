@@ -1021,7 +1021,7 @@ fn create_radial_gradient(
     let create_fn = |matrix: swf::Matrix, gradient_scale: f64| {
         let focal_center = matrix
             * (
-                swf::Twips::new((focal_point * 16384.0) as i32),
+                swf::Twips::new((focal_point.clamp(-0.98, 0.98) * 16384.0) as i32),
                 swf::Twips::ZERO,
             );
         let center = matrix * (swf::Twips::ZERO, swf::Twips::ZERO);

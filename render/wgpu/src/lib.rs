@@ -151,7 +151,7 @@ struct GradientUniforms {
 impl From<TessGradient> for GradientUniforms {
     fn from(gradient: TessGradient) -> Self {
         Self {
-            focal_point: gradient.focal_point.to_f32(),
+            focal_point: gradient.focal_point.to_f32().clamp(-0.98, 0.98),
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             shape: match gradient.gradient_type {
                 GradientType::Linear => 1,
