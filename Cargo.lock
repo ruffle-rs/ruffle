@@ -720,7 +720,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "windows 0.44.0",
+ "windows",
 ]
 
 [[package]]
@@ -917,8 +917,9 @@ dependencies = [
 
 [[package]]
 name = "d3d12"
-version = "0.5.0"
-source = "git+https://github.com/gfx-rs/d3d12-rs?rev=a990c93#a990c93ec64eeab78f2292763d0715da9dba1d59"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8f0de2f5a8e7bd4a9eec0e3c781992a4ce1724f68aec7d7a3715344de8b39da"
 dependencies = [
  "bitflags",
  "libloading",
@@ -1549,7 +1550,7 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows 0.44.0",
+ "windows",
 ]
 
 [[package]]
@@ -1632,8 +1633,9 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "glow"
-version = "0.11.2"
-source = "git+https://github.com/grovesNL/glow?rev=c8a011fcd57a5c68cc917ed394baa484bdefc909#c8a011fcd57a5c68cc917ed394baa484bdefc909"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e007a07a24de5ecae94160f141029e9a347282cfe25d1d58d85d845cf3130f1"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -1673,15 +1675,15 @@ dependencies = [
 
 [[package]]
 name = "gpu-allocator"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "434618454f74b63f9b39328298097256977c41ea0ba9d75a47238b77790b6163"
+checksum = "ce95f9e2e11c2c6fadfce42b5af60005db06576f231f5c92550fdded43c423e8"
 dependencies = [
  "backtrace",
  "log",
  "thiserror",
  "winapi",
- "windows 0.43.0",
+ "windows",
 ]
 
 [[package]]
@@ -2377,8 +2379,9 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "0.10.0"
-source = "git+https://github.com/gfx-rs/naga?rev=1be8024#1be8024bda3594987b417bead5024b98be9ab521"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5eafe22a23b797c9bc227c6c896419b26b5bb88fa903417a3adaed08778850d5"
 dependencies = [
  "bit-set",
  "bitflags",
@@ -2397,40 +2400,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "naga"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5eafe22a23b797c9bc227c6c896419b26b5bb88fa903417a3adaed08778850d5"
-dependencies = [
- "bit-set",
- "bitflags",
- "indexmap",
- "log",
- "num-traits",
- "rustc-hash",
- "thiserror",
-]
-
-[[package]]
 name = "naga-agal"
 version = "0.1.0"
 dependencies = [
  "bitflags",
  "insta",
- "naga 0.10.0",
+ "naga",
  "num-derive",
  "num-traits",
 ]
 
 [[package]]
 name = "naga_oil"
-version = "0.4.2"
-source = "git+https://github.com/Aaron1011/naga_oil?rev=f4474b53285a85fe67cc35372c9d7ff4517cb556#f4474b53285a85fe67cc35372c9d7ff4517cb556"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99f501e1de2b05a542e9bea75ea0f4141fb7368fe028cc8324c8c4648f1f75ff"
 dependencies = [
  "bit-set",
  "codespan-reporting",
  "data-encoding",
- "naga 0.10.0",
+ "naga",
  "once_cell",
  "regex",
  "regex-syntax",
@@ -3242,7 +3231,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "windows 0.44.0",
+ "windows",
 ]
 
 [[package]]
@@ -3426,7 +3415,7 @@ dependencies = [
  "futures",
  "gc-arena",
  "image",
- "naga 0.11.0",
+ "naga",
  "naga-agal",
  "naga_oil",
  "once_cell",
@@ -4604,14 +4593,15 @@ checksum = "9193164d4de03a926d909d3bc7c30543cecb35400c02114792c2cae20d5e2dbb"
 
 [[package]]
 name = "wgpu"
-version = "0.14.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=c5851275c59b1d5d949b142d6aa973d0bb638181#c5851275c59b1d5d949b142d6aa973d0bb638181"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d745a1b6d91d85c33defbb29f0eee0450e1d2614d987e14bf6baf26009d132d7"
 dependencies = [
  "arrayvec",
  "cfg-if 1.0.0",
  "js-sys",
  "log",
- "naga 0.10.0",
+ "naga",
  "parking_lot",
  "profiling",
  "raw-window-handle",
@@ -4628,8 +4618,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-core"
-version = "0.14.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=c5851275c59b1d5d949b142d6aa973d0bb638181#c5851275c59b1d5d949b142d6aa973d0bb638181"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7131408d940e335792645a98f03639573b0480e9e2e7cddbbab74f7c6d9f3fff"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -4637,7 +4628,7 @@ dependencies = [
  "codespan-reporting",
  "fxhash",
  "log",
- "naga 0.10.0",
+ "naga",
  "parking_lot",
  "profiling",
  "raw-window-handle",
@@ -4652,8 +4643,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "0.14.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=c5851275c59b1d5d949b142d6aa973d0bb638181#c5851275c59b1d5d949b142d6aa973d0bb638181"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7762ae7fcc06943c1b5d4987ab0194e82aaba7767fbfb75d3458844c5b82cc45"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -4676,7 +4668,7 @@ dependencies = [
  "libloading",
  "log",
  "metal",
- "naga 0.10.0",
+ "naga",
  "objc",
  "parking_lot",
  "profiling",
@@ -4693,11 +4685,14 @@ dependencies = [
 
 [[package]]
 name = "wgpu-types"
-version = "0.14.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=c5851275c59b1d5d949b142d6aa973d0bb638181#c5851275c59b1d5d949b142d6aa973d0bb638181"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32444e121b0bd00cb02c0de32fde457a9491bd44e03e7a5db6df9b1da2f6f110"
 dependencies = [
  "bitflags",
+ "js-sys",
  "serde",
+ "web-sys",
 ]
 
 [[package]]
@@ -4755,21 +4750,6 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "windows"
-version = "0.43.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04662ed0e3e5630dfa9b26e4cb823b817f1a9addda855d973a9458c236556244"
-dependencies = [
- "windows_aarch64_gnullvm",
- "windows_aarch64_msvc",
- "windows_i686_gnu",
- "windows_i686_msvc",
- "windows_x86_64_gnu",
- "windows_x86_64_gnullvm",
- "windows_x86_64_msvc",
-]
 
 [[package]]
 name = "windows"
