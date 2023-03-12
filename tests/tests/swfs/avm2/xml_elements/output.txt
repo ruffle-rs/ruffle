@@ -1,0 +1,3 @@
+elements() length: 2
+elements() element toString: foo1
+elements() element toString: bar2
