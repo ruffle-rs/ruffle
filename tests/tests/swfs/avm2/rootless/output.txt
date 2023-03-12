@@ -20,6 +20,17 @@ null
 [object Stage]
 
 
+/// Timer called
+// this
+[object Main]
+
+// stage
+null
+
+// this.actualStage
+[object Stage]
+
+
 /// Attached root
 // this
 [object Main]

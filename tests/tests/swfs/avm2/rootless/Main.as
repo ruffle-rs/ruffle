@@ -2,6 +2,7 @@
 	
 	import flash.display.MovieClip;
 	import flash.display.Stage;
+	import flash.utils.setTimeout;
 	
 	
 	public class Main extends MovieClip {
@@ -26,8 +27,16 @@
 			actualStage = stage;
 			
 			dump("Initial state");
+			
 			stage.removeChildAt(0);
-			dump("Removed root");;
+			dump("Removed root");
+			
+			setTimeout(reattach, 0);
+		}
+		
+		public function reattach() {
+			dump("Timer called");
+			
 			actualStage.addChild(this);
 			dump("Attached root");
 		}

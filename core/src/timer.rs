@@ -41,37 +41,26 @@ impl<'gc> Timers<'gc> {
             return None;
         }
 
-        let level0 = if let Some(level0) = context.stage.root_clip() {
-            level0
-        } else {
-            tracing::warn!("Ignoring timers as there's no root movie");
-            return None;
-        };
-        let mut activation = Activation::from_nothing(
-            context.reborrow(),
-            ActivationIdentifier::root("[Timer Callback]"),
-            level0,
-        );
+        let level0 = context.stage.root_clip();
 
         let mut tick_count = 0;
-        let cur_time = activation.context.timers.cur_time;
+        let cur_time = context.timers.cur_time;
 
         // We have to be careful because the timer list can be mutated while updating;
         // a timer callback could add more timers, clear timers, etc.
-        while activation
-            .context
+        while context
             .timers
             .peek()
             .map(|timer| timer.tick_time)
             .unwrap_or(cur_time)
             < cur_time
         {
-            let timer = activation.context.timers.peek().unwrap();
+            let timer = context.timers.peek().unwrap();
 
             // TODO: This is only really necessary because BinaryHeap lacks `remove` or `retain` on stable.
             // We can remove the timers straight away in `clearInterval` once this is stable.
             if !timer.is_alive.get() {
-                activation.context.timers.pop();
+                context.timers.pop();
                 continue;
             }
 
@@ -79,8 +68,8 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per timer per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = activation.context.timers.peek_mut().unwrap().tick_time;
-                activation.context.timers.cur_time = next_time.wrapping_sub(100);
+                let next_time = context.timers.peek_mut().unwrap().tick_time;
+                context.timers.cur_time = next_time.wrapping_sub(100);
                 break;
             }
 
@@ -90,15 +79,24 @@ impl<'gc> Timers<'gc> {
 
             let cancel_timer = match callback {
                 TimerCallback::Avm1Function { func, params } => {
-                    let result = func.call(
-                        "[Timer Callback]".into(),
-                        &mut activation,
-                        Avm1Value::Undefined,
-                        &params,
-                    );
+                    if let Some(level0) = level0 {
+                        let mut avm1_activation = Activation::from_nothing(
+                            context.reborrow(),
+                            ActivationIdentifier::root("[Timer Callback]"),
+                            level0,
+                        );
+                        let result = func.call(
+                            "[Timer Callback]".into(),
+                            &mut avm1_activation,
+                            Avm1Value::Undefined,
+                            &params,
+                        );
 
-                    if let Err(e) = result {
-                        tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                        if let Err(e) = result {
+                            tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                        }
+                    } else {
+                        tracing::warn!("Skipping AVM1 timer as there's no root");
                     }
 
                     false
@@ -126,15 +124,24 @@ impl<'gc> Timers<'gc> {
                     }
 
                     if !removed {
-                        let result = this.call_method(
-                            method_name,
-                            &params,
-                            &mut activation,
-                            ExecutionReason::Special,
-                        );
+                        if let Some(level0) = level0 {
+                            let mut avm1_activation = Activation::from_nothing(
+                                context.reborrow(),
+                                ActivationIdentifier::root("[Timer Callback]"),
+                                level0,
+                            );
+                            let result = this.call_method(
+                                method_name,
+                                &params,
+                                &mut avm1_activation,
+                                ExecutionReason::Special,
+                            );
 
-                        if let Err(e) = result {
-                            tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                            if let Err(e) = result {
+                                tracing::error!("Unhandled AVM1 error in timer callback: {}", e);
+                            }
+                        } else {
+                            tracing::warn!("Skipping AVM1 timer as there's no root");
                         }
 
                         false
@@ -143,8 +150,7 @@ impl<'gc> Timers<'gc> {
                     }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
-                    let mut avm2_activation =
-                        Avm2Activation::from_nothing(activation.context.reborrow());
+                    let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
                     match closure.call(None, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
@@ -155,9 +161,9 @@ impl<'gc> Timers<'gc> {
                 }
             };
 
-            crate::player::Player::run_actions(&mut activation.context);
+            crate::player::Player::run_actions(context);
 
-            let mut timer = activation.context.timers.peek_mut().unwrap();
+            let mut timer = context.timers.peek_mut().unwrap();
             // Our timer should still be on the top of the heap.
             // The only way that this could fail is the timer callback
             // added a new callback with an *earlier* tick time than our
@@ -171,7 +177,7 @@ impl<'gc> Timers<'gc> {
             if timer.is_timeout || cancel_timer {
                 // Timeouts only fire once.
                 drop(timer);
-                activation.context.timers.pop();
+                context.timers.pop();
             } else {
                 // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
                 timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
@@ -179,8 +185,7 @@ impl<'gc> Timers<'gc> {
         }
 
         // Return estimated time until next timer tick.
-        activation
-            .context
+        context
             .timers
             .peek()
             .map(|timer| (timer.tick_time.wrapping_sub(cur_time)) as f64 / Self::TIMER_SCALE)
