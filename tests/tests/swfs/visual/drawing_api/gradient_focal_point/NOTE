@@ -1,0 +1,3 @@
+The .swf was essentially created in JPEXS ffdec, which is why there's no .fla file. 
+
+While the expected result doesn't match what Flash Player shows, the important point here is that the bottom three rows are identical, and the fourth from the bottom is different from them.
