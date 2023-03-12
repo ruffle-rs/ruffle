@@ -1853,7 +1853,6 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         // The text is hovered if the mouse is over any child nodes.
         if self.visible()
             && self.mouse_enabled()
-            && self.is_selectable()
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
             Avm2MousePick::Hit((*self).into())
@@ -1863,7 +1862,11 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     }
 
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        MouseCursor::IBeam
+        if self.is_selectable() {
+            MouseCursor::IBeam
+        } else {
+            MouseCursor::Arrow
+        }
     }
 }
 
