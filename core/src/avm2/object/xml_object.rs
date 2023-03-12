@@ -118,35 +118,34 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                         return Ok(Value::Undefined);
                     }
                 }
-
-                let matched_children = if let E4XNodeKind::Element {
-                    children,
-                    attributes,
-                } = &*read.node.kind()
-                {
-                    let search_children = if name.is_attribute() {
-                        attributes
-                    } else {
-                        children
-                    };
-
-                    search_children
-                        .iter()
-                        .filter_map(|child| {
-                            if child.matches_name(name) {
-                                Some(E4XOrXml::E4X(*child))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                } else {
-                    Vec::new()
-                };
-                return Ok(
-                    XmlListObject::new(activation, matched_children, Some(self.into())).into(),
-                );
             }
+
+            let matched_children = if let E4XNodeKind::Element {
+                children,
+                attributes,
+            } = &*read.node.kind()
+            {
+                let search_children = if name.is_attribute() {
+                    attributes
+                } else {
+                    children
+                };
+
+                search_children
+                    .iter()
+                    .filter_map(|child| {
+                        if child.matches_name(name) {
+                            Some(E4XOrXml::E4X(*child))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
+
+            return Ok(XmlListObject::new(activation, matched_children, Some(self.into())).into());
         }
 
         read.base.get_property_local(name, activation)
