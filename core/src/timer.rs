@@ -41,7 +41,12 @@ impl<'gc> Timers<'gc> {
             return None;
         }
 
-        let level0 = context.stage.root_clip();
+        let level0 = if let Some(level0) = context.stage.root_clip() {
+            level0
+        } else {
+            tracing::warn!("Ignoring timers as there's no root movie");
+            return None;
+        };
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Timer Callback]"),

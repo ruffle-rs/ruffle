@@ -49,16 +49,17 @@ impl<'gc> FocusTracker<'gc> {
 
         tracing::info!("Focus is now on {:?}", focused_element);
 
-        let level0 = context.stage.root_clip();
-        Avm1::notify_system_listeners(
-            level0,
-            context,
-            "Selection".into(),
-            "onSetFocus".into(),
-            &[
-                old.map(|v| v.object()).unwrap_or(Value::Null),
-                focused_element.map(|v| v.object()).unwrap_or(Value::Null),
-            ],
-        );
+        if let Some(level0) = context.stage.root_clip() {
+            Avm1::notify_system_listeners(
+                level0,
+                context,
+                "Selection".into(),
+                "onSetFocus".into(),
+                &[
+                    old.map(|v| v.object()).unwrap_or(Value::Null),
+                    focused_element.map(|v| v.object()).unwrap_or(Value::Null),
+                ],
+            );
+        }
     }
 }

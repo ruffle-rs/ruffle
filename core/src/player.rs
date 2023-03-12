@@ -578,7 +578,7 @@ impl Player {
             // TODO: This should use a pointed display object with `.menu`
             let root_dobj = context.stage.root_clip();
 
-            let menu = if let Value::Object(obj) = root_dobj.object() {
+            let menu = if let Some(Value::Object(obj)) = root_dobj.map(|root| root.object()) {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
                     ActivationIdentifier::root("[ContextMenu]"),
@@ -597,13 +597,14 @@ impl Player {
                     None
                 };
                 crate::avm1::make_context_menu_state(menu_object, &mut activation)
-            } else if let Avm2Value::Object(_obj) = root_dobj.object2() {
+            } else if let Some(Avm2Value::Object(_obj)) = root_dobj.map(|root| root.object2()) {
                 // TODO: send "menuSelect" event
                 tracing::warn!("AVM2 Context menu callbacks are not implemented");
 
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                 let menu_object = root_dobj
+                    .expect("Root is confirmed to exist here")
                     .as_interactive()
                     .map(|iobj| iobj.context_menu())
                     .and_then(|v| v.as_object());
@@ -666,23 +667,24 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let root_clip = context.stage.root_clip();
-        let mut activation = Activation::from_nothing(
-            context.reborrow(),
-            ActivationIdentifier::root("[Context Menu Callback]"),
-            root_clip,
-        );
+        if let Some(root_clip) = context.stage.root_clip() {
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                ActivationIdentifier::root("[Context Menu Callback]"),
+                root_clip,
+            );
 
-        // TODO: Remember to also change the first arg
-        // when we support contextmenu on non-root-movie
-        let params = vec![root_clip.object(), Value::Object(item)];
+            // TODO: Remember to also change the first arg
+            // when we support contextmenu on non-root-movie
+            let params = vec![root_clip.object(), Value::Object(item)];
 
-        let _ = callback.call(
-            "[Context Menu Callback]".into(),
-            &mut activation,
-            Value::Undefined,
-            &params,
-        );
+            let _ = callback.call(
+                "[Context Menu Callback]".into(),
+                &mut activation,
+                Value::Undefined,
+                &params,
+            );
+        }
     }
 
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
@@ -697,7 +699,11 @@ impl Player {
     }
 
     fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             if mc.playing() {
                 mc.stop(context);
             } else {
@@ -706,17 +712,29 @@ impl Player {
         }
     }
     fn rewind_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.goto_frame(context, 1, true)
         }
     }
     fn forward_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.next_frame(context);
         }
     }
     fn back_root_movie(context: &mut UpdateContext<'_, '_>) {
-        if let Some(mc) = context.stage.root_clip().as_movie_clip() {
+        if let Some(mc) = context
+            .stage
+            .root_clip()
+            .and_then(|root| root.as_movie_clip())
+        {
             mc.prev_frame(context);
         }
     }
@@ -1072,15 +1090,17 @@ impl Player {
 
             // Fire event listener on appropriate object
             if let Some((listener_type, event_name, args)) = listener {
-                context.action_queue.queue_action(
-                    context.stage.root_clip(),
-                    ActionType::NotifyListeners {
-                        listener: listener_type,
-                        method: event_name,
-                        args,
-                    },
-                    false,
-                );
+                if let Some(root_clip) = context.stage.root_clip() {
+                    context.action_queue.queue_action(
+                        root_clip,
+                        ActionType::NotifyListeners {
+                            listener: listener_type,
+                            method: event_name,
+                            args,
+                        },
+                        false,
+                    );
+                }
             }
 
             Self::run_actions(context);
@@ -1394,7 +1414,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let mut did_finish = true;
 
-            if let Some(root) = context.stage.root_clip().as_movie_clip() {
+            if let Some(root) = context.stage.root_clip().and_then(|root| root.as_movie_clip()) {
                 let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
                 did_finish = root.preload(context, limit);
 
@@ -1774,7 +1794,7 @@ impl Player {
             self.current_frame = update_context
                 .stage
                 .root_clip()
-                .as_movie_clip()
+                .and_then(|root| root.as_movie_clip())
                 .map(|clip| clip.current_frame());
 
             // Hovered object may have been updated; copy it back to the GC root.

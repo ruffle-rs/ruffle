@@ -34,9 +34,13 @@ impl<'gc> ContextMenuState<'gc> {
         &self.callbacks[index]
     }
     pub fn build_builtin_items(&mut self, item_flags: BuiltInItemFlags, stage: Stage<'gc>) {
-        let root_mc = stage.root_clip().as_movie_clip();
+        let root_mc = if let Some(root_clip) = stage.root_clip().and_then(|c| c.as_movie_clip()) {
+            root_clip
+        } else {
+            return;
+        };
         if item_flags.play {
-            let is_playing_root_movie = root_mc.unwrap().playing();
+            let is_playing_root_movie = root_mc.playing();
             self.push(
                 ContextMenuItem {
                     enabled: true,
@@ -48,7 +52,7 @@ impl<'gc> ContextMenuState<'gc> {
             );
         }
         if item_flags.rewind {
-            let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+            let is_first_frame = root_mc.current_frame() <= 1;
             self.push(
                 ContextMenuItem {
                     enabled: !is_first_frame,
@@ -60,7 +64,7 @@ impl<'gc> ContextMenuState<'gc> {
             );
         }
         if item_flags.forward_and_back {
-            let is_first_frame = root_mc.unwrap().current_frame() <= 1;
+            let is_first_frame = root_mc.current_frame() <= 1;
             self.push(
                 ContextMenuItem {
                     enabled: true,
@@ -158,7 +162,7 @@ pub struct BuiltInItemFlags {
 
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
-        let root_mc = stage.root_clip().as_movie_clip();
+        let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
         let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {

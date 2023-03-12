@@ -751,7 +751,11 @@ impl<'gc> Loader<'gc> {
                     _ => unreachable!(),
                 };
 
-                replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
+                replacing_root_movie = uc
+                    .stage
+                    .root_clip()
+                    .map(|root| DisplayObject::ptr_eq(clip, root))
+                    .unwrap_or(false);
 
                 if let Some(mut mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
@@ -817,7 +821,11 @@ impl<'gc> Loader<'gc> {
                     _ => unreachable!(),
                 };
 
-                replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
+                replacing_root_movie = uc
+                    .stage
+                    .root_clip()
+                    .map(|root| DisplayObject::ptr_eq(clip, root))
+                    .unwrap_or(false);
 
                 if let Some(mut mc) = clip.as_movie_clip() {
                     if !uc.is_action_script_3() {
