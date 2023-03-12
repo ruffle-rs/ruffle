@@ -1537,7 +1537,7 @@ impl From<TessGradient> for Gradient {
                 swf::GradientSpread::Repeat => 1,
                 swf::GradientSpread::Reflect => 2,
             },
-            focal_point: gradient.focal_point.to_f32(),
+            focal_point: gradient.focal_point.to_f32().clamp(-0.98, 0.98),
             interpolation: gradient.interpolation,
         }
     }
