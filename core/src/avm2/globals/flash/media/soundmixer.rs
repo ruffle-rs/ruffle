@@ -1,6 +1,7 @@
 //! `flash.media.SoundMixer` builtin/prototype
 
 use std::cell::RefMut;
+use std::sync::Arc;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
@@ -16,6 +17,7 @@ use crate::avm2::QName;
 use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
 use gc_arena::GcCell;
+use once_cell::sync::Lazy;
 
 /// Implements `flash.media.SoundMixer`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -147,34 +149,48 @@ pub fn compute_spectrum<'gc>(
         0
     };
 
-    // This is actually more like a DCT, but at least it's related to an FFT.
     if fft {
+        // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
+        static FFT: Lazy<Arc<dyn realfft::RealToComplex<f32>>> =
+            Lazy::new(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
+
+        let fft = FFT.as_ref();
+
+        let mut in_left = fft.make_input_vec();
+        let mut in_right = fft.make_input_vec();
+
+        for ((il, ir), h) in in_left
+            .iter_mut()
+            .zip(in_right.iter_mut())
+            .zip(hist)
+            .take(512)
+        {
+            *il = h[0];
+            *ir = h[1];
+        }
+
+        let mut out_left = fft.make_output_vec();
+        let mut out_right = fft.make_output_vec();
+
+        // An error is only returned if any of the slices are the wrong size,
+        // but they can't be, because the fft made them itself.
+        let mut scratch = fft.make_scratch_vec();
+        let _ = fft.process_with_scratch(&mut in_left, &mut out_left, &mut scratch);
+        let _ = fft.process_with_scratch(&mut in_right, &mut out_right, &mut scratch);
+
         // This function was reverse-engineered with blood and tears.
         #[inline]
         fn postproc(x: f32) -> f32 {
             x.abs().ln().max(0.0) / 4.0
         }
 
-        // Precompute a single period of the cosine function to be used as a lookup table.
-        let mut cos_lut = [0.0f32; 2048];
-        for (i, c) in cos_lut.iter_mut().enumerate() {
-            *c = (i as f32 / 2048.0 * 2.0 * std::f32::consts::PI).cos();
+        for (h, (ol, or)) in hist
+            .iter_mut()
+            .zip((out_left.iter()).zip(out_right.iter()))
+            .take(512)
+        {
+            *h = [postproc(ol.re), postproc(or.re)];
         }
-
-        // The actual DCT, with a naive implementation.
-        let mut outp = [[0.0, 0.0]; 512];
-        for (freq, o) in outp.iter_mut().enumerate() {
-            // Only the first 512 frames are taken into account.
-            for (i, sample) in hist.iter().take(512).enumerate() {
-                let coeff = cos_lut[(freq * i) % 2048];
-                o[0] += sample[0] * coeff;
-                o[1] += sample[1] * coeff;
-            }
-            *o = [postproc(o[0]), postproc(o[1])];
-        }
-
-        // Only the first 512 elements are used later.
-        hist[..512].copy_from_slice(&outp);
     }
 
     // A stretch factor of 0 appears to be "special" in that it squishes the
