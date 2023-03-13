@@ -209,7 +209,7 @@ pub trait Context3D: Collect + Downcast {
         format: Context3DTextureFormat,
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
-    ) -> Rc<dyn Texture>;
+    ) -> Result<Rc<dyn Texture>, Error>;
 }
 impl_downcast!(Context3D);
 
