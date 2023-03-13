@@ -1,3 +1,27 @@
 foo=a
 foo=0&foo=1&foo=2
+0,1,2
+0,1,2,3,4
 %F0%9F%98%AD=0&%F0%9F%98%AD=%F0%9F%98%AD&%F0%9F%98%AD=2
+0,😭,2
+hello=world,test=%F0%9F%98%80
+world
+hi!
+😀,1,equals=test
+undefined
+null
+10
+string
+1
+hi,bye
+=
+
+,b
+hello=world%3D2
+s p a c e !
+[object Object]
+hello%3Dworld=world,te%20st=equals%3Dtest,test=1,test=2%203
+1,2 3,4
+equals=test,hi bye
+1,2 3,4,1
+equals=test,hi bye,hi
