@@ -232,6 +232,7 @@ export class RufflePlayer extends HTMLElement {
         this.saveManager = <HTMLDialogElement>(
             this.shadow.getElementById("save-manager")!
         );
+        this.populateSaves();
         const closeSaveManager = this.saveManager.querySelector("#close-modal");
         if (closeSaveManager) {
             closeSaveManager.addEventListener("click", () =>
@@ -245,10 +246,6 @@ export class RufflePlayer extends HTMLElement {
         const restoreSave = this.saveManager.querySelector("#restore-save");
         if (restoreSave) {
             restoreSave.addEventListener("change", this.restoreSave.bind(this));
-        }
-        const deleteSave = this.saveManager.querySelector("#delete-save");
-        if (deleteSave) {
-            deleteSave.addEventListener("click", this.deleteSave.bind(this));
         }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
@@ -882,27 +879,99 @@ export class RufflePlayer extends HTMLElement {
      * @param event The change event fired
      */
     async restoreSave(event: Event): Promise<void> {
-        const fileInput = <HTMLInputElement>(event.target);
+        const fileInput = <HTMLInputElement>event.target;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+            if (reader.result && typeof reader.result === "string") {
+                const b64Regex = new RegExp("data:.*;base64,");
+                const unprintable = new RegExp("[\u0000-\u001f]*");
+                const nullChar = "\u0000";
+                const b64SolData = reader.result.replace(b64Regex, "");
+                const solDataNamePlus = atob(b64SolData)
+                    .slice(10)
+                    .replace(unprintable, "");
+                const solName = solDataNamePlus.substring(
+                    0,
+                    solDataNamePlus.indexOf(nullChar)
+                );
+                const solKey = this.swfUrl
+                    ? this.swfUrl.hostname +
+                      this.swfUrl.pathname +
+                      "/" +
+                      solName
+                    : document.location.hostname + "//" + solName;
+                if (this.isB64SOL(b64SolData)) {
+                    if (localStorage[solKey]) {
+                        alert(
+                            "Save data with key " +
+                                solKey +
+                                " already exists. Delete it first."
+                        );
+                    } else {
+                        this.saveManager.close();
+                        localStorage.setItem(solKey, b64SolData);
+                        this.populateSaves();
+                    }
+                }
+            }
+        });
         if (
             fileInput &&
             fileInput.files &&
             fileInput.files.length > 0 &&
             fileInput.files[0]
         ) {
-            const solData = await fileInput.files[0].text();
-			console.log(solData);
-			// Encoding this fails
-            //const encodedData = btoa(solData);
+            reader.readAsDataURL(fileInput.files[0]);
         }
-        this.saveManager.close();
     }
 
     /**
-     * Delete local saves.
+     * Delete local save.
+     *
+     * @param key The key to remove from local storage
      */
-    deleteSave(): void {
-        console.log("TESTING DELETE");
+    deleteSave(key: string): void {
         this.saveManager.close();
+        localStorage.removeItem(key);
+        this.populateSaves();
+    }
+
+    /**
+     * Puts the local save SOL file keys in a table.
+     */
+    populateSaves(): void {
+        const saveTable = this.saveManager.querySelector("#local-saves");
+        if (!saveTable) {
+            return;
+        }
+        saveTable.textContent = "";
+        Object.keys(localStorage).forEach((key) => {
+            const solName = key.split("/").pop();
+            const solData = localStorage.getItem(key);
+            if (solName && solData && this.isB64SOL(solData)) {
+                const row = document.createElement("TR");
+                const keyCol = document.createElement("TD");
+                keyCol.textContent = solName;
+                const downloadCol = document.createElement("TD");
+                downloadCol.textContent = "Download";
+                downloadCol.className = "save-option";
+                downloadCol.addEventListener("click", () =>
+                    this.saveFile(
+                        solData,
+                        "application/octet-stream",
+                        solName + ".sol"
+                    )
+                );
+                const deleteCol = document.createElement("TD");
+                deleteCol.textContent = "Delete";
+                deleteCol.className = "save-option";
+                deleteCol.addEventListener("click", () => this.deleteSave(key));
+                row.appendChild(keyCol);
+                row.appendChild(downloadCol);
+                row.appendChild(deleteCol);
+                saveTable.appendChild(row);
+            }
+        });
     }
 
     /**
