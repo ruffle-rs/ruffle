@@ -285,6 +285,9 @@ ruffleShadowTemplate.innerHTML = `
         #restore-save {
             display: none;
         }
+        .replace-save {
+            display: none;
+        }
         .save-option {
             display: inline-block;
             padding: 3px 10px;
@@ -324,10 +327,6 @@ ruffleShadowTemplate.innerHTML = `
         <span id="close-modal">&times;</span>
         <div class="general-save-options">
             <span class="save-option" id="backup-saves">Backup all saves (download all sols)</span>
-            <span id="restore-save-paragraph">
-                <input type="file" accept=".sol" id="restore-save">
-                <label class="save-option" for="restore-save" id="restore-save-label">Restore save (upload sol)</label>
-            </span>
         </div>
         <table id="local-saves"></table>
     </dialog>
