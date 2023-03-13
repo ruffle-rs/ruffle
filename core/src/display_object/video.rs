@@ -7,6 +7,7 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
+use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
@@ -47,7 +48,7 @@ pub struct VideoData<'gc> {
     base: DisplayObjectBase<'gc>,
 
     /// The source of the video data (e.g. an external file, a SWF bitstream)
-    source: GcCell<'gc, VideoSource>,
+    source: GcCell<'gc, VideoSource<'gc>>,
 
     /// The decoder stream that this video source is associated to.
     stream: VideoStream,
@@ -83,14 +84,15 @@ pub enum VideoStream {
 }
 
 #[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub enum VideoSource {
+#[collect(no_drop)]
+pub enum VideoSource<'gc> {
     /// A video bitstream embedded inside of a SWF movie.
     Swf {
         /// The movie that defined this video stream.
         movie: Arc<SwfMovie>,
 
         /// The video stream definition.
+        #[collect(require_static)]
         streamdef: DefineVideoStream,
 
         /// The locations of each embedded sub-bitstream for each video frame.
@@ -98,6 +100,21 @@ pub enum VideoSource {
         /// Each frame consists of a start and end parameter which can be used
         /// to reconstruct a reference to the embedded bitstream.
         frames: BTreeMap<u32, (usize, usize)>,
+    },
+    /// An attached NetStream.
+    NetStream {
+        /// The movie whose code created the Video object.
+        movie: Arc<SwfMovie>,
+
+        /// The stream the video is downloaded from.
+        stream: GcCell<'gc, NetStream>,
+
+        /// The number of frames in the source media, if known.
+        num_frames: Option<usize>,
+
+        /// The size of the video, if known.
+        #[collect(require_static)]
+        size: Option<Rectangle<Twips>>,
     },
 }
 
@@ -130,6 +147,28 @@ impl<'gc> Video<'gc> {
         ))
     }
 
+    /// Convert this Video into a NetStream sourced video.
+    ///
+    /// Existing video state related to the old video stream will be dropped.
+    pub fn attach_netstream(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        stream: GcCell<'gc, NetStream>,
+    ) {
+        let movie = self.movie();
+        let mut video = self.0.write(context.gc_context);
+
+        *video.source.write(context.gc_context) = VideoSource::NetStream {
+            movie,
+            stream,
+            num_frames: None,
+            size: None,
+        };
+
+        video.stream = VideoStream::Uninstantiated(0);
+        video.keyframes = BTreeSet::new();
+    }
+
     /// Preload frame data from an SWF.
     ///
     /// This function yields an error if this video player is not playing an
@@ -155,6 +194,7 @@ impl<'gc> Video<'gc> {
 
                 frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
             }
+            VideoSource::NetStream { .. } => {}
         }
     }
 
@@ -177,7 +217,8 @@ impl<'gc> Video<'gc> {
         };
 
         let num_frames = match &*read.source.read() {
-            VideoSource::Swf { streamdef, .. } => Some(streamdef.num_frames),
+            VideoSource::Swf { streamdef, .. } => Some(streamdef.num_frames as usize),
+            VideoSource::NetStream { num_frames, .. } => *num_frames,
         };
 
         if let Some(num_frames) = num_frames {
@@ -271,6 +312,7 @@ impl<'gc> Video<'gc> {
                     }
                 }
             },
+            VideoSource::NetStream { .. } => unimplemented!(),
         };
 
         drop(read);
@@ -366,6 +408,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
                 (stream, movie.clone(), keyframes)
             }
+            VideoSource::NetStream { .. } => return,
         };
 
         let starting_seek = if let VideoStream::Uninstantiated(seek_to) = write.stream {
@@ -421,6 +464,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn id(&self) -> CharacterId {
         match (*self.0.read().source.read()).borrow() {
             VideoSource::Swf { streamdef, .. } => streamdef.id,
+            VideoSource::NetStream { .. } => 0,
         }
     }
 
@@ -432,6 +476,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 x_max: Twips::from_pixels_i32(streamdef.width.into()),
                 y_max: Twips::from_pixels_i32(streamdef.height.into()),
             },
+            VideoSource::NetStream { size, .. } => size.clone().unwrap_or_default(),
         }
     }
 
@@ -456,12 +501,16 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
+            // TODO: smoothing flag should be a video property
             let (smoothed_flag, num_frames, version) = match &*read.source.read() {
                 VideoSource::Swf {
                     streamdef,
                     frames,
                     movie,
                 } => (streamdef.is_smoothed, frames.len(), movie.version()),
+                VideoSource::NetStream { num_frames, .. } => {
+                    (false, num_frames.unwrap_or(0), self.movie().version())
+                }
             };
 
             let smoothing = match (context.stage.quality(), version) {
@@ -489,6 +538,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn movie(&self) -> Arc<SwfMovie> {
         match &*self.0.read().source.read() {
             VideoSource::Swf { movie, .. } => movie.clone(),
+            VideoSource::NetStream { movie, .. } => movie.clone(),
         }
     }
 }
