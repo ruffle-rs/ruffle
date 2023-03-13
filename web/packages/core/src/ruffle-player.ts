@@ -243,10 +243,6 @@ export class RufflePlayer extends HTMLElement {
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
         }
-        const restoreSave = this.saveManager.querySelector("#restore-save");
-        if (restoreSave) {
-            restoreSave.addEventListener("change", this.restoreSave.bind(this));
-        }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         window.addEventListener("pointerdown", this.pointerDown.bind(this));
@@ -874,40 +870,20 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Restore save from SOL file.
+     * Replace save from SOL file.
      *
      * @param event The change event fired
+     * @param solKey The localStorage save file key
      */
-    async restoreSave(event: Event): Promise<void> {
+    async replaceSOL(event: Event, solKey: string): Promise<void> {
         const fileInput = <HTMLInputElement>event.target;
         const reader = new FileReader();
         reader.addEventListener("load", () => {
             if (reader.result && typeof reader.result === "string") {
                 const b64Regex = new RegExp("data:.*;base64,");
-                const unprintable = new RegExp("[\u0000-\u001f]*");
-                const nullChar = "\u0000";
                 const b64SolData = reader.result.replace(b64Regex, "");
-                const solDataNamePlus = atob(b64SolData)
-                    .slice(10)
-                    .replace(unprintable, "");
-                const solName = solDataNamePlus.substring(
-                    0,
-                    solDataNamePlus.indexOf(nullChar)
-                );
-                const solKey = this.swfUrl
-                    ? this.swfUrl.hostname +
-                      this.swfUrl.pathname +
-                      "/" +
-                      solName
-                    : document.location.hostname + "//" + solName;
                 if (this.isB64SOL(b64SolData)) {
                     if (localStorage[solKey]) {
-                        alert(
-                            "Save data with key " +
-                                solKey +
-                                " already exists. Delete it first."
-                        );
-                    } else {
                         this.saveManager.close();
                         localStorage.setItem(solKey, b64SolData);
                         this.populateSaves();
@@ -962,12 +938,31 @@ export class RufflePlayer extends HTMLElement {
                         solName + ".sol"
                     )
                 );
+                const replaceCol = document.createElement("TD");
+                const replaceInput = <HTMLInputElement>(
+                    document.createElement("INPUT")
+                );
+                replaceInput.type = "file";
+                replaceInput.className = "replace-save";
+                replaceInput.id = "replace-save-" + key;
+                const replaceLabel = <HTMLLabelElement>(
+                    document.createElement("LABEL")
+                );
+                replaceLabel.htmlFor = "replace-save-" + key;
+                replaceLabel.textContent = "Replace";
+                replaceLabel.className = "save-option";
+                replaceInput.addEventListener("change", (event) =>
+                    this.replaceSOL(event, key)
+                );
+                replaceCol.appendChild(replaceInput);
+                replaceCol.appendChild(replaceLabel);
                 const deleteCol = document.createElement("TD");
                 deleteCol.textContent = "Delete";
                 deleteCol.className = "save-option";
                 deleteCol.addEventListener("click", () => this.deleteSave(key));
                 row.appendChild(keyCol);
                 row.appendChild(downloadCol);
+                row.appendChild(replaceCol);
                 row.appendChild(deleteCol);
                 saveTable.appendChild(row);
             }
