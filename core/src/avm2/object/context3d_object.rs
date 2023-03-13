@@ -421,7 +421,7 @@ impl<'gc> Context3DObject<'gc> {
                 format,
                 optimize_for_render_to_texture,
                 streaming_levels,
-            );
+            )?;
 
         let class = activation.avm2().classes().cubetexture;
 

@@ -469,31 +469,14 @@ impl WgpuContext3D {
                     dest,
                     layer,
                 } => {
-                    // FIXME - handle non-BGRA8Unorm textures
-                    match source.format() {
-                        BitmapFormat::Rgba => {}
-                        _ => unimplemented!(),
-                    }
-
-                    let bgra_data = source
-                        .data()
-                        .chunks_exact(4)
-                        .flat_map(|chunk| {
-                            // Convert from RGBA to BGRA
-                            [chunk[2], chunk[1], chunk[0], chunk[3]]
-                        })
-                        .collect::<Vec<_>>();
-
                     let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
 
-                    // Note - this is very inefficient, since we allocate, and then destroy a buffer
-                    // every time we copy a bitmap to a texture.
-                    // Unfortunately, we cannot copy directly from the Ruffle texture, since the format
-                    // is incorrect (RGBA vs BGRA).
-                    // The `StagingBelt` helper doesn't support writing to textures, so we're using
-                    // our own setup for now.
-                    //
-                    // Hopefully, writing to textures is rare enough that this isn't a big deal.
+                    let image_data = match (source.format(), dest.format) {
+                        (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => source.data(),
+                        (source_format, dest_format) => {
+                            unimplemented!("Trying to copy from bitmap format {source_format:?} to texture format {dest_format:?}")
+                        }
+                    };
 
                     let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
                         label: None,
@@ -503,7 +486,7 @@ impl WgpuContext3D {
                     });
 
                     let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
-                    texture_buffer_view.copy_from_slice(&bgra_data);
+                    texture_buffer_view.copy_from_slice(image_data);
                     drop(texture_buffer_view);
                     texture_buffer.unmap();
 
@@ -517,7 +500,7 @@ impl WgpuContext3D {
                             },
                         },
                         wgpu::ImageCopyTexture {
-                            texture: &dest.0,
+                            texture: &dest.texture,
                             mip_level: 0,
                             origin: wgpu::Origin3d {
                                 x: 0,
@@ -549,7 +532,7 @@ impl WgpuContext3D {
                         }
 
                         Some(BoundTextureData {
-                            view: texture.0.create_view(&view),
+                            view: texture.texture.create_view(&view),
                             cube: *cube,
                         })
                     } else {
@@ -680,7 +663,10 @@ pub struct ShaderModuleAgal(Vec<u8>);
 
 #[derive(Collect)]
 #[collect(require_static)]
-pub struct TextureWrapper(wgpu::Texture);
+pub struct TextureWrapper {
+    texture: wgpu::Texture,
+    format: wgpu::TextureFormat,
+}
 
 impl IndexBuffer for IndexBufferWrapper {}
 impl VertexBuffer for VertexBufferWrapper {}
@@ -756,14 +742,7 @@ impl Context3D for WgpuContext3D {
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
-        let format = match format {
-            Context3DTextureFormat::Bgra => TextureFormat::Bgra8Unorm,
-            _ => {
-                return Err(Error::Unimplemented(
-                    format!("Texture format {format:?}").into(),
-                ))
-            }
-        };
+        let format = convert_texture_format(format)?;
 
         if streaming_levels != 0 {
             return Err(Error::Unimplemented(
@@ -785,7 +764,7 @@ impl Context3D for WgpuContext3D {
             view_formats: &[format],
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
         });
-        Ok(Rc::new(TextureWrapper(texture)))
+        Ok(Rc::new(TextureWrapper { texture, format }))
     }
 
     fn create_cube_texture(
@@ -794,11 +773,8 @@ impl Context3D for WgpuContext3D {
         format: ruffle_render::backend::Context3DTextureFormat,
         _optimize_for_render_to_texture: bool,
         streaming_levels: u32,
-    ) -> Rc<dyn ruffle_render::backend::Texture> {
-        let format = match format {
-            Context3DTextureFormat::Bgra => TextureFormat::Bgra8Unorm,
-            _ => panic!("Unsupported texture format {:?}", format),
-        };
+    ) -> Result<Rc<dyn ruffle_render::backend::Texture>, Error> {
+        let format = convert_texture_format(format)?;
 
         if streaming_levels != 0 {
             tracing::warn!(
@@ -824,7 +800,7 @@ impl Context3D for WgpuContext3D {
             // is `false`.
             usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST,
         });
-        Rc::new(TextureWrapper(texture))
+        Ok(Rc::new(TextureWrapper { texture, format }))
     }
 }
 
@@ -894,4 +870,18 @@ fn make_render_pass<'a>(
         }
     }
     pass
+}
+
+fn convert_texture_format(input: Context3DTextureFormat) -> Result<wgpu::TextureFormat, Error> {
+    match input {
+        // Note - webgl doesn't support Bgra, so we use Rgba instead.
+        // This optimizes the case where we upload from a BitmapData
+        // (since the bytes will already be in the correct format),
+        // and penalizes the case where we upload from a ByteArray
+        // (we'll need to convert from Bgra to Rgba).
+        Context3DTextureFormat::Bgra => Ok(TextureFormat::Rgba8Unorm),
+        _ => Err(Error::Unimplemented(
+            format!("Texture format {input:?}").into(),
+        )),
+    }
 }
