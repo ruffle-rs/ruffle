@@ -3168,6 +3168,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "realfft"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93d6b8e8f0c6d2234aa58048d7290c60bf92cd36fd2888cd8331c66ad4f2e1d2"
+dependencies = [
+ "rustfft",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3306,9 +3315,11 @@ dependencies = [
  "nellymoser-rs",
  "num-derive",
  "num-traits",
+ "once_cell",
  "percent-encoding",
  "quick-xml",
  "rand",
+ "realfft",
  "regress",
  "ruffle_macros",
  "ruffle_render",
