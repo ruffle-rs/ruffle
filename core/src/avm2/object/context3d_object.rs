@@ -15,7 +15,6 @@ use ruffle_render::backend::{
 };
 use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
 
@@ -317,7 +316,7 @@ impl<'gc> Context3DObject<'gc> {
             context.commands.render_stage3d(
                 handle,
                 // FIXME - apply x and y translation from Stage3D
-                Transform::default(),
+                context.transform_stack.transform(),
             );
         }
     }

@@ -1,0 +1,12 @@
+NOTE: This test MUST be run under a (possibly simulated) display with a scale factor of 2
+stage.transform.matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+stage.contentsScaleFactor: 2
+stage.transform.matrix: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+stage.contentsScaleFactor: 2
+stage.localToGlobal(new Point(0, 0)) = (x=0, y=0)
+Set stage matrix
+stage.transform.matrix: (a=1.5, b=0, c=0, d=1, tx=10, ty=100)
+stage.contentsScaleFactor: 2
+stage.localToGlobal(new Point(0, 0)) = (x=0, y=0)
+mouseDown: stageX= 2.5 stageY=2.5 localX=2.5 localY = 2.5
+mouseDown: stageX= 545 stageY=394 localX=545 localY = 394

@@ -379,7 +379,12 @@ impl App {
     }
 
     fn run(self) -> ! {
-        let mut loaded = false;
+        enum LoadingState {
+            Loading,
+            WaitingForResize,
+            Loaded,
+        }
+        let mut loaded = LoadingState::Loading;
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
         let mut next_frame_time = Instant::now();
@@ -401,7 +406,9 @@ impl App {
                     }
 
                     // Core loop
-                    winit::event::Event::MainEventsCleared if loaded => {
+                    winit::event::Event::MainEventsCleared
+                        if matches!(loaded, LoadingState::Loaded) =>
+                    {
                         let new_time = Instant::now();
                         let dt = new_time.duration_since(time).as_micros();
                         if dt > 0 {
@@ -444,6 +451,9 @@ impl App {
                                 scale_factor: viewport_scale_factor,
                             });
                             self.window.request_redraw();
+                            if matches!(loaded, LoadingState::WaitingForResize) {
+                                loaded = LoadingState::Loaded;
+                            }
                         }
                         WindowEvent::CursorMoved { position, .. } => {
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
@@ -605,6 +615,16 @@ impl App {
                         self.window.set_visible(true);
 
                         let viewport_size = self.window.inner_size();
+
+                        // On X11 (and possibly other platforms), the window size is not updated immediately.
+                        // Wait for the window to be resized to the requested size before we start running
+                        // the SWF (which can observe the viewport size in "noScale" mode)
+                        if window_size != viewport_size.into() {
+                            loaded = LoadingState::WaitingForResize;
+                        } else {
+                            loaded = LoadingState::Loaded;
+                        }
+
                         let viewport_scale_factor = self.window.scale_factor();
                         let mut player_lock = self.player.lock().expect("Cannot reenter");
                         player_lock.set_viewport_dimensions(ViewportDimensions {
@@ -612,14 +632,12 @@ impl App {
                             height: viewport_size.height,
                             scale_factor: viewport_scale_factor,
                         });
-
-                        loaded = true;
                     }
                     _ => (),
                 }
 
                 // After polling events, sleep the event loop until the next event or the next frame.
-                *control_flow = if loaded {
+                *control_flow = if matches!(loaded, LoadingState::Loaded) {
                     ControlFlow::WaitUntil(next_frame_time)
                 } else {
                     ControlFlow::Wait

@@ -28,6 +28,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
@@ -130,6 +131,14 @@ pub struct StageData<'gc> {
 
     /// The swf that registered this stage
     movie: Arc<SwfMovie>,
+
+    /// The final viewport transformation matrix applied
+    /// when rendering the stage. This includes the HiDPI scale factor,
+    /// and stage alignment translation. Neither of those are included
+    /// in the ActionScript-exposed `Stage.matrix` (which is always the
+    /// identity matrix unless explicitly set from ActionScript)
+    #[collect(require_static)]
+    viewport_matrix: Matrix,
 }
 
 impl<'gc> Stage<'gc> {
@@ -168,6 +177,7 @@ impl<'gc> Stage<'gc> {
                 loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
                 stage3ds: vec![],
                 movie,
+                viewport_matrix: Matrix::IDENTITY,
             },
         ));
         stage.set_is_root(gc_context, true);
@@ -183,7 +193,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn inverse_view_matrix(self) -> Matrix {
-        let mut inverse_view_matrix = *(self.base().matrix());
+        let mut inverse_view_matrix = self.0.read().viewport_matrix;
         inverse_view_matrix.invert();
 
         inverse_view_matrix
@@ -501,9 +511,8 @@ impl<'gc> Stage<'gc> {
         } else {
             height_delta / 2.0
         };
-        drop(stage);
 
-        *self.base_mut(context.gc_context).matrix_mut() = Matrix {
+        stage.viewport_matrix = Matrix {
             a: scale_x as f32,
             b: 0.0,
             c: 0.0,
@@ -511,6 +520,8 @@ impl<'gc> Stage<'gc> {
             tx: Twips::from_pixels(tx),
             ty: Twips::from_pixels(ty),
         };
+
+        drop(stage);
 
         self.0.write(context.gc_context).view_bounds = if self.should_letterbox() {
             // Letterbox: movie area
@@ -550,8 +561,7 @@ impl<'gc> Stage<'gc> {
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 
-        let base = self.base();
-        let view_matrix = base.matrix();
+        let view_matrix = self.0.read().viewport_matrix;
 
         let (movie_width, movie_height) = self.0.read().movie_size;
         let movie_width = movie_width as f32 * view_matrix.a;
@@ -716,7 +726,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn local_to_global_matrix(&self) -> Matrix {
-        // TODO: See comments in DisplayObject::local_to_global_matrix.
+        // The stage is in Stage coordinates by definition
         Default::default()
     }
 
@@ -782,6 +792,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+        context.transform_stack.push(&Transform {
+            matrix: self.0.read().viewport_matrix,
+            color_transform: Default::default(),
+        });
+
         // All of our Stage3D instances get rendered *underneath* the main stage.
         // Note that the stage background color is actually the lowest possible layer,
         // and get applied when we start the frame (before `render` is called).
@@ -796,6 +811,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         if self.should_letterbox() {
             self.draw_letterbox(context);
         }
+
+        context.transform_stack.pop();
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
