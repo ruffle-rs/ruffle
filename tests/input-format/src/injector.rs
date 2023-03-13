@@ -88,6 +88,7 @@ impl InputInjector {
                         let mask: MouseButtons = (*btn).into();
                         self.buttons &= !mask;
                     }
+                    AutomatedEvent::ResizeViewport { .. } => {}
                 }
 
                 event_sink(event, self.buttons);

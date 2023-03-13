@@ -1,0 +1,2 @@
+Stage enterFrame: stageWidth=550 stageHeight = 400
+Stage enterFrame: stageWidth=550 stageHeight = 400

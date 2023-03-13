@@ -47,4 +47,7 @@ pub enum AutomatedEvent {
 
     /// Press a key
     KeyDown { key_code: u8 },
+
+    /// Resize the viewport (equivalent to resizing the desktop window)
+    ResizeViewport { width: u32, height: u32 },
 }

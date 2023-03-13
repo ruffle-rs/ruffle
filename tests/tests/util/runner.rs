@@ -8,9 +8,9 @@ use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::events::KeyCode;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
-use ruffle_core::impl_audio_mixer_backend;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::{impl_audio_mixer_backend, ViewportDimensions};
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use std::cell::RefCell;
@@ -131,8 +131,8 @@ pub fn run_swf(
         executor.run();
 
         injector.next(|evt, _btns_down| {
-            player.lock().unwrap().handle_event(match evt {
-                AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
+            let evt = match evt {
+                AutomatedEvent::MouseDown { pos, btn } => Some(PlayerEvent::MouseDown {
                     x: pos.0,
                     y: pos.1,
                     button: match btn {
@@ -140,9 +140,11 @@ pub fn run_swf(
                         InputMouseButton::Middle => RuffleMouseButton::Middle,
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
-                },
-                AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
-                AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {
+                }),
+                AutomatedEvent::MouseMove { pos } => {
+                    Some(PlayerEvent::MouseMove { x: pos.0, y: pos.1 })
+                }
+                AutomatedEvent::MouseUp { pos, btn } => Some(PlayerEvent::MouseUp {
                     x: pos.0,
                     y: pos.1,
                     button: match btn {
@@ -150,13 +152,26 @@ pub fn run_swf(
                         InputMouseButton::Middle => RuffleMouseButton::Middle,
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
-                },
-                AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
+                }),
+                AutomatedEvent::KeyDown { key_code } => Some(PlayerEvent::KeyDown {
                     key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
                     key_char: None,
-                },
+                }),
+                AutomatedEvent::ResizeViewport { width, height } => {
+                    let mut player_lock = player.lock().unwrap();
+                    let scale_factor = player_lock.viewport_dimensions().scale_factor;
+                    player_lock.set_viewport_dimensions(ViewportDimensions {
+                        width: *width,
+                        height: *height,
+                        scale_factor,
+                    });
+                    None
+                }
                 AutomatedEvent::Wait => unreachable!(),
-            });
+            };
+            if let Some(evt) = evt {
+                player.lock().unwrap().handle_event(evt);
+            }
         });
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
         player.lock().unwrap().render();

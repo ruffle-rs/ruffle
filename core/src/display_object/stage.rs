@@ -572,12 +572,16 @@ impl<'gc> Stage<'gc> {
         let margin_top = view_matrix.ty.to_pixels() as f32;
         let margin_bottom = viewport_height - movie_height - margin_top;
 
+        // Letterboxing uses the stage background color. Use a transparent color (alpha=0)
+        // to achieve this, since we're already cleared the frame to the correct background color.
+        let transparent_color = Color::from_rgb(0, 0);
+
         // Letterboxing only occurs in `StageScaleMode::ShowAll`, and they would only appear on the top+bottom or left+right.
         if margin_top + margin_bottom > margin_left + margin_right {
             // Top + bottom
             if margin_top > 0.0 {
                 context.commands.draw_rect(
-                    Color::BLACK,
+                    transparent_color.clone(),
                     Matrix::create_box(
                         viewport_width,
                         margin_top,
@@ -589,7 +593,7 @@ impl<'gc> Stage<'gc> {
             }
             if margin_bottom > 0.0 {
                 context.commands.draw_rect(
-                    Color::BLACK,
+                    transparent_color,
                     Matrix::create_box(
                         viewport_width,
                         margin_bottom,
@@ -603,7 +607,7 @@ impl<'gc> Stage<'gc> {
             // Left + right
             if margin_left > 0.0 {
                 context.commands.draw_rect(
-                    Color::BLACK,
+                    transparent_color.clone(),
                     Matrix::create_box(
                         margin_left,
                         viewport_height,
@@ -615,7 +619,7 @@ impl<'gc> Stage<'gc> {
             }
             if margin_right > 0.0 {
                 context.commands.draw_rect(
-                    Color::BLACK,
+                    transparent_color,
                     Matrix::create_box(
                         margin_right,
                         viewport_height,
