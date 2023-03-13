@@ -208,9 +208,6 @@ impl<'gc> Avm2Button<'gc> {
                     Ok(child) => {
                         child.set_matrix(context.gc_context, record.matrix.into());
                         child.set_depth(context.gc_context, record.depth.into());
-                        if let Some(clip) = child.as_movie_clip() {
-                            clip.set_is_button_state(context.gc_context);
-                        }
 
                         if swf_state != swf::ButtonState::HIT_TEST {
                             child.set_color_transform(

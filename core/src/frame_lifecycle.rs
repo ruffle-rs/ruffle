@@ -14,7 +14,6 @@
 use crate::avm2::Avm2;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
-use fnv::FnvHashSet;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -73,63 +72,35 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     let stage = context.stage;
 
     *context.frame_phase = FramePhase::Enter;
-
+    Avm2::each_orphan_movie(context, |movie, context| {
+        movie.enter_frame(context);
+    });
     stage.enter_frame(context);
 
-    let mut ran_framescript = FnvHashSet::default();
-
-    Avm2::each_orphan_movie(context, |movie, context| {
-        if movie.initialized() {
-            // Orphan frame scripts run in a really weird place.
-            // Running them here matches the output we get from Flash Player,
-            // where the currentFrame field field hasn't been updated yet
-            // (but is updated when we call an enterFrame listener)
-            movie.run_frame_scripts(context);
-            movie.enter_frame(context);
-            ran_framescript.insert(movie.downgrade().as_ptr());
-        }
-    });
-
     *context.frame_phase = FramePhase::Construct;
-
-    Avm2::each_orphan_movie(context, |movie, context| {
-        if !movie.initialized() {
-            movie.run_frame_scripts(context);
-            ran_framescript.insert(movie.downgrade().as_ptr());
-        }
-    });
-
-    stage.construct_frame(context);
-
     Avm2::each_orphan_movie(context, |movie, context| {
         movie.construct_frame(context);
-        if !ran_framescript.contains(&movie.downgrade().as_ptr()) {
-            movie.run_frame_scripts(context);
-        }
     });
-
+    stage.construct_frame(context);
     stage.frame_constructed(context);
 
     *context.frame_phase = FramePhase::FrameScripts;
-
+    Avm2::each_orphan_movie(context, |movie, context| {
+        movie.run_frame_scripts(context);
+    });
     stage.run_frame_scripts(context);
 
-    Avm2::each_orphan_movie(context, |movie, context| {
-        if !movie.initialized() {
-            movie.enter_frame(context);
-        }
-    });
-
     *context.frame_phase = FramePhase::Exit;
-    stage.exit_frame(context);
-
     Avm2::each_orphan_movie(context, |movie, context| {
         movie.on_exit_frame(context);
     });
+    stage.exit_frame(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list
     // inside `each_orphan_movie`, since the callback may modify the orphan list.
     // Instead, we do one cleanup at the end of the frame.
+    // This performs special handling of clips which became orphaned as
+    // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
     Avm2::cleanup_dead_orphans(context);
 
     *context.frame_phase = FramePhase::Idle;

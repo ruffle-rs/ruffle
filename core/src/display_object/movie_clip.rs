@@ -911,6 +911,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing()
     }
 
+    pub fn set_skip_next_enter_frame(self, mc: MutationContext<'gc, '_>, skip: bool) {
+        self.0.write(mc).set_skip_next_enter_frame(skip);
+    }
+
     pub fn programmatically_played(self) -> bool {
         self.0.read().programmatically_played()
     }
@@ -2237,26 +2241,6 @@ impl<'gc> MovieClip<'gc> {
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
     }
 
-    /// If `true`, this clip was instantiated by Avm2Button
-    /// from an SWF tag. Currently, this flag
-    /// is used to opt out of orphan handling in `avm2::valid_orphan`
-    pub fn is_button_state(&self) -> bool {
-        self.0
-            .read()
-            .flags
-            .intersects(MovieClipFlags::IS_BUTTON_STATE)
-    }
-
-    /// Permanently marks this clip as being used as one of the four
-    /// `ButtonState`s for an `Avm2Button`. This should only be called
-    /// within `avm2_button`
-    pub fn set_is_button_state(&self, gc_context: MutationContext<'gc, '_>) {
-        self.0
-            .write(gc_context)
-            .flags
-            .set(MovieClipFlags::IS_BUTTON_STATE, true)
-    }
-
     pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if self.forced_button_mode()
             || self
@@ -2354,6 +2338,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         //Child removals from looping gotos appear to resolve in reverse order.
         for child in self.iter_render_list().rev() {
             child.enter_frame(context);
+        }
+
+        if self.0.read().skip_next_enter_frame() {
+            self.0
+                .write(context.gc_context)
+                .set_skip_next_enter_frame(false);
+            return;
         }
 
         if context.is_action_script_3() {
@@ -3078,6 +3069,14 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_playing(&mut self, value: bool) {
         self.flags.set(MovieClipFlags::PLAYING, value);
+    }
+
+    pub fn set_skip_next_enter_frame(&mut self, value: bool) {
+        self.flags.set(MovieClipFlags::SKIP_NEXT_ENTER_FRAME, value);
+    }
+
+    fn skip_next_enter_frame(&self) -> bool {
+        self.flags.contains(MovieClipFlags::SKIP_NEXT_ENTER_FRAME)
     }
 
     fn programmatically_played(&self) -> bool {
@@ -4419,7 +4418,12 @@ bitflags! {
         /// that happen while those tags run should cancel the loop.
         const LOOP_QUEUED = 1 << 4;
 
-        const IS_BUTTON_STATE = 1 << 5;
+        /// Flag set when we should skip running our next 'enterFrame'
+        /// for ourself *only* (we still run children).
+        /// This is set for objects constructed from ActionScript,
+        /// which are observed to lag behind objects placed by the timeline
+        /// (even if they are both placed in the same frame)
+        const SKIP_NEXT_ENTER_FRAME          = 1 << 5;
     }
 }
 

@@ -418,6 +418,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 removed.set_parent(context, None);
             }
 
+            // The `remove_range` method is only ever called as a result of an ActionScript
+            // call
+            removed.set_placed_by_script(context.gc_context, true);
+
             write = self.raw_container_mut(context.gc_context);
         }
     }

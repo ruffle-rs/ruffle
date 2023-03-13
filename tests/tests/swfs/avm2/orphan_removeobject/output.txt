@@ -1,0 +1,636 @@
+Running child constructor: this.myId = 0 this.parent=[object MainTimeline]
+Constructed GrandChild: this.myId= 0 this.parent=null this.name=manualGrandchild
+Running child constructor: this.myId = 1 this.parent=[object MainTimeline]
+Constructed GrandChild: this.myId= 1 this.parent=null this.name=manualGrandchild
+Running child constructor: this.myId = 2 this.parent=[object MainTimeline]
+Constructed GrandChild: this.myId= 2 this.parent=null this.name=manualGrandchild
+Running child constructor: this.myId = 3 this.parent=[object MainTimeline]
+Constructed GrandChild: this.myId= 3 this.parent=null this.name=manualGrandchild
+Running child constructor: this.myId = 4 this.parent=[object MainTimeline]
+Constructed GrandChild: this.myId= 4 this.parent=null this.name=manualGrandchild
+Running child constructor: this.myId = 5 this.parent=null
+Constructed GrandChild: this.myId= 5 this.parent=null this.name=manualGrandchild
+Freshly constructed: this.sneakyChild.currentFrame = 1 this.sneakyChild.isPlaying = false
+Running child constructor: this.myId = 6 this.parent=null
+Constructed GrandChild: this.myId= 6 this.parent=null this.name=manualGrandchild
+toBeSwappedChild: [object MyChild]
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Adding child in enterFrame
+Running child constructor: this.myId = 8 this.parent=null
+Constructed GrandChild: this.myId= 8 this.parent=null this.name=manualGrandchild
+MainTimeline frame: 2
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Removing otherTimeline1
+MainTimeline frame: 3
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Constructed GrandChild: this.myId= 9 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 10 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 11 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 12 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 13 this.parent=[object MyChild] this.name=timelineGrandchild
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+MainTimeline frame: 4
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Constructed GrandChild: this.myId= 14 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 15 this.parent=[object MyChild] this.name=timelineGrandchild
+Constructed GrandChild: this.myId= 16 this.parent=[object MyChild] this.name=timelineGrandchild
+Child timelineChild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+MainTimeline frame: 5
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Constructed GrandChild: this.myId= 17 this.parent=[object MyChild] this.name=timelineGrandchild
+Child timelineChild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=[object MyChild] in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 3 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=[object MyChild] in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+MainTimeline frame: 6
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+MainTimeline frame: 7
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in enterFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in enterFrame: child.currentFrame = 2 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in frameConstructed: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in frameConstructed: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in frameConstructed: child.currentFrame = 2 child.isPlaying = false
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Child timelineChild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromFrameScript child.myId = 7 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 6 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 7 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child addedFromEnterFrame child.myId = 8 child.parent=[object MainTimeline] in exitFrame: child.currentFrame = 5 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 8 child.parent=null in exitFrame: child.currentFrame = 1 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 9 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 10 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 11 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 12 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 13 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 14 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 15 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 16 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+GrandChild child.name = timelineGrandchild child.myId = 17 child.parent=null in exitFrame: child.currentFrame = 2 child.isPlaying = false
+Child timelineChild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 4 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 0 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child toBeSwappedChild child.myId = 1 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 8 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 1 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline1 child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 8 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 2 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child otherTimeline2 child.myId = 3 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 8 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 3 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child removedTimelineChild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 8 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 4 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child SneakyChild child.myId = 5 child.parent=[object MainTimeline] in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 5 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+Child Orphan child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 7 child.isPlaying = false
+GrandChild child.name = manualGrandchild child.myId = 6 child.parent=null in enterFrame: child.currentFrame = 3 child.isPlaying = false
+MainTimeline frame: 8
+Running child constructor: this.myId = 9 this.parent=null
+Constructed GrandChild: this.myId= 18 this.parent=null this.name=manualGrandchild
+Dummy currentFrame: 1
+Main reached frame 8. Captured framescripts:
+List entry 0
+Child Orphan this.myId = 6 this.parent=null in framescript 1: this.currentFrame = 1
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child addedFromEnterFrame this.myId = 8 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child otherTimeline1 this.myId = 2 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 1: this.currentFrame = 1
+Child timelineChild this.myId = 0 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 1: this.currentFrame = 1
+List entry 1
+Child Orphan this.myId = 6 this.parent=null in framescript 2: this.currentFrame = 2
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child addedFromEnterFrame this.myId = 8 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child otherTimeline1 this.myId = 2 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 2: this.currentFrame = 2
+Child timelineChild this.myId = 0 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 2: this.currentFrame = 2
+List entry 2
+Child Orphan this.myId = 6 this.parent=null in framescript 3: this.currentFrame = 3
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+Child addedFromEnterFrame this.myId = 8 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+Child otherTimeline1 this.myId = 2 this.parent=null in framescript 3: this.currentFrame = 3
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 3: this.currentFrame = 3
+Child timelineChild this.myId = 0 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 3: this.currentFrame = 3
+List entry 3
+Child Orphan this.myId = 6 this.parent=null in framescript 4: this.currentFrame = 4
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 4: this.currentFrame = 4
+Child addedFromEnterFrame this.myId = 8 this.parent=[object MainTimeline] in framescript 4: this.currentFrame = 4
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 4: this.currentFrame = 4
+Child otherTimeline1 this.myId = 2 this.parent=null in framescript 4: this.currentFrame = 4
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 4: this.currentFrame = 4
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 4: this.currentFrame = 4
+Child timelineChild this.myId = 0 this.parent=null in framescript 4: this.currentFrame = 4
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 4: this.currentFrame = 4
+List entry 4
+Child Orphan this.myId = 6 this.parent=null in framescript 5: this.currentFrame = 5
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 5: this.currentFrame = 5
+Child addedFromEnterFrame this.myId = 8 this.parent=[object MainTimeline] in framescript 5: this.currentFrame = 5
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 5: this.currentFrame = 5
+Child otherTimeline1 this.myId = 2 this.parent=null in framescript 5: this.currentFrame = 5
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 5: this.currentFrame = 5
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 5: this.currentFrame = 5
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 5: this.currentFrame = 5
+List entry 5
+Child Orphan this.myId = 6 this.parent=null in framescript 6: this.currentFrame = 6
+Child SneakyChild this.myId = 5 this.parent=[object MainTimeline] in framescript 6: this.currentFrame = 6
+Child addedFromFrameScript this.myId = 7 this.parent=[object MainTimeline] in framescript 6: this.currentFrame = 6
+Child otherTimeline1 this.myId = 2 this.parent=null in framescript 6: this.currentFrame = 6
+Child otherTimeline2 this.myId = 3 this.parent=[object MainTimeline] in framescript 6: this.currentFrame = 6
+Child removedTimelineChild this.myId = 4 this.parent=null in framescript 6: this.currentFrame = 6
+Child toBeSwappedChild this.myId = 1 this.parent=[object MainTimeline] in framescript 6: this.currentFrame = 6
+Done
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
+Running child framescript
