@@ -1,4 +1,8 @@
 attr: x
 attr: a
+attribute("*") attr: x
+attribute("*") attr: a
 child.id: 1
 child.id: 2
+child("*") child.id: 1
+child("*") child.id: 2
