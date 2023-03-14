@@ -611,6 +611,10 @@ impl<'a> NagaBuilder<'a> {
                 .ok_or(Error::MissingVertexAttributeData(index))?
                 .to_naga_type(&mut self.module);
 
+            // Function arguments might not be in the same order as the
+            // corresponding binding indices (e.g. the first argument might have binding '2').
+            // However, we only access the `FunctionArgument` expression through the `vertex_input_expressions`
+            // vec, which is indexed by the binding index.
             self.func.arguments.push(FunctionArgument {
                 name: None,
                 ty,
@@ -621,11 +625,13 @@ impl<'a> NagaBuilder<'a> {
                 }),
             });
 
-            // Arguments map one-to-one to vertex attributes.
-            let expr = self
-                .func
-                .expressions
-                .append(Expression::FunctionArgument(index as u32), Span::UNDEFINED);
+            let arg_index = self.func.arguments.len() - 1;
+
+            // Arguments map one-tom-one to vertex attributes.
+            let expr = self.func.expressions.append(
+                Expression::FunctionArgument(arg_index as u32),
+                Span::UNDEFINED,
+            );
             self.vertex_input_expressions[index] = Some(expr);
         }
         Ok(self.vertex_input_expressions[index].unwrap())
