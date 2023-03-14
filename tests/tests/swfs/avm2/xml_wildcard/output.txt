@@ -6,3 +6,6 @@ child.id: 1
 child.id: 2
 child("*") child.id: 1
 child("*") child.id: 2
+xml_list is an [object XMLList]
+xml_list.* child: toto
+xml_list.* child: piggy
