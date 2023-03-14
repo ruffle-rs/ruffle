@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, WeakObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -157,6 +157,10 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::EventObject(EventObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {

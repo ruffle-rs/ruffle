@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error;
-use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject, WeakObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
@@ -75,6 +75,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::ScriptObject(ScriptObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {

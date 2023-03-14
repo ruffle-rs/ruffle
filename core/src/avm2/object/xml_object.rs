@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, WeakObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
@@ -153,6 +153,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::XmlObject(XmlObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {

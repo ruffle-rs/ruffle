@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, WeakObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
@@ -154,6 +154,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::FunctionObject(FunctionObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn to_string(&self, _activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {

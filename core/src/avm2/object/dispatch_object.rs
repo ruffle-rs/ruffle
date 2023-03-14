@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::DispatchList;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, ObjectPtr, TObject, WeakObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
@@ -89,6 +89,10 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::DispatchObject(DispatchObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn construct(

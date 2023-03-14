@@ -62,40 +62,147 @@ mod vertex_buffer_3d_object;
 mod xml_list_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
-pub use crate::avm2::object::bitmapdata_object::{bitmap_data_allocator, BitmapDataObject};
-pub use crate::avm2::object::bytearray_object::{byte_array_allocator, ByteArrayObject};
-pub use crate::avm2::object::class_object::ClassObject;
-pub use crate::avm2::object::context3d_object::Context3DObject;
-pub use crate::avm2::object::date_object::{date_allocator, DateObject};
-pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
-pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::{application_domain_allocator, DomainObject};
-pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
-pub use crate::avm2::object::event_object::{event_allocator, EventObject};
-pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
-pub use crate::avm2::object::index_buffer_3d_object::IndexBuffer3DObject;
-pub use crate::avm2::object::loaderinfo_object::{
-    loader_info_allocator, LoaderInfoObject, LoaderStream,
+pub use crate::avm2::object::array_object::{array_allocator, ArrayObject, ArrayObjectWeak};
+pub use crate::avm2::object::bitmapdata_object::{
+    bitmap_data_allocator, BitmapDataObject, BitmapDataObjectWeak,
 };
-pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
-pub use crate::avm2::object::netstream_object::{netstream_allocator, NetStreamObject};
-pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
-pub use crate::avm2::object::program_3d_object::Program3DObject;
-pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
-pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject};
-pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject};
-pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
-pub use crate::avm2::object::soundchannel_object::{sound_channel_allocator, SoundChannelObject};
-pub use crate::avm2::object::stage3d_object::{stage_3d_allocator, Stage3DObject};
-pub use crate::avm2::object::stage_object::StageObject;
-pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
-pub use crate::avm2::object::texture_object::TextureObject;
-pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
-pub use crate::avm2::object::vertex_buffer_3d_object::VertexBuffer3DObject;
-pub use crate::avm2::object::xml_list_object::{xml_list_allocator, E4XOrXml, XmlListObject};
-pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
+pub use crate::avm2::object::bytearray_object::{
+    byte_array_allocator, ByteArrayObject, ByteArrayObjectWeak,
+};
+pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
+pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
+pub use crate::avm2::object::date_object::{date_allocator, DateObject, DateObjectWeak};
+pub use crate::avm2::object::dictionary_object::{
+    dictionary_allocator, DictionaryObject, DictionaryObjectWeak,
+};
+pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWeak};
+pub use crate::avm2::object::domain_object::{
+    application_domain_allocator, DomainObject, DomainObjectWeak,
+};
+pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
+pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
+pub use crate::avm2::object::function_object::{
+    function_allocator, FunctionObject, FunctionObjectWeak,
+};
+pub use crate::avm2::object::index_buffer_3d_object::{
+    IndexBuffer3DObject, IndexBuffer3DObjectWeak,
+};
+pub use crate::avm2::object::loaderinfo_object::{
+    loader_info_allocator, LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
+};
+pub use crate::avm2::object::namespace_object::{
+    namespace_allocator, NamespaceObject, NamespaceObjectWeak,
+};
+pub use crate::avm2::object::netstream_object::{
+    netstream_allocator, NetStreamObject, NetStreamObjectWeak,
+};
+pub use crate::avm2::object::primitive_object::{
+    primitive_allocator, PrimitiveObject, PrimitiveObjectWeak,
+};
+pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
+pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
+pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
+pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
+pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData, ScriptObjectWeak};
+pub use crate::avm2::object::sound_object::{
+    sound_allocator, QueuedPlay, SoundData, SoundObject, SoundObjectWeak,
+};
+pub use crate::avm2::object::soundchannel_object::{
+    sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
+};
+pub use crate::avm2::object::stage3d_object::{
+    stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
+};
+pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
+pub use crate::avm2::object::textformat_object::{
+    textformat_allocator, TextFormatObject, TextFormatObjectWeak,
+};
+pub use crate::avm2::object::texture_object::{TextureObject, TextureObjectWeak};
+pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, VectorObjectWeak};
+pub use crate::avm2::object::vertex_buffer_3d_object::{
+    VertexBuffer3DObject, VertexBuffer3DObjectWeak,
+};
+pub use crate::avm2::object::xml_list_object::{
+    xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
+};
+pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
+
+#[allow(clippy::enum_variant_names)]
+#[derive(Clone, Collect, Debug, Copy)]
+#[collect(no_drop)]
+pub enum WeakObject<'gc> {
+    ScriptObject(ScriptObjectWeak<'gc>),
+    FunctionObject(FunctionObjectWeak<'gc>),
+    PrimitiveObject(PrimitiveObjectWeak<'gc>),
+    NamespaceObject(NamespaceObjectWeak<'gc>),
+    ArrayObject(ArrayObjectWeak<'gc>),
+    StageObject(StageObjectWeak<'gc>),
+    DomainObject(DomainObjectWeak<'gc>),
+    EventObject(EventObjectWeak<'gc>),
+    DispatchObject(DispatchObjectWeak<'gc>),
+    XmlObject(XmlObjectWeak<'gc>),
+    XmlListObject(XmlListObjectWeak<'gc>),
+    RegExpObject(RegExpObjectWeak<'gc>),
+    ByteArrayObject(ByteArrayObjectWeak<'gc>),
+    LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
+    ClassObject(ClassObjectWeak<'gc>),
+    VectorObject(VectorObjectWeak<'gc>),
+    SoundObject(SoundObjectWeak<'gc>),
+    SoundChannelObject(SoundChannelObjectWeak<'gc>),
+    BitmapDataObject(BitmapDataObjectWeak<'gc>),
+    DateObject(DateObjectWeak<'gc>),
+    DictionaryObject(DictionaryObjectWeak<'gc>),
+    QNameObject(QNameObjectWeak<'gc>),
+    TextFormatObject(TextFormatObjectWeak<'gc>),
+    ProxyObject(ProxyObjectWeak<'gc>),
+    ErrorObject(ErrorObjectWeak<'gc>),
+    Stage3DObject(Stage3DObjectWeak<'gc>),
+    Context3DObject(Context3DObjectWeak<'gc>),
+    IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
+    VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
+    TextureObject(TextureObjectWeak<'gc>),
+    Program3DObject(Program3DObjectWeak<'gc>),
+    NetStreamObject(NetStreamObjectWeak<'gc>),
+}
+
+impl<'gc> WeakObject<'gc> {
+    pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Object<'gc>> {
+        Some(match self {
+            Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
+            Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),
+            Self::PrimitiveObject(o) => PrimitiveObject(o.0.upgrade(mc)?).into(),
+            Self::NamespaceObject(o) => NamespaceObject(o.0.upgrade(mc)?).into(),
+            Self::ArrayObject(o) => ArrayObject(o.0.upgrade(mc)?).into(),
+            Self::StageObject(o) => StageObject(o.0.upgrade(mc)?).into(),
+            Self::DomainObject(o) => DomainObject(o.0.upgrade(mc)?).into(),
+            Self::EventObject(o) => EventObject(o.0.upgrade(mc)?).into(),
+            Self::DispatchObject(o) => DispatchObject(o.0.upgrade(mc)?).into(),
+            Self::XmlObject(o) => XmlObject(o.0.upgrade(mc)?).into(),
+            Self::XmlListObject(o) => XmlListObject(o.0.upgrade(mc)?).into(),
+            Self::RegExpObject(o) => RegExpObject(o.0.upgrade(mc)?).into(),
+            Self::ByteArrayObject(o) => ByteArrayObject(o.0.upgrade(mc)?).into(),
+            Self::LoaderInfoObject(o) => LoaderInfoObject(o.0.upgrade(mc)?).into(),
+            Self::ClassObject(o) => ClassObject(o.0.upgrade(mc)?).into(),
+            Self::VectorObject(o) => VectorObject(o.0.upgrade(mc)?).into(),
+            Self::SoundObject(o) => SoundObject(o.0.upgrade(mc)?).into(),
+            Self::SoundChannelObject(o) => SoundChannelObject(o.0.upgrade(mc)?).into(),
+            Self::BitmapDataObject(o) => BitmapDataObject(o.0.upgrade(mc)?).into(),
+            Self::DateObject(o) => DateObject(o.0.upgrade(mc)?).into(),
+            Self::DictionaryObject(o) => DictionaryObject(o.0.upgrade(mc)?).into(),
+            Self::QNameObject(o) => QNameObject(o.0.upgrade(mc)?).into(),
+            Self::TextFormatObject(o) => TextFormatObject(o.0.upgrade(mc)?).into(),
+            Self::ProxyObject(o) => ProxyObject(o.0.upgrade(mc)?).into(),
+            Self::ErrorObject(o) => ErrorObject(o.0.upgrade(mc)?).into(),
+            Self::Stage3DObject(o) => Stage3DObject(o.0.upgrade(mc)?).into(),
+            Self::Context3DObject(o) => Context3DObject(o.0.upgrade(mc)?).into(),
+            Self::IndexBuffer3DObject(o) => IndexBuffer3DObject(o.0.upgrade(mc)?).into(),
+            Self::VertexBuffer3DObject(o) => VertexBuffer3DObject(o.0.upgrade(mc)?).into(),
+            Self::TextureObject(o) => TextureObject(o.0.upgrade(mc)?).into(),
+            Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
+            Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
+        })
+    }
+}
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -1032,6 +1139,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
+
+    /// Downgrades this Object to a WeakObject.
+    fn downgrade(&self) -> WeakObject<'gc>;
 
     /// Get this object's class, if it has one.
     fn instance_of(&self) -> Option<ClassObject<'gc>> {

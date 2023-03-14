@@ -6,9 +6,11 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::streams::NetStream;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+
+use super::WeakObject;
 
 pub fn netstream_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -28,7 +30,11 @@ pub fn netstream_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct NetStreamObject<'gc>(GcCell<'gc, NetStreamObjectData<'gc>>);
+pub struct NetStreamObject<'gc>(pub GcCell<'gc, NetStreamObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct NetStreamObjectWeak<'gc>(pub GcWeakCell<'gc, NetStreamObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -48,6 +54,10 @@ impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         self.0.as_ptr() as *const ObjectPtr
+    }
+
+    fn downgrade(&self) -> WeakObject<'gc> {
+        WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(self.0)))
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
