@@ -884,6 +884,29 @@ export class RufflePlayer extends HTMLElement {
                 const b64SolData = reader.result.replace(b64Regex, "");
                 if (this.isB64SOL(b64SolData)) {
                     if (localStorage[solKey]) {
+                        const swfPath = this.swfUrl ? this.swfUrl.pathname : "";
+                        const swfHost = this.swfUrl
+                            ? this.swfUrl.hostname
+                            : document.location.hostname;
+                        const savePath = solKey
+                            .split("/")
+                            .slice(1, -1)
+                            .join("/");
+                        if (
+                            swfPath.includes(savePath) &&
+                            solKey.startsWith(swfHost)
+                        ) {
+                            const confirmReload = confirm(
+                                "The only way to replace this save file without potential conflict is to reload this content. Do you wish to continue anyway?"
+                            );
+                            if (confirmReload && this.loadedConfig) {
+                                this.destroy();
+                                localStorage.setItem(solKey, b64SolData);
+                                this.load(this.loadedConfig);
+                                this.populateSaves();
+                                return;
+                            }
+                        }
                         this.saveManager.close();
                         localStorage.setItem(solKey, b64SolData);
                         this.populateSaves();
