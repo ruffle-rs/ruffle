@@ -557,6 +557,28 @@ impl<'gc> Context3DObject<'gc> {
             activation, *self, texture, class,
         )?))
     }
+
+    pub(crate) fn set_sampler_state_at(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        sampler: u32,
+        wrap: ruffle_render::backend::Context3DWrapMode,
+        filter: ruffle_render::backend::Context3DTextureFilter,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetSamplerStateAt {
+                    sampler,
+                    wrap,
+                    filter,
+                },
+                activation.context.gc_context,
+            )
+    }
 }
 
 #[derive(Collect)]

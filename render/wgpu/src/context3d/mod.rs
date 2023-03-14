@@ -1077,6 +1077,14 @@ impl Context3D for WgpuContext3D {
                     },
                 );
             }
+            Context3DCommand::SetSamplerStateAt {
+                sampler,
+                wrap,
+                filter,
+            } => {
+                self.current_pipeline
+                    .update_sampler_state_at(*sampler as usize, *wrap, *filter);
+            }
         }
     }
 }

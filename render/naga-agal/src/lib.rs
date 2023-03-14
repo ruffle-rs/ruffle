@@ -8,6 +8,7 @@ use builder::NagaBuilder;
 pub const SHADER_ENTRY_POINT: &str = "main";
 
 pub const MAX_VERTEX_ATTRIBUTES: usize = 8;
+pub const MAX_TEXTURES: usize = 8;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum VertexAttributeFormat {
@@ -40,6 +41,8 @@ pub enum ShaderType {
     Vertex,
     Fragment,
 }
+
+pub use types::{Filter, Mipmap, SamplerOverride, Wrapping};
 
 /**
  * Compiles an Adobe AGAL shader to a Naga Module.
@@ -89,6 +92,7 @@ pub enum ShaderType {
 pub fn agal_to_naga(
     agal: &[u8],
     vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
+    sampler_overrides: &[Option<SamplerOverride>; MAX_TEXTURES],
 ) -> Result<Module, Error> {
-    NagaBuilder::process_agal(agal, vertex_attributes)
+    NagaBuilder::process_agal(agal, vertex_attributes, sampler_overrides)
 }

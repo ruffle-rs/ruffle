@@ -274,6 +274,62 @@ impl Context3DCompareMode {
     }
 }
 
+#[derive(Collect, Copy, Clone, Debug)]
+#[collect(require_static)]
+pub enum Context3DWrapMode {
+    Clamp,
+    ClampURepeatV,
+    Repeat,
+    RepeatUClampV,
+}
+
+impl Context3DWrapMode {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"clamp" {
+            Some(Context3DWrapMode::Clamp)
+        } else if s == b"clamp_u_repeat_v" {
+            Some(Context3DWrapMode::ClampURepeatV)
+        } else if s == b"repeat" {
+            Some(Context3DWrapMode::Repeat)
+        } else if s == b"repeat_u_clamp_v" {
+            Some(Context3DWrapMode::RepeatUClampV)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Collect, Copy, Clone, Debug)]
+#[collect(require_static)]
+pub enum Context3DTextureFilter {
+    Anisotropic16X,
+    Anisotropic2X,
+    Anisotropic4X,
+    Anisotropic8X,
+    Linear,
+    Nearest,
+}
+
+impl Context3DTextureFilter {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"anisotropic16x" {
+            Some(Context3DTextureFilter::Anisotropic16X)
+        } else if s == b"anisotropic2x" {
+            Some(Context3DTextureFilter::Anisotropic2X)
+        } else if s == b"anisotropic4x" {
+            Some(Context3DTextureFilter::Anisotropic4X)
+        } else if s == b"anisotropic8x" {
+            Some(Context3DTextureFilter::Anisotropic8X)
+        } else if s == b"linear" {
+            Some(Context3DTextureFilter::Linear)
+        } else if s == b"nearest" {
+            Some(Context3DTextureFilter::Nearest)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum Context3DCommand<'gc> {
@@ -370,6 +426,11 @@ pub enum Context3DCommand<'gc> {
     SetBlendFactors {
         source_factor: Context3DBlendFactor,
         destination_factor: Context3DBlendFactor,
+    },
+    SetSamplerStateAt {
+        sampler: u32,
+        wrap: Context3DWrapMode,
+        filter: Context3DTextureFilter,
     },
 }
 

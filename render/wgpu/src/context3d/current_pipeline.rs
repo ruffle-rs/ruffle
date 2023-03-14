@@ -1,5 +1,9 @@
 use naga::valid::{Capabilities, ValidationFlags, Validator};
-use ruffle_render::backend::{Context3DTriangleFace, Context3DVertexBufferFormat, Texture};
+use naga_agal::{Filter, SamplerOverride, Wrapping};
+use ruffle_render::backend::{
+    Context3DTextureFilter, Context3DTriangleFace, Context3DVertexBufferFormat, Context3DWrapMode,
+    Texture,
+};
 
 use wgpu::{
     BindGroupEntry, BindingResource, BufferDescriptor, BufferUsages, FrontFace, SamplerBindingType,
@@ -31,8 +35,12 @@ const SAMPLER_REPEAT_LINEAR: u32 = 2;
 const SAMPLER_REPEAT_NEAREST: u32 = 3;
 const SAMPLER_CLAMP_LINEAR: u32 = 4;
 const SAMPLER_CLAMP_NEAREST: u32 = 5;
+const SAMPLER_CLAMP_U_REPEAT_V_LINEAR: u32 = 6;
+const SAMPLER_CLAMP_U_REPEAT_V_NEAREST: u32 = 7;
+const SAMPLER_REPEAT_U_CLAMP_V_LINEAR: u32 = 8;
+const SAMPLER_REPEAT_U_CLAMP_V_NEAREST: u32 = 9;
 
-const TEXTURE_START_BIND_INDEX: u32 = 6;
+const TEXTURE_START_BIND_INDEX: u32 = 10;
 
 // The flash Context3D API is similar to OpenGL - it has many methods
 // which modify the current state (`setVertexBufferAt`, `setCulling`, etc.)
@@ -74,6 +82,8 @@ pub struct CurrentPipeline {
     sample_count: u32,
 
     dirty: Cell<bool>,
+
+    sampler_override: [Option<SamplerOverride>; 8],
 }
 
 pub struct BoundTextureData {
@@ -119,6 +129,8 @@ impl CurrentPipeline {
             color_component: wgpu::BlendComponent::REPLACE,
             alpha_component: wgpu::BlendComponent::REPLACE,
             sample_count: 1,
+
+            sampler_override: [None; 8],
         }
     }
     pub fn set_vertex_shader(&mut self, shader: Rc<ShaderModuleAgal>) {
@@ -258,6 +270,30 @@ impl CurrentPipeline {
                 ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                 count: None,
             },
+            wgpu::BindGroupLayoutEntry {
+                binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                count: None,
+            },
         ];
 
         for (i, bound_texture) in self.bound_textures.iter().enumerate() {
@@ -324,6 +360,30 @@ impl CurrentPipeline {
                 binding: SAMPLER_CLAMP_NEAREST,
                 resource: BindingResource::Sampler(&descriptors.bitmap_samplers.clamp_nearest),
             },
+            BindGroupEntry {
+                binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
+                resource: BindingResource::Sampler(
+                    &descriptors.bitmap_samplers.clamp_u_repeat_v_linear,
+                ),
+            },
+            BindGroupEntry {
+                binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
+                resource: BindingResource::Sampler(
+                    &descriptors.bitmap_samplers.clamp_u_repeat_v_nearest,
+                ),
+            },
+            BindGroupEntry {
+                binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
+                resource: BindingResource::Sampler(
+                    &descriptors.bitmap_samplers.repeat_u_clamp_v_linear,
+                ),
+            },
+            BindGroupEntry {
+                binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
+                resource: BindingResource::Sampler(
+                    &descriptors.bitmap_samplers.repeat_u_clamp_v_nearest,
+                ),
+            },
         ];
 
         for (i, bound_texture) in self.bound_textures.iter().enumerate() {
@@ -363,6 +423,8 @@ impl CurrentPipeline {
             })
         });
 
+        let sampler_overrides = &self.sampler_override;
+
         let vertex_naga = naga_agal::agal_to_naga(
             &self
                 .vertex_shader
@@ -370,6 +432,7 @@ impl CurrentPipeline {
                 .expect("Missing vertex shader!")
                 .0,
             &agal_attributes,
+            sampler_overrides,
         )
         .expect("Vertex shader failed to compile");
 
@@ -380,6 +443,7 @@ impl CurrentPipeline {
                 .expect("Missing fragment shader")
                 .0,
             &[None; 8],
+            sampler_overrides,
         )
         .expect("Fragment shader failed to compile");
 
@@ -565,6 +629,33 @@ impl CurrentPipeline {
             self.color_component = color_component;
             self.alpha_component = alpha_component;
             self.dirty.set(true);
+        }
+    }
+
+    pub(crate) fn update_sampler_state_at(
+        &mut self,
+        sampler: usize,
+        wrap: ruffle_render::backend::Context3DWrapMode,
+        filter: ruffle_render::backend::Context3DTextureFilter,
+    ) {
+        let sampler_override = SamplerOverride {
+            wrapping: match wrap {
+                Context3DWrapMode::Clamp => Wrapping::Clamp,
+                Context3DWrapMode::Repeat => Wrapping::Repeat,
+                Context3DWrapMode::ClampURepeatV => Wrapping::ClampURepeatV,
+                Context3DWrapMode::RepeatUClampV => Wrapping::RepeatUClampV,
+            },
+            filter: match filter {
+                Context3DTextureFilter::Linear => Filter::Linear,
+                Context3DTextureFilter::Nearest => Filter::Nearest,
+                _ => unimplemented!(),
+            },
+            // FIXME - implement this
+            mipmap: naga_agal::Mipmap::Disable,
+        };
+        if self.sampler_override[sampler] != Some(sampler_override) {
+            self.dirty.set(true);
+            self.sampler_override[sampler] = Some(sampler_override);
         }
     }
 }
