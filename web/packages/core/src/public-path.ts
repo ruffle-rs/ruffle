@@ -1,4 +1,4 @@
-import type { Config } from "./config";
+import type { ApiConfig } from "./config";
 
 // This must be in global scope because `document.currentScript`
 // works only while the script is initially being processed.
@@ -41,7 +41,7 @@ try {
  * @param config The `window.RufflePlayer.config` object.
  * @returns The public path for the given source.
  */
-export function publicPath(config: Config): string {
+export function publicPath(config: ApiConfig): string {
     // Default to the directory where this script resides.
     let path = currentScriptURL;
     if (config.publicPath !== null && config.publicPath !== undefined) {

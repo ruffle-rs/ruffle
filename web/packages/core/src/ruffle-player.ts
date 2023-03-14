@@ -2,15 +2,16 @@ import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
-import type { Config } from "./config";
-import { DEFAULT_CONFIG } from "./config";
+import { DEFAULT_LOAD_OPTIONS } from "./load-options";
 import {
+    BaseLoadOptions,
     DataLoadOptions,
     URLLoadOptions,
     AutoPlay,
     UnmuteOverlay,
     WindowMode,
 } from "./load-options";
+import type { ApiConfig } from "./config";
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-file-name";
 import { buildInfo } from "./build-info";
@@ -139,7 +140,7 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
-    private loadedConfig: Required<Config> = DEFAULT_CONFIG;
+    private loadedConfig: BaseLoadOptions = DEFAULT_LOAD_OPTIONS;
 
     private swfUrl?: URL;
     private instance: Ruffle | null;
@@ -182,7 +183,7 @@ export class RufflePlayer extends HTMLElement {
      * Any configuration that should apply to this specific player.
      * This will be defaulted with any global configuration.
      */
-    config: Config = {};
+    config: ApiConfig & BaseLoadOptions = {};
 
     /**
      * Indicates the readiness of the playing movie.
@@ -427,7 +428,7 @@ export class RufflePlayer extends HTMLElement {
             );
         }
         const ruffleConstructor = await loadRuffle(
-            this.loadedConfig,
+            window.RufflePlayer?.config ?? {},
             this.onRuffleDownloadProgress.bind(this)
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
@@ -638,7 +639,7 @@ export class RufflePlayer extends HTMLElement {
 
         try {
             this.loadedConfig = {
-                ...DEFAULT_CONFIG,
+                ...DEFAULT_LOAD_OPTIONS,
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
@@ -1820,6 +1821,7 @@ export function workaroundYoutubeMixedContent(
             if (
                 url.protocol === "http:" &&
                 window.location.protocol === "https:" &&
+                "upgradeToHttps" in window_config &&
                 window_config.upgradeToHttps !== false
             ) {
                 url.protocol = "https:";

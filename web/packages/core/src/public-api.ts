@@ -1,7 +1,8 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
-import type { Config } from "./config";
+import type { ApiConfig } from "./config";
+import type { BaseLoadOptions } from "./load-options";
 
 declare global {
     interface Window {
@@ -11,7 +12,7 @@ declare global {
          * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
          * [[PublicAPI]] instance itself.
          */
-        RufflePlayer?: { config?: Config } | PublicAPI;
+        RufflePlayer?: { config?: ApiConfig & BaseLoadOptions } | PublicAPI;
     }
 }
 
@@ -30,7 +31,7 @@ export class PublicAPI {
     /**
      * The configuration object used when Ruffle is instantiated.
      */
-    config: Config;
+    config: ApiConfig;
 
     private sources: Record<string, typeof SourceAPI>;
     private invoked: boolean;

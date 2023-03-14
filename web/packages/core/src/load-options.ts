@@ -320,6 +320,33 @@ export interface BaseLoadOptions {
     playerVersion?: number | null;
 }
 
+export const DEFAULT_LOAD_OPTIONS: Required<BaseLoadOptions> = {
+    allowScriptAccess: false,
+    parameters: {},
+    autoplay: AutoPlay.Auto,
+    backgroundColor: null,
+    letterbox: Letterbox.Fullscreen,
+    unmuteOverlay: UnmuteOverlay.Visible,
+    upgradeToHttps: true,
+    compatibilityRules: true,
+    warnOnUnsupportedContent: true,
+    logLevel: LogLevel.Error,
+    showSwfDownload: false,
+    contextMenu: true,
+    // Backwards-compatibility option
+    preloader: true,
+    splashScreen: true,
+    maxExecutionDuration: { secs: 15, nanos: 0 },
+    base: null,
+    menu: true,
+    salign: "",
+    quality: "high",
+    scale: "showAll",
+    forceScale: false,
+    wmode: WindowMode.Opaque,
+    playerVersion: null,
+};
+
 /**
  * Options to load a movie by URL.
  */
