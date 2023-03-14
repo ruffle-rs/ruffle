@@ -376,10 +376,7 @@ pub fn set_html_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let html_text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let html_text = args.get_string(activation, 0)?;
 
         this.set_is_html(&mut activation.context, true);
         this.set_html_text(&html_text, &mut activation.context);
@@ -491,10 +488,7 @@ pub fn set_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let text = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let text = args.get_string(activation, 0)?;
 
         this.set_is_html(&mut activation.context, false);
         this.set_text(&text, &mut activation.context);
