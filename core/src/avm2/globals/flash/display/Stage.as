@@ -13,7 +13,7 @@ package flash.display {
             throw new Error("You cannot construct new instances of the Stage.")
         }
 
-        public function set accessibilityProperties(value:AccessibilityProperties):void {
+        override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
