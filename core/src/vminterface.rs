@@ -64,7 +64,7 @@ impl Instantiator {
 /// representation of the object. Objects cannot be shared across multiple VMs
 /// and attempting to do so will generate a runtime error. Dual-representation
 /// objects are prohibited.
-#[derive(Copy, Clone, Collect)]
+#[derive(Copy, Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum AvmObject<'gc> {
     /// An object that is exclusively represented as an AVM1 object. Attempts

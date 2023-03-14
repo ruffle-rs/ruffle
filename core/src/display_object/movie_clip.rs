@@ -911,10 +911,6 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing()
     }
 
-    pub fn set_skip_next_enter_frame(self, mc: MutationContext<'gc, '_>, skip: bool) {
-        self.0.write(mc).set_skip_next_enter_frame(skip);
-    }
-
     pub fn programmatically_played(self) -> bool {
         self.0.read().programmatically_played()
     }
@@ -1681,6 +1677,8 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let frame_before_rewind = self.current_frame();
+        self.base_mut(context.gc_context)
+            .set_skip_next_enter_frame(false);
 
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
@@ -2335,14 +2333,29 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let skip_frame = self.base().should_skip_next_enter_frame();
         //Child removals from looping gotos appear to resolve in reverse order.
         for child in self.iter_render_list().rev() {
+            if skip_frame {
+                // If we're skipping our current frame, then we want to skip it for our children
+                // as well. This counts as the skipped frame for any children that already
+                // has this set to true (e.g. a third-level grandchild doesn't skip three frames).
+                // We'll still call 'enter_frame' on the child - it will recurse, propagating along
+                // the flag, and then set its own flag back to 'false'.
+                //
+                // We do *not* propagate `skip_frame=false` down to children, since a normally
+                // executing parent can add a child that should have its first frame skipped.
+
+                // FIXME - does this propagate through non-movie-clip children (Loader/Button)?
+                child
+                    .base_mut(context.gc_context)
+                    .set_skip_next_enter_frame(true);
+            }
             child.enter_frame(context);
         }
 
-        if self.0.read().skip_next_enter_frame() {
-            self.0
-                .write(context.gc_context)
+        if skip_frame {
+            self.base_mut(context.gc_context)
                 .set_skip_next_enter_frame(false);
             return;
         }
@@ -3069,14 +3082,6 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_playing(&mut self, value: bool) {
         self.flags.set(MovieClipFlags::PLAYING, value);
-    }
-
-    pub fn set_skip_next_enter_frame(&mut self, value: bool) {
-        self.flags.set(MovieClipFlags::SKIP_NEXT_ENTER_FRAME, value);
-    }
-
-    fn skip_next_enter_frame(&self) -> bool {
-        self.flags.contains(MovieClipFlags::SKIP_NEXT_ENTER_FRAME)
     }
 
     fn programmatically_played(&self) -> bool {
@@ -4417,13 +4422,6 @@ bitflags! {
         /// Because AVM2 queues PlaceObject tags to run later, explicit gotos
         /// that happen while those tags run should cancel the loop.
         const LOOP_QUEUED = 1 << 4;
-
-        /// Flag set when we should skip running our next 'enterFrame'
-        /// for ourself *only* (we still run children).
-        /// This is set for objects constructed from ActionScript,
-        /// which are observed to lag behind objects placed by the timeline
-        /// (even if they are both placed in the same frame)
-        const SKIP_NEXT_ENTER_FRAME          = 1 << 5;
     }
 }
 
