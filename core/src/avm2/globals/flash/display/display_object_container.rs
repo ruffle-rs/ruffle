@@ -634,11 +634,7 @@ pub fn set_mouse_children<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_container())
     {
-        let mouse_children = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let mouse_children = args.get_bool(0);
 
         dobj.raw_container_mut(activation.context.gc_context)
             .set_mouse_children(mouse_children);
