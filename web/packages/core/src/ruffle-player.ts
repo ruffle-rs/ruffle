@@ -1109,10 +1109,13 @@ export class RufflePlayer extends HTMLElement {
                     navigator.clipboard.writeText(this.getPanicData()),
             });
         }
-        items.push({
-            text: "Open Save Manager",
-            onClick: () => this.saveManager.showModal(),
-        });
+        const localSaveTable = this.saveManager.querySelector("#local-saves");
+        if (localSaveTable && localSaveTable.textContent !== "") {
+            items.push({
+                text: "Open Save Manager",
+                onClick: () => this.saveManager.showModal(),
+            });
+        }
 
         items.push(null);
 
