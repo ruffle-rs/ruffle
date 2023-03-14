@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -137,11 +138,7 @@ pub fn has_glyphs<'gc>(
             .avm2_class_registry()
             .class_symbol(this)
     }) {
-        let my_str = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let my_str = args.get_string(activation, 0)?;
 
         if let Some(Character::Font(font)) = activation
             .context
