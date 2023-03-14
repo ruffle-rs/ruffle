@@ -11,6 +11,7 @@ use swf::ButtonState;
 pub use crate::avm2::globals::flash::media::soundmixer::{
     get_sound_transform, set_sound_transform,
 };
+use crate::avm2::parameters::ParametersExt;
 
 /// Implements `flash.display.SimpleButton`'s 'init' method. which is called from the constructor
 pub fn init<'gc>(
@@ -258,12 +259,7 @@ pub fn set_track_as_menu<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_avm2_button())
     {
-        match args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean()
-        {
+        match args.get_bool(0) {
             true => btn.set_button_tracking(&mut activation.context, ButtonTracking::Menu),
             false => btn.set_button_tracking(&mut activation.context, ButtonTracking::Push),
         }

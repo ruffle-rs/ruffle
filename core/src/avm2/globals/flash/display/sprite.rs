@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, StageObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -151,11 +152,7 @@ pub fn set_button_mode<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|o| o.as_movie_clip())
     {
-        let forced_button_mode = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let forced_button_mode = args.get_bool(0);
 
         mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
     }

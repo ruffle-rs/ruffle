@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -48,11 +49,7 @@ pub fn set_mouse_enabled<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let value = args.get_bool(0);
         int.set_mouse_enabled(activation.context.gc_context, value);
     }
 
@@ -85,11 +82,7 @@ pub fn set_double_click_enabled<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let value = args.get_bool(0);
         int.set_double_click_enabled(activation.context.gc_context, value);
     }
 

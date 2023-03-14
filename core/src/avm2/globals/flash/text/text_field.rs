@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject, TextFormatObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
@@ -125,11 +126,7 @@ pub fn set_background<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let has_background = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let has_background = args.get_bool(0);
         this.set_has_background(activation.context.gc_context, has_background);
     }
 
@@ -195,11 +192,7 @@ pub fn set_border<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let border = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let border = args.get_bool(0);
         this.set_has_border(activation.context.gc_context, border);
     }
 
@@ -319,11 +312,7 @@ pub fn set_display_as_password<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_password = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_password = args.get_bool(0);
 
         this.set_password(is_password, &mut activation.context);
     }
@@ -355,11 +344,7 @@ pub fn set_embed_fonts<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_embed_fonts = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_embed_fonts = args.get_bool(0);
 
         this.set_is_device_font(&mut activation.context, !is_embed_fonts);
     }
@@ -442,11 +427,7 @@ pub fn set_multiline<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_multiline = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_multiline = args.get_bool(0);
 
         this.set_multiline(is_multiline, &mut activation.context);
     }
@@ -478,11 +459,7 @@ pub fn set_selectable<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_selectable = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_selectable = args.get_bool(0);
 
         this.set_selectable(is_selectable, &mut activation.context);
     }
@@ -677,11 +654,7 @@ pub fn set_word_wrap<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_word_wrap = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let is_word_wrap = args.get_bool(0);
 
         this.set_word_wrap(is_word_wrap, &mut activation.context);
     }
