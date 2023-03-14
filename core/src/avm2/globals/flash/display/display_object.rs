@@ -21,6 +21,7 @@ use std::str::FromStr;
 use swf::BlendMode;
 
 pub use crate::avm2::object::stage_allocator as display_object_allocator;
+use crate::avm2::parameters::ParametersExt;
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -105,11 +106,7 @@ pub fn set_alpha<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_alpha = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_alpha = args.get_f64(activation, 0)?;
         dobj.set_alpha(activation.context.gc_context, new_alpha);
     }
 
@@ -136,11 +133,7 @@ pub fn set_height<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_height = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_height = args.get_f64(activation, 0)?;
 
         if new_height >= 0.0 {
             dobj.set_height(activation.context.gc_context, new_height);
@@ -170,11 +163,7 @@ pub fn set_scale_y<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_scale = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_scale = args.get_f64(activation, 0)?;
         dobj.set_scale_y(activation.context.gc_context, Percent::from_unit(new_scale));
     }
 
@@ -201,11 +190,7 @@ pub fn set_width<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_width = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_width = args.get_f64(activation, 0)?;
 
         if new_width >= 0.0 {
             dobj.set_width(activation.context.gc_context, new_width);
@@ -235,11 +220,7 @@ pub fn set_scale_x<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_scale = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_scale = args.get_f64(activation, 0)?;
         dobj.set_scale_x(activation.context.gc_context, Percent::from_unit(new_scale));
     }
 
@@ -278,13 +259,9 @@ pub fn set_filters<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_filters = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let new_filters = args.try_get_object(activation, 0);
 
-        if matches!(new_filters, Value::Undefined | Value::Null) {
-            dobj.set_filters(activation.context.gc_context, vec![]);
-        } else {
-            let new_filters = new_filters.coerce_to_object(activation)?;
-
+        if let Some(new_filters) = new_filters {
             if let Some(filters_array) = new_filters.as_array_object() {
                 if let Some(filters_storage) = filters_array.as_array_storage() {
                     let filters_namespace =
@@ -311,6 +288,8 @@ pub fn set_filters<'gc>(
                     dobj.set_filters(activation.context.gc_context, filter_vec);
                 }
             }
+        } else {
+            dobj.set_filters(activation.context.gc_context, vec![]);
         }
     }
 
@@ -337,11 +316,7 @@ pub fn set_x<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_x = args.get_f64(activation, 0)?;
 
         dobj.set_x(activation.context.gc_context, new_x);
     }
@@ -369,11 +344,7 @@ pub fn set_y<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_y = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_y = args.get_f64(activation, 0)?;
 
         dobj.set_y(activation.context.gc_context, new_y);
     }
@@ -498,11 +469,7 @@ pub fn set_rotation<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_rotation = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let new_rotation = args.get_f64(activation, 0)?;
 
         dobj.set_rotation(activation.context.gc_context, Degrees::from(new_rotation));
     }
@@ -530,11 +497,7 @@ pub fn set_name<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_name = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_name = args.get_string(activation, 0)?;
 
         if dobj.instantiated_by_timeline() {
             return Err(format!(
@@ -617,11 +580,7 @@ pub fn set_visible<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_visible = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_boolean();
+        let new_visible = args.get_bool(0);
 
         dobj.set_visible(activation.context.gc_context, new_visible);
     }
@@ -666,23 +625,9 @@ pub fn hit_test_point<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let shape_flag = args
-            .get(2)
-            .cloned()
-            .unwrap_or_else(|| false.into())
-            .coerce_to_boolean();
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let shape_flag = args.get_bool(2);
 
         // Transform the coordinates from root to world space.
         let point = match dobj.avm2_root(&mut activation.context) {
@@ -708,18 +653,12 @@ pub fn hit_test_point<'gc>(
 
 /// Implements `hitTestObject`.
 pub fn hit_test_object<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(rhs_dobj) = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .as_object()
-            .and_then(|o| o.as_display_object())
-        {
+        if let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object() {
             return Ok(dobj.hit_test_object(rhs_dobj).into());
         }
     }
@@ -770,7 +709,7 @@ pub fn set_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        let transform = args[0].coerce_to_object(activation)?;
+        let transform = args.get_object(activation, 0, "transform")?;
 
         // FIXME - consider 3D matrix and pixel bounds
         let matrix = transform
@@ -817,11 +756,7 @@ pub fn set_blend_mode<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let mode = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let mode = args.get_string(activation, 0)?;
 
         if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(activation.context.gc_context, mode);
@@ -890,7 +825,7 @@ pub fn set_scroll_rect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(rectangle) = args[0].as_object() {
+        if let Some(rectangle) = args.try_get_object(activation, 0) {
             // Flash only updates the "internal" scrollRect used by `localToLocal` when the next
             // frame is rendered. However, accessing `DisplayObject.scrollRect` from ActionScript
             // will immediately return the updated value.
@@ -921,10 +856,7 @@ pub fn local_to_global<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let point = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let point = args.get_object(activation, 0, "point")?;
         let x = point
             .get_public_property("x", activation)?
             .coerce_to_number(activation)?;
@@ -953,10 +885,7 @@ pub fn global_to_local<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let point = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let point = args.get_object(activation, 0, "point")?;
         let x = point
             .get_public_property("x", activation)?
             .coerce_to_number(activation)?;
@@ -985,29 +914,25 @@ pub fn get_bounds<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        // TODO: add typing `(target: DisplayObject)` for proper type errors
-        if let Some(target) = args.get(0).cloned().and_then(|value| match value {
-            Value::Undefined | Value::Null => Some(dobj),
-            _ => value.as_object().and_then(|o| o.as_display_object()),
-        }) {
-            let bounds = dobj.bounds();
-            let out_bounds = if DisplayObject::ptr_eq(dobj, target) {
-                // Getting the clips bounds in its own coordinate space; no AABB transform needed.
-                bounds
-            } else {
-                // Transform AABB to target space.
-                // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
-                // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
-                // the final matrix, but this matches Flash's behavior.
-                let to_global_matrix = dobj.local_to_global_matrix();
-                let to_target_matrix = target.global_to_local_matrix();
-                to_target_matrix * to_global_matrix * bounds
-            };
-
-            return Ok(new_rectangle(activation, out_bounds)?.into());
+        let target = args
+            .try_get_object(activation, 0)
+            .and_then(|o| o.as_display_object())
+            .unwrap_or(dobj);
+        let bounds = dobj.bounds();
+        let out_bounds = if DisplayObject::ptr_eq(dobj, target) {
+            // Getting the clips bounds in its own coordinate space; no AABB transform needed.
+            bounds
         } else {
-            return Ok(Value::Undefined);
-        }
+            // Transform AABB to target space.
+            // Calculate the matrix to transform into the target coordinate space, and transform the above AABB.
+            // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
+            // the final matrix, but this matches Flash's behavior.
+            let to_global_matrix = dobj.local_to_global_matrix();
+            let to_target_matrix = target.global_to_local_matrix();
+            to_target_matrix * to_global_matrix * bounds
+        };
+
+        return Ok(new_rectangle(activation, out_bounds)?.into());
     }
     Ok(Value::Undefined)
 }
@@ -1039,20 +964,17 @@ pub fn set_mask<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|this| this.as_display_object()) {
-        let mask = args.get(0).unwrap_or(&Value::Null);
+        let mask = args.try_get_object(activation, 0);
 
-        if matches!(mask, Value::Null) {
-            this.set_masker(activation.context.gc_context, None, true);
-        } else {
-            let mask = mask
-                .coerce_to_object(activation)?
-                .as_display_object()
-                .ok_or_else(|| -> Error {
-                    format!("Mask is not a DisplayObject: {mask:?}").into()
-                })?;
+        if let Some(mask) = mask {
+            let mask = mask.as_display_object().ok_or_else(|| -> Error {
+                format!("Mask is not a DisplayObject: {mask:?}").into()
+            })?;
 
             this.set_masker(activation.context.gc_context, Some(mask), true);
             mask.set_maskee(activation.context.gc_context, Some(this), true);
+        } else {
+            this.set_masker(activation.context.gc_context, None, true);
         }
     }
     Ok(Value::Undefined)
