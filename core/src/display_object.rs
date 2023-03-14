@@ -1342,7 +1342,11 @@ pub trait TDisplayObject<'gc>:
             // Children added to buttons by the timeline do not emit events.
             if self.parent().and_then(|p| p.as_avm2_button()).is_none() {
                 dispatch_added_event_only((*self).into(), context);
-                dispatch_added_to_stage_event_only((*self).into(), context);
+                // Note - we use 'avm2_stage' here, which looks through button ancestors
+                // (unlike `is_on_stage`)
+                if self.avm2_stage(context).is_some() {
+                    dispatch_added_to_stage_event_only((*self).into(), context);
+                }
             }
 
             //TODO: Don't report missing property errors.

@@ -1,0 +1,10 @@
+Constructing ParentClip
+ChildClip constructor
+ChildClip event added: this.parent=[object ParentClip] this.stage=null
+ParentClip constructor
+Constructed ParentClip
+Adding to main
+ParentClip event added: this.parent=[object MainTimeline] this.stage=[object Stage]
+ParentClip event addedToStage: this.parent=[object MainTimeline] this.stage=[object Stage]
+ChildClip event addedToStage: this.parent=[object ParentClip] this.stage=[object Stage]
+Added to main

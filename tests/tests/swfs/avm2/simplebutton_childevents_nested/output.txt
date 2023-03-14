@@ -1,21 +1,21 @@
 up_child: Constructed
-up_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
-up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+up_child:[Event type="added" bubbles=true cancelable=false eventPhase=2] this.parent=[object UpButtonShape] this.stage=[object Stage]
+up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] this.parent=[object UpButtonShape] this.stage=[object Stage]
 instance2: Constructed
 //Constructed UpButtonShape ( instance2 )!
 over_child: Constructed
-over_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
-over_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+over_child:[Event type="added" bubbles=true cancelable=false eventPhase=2] this.parent=[object OverButtonShape] this.stage=[object Stage]
+over_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] this.parent=[object OverButtonShape] this.stage=[object Stage]
 instance5: Constructed
 //Constructed OverButtonShape ( instance5 )!
 down_child: Constructed
-down_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
-down_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+down_child:[Event type="added" bubbles=true cancelable=false eventPhase=2] this.parent=[object DownButtonShape] this.stage=[object Stage]
+down_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] this.parent=[object DownButtonShape] this.stage=[object Stage]
 instance8: Constructed
 //Constructed DownButtonShape ( instance8 )!
-instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2]
-instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
-up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2] this.parent=[object Sprite] this.stage=null
+instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] this.parent=[object Sprite] this.stage=[object Stage]
+up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] this.parent=[object UpButtonShape] this.stage=[object Stage]
 //MainTimeline frame 1
 //my_button
 [object SimpleButton]
@@ -45,10 +45,10 @@ up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
 [object Shape] - instance10
 //my_button.hitTestState
 [object Shape] - instance11
-up_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-instance2:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-over_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-instance5:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-down_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
-instance8:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+up_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=[object UpButtonShape] this.stage=[object Stage]
+instance2:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=[object Sprite] this.stage=[object Stage]
+over_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=[object OverButtonShape] this.stage=null
+instance5:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=null this.stage=null
+down_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=[object DownButtonShape] this.stage=null
+instance8:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2] this.parent=null this.stage=null
 //MainTimeline frame 2

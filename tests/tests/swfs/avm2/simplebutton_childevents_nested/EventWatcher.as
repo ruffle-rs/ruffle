@@ -10,7 +10,7 @@
 		}
 		
 		function trace_event(event: Event) {
-			trace(this.name + ":" + event);
+			trace(this.name + ":" + event + " this.parent=" + this.parent + " this.stage=" + this.stage);
 		}
 		
 		public function setup() {
