@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
-use crate::string::WStr;
+use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::DrawCommand;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
@@ -25,16 +26,8 @@ pub fn begin_fill<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let color = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let alpha = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| 1.0.into())
-            .coerce_to_number(activation)?;
+        let color = args.get_u32(activation, 0)?;
+        let alpha = args.get_f64(activation, 1)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(Some(FillStyle::Color(color_from_args(color, alpha))));
@@ -86,30 +79,10 @@ pub fn curve_to<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x1 = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y1 = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let x2 = Twips::from_pixels(
-            args.get(2)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y2 = Twips::from_pixels(
-            args.get(3)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+        let x1 = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y1 = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let x2 = Twips::from_pixels(args.get_f64(activation, 2)?);
+        let y2 = Twips::from_pixels(args.get_f64(activation, 3)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.draw_command(DrawCommand::CurveTo { x1, y1, x2, y2 });
@@ -134,40 +107,31 @@ pub fn end_fill<'gc>(
     Ok(Value::Undefined)
 }
 
-fn caps_to_cap_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    caps: Value<'gc>,
-) -> Result<LineCapStyle, Error<'gc>> {
-    if let Value::Null = caps {
-        return Ok(LineCapStyle::None);
-    }
-
-    let caps = caps.coerce_to_string(activation)?;
-    if &caps == b"none" {
-        Ok(LineCapStyle::None)
-    } else if &caps == b"square" {
-        Ok(LineCapStyle::Square)
+fn caps_to_cap_style(caps: Option<AvmString>) -> LineCapStyle {
+    if let Some(caps) = caps {
+        if &caps == b"none" {
+            LineCapStyle::None
+        } else if &caps == b"square" {
+            LineCapStyle::Square
+        } else {
+            LineCapStyle::Round
+        }
     } else {
-        Ok(LineCapStyle::Round)
+        LineCapStyle::None
     }
 }
 
-fn joints_to_join_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    joints: Value<'gc>,
-    miter_limit: f64,
-) -> Result<LineJoinStyle, Error<'gc>> {
-    if let Value::Null = joints {
-        return Ok(LineJoinStyle::Round);
-    }
-
-    let joints = joints.coerce_to_string(activation)?;
-    if &joints == b"miter" {
-        Ok(LineJoinStyle::Miter(Fixed8::from_f64(miter_limit)))
-    } else if &joints == b"bevel" {
-        Ok(LineJoinStyle::Bevel)
+fn joints_to_join_style(joints: Option<AvmString>, miter_limit: f64) -> LineJoinStyle {
+    if let Some(joints) = joints {
+        if &joints == b"miter" {
+            LineJoinStyle::Miter(Fixed8::from_f64(miter_limit))
+        } else if &joints == b"bevel" {
+            LineJoinStyle::Bevel
+        } else {
+            LineJoinStyle::Round
+        }
     } else {
-        Ok(LineJoinStyle::Round)
+        LineJoinStyle::Round
     }
 }
 
@@ -190,48 +154,24 @@ pub fn line_style<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let thickness = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| f64::NAN.into())
-            .coerce_to_number(activation)?;
+        let thickness = args.get_f64(activation, 0)?;
 
         if thickness.is_nan() {
             if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
                 draw.set_line_style(None);
             }
         } else {
-            let color = args
-                .get(1)
-                .cloned()
-                .unwrap_or_else(|| 0.into())
-                .coerce_to_u32(activation)?;
-            let alpha = args
-                .get(2)
-                .cloned()
-                .unwrap_or_else(|| 1.0.into())
-                .coerce_to_number(activation)?;
-            let is_pixel_hinted = args
-                .get(3)
-                .cloned()
-                .unwrap_or_else(|| false.into())
-                .coerce_to_boolean();
-            let scale_mode = args
-                .get(4)
-                .cloned()
-                .unwrap_or_else(|| "normal".into())
-                .coerce_to_string(activation)?;
-            let caps = caps_to_cap_style(activation, args.get(5).cloned().unwrap_or(Value::Null))?;
-            let joints = args.get(6).cloned().unwrap_or(Value::Null);
-            let miter_limit = args
-                .get(7)
-                .cloned()
-                .unwrap_or_else(|| 3.0.into())
-                .coerce_to_number(activation)?;
+            let color = args.get_u32(activation, 1)?;
+            let alpha = args.get_f64(activation, 2)?;
+            let is_pixel_hinted = args.get_bool(3);
+            let scale_mode = args.get_string(activation, 4)?;
+            let caps = caps_to_cap_style(args.try_get_string(activation, 5)?);
+            let joints = args.try_get_string(activation, 6)?;
+            let miter_limit = args.get_f64(activation, 7)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let color = color_from_args(color, alpha);
-            let join_style = joints_to_join_style(activation, joints, miter_limit)?;
+            let join_style = joints_to_join_style(joints, miter_limit);
             let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
 
             let line_style = LineStyle::new()
@@ -261,18 +201,8 @@ pub fn line_to<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.draw_command(DrawCommand::LineTo { x, y });
@@ -289,18 +219,8 @@ pub fn move_to<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.draw_command(DrawCommand::MoveTo { x, y });
@@ -317,30 +237,10 @@ pub fn draw_rect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = Twips::from_pixels(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let y = Twips::from_pixels(
-            args.get(1)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let width = Twips::from_pixels(
-            args.get(2)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
-        let height = Twips::from_pixels(
-            args.get(3)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_number(activation)?,
-        );
+        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
+        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let width = Twips::from_pixels(args.get_f64(activation, 2)?);
+        let height = Twips::from_pixels(args.get_f64(activation, 3)?);
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.draw_command(DrawCommand::MoveTo { x, y });
@@ -628,36 +528,12 @@ pub fn draw_round_rect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let width = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let height = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let ellipse_width = args
-            .get(4)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let ellipse_height = args
-            .get(5)
-            .cloned()
-            .unwrap_or(Value::Number(f64::NAN))
-            .coerce_to_number(activation)?;
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let width = args.get_f64(activation, 2)?;
+        let height = args.get_f64(activation, 3)?;
+        let ellipse_width = args.get_f64(activation, 4)?;
+        let ellipse_height = args.get_f64(activation, 5)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(
@@ -682,21 +558,9 @@ pub fn draw_circle<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let radius = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let radius = args.get_f64(activation, 2)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(
@@ -721,26 +585,10 @@ pub fn draw_ellipse<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
-        let x = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let y = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let width = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
-        let height = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_number(activation)?;
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
+        let width = args.get_f64(activation, 2)?;
+        let height = args.get_f64(activation, 3)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw_round_rect_internal(&mut draw, x, y, width, height, width, height)
