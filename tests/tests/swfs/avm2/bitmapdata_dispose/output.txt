@@ -1,1 +1,7 @@
+bitmapBefore: width=5 height=6
+//data.dispose()
+bitmapBefore: width=5 height=6
+bitmapAfter: width=0 height=0
+//bitmapBefore.bitmapData = data
+bitmapBefore: width=0 height=0
 Caught error:  ArgumentError: Error #2015: Invalid BitmapData.

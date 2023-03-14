@@ -72,6 +72,12 @@ pub struct BitmapData<'gc> {
     /// The current bitmap data object.
     bitmap_data: BitmapDataWrapper<'gc>,
 
+    /// The width and height values are cached from the BitmapDataWrapper
+    /// when this Bitmap instance is first created,
+    /// and continue to be reported even if the BitmapData is disposed.
+    width: u32,
+    height: u32,
+
     /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
 
@@ -102,12 +108,17 @@ impl<'gc> Bitmap<'gc> {
         //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         //time due to mutable borrowing issues.
 
+        let width = bitmap_data.read().width();
+        let height = bitmap_data.read().height();
+
         Bitmap(GcCell::allocate(
             context.gc_context,
             BitmapData {
                 base: Default::default(),
                 id,
                 bitmap_data: BitmapDataWrapper::new(bitmap_data),
+                width,
+                height,
                 smoothing,
                 avm2_object: None,
                 avm2_bitmap_class: BitmapClass::NoSubclass,
@@ -149,12 +160,15 @@ impl<'gc> Bitmap<'gc> {
         ))
     }
 
+    // Important - we read 'width' and 'height' from the cached
+    // values on this object. See the definition of these fields
+    // for more information
     pub fn width(self) -> u16 {
-        self.0.read().bitmap_data.width() as u16
+        self.0.read().width as u16
     }
 
     pub fn height(self) -> u16 {
-        self.0.read().bitmap_data.height() as u16
+        self.0.read().height as u16
     }
 
     pub fn bitmap_data_wrapper(self) -> BitmapDataWrapper<'gc> {
@@ -179,7 +193,13 @@ impl<'gc> Bitmap<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
     ) {
-        self.0.write(context.gc_context).bitmap_data = BitmapDataWrapper::new(bitmap_data);
+        let mut write = self.0.write(context.gc_context);
+        // Refresh our cached values, even if we're writing the same BitmapData
+        // that we currently have stored. This will update them to '0' if the
+        // BitmapData has been disposed since it was originally set.
+        write.width = bitmap_data.read().width();
+        write.height = bitmap_data.read().height();
+        write.bitmap_data = BitmapDataWrapper::new(bitmap_data);
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
