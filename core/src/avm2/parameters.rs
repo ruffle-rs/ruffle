@@ -9,6 +9,9 @@ use crate::string::AvmString;
 /// It is expected that the AS signature is correct and you only operate on values defined from it.
 /// These values will be `expect()`ed to exist, and any method here will panic if they're missing.  
 pub trait ParametersExt<'gc> {
+    /// Gets the value at the given index.
+    fn get_value(&self, index: usize) -> Value<'gc>;
+
     /// Gets the value at the given index and coerces it to an Object.
     ///
     /// If the value is null or is undefined, a TypeError 2007 is raised.
@@ -86,6 +89,11 @@ pub trait ParametersExt<'gc> {
 }
 
 impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
+    #[inline]
+    fn get_value(&self, index: usize) -> Value<'gc> {
+        self[index]
+    }
+
     fn get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
