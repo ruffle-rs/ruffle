@@ -1,9 +1,9 @@
 package flash.net {
-    import __ruffle__.stub_method;
+    import __ruffle__.stub_constructor;
     
     public class Responder {
         public function Responder(result:Function, status:Function = null) {
-            stub_method("flash.net.Responder", "constructor");
+            stub_constructor("flash.net.Responder");
         }
     }
 }
