@@ -6,6 +6,7 @@ use ruffle_render::backend::Context3DTriangleFace;
 use ruffle_render::backend::Context3DVertexBufferFormat;
 use ruffle_render::backend::ProgramType;
 
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
 use crate::avm2::Value;
@@ -121,10 +122,7 @@ pub fn set_vertex_buffer_at<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_u32(activation)?;
 
-        let format = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let format = args.get_string(activation, 3)?;
 
         let format = if &*format == b"float4" {
             Context3DVertexBufferFormat::Float4
@@ -218,10 +216,7 @@ pub fn set_culling<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.and_then(|this| this.as_context_3d()) {
-        let culling = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let culling = args.get_string(activation, 0)?;
 
         let culling = if &*culling == b"none" {
             Context3DTriangleFace::None
@@ -247,10 +242,7 @@ pub fn set_program_constants_from_matrix<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.and_then(|this| this.as_context_3d()) {
-        let program_type = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let program_type = args.get_string(activation, 0)?;
 
         let is_vertex = if &*program_type == b"vertex" {
             ProgramType::Vertex
@@ -313,10 +305,7 @@ pub fn set_program_constants_from_vector<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.and_then(|this| this.as_context_3d()) {
-        let program_type = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let program_type = args.get_string(activation, 0)?;
 
         let program_type = if &*program_type == b"vertex" {
             ProgramType::Vertex
