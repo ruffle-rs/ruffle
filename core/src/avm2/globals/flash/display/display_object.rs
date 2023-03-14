@@ -64,9 +64,9 @@ pub fn native_instance_init<'gc>(
                     // and consequently are observed to have their currentFrame lag one
                     // frame behind objects placed by the timeline (even if they were
                     // both placed in the same frame to begin with).
-                    if let Some(clip) = child.as_movie_clip() {
-                        clip.set_skip_next_enter_frame(activation.context.gc_context, true);
-                    }
+                    child
+                        .base_mut(activation.context.gc_context)
+                        .set_skip_next_enter_frame(true);
                     break;
                 }
                 class_object = class.superclass_object();

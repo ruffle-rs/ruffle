@@ -390,6 +390,16 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.contains(DisplayObjectFlags::AVM1_REMOVED)
     }
 
+    pub fn should_skip_next_enter_frame(&self) -> bool {
+        self.flags
+            .contains(DisplayObjectFlags::SKIP_NEXT_ENTER_FRAME)
+    }
+
+    pub fn set_skip_next_enter_frame(&mut self, skip: bool) {
+        self.flags
+            .set(DisplayObjectFlags::SKIP_NEXT_ENTER_FRAME, skip);
+    }
+
     fn set_avm1_removed(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::AVM1_REMOVED, value);
     }
@@ -1342,7 +1352,9 @@ pub trait TDisplayObject<'gc>:
             // Children added to buttons by the timeline do not emit events.
             if self.parent().and_then(|p| p.as_avm2_button()).is_none() {
                 dispatch_added_event_only((*self).into(), context);
-                dispatch_added_to_stage_event_only((*self).into(), context);
+                if self.avm2_stage(context).is_some() {
+                    dispatch_added_to_stage_event_only((*self).into(), context);
+                }
             }
 
             //TODO: Don't report missing property errors.
@@ -1815,6 +1827,13 @@ bitflags! {
 
         /// Whether this object has an explicit name.
         const HAS_EXPLICIT_NAME        = 1 << 10;
+
+        /// Flag set when we should skip running our next 'enterFrame'
+        /// for ourself and our children.
+        /// This is set for objects constructed from ActionScript,
+        /// which are observed to lag behind objects placed by the timeline
+        /// (even if they are both placed in the same frame)
+        const SKIP_NEXT_ENTER_FRAME          = 1 << 11;
     }
 }
 

@@ -1,0 +1,158 @@
+Constructing ParentClip
+ChildClip constructor!
+childClip (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+Parent clip constructor
+Constructed ParentClip
+parentClip.currentFrame: 1
+parentClip.getChildAt(0): [object HolderClip_3]
+parentClip.getChildAt(0).currentFrame: 1
+parentClip.getChildAt(0).getChildAt(0): [object ChildClip]
+parentClip.getChildAt(0).getChildAt(0).currentFrame: 1
+Adding child
+childClip (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+Added child
+Adding other child
+Watcher1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+Added other child
+Adding additional child
+Watcher2 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+Watcher2 (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+Added other child
+Adding final orphan
+Watcher3 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+Watcher3 (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+Watcher3 (frame 1):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+Added final child
+childClip (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=1
+enterFrame for ParentClip: this.currentFrame=1
+Watcher1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Parent framescript
+Holder clip framescript
+Child frameScript 1: this.currentFrame = 1
+childClip (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=2
+enterFrame for ParentClip: this.currentFrame=2
+Watcher1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Child frameScript 2: this.currentFrame = 2
+childClip (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=1
+enterFrame for ParentClip: this.currentFrame=1
+Watcher1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Parent framescript
+Holder clip framescript
+Child frameScript 1: this.currentFrame = 1
+childClip (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=2
+enterFrame for ParentClip: this.currentFrame=2
+Watcher1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Child frameScript 2: this.currentFrame = 2
+childClip (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=1
+enterFrame for ParentClip: this.currentFrame=1
+Watcher1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Parent framescript
+Holder clip framescript
+Child frameScript 1: this.currentFrame = 1
+childClip (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=2
+enterFrame for ParentClip: this.currentFrame=2
+Watcher1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Child frameScript 2: this.currentFrame = 2
+childClip (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=1
+enterFrame for ParentClip: this.currentFrame=1
+Watcher1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Parent framescript
+Holder clip framescript
+Child frameScript 1: this.currentFrame = 1
+childClip (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+enterFrame for ChildClip: this.currentFrame=2
+enterFrame for ParentClip: this.currentFrame=2
+Watcher1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+childClip (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Child frameScript 2: this.currentFrame = 2
+childClip (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher2 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Watcher3 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]

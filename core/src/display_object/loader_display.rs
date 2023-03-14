@@ -98,7 +98,14 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let skip_frame = self.base().should_skip_next_enter_frame();
         for child in self.iter_render_list() {
+            // See MovieClip::enter_frame for an explanation of this.
+            if skip_frame {
+                child
+                    .base_mut(context.gc_context)
+                    .set_skip_next_enter_frame(true);
+            }
             child.enter_frame(context);
         }
     }
