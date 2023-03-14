@@ -1,9 +1,12 @@
+use crate::avm2::error::argument_error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
+use ruffle_render::backend::Context3DTextureFilter;
+use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
     Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
@@ -597,5 +600,68 @@ pub fn set_render_to_back_buffer<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let context = this.unwrap().as_context_3d().unwrap();
     context.set_render_to_back_buffer(activation);
+    Ok(Value::Undefined)
+}
+
+pub fn set_sampler_state_at<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let wrap = args[1].coerce_to_string(activation)?;
+        let filter = args[2].coerce_to_string(activation)?;
+        let mip_filter = args[3].coerce_to_string(activation)?;
+
+        let wrap = Context3DWrapMode::from_wstr(&wrap).ok_or_else(|| {
+            Error::AvmError(
+                argument_error(
+                    activation,
+                    "Error #2008: Parameter wrap must be one of the accepted values.",
+                    2008,
+                )
+                .expect("Failed to construct error"),
+            )
+        })?;
+
+        let filter = Context3DTextureFilter::from_wstr(&filter).ok_or_else(|| {
+            Error::AvmError(
+                argument_error(
+                    activation,
+                    "Error #2008: Parameter filter must be one of the accepted values.",
+                    2008,
+                )
+                .expect("Failed to construct error"),
+            )
+        })?;
+
+        if matches!(
+            filter,
+            Context3DTextureFilter::Anisotropic2X
+                | Context3DTextureFilter::Anisotropic4X
+                | Context3DTextureFilter::Anisotropic8X
+                | Context3DTextureFilter::Anisotropic16X
+        ) {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "setSamplerStateAt",
+                "filter == 'anisotropic'"
+            );
+        }
+
+        if &*mip_filter != b"mipnone" {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "setSamplerStateAt",
+                "mipFilter != 'none'"
+            );
+        }
+
+        context.set_sampler_state_at(activation, sampler, wrap, filter);
+    }
     Ok(Value::Undefined)
 }

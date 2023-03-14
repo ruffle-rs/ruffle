@@ -17,13 +17,21 @@ var sampler1_: sampler;
 var sampler2_: sampler;
 @group(0) @binding(5) 
 var sampler3_: sampler;
+@group(0) @binding(6) 
+var sampler4_: sampler;
+@group(0) @binding(7) 
+var sampler5_: sampler;
+@group(0) @binding(8) 
+var sampler6_: sampler;
+@group(0) @binding(9) 
+var sampler7_: sampler;
 
 @fragment 
 fn main(@location(0) param: vec4<f32>) -> FragmentOutput {
     var dest_temp: vec4<f32>;
 
     dest_temp = param;
-    let _e7: vec4<f32> = dest_temp;
-    return FragmentOutput(_e7);
+    let _e11: vec4<f32> = dest_temp;
+    return FragmentOutput(_e11);
 }
 

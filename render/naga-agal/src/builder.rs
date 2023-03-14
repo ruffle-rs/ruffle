@@ -23,9 +23,13 @@ const SAMPLER_REPEAT_LINEAR: usize = 0;
 const SAMPLER_REPEAT_NEAREST: usize = 1;
 const SAMPLER_CLAMP_LINEAR: usize = 2;
 const SAMPLER_CLAMP_NEAREST: usize = 3;
+const SAMPLER_CLAMP_U_REPEAT_V_LINEAR: usize = 4;
+const SAMPLER_CLAMP_U_REPEAT_V_NEAREST: usize = 5;
+const SAMPLER_REPEAT_U_CLAMP_V_LINEAR: usize = 6;
+const SAMPLER_REPEAT_U_CLAMP_V_NEAREST: usize = 7;
 
 const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 2;
-const TEXTURE_START_BIND_INDEX: u32 = 6;
+const TEXTURE_START_BIND_INDEX: u32 = 10;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -36,6 +40,10 @@ struct TextureSamplers {
     repeat_nearest: Handle<Expression>,
     clamp_linear: Handle<Expression>,
     clamp_nearest: Handle<Expression>,
+    clamp_u_repeat_v_linear: Handle<Expression>,
+    clamp_u_repeat_v_nearest: Handle<Expression>,
+    repeat_u_clamp_v_linear: Handle<Expression>,
+    repeat_u_clamp_v_nearest: Handle<Expression>,
 }
 
 pub(crate) struct NagaBuilder<'a> {
@@ -255,6 +263,7 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
+    pub sampler_overrides: &'a [Option<SamplerOverride>; 8],
     pub version: AgalVersion,
 }
 
@@ -268,6 +277,7 @@ impl<'a> NagaBuilder<'a> {
     pub fn process_agal(
         mut agal: &[u8],
         vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
+        sampler_overrides: &[Option<SamplerOverride>; 8],
     ) -> Result<Module> {
         let data = &mut agal;
 
@@ -298,6 +308,7 @@ impl<'a> NagaBuilder<'a> {
         let mut builder = NagaBuilder::new(ShaderConfig {
             shader_type,
             vertex_attributes,
+            sampler_overrides,
             version,
         });
 
@@ -509,7 +520,7 @@ impl<'a> NagaBuilder<'a> {
         );
 
         let texture_samplers = if let ShaderType::Fragment = shader_config.shader_type {
-            let samplers = (0..4)
+            let samplers = (0..8)
                 .map(|i| {
                     let var = module.global_variables.append(
                         GlobalVariable {
@@ -539,6 +550,10 @@ impl<'a> NagaBuilder<'a> {
                 clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST],
                 repeat_linear: samplers[SAMPLER_REPEAT_LINEAR],
                 repeat_nearest: samplers[SAMPLER_REPEAT_NEAREST],
+                clamp_u_repeat_v_linear: samplers[SAMPLER_CLAMP_U_REPEAT_V_LINEAR],
+                clamp_u_repeat_v_nearest: samplers[SAMPLER_CLAMP_U_REPEAT_V_NEAREST],
+                repeat_u_clamp_v_linear: samplers[SAMPLER_REPEAT_U_CLAMP_V_LINEAR],
+                repeat_u_clamp_v_nearest: samplers[SAMPLER_REPEAT_U_CLAMP_V_NEAREST],
             })
         } else {
             None
@@ -1058,17 +1073,49 @@ impl<'a> NagaBuilder<'a> {
 
                 let texture_samplers = self.texture_samplers.as_ref().unwrap();
 
-                let sampler_binding = match (sampler_field.filter, sampler_field.wrapping) {
-                    (Filter::Linear, Wrapping::Clamp) => texture_samplers.clamp_linear,
-                    (Filter::Linear, Wrapping::Repeat) => texture_samplers.repeat_linear,
-                    (Filter::Nearest, Wrapping::Clamp) => texture_samplers.clamp_nearest,
-                    (Filter::Nearest, Wrapping::Repeat) => texture_samplers.repeat_nearest,
-                };
-
                 let texture_id = sampler_field.reg_num;
                 if sampler_field.reg_type != RegisterType::Sampler {
                     panic!("Invalid sample register type {:?}", sampler_field);
                 }
+
+                let mut filter = sampler_field.filter;
+                let mut wrapping = sampler_field.wrapping;
+
+                // See https://github.com/openfl/openfl/issues/1332
+
+                // FIXME - Flash Player seems to unconditionally use sampler overrides,
+                // regardless of whether or not `ignore_sampler` is set. I haven't
+                // found any real SWFs that use it, so let's panic so that get
+                // get a bug report if it ever happens.
+                if sampler_field.special.ignore_sampler {
+                    panic!("Found ignore_sampler in {:?}", sampler_field);
+                }
+
+                if let Some(sampler_override) =
+                    &self.shader_config.sampler_overrides[texture_id as usize]
+                {
+                    filter = sampler_override.filter;
+                    wrapping = sampler_override.wrapping;
+                }
+
+                let sampler_binding = match (filter, wrapping) {
+                    (Filter::Linear, Wrapping::Clamp) => texture_samplers.clamp_linear,
+                    (Filter::Linear, Wrapping::Repeat) => texture_samplers.repeat_linear,
+                    (Filter::Linear, Wrapping::ClampURepeatV) => {
+                        texture_samplers.clamp_u_repeat_v_linear
+                    }
+                    (Filter::Linear, Wrapping::RepeatUClampV) => {
+                        texture_samplers.repeat_u_clamp_v_linear
+                    }
+                    (Filter::Nearest, Wrapping::Clamp) => texture_samplers.clamp_nearest,
+                    (Filter::Nearest, Wrapping::Repeat) => texture_samplers.repeat_nearest,
+                    (Filter::Nearest, Wrapping::ClampURepeatV) => {
+                        texture_samplers.clamp_u_repeat_v_nearest
+                    }
+                    (Filter::Nearest, Wrapping::RepeatUClampV) => {
+                        texture_samplers.repeat_u_clamp_v_nearest
+                    }
+                };
 
                 let coord = self.emit_source_field_load(source1, false)?;
                 let coord = match sampler_field.dimension {
