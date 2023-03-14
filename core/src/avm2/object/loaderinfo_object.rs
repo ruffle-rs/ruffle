@@ -11,7 +11,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfMovie;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -77,7 +77,11 @@ pub enum LoaderStream<'gc> {
 /// resource.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct LoaderInfoObject<'gc>(GcCell<'gc, LoaderInfoObjectData<'gc>>);
+pub struct LoaderInfoObject<'gc>(pub GcCell<'gc, LoaderInfoObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct LoaderInfoObjectWeak<'gc>(pub GcWeakCell<'gc, LoaderInfoObjectData<'gc>>);
 
 impl fmt::Debug for LoaderInfoObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

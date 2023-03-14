@@ -9,7 +9,7 @@ use crate::backend::audio::SoundHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use swf::SoundInfo;
 
@@ -36,7 +36,11 @@ pub fn sound_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct SoundObject<'gc>(GcCell<'gc, SoundObjectData<'gc>>);
+pub struct SoundObject<'gc>(pub GcCell<'gc, SoundObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SoundObjectWeak<'gc>(pub GcWeakCell<'gc, SoundObjectData<'gc>>);
 
 impl fmt::Debug for SoundObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

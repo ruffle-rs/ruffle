@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates QName objects.
@@ -32,7 +32,11 @@ pub fn q_name_allocator<'gc>(
 /// An Object which represents a boxed QName.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct QNameObject<'gc>(GcCell<'gc, QNameObjectData<'gc>>);
+pub struct QNameObject<'gc>(pub GcCell<'gc, QNameObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct QNameObjectWeak<'gc>(pub GcWeakCell<'gc, QNameObjectData<'gc>>);
 
 impl fmt::Debug for QNameObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

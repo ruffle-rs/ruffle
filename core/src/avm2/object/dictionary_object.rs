@@ -8,7 +8,7 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -35,7 +35,11 @@ pub fn dictionary_allocator<'gc>(
 /// keys are objects instead of strings.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DictionaryObject<'gc>(GcCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObject<'gc>(pub GcCell<'gc, DictionaryObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct DictionaryObjectWeak<'gc>(pub GcWeakCell<'gc, DictionaryObjectData<'gc>>);
 
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

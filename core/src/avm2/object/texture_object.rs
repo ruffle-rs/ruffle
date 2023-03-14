@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::backend::Texture;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -14,7 +14,11 @@ use super::{ClassObject, Context3DObject};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct TextureObject<'gc>(GcCell<'gc, TextureObjectData<'gc>>);
+pub struct TextureObject<'gc>(pub GcCell<'gc, TextureObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct TextureObjectWeak<'gc>(pub GcWeakCell<'gc, TextureObjectData<'gc>>);
 
 impl<'gc> TextureObject<'gc> {
     pub fn from_handle(

@@ -11,7 +11,7 @@ use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::KeyCode;
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -34,7 +34,11 @@ pub fn event_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct EventObject<'gc>(GcCell<'gc, EventObjectData<'gc>>);
+pub struct EventObject<'gc>(pub GcCell<'gc, EventObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct EventObjectWeak<'gc>(pub GcWeakCell<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
