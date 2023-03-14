@@ -2,7 +2,6 @@ import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
-import type { Config } from "./config";
 import { DEFAULT_CONFIG } from "./config";
 import {
     DataLoadOptions,
@@ -139,7 +138,7 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuSupported = false;
 
     // The effective config loaded upon `.load()`.
-    private loadedConfig: Required<Config> = DEFAULT_CONFIG;
+    private loadedConfig?: URLLoadOptions | DataLoadOptions;
 
     private swfUrl?: URL;
     private instance: Ruffle | null;
@@ -182,7 +181,7 @@ export class RufflePlayer extends HTMLElement {
      * Any configuration that should apply to this specific player.
      * This will be defaulted with any global configuration.
      */
-    config: Config = {};
+    config: URLLoadOptions | DataLoadOptions | object = {};
 
     /**
      * Indicates the readiness of the playing movie.
@@ -416,18 +415,19 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
 
         if (
+            this.loadedConfig &&
             this.loadedConfig.splashScreen !== false &&
             this.loadedConfig.preloader !== false
         ) {
             this.showSplashScreen();
         }
-        if (this.loadedConfig.preloader === false) {
+        if (this.loadedConfig && this.loadedConfig.preloader === false) {
             console.warn(
                 "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration."
             );
         }
         const ruffleConstructor = await loadRuffle(
-            this.loadedConfig,
+            this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this)
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
@@ -503,6 +503,7 @@ export class RufflePlayer extends HTMLElement {
 
         // Treat invalid values as `AutoPlay.Auto`.
         if (
+            !this.loadedConfig ||
             this.loadedConfig.autoplay === AutoPlay.On ||
             (this.loadedConfig.autoplay !== AutoPlay.Off &&
                 this.audioState() === "running")
@@ -511,7 +512,10 @@ export class RufflePlayer extends HTMLElement {
 
             if (this.audioState() !== "running") {
                 // Treat invalid values as `UnmuteOverlay.Visible`.
-                if (this.loadedConfig.unmuteOverlay !== UnmuteOverlay.Hidden) {
+                if (
+                    !this.loadedConfig ||
+                    this.loadedConfig.unmuteOverlay !== UnmuteOverlay.Hidden
+                ) {
                     this.unmuteOverlay.style.display = "block";
                 }
 
@@ -913,6 +917,7 @@ export class RufflePlayer extends HTMLElement {
         if (
             this.instance &&
             this.swfUrl &&
+            this.loadedConfig &&
             this.loadedConfig.showSwfDownload === true
         ) {
             items.push(null);
@@ -999,7 +1004,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         if (
-            this.loadedConfig.contextMenu === false ||
+            (this.loadedConfig && this.loadedConfig.contextMenu === false) ||
             this.contextMenuForceDisabled
         ) {
             return;
@@ -1667,7 +1672,9 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        let result = `Allows script access: ${this.loadedConfig.allowScriptAccess}\n`;
+        let result = `Allows script access: ${
+            this.loadedConfig ? this.loadedConfig.allowScriptAccess : false
+        }\n`;
         let renderInfo = `(Cached) ${this._cachedDebugInfo}`;
         if (this.instance) {
             try {
@@ -1820,7 +1827,8 @@ export function workaroundYoutubeMixedContent(
             if (
                 url.protocol === "http:" &&
                 window.location.protocol === "https:" &&
-                window_config.upgradeToHttps !== false
+                (!("upgradeToHttps" in window_config) ||
+                    window_config.upgradeToHttps !== false)
             ) {
                 url.protocol = "https:";
                 elem.setAttribute(attr, url.toString());

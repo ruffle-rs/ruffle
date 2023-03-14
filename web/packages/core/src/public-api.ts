@@ -1,7 +1,7 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
-import type { Config } from "./config";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 declare global {
     interface Window {
@@ -11,7 +11,9 @@ declare global {
          * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
          * [[PublicAPI]] instance itself.
          */
-        RufflePlayer?: { config?: Config } | PublicAPI;
+        RufflePlayer?:
+            | { config?: DataLoadOptions | URLLoadOptions | object }
+            | PublicAPI;
     }
 }
 
@@ -30,7 +32,7 @@ export class PublicAPI {
     /**
      * The configuration object used when Ruffle is instantiated.
      */
-    config: Config;
+    config: DataLoadOptions | URLLoadOptions | object;
 
     private sources: Record<string, typeof SourceAPI>;
     private invoked: boolean;
@@ -156,7 +158,8 @@ export class PublicAPI {
                 throw new Error("No registered Ruffle source!");
             }
 
-            const polyfills = this.config.polyfills;
+            const polyfills =
+                "polyfills" in this.config ? this.config.polyfills : true;
             if (polyfills !== false) {
                 this.sources[this.newestName]!.polyfill(
                     this.newestName === "extension"
@@ -284,7 +287,10 @@ export class PublicAPI {
             // This is necessary because scripts such as SWFObject check for the
             // Flash Player immediately when they load.
             // TODO: Maybe there's a better place for this.
-            const polyfills = publicAPI.config.polyfills;
+            const polyfills =
+                "polyfills" in publicAPI.config
+                    ? publicAPI.config.polyfills
+                    : true;
             if (polyfills !== false) {
                 SourceAPI.pluginPolyfill();
             }
