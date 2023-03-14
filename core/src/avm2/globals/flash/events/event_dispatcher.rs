@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
 use crate::avm2::object::{DispatchObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Avm2, Error};
@@ -38,11 +39,7 @@ pub fn add_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let event_type = args.get_string(activation, 0)?;
         let listener = args
             .get(1)
             .cloned()
@@ -79,11 +76,7 @@ pub fn remove_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let event_type = args.get_string(activation, 0)?;
         let listener = args
             .get(1)
             .cloned()
@@ -112,11 +105,7 @@ pub fn has_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let event_type = args.get_string(activation, 0)?;
 
         return Ok(dispatch_list
             .as_dispatch_mut(activation.context.gc_context)
@@ -136,11 +125,7 @@ pub fn will_trigger<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
-        let event_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let event_type = args.get_string(activation, 0)?;
 
         if dispatch_list
             .as_dispatch_mut(activation.context.gc_context)

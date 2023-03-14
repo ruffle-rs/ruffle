@@ -154,11 +154,7 @@ pub fn get_child_by_name<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_container())
     {
-        let name = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let name = args.get_string(activation, 0)?;
         if let Some(child) = dobj.child_by_name(&name, false) {
             return Ok(child.object2());
         } else {

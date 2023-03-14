@@ -80,11 +80,7 @@ pub fn set_auto_size<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 0)?;
         this.set_autosize(
             if &value == b"left" {
                 AutoSizeMode::Left
@@ -600,11 +596,7 @@ pub fn set_type<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let is_editable = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let is_editable = args.get_string(activation, 0)?;
 
         if &is_editable == b"input" {
             this.set_editable(true, &mut activation.context);
@@ -659,11 +651,7 @@ pub fn append_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let new_text = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_text = args.get_string(activation, 0)?;
         let existing_length = this.text_length();
 
         this.replace_text(
@@ -721,11 +709,7 @@ pub fn replace_selected_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 0)?;
         let selection = this
             .selection()
             .unwrap_or_else(|| TextSelection::for_position(0));
@@ -760,11 +744,7 @@ pub fn replace_text<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_u32(activation)?;
-        let value = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let value = args.get_string(activation, 2)?;
 
         this.replace_text(
             begin_index as usize,
@@ -888,11 +868,7 @@ pub fn set_anti_alias_type<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_type = args.get_string(activation, 0)?;
 
         if &new_type == b"advanced" {
             this.set_render_settings(
@@ -938,11 +914,7 @@ pub fn set_grid_fit_type<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let old_settings = this.render_settings();
-        let new_type = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?;
+        let new_type = args.get_string(activation, 0)?;
 
         if &new_type == b"pixel" {
             this.set_render_settings(
