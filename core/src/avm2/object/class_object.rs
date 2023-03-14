@@ -17,7 +17,7 @@ use crate::avm2::TranslationUnit;
 use crate::avm2::{Domain, Error};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{BorrowError, Ref, RefMut};
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -26,7 +26,11 @@ use std::hash::{Hash, Hasher};
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct ClassObject<'gc>(GcCell<'gc, ClassObjectData<'gc>>);
+pub struct ClassObject<'gc>(pub GcCell<'gc, ClassObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ClassObjectWeak<'gc>(pub GcWeakCell<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]

@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates BitmapData objects.
@@ -32,7 +32,11 @@ pub fn bitmap_data_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct BitmapDataObject<'gc>(GcCell<'gc, BitmapDataObjectData<'gc>>);
+pub struct BitmapDataObject<'gc>(pub GcCell<'gc, BitmapDataObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct BitmapDataObjectWeak<'gc>(pub GcWeakCell<'gc, BitmapDataObjectData<'gc>>);
 
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

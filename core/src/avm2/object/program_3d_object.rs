@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use ruffle_render::backend::ShaderModule;
 use std::cell::{Ref, RefMut};
 use std::rc::Rc;
@@ -14,7 +14,11 @@ use super::Context3DObject;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Program3DObject<'gc>(GcCell<'gc, Program3DObjectData<'gc>>);
+pub struct Program3DObject<'gc>(pub GcCell<'gc, Program3DObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct Program3DObjectWeak<'gc>(pub GcWeakCell<'gc, Program3DObjectData<'gc>>);
 
 impl<'gc> Program3DObject<'gc> {
     pub fn from_context(

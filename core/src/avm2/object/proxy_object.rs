@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Proxy objects.
@@ -26,7 +26,11 @@ pub fn proxy_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ProxyObject<'gc>(GcCell<'gc, ProxyObjectData<'gc>>);
+pub struct ProxyObject<'gc>(pub GcCell<'gc, ProxyObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ProxyObjectWeak<'gc>(pub GcWeakCell<'gc, ProxyObjectData<'gc>>);
 
 impl fmt::Debug for ProxyObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

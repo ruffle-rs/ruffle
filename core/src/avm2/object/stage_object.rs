@@ -8,13 +8,17 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);
+pub struct StageObject<'gc>(pub GcCell<'gc, StageObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct StageObjectWeak<'gc>(pub GcWeakCell<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]

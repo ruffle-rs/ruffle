@@ -9,7 +9,7 @@ use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates SoundChannel objects.
@@ -35,7 +35,11 @@ pub fn sound_channel_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct SoundChannelObject<'gc>(GcCell<'gc, SoundChannelObjectData<'gc>>);
+pub struct SoundChannelObject<'gc>(pub GcCell<'gc, SoundChannelObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct SoundChannelObjectWeak<'gc>(pub GcWeakCell<'gc, SoundChannelObjectData<'gc>>);
 
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
