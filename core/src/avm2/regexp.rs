@@ -103,6 +103,7 @@ impl<'gc> RegExp<'gc> {
                     multiline: self.flags.contains(RegExpFlags::MULTILINE),
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
                     no_opt: false,
+                    unicode: false,
                 },
             );
             self.cached_regex = Some(re.map_err(drop));
