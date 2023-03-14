@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
@@ -35,7 +35,11 @@ pub fn error_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
+pub struct ErrorObject<'gc>(pub GcCell<'gc, ErrorObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ErrorObjectWeak<'gc>(pub GcWeakCell<'gc, ErrorObjectData<'gc>>);
 
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

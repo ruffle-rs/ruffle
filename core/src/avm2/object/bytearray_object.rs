@@ -7,7 +7,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -49,7 +49,11 @@ pub fn byte_array_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ByteArrayObject<'gc>(GcCell<'gc, ByteArrayObjectData<'gc>>);
+pub struct ByteArrayObject<'gc>(pub GcCell<'gc, ByteArrayObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ByteArrayObjectWeak<'gc>(pub GcWeakCell<'gc, ByteArrayObjectData<'gc>>);
 
 impl fmt::Debug for ByteArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

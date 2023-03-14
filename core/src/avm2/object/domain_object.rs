@@ -7,7 +7,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates AppDomain objects.
@@ -27,7 +27,11 @@ pub fn application_domain_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DomainObject<'gc>(GcCell<'gc, DomainObjectData<'gc>>);
+pub struct DomainObject<'gc>(pub GcCell<'gc, DomainObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct DomainObjectWeak<'gc>(pub GcWeakCell<'gc, DomainObjectData<'gc>>);
 
 impl fmt::Debug for DomainObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

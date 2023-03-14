@@ -9,7 +9,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Function objects.
@@ -55,7 +55,11 @@ pub fn function_allocator<'gc>(
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
+pub struct FunctionObject<'gc>(pub GcCell<'gc, FunctionObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct FunctionObjectWeak<'gc>(pub GcWeakCell<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

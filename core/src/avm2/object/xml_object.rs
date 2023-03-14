@@ -8,7 +8,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::E4XOrXml;
@@ -33,7 +33,11 @@ pub fn xml_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlObject<'gc>(pub GcCell<'gc, XmlObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct XmlObjectWeak<'gc>(pub GcWeakCell<'gc, XmlObjectData<'gc>>);
 
 impl fmt::Debug for XmlObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

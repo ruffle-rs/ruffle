@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates array objects.
@@ -32,7 +32,11 @@ pub fn array_allocator<'gc>(
 /// An Object which stores numerical properties in an array.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct ArrayObject<'gc>(GcCell<'gc, ArrayObjectData<'gc>>);
+pub struct ArrayObject<'gc>(pub GcCell<'gc, ArrayObjectData<'gc>>);
+
+#[derive(Collect, Clone, Copy, Debug)]
+#[collect(no_drop)]
+pub struct ArrayObjectWeak<'gc>(pub GcWeakCell<'gc, ArrayObjectData<'gc>>);
 
 impl fmt::Debug for ArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
