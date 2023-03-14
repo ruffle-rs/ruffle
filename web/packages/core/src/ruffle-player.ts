@@ -928,6 +928,7 @@ export class RufflePlayer extends HTMLElement {
                 const row = document.createElement("TR");
                 const keyCol = document.createElement("TD");
                 keyCol.textContent = solName;
+                keyCol.title = key;
                 const downloadCol = document.createElement("TD");
                 downloadCol.textContent = "Download";
                 downloadCol.className = "save-option";
