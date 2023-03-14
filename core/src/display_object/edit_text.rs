@@ -407,6 +407,10 @@ impl<'gc> EditText<'gc> {
         !self.0.read().flags.contains(EditTextFlag::READ_ONLY)
     }
 
+    pub fn was_static(self) -> bool {
+        self.0.read().flags.contains(EditTextFlag::WAS_STATIC)
+    }
+
     pub fn set_editable(self, is_editable: bool, context: &mut UpdateContext<'_, 'gc>) {
         self.0
             .write(context.gc_context)
@@ -1855,7 +1859,11 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             && self.mouse_enabled()
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
-            Avm2MousePick::Hit((*self).into())
+            if self.was_static() {
+                Avm2MousePick::PropagateToParent
+            } else {
+                Avm2MousePick::Hit((*self).into())
+            }
         } else {
             Avm2MousePick::Miss
         }
