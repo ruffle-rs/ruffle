@@ -318,6 +318,24 @@ export interface BaseLoadOptions {
      * @default null
      */
     playerVersion?: number | null;
+
+    /**
+     * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
+     *
+     * @default null
+     */
+    publicPath?: string | null;
+
+    /**
+     * Whether or not to enable polyfills on the page.
+     *
+     * Polyfills will look for "legacy" flash content like `<object>`
+     * and `<embed>` elements, and replace them with compatible
+     * Ruffle elements.
+     *
+     * @default true
+     */
+    polyfills?: boolean;
 }
 
 /**

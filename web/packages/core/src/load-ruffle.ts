@@ -11,7 +11,7 @@ import {
 } from "wasm-feature-detect";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
-import type { Config } from "./config";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 declare global {
     let __webpack_public_path__: string;
@@ -32,7 +32,7 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  * instances.
  */
 async function fetchRuffle(
-    config: Config,
+    config: URLLoadOptions | DataLoadOptions | object,
     progressCallback?: ProgressCallback
 ): Promise<typeof Ruffle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
@@ -123,7 +123,7 @@ let lastLoaded: Promise<Ruffle> | null = null;
  * instances.
  */
 export function loadRuffle(
-    config: Config,
+    config: URLLoadOptions | DataLoadOptions | object,
     progressCallback?: ProgressCallback
 ): Promise<Ruffle> {
     if (lastLoaded === null) {

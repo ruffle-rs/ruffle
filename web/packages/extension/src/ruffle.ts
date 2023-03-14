@@ -1,8 +1,8 @@
-import { PublicAPI, Config } from "ruffle-core";
+import { PublicAPI, BaseLoadOptions } from "ruffle-core";
 
 interface LoadMessage {
     type: "load";
-    config: Config;
+    config: BaseLoadOptions;
 }
 
 interface PingMessage {

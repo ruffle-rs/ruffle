@@ -2,10 +2,11 @@ import { RuffleObject } from "./ruffle-object";
 import { RuffleEmbed } from "./ruffle-embed";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
-import type { Config } from "./config";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 
 let isExtension: boolean;
-const globalConfig: Config = window.RufflePlayer?.config ?? {};
+const globalConfig: DataLoadOptions | URLLoadOptions | object =
+    window.RufflePlayer?.config ?? {};
 const jsScriptUrl = publicPath(globalConfig) + "ruffle.js";
 
 /**
