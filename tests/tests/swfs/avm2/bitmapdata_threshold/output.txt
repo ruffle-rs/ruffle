@@ -1,0 +1,176 @@
+// A.threshold(B, B.rect, new Point(0, 0), undefined, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+! error 2007
+// A.threshold(B, B.rect, new Point(0, 0), 0, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+! error 2005
+// A.threshold(B, B.rect, new Point(0, 0), equals, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+! error 2005
+// A.threshold(B, B.rect, new Point(0, 0), !=, 0xFF000000, 0xFFFF0000, 0xFF000000, true)
+0
+// bitmap.getPixel32(0, 0)
+255, 255, 255, 255
+// bitmap.getPixel32(0, 1)
+255, 255, 255, 255
+// bitmap.getPixel32(1, 0)
+255, 255, 255, 255
+// bitmap.getPixel32(1, 1)
+255, 255, 255, 255
+// A.threshold(B, B.rect, new Point(0, 0), ==, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), ==, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), !=, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), !=, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+0
+// bitmap.getPixel32(0, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(0, 1)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 1)
+0, 0, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), <, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+0
+// bitmap.getPixel32(0, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(0, 1)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 1)
+0, 0, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), <, 0xFF000000, 0xFFFF0000, 0xF0000000, false)
+0
+// bitmap.getPixel32(0, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(0, 1)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 1)
+0, 0, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), <=, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), <=, 0xFF000000, 0xFFFF0000, 0xF0000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), <=, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), >, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+0
+// bitmap.getPixel32(0, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(0, 1)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 0)
+0, 0, 0, 0
+// bitmap.getPixel32(1, 1)
+0, 0, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), >, 0x10000000, 0xFFFF0000, 0xF0000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), >=, 0xFFF00000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), >=, 0x10000000, 0xFFFF0000, 0xF0000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(0, 0), >=, 0xFF000000, 0xFFFF0000, 0xFF000000, false)
+4
+// bitmap.getPixel32(0, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// A.threshold(B, B.rect, new Point(1, 0), ==, 0xFF000000, 0xFFFF0000, 0xFFFFFFFF, false)
+6
+// bitmap.getPixel32(0, 0)
+255, 0, 0, 0
+// bitmap.getPixel32(0, 1)
+255, 0, 0, 0
+// bitmap.getPixel32(0, 2)
+255, 0, 0, 0
+// bitmap.getPixel32(1, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(1, 2)
+255, 255, 0, 0
+// bitmap.getPixel32(2, 0)
+255, 255, 0, 0
+// bitmap.getPixel32(2, 1)
+255, 255, 0, 0
+// bitmap.getPixel32(2, 2)
+255, 255, 0, 0

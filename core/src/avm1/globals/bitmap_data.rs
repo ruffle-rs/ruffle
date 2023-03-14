@@ -6,7 +6,7 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
@@ -1167,10 +1167,15 @@ pub fn threshold<'gc>(
             let dest_x = dest_point.get("x", activation)?.coerce_to_f64(activation)? as i32;
             let dest_y = dest_point.get("y", activation)?.coerce_to_f64(activation)? as i32;
 
-            let operation = args
-                .get(3)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?;
+            let operation = args.get(3);
+            let operation = match ThresholdOperation::from_wstr(
+                &operation
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_string(activation)?,
+            ) {
+                Some(operation) => operation,
+                None => return Ok(0.into()),
+            };
 
             let threshold = args
                 .get(4)
@@ -1211,7 +1216,7 @@ pub fn threshold<'gc>(
                             source_bitmap_ref,
                             (src_min_x, src_min_y, src_width, src_height),
                             (dest_x, dest_y),
-                            operation.as_wstr(),
+                            operation,
                             threshold,
                             colour,
                             mask,
