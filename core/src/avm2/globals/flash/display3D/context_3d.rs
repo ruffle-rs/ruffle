@@ -291,10 +291,7 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let vector = vector.as_vector_storage().unwrap();
 
-        let num_registers = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
+        let num_registers = args.get_i32(activation, 3)?;
 
         let to_take = if num_registers != -1 {
             // Each register requries 4 floating-point values
