@@ -1187,12 +1187,12 @@ impl<'gc> BitmapData<'gc> {
     /// This implements the threshold operation generically over the test operation performed for each pixel
     /// Returns the number of pixels modified
     #[allow(clippy::too_many_arguments)]
-    fn threshold_internal<Op: Fn(u32, u32) -> bool>(
+    pub fn threshold(
         &mut self,
         source_bitmap: &Self,
         src_rect: (i32, i32, i32, i32),
         dest_point: (i32, i32),
-        operation: Op,
+        operation: ThresholdOperation,
         threshold: u32,
         colour: u32,
         mask: u32,
@@ -1228,7 +1228,7 @@ impl<'gc> BitmapData<'gc> {
                     .to_un_multiplied_alpha();
 
                 // If the test, as defined by the operation pass then set to input colour
-                if operation(source_color.0 as u32 & mask, masked_threshold) {
+                if operation.matches(source_color.0 as u32 & mask, masked_threshold) {
                     modified_count += 1;
                     self.set_pixel32_raw(dest_x as u32, dest_y as u32, Color(colour as _));
                 } else {
@@ -1246,44 +1246,6 @@ impl<'gc> BitmapData<'gc> {
         }
 
         modified_count
-    }
-
-    /// Perform the threshold operation
-    /// Returns the number of modified pixels
-    #[allow(clippy::too_many_arguments)]
-    pub fn threshold(
-        &mut self,
-        source_bitmap: &Self,
-        src_rect: (i32, i32, i32, i32),
-        dest_point: (i32, i32),
-        operation: &WStr,
-        threshold: u32,
-        colour: u32,
-        mask: u32,
-        copy_source: bool,
-    ) -> u32 {
-        // Define the test that will be performed for each pixel
-        let op = match operation.to_utf8_lossy().as_ref() {
-            "==" => |v, mt| v == mt,
-            "!=" => |v, mt| v != mt,
-            "<" => |v, mt| v < mt,
-            "<=" => |v, mt| v <= mt,
-            ">" => |v, mt| v > mt,
-            ">=" => |v, mt| v >= mt,
-            // For undefined/invalid operations FP seems to just return 0 here
-            _ => return 0,
-        };
-
-        self.threshold_internal(
-            source_bitmap,
-            src_rect,
-            dest_point,
-            op,
-            threshold,
-            colour,
-            mask,
-            copy_source,
-        )
     }
 
     // Updates the data stored with our `BitmapHandle` if this `BitmapData`
@@ -1540,6 +1502,47 @@ fn copy_pixels_to_bitmapdata(write: &mut BitmapData, buffer: &[u8], buffer_width
             // Ignore the original color entirely - the blending (including alpha)
             // was done by the renderer when it wrote over the previous texture contents.
             write.set_pixel32_raw(x, y, nc);
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ThresholdOperation {
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanOrEquals,
+    GreaterThan,
+    GreaterThanOrEquals,
+}
+
+impl ThresholdOperation {
+    pub fn from_wstr(str: &WStr) -> Option<Self> {
+        if str == b"==" {
+            Some(Self::Equals)
+        } else if str == b"!=" {
+            Some(Self::NotEquals)
+        } else if str == b"<" {
+            Some(Self::LessThan)
+        } else if str == b"<=" {
+            Some(Self::LessThanOrEquals)
+        } else if str == b">" {
+            Some(Self::GreaterThan)
+        } else if str == b">=" {
+            Some(Self::GreaterThanOrEquals)
+        } else {
+            None
+        }
+    }
+
+    pub fn matches(&self, value: u32, masked_threshold: u32) -> bool {
+        match self {
+            ThresholdOperation::Equals => value == masked_threshold,
+            ThresholdOperation::NotEquals => value != masked_threshold,
+            ThresholdOperation::LessThan => value < masked_threshold,
+            ThresholdOperation::LessThanOrEquals => value <= masked_threshold,
+            ThresholdOperation::GreaterThan => value > masked_threshold,
+            ThresholdOperation::GreaterThanOrEquals => value >= masked_threshold,
         }
     }
 }

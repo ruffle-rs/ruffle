@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
@@ -20,7 +20,7 @@ use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
 pub use crate::avm2::object::bitmap_data_allocator;
-use crate::avm2::parameters::ParametersExt;
+use crate::avm2::parameters::{null_parameter_error, ParametersExt};
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -1056,6 +1056,93 @@ pub fn perlin_noise<'gc>(
                     grayscale,
                     octave_offsets,
                 );
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `BitmapData.threshold`
+pub fn threshold<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        if !bitmap_data.read().disposed() {
+            let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
+            let source_rect = args.get_object(activation, 1, "sourceRect")?;
+            let dest_point = args.get_object(activation, 2, "dstPoint")?;
+            let dest_point = (
+                dest_point
+                    .get_public_property("x", activation)?
+                    .coerce_to_i32(activation)?,
+                dest_point
+                    .get_public_property("y", activation)?
+                    .coerce_to_i32(activation)?,
+            );
+            let operation = args.try_get_string(activation, 3)?;
+            let threshold = args.get_u32(activation, 4)?;
+            let color = args.get_u32(activation, 5)?;
+            let mask = args.get_u32(activation, 6)?;
+            let copy_source = args.get_bool(7);
+
+            let operation = if let Some(operation) = operation {
+                if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
+                    operation
+                } else {
+                    // It's wrong but this is what Flash says.
+                    return Err(Error::AvmError(argument_error(
+                        activation,
+                        "Parameter 0 is of the incorrect type. Should be type Operation.",
+                        2005,
+                    )?));
+                }
+            } else {
+                return Err(null_parameter_error(activation, "operation"));
+            };
+
+            let src_min_x = source_rect
+                .get_public_property("x", activation)?
+                .coerce_to_i32(activation)?;
+            let src_min_y = source_rect
+                .get_public_property("y", activation)?
+                .coerce_to_i32(activation)?;
+            let src_width = source_rect
+                .get_public_property("width", activation)?
+                .coerce_to_i32(activation)?;
+            let src_height = source_rect
+                .get_public_property("height", activation)?
+                .coerce_to_i32(activation)?;
+
+            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
+                src_bitmap.read().check_valid(activation)?;
+                // dealing with object aliasing...
+                let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+                let src_bitmap_data_cell = src_bitmap;
+                let src_bitmap_gc_ref; // only initialized if source is a different object than self
+                let source_bitmap_ref = // holds the reference to either of the ones above
+                    if GcCell::ptr_eq(src_bitmap, bitmap_data) {
+                        src_bitmap_clone = src_bitmap_data_cell.read().clone();
+                        &src_bitmap_clone
+                    } else {
+                        src_bitmap_gc_ref = src_bitmap_data_cell.read();
+                        &src_bitmap_gc_ref
+                    };
+                return Ok(bitmap_data
+                    .write(activation.context.gc_context)
+                    .threshold(
+                        source_bitmap_ref,
+                        (src_min_x, src_min_y, src_width, src_height),
+                        dest_point,
+                        operation,
+                        threshold,
+                        color,
+                        mask,
+                        copy_source,
+                    )
+                    .into());
+            }
         }
     }
 

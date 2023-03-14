@@ -171,7 +171,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
     }
 }
 
-fn null_parameter_error<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
+pub fn null_parameter_error<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
     let error = type_error(
         activation,
         &format!("Parameter {name} must be non-null."),
