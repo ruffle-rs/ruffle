@@ -23,12 +23,10 @@ package flash.display {
         }
         
         public function get accessibilityProperties():AccessibilityProperties {
-            stub_getter("flash.display.DisplayObject", "accessibilityProperties");
             return this._accessibilityProperties;
         }
         public function set accessibilityProperties(value:AccessibilityProperties):void {
             this._accessibilityProperties = value;
-            stub_setter("flash.display.DisplayObject", "accessibilityProperties");
         }
 
         public native function get alpha():Number;
