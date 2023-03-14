@@ -6,6 +6,7 @@ use crate::avm2::object::{BitmapDataObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
+use crate::avm2::parameters::ParametersExt;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
@@ -22,22 +23,11 @@ pub fn init<'gc>(
         activation.super_init(this, &[])?;
 
         let bitmap_data = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .as_object()
-            .and_then(|bd| bd.as_bitmap_data());
+            .try_get_object(activation, 0)
+            .and_then(|o| o.as_bitmap_data());
         //TODO: Pixel snapping is not supported
-        let _pixel_snapping = args
-            .get(1)
-            .cloned()
-            .unwrap_or_else(|| "auto".into())
-            .coerce_to_string(activation)?;
-        let smoothing = args
-            .get(2)
-            .cloned()
-            .unwrap_or_else(|| false.into())
-            .coerce_to_boolean();
+        let _pixel_snapping = args.get_string(activation, 1);
+        let smoothing = args.get_bool(2);
 
         if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
             //We are being initialized by the movie. This means that we
@@ -203,7 +193,7 @@ pub fn set_smoothing<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
     {
-        let smoothing = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let smoothing = args.get_bool(0);
         bitmap.set_smoothing(activation.context.gc_context, smoothing);
     }
 
