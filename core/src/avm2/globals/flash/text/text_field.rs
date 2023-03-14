@@ -157,10 +157,7 @@ pub fn set_background_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
         this.set_background_color(activation.context.gc_context, color);
     }
@@ -223,10 +220,7 @@ pub fn set_border_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let rgb = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let rgb = args.get_u32(activation, 0)?;
         let color = Color::from_rgb(rgb, 255);
         this.set_border_color(activation.context.gc_context, color);
     }

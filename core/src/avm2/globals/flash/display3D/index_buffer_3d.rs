@@ -1,4 +1,5 @@
 use crate::avm2::object::{ClassObject, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
@@ -39,14 +40,8 @@ pub fn upload_from_vector<'gc>(
             .as_vector_storage()
             .ok_or_else(|| Error::from("ArgumentError: Parameter must be a Vector"))?;
 
-        let start_offset = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let count = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let start_offset = args.get_u32(activation, 1)?;
+        let count = args.get_u32(activation, 2)?;
 
         index_buffer.set_count(count as usize, activation.context.gc_context);
 

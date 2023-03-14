@@ -1,3 +1,4 @@
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::ClassObject;
 use crate::avm2::TObject;
@@ -26,18 +27,9 @@ pub fn upload_from_byte_array<'gc>(
             .as_bytearray()
             .ok_or_else(|| Error::from("ArgumentError: Parameter must be a ByteArray"))?;
 
-        let byte_offset = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let start_vertex = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let num_vertices = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let byte_offset = args.get_u32(activation, 1)?;
+        let start_vertex = args.get_u32(activation, 2)?;
+        let num_vertices = args.get_u32(activation, 3)?;
 
         let data = byte_array
             .read_at(
@@ -73,14 +65,8 @@ pub fn upload_from_vector<'gc>(
             .as_vector_storage()
             .ok_or_else(|| Error::from("ArgumentError: Parameter must be a Vector"))?;
 
-        let start_vertex = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
-        let num_vertices = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_u32(activation)?;
+        let start_vertex = args.get_u32(activation, 1)?;
+        let num_vertices = args.get_u32(activation, 2)?;
 
         let data: Result<Vec<f32>, _> = vector
             .iter()
