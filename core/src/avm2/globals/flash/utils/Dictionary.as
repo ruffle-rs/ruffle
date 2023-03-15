@@ -7,8 +7,10 @@ package flash.utils {
 		public function Dictionary(weakKeys:Boolean = false)
 		{
 			if (weakKeys) {
-				stub_constructor("flash.utils.Dictionary", "with weak keys");
+				this.make_weak();
 			}
 		}
+
+		private native function make_weak():void;
     }
 }

@@ -166,6 +166,43 @@ pub enum WeakObject<'gc> {
 }
 
 impl<'gc> WeakObject<'gc> {
+    pub fn as_ptr(self) -> *const ObjectPtr {
+        match self {
+            Self::ScriptObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::FunctionObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::PrimitiveObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::NamespaceObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::ArrayObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::StageObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::DomainObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::EventObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::DispatchObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::XmlObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::XmlListObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::RegExpObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::ByteArrayObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::LoaderInfoObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::ClassObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::VectorObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::SoundObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::SoundChannelObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::BitmapDataObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::DateObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::DictionaryObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::QNameObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::TextFormatObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::ProxyObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::ErrorObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::Stage3DObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::Context3DObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::IndexBuffer3DObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::VertexBuffer3DObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::TextureObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::Program3DObject(o) => o.0.as_ptr() as *const ObjectPtr,
+            Self::NetStreamObject(o) => o.0.as_ptr() as *const ObjectPtr,
+        }
+    }
+
     pub fn upgrade(self, mc: MutationContext<'gc, '_>) -> Option<Object<'gc>> {
         Some(match self {
             Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
@@ -201,6 +238,20 @@ impl<'gc> WeakObject<'gc> {
             Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
             Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
         })
+    }
+}
+
+impl<'gc> PartialEq for WeakObject<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ptr() == other.as_ptr()
+    }
+}
+
+impl<'gc> Eq for WeakObject<'gc> {}
+
+impl<'gc> Hash for WeakObject<'gc> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_ptr().hash(state);
     }
 }
 

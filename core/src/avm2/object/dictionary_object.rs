@@ -7,8 +7,9 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
-use fnv::FnvHashMap;
+use fnv::FnvBuildHasher;
 use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
+use hashbrown::HashMap;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -22,7 +23,7 @@ pub fn dictionary_allocator<'gc>(
         activation.context.gc_context,
         DictionaryObjectData {
             base,
-            object_space: Default::default(),
+            object_space: DictionaryMap::Strong(Default::default()),
         },
     ))
     .into())
@@ -49,6 +50,86 @@ impl fmt::Debug for DictionaryObject<'_> {
     }
 }
 
+#[derive(Clone)]
+pub enum DictionaryMap<'gc> {
+    Strong(HashMap<Object<'gc>, Value<'gc>, FnvBuildHasher>),
+    Weak(HashMap<WeakObject<'gc>, Value<'gc>, FnvBuildHasher>),
+}
+
+unsafe impl<'gc> Collect for DictionaryMap<'gc> {
+    fn trace(&self, cc: gc_arena::CollectionContext) {
+        match self {
+            Self::Strong(m) => {
+                for (k, v) in m {
+                    k.trace(cc);
+                    v.trace(cc);
+                }
+            }
+            Self::Weak(m) => {
+                for (k, v) in m {
+                    k.trace(cc);
+                    v.trace(cc);
+                }
+            }
+        }
+    }
+}
+
+impl<'gc> DictionaryMap<'gc> {
+    /// Inserts a value into this Dictionary.
+    pub fn insert(&mut self, obj: Object<'gc>, v: Value<'gc>) {
+        match self {
+            DictionaryMap::Strong(m) => m.insert(obj, v),
+            DictionaryMap::Weak(m) => m.insert(obj.downgrade(), v),
+        };
+    }
+
+    /// Removes a value from this Dictionary.
+    pub fn remove(&mut self, obj: Object<'gc>) {
+        match self {
+            DictionaryMap::Strong(m) => m.remove(&obj),
+            DictionaryMap::Weak(m) => m.remove(&obj.downgrade()),
+        };
+    }
+
+    /// Gets a value in this Dictionary by key.
+    pub fn get(&self, obj: Object<'gc>) -> Option<Value<'gc>> {
+        match self {
+            DictionaryMap::Strong(m) => m.get(&obj).cloned(),
+            DictionaryMap::Weak(m) => m.get(&obj.downgrade()).cloned(),
+        }
+    }
+
+    /// Gets a key at a specific index in this Dictionary
+    ///
+    /// Automatically clears dead references
+    pub fn get_key_at(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        index: usize,
+    ) -> Option<Object<'gc>> {
+        self.prune(mc);
+        match self {
+            DictionaryMap::Strong(m) => m.keys().nth(index).cloned(),
+            DictionaryMap::Weak(m) => m.keys().nth(index).and_then(|o| o.upgrade(mc)),
+        }
+    }
+
+    /// Clears out any dead references in this Dictionary
+    pub fn prune(&mut self, mc: MutationContext<'gc, '_>) {
+        if let Self::Weak(m) = self {
+            m.drain_filter(|k, _| k.upgrade(mc).is_none());
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            DictionaryMap::Strong(m) => m.len(),
+            DictionaryMap::Weak(m) => m.len(),
+        }
+    }
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct DictionaryObjectData<'gc> {
@@ -56,7 +137,7 @@ pub struct DictionaryObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Object key storage
-    object_space: FnvHashMap<Object<'gc>, Value<'gc>>,
+    object_space: DictionaryMap<'gc>,
 }
 
 impl<'gc> DictionaryObject<'gc> {
@@ -65,8 +146,7 @@ impl<'gc> DictionaryObject<'gc> {
         self.0
             .read()
             .object_space
-            .get(&name)
-            .cloned()
+            .get(name)
             .unwrap_or(Value::Undefined)
     }
 
@@ -82,11 +162,15 @@ impl<'gc> DictionaryObject<'gc> {
 
     /// Delete a value from the dictionary's object space.
     pub fn delete_property_by_object(self, name: Object<'gc>, mc: MutationContext<'gc, '_>) {
-        self.0.write(mc).object_space.remove(&name);
+        self.0.write(mc).object_space.remove(name);
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
-        self.0.read().object_space.get(&name).is_some()
+        self.0.read().object_space.get(name).is_some()
+    }
+
+    pub fn make_weak(self, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).object_space = DictionaryMap::Weak(Default::default());
     }
 }
 
@@ -118,11 +202,12 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
-        let read = self.0.read();
-        let num_enumerants = read.base.num_enumerants();
-        let object_space_length = read.object_space.keys().len() as u32;
+        let mut write = self.0.write(activation.context.gc_context);
+        let num_enumerants = write.base.num_enumerants();
+        write.object_space.prune(activation.context.gc_context);
+        let object_space_length = write.object_space.len() as u32;
 
         if last_index < num_enumerants + object_space_length {
             Ok(Some(last_index.saturating_add(1)))
@@ -134,18 +219,22 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let read = self.0.read();
-        let object_space_len = read.object_space.keys().len() as u32;
+        let mut write = self.0.write(activation.context.gc_context);
+        let object_space_len = write.object_space.len() as u32;
         if object_space_len >= index {
             Ok(index
                 .checked_sub(1)
-                .and_then(|index| read.object_space.keys().nth(index as usize).cloned())
+                .and_then(|index| {
+                    write
+                        .object_space
+                        .get_key_at(activation.context.gc_context, index as usize)
+                })
                 .map(|v| v.into())
                 .unwrap_or(Value::Undefined))
         } else {
-            Ok(read
+            Ok(write
                 .base
                 .get_enumerant_name(index - object_space_len)
                 .unwrap_or(Value::Undefined))
