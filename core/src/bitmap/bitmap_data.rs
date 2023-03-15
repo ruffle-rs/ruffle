@@ -194,7 +194,7 @@ bitflags! {
         const GREEN = 1 << 1;
         const BLUE = 1 << 2;
         const ALPHA = 1 << 3;
-        const RGB = Self::RED.bits | Self::GREEN.bits | Self::BLUE.bits;
+        const RGB = Self::RED.bits() | Self::GREEN.bits() | Self::BLUE.bits();
     }
 }
 

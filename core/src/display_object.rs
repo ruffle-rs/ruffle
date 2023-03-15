@@ -1849,10 +1849,10 @@ bitflags! {
         const SKIP_INVISIBLE = 1 << 1;
 
         /// The options used for `hitTest` calls in ActionScript.
-        const AVM_HIT_TEST = Self::SKIP_MASK.bits;
+        const AVM_HIT_TEST = Self::SKIP_MASK.bits();
 
         /// The options used for mouse picking, such as clicking on buttons.
-        const MOUSE_PICK = Self::SKIP_MASK.bits | Self::SKIP_INVISIBLE.bits;
+        const MOUSE_PICK = Self::SKIP_MASK.bits() | Self::SKIP_INVISIBLE.bits();
     }
 }
 
