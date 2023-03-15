@@ -34,9 +34,7 @@ impl<'gc> ContextMenuState<'gc> {
         &self.callbacks[index]
     }
     pub fn build_builtin_items(&mut self, item_flags: BuiltInItemFlags, stage: Stage<'gc>) {
-        let root_mc = if let Some(root_clip) = stage.root_clip().and_then(|c| c.as_movie_clip()) {
-            root_clip
-        } else {
+        let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {
             return;
         };
         if item_flags.play {
