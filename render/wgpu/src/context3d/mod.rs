@@ -3,20 +3,20 @@ use ruffle_render::backend::{
     Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, ShaderModule,
     VertexBuffer,
 };
-use ruffle_render::bitmap::{BitmapFormat, BitmapHandle};
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
 use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, COPY_BUFFER_ALIGNMENT,
+    BindGroup, BufferDescriptor, BufferUsages, ImageCopyTexture, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages, COPY_BUFFER_ALIGNMENT,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
-use crate::Texture;
+use crate::{as_texture, Texture};
 use gc_arena::{Collect, MutationContext};
 
 use std::num::{NonZeroU32, NonZeroU64};
@@ -474,35 +474,20 @@ impl WgpuContext3D {
                 } => {
                     let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
 
-                    let image_data = match (source.format(), dest.format) {
-                        (BitmapFormat::Rgba, wgpu::TextureFormat::Rgba8Unorm) => source.data(),
-                        (source_format, dest_format) => {
-                            unimplemented!("Trying to copy from bitmap format {source_format:?} to texture format {dest_format:?}")
-                        }
-                    };
+                    if dest.format != wgpu::TextureFormat::Rgba8Unorm {
+                        unimplemented!("Trying to copy to texture format {:?}", dest.format);
+                    }
 
-                    let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
-                        label: None,
-                        size: 4 * source.width() as u64 * source.height() as u64,
-                        usage: BufferUsages::COPY_SRC,
-                        mapped_at_creation: true,
-                    });
+                    let source_texture = as_texture(source);
 
-                    let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
-                    texture_buffer_view.copy_from_slice(image_data);
-                    drop(texture_buffer_view);
-                    texture_buffer.unmap();
-
-                    buffer_command_encoder.copy_buffer_to_texture(
-                        wgpu::ImageCopyBuffer {
-                            buffer: &texture_buffer,
-                            layout: wgpu::ImageDataLayout {
-                                offset: 0,
-                                bytes_per_row: NonZeroU32::new(4 * source.width()),
-                                rows_per_image: Some(NonZeroU32::new(source.height()).unwrap()),
-                            },
+                    buffer_command_encoder.copy_texture_to_texture(
+                        ImageCopyTexture {
+                            texture: &source_texture.texture,
+                            mip_level: 0,
+                            origin: wgpu::Origin3d::ZERO,
+                            aspect: wgpu::TextureAspect::All,
                         },
-                        wgpu::ImageCopyTexture {
+                        ImageCopyTexture {
                             texture: &dest.texture,
                             mip_level: 0,
                             origin: wgpu::Origin3d {
@@ -512,9 +497,9 @@ impl WgpuContext3D {
                             },
                             aspect: wgpu::TextureAspect::All,
                         },
-                        wgpu::Extent3d {
-                            width: source.width(),
-                            height: source.height(),
+                        Extent3d {
+                            width: source_texture.width,
+                            height: source_texture.height,
                             depth_or_array_layers: 1,
                         },
                     );

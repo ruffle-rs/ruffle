@@ -9,10 +9,16 @@ pub fn upload_from_bitmap_data<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(texture) = this.and_then(|this| this.as_texture()) {
-        if let Some(source) = args[0].coerce_to_object(activation)?.as_bitmap_data() {
-            texture
-                .context3d()
-                .copy_bitmap_to_texture(activation, source, texture.handle(), 0);
+        if let Some(source) = args[0]
+            .coerce_to_object(activation)?
+            .as_bitmap_data_wrapper()
+        {
+            texture.context3d().copy_bitmap_to_texture(
+                source.bitmap_handle(&mut activation.context),
+                texture.handle(),
+                0,
+                activation,
+            );
         } else {
             panic!("Invalid source: {:?}", args[0]);
         }

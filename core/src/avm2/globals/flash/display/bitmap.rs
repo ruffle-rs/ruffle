@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 use crate::avm2::parameters::ParametersExt;
-use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use crate::{avm2_stub_getter, avm2_stub_setter};
@@ -24,7 +24,7 @@ pub fn init<'gc>(
 
         let bitmap_data = args
             .try_get_object(activation, 0)
-            .and_then(|o| o.as_bitmap_data());
+            .and_then(|o| o.as_bitmap_data_wrapper());
         //TODO: Pixel snapping is not supported
         let _pixel_snapping = args.get_string(activation, 1);
         let smoothing = args.get_bool(2);
@@ -87,7 +87,10 @@ pub fn init<'gc>(
             //Bitmap subclass).
 
             let bitmap_data = bitmap_data.unwrap_or_else(|| {
-                GcCell::allocate(activation.context.gc_context, BitmapData::dummy())
+                BitmapDataWrapper::new(GcCell::allocate(
+                    activation.context.gc_context,
+                    BitmapData::dummy(),
+                ))
             });
 
             let bitmap =

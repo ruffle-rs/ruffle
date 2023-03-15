@@ -246,7 +246,7 @@ fn attach_bitmap<'gc>(
         if let Some(bitmap_data) = bitmap
             .coerce_to_object(activation)
             .as_bitmap_data_object()
-            .map(|bd| bd.bitmap_data())
+            .map(|bd| bd.bitmap_data_wrapper())
         {
             if let Some(depth) = args.get(1) {
                 let depth = depth

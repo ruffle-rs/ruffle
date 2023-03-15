@@ -117,9 +117,9 @@ pub fn get_width<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
-        return Ok((bitmap_data.read().width() as i32).into());
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
+        return Ok((bitmap_data.width() as i32).into());
     }
 
     Ok(Value::Undefined)
@@ -131,9 +131,9 @@ pub fn get_height<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
-        return Ok((bitmap_data.read().height() as i32).into());
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
+        return Ok((bitmap_data.height() as i32).into());
     }
 
     Ok(Value::Undefined)
@@ -1006,10 +1006,10 @@ pub fn dispose<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         // Don't check if we've already disposed this BitmapData - 'BitmapData.dispose()' can be called
         // multiple times
-        bitmap_data.write(activation.context.gc_context).dispose();
+        bitmap_data.dispose(activation.context.gc_context);
     }
     Ok(Value::Undefined)
 }

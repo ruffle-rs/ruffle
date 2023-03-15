@@ -102,21 +102,21 @@ impl<'gc> Bitmap<'gc> {
     pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc>,
         id: CharacterId,
-        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
+        bitmap_data: BitmapDataWrapper<'gc>,
         smoothing: bool,
     ) -> Self {
         //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         //time due to mutable borrowing issues.
 
-        let width = bitmap_data.read().width();
-        let height = bitmap_data.read().height();
+        let width = bitmap_data.width();
+        let height = bitmap_data.height();
 
         Bitmap(GcCell::allocate(
             context.gc_context,
             BitmapData {
                 base: Default::default(),
                 id,
-                bitmap_data: BitmapDataWrapper::new(bitmap_data),
+                bitmap_data,
                 width,
                 height,
                 smoothing,
@@ -155,7 +155,7 @@ impl<'gc> Bitmap<'gc> {
         Ok(Self::new_with_bitmap_data(
             context,
             id,
-            bitmap_data,
+            BitmapDataWrapper::new(bitmap_data),
             smoothing,
         ))
     }
