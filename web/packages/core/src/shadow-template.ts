@@ -282,6 +282,10 @@ ruffleShadowTemplate.innerHTML = `
             width: 1px;
             height: 1px;
         }
+        #modal-area {
+            width: 100%;
+            height: 100%;
+        }
         #restore-save {
             display: none;
         }
@@ -324,11 +328,13 @@ ruffleShadowTemplate.innerHTML = `
     </div>
 
     <dialog id="save-manager">
-        <span id="close-modal">&times;</span>
-        <div class="general-save-options">
-            <span class="save-option" id="backup-saves">Backup all saves (download all sols)</span>
+        <div id="modal-area">
+            <span id="close-modal">&times;</span>
+            <div class="general-save-options">
+                <span class="save-option" id="backup-saves">Backup all saves (download all sols)</span>
+            </div>
+            <table id="local-saves"></table>
         </div>
-        <table id="local-saves"></table>
     </dialog>
     <ul id="context-menu"></ul>
 `;

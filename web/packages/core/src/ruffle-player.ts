@@ -233,6 +233,15 @@ export class RufflePlayer extends HTMLElement {
             this.shadow.getElementById("save-manager")!
         );
         this.populateSaves();
+        this.saveManager.addEventListener("click", () =>
+            this.saveManager.close()
+        );
+        const modalArea = this.saveManager.querySelector("#modal-area");
+        if (modalArea) {
+            modalArea.addEventListener("click", (event) =>
+                event.stopPropagation()
+            );
+        }
         const closeSaveManager = this.saveManager.querySelector("#close-modal");
         if (closeSaveManager) {
             closeSaveManager.addEventListener("click", () =>
