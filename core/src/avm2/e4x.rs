@@ -94,7 +94,7 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
-    fn append_child(
+    pub fn append_child(
         &self,
         gc_context: MutationContext<'gc, '_>,
         child: Self,

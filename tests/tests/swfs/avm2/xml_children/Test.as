@@ -9,6 +9,11 @@
 				<child kind="A">Third Child: <p>Inner element</p></child>
 			</outer>;
 			
+			var newChild = <child kind="D">Custom child</child>;
+			outer.appendChild(newChild);
+			trace("New child: " + outer.children()[3]);
+			trace("Equal: " + (newChild === outer.children()[3]));
+			
 			trace("Children length: " + outer.children().length());
 			
 			trace("'child' in outer: " + ('child' in outer));
