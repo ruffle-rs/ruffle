@@ -25,7 +25,7 @@ bitflags! {
 impl BlurFilterFlags {
     #[inline]
     pub fn from_passes(num_passes: u8) -> Self {
-        let flags = Self::from_bits_truncate(num_passes << 3);
+        let flags = Self::from_bits_retain(num_passes << 3);
         debug_assert_eq!(flags & Self::PASSES, flags);
         flags
     }

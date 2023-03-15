@@ -1342,7 +1342,7 @@ impl<'a> Reader<'a> {
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
-            let mut flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
             // Verify valid cap and join styles.
             if flags.contains(LineStyleFlag::JOIN_STYLE) {
                 log::warn!("Invalid line join style");
@@ -1657,7 +1657,7 @@ impl<'a> Reader<'a> {
             Ok(LineStyle::new().with_width(width).with_color(color))
         } else {
             // LineStyle2 in DefineShape4
-            let mut flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
             // Verify valid cap and join styles.
             if flags.contains(LineStyleFlag::JOIN_STYLE) {
                 log::warn!("Invalid line join style");
@@ -2074,7 +2074,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: DropShadowFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: DropShadowFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2082,7 +2082,7 @@ impl<'a> Reader<'a> {
         Ok(BlurFilter {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
-            flags: BlurFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: BlurFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2092,7 +2092,7 @@ impl<'a> Reader<'a> {
             blur_x: self.read_fixed16()?,
             blur_y: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: GlowFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: GlowFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2106,7 +2106,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: BevelFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: BevelFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 
@@ -2130,7 +2130,7 @@ impl<'a> Reader<'a> {
             angle: self.read_fixed16()?,
             distance: self.read_fixed16()?,
             strength: self.read_fixed8()?,
-            flags: GradientFilterFlags::from_bits_truncate(self.read_u8()?),
+            flags: GradientFilterFlags::from_bits_retain(self.read_u8()?),
         })
     }
 

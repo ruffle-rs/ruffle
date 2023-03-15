@@ -269,10 +269,10 @@ pub fn as_set_prop_flags<'gc>(
     };
 
     let set_flags = args.get(2).unwrap_or(&0.into()).coerce_to_f64(activation)? as u16;
-    let set_attributes = Attribute::from_bits_truncate(set_flags);
+    let set_attributes = Attribute::from_bits_retain(set_flags);
 
     let clear_flags = args.get(3).unwrap_or(&0.into()).coerce_to_f64(activation)? as u16;
-    let clear_attributes = Attribute::from_bits_truncate(clear_flags);
+    let clear_attributes = Attribute::from_bits_retain(clear_flags);
 
     if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {
         avm_warn!(

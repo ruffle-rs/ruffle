@@ -1101,8 +1101,8 @@ impl<'gc> BitmapData<'gc> {
                         // because of the saturating conversion to u8
                         *noise_c = if c == 3 { 1.0 } else { -1.0 };
 
-                        // SAFETY: `c` is always in 0..4, so `1 << c` is a valid `ChannelOptions`.
-                        let c = unsafe { ChannelOptions::from_bits_unchecked(1 << c) };
+                        // `c` is always in 0..4, so `1 << c` is never actually truncated here
+                        let c = ChannelOptions::from_bits_truncate(1 << c);
                         if channel_options.contains(c) {
                             *noise_c = turb.turbulence(
                                 channel,

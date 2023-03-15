@@ -871,7 +871,7 @@ impl LineStyle {
     #[inline]
     pub fn with_start_cap(mut self, val: LineCapStyle) -> Self {
         self.flags -= LineStyleFlag::START_CAP_STYLE;
-        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 6);
+        self.flags |= LineStyleFlag::from_bits_retain((val as u16) << 6);
         self
     }
 
@@ -884,7 +884,7 @@ impl LineStyle {
     #[inline]
     pub fn with_end_cap(mut self, val: LineCapStyle) -> Self {
         self.flags -= LineStyleFlag::END_CAP_STYLE;
-        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 8);
+        self.flags |= LineStyleFlag::from_bits_retain((val as u16) << 8);
         self
     }
 

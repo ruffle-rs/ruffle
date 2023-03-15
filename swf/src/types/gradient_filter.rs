@@ -48,7 +48,7 @@ bitflags! {
 impl GradientFilterFlags {
     #[inline]
     pub fn from_passes(num_passes: u8) -> Self {
-        let flags = Self::from_bits_truncate(num_passes);
+        let flags = Self::from_bits_retain(num_passes);
         debug_assert_eq!(flags & Self::PASSES, flags);
         flags
     }
