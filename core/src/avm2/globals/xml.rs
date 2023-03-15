@@ -15,30 +15,23 @@ pub fn init<'gc>(
     let this = this.unwrap().as_xml_object().unwrap();
     let value = args[0];
 
-    match E4XNode::parse(value, activation) {
-        Ok(nodes) => {
-            let node = match nodes.as_slice() {
-                // XML defaults to an empty text node when nothing was parsed
-                [] => E4XNode::text(activation.context.gc_context, AvmString::default()),
-                [node] => *node,
-                _ => {
-                    return Err(Error::RustError(
-                        format!(
-                            "XML constructor must be called with a single node: found {:?}",
-                            nodes
-                        )
-                        .into(),
-                    ))
-                }
-            };
-            this.set_node(activation.context.gc_context, node);
-        }
-        Err(e) => {
+    let nodes = E4XNode::parse(value, activation)?;
+
+    let node = match nodes.as_slice() {
+        // XML defaults to an empty text node when nothing was parsed
+        [] => E4XNode::text(activation.context.gc_context, AvmString::default()),
+        [node] => *node,
+        _ => {
             return Err(Error::RustError(
-                format!("Failed to parse XML: {e:?}").into(),
+                format!(
+                    "XML constructor must be called with a single node: found {:?}",
+                    nodes
+                )
+                .into(),
             ))
         }
-    }
+    };
+    this.set_node(activation.context.gc_context, node);
 
     Ok(Value::Undefined)
 }

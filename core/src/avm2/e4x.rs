@@ -9,6 +9,8 @@ use quick_xml::{
     Reader,
 };
 
+use crate::avm2::{error::type_error, TObject};
+
 use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
 use crate::string::{WStr, WString};
 
@@ -117,14 +119,29 @@ impl<'gc> E4XNode<'gc> {
     /// The caller is responsible for validating that the number of top-level nodes
     /// is correct (for XML, there should be exactly one.)
     pub fn parse(
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Vec<Self>, Error<'gc>> {
-        let string = match value {
+        let string = match &value {
             // The docs claim that this throws a TypeError, but it actually doesn't
             Value::Null | Value::Undefined => AvmString::default(),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
-            value => value.coerce_to_string(activation)?,
+            val => {
+                if let Some(obj) = val.as_object() {
+                    if let Some(xml) = obj.as_xml_object() {
+                        value = xml.call_public_property("toXMLString", &[], activation)?;
+                    } else if let Some(list) = obj.as_xml_list_object() {
+                        if list.length() == 1 {
+                            value = list.children_mut(activation.context.gc_context)[0]
+                                .get_or_create_xml(activation)
+                                .call_public_property("toXMLString", &[], activation)?;
+                        } else {
+                            return Err(Error::AvmError(type_error(activation, "Error #1088: The markup in the document following the root element must be well-formed.", 1088)?));
+                        }
+                    }
+                }
+                value.coerce_to_string(activation)?
+            }
         };
 
         let data_utf8 = string.to_utf8_lossy();
@@ -342,15 +359,9 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn xml_to_xml_string(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        match &self.0.read().kind {
-            E4XNodeKind::Text(text) => Ok(*text),
-            E4XNodeKind::Element { .. } => {
-                Err(format!("XML.toXMLString(): Not yet implemented element {:?}", self).into())
-            }
-            other => Err(format!("XML.toXMLString(): Not yet implemented for {other:?}").into()),
-        }
+        return to_xml_string(E4XOrXml::E4X(*self), activation);
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
