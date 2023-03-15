@@ -841,6 +841,17 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
+        const byteString = atob(bytesBase64);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], {type: mimeString});
+        return blob;
+    }
+
     /**
      * Download base-64 string as file
      *
@@ -853,19 +864,16 @@ export class RufflePlayer extends HTMLElement {
         mimeType: string,
         fileName: string
     ): void {
-        const fileUrl = "data:" + mimeType + ";base64," + bytesBase64;
-        fetch(fileUrl)
-            .then((response) => response.blob())
-            .then((blob) => {
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.style.display = "none";
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            });
+        const blob = this.base64ToBlob(bytesBase64, mimeType);
+        const blobURL = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobURL;
+        link.style.display = "none";
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobURL);
     }
 
     /**
@@ -1154,6 +1162,7 @@ export class RufflePlayer extends HTMLElement {
                     navigator.clipboard.writeText(this.getPanicData()),
             });
         }
+        this.populateSaves();
         const localSaveTable = this.saveManager.querySelector("#local-saves");
         if (localSaveTable && localSaveTable.textContent !== "") {
             items.push({
