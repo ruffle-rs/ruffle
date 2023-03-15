@@ -37,6 +37,10 @@ package flash.display {
 			// https://github.com/ruffle-rs/ruffle/pull/8909
 			throw new Error("flash.display.Loader.unload - not yet implemented");
 		}
+
+		public function unloadAndStop(gc:Boolean = true):void {
+			stub_method("flash.display.Loader", "unloadAndStop");
+		}
 		
 		public function close():void {
 			stub_method("flash.display.Loader", "close");
