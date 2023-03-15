@@ -967,6 +967,7 @@ export class RufflePlayer extends HTMLElement {
                     document.createElement("INPUT")
                 );
                 replaceInput.type = "file";
+                replaceInput.accept = ".sol";
                 replaceInput.className = "replace-save";
                 replaceInput.id = "replace-save-" + key;
                 const replaceLabel = <HTMLLabelElement>(
