@@ -261,6 +261,7 @@ include "flash/text/TextFieldAutoSize.as"
 include "flash/text/TextFieldType.as"
 include "flash/text/TextFormat.as"
 include "flash/text/TextFormatAlign.as"
+include "flash/text/TextFormatDisplay.as"
 include "flash/text/TextInteractionMode.as"
 include "flash/text/TextLineMetrics.as"
 
