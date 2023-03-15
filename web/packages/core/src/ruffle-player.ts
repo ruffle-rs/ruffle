@@ -848,7 +848,7 @@ export class RufflePlayer extends HTMLElement {
         for (let i = 0; i < byteString.length; i++) {
             ia[i] = byteString.charCodeAt(i);
         }
-        const blob = new Blob([ab], {type: mimeString});
+        const blob = new Blob([ab], { type: mimeString });
         return blob;
     }
 
@@ -890,6 +890,53 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private confirmReloadSave(
+        solKey: string,
+        b64SolData: string,
+        replace: boolean
+    ) {
+        if (this.isB64SOL(b64SolData)) {
+            if (localStorage[solKey]) {
+                if (!replace) {
+                    const confirmDelete = confirm(
+                        "Are you sure you want to delete this save file?"
+                    );
+                    if (!confirmDelete) {
+                        return;
+                    }
+                }
+                const swfPath = this.swfUrl ? this.swfUrl.pathname : "";
+                const swfHost = this.swfUrl
+                    ? this.swfUrl.hostname
+                    : document.location.hostname;
+                const savePath = solKey.split("/").slice(1, -1).join("/");
+                if (swfPath.includes(savePath) && solKey.startsWith(swfHost)) {
+                    const confirmReload = confirm(
+                        `The only way to ${
+                            replace ? "replace" : "delete"
+                        } this save file without potential conflict is to reload this content. Do you wish to continue anyway?`
+                    );
+                    if (confirmReload && this.loadedConfig) {
+                        this.destroy();
+                        replace
+                            ? localStorage.setItem(solKey, b64SolData)
+                            : localStorage.removeItem(solKey);
+                        this.load(this.loadedConfig);
+                        this.populateSaves();
+                        this.saveManager.close();
+                        return;
+                    }
+                } else {
+                    replace
+                        ? localStorage.setItem(solKey, b64SolData)
+                        : localStorage.removeItem(solKey);
+                }
+                this.populateSaves();
+                this.saveManager.close();
+            }
+        }
+    }
+
     /**
      * Replace save from SOL file.
      *
@@ -903,36 +950,7 @@ export class RufflePlayer extends HTMLElement {
             if (reader.result && typeof reader.result === "string") {
                 const b64Regex = new RegExp("data:.*;base64,");
                 const b64SolData = reader.result.replace(b64Regex, "");
-                if (this.isB64SOL(b64SolData)) {
-                    if (localStorage[solKey]) {
-                        const swfPath = this.swfUrl ? this.swfUrl.pathname : "";
-                        const swfHost = this.swfUrl
-                            ? this.swfUrl.hostname
-                            : document.location.hostname;
-                        const savePath = solKey
-                            .split("/")
-                            .slice(1, -1)
-                            .join("/");
-                        if (
-                            swfPath.includes(savePath) &&
-                            solKey.startsWith(swfHost)
-                        ) {
-                            const confirmReload = confirm(
-                                "The only way to replace this save file without potential conflict is to reload this content. Do you wish to continue anyway?"
-                            );
-                            if (confirmReload && this.loadedConfig) {
-                                this.destroy();
-                                localStorage.setItem(solKey, b64SolData);
-                                this.load(this.loadedConfig);
-                                this.populateSaves();
-                                return;
-                            }
-                        }
-                        this.saveManager.close();
-                        localStorage.setItem(solKey, b64SolData);
-                        this.populateSaves();
-                    }
-                }
+                this.confirmReloadSave(solKey, b64SolData, true);
             }
         });
         if (
@@ -951,9 +969,10 @@ export class RufflePlayer extends HTMLElement {
      * @param key The key to remove from local storage
      */
     private deleteSave(key: string): void {
-        this.saveManager.close();
-        localStorage.removeItem(key);
-        this.populateSaves();
+        const b64SolData = localStorage.getItem(key);
+        if (b64SolData) {
+            this.confirmReloadSave(key, b64SolData, false);
+        }
     }
 
     /**
@@ -1030,7 +1049,6 @@ export class RufflePlayer extends HTMLElement {
                 );
             }
         });
-        this.saveManager.close();
     }
 
     /**
