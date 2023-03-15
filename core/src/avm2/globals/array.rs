@@ -1215,7 +1215,7 @@ pub fn sort_on<'gc>(
     Ok(0.into())
 }
 
-/// Implements `Vector.removeAt`
+/// Implements `Array.removeAt`
 pub fn remove_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
