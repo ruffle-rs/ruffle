@@ -16,6 +16,7 @@ package {
         AS3 native function elements(name:*):XMLList;
         AS3 native function attributes():XMLList;
         AS3 native function attribute(name:*):XMLList;
+        AS3 native function nodeKind():String;
 
 
         AS3 native function toString():String;
@@ -70,6 +71,11 @@ package {
         prototype.attribute = function(name:*):XMLList {
             var self:XML = this;
             return self.AS3::attribute(name);
+        };
+
+        prototype.nodeKind = function():String {
+            var self:XML = this;
+            return self.AS3::nodeKind();
         };
     }
 }

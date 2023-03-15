@@ -203,3 +203,21 @@ pub fn call_handler<'gc>(
         .construct(activation, args)?
         .into())
 }
+
+pub fn node_kind<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let xml = this.as_xml_object().unwrap();
+    let name = match &*xml.node().kind() {
+        E4XNodeKind::Text(_) => "text",
+        E4XNodeKind::CData(_) => "text", // cdata pretends to be text here
+        E4XNodeKind::Comment(_) => "comment",
+        E4XNodeKind::ProcessingInstruction(_) => "processing-instruction",
+        E4XNodeKind::Attribute(_) => "attribute",
+        E4XNodeKind::Element { .. } => "element",
+    };
+    Ok(name.into())
+}
