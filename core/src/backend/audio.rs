@@ -320,11 +320,10 @@ impl<'gc> AudioManager<'gc> {
         // Update the position of sounds, and remove any completed sounds.
         self.sounds.retain(|sound| {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
-                // Sounds still playing; update position.
+                // Sounds still playing; update position for AVM1 sounds.
+                // AVM2 sounds do not update position and instead grab the position on demand.
                 if let Some(avm1_object) = sound.avm1_object {
                     avm1_object.set_position(gc_context, pos.round() as u32);
-                } else if let Some(avm2_object) = sound.avm2_object {
-                    avm2_object.set_position(gc_context, pos);
                 }
                 true
             } else {
@@ -349,8 +348,6 @@ impl<'gc> AudioManager<'gc> {
                 }
 
                 if let Some(object) = sound.avm2_object {
-                    object.set_position(gc_context, duration);
-
                     //TODO: AVM2 events are usually not queued, but we can't
                     //hold the update context in the audio manager yet.
                     action_queue.queue_action(

@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
+use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -95,13 +96,17 @@ impl<'gc> SoundChannelObject<'gc> {
     }
 
     /// Return the position of the playing sound in seconds.
-    pub fn position(self) -> f64 {
-        self.0.read().position
-    }
+    pub fn position(self, context: &mut UpdateContext<'_, 'gc>) -> f64 {
+        // The position is cached on read. This means that if the position isn't read until after
+        // the sound has played, the position will be 0 (#9952).
+        let mut write = self.0.write(context.gc_context);
+        if let SoundChannelData::Loaded { sound_instance } = write.sound_channel_data {
+            if let Some(pos) = context.audio.get_sound_position(sound_instance) {
+                write.position = pos;
+            }
+        }
 
-    /// Set the position of the playing sound in seconds.
-    pub fn set_position(self, mc: MutationContext<'gc, '_>, value: f64) {
-        self.0.write(mc).position = value;
+        write.position
     }
 
     pub fn instance(self) -> Option<SoundInstanceHandle> {

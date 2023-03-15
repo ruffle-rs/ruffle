@@ -46,12 +46,12 @@ pub fn get_right_peak<'gc>(
 
 /// Impl `SoundChannel.position`
 pub fn get_position<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(instance) = this.and_then(|this| this.as_sound_channel()) {
-        return Ok(instance.position().into());
+        return Ok(instance.position(&mut activation.context).into());
     }
     Ok(Value::Undefined)
 }
