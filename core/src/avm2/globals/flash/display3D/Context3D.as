@@ -16,8 +16,8 @@ package flash.display3D {
         public native function createVertexBuffer(numVertices:int, data32PerVertex:int, bufferUsage:String = "staticDraw"):VertexBuffer3D;
         public native function configureBackBuffer(
             width:int, height:int, antiAlias:int, enableDepthAndStencil:Boolean = true, wantsBestResolution:Boolean = false, wantsBestResolutionOnBrowserZoom:Boolean = false
-        ):void;
-        public native function setVertexBufferAt(index:int, buffer:VertexBuffer3D, bufferOffset:int = 0, format:String = "float4"):void
+            ):void;
+        public native function setVertexBufferAt(index:int, buffer:VertexBuffer3D, bufferOffset:int = 0, format:String = "float4"):void;
         public native function createProgram():Program3D;
         public native function setProgram(program:Program3D):void;
         public native function drawTriangles(indexBuffer:IndexBuffer3D, firstIndex:int = 0, numTriangles:int = -1):void;
@@ -60,9 +60,17 @@ package flash.display3D {
             return 2048;
         }
 
-         public function get maxBackBufferHeight():int {
+        public function get maxBackBufferHeight():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferHeight");
             return 2048;
-         }
+        }
+
+        public function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void {
+            stub_method("flash.display3D.Context3D", "setStencilReferenceValue");
+        }
+
+        public function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void {
+            stub_method("flash.display3D.Context3D", "setSamplerStateAt");
+        }
     }
 }

@@ -5,6 +5,7 @@ package flash.display {
     import flash.geom.Matrix;
     import flash.filters.BitmapFilter;
     import flash.utils.ByteArray;
+    import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
     public class BitmapData implements IBitmapDrawable {
@@ -56,5 +57,10 @@ package flash.display {
         public native function threshold(
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String, threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false
         ):uint;
+
+        public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
+            stub_method("flash.display.BitmapData", "generateFilterRect");
+            return sourceRect.clone();
+        }
     }
 }
