@@ -141,7 +141,7 @@ impl<'gc> Context3DObject<'gc> {
             activation,
             *self,
             handle,
-            data_32_per_vertex as usize,
+            data_32_per_vertex,
         )?))
     }
 
@@ -150,7 +150,7 @@ impl<'gc> Context3DObject<'gc> {
         buffer: VertexBuffer3DObject<'gc>,
         data: Vec<u8>,
         start_vertex: usize,
-        data_per_vertex: usize,
+        data32_per_vertex: u8,
         activation: &mut Activation<'_, 'gc>,
     ) {
         self.0.write(activation.context.gc_context).commands.push(
@@ -158,7 +158,7 @@ impl<'gc> Context3DObject<'gc> {
                 buffer: buffer.handle(),
                 data,
                 start_vertex,
-                data_per_vertex,
+                data32_per_vertex,
             },
         );
     }

@@ -40,7 +40,10 @@ pub fn upload_from_byte_array<'gc>(
             .coerce_to_u32(activation)?;
 
         let data = byte_array
-            .read_at(num_vertices as usize * 2, byte_offset as usize)
+            .read_at(
+                num_vertices as usize * 4 * vertex_buffer.data32_per_vertex() as usize,
+                byte_offset as usize,
+            )
             .map_err(|e| e.to_avm(activation))?
             .to_vec();
 
@@ -48,7 +51,7 @@ pub fn upload_from_byte_array<'gc>(
             vertex_buffer,
             data,
             start_vertex as usize,
-            vertex_buffer.data_per_vertex(),
+            vertex_buffer.data32_per_vertex(),
             activation,
         );
     }
@@ -82,7 +85,7 @@ pub fn upload_from_vector<'gc>(
         let data: Result<Vec<f32>, _> = vector
             .iter()
             .map(|val| val.coerce_to_number(activation).map(|val| val as f32))
-            .take(num_vertices as usize * vertex_buffer.data_per_vertex())
+            .take(num_vertices as usize * vertex_buffer.data32_per_vertex() as usize)
             .collect();
 
         let data_bytes = bytemuck::cast_slice::<f32, u8>(data?.as_slice()).to_vec();
@@ -91,7 +94,7 @@ pub fn upload_from_vector<'gc>(
             vertex_buffer,
             data_bytes,
             start_vertex as usize,
-            vertex_buffer.data_per_vertex(),
+            vertex_buffer.data32_per_vertex(),
             activation,
         );
     }

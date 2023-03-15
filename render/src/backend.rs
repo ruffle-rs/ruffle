@@ -299,7 +299,7 @@ pub enum Context3DCommand<'gc> {
     UploadToVertexBuffer {
         buffer: Rc<dyn VertexBuffer>,
         start_vertex: usize,
-        data_per_vertex: usize,
+        data32_per_vertex: u8,
         data: Vec<u8>,
     },
 

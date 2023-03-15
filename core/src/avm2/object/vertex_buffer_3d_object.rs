@@ -21,7 +21,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn VertexBuffer>,
-        data_per_vertex: usize,
+        data32_per_vertex: u8,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().vertexbuffer3d;
         let base = ScriptObjectData::new(class);
@@ -32,7 +32,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
                 base,
                 context3d,
                 handle,
-                data_per_vertex,
+                data32_per_vertex,
             },
         ))
         .into();
@@ -51,8 +51,8 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         self.0.read().context3d
     }
 
-    pub fn data_per_vertex(&self) -> usize {
-        self.0.read().data_per_vertex
+    pub fn data32_per_vertex(&self) -> u8 {
+        self.0.read().data32_per_vertex
     }
 }
 
@@ -66,7 +66,10 @@ pub struct VertexBuffer3DObjectData<'gc> {
 
     handle: Rc<dyn VertexBuffer>,
 
-    data_per_vertex: usize,
+    /// The 'data32PerVertex' value that this object was created with.
+    /// This is the number of 32-bit values associated with each vertex,
+    /// and is at most 64
+    data32_per_vertex: u8,
 }
 
 impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
