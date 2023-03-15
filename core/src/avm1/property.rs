@@ -8,7 +8,7 @@ use gc_arena::Collect;
 bitflags! {
     /// Attributes of properties in the AVM runtime.
     /// The values are significant and should match the order used by `object::as_set_prop_flags`.
-    #[derive(Collect)]
+    #[derive(Clone, Collect, Copy, Debug)]
     #[collect(require_static)]
     pub struct Attribute: u16 {
         const DONT_ENUM     = 1 << 0;

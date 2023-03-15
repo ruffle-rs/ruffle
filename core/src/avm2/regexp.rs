@@ -37,7 +37,7 @@ impl<'gc> Clone for RegExp<'gc> {
 }
 
 bitflags! {
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect, Debug)]
     #[collect(require_static)]
     pub struct RegExpFlags: u8 {
         const GLOBAL       = 1 << 0;

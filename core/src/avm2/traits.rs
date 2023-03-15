@@ -17,7 +17,8 @@ use swf::avm2::types::{
 
 bitflags! {
     /// All attributes a trait can have.
-    pub struct  TraitAttributes: u8 {
+    #[derive(Clone, Copy)]
+    pub struct TraitAttributes: u8 {
         /// Whether or not traits in downstream classes are allowed to override
         /// this trait.
         const FINAL    = 1 << 0;

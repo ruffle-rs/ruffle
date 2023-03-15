@@ -803,6 +803,7 @@ bitflags! {
     /// The array options that a given sort operation may use.
     ///
     /// These are provided as a number by the VM and converted into bitflags.
+    #[derive(Clone, Copy)]
     pub struct SortOptions: u8 {
         /// Request case-insensitive string value sort.
         const CASE_INSENSITIVE     = 1 << 0;

@@ -4401,7 +4401,7 @@ pub enum QueuedTagAction {
 
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect)]
     #[collect(require_static)]
     struct MovieClipFlags: u8 {
         /// Whether this `MovieClip` has run its initial frame.

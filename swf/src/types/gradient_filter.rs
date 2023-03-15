@@ -35,6 +35,7 @@ impl GradientFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct GradientFilterFlags: u8 {
         const INNER_SHADOW     = 1 << 7;
         const KNOCKOUT         = 1 << 6;

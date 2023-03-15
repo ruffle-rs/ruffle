@@ -1038,7 +1038,7 @@ bitflags! {
     ///
     /// This is a bitflags instead of an enum to mimic Flash Player behavior.
     /// You can theoretically have both TOP and BOTTOM bits set, for example.
-    #[derive(Default, Collect)]
+    #[derive(Clone, Copy, Default, Collect)]
     #[collect(require_static)]
     pub struct StageAlign: u8 {
         /// Align to the top of the viewport.

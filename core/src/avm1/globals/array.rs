@@ -14,6 +14,7 @@ use std::cmp::Ordering;
 
 bitflags! {
     /// Options used by `Array.sort` and `Array.sortOn`.
+    #[derive(Clone, Copy)]
     struct SortOptions: i32 {
         const CASE_INSENSITIVE     = 1 << 0;
         const DESCENDING           = 1 << 1;

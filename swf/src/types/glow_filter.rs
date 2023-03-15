@@ -28,6 +28,7 @@ impl GlowFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct GlowFilterFlags: u8 {
         const INNER_GLOW       = 1 << 7;
         const KNOCKOUT         = 1 << 6;

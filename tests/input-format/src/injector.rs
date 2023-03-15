@@ -12,6 +12,7 @@ bitflags! {
     ///
     /// Convertable from `MouseButton`, which is intended to represent ONE
     /// button being held or released.
+    #[derive(Clone, Copy)]
     pub struct MouseButtons: u8 {
         const LEFT = 0b00000001;
         const MIDDLE = 0b00000010;

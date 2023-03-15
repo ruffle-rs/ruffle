@@ -16,6 +16,7 @@ impl BlurFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct BlurFilterFlags: u8 {
         const PASSES = 0b11111 << 3;
     }

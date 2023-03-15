@@ -35,6 +35,7 @@ impl DropShadowFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct DropShadowFilterFlags: u8 {
         const INNER_SHADOW     = 1 << 7;
         const KNOCKOUT         = 1 << 6;

@@ -1879,7 +1879,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 }
 
 bitflags::bitflags! {
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect)]
     #[collect(require_static)]
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
