@@ -839,7 +839,11 @@ export class RufflePlayer extends HTMLElement {
      * @param mimeType The MIME type
      * @param fileName The name to give the file
      */
-    saveFile(bytesBase64: string, mimeType: string, fileName: string): void {
+    private saveFile(
+        bytesBase64: string,
+        mimeType: string,
+        fileName: string
+    ): void {
         const fileUrl = "data:" + mimeType + ";base64," + bytesBase64;
         fetch(fileUrl)
             .then((response) => response.blob())
@@ -860,7 +864,7 @@ export class RufflePlayer extends HTMLElement {
      * Check if string is a base-64 encoded SOL file
      * @param solData The base-64 encoded SOL string
      */
-    isB64SOL(solData: string): boolean {
+    private isB64SOL(solData: string): boolean {
         try {
             const decodedData = atob(solData);
             return decodedData.slice(6, 10) === "TCSO";
@@ -875,7 +879,7 @@ export class RufflePlayer extends HTMLElement {
      * @param event The change event fired
      * @param solKey The localStorage save file key
      */
-    async replaceSOL(event: Event, solKey: string): Promise<void> {
+    private replaceSOL(event: Event, solKey: string): void {
         const fileInput = <HTMLInputElement>event.target;
         const reader = new FileReader();
         reader.addEventListener("load", () => {
@@ -929,7 +933,7 @@ export class RufflePlayer extends HTMLElement {
      *
      * @param key The key to remove from local storage
      */
-    deleteSave(key: string): void {
+    private deleteSave(key: string): void {
         this.saveManager.close();
         localStorage.removeItem(key);
         this.populateSaves();
@@ -938,7 +942,7 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Puts the local save SOL file keys in a table.
      */
-    populateSaves(): void {
+    private populateSaves(): void {
         const saveTable = this.saveManager.querySelector("#local-saves");
         if (!saveTable) {
             return;
@@ -997,7 +1001,7 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Gets the local save information as SOL files and downloads them.
      */
-    backupSaves(): void {
+    private backupSaves(): void {
         Object.keys(localStorage).forEach((key) => {
             const solName = key.split("/").pop();
             const solData = localStorage.getItem(key);
@@ -1010,6 +1014,13 @@ export class RufflePlayer extends HTMLElement {
             }
         });
         this.saveManager.close();
+    }
+
+    /**
+     * Opens the save manager.
+     */
+    private openSaveManager(): void {
+        this.saveManager.showModal();
     }
 
     /**
@@ -1138,7 +1149,7 @@ export class RufflePlayer extends HTMLElement {
         if (localSaveTable && localSaveTable.textContent !== "") {
             items.push({
                 text: "Open Save Manager",
-                onClick: () => this.saveManager.showModal(),
+                onClick: this.openSaveManager.bind(this),
             });
         }
 
