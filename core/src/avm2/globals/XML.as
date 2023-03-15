@@ -1,5 +1,6 @@
 package {
     [Ruffle(InstanceAllocator)]
+    [Ruffle(CallHandler)]
     public final dynamic class XML {
         public function XML(value:* = undefined) {
             this.init(value);

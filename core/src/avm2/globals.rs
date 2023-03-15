@@ -578,6 +578,7 @@ fn load_playerglobal<'gc>(
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
     activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     activation.avm2().native_instance_init_table = native::NATIVE_INSTANCE_INIT_TABLE;
+    activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
 
     let movie = SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
         .expect("playerglobal.swf should be valid");

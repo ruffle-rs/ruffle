@@ -1,0 +1,6 @@
+From string:
+0
+Some string
+From complex string:
+1
+outer
