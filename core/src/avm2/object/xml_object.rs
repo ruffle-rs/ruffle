@@ -224,8 +224,39 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
+        let write = self.0.write(activation.context.gc_context);
+        let mut kind = write.node.kind_mut(activation.context.gc_context);
+        let E4XNodeKind::Element {
+            attributes,
+            ..
+        } = &mut *kind else {
+                return Ok(());
+            };
+
+        #[allow(clippy::collapsible_if)]
+        if name.contains_public_namespace() && name.is_attribute() {
+            if !attributes.iter_mut().any(|attr| attr.matches_name(name)) {
+                if let Some(obj) = value.as_object() {
+                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
+                        return Err(format!(
+                            "Cannot set an XML/XMLList object {:?} as an attribute",
+                            obj
+                        )
+                        .into());
+                    }
+                }
+                let Some(local_name) = name.local_name() else {
+                    return Err(format!("Cannot set attribute {:?} without a local name", name).into());
+                };
+                let value = value.coerce_to_string(activation)?;
+                let new_attr = E4XNode::attribute(activation.context.gc_context, local_name, value);
+                attributes.push(new_attr);
+                return Ok(());
+            }
+        }
+
         Err(format!("Modifying an XML object is not yet implemented: {name:?} = {value:?}").into())
     }
 }

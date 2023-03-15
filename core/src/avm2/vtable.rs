@@ -116,6 +116,10 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
+        if name.is_attribute() {
+            return None;
+        }
+
         self.0
             .read()
             .resolved_traits
@@ -124,6 +128,10 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_trait_with_ns(self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, Property)> {
+        if name.is_attribute() {
+            return None;
+        }
+
         self.0
             .read()
             .resolved_traits
