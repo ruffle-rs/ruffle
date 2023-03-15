@@ -3,3 +3,10 @@ test
 
 // new XML(objWithToString).bar
 test
+xmlCopy().toXMLString(): <outer/>
+xmlObj === xmlCopy: false
+Caught error: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+1088
+new XML(singleList): <outer><inner>Hello</inner><second>World</second></outer>
+Caught error: TypeError: Error #1088: The markup in the document following the root element must be well-formed.
+1088
