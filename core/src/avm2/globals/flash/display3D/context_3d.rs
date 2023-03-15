@@ -351,11 +351,11 @@ pub fn create_texture<'gc>(
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
         let streaming_levels = args[4].as_integer(activation.context.gc_context)? as u32;
-        let format = if &*format == b"bgra" {
-            Context3DTextureFormat::Bgra
-        } else {
-            panic!("Unsupported texture format in createTexture: {:?}", format);
-        };
+        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
+            Error::RustError(
+                format!("Unsupported texture format in createTexture: {:?}", format).into(),
+            )
+        })?;
 
         let class = activation.avm2().classes().texture;
 
@@ -383,14 +383,15 @@ pub fn create_rectangle_texture<'gc>(
         let height = args[1].as_integer(activation.context.gc_context)? as u32;
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
-        let format = if &*format == b"bgra" {
-            Context3DTextureFormat::Bgra
-        } else {
-            panic!(
-                "Unsupported texture format in createRectangleTexture: {:?}",
-                format
-            );
-        };
+        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
+            Error::RustError(
+                format!(
+                    "Unsupported texture format in createRectangleTexture: {:?}",
+                    format
+                )
+                .into(),
+            )
+        })?;
 
         let class = activation.avm2().classes().rectangletexture;
 
@@ -418,14 +419,15 @@ pub fn create_cube_texture<'gc>(
         let format = args[1].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[2].coerce_to_boolean();
         let streaming_levels = args[3].as_integer(activation.context.gc_context)? as u32;
-        let format = if &*format == b"bgra" {
-            Context3DTextureFormat::Bgra
-        } else {
-            panic!(
-                "Unsupported texture format in createCubeTexture: {:?}",
-                format
-            );
-        };
+        let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
+            Error::RustError(
+                format!(
+                    "Unsupported texture format in createCubeTexture: {:?}",
+                    format
+                )
+                .into(),
+            )
+        })?;
 
         return context.create_cube_texture(
             size,
