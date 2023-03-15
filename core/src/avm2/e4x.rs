@@ -1,5 +1,5 @@
 use std::{
-    cell::Ref,
+    cell::{Ref, RefMut},
     fmt::{self, Debug},
 };
 
@@ -75,6 +75,21 @@ impl<'gc> E4XNode<'gc> {
                 parent: None,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
+            },
+        ))
+    }
+
+    pub fn attribute(
+        mc: MutationContext<'gc, '_>,
+        name: AvmString<'gc>,
+        value: AvmString<'gc>,
+    ) -> Self {
+        E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: None,
+                local_name: Some(name),
+                kind: E4XNodeKind::Attribute(value),
             },
         ))
     }
@@ -366,6 +381,10 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {
         Ref::map(self.0.read(), |r| &r.kind)
+    }
+
+    pub fn kind_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<'_, E4XNodeKind<'gc>> {
+        RefMut::map(self.0.write(mc), |r| &mut r.kind)
     }
 
     pub fn ptr_eq(first: E4XNode<'gc>, second: E4XNode<'gc>) -> bool {

@@ -43,6 +43,27 @@
 			trace("outer.child.attribute(\"sharedAttr\") = " + outer.child.attribute("sharedAttr"));
 			trace("outer.child.attribute(\"sharedAttr\").length() = " + outer.child.attribute("sharedAttr").length());
 			trace("outer.child.attribute(\"missingAttr\").length() = " + outer.child.attribute("missingAttr").length());
+		
+			outer.@newAttr = "Some value";
+			trace("outer.@newAttr = " + outer.@newAttr);
+			trace("outer.attribute('newAttr') = " + outer.attribute('newAttr'));
+		
+			outer.@secondNewAttr = 5;
+			trace("outer.@secondNewAttr = " + outer.@secondNewAttr);
+			trace("outer.attribute('secondNewAttr') = " + outer.attribute('secondNewAttr'));
+		
+			outer.@thirdNewAttr = otherCustomKey;
+			trace("outer.@thirdNewAttr = " + outer.@thirdNewAttr);
+			trace("outer.attribute('thirdNewAttr') = " + outer.attribute('thirdNewAttr'));
+		
+			outer.@name = "Custom attr value";
+			trace("outer.@name = " + outer.@name);
+			trace("outer.attribute('name') = " + outer.attribute('name'));
+			trace("outer.name() = " + outer.name());
+
+			for each (var attr in outer.attributes()) {
+				trace("Attr: " + attr.name() + " = " + attr);
+			}
 		}
 	}
 }
