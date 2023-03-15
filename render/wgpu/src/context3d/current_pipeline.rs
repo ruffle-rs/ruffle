@@ -389,7 +389,10 @@ impl CurrentPipeline {
                     Context3DVertexBufferFormat::Float1 => {
                         (wgpu::VertexFormat::Float32, std::mem::size_of::<f32>())
                     }
-                    Context3DVertexBufferFormat::Bytes4 => (wgpu::VertexFormat::Uint8x4, 4),
+                    // AGAL shaders always work with floating-point values, so
+                    // we use Unorm8x4 to convert the bytes to floats in the range
+                    // [0, 1].
+                    Context3DVertexBufferFormat::Bytes4 => (wgpu::VertexFormat::Unorm8x4, 4),
                 };
 
                 let buffer_data = index_per_buffer
