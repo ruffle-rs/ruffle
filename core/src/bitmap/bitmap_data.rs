@@ -243,7 +243,8 @@ enum DirtyState {
 mod wrapper {
     use crate::context::RenderContext;
     use crate::{avm2::Value as Avm2Value, context::UpdateContext};
-    use gc_arena::{Collect, GcCell};
+    use gc_arena::{Collect, GcCell, MutationContext};
+    use ruffle_render::bitmap::BitmapHandle;
     use ruffle_render::commands::CommandHandler;
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
@@ -308,6 +309,18 @@ mod wrapper {
             self.0
         }
 
+        /// Provides access to the underlying `BitmapHandle`.
+        /// If the CPU pixels are dirty, syncs them to the GPU.
+        /// If the GPU pixels are dirty, then handle is returned immediately
+        /// without waiting for the sync to complete, as a BitmapHandle can
+        /// only be used to access the GPU data. Unlike `overwrite_cpu_pixels_from_gpu`,
+        /// this does not cancel the GPU -> CPU sync.
+        pub fn bitmap_handle(&self, context: &mut UpdateContext<'_, 'gc>) -> BitmapHandle {
+            let mut bitmap_data = self.0.write(context.gc_context);
+            bitmap_data.update_dirty_texture(context.renderer);
+            bitmap_data.bitmap_handle(context.renderer).unwrap()
+        }
+
         // Provides access to the underlying `BitmapData`.
         // This should only be used when you will be overwriting the entire
         // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
@@ -349,6 +362,17 @@ mod wrapper {
 
         pub fn transparency(&self) -> bool {
             self.0.read().transparency
+        }
+
+        pub fn check_valid(
+            &self,
+            activation: &mut crate::avm2::Activation<'_, 'gc>,
+        ) -> Result<(), crate::avm2::Error<'gc>> {
+            self.0.read().check_valid(activation)
+        }
+
+        pub fn dispose(&self, mc: MutationContext<'gc, '_>) {
+            self.0.write(mc).dispose();
         }
 
         pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {

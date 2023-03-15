@@ -6,14 +6,16 @@ use downcast_rs::{impl_downcast, Downcast};
 
 use crate::backend::RenderBackend;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct BitmapHandle(pub Arc<dyn BitmapHandleImpl>);
 
 pub trait BitmapHandleImpl: Downcast + Debug {}
 impl_downcast!(BitmapHandleImpl);
 
 /// Info returned by the `register_bitmap` methods.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
     pub width: u16,
