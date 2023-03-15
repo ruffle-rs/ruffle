@@ -21,8 +21,8 @@ pub struct WebAudioBackend {
     buffers: Vec<Arc<RwLock<Buffer>>>,
     /// When the last submitted buffer is expected to play out completely, in seconds.
     time: Arc<RwLock<f64>>,
-    /// How many consecutive times we have filled the next buffer "at a sufficiently early time".
-    num_quick_fills: Arc<RwLock<u32>>,
+    /// For how many seconds were we able to continuously fill the next buffer "at a sufficiently early time".
+    probation_time: Arc<RwLock<f32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -36,9 +36,9 @@ impl WebAudioBackend {
     /// to account for any initialization (shape tessellation, WASM JIT, etc.) hitches.
     const WARMUP_PERIOD: f32 = 2.0;
 
-    /// How many consecutive "quick fills" to wait before decreasing the buffer size.
-    /// A higher value is more conservative.
-    const NUM_QUICK_FILLS_THRESHOLD: u32 = 100;
+    /// For how long we need to fill every single buffer "quickly enough" in order to decrease buffer size.
+    /// Measured in seconds. A higher value is more conservative.
+    const PROBATION_LENGTH: f32 = 10.0;
     /// The limit of playout ratio (progress) when filling the next buffer, under which it is
     /// considered "quick". Must be in 0..1, and less than `0.5 * NORMAL_PROGRESS_RANGE_MAX`.
     const NORMAL_PROGRESS_RANGE_MIN: f64 = 0.25;
@@ -55,7 +55,7 @@ impl WebAudioBackend {
             buffer_size: Arc::new(RwLock::new(Self::INITIAL_BUFFER_SIZE)),
             buffers: Vec::with_capacity(2),
             time: Arc::new(RwLock::new(0.0)),
-            num_quick_fills: Arc::new(RwLock::new(0u32)),
+            probation_time: Arc::new(RwLock::new(0.0)),
             log_subscriber,
         };
 
@@ -111,7 +111,7 @@ struct Buffer {
     audio_node: Option<web_sys::AudioBufferSourceNode>,
     on_ended_handler: Closure<dyn FnMut()>,
     time: Arc<RwLock<f64>>,
-    num_quick_fills: Arc<RwLock<u32>>,
+    probation_elapsed: Arc<RwLock<f32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -130,7 +130,7 @@ impl Buffer {
             audio_node: None,
             on_ended_handler: Closure::new(|| {}),
             time: audio.time.clone(),
-            num_quick_fills: audio.num_quick_fills.clone(),
+            probation_elapsed: audio.probation_time.clone(),
             log_subscriber: audio.log_subscriber.clone(),
         }));
 
@@ -152,7 +152,10 @@ impl Buffer {
 
         let mut time = self.time.write().expect("Cannot reenter locks");
         let mut buffer_size = self.buffer_size.write().expect("Cannot reenter locks");
-        let mut num_quick_fills = self.num_quick_fills.write().expect("Cannot reenter locks");
+        let mut probation_elapsed = self
+            .probation_elapsed
+            .write()
+            .expect("Cannot reenter locks");
 
         let time_left = *time - self.context.current_time();
         let mut buffer_timestep = f64::from(*buffer_size) / f64::from(self.context.sample_rate());
@@ -170,13 +173,13 @@ impl Buffer {
 
         if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MIN {
             // This fill is considered quick, let's count it.
-            *num_quick_fills += 1;
+            *probation_elapsed += buffer_timestep as f32;
         } else if progress < WebAudioBackend::NORMAL_PROGRESS_RANGE_MAX {
-            // This fill is in the "normal" range, only resetting the "quick fill" counter.
-            *num_quick_fills = 0;
+            // This fill is in the "normal" range, only resetting the probation time.
+            *probation_elapsed = 0.0;
         } else {
             // This fill is considered slow (maybe even too slow), increasing the buffer size.
-            *num_quick_fills = 0;
+            *probation_elapsed = 0.0;
             if progress >= 1.0 {
                 tracing::debug!("Audio underrun detected!");
             }
@@ -184,23 +187,25 @@ impl Buffer {
                 if *buffer_size < WebAudioBackend::MAX_BUFFER_SIZE {
                     *buffer_size *= 2;
                     tracing::debug!("Increased audio buffer size to {} frames", buffer_size);
-                }
-                else {
+                } else {
                     tracing::debug!("Not increasing audio buffer size, already at max size");
                 }
-            }
-            else {
-                tracing::debug!("Not increasing audio buffer size, still in warmup period (at {} of {} sec)", *time, WebAudioBackend::WARMUP_PERIOD);
+            } else {
+                tracing::debug!(
+                    "Not increasing audio buffer size, still in warmup period (at {} of {} sec)",
+                    *time,
+                    WebAudioBackend::WARMUP_PERIOD
+                );
             }
         }
 
         // If enough quick fills happened, we decrease the buffer size.
-        if *num_quick_fills > WebAudioBackend::NUM_QUICK_FILLS_THRESHOLD
+        if *probation_elapsed > WebAudioBackend::PROBATION_LENGTH
             && *buffer_size > WebAudioBackend::MIN_BUFFER_SIZE
         {
             *buffer_size /= 2;
             tracing::debug!("Decreased audio buffer size to {} frames", buffer_size);
-            *num_quick_fills = 0;
+            *probation_elapsed = 0.0;
         }
 
         // In case buffer_size changed above (or in the latest call in the other instance),
