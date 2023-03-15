@@ -3,6 +3,7 @@
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
@@ -220,4 +221,26 @@ pub fn node_kind<'gc>(
         E4XNodeKind::Element { .. } => "element",
     };
     Ok(name.into())
+}
+
+pub fn append_child<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let xml = this.as_xml_object().unwrap();
+
+    let child = args.get_object(activation, 0, "child")?;
+    let child = if let Some(child) = child.as_xml_object() {
+        child
+    } else {
+        return Err(format!("XML.appendChild is not yet implemented for {child:?}").into());
+    };
+
+    let child = child.node();
+
+    xml.node()
+        .append_child(activation.context.gc_context, *child)?;
+    Ok(Value::Undefined)
 }

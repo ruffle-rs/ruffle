@@ -1,12 +1,16 @@
-Children length: 3
+New child: Custom child
+Equal: true
+Children length: 4
 'child' in outer: true
 Child kind= A
 Child kind= B
 Child kind= A
+Child kind= D
 Inner child localName null
 Inner child localName null
 Inner child localName null
 Inner child localName p
+Inner child localName null
 Empty children: 0
 filterA.length() = 2
 filterA[0].toString() = First Child
