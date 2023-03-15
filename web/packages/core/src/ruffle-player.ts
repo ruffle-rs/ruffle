@@ -1635,8 +1635,8 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Change link to https://ruffle.rs/faq or similar
         // TODO: Pause content until message is dismissed
         div.innerHTML = `<div class="message">
-            <p>The Ruffle emulator does not yet support ActionScript 3, required by this content.</p>
-            <p>If you choose to run it anyway, interactivity will be missing or limited.</p>
+            <p>The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.</p>
+            <p>Some parts of the content may not work as expected.</p>
             <div>
                 <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
                 <button id="run-anyway-btn">Run anyway</button>
