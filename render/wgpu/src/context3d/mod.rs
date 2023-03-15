@@ -252,7 +252,7 @@ impl WgpuContext3D {
                 Context3DCommand::UploadToVertexBuffer {
                     buffer,
                     start_vertex,
-                    data_per_vertex,
+                    data32_per_vertex,
                     data,
                 } => {
                     let buffer: Rc<VertexBufferWrapper> = buffer
@@ -265,7 +265,9 @@ impl WgpuContext3D {
                         .write_buffer(
                             &mut buffer_command_encoder,
                             &buffer.buffer,
-                            (*start_vertex * *data_per_vertex * std::mem::size_of::<f32>()) as u64,
+                            (*start_vertex
+                                * (*data32_per_vertex as usize)
+                                * std::mem::size_of::<f32>()) as u64,
                             NonZeroU64::new(data.len() as u64).unwrap(),
                             &self.descriptors.device,
                         )
