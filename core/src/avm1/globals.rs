@@ -4,10 +4,10 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
-use gc_arena::MutationContext;
 use std::str;
 
 mod accessibility;
@@ -516,12 +516,14 @@ pub struct SystemPrototypes<'gc> {
 
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
 ) -> (
     SystemPrototypes<'gc>,
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
+    let gc_context = context.gc_context;
+
     let object_proto = ScriptObject::new(gc_context, None).into();
     let function_proto = function::create_proto(gc_context, object_proto);
 
@@ -1188,7 +1190,7 @@ mod tests {
     use super::*;
 
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        create_globals(activation.context.gc_context).1
+        create_globals(&mut activation.context.borrow_gc()).1
     }
 
     test_method!(boolean_function, "Boolean", setup,

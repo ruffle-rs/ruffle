@@ -5,7 +5,7 @@ use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::script::{Script, TranslationUnit};
-use crate::context::UpdateContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
 
@@ -142,7 +142,8 @@ pub struct Avm2<'gc> {
 
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
-    pub fn new(mc: MutationContext<'gc, '_>) -> Self {
+    pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+        let mc = context.gc_context;
         let globals = Domain::global_domain(mc);
 
         Self {

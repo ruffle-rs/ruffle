@@ -21,6 +21,7 @@ use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::streams::StreamManager;
+use crate::string::AvmStringInterner;
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
@@ -36,6 +37,28 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
+/// Minimal context, useful for manipulating the GC heap.
+pub struct GcContext<'a, 'gc> {
+    /// The mutation context to allocate and mutate `GcCell` types.
+    pub gc_context: MutationContext<'gc, 'a>,
+
+    /// The global string interner.
+    pub interner: &'a mut AvmStringInterner<'gc>,
+}
+
+impl<'a, 'gc> GcContext<'a, 'gc> {
+    #[inline(always)]
+    pub fn reborrow<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    where
+        'a: 'b,
+    {
+        GcContext {
+            gc_context: self.gc_context,
+            interner: self.interner,
+        }
+    }
+}
+
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
@@ -46,6 +69,9 @@ pub struct UpdateContext<'a, 'gc> {
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'a>,
+
+    /// The global string interner.
+    pub interner: &'a mut AvmStringInterner<'gc>,
 
     /// A collection of stubs encountered during this movie.
     pub stub_tracker: &'a mut StubCollection,
@@ -295,6 +321,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     /// update context without adding further lifetimes for its borrowing.
     /// Please note that you will not be able to use the original update
     /// context until this reborrowed copy has fallen out of scope.
+    #[inline]
     pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc>
     where
         'a: 'b,
@@ -302,6 +329,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         UpdateContext {
             action_queue: self.action_queue,
             gc_context: self.gc_context,
+            interner: self.interner,
             stub_tracker: self.stub_tracker,
             library: self.library,
             player_version: self.player_version,
@@ -345,6 +373,17 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,
+        }
+    }
+
+    #[inline]
+    pub fn borrow_gc<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    where
+        'a: 'b,
+    {
+        GcContext {
+            gc_context: self.gc_context,
+            interner: self.interner,
         }
     }
 

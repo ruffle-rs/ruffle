@@ -19,6 +19,7 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
+use crate::context::GcContext;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -40,11 +41,12 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
 use crate::streams::StreamManager;
-use crate::string::AvmString;
+use crate::string::{AvmString, AvmStringInterner};
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
+use gc_arena::MutationContext;
 use gc_arena::{ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use rand::{rngs::SmallRng, SeedableRng};
@@ -129,6 +131,7 @@ struct GcRootData<'gc> {
     avm2: Avm2<'gc>,
 
     action_queue: ActionQueue<'gc>,
+    interner: AvmStringInterner<'gc>,
 
     /// Object which manages asynchronous processes that need to interact with
     /// data in the GC arena.
@@ -169,6 +172,7 @@ impl<'gc> GcRootData<'gc> {
         Stage<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
+        &mut AvmStringInterner<'gc>,
         &mut Avm1<'gc>,
         &mut Avm2<'gc>,
         &mut Option<DragObject<'gc>>,
@@ -186,6 +190,7 @@ impl<'gc> GcRootData<'gc> {
             self.stage,
             &mut self.library,
             &mut self.action_queue,
+            &mut self.interner,
             &mut self.avm1,
             &mut self.avm2,
             &mut self.drag_object,
@@ -1723,6 +1728,7 @@ impl Player {
                 stage,
                 library,
                 action_queue,
+                interner,
                 avm1,
                 avm2,
                 drag_object,
@@ -1748,6 +1754,7 @@ impl Player {
                 ui: self.ui.deref_mut(),
                 action_queue,
                 gc_context,
+                interner,
                 stage,
                 mouse_over_object: mouse_hovered_object,
                 mouse_down_object: mouse_pressed_object,
@@ -2176,6 +2183,47 @@ impl PlayerBuilder {
         self
     }
 
+    fn create_gc_root<'gc>(
+        gc_context: MutationContext<'gc, '_>,
+        player_version: u8,
+        fullscreen: bool,
+        fake_movie: Arc<SwfMovie>,
+    ) -> GcRoot<'gc> {
+        let mut interner = AvmStringInterner::new();
+        let mut init = GcContext {
+            gc_context,
+            interner: &mut interner,
+        };
+
+        GcRoot {
+            callstack: GcCell::allocate(gc_context, GcCallstack::default()),
+            data: GcCell::allocate(
+                gc_context,
+                GcRootData {
+                    audio_manager: AudioManager::new(),
+                    action_queue: ActionQueue::new(),
+                    avm1: Avm1::new(&mut init, player_version),
+                    avm2: Avm2::new(&mut init),
+                    interner,
+                    current_context_menu: None,
+                    drag_object: None,
+                    external_interface: ExternalInterface::new(),
+                    focus_tracker: FocusTracker::new(gc_context),
+                    library: Library::empty(),
+                    load_manager: LoadManager::new(),
+                    mouse_hovered_object: None,
+                    mouse_pressed_object: None,
+                    avm1_shared_objects: HashMap::new(),
+                    avm2_shared_objects: HashMap::new(),
+                    stage: Stage::empty(gc_context, fullscreen, fake_movie),
+                    timers: Timers::new(),
+                    unbound_text_fields: Vec::new(),
+                    stream_manager: StreamManager::new(),
+                },
+            ),
+        }
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -2264,35 +2312,13 @@ impl PlayerBuilder {
                 // GC data
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
                     ArenaParameters::default(),
-                    |gc_context| GcRoot {
-                        callstack: GcCell::allocate(gc_context, GcCallstack::default()),
-                        data: GcCell::allocate(
+                    |gc_context| {
+                        Self::create_gc_root(
                             gc_context,
-                            GcRootData {
-                                audio_manager: AudioManager::new(),
-                                action_queue: ActionQueue::new(),
-                                avm1: Avm1::new(gc_context, player_version),
-                                avm2: Avm2::new(gc_context),
-                                current_context_menu: None,
-                                drag_object: None,
-                                external_interface: ExternalInterface::new(),
-                                focus_tracker: FocusTracker::new(gc_context),
-                                library: Library::empty(),
-                                load_manager: LoadManager::new(),
-                                mouse_hovered_object: None,
-                                mouse_pressed_object: None,
-                                avm1_shared_objects: HashMap::new(),
-                                avm2_shared_objects: HashMap::new(),
-                                stage: Stage::empty(
-                                    gc_context,
-                                    self.fullscreen,
-                                    fake_movie.clone(),
-                                ),
-                                timers: Timers::new(),
-                                unbound_text_fields: Vec::new(),
-                                stream_manager: StreamManager::new(),
-                            },
-                        ),
+                            player_version,
+                            self.fullscreen,
+                            fake_movie.clone(),
+                        )
                     },
                 ))),
             })
