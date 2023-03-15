@@ -32,6 +32,9 @@ impl WebAudioBackend {
     const INITIAL_BUFFER_SIZE: u32 = 2048; // 46.44 ms at 44.1 kHz
     const MIN_BUFFER_SIZE: u32 = 1024; // 23.22 ms at 44.1 kHz
     const MAX_BUFFER_SIZE: u32 = 16384; // 371.52 ms at 44.1 kHz
+    /// Buffer size will not be increased until this many seconds have elapsed after startup,
+    /// to account for any initialization (shape tessellation, WASM JIT, etc.) hitches.
+    const WARMUP_PERIOD: f32 = 2.0;
 
     /// How many consecutive "quick fills" to wait before decreasing the buffer size.
     /// A higher value is more conservative.
@@ -173,14 +176,21 @@ impl Buffer {
             *num_quick_fills = 0;
         } else {
             // This fill is considered slow (maybe even too slow), increasing the buffer size.
+            *num_quick_fills = 0;
             if progress >= 1.0 {
                 tracing::debug!("Audio underrun detected!");
             }
-            *num_quick_fills = 0;
-            if *buffer_size < WebAudioBackend::MAX_BUFFER_SIZE {
-                *buffer_size *= 2;
-                tracing::debug!("Increased audio buffer size to {} frames", buffer_size);
-                *num_quick_fills = 0;
+            if *time as f32 > WebAudioBackend::WARMUP_PERIOD {
+                if *buffer_size < WebAudioBackend::MAX_BUFFER_SIZE {
+                    *buffer_size *= 2;
+                    tracing::debug!("Increased audio buffer size to {} frames", buffer_size);
+                }
+                else {
+                    tracing::debug!("Not increasing audio buffer size, already at max size");
+                }
+            }
+            else {
+                tracing::debug!("Not increasing audio buffer size, still in warmup period (at {} of {} sec)", *time, WebAudioBackend::WARMUP_PERIOD);
             }
         }
 
