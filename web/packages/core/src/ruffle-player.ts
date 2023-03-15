@@ -993,15 +993,17 @@ export class RufflePlayer extends HTMLElement {
                 keyCol.textContent = solName;
                 keyCol.title = key;
                 const downloadCol = document.createElement("TD");
-                downloadCol.textContent = "Download";
-                downloadCol.className = "save-option";
-                downloadCol.addEventListener("click", () =>
+                const downloadSpan = document.createElement("SPAN");
+                downloadSpan.textContent = "Download";
+                downloadSpan.className = "save-option";
+                downloadSpan.addEventListener("click", () =>
                     this.saveFile(
                         solData,
                         "application/octet-stream",
                         solName + ".sol"
                     )
                 );
+                downloadCol.appendChild(downloadSpan);
                 const replaceCol = document.createElement("TD");
                 const replaceInput = <HTMLInputElement>(
                     document.createElement("INPUT")
@@ -1022,9 +1024,13 @@ export class RufflePlayer extends HTMLElement {
                 replaceCol.appendChild(replaceInput);
                 replaceCol.appendChild(replaceLabel);
                 const deleteCol = document.createElement("TD");
-                deleteCol.textContent = "Delete";
-                deleteCol.className = "save-option";
-                deleteCol.addEventListener("click", () => this.deleteSave(key));
+                const deleteSpan = document.createElement("SPAN");
+                deleteSpan.textContent = "Delete";
+                deleteSpan.className = "save-option";
+                deleteSpan.addEventListener("click", () =>
+                    this.deleteSave(key)
+                );
+                deleteCol.appendChild(deleteSpan);
                 row.appendChild(keyCol);
                 row.appendChild(downloadCol);
                 row.appendChild(replaceCol);
