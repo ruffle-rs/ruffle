@@ -4,6 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::string::{AvmString, WStr};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::textformat_allocator as text_format_allocator;
 
@@ -192,6 +193,24 @@ pub fn set_color<'gc>(
             };
         }
     }
+    Ok(Value::Undefined)
+}
+
+pub fn get_display<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.text.TextFormat", "display");
+    Ok("block".into())
+}
+
+pub fn set_display<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.text.TextFormat", "display");
     Ok(Value::Undefined)
 }
 
