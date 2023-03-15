@@ -10,7 +10,7 @@ use std::cell::Cell;
 use wgpu::util::StagingBelt;
 use wgpu::{
     BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages,
+    TextureUsages, COPY_BUFFER_ALIGNMENT,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
@@ -261,16 +261,17 @@ impl WgpuContext3D {
                         .downcast::<VertexBufferWrapper>()
                         .unwrap();
 
-                    self.buffer_staging_belt
-                        .write_buffer(
-                            &mut buffer_command_encoder,
-                            &buffer.buffer,
-                            (*start_vertex
-                                * (*data32_per_vertex as usize)
-                                * std::mem::size_of::<f32>()) as u64,
-                            NonZeroU64::new(data.len() as u64).unwrap(),
-                            &self.descriptors.device,
-                        )
+                    let align = COPY_BUFFER_ALIGNMENT as usize;
+                    let rounded_size = (data.len() + align - 1) & !(align - 1);
+
+                    self.buffer_staging_belt.write_buffer(
+                        &mut buffer_command_encoder,
+                        &buffer.buffer,
+                        (*start_vertex * (*data32_per_vertex as usize) * std::mem::size_of::<f32>())
+                            as u64,
+                        NonZeroU64::new(rounded_size as u64).unwrap(),
+                        &self.descriptors.device,
+                    )[..data.len()]
                         .copy_from_slice(data);
                 }
 

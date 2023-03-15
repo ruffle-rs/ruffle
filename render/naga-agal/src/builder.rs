@@ -140,7 +140,9 @@ impl VertexAttributeFormat {
             VertexAttributeFormat::Float2 => (VectorSize::Bi, 4, ScalarKind::Float),
             VertexAttributeFormat::Float3 => (VectorSize::Tri, 4, ScalarKind::Float),
             VertexAttributeFormat::Float4 => (VectorSize::Quad, 4, ScalarKind::Float),
-            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, 1, ScalarKind::Uint),
+            // The conversion is done by wgpu, since we specify
+            // `wgpu::VertexFormat::Unorm8x4` in `CurrentPipeline::rebuild_pipeline`
+            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, 4, ScalarKind::Float),
         };
 
         module.types.insert(
@@ -239,6 +241,9 @@ impl VertexAttributeFormat {
                 })
             }
             VertexAttributeFormat::Float4 => base_expr,
+            // The conversion is done by wgpu, since we specify
+            // `wgpu::VertexFormat::Unorm8x4` in `CurrentPipeline::rebuild_pipeline`
+            VertexAttributeFormat::Bytes4 => base_expr,
             _ => {
                 return Err(Error::Unimplemented(format!(
                     "Unsupported conversion from {self:?} to float4",
