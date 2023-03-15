@@ -27,6 +27,9 @@ const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
 // Indicates that we should generate a reference to a native initializer
 // method (used as a metadata key with `Ruffle` metadata)
 const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
+/// Indicates that we should generate a reference to a class call handler
+/// method (used as a metadata key with `Ruffle` metadata)
+const METADATA_CALL_HANDLER: &str = "CallHandler";
 
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
@@ -275,7 +278,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let none_tokens = quote! { None };
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
     let mut rust_instance_allocators = vec![none_tokens.clone(); abc.classes.len()];
-    let mut rust_native_instance_initializers = vec![none_tokens; abc.classes.len()];
+    let mut rust_native_instance_initializers = vec![none_tokens.clone(); abc.classes.len()];
+    let mut rust_call_handlers = vec![none_tokens; abc.classes.len()];
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
         let method_id = match trait_.kind {
@@ -329,6 +333,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         let instance_allocator_method_name =
             "::".to_string() + &flash_to_rust_path(class_name) + "_allocator";
         let native_instance_init_method_name = "::native_instance_init".to_string();
+        let call_handler_method_name = "::call_handler".to_string();
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name = &abc.constant_pool.strings[metadata.name.0 as usize - 1];
@@ -366,6 +371,15 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                                 "",
                                 &native_instance_init_method_name,
                             )
+                    }
+                    (None, METADATA_CALL_HANDLER) => {
+                        rust_call_handlers[class_id as usize] = rust_method_name_and_path(
+                            &abc,
+                            trait_,
+                            None,
+                            "",
+                            &call_handler_method_name,
+                        )
                     }
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }
@@ -431,6 +445,14 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         // load it into Ruffle.
         pub const NATIVE_INSTANCE_INIT_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
             #(#rust_native_instance_initializers,)*
+        ];
+
+        // This is very similar to `NATIVE_INSTANCE_INIT_TABLE`.
+        // When an entry is `Some(fn_ptr)`, we use
+        // `fn_ptr` as the native call handler for the corresponding class when we
+        // load it into Ruffle.
+        pub const NATIVE_CALL_HANDLER_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
+            #(#rust_call_handlers,)*
         ];
     }
     .to_string();

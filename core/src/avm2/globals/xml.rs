@@ -197,3 +197,16 @@ pub fn attribute<'gc>(
 
     Ok(XmlListObject::new(activation, attributes, Some(xml.into())).into())
 }
+
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .xml
+        .construct(activation, args)?
+        .into())
+}
