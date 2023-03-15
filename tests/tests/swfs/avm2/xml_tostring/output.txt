@@ -1,0 +1,4 @@
+xml.toString(): Cow
+xml.toString(): <animals><animal id="1">Cow</animal><animal id="2">Pig</animal></animals>
+xml.toString(): <foo><bar a="x" b="y" c="z"/></foo>
+xml.toString(): <foo><bar x="a&quot;b">&gt;&amp;&lt;</bar></foo>
