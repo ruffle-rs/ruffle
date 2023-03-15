@@ -104,7 +104,7 @@ impl_downcast!(ShaderModule);
 pub trait Texture: Downcast + Collect {}
 impl_downcast!(Texture);
 
-#[derive(Collect, Debug)]
+#[derive(Collect, Debug, Copy, Clone)]
 #[collect(require_static)]
 pub enum Context3DTextureFormat {
     Bgra,
@@ -113,6 +113,26 @@ pub enum Context3DTextureFormat {
     Compressed,
     CompressedAlpha,
     RgbaHalfFloat,
+}
+
+impl Context3DTextureFormat {
+    pub fn from_wstr(wstr: &WStr) -> Option<Context3DTextureFormat> {
+        if wstr == b"bgra" {
+            Some(Context3DTextureFormat::Bgra)
+        } else if wstr == b"bgraPacked4444" {
+            Some(Context3DTextureFormat::BgraPacked)
+        } else if wstr == b"bgrPacked565" {
+            Some(Context3DTextureFormat::BgrPacked)
+        } else if wstr == b"compressed" {
+            Some(Context3DTextureFormat::Compressed)
+        } else if wstr == b"compressedAlpha" {
+            Some(Context3DTextureFormat::CompressedAlpha)
+        } else if wstr == b"rgbaHalfFloat" {
+            Some(Context3DTextureFormat::RgbaHalfFloat)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Collect, Debug, Copy, Clone)]

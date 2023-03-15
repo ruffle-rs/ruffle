@@ -5,6 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -104,6 +105,7 @@ impl<'gc> Context3DObject<'gc> {
         class: ClassObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        check_texture_stub(activation, format);
         let texture = self
             .0
             .write(activation.context.gc_context)
@@ -410,6 +412,7 @@ impl<'gc> Context3DObject<'gc> {
         streaming_levels: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        check_texture_stub(activation, format);
         let texture = self
             .0
             .write(activation.context.gc_context)
@@ -468,5 +471,29 @@ impl<'gc> TObject<'gc> for Context3DObject<'gc> {
 impl std::fmt::Debug for Context3DObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Context3D")
+    }
+}
+
+// This would ideally be placed closer to the actual usage, but
+// we don't have stub support in 'render' crates
+fn check_texture_stub(activation: &mut Activation<'_, '_>, format: Context3DTextureFormat) {
+    match format {
+        Context3DTextureFormat::BgrPacked => {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "createTexture",
+                "with BgrPacked"
+            );
+        }
+        Context3DTextureFormat::Compressed => {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "createTexture",
+                "with Compressed"
+            );
+        }
+        _ => {}
     }
 }
