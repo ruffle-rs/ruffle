@@ -31,6 +31,8 @@ package flash.text {
         public native function set bullet(param1:Object): void;
         public native function get color(): Object;
         public native function set color(param1:Object): void;
+        public native function get display(): String;
+        public native function set display(param1:String): void;
         public native function get font(): String;
         public native function set font(param1:String): void;
         public native function get indent(): Object;
