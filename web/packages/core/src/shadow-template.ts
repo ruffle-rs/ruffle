@@ -275,6 +275,7 @@ ruffleShadowTemplate.innerHTML = `
                 transform: rotate(360deg);
             }
         }
+
         #virtual-keyboard {
             position: absolute;
             opacity: 0;
@@ -282,16 +283,20 @@ ruffleShadowTemplate.innerHTML = `
             width: 1px;
             height: 1px;
         }
+
         #modal-area {
             width: 100%;
             height: 100%;
         }
+
         #restore-save {
             display: none;
         }
+
         .replace-save {
             display: none;
         }
+
         .save-option {
             display: inline-block;
             padding: 3px 10px;
@@ -301,15 +306,37 @@ ruffleShadowTemplate.innerHTML = `
             background-color: var(--ruffle-blue);
             color: white;
         }
+
         #close-modal {
             position: absolute;
             top: 5px;
-            right: 5px;
+            right: 10px;
             cursor: pointer;
+            font-size: x-large;
         }
+
         .general-save-options {
             text-align: center;
             padding-bottom: 8px;
+            border-bottom: 2px solid #888;
+        }
+
+        #local-saves {
+            border-collapse: collapse;
+            margin-left: 0 0.5em;
+        }
+
+        #local-saves td {
+            border-bottom: 1px solid #bbb;
+            height: 30px;
+        }
+
+        #local-saves tr td:nth-child(1) {
+            padding-right: 1em;
+        }
+
+        #local-saves tr:nth-child(even) {
+            background-color: #f2f2f2;
         }
     </style>
     <style id="dynamic_styles"></style>
