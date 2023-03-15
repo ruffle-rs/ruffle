@@ -24,8 +24,8 @@ impl DesktopUiBackend {
 
 // TODO: Move link to https://ruffle.rs/faq or similar
 const UNSUPPORTED_CONTENT_MESSAGE: &str = "\
-The Ruffle emulator does not yet support ActionScript 3, required by this content.
-If you choose to run it anyway, interactivity will be missing or limited.
+The Ruffle emulator may not yet fully support all of ActionScript 3 used by this content.
+Some parts of the content may not work as expected.
 
 See the following link for more info:
 https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users";
