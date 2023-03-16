@@ -2,14 +2,14 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{namespace_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::avm2_stub_constructor;
+use crate::{avm2_stub_constructor, avm2_stub_getter};
 use gc_arena::GcCell;
 
 /// Implements `Namespace`'s instance initializer.
@@ -76,6 +76,33 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Namespace.prefix`'s getter
+pub fn prefix<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if this.and_then(|t| t.as_namespace_object()).is_some() {
+        avm2_stub_getter!(activation, "Namespace", "prefix");
+        return Ok("".into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Namespace.uri`'s getter
+pub fn uri<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(o) = this.and_then(|t| t.as_namespace_object()) {
+        return Ok(o.namespace().as_uri().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Namespace`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let mc = activation.context.gc_context;
@@ -99,6 +126,17 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         "<Namespace call handler>",
         mc,
     ));
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("prefix", Some(prefix), None), ("uri", Some(uri), None)];
+    write.define_builtin_instance_properties(
+        mc,
+        activation.avm2().public_namespace,
+        PUBLIC_INSTANCE_PROPERTIES,
+    );
 
     class
 }
