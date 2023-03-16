@@ -12,7 +12,10 @@ declare global {
          * [[PublicAPI]] instance itself.
          */
         RufflePlayer?:
-            | { config?: DataLoadOptions | URLLoadOptions | object }
+            | {
+                  config?: DataLoadOptions | URLLoadOptions | object;
+                  conflict?: Record<string, unknown> | null;
+              }
             | PublicAPI;
     }
 }
@@ -33,11 +36,11 @@ export class PublicAPI {
      * The configuration object used when Ruffle is instantiated.
      */
     config: DataLoadOptions | URLLoadOptions | object;
+    conflict: Record<string, unknown> | null;
 
     private sources: Record<string, typeof SourceAPI>;
     private invoked: boolean;
     private newestName: string | null;
-    private conflict: Record<string, unknown> | null;
 
     /**
      * Construct the Ruffle public API.

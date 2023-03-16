@@ -16,8 +16,8 @@ function handleMessage(message: Message) {
         case "load": {
             const api = window.RufflePlayer ?? {};
             api.config = {
-                ...api.config,
                 ...message.config,
+                ...api.config,
             };
             window.RufflePlayer = PublicAPI.negotiate(api, "extension");
             return {};
