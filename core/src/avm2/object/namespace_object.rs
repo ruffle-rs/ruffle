@@ -70,6 +70,10 @@ impl<'gc> NamespaceObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn init_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
+        self.0.write(mc).namespace = namespace;
+    }
 }
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
@@ -95,5 +99,9 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
 
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
         Some(Ref::map(self.0.read(), |s| &s.namespace))
+    }
+
+    fn as_namespace_object(&self) -> Option<Self> {
+        Some(*self)
     }
 }

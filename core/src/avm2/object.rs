@@ -1083,6 +1083,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_namespace_object(&self) -> Option<NamespaceObject<'gc>> {
+        None
+    }
+
     /// Unwrap this object as a `QNameObject`
     fn as_qname_object(self) -> Option<QNameObject<'gc>> {
         None
