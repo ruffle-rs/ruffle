@@ -2,7 +2,7 @@
 
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject};
+use crate::avm2::object::{E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Multiname, Object, Value};
@@ -51,6 +51,17 @@ pub fn name<'gc>(
     } else {
         Ok(Value::Null)
     }
+}
+
+pub fn namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // FIXME: Implement namespace support (including prefix)
+    avm2_stub_method!(activation, "XML", "namespace");
+    let namespace = activation.avm2().public_namespace;
+    Ok(NamespaceObject::from_namespace(activation, namespace)?.into())
 }
 
 pub fn local_name<'gc>(

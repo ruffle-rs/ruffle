@@ -9,6 +9,7 @@ package {
         private native function init(value:*):void;
 
         AS3 native function name():Object;
+        AS3 native function namespace(prefix:String = null):*;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
         AS3 native function child(name:Object):XMLList;
@@ -30,6 +31,11 @@ package {
             // itself, instead of the AS3 method.
             return self.AS3::name();
         };
+
+        prototype.namespace = function(prefix:String = null):* {
+            var self:XML = this;
+            return self.AS3::namespace(prefix);
+        }
 
         prototype.localName = function():Object {
             var self:XML = this;
