@@ -74,6 +74,10 @@ impl<'gc> NamespaceObject<'gc> {
     pub fn init_namespace(&self, mc: MutationContext<'gc, '_>, namespace: Namespace<'gc>) {
         self.0.write(mc).namespace = namespace;
     }
+
+    pub fn namespace(self) -> Namespace<'gc> {
+        return self.0.read().namespace;
+    }
 }
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {

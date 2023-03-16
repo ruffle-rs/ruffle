@@ -5,3 +5,7 @@ package {
 
 var xml = <foo>bar</foo>;
 trace("xml.namespace(): " + xml.namespace());
+
+var ns = xml.namespace();
+trace("ns.prefix: " + ns.prefix);
+trace("ns.uri: " + ns.uri);
