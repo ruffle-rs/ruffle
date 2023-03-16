@@ -21,6 +21,7 @@ use std::str::FromStr;
 
 pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::parameters::{null_parameter_error, ParametersExt};
+use crate::display_object::TDisplayObject;
 
 /// Copy the static data from a given Bitmap into a new BitmapData.
 ///
@@ -667,10 +668,131 @@ pub fn unlock<'gc>(
 
 pub fn hit_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.BitmapData", "hitTest");
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        if !bitmap_data.read().disposed() {
+            let first_point = args.get_object(activation, 0, "firstPoint")?;
+            let top_left = (
+                first_point
+                    .get_public_property("x", activation)?
+                    .coerce_to_i32(activation)?,
+                first_point
+                    .get_public_property("y", activation)?
+                    .coerce_to_i32(activation)?,
+            );
+            let source_threshold = args.get_u32(activation, 1)?;
+            let compare_object = args.get_object(activation, 2, "secondObject")?;
+            let point_class = activation.avm2().classes().point;
+            let rectangle_class = activation.avm2().classes().rectangle;
+
+            if compare_object.is_of_type(point_class, activation) {
+                let test_point = (
+                    compare_object
+                        .get_public_property("x", activation)?
+                        .coerce_to_i32(activation)?
+                        - top_left.0,
+                    compare_object
+                        .get_public_property("y", activation)?
+                        .coerce_to_i32(activation)?
+                        - top_left.1,
+                );
+                return Ok(Value::Bool(
+                    bitmap_data
+                        .read()
+                        .hit_test_point(source_threshold, test_point),
+                ));
+            } else if compare_object.is_of_type(rectangle_class, activation) {
+                let test_point = (
+                    compare_object
+                        .get_public_property("x", activation)?
+                        .coerce_to_i32(activation)?
+                        - top_left.0,
+                    compare_object
+                        .get_public_property("y", activation)?
+                        .coerce_to_i32(activation)?
+                        - top_left.1,
+                );
+                let size = (
+                    compare_object
+                        .get_public_property("width", activation)?
+                        .coerce_to_i32(activation)?,
+                    compare_object
+                        .get_public_property("height", activation)?
+                        .coerce_to_i32(activation)?,
+                );
+                return Ok(Value::Bool(bitmap_data.read().hit_test_rectangle(
+                    source_threshold,
+                    test_point,
+                    size,
+                )));
+            } else if let Some(other_bmd) = compare_object.as_bitmap_data() {
+                other_bmd.read().check_valid(activation)?;
+                let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
+                let second_point = (
+                    second_point
+                        .get_public_property("x", activation)?
+                        .coerce_to_i32(activation)?,
+                    second_point
+                        .get_public_property("y", activation)?
+                        .coerce_to_i32(activation)?,
+                );
+                let second_threshold = args.get_u32(activation, 4)?;
+
+                let result = if GcCell::ptr_eq(bitmap_data, other_bmd) {
+                    bitmap_data.read().hit_test_bitmapdata(
+                        top_left,
+                        source_threshold,
+                        None,
+                        second_point,
+                        second_threshold,
+                    )
+                } else {
+                    bitmap_data.read().hit_test_bitmapdata(
+                        top_left,
+                        source_threshold,
+                        Some(&other_bmd.read()),
+                        second_point,
+                        second_threshold,
+                    )
+                };
+                return Ok(Value::Bool(result));
+            } else if let Some(bitmap) = compare_object
+                .as_display_object()
+                .and_then(|dobj| dobj.as_bitmap())
+            {
+                let other_bmd = bitmap.bitmap_data_wrapper().sync();
+                other_bmd.read().check_valid(activation)?;
+                let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
+                let second_point = (
+                    second_point
+                        .get_public_property("x", activation)?
+                        .coerce_to_i32(activation)?,
+                    second_point
+                        .get_public_property("y", activation)?
+                        .coerce_to_i32(activation)?,
+                );
+                let second_threshold = args.get_u32(activation, 4)?;
+
+                return Ok(Value::Bool(bitmap_data.read().hit_test_bitmapdata(
+                    top_left,
+                    source_threshold,
+                    Some(&other_bmd.read()),
+                    second_point,
+                    second_threshold,
+                )));
+            } else {
+                // This is the error message Flash Player produces. Even though it's misleading.
+                return Err(Error::AvmError(argument_error(
+                    activation,
+                    "Parameter 0 is of the incorrect type. Should be type BitmapData.",
+                    2005,
+                )?));
+            }
+        }
+    }
+
     Ok(false.into())
 }
 
