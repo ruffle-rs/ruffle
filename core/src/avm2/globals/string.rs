@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{primitive_allocator, Object, TObject};
+use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -13,6 +13,30 @@ use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::string::{AvmString, WString};
 use gc_arena::GcCell;
 use std::iter;
+
+// All of these methods will be defined as both
+// AS3 instance methods and methods on the `String` class prototype.
+const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
+    ("toUpperCase", to_upper_case),
+    ("charCodeAt", char_code_at),
+    ("search", search),
+    ("concat", concat),
+    ("slice", slice),
+    ("match", match_s),
+    ("valueOf", value_of),
+    ("charAt", char_at),
+    ("substr", substr),
+    ("toString", to_string),
+    ("toLocaleLowerCase", to_lower_case),
+    ("indexOf", index_of),
+    ("replace", replace),
+    ("split", split),
+    ("substring", substring),
+    ("lastIndexOf", last_index_of),
+    ("toLocaleUpperCase", to_upper_case),
+    ("localeCompare", locale_compare),
+    ("toLowerCase", to_lower_case),
+];
 
 /// Implements `String`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -39,10 +63,32 @@ pub fn instance_init<'gc>(
 
 /// Implements `String`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+        let proto = this_class.prototype();
+
+        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+            proto.set_string_property_local(
+                *name,
+                FunctionObject::from_method(
+                    activation,
+                    Method::from_builtin(*method, name, gc_context),
+                    scope,
+                    None,
+                    Some(this_class),
+                )
+                .into(),
+                activation,
+            )?;
+            proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
+        }
+    }
     Ok(Value::Undefined)
 }
 
@@ -601,6 +647,18 @@ fn to_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.valueOf`
+fn value_of<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        return this.value_of(activation.context.gc_context);
+    }
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.toUpperCase`
 fn to_upper_case<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -646,31 +704,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         activation.avm2().public_namespace,
         PUBLIC_INSTANCE_PROPERTIES,
     );
-
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("charAt", char_at),
-        ("charCodeAt", char_code_at),
-        ("concat", concat),
-        ("indexOf", index_of),
-        ("lastIndexOf", last_index_of),
-        ("localeCompare", locale_compare),
-        ("match", match_s),
-        ("replace", replace),
-        ("search", search),
-        ("slice", slice),
-        ("split", split),
-        ("substr", substr),
-        ("substring", substring),
-        ("toLocaleLowerCase", to_lower_case),
-        ("toLocaleUpperCase", to_upper_case),
-        ("toLowerCase", to_lower_case),
-        ("toString", to_string),
-        ("toUpperCase", to_upper_case),
-    ];
     write.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
+        PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
     const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
