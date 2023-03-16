@@ -547,22 +547,6 @@ pub fn load_player_globals<'gc>(
     // this call.
     load_playerglobal(activation, domain)?;
 
-    // Everything after the `load_playerglobal` call needs classes
-    // defined in the playerglobal swf.
-
-    // package `flash.media`
-    avm2_system_class!(
-        soundtransform,
-        activation,
-        flash::media::soundtransform::create_class(activation),
-        script
-    );
-    class(
-        flash::media::soundmixer::create_class(activation),
-        script,
-        activation,
-    )?;
-
     Ok(())
 }
 
@@ -700,6 +684,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.media", "SoundChannel", soundchannel),
+            ("flash.media", "SoundTransform", soundtransform),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),
