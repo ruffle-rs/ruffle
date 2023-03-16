@@ -161,6 +161,12 @@ impl Drawing {
         self.dirty.set(true);
     }
 
+    pub fn set_line_fill_style(&mut self, fill_style: FillStyle) {
+        if let Some(style) = self.current_line.as_ref().map(|l| l.style.clone()) {
+            self.set_line_style(Some(style.with_fill_style(fill_style)));
+        }
+    }
+
     pub fn draw_command(&mut self, command: DrawCommand) {
         let add_to_bounds = if let DrawCommand::MoveTo { x, y } = command {
             // Close any pending fills before moving.
