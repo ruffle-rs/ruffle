@@ -3,10 +3,11 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
-use crate::avm2::object::{namespace_allocator, Object};
+use crate::avm2::object::{namespace_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2_stub_constructor;
 use gc_arena::GcCell;
@@ -14,11 +15,34 @@ use gc_arena::GcCell;
 /// Implements `Namespace`'s instance initializer.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_constructor!(activation, "Namespace");
-    Err("Namespace constructor is a stub.".into())
+    if let Some(this) = this.and_then(|this| this.as_namespace_object()) {
+        let uri_value = match args {
+            [_prefix, uri] => {
+                avm2_stub_constructor!(activation, "Namespace", "Namespace prefix not supported");
+                Some(*uri)
+            }
+            [uri] => Some(*uri),
+            _ => None,
+        };
+
+        let namespace = match uri_value {
+            Some(Value::Object(Object::QNameObject(qname))) => qname
+                .uri()
+                .map(|uri| Namespace::package(uri, activation.context.gc_context))
+                .unwrap_or_else(|| Namespace::any(activation.context.gc_context)),
+            Some(val) => Namespace::package(
+                val.coerce_to_string(activation)?,
+                activation.context.gc_context,
+            ),
+            None => activation.avm2().public_namespace,
+        };
+
+        this.init_namespace(activation.context.gc_context, namespace);
+    }
+    Ok(Value::Undefined)
 }
 
 fn class_call<'gc>(
