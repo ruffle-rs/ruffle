@@ -25,6 +25,7 @@
 			test(bmd, new Point(3, 1), 0xA0, bmd, new Point(1, 2), 0xFF);
 			test(bmd, new Point(0, 0), 0xA0, bmd, new Point(1, 0), 0xFF);
 			test(bmd, new Point(1, 1), 0xFF, bmd, new Point(1, 1), 0xFF);
+			test(bmd, new Point(-1, -1), 0xA0, bmd, new Point(1, 1), 0xA0);
 			trace("");
 
 			trace("/// hitTest with other bmd");
@@ -50,6 +51,8 @@
 			test(bmd, new Point(0, 0), 0xFF, new Rectangle(0, 0, 3, 4));
 			test(bmd, new Point(0, 0), 0xFF, new Rectangle(2, 2, 1, 1));
 			test(bmd, new Point(2, 2), 0xFF, new Rectangle(4, 4, 1, 1));
+			test(bmd, new Point(-1, 0), 0xA0, new Rectangle(2, 2, 5, 5));
+			test(bmd, new Point(-10, 10), 0x00, new Rectangle(0, 0, 1, 1));
 			trace("");
 
 			// Testing bmd against point, offsets the point by -firstPoint and then checks if that pixel is opaque
@@ -58,6 +61,10 @@
 			test(bmd, new Point(0, 0), 0xFF, new Point(0, 0));
 			test(bmd, new Point(0, 0), 0xFF, new Point(2, 2));
 			test(bmd, new Point(2, 2), 0xFF, new Point(4, 4));
+			test(bmd, new Point(3, 3), 0xFF, new Point(-1, -1));
+			test(bmd, new Point(-1, -1), 0xA0, new Point(2, 2));
+			test(bmd, new Point(-1, -1), 0xA0, new Point(0, 0));
+			test(bmd, new Point(-10, -10), 0x00, new Point(0, 0));
 			trace("");
 
 			trace("/// Error cases")
