@@ -1,0 +1,65 @@
+myClass descendants:
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+* descendants:
+<student id="239"><myClass name="Algebra"/><myClass name="Spanish 2"/></student>
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<student id="206"><myClass name="Trigonometry"/><myClass name="Spanish 2"/></student>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+No-arg descendants:
+<student id="239"><myClass name="Algebra"/><myClass name="Spanish 2"/></student>
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<student id="206"><myClass name="Trigonometry"/><myClass name="Spanish 2"/></student>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+student descendants operator:
+<student id="239"><myClass name="Algebra"/><myClass name="Spanish 2"/></student>
+<student id="206"><myClass name="Trigonometry"/><myClass name="Spanish 2"/></student>
+myClass descendants operator:
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+Non-matching descendants
+
+Non-matching descendants operator
+
+myClass list descendants
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+<myClass name="Nested"/>
+list * descendants:
+<student id="239"><myClass name="Algebra"/><myClass name="Spanish 2"/></student>
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<student id="206"><myClass name="Trigonometry"/><myClass name="Spanish 2"/></student>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+<inner><myClass name="Nested"/></inner>
+<myClass name="Nested"/>
+list no-arg descendants;
+<student id="239"><myClass name="Algebra"/><myClass name="Spanish 2"/></student>
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<student id="206"><myClass name="Trigonometry"/><myClass name="Spanish 2"/></student>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+<inner><myClass name="Nested"/></inner>
+<myClass name="Nested"/>
+myClass list descendants operator
+<myClass name="Algebra"/>
+<myClass name="Spanish 2"/>
+<myClass name="Trigonometry"/>
+<myClass name="Spanish 2"/>
+<myClass name="Nested"/>
+Non-matching list descendants
+
+Non-matching list descendants operator
+

@@ -339,6 +339,17 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
+    pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {
+        if let E4XNodeKind::Element { children, .. } = &self.0.read().kind {
+            for child in children {
+                if child.matches_name(name) {
+                    out.push(E4XOrXml::E4X(*child));
+                }
+                child.descendants(name, out)
+            }
+        }
+    }
+
     pub fn has_simple_content(&self) -> bool {
         match &self.0.read().kind {
             E4XNodeKind::Element { children, .. } => children

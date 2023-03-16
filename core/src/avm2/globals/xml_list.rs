@@ -1,15 +1,17 @@
 //! XMLList builtin and prototype
 
+use ruffle_wstr::WString;
+
 pub use crate::avm2::object::xml_list_allocator;
-use crate::{
-    avm2::{
-        e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
-        error::type_error,
-        object::{E4XOrXml, XmlListObject},
-        Activation, Error, Multiname, Object, TObject, Value,
-    },
-    avm2_stub_method,
+use crate::avm2::{
+    e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
+    error::type_error,
+    object::{E4XOrXml, XmlListObject},
+    string::AvmString,
+    Activation, Error, Multiname, Object, TObject, Value,
 };
+
+use super::xml::name_to_multiname;
 
 fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
@@ -59,16 +61,32 @@ pub fn has_simple_content<'gc>(
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let list = this.unwrap().as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
         Ok(simple_content_to_string(children.iter().cloned(), activation)?.into())
     } else {
-        avm2_stub_method!(activation, "XMLList", "toString", "non-simple content");
-        Err("XMLList.toString() for non-simple content: not yet implemented".into())
+        to_xml_string(activation, this, args)
     }
+}
+
+pub fn to_xml_string<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let children = list.children();
+    let mut out = WString::new();
+    for (i, child) in children.iter().enumerate() {
+        if i != 0 {
+            out.push_char('\n');
+        }
+        out.push_str(child.node().xml_to_xml_string(activation)?.as_wstr())
+    }
+    Ok(AvmString::new(activation.context.gc_context, out).into())
 }
 
 pub fn length<'gc>(
@@ -179,4 +197,18 @@ pub fn name<'gc>(
             1086,
         )?)),
     }
+}
+
+pub fn descendants<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_list = this.unwrap().as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0])?;
+    let mut descendants = Vec::new();
+    for child in xml_list.children().iter() {
+        child.node().descendants(&multiname, &mut descendants);
+    }
+    Ok(XmlListObject::new(activation, descendants, Some(xml_list.into())).into())
 }
