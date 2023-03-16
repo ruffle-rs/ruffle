@@ -299,7 +299,8 @@ impl<'gc> Avm2<'gc> {
 
     /// Dispatch an event on an object.
     ///
-    /// This should be a root activation. As such, the error is a message and not something actionable.
+    /// This will become its own self contained activation.
+    /// As such, the error is a message and not something actionable.
     ///
     /// The `bool` parameter reads true if the event was cancelled.
     pub fn dispatch_event(
