@@ -6,8 +6,9 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
+
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
@@ -464,12 +465,12 @@ fn to_string<'gc>(
 }
 
 pub fn create_matrix_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     matrix_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
@@ -478,11 +479,11 @@ pub fn create_matrix_object<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

@@ -7,8 +7,8 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -62,31 +62,31 @@ pub fn number_function<'gc>(
 }
 
 pub fn create_number_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     number_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let number = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(number),
         Executable::Native(number_function),
         fn_proto,
         number_proto,
     );
     let object = number.raw_script_object();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     number
 }
 
 /// Creates `Number.prototype`.
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let number_proto = ValueObject::empty_box(gc_context, proto);
+    let number_proto = ValueObject::empty_box(context.gc_context, proto);
     let object = number_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     number_proto
 }
 

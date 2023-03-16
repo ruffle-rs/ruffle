@@ -4,9 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
 use crate::xml::XmlNode;
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "localName" => property(local_name);
@@ -393,11 +393,11 @@ fn namespace_uri<'gc>(
 
 /// Construct the prototype for `XMLNode`.
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_node_proto = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, xml_node_proto, fn_proto);
+    let xml_node_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, xml_node_proto, fn_proto);
     xml_node_proto.into()
 }

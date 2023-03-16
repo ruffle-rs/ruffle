@@ -3,9 +3,10 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell};
 use std::fmt;
 
 #[inline]
@@ -572,22 +573,22 @@ fn method<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let date_proto = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, date_proto, fn_proto);
+    let date_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
 
     let date_constructor = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(date_method!(256)),
         Executable::Native(function),
         fn_proto,
         date_proto.into(),
     );
     let object = date_constructor.raw_script_object();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
 
     date_constructor
 }

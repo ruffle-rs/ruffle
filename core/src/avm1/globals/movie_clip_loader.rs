@@ -9,9 +9,9 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
+use crate::context::GcContext;
 use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
 use crate::loader::MovieLoaderEventHandler;
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
@@ -158,14 +158,14 @@ fn get_progress<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let mcl_proto = ScriptObject::new(gc_context, Some(proto));
-    broadcaster_functions.initialize(gc_context, mcl_proto.into(), array_proto);
-    define_properties_on(PROTO_DECLS, gc_context, mcl_proto, fn_proto);
+    let mcl_proto = ScriptObject::new(context.gc_context, Some(proto));
+    broadcaster_functions.initialize(context.gc_context, mcl_proto.into(), array_proto);
+    define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
     mcl_proto.into()
 }

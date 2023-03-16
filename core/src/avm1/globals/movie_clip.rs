@@ -9,6 +9,7 @@ use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
+use crate::context::GcContext;
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
@@ -16,7 +17,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use gc_arena::MutationContext;
+
 use ruffle_render::shape_utils::DrawCommand;
 use std::str::FromStr;
 use swf::{
@@ -229,12 +230,12 @@ pub fn hit_test<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
 

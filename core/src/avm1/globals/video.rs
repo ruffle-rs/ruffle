@@ -6,8 +6,8 @@ use crate::avm1::object::{NativeObject, Object, TObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::value::Value;
 use crate::avm1::ScriptObject;
+use crate::context::GcContext;
 use crate::display_object::{TDisplayObject, Video};
-use gc_arena::MutationContext;
 
 macro_rules! video_method {
     ( $fn: expr ) => {
@@ -56,11 +56,11 @@ pub fn attach_video<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

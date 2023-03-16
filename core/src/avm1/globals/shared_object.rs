@@ -7,11 +7,12 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
+use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
-use gc_arena::MutationContext;
+
 use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -415,19 +416,19 @@ pub fn remove_listener<'gc>(
 }
 
 pub fn create_shared_object_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     shared_object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let shared_obj = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
         shared_object_proto,
     );
     let object = shared_obj.raw_script_object();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     shared_obj
 }
 
@@ -540,13 +541,13 @@ pub fn on_sync<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let shared_obj = SharedObject::empty_shared_obj(gc_context, proto);
+    let shared_obj = SharedObject::empty_shared_obj(context.gc_context, proto);
     let object = shared_obj.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     shared_obj.into()
 }
 

@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
-use gc_arena::MutationContext;
+use crate::context::GcContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "clone" => method(clone);
@@ -193,11 +193,11 @@ pub fn clone<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let object = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }

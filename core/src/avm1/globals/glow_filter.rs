@@ -4,6 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::Color;
 
@@ -290,14 +291,14 @@ fn method<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let glow_filter_proto = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, glow_filter_proto, fn_proto);
+    let glow_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, glow_filter_proto, fn_proto);
     FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(glow_filter_method!(0)),
         constructor_to_fn!(glow_filter_method!(0)),
         fn_proto,

@@ -3,7 +3,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use gc_arena::MutationContext;
+use crate::context::GcContext;
+
 use rand::Rng;
 use std::f64::consts;
 
@@ -157,12 +158,12 @@ pub fn random<'gc>(
 }
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let math = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, math, fn_proto);
+    let math = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, context, math, fn_proto);
     math.into()
 }
 
@@ -172,10 +173,12 @@ mod tests {
     use crate::avm1::test_utils::with_avm;
 
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+        let object_proto = activation.context.avm1.prototypes().object;
+        let function_proto = activation.context.avm1.prototypes().function;
         create(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().object,
-            activation.context.avm1.prototypes().function,
+            &mut activation.context.borrow_gc(),
+            object_proto,
+            function_proto,
         )
     }
 
@@ -390,11 +393,7 @@ mod tests {
     #[test]
     fn test_atan2_nan() {
         with_avm(19, |activation, _root| -> Result<(), Error> {
-            let math = create(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().object,
-                activation.context.avm1.prototypes().function,
-            );
+            let math = setup(activation);
 
             assert_eq!(atan2(activation, math, &[]).unwrap(), f64::NAN.into());
             assert_eq!(
@@ -416,11 +415,7 @@ mod tests {
     #[test]
     fn test_atan2_valid() {
         with_avm(19, |activation, _root| -> Result<(), Error> {
-            let math = create(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().object,
-                activation.context.avm1.prototypes().function,
-            );
+            let math = setup(activation);
 
             assert_eq!(
                 atan2(activation, math, &[10.into()]).unwrap(),

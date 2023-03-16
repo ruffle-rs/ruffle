@@ -4,8 +4,8 @@ use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use crate::avm1_stub;
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "PolicyFileResolver" => method(policy_file_resolver);
@@ -84,11 +84,11 @@ fn policy_file_resolver<'gc>(
 }
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let security = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, security, fn_proto);
+    let security = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, context, security, fn_proto);
     security.into()
 }
