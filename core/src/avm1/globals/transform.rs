@@ -5,8 +5,8 @@ use crate::avm1::globals::matrix::{matrix_to_object, object_to_matrix};
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
+use crate::context::GcContext;
 use crate::display_object::{MovieClip, TDisplayObject};
-use gc_arena::MutationContext;
 
 macro_rules! tx_getter {
     ( $get:ident ) => {
@@ -75,13 +75,13 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let transform_object = TransformObject::empty(gc_context, proto);
+    let transform_object = TransformObject::empty(context.gc_context, proto);
     let object = transform_object.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     transform_object.into()
 }
 

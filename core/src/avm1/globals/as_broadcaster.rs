@@ -7,6 +7,7 @@ use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
 use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, MutationContext};
 
@@ -18,10 +19,11 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
+    let gc_context = context.gc_context;
     let as_broadcaster_proto = ScriptObject::new(gc_context, Some(proto));
     let as_broadcaster = FunctionObject::constructor(
         gc_context,
@@ -32,8 +34,8 @@ pub fn create<'gc>(
     );
     let object = as_broadcaster.raw_script_object();
 
-    let define_as_object = |index: usize| -> Object<'gc> {
-        match OBJECT_DECLS[index].define_on(gc_context, object, fn_proto) {
+    let mut define_as_object = |index: usize| -> Object<'gc> {
+        match OBJECT_DECLS[index].define_on(context, object, fn_proto) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }

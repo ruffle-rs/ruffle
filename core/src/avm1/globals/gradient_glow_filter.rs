@@ -7,8 +7,8 @@ use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "distance" => property(distance, set_distance);
@@ -452,12 +452,12 @@ pub fn set_knockout<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let color_matrix_filter = GradientGlowFilterObject::empty_object(gc_context, proto);
+    let color_matrix_filter = GradientGlowFilterObject::empty_object(context.gc_context, proto);
     let object = color_matrix_filter.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     color_matrix_filter.into()
 }

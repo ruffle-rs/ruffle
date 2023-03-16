@@ -10,10 +10,10 @@ use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
+use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
-use gc_arena::MutationContext;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -1328,13 +1328,13 @@ pub fn compare<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let bitmap_data_object = BitmapDataObject::empty_object(gc_context, proto);
+    let bitmap_data_object = BitmapDataObject::empty_object(context.gc_context, proto);
     let object = bitmap_data_object.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     bitmap_data_object.into()
 }
 
@@ -1382,18 +1382,18 @@ pub fn load_bitmap<'gc>(
 }
 
 pub fn create_bitmap_data_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     bitmap_data_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let bitmap_data = FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(constructor),
         constructor_to_fn!(constructor),
         fn_proto,
         bitmap_data_proto,
     );
     let object = bitmap_data.raw_script_object();
-    define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
     bitmap_data
 }

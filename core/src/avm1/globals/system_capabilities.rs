@@ -4,8 +4,8 @@ use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
+use crate::context::GcContext;
 use crate::string::AvmString;
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);
@@ -250,11 +250,11 @@ pub fn get_max_idc_level<'gc>(
 }
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, capabilities, fn_proto);
+    let capabilities = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
     capabilities.into()
 }

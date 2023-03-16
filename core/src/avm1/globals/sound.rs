@@ -8,9 +8,9 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::backend::navigator::Request;
 use crate::character::Character;
+use crate::context::GcContext;
 use crate::display_object::{SoundTransform, TDisplayObject};
 use crate::{avm1_stub, avm_warn};
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -57,13 +57,13 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let sound = SoundObject::empty_sound(gc_context, proto);
+    let sound = SoundObject::empty_sound(context.gc_context, proto);
     let object = sound.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     sound.into()
 }
 

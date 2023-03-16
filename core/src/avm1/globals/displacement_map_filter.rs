@@ -6,8 +6,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
+use crate::context::GcContext;
 use crate::string::{AvmString, WStr};
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "alpha" => property(alpha, set_alpha);
@@ -302,12 +302,12 @@ pub fn set_scale_y<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let filter = DisplacementMapFilterObject::empty_object(gc_context, proto);
+    let filter = DisplacementMapFilterObject::empty_object(context.gc_context, proto);
     let object = filter.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     filter.into()
 }

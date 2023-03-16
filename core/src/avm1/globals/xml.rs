@@ -9,9 +9,9 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
+use crate::context::GcContext;
 use crate::string::AvmString;
 use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
-use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "docTypeDecl" => property(doc_type_decl; READ_ONLY);
@@ -339,12 +339,12 @@ fn spawn_xml_fetch<'gc>(
 
 /// Construct the prototype for `XML`.
 pub fn create_proto<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XmlObject::empty(gc_context, proto);
+    let xml_proto = XmlObject::empty(context.gc_context, proto);
     let object = xml_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, context, object, fn_proto);
     xml_proto.into()
 }

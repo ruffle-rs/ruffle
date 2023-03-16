@@ -7,9 +7,9 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
+use crate::context::GcContext;
 use crate::display_object::StageDisplayState;
 use crate::string::{AvmString, WStr, WString};
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);
@@ -21,15 +21,15 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_stage_object<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let stage = ScriptObject::new(gc_context, Some(proto));
-    broadcaster_functions.initialize(gc_context, stage.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, gc_context, stage, fn_proto);
+    let stage = ScriptObject::new(context.gc_context, Some(proto));
+    broadcaster_functions.initialize(context.gc_context, stage.into(), array_proto);
+    define_properties_on(OBJECT_DECLS, context, stage, fn_proto);
     stage.into()
 }
 

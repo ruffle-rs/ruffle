@@ -4,6 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
+use crate::context::GcContext;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 #[derive(Clone, Debug, Collect)]
@@ -15,9 +16,12 @@ struct ColorMatrixFilterData {
 impl Default for ColorMatrixFilterData {
     fn default() -> Self {
         Self {
+            #[rustfmt::skip]
             matrix: [
-                1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
+                1.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 1.0, 0.0,
             ],
         }
     }
@@ -118,14 +122,14 @@ fn method<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let color_matrix_filter_proto = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, gc_context, color_matrix_filter_proto, fn_proto);
+    let color_matrix_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, context, color_matrix_filter_proto, fn_proto);
     FunctionObject::constructor(
-        gc_context,
+        context.gc_context,
         Executable::Native(color_matrix_filter_method!(0)),
         constructor_to_fn!(color_matrix_filter_method!(0)),
         fn_proto,

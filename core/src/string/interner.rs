@@ -1,6 +1,8 @@
+use std::borrow::Cow;
+
 use fnv::FnvHashSet;
 use gc_arena::{Collect, MutationContext};
-use ruffle_wstr::{WStr, WString};
+use ruffle_wstr::WStr;
 
 use super::avm_string::AvmString;
 
@@ -17,14 +19,18 @@ impl<'gc> AvmStringInterner<'gc> {
     }
 
     #[must_use]
-    pub fn intern_wstr<S>(&mut self, gc_context: MutationContext<'gc, '_>, s: S) -> AvmString<'gc>
+    pub fn intern_wstr<'a, S>(
+        &mut self,
+        gc_context: MutationContext<'gc, '_>,
+        s: S,
+    ) -> AvmString<'gc>
     where
-        S: AsRef<WStr> + Into<WString>,
+        S: AsRef<WStr> + Into<Cow<'a, WStr>>,
     {
         if let Some(s) = self.interned.get(s.as_ref()) {
             *s
         } else {
-            let s = AvmString::new(gc_context, s);
+            let s = AvmString::new(gc_context, s.into().into_owned());
             self.interned.insert(s);
             s
         }

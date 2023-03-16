@@ -6,9 +6,9 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1_stub;
+use crate::context::GcContext;
 use bitflags::bitflags;
 use core::fmt;
-use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "exactSettings" => property(get_exact_settings, set_exact_settings);
@@ -510,15 +510,16 @@ pub fn on_status<'gc>(
 }
 
 pub fn create<'gc>(
-    gc_context: MutationContext<'gc, '_>,
+    context: &mut GcContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     security: Object<'gc>,
     capabilities: Object<'gc>,
     ime: Object<'gc>,
 ) -> Object<'gc> {
+    let gc_context = context.gc_context;
     let system = ScriptObject::new(gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, gc_context, system, fn_proto);
+    define_properties_on(OBJECT_DECLS, context, system, fn_proto);
     system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
     system.define_value(gc_context, "security", security.into(), Attribute::empty());
     system.define_value(
