@@ -12,7 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
-use crate::context::UpdateContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::Ref;
@@ -231,9 +231,9 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string_option(
         self,
         string_index: u32,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        let mut write = self.0.write(mc);
+        let mut write = self.0.write(context.gc_context);
         if let Some(Some(string)) = write.strings.get(string_index as usize) {
             return Ok(Some(*string));
         }
@@ -242,17 +242,18 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(None);
         }
 
-        let avm_string = AvmString::new_utf8(
-            mc,
-            write
-                .abc
-                .constant_pool
-                .strings
-                .get(string_index as usize - 1)
-                .ok_or_else(|| format!("Unknown string constant {string_index}"))?,
-        );
-        write.strings[string_index as usize] = Some(avm_string);
+        let raw = write
+            .abc
+            .constant_pool
+            .strings
+            .get(string_index as usize - 1)
+            .ok_or_else(|| format!("Unknown string constant {string_index}"))?;
 
+        let avm_string = context
+            .interner
+            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
+
+        write.strings[string_index as usize] = Some(avm_string);
         Ok(Some(avm_string))
     }
 
@@ -265,11 +266,11 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string(
         self,
         string_index: u32,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(self
-            .pool_string_option(string_index, mc)?
-            .unwrap_or_default())
+            .pool_string_option(string_index, context)?
+            .unwrap_or_else(AvmString::default))
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -279,7 +280,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_namespace(
         self,
         ns_index: Index<AbcNamespace>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
@@ -288,8 +289,8 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let namespace = Namespace::from_abc_namespace(self, ns_index, mc)?;
-        self.0.write(mc).namespaces[ns_index.0 as usize] = Some(namespace);
+        let namespace = Namespace::from_abc_namespace(self, ns_index, context)?;
+        self.0.write(context.gc_context).namespaces[ns_index.0 as usize] = Some(namespace);
 
         Ok(namespace)
     }
@@ -299,8 +300,9 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_maybe_uninitialized_multiname(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+        let mc = context.gc_context;
         let read = self.0.read();
         if let Some(Some(multiname)) = read.multinames.get(multiname_index.0 as usize) {
             return Ok(*multiname);
@@ -308,7 +310,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let multiname = Multiname::from_abc_index(self, multiname_index, mc)?;
+        let multiname = Multiname::from_abc_index(self, multiname_index, context)?;
         let multiname = Gc::allocate(mc, multiname);
         self.0.write(mc).multinames[multiname_index.0 as usize] = Some(multiname);
 
@@ -322,9 +324,9 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, mc)?;
+        let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, context)?;
         if multiname.has_lazy_component() {
             return Err(format!("Multiname {} is not static", multiname_index.0).into());
         }
@@ -339,12 +341,13 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static_any(
         self,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
+            let mc = context.gc_context;
             Ok(Gc::allocate(mc, Multiname::any(mc)))
         } else {
-            self.pool_multiname_static(multiname_index, mc)
+            self.pool_multiname_static(multiname_index, context)
         }
     }
 }

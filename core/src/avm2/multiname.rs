@@ -4,6 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
+use crate::context::GcContext;
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -113,7 +114,7 @@ impl<'gc> Multiname<'gc> {
     fn abc_namespace_set(
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
         if namespace_set_index.0 == 0 {
             return Err(Error::RustError(
@@ -134,37 +135,38 @@ impl<'gc> Multiname<'gc> {
 
         if ns_set.len() == 1 {
             Ok(NamespaceSet::single(
-                translation_unit.pool_namespace(ns_set[0], mc)?,
+                translation_unit.pool_namespace(ns_set[0], context)?,
             ))
         } else {
             let mut result = Vec::with_capacity(ns_set.len());
             for ns in ns_set {
-                result.push(translation_unit.pool_namespace(*ns, mc)?)
+                result.push(translation_unit.pool_namespace(*ns, context)?)
             }
-            Ok(NamespaceSet::multiple(result, mc))
+            Ok(NamespaceSet::multiple(result, context.gc_context))
         }
     }
 
     pub fn from_abc_index(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
+        let mc = context.gc_context;
         let abc = translation_unit.abc();
         let abc_multiname = Self::resolve_multiname_index(&abc, multiname_index)?;
 
         let mut multiname = match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, mc)?),
-                    name: translation_unit.pool_string_option(name.0, mc)?,
+                    ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, context)?),
+                    name: translation_unit.pool_string_option(name.0, context)?,
                     params: Vec::new(),
                     flags: Default::default(),
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
-                name: translation_unit.pool_string_option(name.0, mc)?,
+                name: translation_unit.pool_string_option(name.0, context)?,
                 params: Vec::new(),
                 flags: MultinameFlags::HAS_LAZY_NS,
             },
@@ -182,14 +184,14 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
-                name: translation_unit.pool_string_option(name.0, mc)?,
+                ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
+                name: translation_unit.pool_string_option(name.0, context)?,
                 params: Vec::new(),
                 flags: Default::default(),
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
-                ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
+                ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
                 name: None,
                 params: Vec::new(),
                 flags: MultinameFlags::HAS_LAZY_NAME,
@@ -199,7 +201,7 @@ impl<'gc> Multiname<'gc> {
                 parameters,
             } => {
                 let mut base = translation_unit
-                    .pool_multiname_static(*base_type, mc)?
+                    .pool_multiname_static(*base_type, context)?
                     .deref()
                     .clone();
 
@@ -213,7 +215,7 @@ impl<'gc> Multiname<'gc> {
 
                 for param_type in parameters {
                     let param_multiname =
-                        translation_unit.pool_multiname_static_any(*param_type, mc)?;
+                        translation_unit.pool_multiname_static_any(*param_type, context)?;
 
                     base.params.push(param_multiname);
                 }

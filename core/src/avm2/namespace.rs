@@ -1,6 +1,6 @@
-use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use crate::{avm2::script::TranslationUnit, context::GcContext};
 use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Namespace as AbcNamespace};
@@ -46,10 +46,10 @@ impl<'gc> Namespace<'gc> {
     pub fn from_abc_namespace(
         translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
-            return Ok(Self::any(mc));
+            return Ok(Self::any(context.gc_context));
         }
 
         let actual_index = namespace_index.0 as usize - 1;
@@ -62,28 +62,28 @@ impl<'gc> Namespace<'gc> {
 
         let ns = match abc_namespace? {
             AbcNamespace::Namespace(idx) => {
-                NamespaceData::Namespace(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Namespace(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::Package(idx) => {
-                NamespaceData::Namespace(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Namespace(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::PackageInternal(idx) => {
-                NamespaceData::PackageInternal(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::PackageInternal(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::Protected(idx) => {
-                NamespaceData::Protected(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Protected(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::Explicit(idx) => {
-                NamespaceData::Explicit(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Explicit(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::StaticProtected(idx) => {
-                NamespaceData::StaticProtected(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::StaticProtected(translation_unit.pool_string(idx.0, context)?)
             }
             AbcNamespace::Private(idx) => {
-                NamespaceData::Private(translation_unit.pool_string(idx.0, mc)?)
+                NamespaceData::Private(translation_unit.pool_string(idx.0, context)?)
             }
         };
-        Ok(Self(Gc::allocate(mc, ns)))
+        Ok(Self(Gc::allocate(context.gc_context, ns)))
     }
 
     pub fn any(mc: MutationContext<'gc, '_>) -> Self {

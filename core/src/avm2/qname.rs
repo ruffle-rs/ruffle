@@ -2,6 +2,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::{Namespace, NamespaceData};
+use crate::context::GcContext;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
@@ -48,7 +49,7 @@ impl<'gc> QName<'gc> {
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
+        context: &mut GcContext<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         if multiname_index.0 == 0 {
             return Err("Attempted to load a trait name of index zero".into());
@@ -64,8 +65,8 @@ impl<'gc> QName<'gc> {
 
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
-                ns: translation_unit.pool_namespace(*namespace, mc)?,
-                name: translation_unit.pool_string(name.0, mc)?,
+                ns: translation_unit.pool_namespace(*namespace, context)?,
+                name: translation_unit.pool_string(name.0, context)?,
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })

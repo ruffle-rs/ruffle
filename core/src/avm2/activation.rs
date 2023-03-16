@@ -20,7 +20,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{value, Avm2, Error};
-use crate::context::UpdateContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::string::AvmString;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell};
@@ -701,6 +701,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.context.avm2
     }
 
+    #[inline]
+    pub fn borrow_gc(&mut self) -> GcContext<'_, 'gc> {
+        self.context.borrow_gc()
+    }
+
     /// Get the class that defined the currently-executing method, if it
     /// exists.
     ///
@@ -815,24 +820,24 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Retrieve a string from the current constant pool.
     fn pool_string<'b>(
-        &self,
+        &mut self,
         method: &'b BytecodeMethod<'gc>,
         index: Index<String>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_string(index.0, self.context.gc_context)
+            .pool_string(index.0, &mut self.borrow_gc())
     }
 
     /// Retrieve a namespace from the current constant pool.
     fn pool_namespace(
-        &self,
+        &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_namespace(index, self.context.gc_context)
+            .pool_namespace(index, &mut self.borrow_gc())
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -843,7 +848,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, self.context.gc_context)
+            .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -855,7 +860,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let name = method
             .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, self.context.gc_context)?;
+            .pool_maybe_uninitialized_multiname(index, &mut self.borrow_gc())?;
         if name.has_lazy_component() {
             let name = name.fill_with_runtime_params(self)?;
             Ok(Gc::allocate(self.context.gc_context, name))
@@ -875,7 +880,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_multiname_static(index, self.context.gc_context)
+            .pool_multiname_static(index, &mut self.borrow_gc())
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -889,7 +894,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_multiname_static_any(index, self.context.gc_context)
+            .pool_multiname_static_any(index, &mut self.borrow_gc())
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -1275,7 +1280,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<String>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(self.pool_string(&method, value)?);
+        let s = self.pool_string(&method, value)?;
+        self.push_stack(s);
         Ok(FrameControl::Continue)
     }
 
@@ -1739,7 +1745,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let qname = QName::from_abc_multiname(
                     method.translation_unit(),
                     vname,
-                    self.context.gc_context,
+                    &mut self.borrow_gc(),
                 )?;
                 ScriptObject::catch_scope(self.context.gc_context, &qname)
             };

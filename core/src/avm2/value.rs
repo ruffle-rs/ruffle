@@ -516,8 +516,8 @@ pub fn abc_default_value<'gc>(
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, activation.context.gc_context)
-            .map(|v| v.into()),
+            .pool_string(s.0, &mut activation.borrow_gc())
+            .map(Into::into),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -528,11 +528,10 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Protected(ns)
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
-        | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
-            activation,
-            translation_unit.pool_namespace(*ns, activation.context.gc_context)?,
-        )?
-        .into()),
+        | AbcDefaultValue::Private(ns) => {
+            let ns = translation_unit.pool_namespace(*ns, &mut activation.borrow_gc())?;
+            NamespaceObject::from_namespace(activation, ns).map(Into::into)
+        }
     }
 }
 

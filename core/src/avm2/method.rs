@@ -57,12 +57,12 @@ impl<'gc> ParamConfig<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
-            txunit.pool_string(name.0, activation.context.gc_context)?
+            txunit.pool_string(name.0, &mut activation.borrow_gc())?
         } else {
             "<Unnamed Parameter>".into()
         };
         let param_type_name = txunit
-            .pool_multiname_static_any(config.kind, activation.context.gc_context)?
+            .pool_multiname_static_any(config.kind, &mut activation.borrow_gc())?
             .deref()
             .clone();
 
@@ -151,7 +151,7 @@ impl<'gc> BytecodeMethod<'gc> {
             }
 
             let return_type = txunit
-                .pool_multiname_static_any(method.return_type, activation.context.gc_context)?
+                .pool_multiname_static_any(method.return_type, &mut activation.borrow_gc())?
                 .deref()
                 .clone();
 
