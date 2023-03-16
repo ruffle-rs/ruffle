@@ -35,6 +35,7 @@ impl DropShadowFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct DropShadowFilterFlags: u8 {
         const INNER_SHADOW     = 1 << 7;
         const KNOCKOUT         = 1 << 6;
@@ -46,7 +47,7 @@ bitflags! {
 impl DropShadowFilterFlags {
     #[inline]
     pub fn from_passes(num_passes: u8) -> Self {
-        let flags = Self::from_bits_truncate(num_passes);
+        let flags = Self::from_bits_retain(num_passes);
         debug_assert_eq!(flags & Self::PASSES, flags);
         flags
     }

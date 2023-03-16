@@ -25,6 +25,7 @@ impl ConvolutionFilter {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ConvolutionFilterFlags: u8 {
         const CLAMP          = 1 << 1;
         const PRESERVE_ALPHA = 1 << 0;

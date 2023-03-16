@@ -65,7 +65,7 @@ fn lowest_common_ancestor<'gc>(
 
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect)]
     #[collect(require_static)]
     struct InteractiveObjectFlags: u8 {
         /// Whether this `InteractiveObject` accepts mouse and other user

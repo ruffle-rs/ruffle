@@ -1879,7 +1879,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 }
 
 bitflags::bitflags! {
-    #[derive(Collect)]
+    #[derive(Clone, Copy, Collect)]
     #[collect(require_static)]
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
@@ -1896,8 +1896,8 @@ bitflags::bitflags! {
         const WAS_STATIC = 1 << 10;
         const BORDER = 1 << 11;
         const NO_SELECT = 1 << 12;
-        const SWF_FLAGS = Self::READ_ONLY.bits | Self::PASSWORD.bits | Self::MULTILINE.bits | Self::WORD_WRAP.bits | Self::USE_OUTLINES.bits |
-                          Self::HTML.bits | Self::WAS_STATIC.bits | Self::BORDER.bits | Self::NO_SELECT.bits;
+        const SWF_FLAGS = Self::READ_ONLY.bits() | Self::PASSWORD.bits() | Self::MULTILINE.bits() | Self::WORD_WRAP.bits() | Self::USE_OUTLINES.bits() |
+                          Self::HTML.bits() | Self::WAS_STATIC.bits() | Self::BORDER.bits() | Self::NO_SELECT.bits();
     }
 }
 

@@ -49,7 +49,7 @@ impl<'gc> NamespaceSet<'gc> {
 }
 
 bitflags! {
-    #[derive(Default, Collect)]
+    #[derive(Clone, Copy, Debug, Default, Collect)]
     #[collect(require_static)]
     pub struct MultinameFlags: u8 {
         /// Whether the namespace needs to be read at runtime before use.

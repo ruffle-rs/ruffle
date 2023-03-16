@@ -24,6 +24,7 @@ use super::string::AvmString;
 
 bitflags! {
     /// All possible attributes for a given class.
+    #[derive(Clone, Copy)]
     pub struct ClassAttributes: u8 {
         /// Class is sealed, attempts to set or init dynamic properties on an
         /// object will generate a runtime error.

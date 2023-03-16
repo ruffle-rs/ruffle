@@ -1786,8 +1786,8 @@ impl<'gc> DisplayObject<'gc> {
 
 bitflags! {
     /// Bit flags used by `DisplayObject`.
-    #[derive(Collect)]
-    #[collect(no_drop)]
+    #[derive(Clone, Collect, Copy)]
+    #[collect(require_static)]
     struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
@@ -1840,6 +1840,7 @@ bitflags! {
 bitflags! {
     /// Defines how hit testing should be performed.
     /// Used for mouse picking and ActionScript's hitTestClip functions.
+    #[derive(Clone, Copy)]
     pub struct HitTestOptions: u8 {
         /// Ignore objects used as masks (setMask / clipDepth).
         const SKIP_MASK = 1 << 0;
@@ -1848,10 +1849,10 @@ bitflags! {
         const SKIP_INVISIBLE = 1 << 1;
 
         /// The options used for `hitTest` calls in ActionScript.
-        const AVM_HIT_TEST = Self::SKIP_MASK.bits;
+        const AVM_HIT_TEST = Self::SKIP_MASK.bits();
 
         /// The options used for mouse picking, such as clicking on buttons.
-        const MOUSE_PICK = Self::SKIP_MASK.bits | Self::SKIP_INVISIBLE.bits;
+        const MOUSE_PICK = Self::SKIP_MASK.bits() | Self::SKIP_INVISIBLE.bits();
     }
 }
 

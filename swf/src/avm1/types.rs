@@ -156,6 +156,7 @@ pub struct FunctionParam<'a> {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct FunctionFlags: u16 {
         const PRELOAD_THIS = 1 << 0;
         const SUPPRESS_THIS = 1 << 1;
@@ -236,6 +237,7 @@ impl GetUrl2 {
 
 bitflags! {
     // NOTE: The GetURL2 flag layout is listed backwards in the SWF19 specs.
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub(crate) struct GetUrlFlags: u8 {
         const METHOD_NONE = 0;
         const METHOD_GET = 1;

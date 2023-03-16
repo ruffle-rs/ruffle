@@ -96,6 +96,7 @@ pub struct SourceField {
 }
 
 bitflags::bitflags! {
+    #[derive(Clone, Copy, Debug)]
     pub struct Mask: u8 {
         const X = 0b0001;
         const Y = 0b0010;
