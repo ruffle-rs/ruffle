@@ -320,5 +320,8 @@ include "flash/utils/Proxy.as"
 include "flash/utils/CompressionAlgorithm.as"
 include "flash/utils/Endian.as"
 include "flash/utils/Timer.as"
+
+include "flash/xml/XMLNodeType.as"
+
 include "XML.as"
 include "XMLList.as"
