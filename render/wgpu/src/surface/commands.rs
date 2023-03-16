@@ -93,7 +93,11 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform,
                 blend_mode,
             } => self.render_texture(transform, binds, *blend_mode),
-            DrawCommand::RenderShape { shape, transform } => self.render_shape(*shape, transform),
+            DrawCommand::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            } => self.render_shape(*shape, transform, *is_stroke),
             DrawCommand::DrawRect { color, matrix } => self.draw_rect(color, matrix),
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
@@ -297,23 +301,29 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform, is_stroke: bool) {
+        let show_strokes = self.mask_state != MaskState::DrawMaskStencil
+            && self.mask_state != MaskState::ClearMaskStencil;
+        if !show_strokes && is_stroke {
+            return;
+        }
+
         if cfg!(feature = "render_debug_labels") {
             self.render_pass
                 .push_debug_group(&format!("render_shape {}", shape.0));
         }
 
         let mesh = &self.meshes[shape.0];
+        self.draw_mesh(transform, mesh);
+
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
+    }
+
+    fn draw_mesh(&mut self, transform: &Transform, mesh: &'pass Mesh) {
         for draw in &mesh.draws {
-            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
-                && self.mask_state != MaskState::ClearMaskStencil
-            {
-                draw.num_indices
-            } else {
-                // Omit strokes when drawing a mask stencil.
-                draw.num_mask_indices
-            };
-            if num_indices == 0 {
+            if draw.num_indices == 0 {
                 continue;
             }
 
@@ -333,11 +343,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.draw(
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
                 mesh.index_buffer.slice(draw.indices.clone()),
-                num_indices,
+                draw.num_indices,
             );
-        }
-        if cfg!(feature = "render_debug_labels") {
-            self.render_pass.pop_debug_group();
         }
     }
 
@@ -436,6 +443,7 @@ pub enum DrawCommand {
     RenderShape {
         shape: ShapeHandle,
         transform: Transform,
+        is_stroke: bool,
     },
     DrawRect {
         color: Color,
@@ -575,9 +583,15 @@ pub fn chunk_blends<'a>(
                     render_stage3d: true,
                 })
             }
-            Command::RenderShape { shape, transform } => {
-                current.push(DrawCommand::RenderShape { shape, transform })
-            }
+            Command::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            } => current.push(DrawCommand::RenderShape {
+                shape,
+                transform,
+                is_stroke,
+            }),
             Command::DrawRect { color, matrix } => {
                 current.push(DrawCommand::DrawRect { color, matrix })
             }

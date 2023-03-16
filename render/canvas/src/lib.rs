@@ -5,20 +5,20 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
 };
-use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
-};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, SyncHandle};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
+use ruffle_render::shape_utils::{
+    DrawCommand, FillStyle, LineScaleMode, LineScales, ShapeConverter, ShapeFills, ShapeStrokes,
+};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, CharacterId, Color};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
@@ -434,30 +434,55 @@ impl RenderBackend for WebCanvasRenderBackend {
         }
     }
 
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
+        let data = swf_shape_fills_to_canvas_commands(shape, self);
         self.shapes.push(data);
         handle
     }
 
-    fn replace_shape(
+    fn replace_shape_fills(&mut self, shape: &ShapeFills, _id: CharacterId, handle: ShapeHandle) {
+        let data = swf_shape_fills_to_canvas_commands(shape, self);
+        self.shapes[handle.0] = data;
+    }
+
+    fn register_shape_strokes(
         &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
+    ) -> ShapeHandle {
+        let handle = ShapeHandle(self.shapes.len());
+        let data = swf_shape_strokes_to_canvas_commands(shape, self);
+        self.shapes.push(data);
+        handle
+    }
+
+    fn replace_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
         handle: ShapeHandle,
     ) {
-        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
+        let data = swf_shape_strokes_to_canvas_commands(shape, self);
         self.shapes[handle.0] = data;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into(), &NullBitmapSource)
+        let (fills, _strokes) =
+            ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
+
+        // TODO: Can glyphs have strokes?
+
+        self.register_shape_fills(
+            &ShapeFills {
+                paths: fills,
+                bounds: shape.shape_bounds.clone(),
+            },
+            shape.id,
+        )
     }
 
     fn render_offscreen(
@@ -534,7 +559,7 @@ impl CommandHandler for WebCanvasRenderBackend {
         panic!("Stage3D should not have been created on canvas backend")
     }
 
-    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform, _is_stroke: bool) {
         match &self.mask_state {
             MaskState::DrawContent => {
                 let mut line_scale = LineScales::new(&transform.matrix);
@@ -821,13 +846,80 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
     path
 }
 
-fn swf_shape_to_canvas_commands(
-    shape: &DistilledShape,
-    bitmap_source: &dyn BitmapSource,
+fn swf_shape_fills_to_canvas_commands(
+    shape: &ShapeFills,
     backend: &mut WebCanvasRenderBackend,
 ) -> ShapeData {
-    use ruffle_render::shape_utils::DrawPath;
-    use swf::{FillStyle, LineCapStyle, LineJoinStyle};
+    // Some browsers will vomit if you try to load/draw an image with 0 width/height.
+    // TODO(Herschel): Might be better to just return None in this case and skip
+    // rendering altogether.
+
+    let mut canvas_data = ShapeData(vec![]);
+
+    let bounds_viewbox_matrix = DomMatrix::new().expect("DomMatrix constructor must succeed");
+    bounds_viewbox_matrix.set_a(1.0 / 20.0);
+    bounds_viewbox_matrix.set_d(1.0 / 20.0);
+
+    for path in &shape.paths {
+        let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
+        canvas_path.add_path_with_transformation(
+            &draw_commands_to_path2d(&path.commands, false),
+            bounds_viewbox_matrix.unchecked_ref(),
+        );
+
+        let fill_style = match &path.style {
+            FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
+            FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
+                create_linear_gradient(&backend.context, gradient, true)
+                    .expect("Couldn't create linear gradient"),
+            ),
+            FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
+                create_radial_gradient(&backend.context, gradient, 0.0, true)
+                    .expect("Couldn't create radial gradient"),
+            ),
+            FillStyle::FocalGradient {
+                gradient,
+                focal_point,
+            } => CanvasFillStyle::Gradient(
+                create_radial_gradient(&backend.context, gradient, focal_point.to_f64(), true)
+                    .expect("Couldn't create radial gradient"),
+            ),
+            FillStyle::Bitmap {
+                size: _,
+                handle,
+                matrix,
+                is_smoothed,
+                is_repeating,
+            } => {
+                let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                    handle.to_owned(),
+                    *matrix,
+                    *is_smoothed,
+                    *is_repeating,
+                    backend,
+                ) {
+                    bitmap
+                } else {
+                    continue;
+                };
+                CanvasFillStyle::Bitmap(bitmap)
+            }
+        };
+
+        canvas_data.0.push(CanvasDrawCommand::Fill {
+            path: canvas_path,
+            fill_style,
+        });
+    }
+
+    canvas_data
+}
+
+fn swf_shape_strokes_to_canvas_commands(
+    shape: &ShapeStrokes,
+    backend: &mut WebCanvasRenderBackend,
+) -> ShapeData {
+    use swf::{LineCapStyle, LineJoinStyle};
 
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.
     // TODO(Herschel): Might be better to just return None in this case and skip
@@ -840,136 +932,65 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
     for path in &shape.paths {
-        match path {
-            DrawPath::Fill {
-                commands, style, ..
-            } => {
-                let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
-                canvas_path.add_path_with_transformation(
-                    &draw_commands_to_path2d(commands, false),
-                    bounds_viewbox_matrix.unchecked_ref(),
-                );
+        let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
+        canvas_path.add_path_with_transformation(
+            &draw_commands_to_path2d(&path.commands, path.is_closed),
+            bounds_viewbox_matrix.unchecked_ref(),
+        );
 
-                let fill_style = match style {
-                    FillStyle::Color(color) => CanvasFillStyle::Color(color.into()),
-                    FillStyle::LinearGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_linear_gradient(&backend.context, gradient, true)
-                            .expect("Couldn't create linear gradient"),
-                    ),
-                    FillStyle::RadialGradient(gradient) => CanvasFillStyle::Gradient(
-                        create_radial_gradient(&backend.context, gradient, 0.0, true)
-                            .expect("Couldn't create radial gradient"),
-                    ),
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => CanvasFillStyle::Gradient(
-                        create_radial_gradient(
-                            &backend.context,
-                            gradient,
-                            focal_point.to_f64(),
-                            true,
-                        )
-                        .expect("Couldn't create radial gradient"),
-                    ),
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
-                            *id,
-                            *matrix,
-                            *is_smoothed,
-                            *is_repeating,
-                            bitmap_source,
-                            backend,
-                        ) {
-                            bitmap
-                        } else {
-                            continue;
-                        };
-                        CanvasFillStyle::Bitmap(bitmap)
-                    }
-                };
-
-                canvas_data.0.push(CanvasDrawCommand::Fill {
-                    path: canvas_path,
-                    fill_style,
-                });
+        let stroke_style = match path.style.fill_style() {
+            FillStyle::Color(color) => CanvasStrokeStyle::Color(color.into()),
+            FillStyle::LinearGradient(gradient) => {
+                CanvasStrokeStyle::Gradient(gradient.clone(), None)
             }
-            DrawPath::Stroke {
-                commands,
-                style,
-                is_closed,
-            } => {
-                let canvas_path = Path2d::new().expect("Path2d constructor must succeed");
-                canvas_path.add_path_with_transformation(
-                    &draw_commands_to_path2d(commands, *is_closed),
-                    bounds_viewbox_matrix.unchecked_ref(),
-                );
-
-                let stroke_style = match style.fill_style() {
-                    FillStyle::Color(color) => CanvasStrokeStyle::Color(color.into()),
-                    FillStyle::LinearGradient(gradient) => {
-                        CanvasStrokeStyle::Gradient(gradient.clone(), None)
-                    }
-                    FillStyle::RadialGradient(gradient) => {
-                        CanvasStrokeStyle::Gradient(gradient.clone(), Some(0.0))
-                    }
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => CanvasStrokeStyle::Gradient(gradient.clone(), Some(focal_point.to_f64())),
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
-                            *id,
-                            *matrix,
-                            *is_smoothed,
-                            *is_repeating,
-                            bitmap_source,
-                            backend,
-                        ) {
-                            bitmap
-                        } else {
-                            continue;
-                        };
-                        CanvasStrokeStyle::Bitmap(bitmap)
-                    }
-                };
-
-                let line_cap = match style.start_cap() {
-                    LineCapStyle::Round => "round",
-                    LineCapStyle::Square => "square",
-                    LineCapStyle::None => "butt",
-                };
-                let (line_join, miter_limit) = match style.join_style() {
-                    LineJoinStyle::Round => ("round", 999_999.0),
-                    LineJoinStyle::Bevel => ("bevel", 999_999.0),
-                    LineJoinStyle::Miter(ml) => ("miter", ml.to_f32()),
-                };
-                canvas_data.0.push(CanvasDrawCommand::Stroke {
-                    path: canvas_path,
-                    line_width: style.width().to_pixels(),
-                    stroke_style,
-                    line_cap: line_cap.to_string(),
-                    line_join: line_join.to_string(),
-                    miter_limit: miter_limit as f64 / 20.0,
-                    scale_mode: match (style.allow_scale_x(), style.allow_scale_y()) {
-                        (false, false) => LineScaleMode::None,
-                        (true, false) => LineScaleMode::Horizontal,
-                        (false, true) => LineScaleMode::Vertical,
-                        (true, true) => LineScaleMode::Both,
-                    },
-                });
+            FillStyle::RadialGradient(gradient) => {
+                CanvasStrokeStyle::Gradient(gradient.clone(), Some(0.0))
             }
-        }
+            FillStyle::FocalGradient {
+                gradient,
+                focal_point,
+            } => CanvasStrokeStyle::Gradient(gradient.clone(), Some(focal_point.to_f64())),
+            FillStyle::Bitmap {
+                size: _,
+                handle,
+                matrix,
+                is_smoothed,
+                is_repeating,
+            } => {
+                let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                    handle.to_owned(),
+                    *matrix,
+                    *is_smoothed,
+                    *is_repeating,
+                    backend,
+                ) {
+                    bitmap
+                } else {
+                    continue;
+                };
+                CanvasStrokeStyle::Bitmap(bitmap)
+            }
+        };
+
+        let line_cap = match path.style.start_cap() {
+            LineCapStyle::Round => "round",
+            LineCapStyle::Square => "square",
+            LineCapStyle::None => "butt",
+        };
+        let (line_join, miter_limit) = match path.style.join_style() {
+            LineJoinStyle::Round => ("round", 999_999.0),
+            LineJoinStyle::Bevel => ("bevel", 999_999.0),
+            LineJoinStyle::Miter(ml) => ("miter", ml.to_f32()),
+        };
+        canvas_data.0.push(CanvasDrawCommand::Stroke {
+            path: canvas_path,
+            line_width: path.style.width().to_pixels(),
+            stroke_style,
+            line_cap: line_cap.to_string(),
+            line_join: line_join.to_string(),
+            miter_limit: miter_limit as f64 / 20.0,
+            scale_mode: path.style.scale_mode(),
+        });
     }
     canvas_data
 }
@@ -1172,14 +1193,13 @@ fn swf_to_canvas_gradient(
 
 /// Converts an SWF bitmap fill to a canvas pattern.
 fn create_bitmap_pattern(
-    id: swf::CharacterId,
+    handle: Option<BitmapHandle>,
     matrix: swf::Matrix,
     is_smoothed: bool,
     is_repeating: bool,
-    bitmap_source: &dyn BitmapSource,
     backend: &mut WebCanvasRenderBackend,
 ) -> Option<CanvasBitmap> {
-    if let Some(handle) = bitmap_source.bitmap_handle(id, backend) {
+    if let Some(handle) = handle {
         let bitmap = as_bitmap_data(&handle);
         let repeat = if !is_repeating {
             // NOTE: The WebGL backend does clamping in this case, just like
@@ -1195,7 +1215,7 @@ fn create_bitmap_pattern(
         {
             Ok(Some(pattern)) => pattern,
             _ => {
-                log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
+                log::warn!("Unable to create bitmap pattern for bitmap");
                 return None;
             }
         };
@@ -1206,7 +1226,7 @@ fn create_bitmap_pattern(
             smoothed: is_smoothed,
         })
     } else {
-        log::warn!("Couldn't fill shape with unknown bitmap {}", id);
+        log::warn!("Couldn't fill shape with unknown bitmap");
         None
     }
 }

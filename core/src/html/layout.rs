@@ -8,7 +8,7 @@ use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::shape_utils::{DrawCommand, LineStyle};
 use std::cmp::{max, min};
 use std::sync::Arc;
 use swf::Twips;
@@ -146,7 +146,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut has_underline: bool = false;
 
         line_drawing.set_line_style(Some(
-            swf::LineStyle::new()
+            LineStyle::new()
                 .with_width(Twips::new(1))
                 .with_color(swf::Color::BLACK),
         ));

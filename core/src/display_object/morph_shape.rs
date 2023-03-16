@@ -7,6 +7,8 @@ use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::{DistilledShape, ShapeStrokes};
+use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8, Twips};
@@ -29,6 +31,11 @@ pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
     ratio: u16,
+    #[collect(require_static)]
+    strokes_handle: Option<ShapeHandle>,
+    #[collect(require_static)]
+    last_strokes: Option<Arc<ShapeStrokes>>,
+    last_scale: (f32, f32),
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -44,6 +51,9 @@ impl<'gc> MorphShape<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(gc_context, static_data),
                 ratio: 0,
+                strokes_handle: None,
+                last_strokes: None,
+                last_scale: (0.0, 0.0),
             },
         ))
     }
@@ -98,14 +108,67 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         // Noop
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
-        let this = self.0.read();
-        let ratio = this.ratio;
-        let static_data = this.static_data;
-        let shape_handle = static_data.get_shape(context, context.library, ratio);
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+        let ratio = self.0.read().ratio;
+        let static_data = self.0.read().static_data;
+        let (fills_handle, strokes) = static_data.get_shape(context, context.library, ratio);
         context
             .commands
-            .render_shape(shape_handle, context.transform_stack.transform());
+            .render_shape(fills_handle, context.transform_stack.transform(), false);
+
+        // Update the stroke if we're drawing it at a different scale than last time
+        let old_scale = self.0.read().last_scale;
+        let old_strokes = self.0.read().last_strokes.clone();
+        let cur_matrix = context.transform_stack.transform().matrix;
+        let render_stroke_matrix = Matrix {
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            tx: cur_matrix.tx,
+            ty: cur_matrix.ty,
+        };
+        let cur_scale = (
+            f32::abs(cur_matrix.a + cur_matrix.c),
+            f32::abs(cur_matrix.b + cur_matrix.d),
+        );
+        if old_scale != cur_scale || old_strokes.as_ref() != Some(&strokes) {
+            let mut write = self.0.write(context.gc_context);
+            let build_stroke_matrix = Matrix {
+                a: cur_matrix.a,
+                b: cur_matrix.b,
+                c: cur_matrix.c,
+                d: cur_matrix.d,
+                tx: Default::default(),
+                ty: Default::default(),
+            };
+            if let Some(handle) = write.strokes_handle {
+                context.renderer.replace_shape_strokes(
+                    &strokes,
+                    write.static_data.id,
+                    build_stroke_matrix,
+                    handle,
+                );
+            } else {
+                write.strokes_handle = Some(context.renderer.register_shape_strokes(
+                    &strokes,
+                    write.static_data.id,
+                    build_stroke_matrix,
+                ));
+            }
+            write.last_scale = cur_scale;
+        }
+
+        if let Some(render_handle) = self.0.read().strokes_handle {
+            context.commands.render_shape(
+                render_handle,
+                Transform {
+                    matrix: render_stroke_matrix,
+                    color_transform: context.transform_stack.transform().color_transform,
+                },
+                true,
+            );
+        }
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
@@ -146,7 +209,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
 /// A precalculated intermediate frame for a morph shape.
 struct Frame {
-    shape_handle: Option<ShapeHandle>,
+    shape_handles: Option<(ShapeHandle, Arc<ShapeStrokes>)>,
     shape: swf::Shape,
     bounds: Rectangle<Twips>,
 }
@@ -185,28 +248,30 @@ impl MorphShapeStatic {
         })
     }
 
-    /// Retrieves the `ShapeHandle` for the given ratio.
+    /// Retrieves the fill & stroke `ShapeHandle`s for the given ratio.
     /// Lazily intializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,
         library: &Library<'gc>,
         ratio: u16,
-    ) -> ShapeHandle {
+    ) -> (ShapeHandle, Arc<ShapeStrokes>) {
         let mut frame = self.get_frame(ratio);
-        if let Some(handle) = frame.shape_handle {
-            handle
+        if let Some(handles) = &frame.shape_handles {
+            handles.clone()
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
-            frame.shape_handle = Some(handle);
-            handle
+            let bitmap_source = MovieLibrarySource {
+                library,
+                gc_context: context.gc_context,
+            };
+            let shape = DistilledShape::from_shape(&frame.shape, &bitmap_source, context.renderer);
+            let fills = context
+                .renderer
+                .register_shape_fills(&shape.fills, shape.id);
+            let strokes = Arc::new(shape.strokes);
+            frame.shape_handles = Some((fills, strokes.clone()));
+            (fills, strokes)
         }
     }
 
@@ -329,7 +394,7 @@ impl MorphShapeStatic {
         };
 
         Frame {
-            shape_handle: None,
+            shape_handles: None,
             shape,
             bounds,
         }

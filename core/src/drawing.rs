@@ -3,14 +3,22 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
-use std::cell::Cell;
-use swf::{FillStyle, LineStyle, Rectangle, Twips};
+use ruffle_render::matrix::Matrix;
+use ruffle_render::shape_utils::{
+    DistilledShape, DrawCommand, FillPath, FillStyle, LineStyle, ShapeFills, ShapeStrokes,
+    StrokePath,
+};
+use ruffle_render::transform::Transform;
+use std::cell::{Cell, RefCell};
+use swf::{Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct Drawing {
-    render_handle: Cell<Option<ShapeHandle>>,
+    fills_handle: Cell<Option<ShapeHandle>>,
+    strokes_handle: Cell<Option<ShapeHandle>>,
+    shape_strokes: RefCell<Option<ShapeStrokes>>,
+    last_scale: Cell<(f32, f32)>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
@@ -32,7 +40,10 @@ impl Default for Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: Cell::new(None),
+            fills_handle: Cell::new(None),
+            strokes_handle: Cell::new(None),
+            shape_strokes: RefCell::new(None),
+            last_scale: Cell::new((0.0, 0.0)),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             dirty: Cell::new(false),
@@ -44,52 +55,6 @@ impl Drawing {
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
         }
-    }
-
-    pub fn from_swf_shape(shape: &swf::Shape) -> Self {
-        let mut this = Self {
-            render_handle: Cell::new(None),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
-            dirty: Cell::new(true),
-            paths: Vec::new(),
-            bitmaps: Vec::new(),
-            current_fill: None,
-            current_line: None,
-            pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
-        };
-
-        let shape: DistilledShape = shape.into();
-        for path in shape.paths {
-            match path {
-                DrawPath::Stroke {
-                    style,
-                    is_closed: _,
-                    commands,
-                } => {
-                    this.set_line_style(Some(style.clone()));
-
-                    for command in commands {
-                        this.draw_command(command);
-                    }
-
-                    this.set_line_style(None);
-                }
-                DrawPath::Fill { style, commands } => {
-                    this.set_fill_style(Some(style.clone()));
-
-                    for command in commands {
-                        this.draw_command(command);
-                    }
-
-                    this.set_fill_style(None);
-                }
-            }
-        }
-
-        this
     }
 
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
@@ -211,19 +176,20 @@ impl Drawing {
     pub fn render(&self, context: &mut RenderContext) {
         if self.dirty.get() {
             self.dirty.set(false);
-            let mut paths = Vec::with_capacity(self.paths.len());
+            let mut fills = Vec::with_capacity(self.paths.len());
+            let mut strokes = Vec::with_capacity(self.paths.len());
 
             for path in &self.paths {
                 match path {
                     DrawingPath::Fill(fill) => {
-                        paths.push(DrawPath::Fill {
-                            style: &fill.style,
+                        fills.push(FillPath {
+                            style: fill.style.to_owned(),
                             commands: fill.commands.to_owned(),
                         });
                     }
                     DrawingPath::Line(line) => {
-                        paths.push(DrawPath::Stroke {
-                            style: &line.style,
+                        strokes.push(StrokePath {
+                            style: line.style.to_owned(),
                             commands: line.commands.to_owned(),
                             is_closed: line.is_closed,
                         });
@@ -232,8 +198,8 @@ impl Drawing {
             }
 
             if let Some(fill) = &self.current_fill {
-                paths.push(DrawPath::Fill {
-                    style: &fill.style,
+                fills.push(FillPath {
+                    style: fill.style.to_owned(),
                     commands: fill.commands.to_owned(),
                 })
             }
@@ -249,8 +215,8 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
+                strokes.push(StrokePath {
+                    style: line.style.to_owned(),
                     commands,
                     is_closed,
                 })
@@ -267,31 +233,93 @@ impl Drawing {
                 } else {
                     self.cursor == self.fill_start
                 };
-                paths.push(DrawPath::Stroke {
-                    style: &line.style,
+                strokes.push(StrokePath {
+                    style: line.style.to_owned(),
                     commands,
                     is_closed,
                 })
             }
 
             let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds.clone(),
-                edge_bounds: self.edge_bounds.clone(),
+                fills: ShapeFills {
+                    paths: fills,
+                    bounds: self.shape_bounds.clone(),
+                },
+                strokes: ShapeStrokes {
+                    paths: strokes,
+                    bounds: self.edge_bounds.clone(),
+                },
                 id: 0,
             };
-            if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, self, handle);
+            if let Some(handle) = self.fills_handle.get() {
+                context
+                    .renderer
+                    .replace_shape_fills(&shape.fills, 0, handle);
             } else {
-                self.render_handle
-                    .set(Some(context.renderer.register_shape(shape, self)));
+                self.fills_handle
+                    .set(Some(context.renderer.register_shape_fills(&shape.fills, 0)));
             }
+            *self.shape_strokes.borrow_mut() = Some(shape.strokes);
+            self.last_scale.set((0.0, 0.0)); // Force recreation of stroke
         }
 
-        if let Some(handle) = self.render_handle.get() {
+        if let Some(handle) = self.fills_handle.get() {
             context
                 .commands
-                .render_shape(handle, context.transform_stack.transform());
+                .render_shape(handle, context.transform_stack.transform(), false);
+        }
+
+        // Update the stroke if we're drawing it at a different scale than last time
+        let old_scale = self.last_scale.get();
+        let cur_matrix = context.transform_stack.transform().matrix;
+        let render_stroke_matrix = Matrix {
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            tx: cur_matrix.tx,
+            ty: cur_matrix.ty,
+        };
+        let cur_scale = (
+            f32::abs(cur_matrix.a + cur_matrix.c),
+            f32::abs(cur_matrix.b + cur_matrix.d),
+        );
+        if old_scale != cur_scale {
+            let build_stroke_matrix = Matrix {
+                a: cur_matrix.a,
+                b: cur_matrix.b,
+                c: cur_matrix.c,
+                d: cur_matrix.d,
+                tx: Default::default(),
+                ty: Default::default(),
+            };
+            let strokes = self.shape_strokes.borrow();
+            if let Some(strokes) = strokes.as_ref() {
+                if let Some(handle) = self.strokes_handle.get() {
+                    context
+                        .renderer
+                        .replace_shape_strokes(strokes, 0, build_stroke_matrix, handle);
+                } else {
+                    self.strokes_handle
+                        .set(Some(context.renderer.register_shape_strokes(
+                            strokes,
+                            0,
+                            build_stroke_matrix,
+                        )));
+                }
+            }
+            self.last_scale.set(cur_scale);
+        }
+
+        if let Some(render_handle) = self.strokes_handle.get() {
+            context.commands.render_shape(
+                render_handle,
+                Transform {
+                    matrix: render_stroke_matrix,
+                    color_transform: context.transform_stack.transform().color_transform,
+                },
+                true,
+            );
         }
     }
 

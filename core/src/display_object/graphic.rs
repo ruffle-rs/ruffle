@@ -13,6 +13,8 @@ use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
+use ruffle_render::shape_utils::{DistilledShape, ShapeStrokes};
+use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -35,6 +37,10 @@ pub struct GraphicData<'gc> {
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
     avm2_object: Option<Avm2Object<'gc>>,
     drawing: Option<Drawing>,
+    #[collect(require_static)]
+    strokes_handle: Option<ShapeHandle>,
+    #[collect(require_static)]
+    last_scale: (f32, f32),
 }
 
 impl<'gc> Graphic<'gc> {
@@ -45,16 +51,21 @@ impl<'gc> Graphic<'gc> {
         movie: Arc<SwfMovie>,
     ) -> Self {
         let library = context.library.library_for_movie(movie.clone()).unwrap();
+        let bitmap_source = MovieLibrarySource {
+            library,
+            gc_context: context.gc_context,
+        };
+        let shape = DistilledShape::from_shape(&swf_shape, &bitmap_source, context.renderer);
+
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
-            render_handle: Some(context.renderer.register_shape(
-                (&swf_shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            )),
+            fills_handle: Some(
+                context
+                    .renderer
+                    .register_shape_fills(&shape.fills, shape.id),
+            ),
+            strokes: Some(shape.strokes),
             shape: swf_shape,
             movie,
         };
@@ -66,6 +77,8 @@ impl<'gc> Graphic<'gc> {
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: None,
                 drawing: None,
+                strokes_handle: None,
+                last_scale: (0.0, 0.0),
             },
         ))
     }
@@ -78,7 +91,8 @@ impl<'gc> Graphic<'gc> {
         let static_data = GraphicStatic {
             id: 0,
             bounds: Default::default(),
-            render_handle: None,
+            fills_handle: None,
+            strokes: None,
             shape: swf::Shape {
                 version: 32,
                 id: 0,
@@ -102,6 +116,8 @@ impl<'gc> Graphic<'gc> {
                 static_data: gc_arena::Gc::allocate(context.gc_context, static_data),
                 avm2_object: Some(avm2_object),
                 drawing: Some(drawing),
+                strokes_handle: None,
+                last_scale: (0.0, 0.0),
             },
         ))
     }
@@ -172,7 +188,9 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .library_for_movie_mut(self.movie())
             .get_graphic(id)
         {
-            self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
+            let mut write = self.0.write(context.gc_context);
+            write.static_data = new_graphic.0.read().static_data;
+            write.last_scale = (0.0, 0.0); // Force recreation of stroke
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
@@ -182,7 +200,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         // Noop
     }
 
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
@@ -190,10 +208,68 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = &self.0.read().drawing {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().static_data.render_handle {
+            return;
+        }
+
+        if let Some(render_handle) = self.0.read().static_data.fills_handle {
             context
                 .commands
-                .render_shape(render_handle, context.transform_stack.transform())
+                .render_shape(render_handle, context.transform_stack.transform(), false)
+        }
+
+        // Update the stroke if we're drawing it at a different scale than last time
+        let old_scale = self.0.read().last_scale;
+        let cur_matrix = context.transform_stack.transform().matrix;
+        let render_stroke_matrix = Matrix {
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            tx: cur_matrix.tx,
+            ty: cur_matrix.ty,
+        };
+        let cur_scale = (
+            f32::abs(cur_matrix.a + cur_matrix.c),
+            f32::abs(cur_matrix.b + cur_matrix.d),
+        );
+        if old_scale != cur_scale {
+            let mut write = self.0.write(context.gc_context);
+            if let Some(strokes) = &write.static_data.strokes {
+                let build_stroke_matrix = Matrix {
+                    a: cur_matrix.a,
+                    b: cur_matrix.b,
+                    c: cur_matrix.c,
+                    d: cur_matrix.d,
+                    tx: Default::default(),
+                    ty: Default::default(),
+                };
+                if let Some(handle) = write.strokes_handle {
+                    context.renderer.replace_shape_strokes(
+                        strokes,
+                        write.static_data.id,
+                        build_stroke_matrix,
+                        handle,
+                    );
+                } else {
+                    write.strokes_handle = Some(context.renderer.register_shape_strokes(
+                        strokes,
+                        write.static_data.id,
+                        build_stroke_matrix,
+                    ));
+                }
+            }
+            write.last_scale = cur_scale;
+        }
+
+        if let Some(render_handle) = self.0.read().strokes_handle {
+            context.commands.render_shape(
+                render_handle,
+                Transform {
+                    matrix: render_stroke_matrix,
+                    color_transform: context.transform_stack.transform().color_transform,
+                },
+                true,
+            );
         }
     }
 
@@ -268,7 +344,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 struct GraphicStatic {
     id: CharacterId,
     shape: swf::Shape,
-    render_handle: Option<ShapeHandle>,
+    fills_handle: Option<ShapeHandle>,
+    strokes: Option<ShapeStrokes>,
     bounds: Rectangle<Twips>,
     movie: Arc<SwfMovie>,
 }

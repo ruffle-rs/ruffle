@@ -1,5 +1,6 @@
 use gc_arena::Collect;
 use std::fmt::Debug;
+use std::ptr;
 use std::sync::Arc;
 
 use downcast_rs::{impl_downcast, Downcast};
@@ -8,6 +9,12 @@ use crate::backend::RenderBackend;
 
 #[derive(Clone, Debug)]
 pub struct BitmapHandle(pub Arc<dyn BitmapHandleImpl>);
+
+impl PartialEq for BitmapHandle {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(self as *const _, other as *const _)
+    }
+}
 
 pub trait BitmapHandleImpl: Downcast + Debug {}
 impl_downcast!(BitmapHandleImpl);
@@ -20,7 +27,7 @@ pub struct BitmapInfo {
     pub height: u16,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BitmapSize {
     pub width: u16,
     pub height: u16,

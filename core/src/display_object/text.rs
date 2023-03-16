@@ -151,9 +151,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
                         context.transform_stack.push(&transform);
                         let glyph_shape_handle = glyph.shape_handle(context.renderer);
-                        context
-                            .commands
-                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
+                        context.commands.render_shape(
+                            glyph_shape_handle,
+                            context.transform_stack.transform(),
+                            false,
+                        );
                         context.transform_stack.pop();
                         transform.matrix.tx += Twips::new(c.advance);
                     }

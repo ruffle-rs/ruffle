@@ -1,7 +1,6 @@
-use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::context3d::WgpuContext3D;
-use crate::mesh::{Mesh, PendingDraw};
+use crate::mesh::Mesh;
 use crate::surface::Surface;
 use crate::target::RenderTargetFrame;
 use crate::target::TextureTarget;
@@ -11,22 +10,24 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use gc_arena::MutationContext;
+use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
+use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::tessellator::ShapeTessellator;
+use ruffle_render::shape_utils::{ShapeConverter, ShapeFills, ShapeStrokes};
+use ruffle_render::tessellator::{ShapeFillTessellator, ShapeStrokeTessellator};
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
-use swf::Color;
+use swf::{CharacterId, Color};
 use tracing::instrument;
 use wgpu::Extent3d;
 
@@ -37,7 +38,8 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     target: T,
     surface: Surface,
     meshes: Vec<Mesh>,
-    shape_tessellator: ShapeTessellator,
+    fill_tessellator: ShapeFillTessellator,
+    stroke_tessellator: ShapeStrokeTessellator,
     // This is currently unused - we just store it to report in
     // `get_viewport_dimensions`
     viewport_scale_factor: f64,
@@ -183,7 +185,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             target,
             surface,
             meshes: Vec::new(),
-            shape_tessellator: ShapeTessellator::new(),
+            fill_tessellator: ShapeFillTessellator::new(),
+            stroke_tessellator: ShapeStrokeTessellator::new(),
             viewport_scale_factor: 1.0,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
@@ -217,64 +220,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         Ok((adapter, device, queue))
     }
 
-    fn register_shape_internal(
+    fn register_shape_fills_internal(&mut self, shape: &ShapeFills, shape_id: CharacterId) -> Mesh {
+        let mesh = self.fill_tessellator.tessellate_shape(&shape.paths);
+        Mesh::build(self, mesh, shape_id)
+    }
+
+    fn register_shape_strokes_internal(
         &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        shape: &ShapeStrokes,
+        shape_id: CharacterId,
+        matrix: Matrix,
     ) -> Mesh {
-        let shape_id = shape.id;
-        let lyon_mesh = self
-            .shape_tessellator
-            .tessellate_shape(shape, bitmap_source);
-
-        let mut draws = Vec::with_capacity(lyon_mesh.len());
-        let mut uniform_buffer = BufferBuilder::new(
-            self.descriptors.limits.min_uniform_buffer_offset_alignment as usize,
-        );
-        let mut vertex_buffer = BufferBuilder::new(0);
-        let mut index_buffer = BufferBuilder::new(0);
-        for draw in lyon_mesh {
-            let draw_id = draws.len();
-            if let Some(draw) = PendingDraw::new(
-                self,
-                bitmap_source,
-                draw,
-                shape_id,
-                draw_id,
-                &mut uniform_buffer,
-                &mut vertex_buffer,
-                &mut index_buffer,
-            ) {
-                draws.push(draw);
-            }
-        }
-
-        let uniform_buffer = uniform_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} uniforms", shape_id),
-            wgpu::BufferUsages::UNIFORM,
-        );
-        let vertex_buffer = vertex_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} vertices", shape_id),
-            wgpu::BufferUsages::VERTEX,
-        );
-        let index_buffer = index_buffer.finish(
-            &self.descriptors.device,
-            create_debug_label!("Shape {} indices", shape_id),
-            wgpu::BufferUsages::INDEX,
-        );
-
-        let draws = draws
-            .into_iter()
-            .map(|d| d.finish(&self.descriptors, &uniform_buffer))
-            .collect();
-
-        Mesh {
-            draws,
-            vertex_buffer,
-            index_buffer,
-        }
+        let mesh = self
+            .stroke_tessellator
+            .tessellate_shape(&shape.paths, matrix);
+        Mesh::build(self, mesh, shape_id)
     }
 
     pub fn descriptors(&self) -> &Arc<Descriptors> {
@@ -419,25 +379,41 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes.push(mesh);
+        let meshes = self.register_shape_fills_internal(shape, id);
+        self.meshes.push(meshes);
         handle
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn replace_shape(
+    fn replace_shape_fills(&mut self, shape: &ShapeFills, id: CharacterId, handle: ShapeHandle) {
+        let mesh = self.register_shape_fills_internal(shape, id);
+        self.meshes[handle.0] = mesh;
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn register_shape_strokes(
         &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
+        shape: &ShapeStrokes,
+        id: CharacterId,
+        matrix: Matrix,
+    ) -> ShapeHandle {
+        let handle = ShapeHandle(self.meshes.len());
+        let meshes = self.register_shape_strokes_internal(shape, id, matrix);
+        self.meshes.push(meshes);
+        handle
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn replace_shape_strokes(
+        &mut self,
+        shape: &ShapeStrokes,
+        id: CharacterId,
+        matrix: Matrix,
         handle: ShapeHandle,
     ) {
-        let mesh = self.register_shape_internal(shape, bitmap_source);
+        let mesh = self.register_shape_strokes_internal(shape, id, matrix);
         self.meshes[handle.0] = mesh;
     }
 
@@ -445,9 +421,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(
-            (&shape).into(),
-            &ruffle_render::backend::null::NullBitmapSource,
+        let (fills, _strokes) =
+            ShapeConverter::from_shape(&shape, &NullBitmapSource, self).into_commands();
+
+        // TODO: Can glyphs have strokes?
+
+        let mesh = self.register_shape_fills_internal(
+            &ShapeFills {
+                paths: fills,
+                bounds: shape.shape_bounds.clone(),
+            },
+            shape.id,
         );
         self.meshes.push(mesh);
         handle

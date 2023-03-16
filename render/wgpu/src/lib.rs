@@ -110,8 +110,8 @@ struct PosVertex {
     position: [f32; 2],
 }
 
-impl From<TessVertex> for PosVertex {
-    fn from(vertex: TessVertex) -> Self {
+impl From<&TessVertex> for PosVertex {
+    fn from(vertex: &TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
         }
@@ -125,8 +125,8 @@ struct PosColorVertex {
     color: [f32; 4],
 }
 
-impl From<TessVertex> for PosColorVertex {
-    fn from(vertex: TessVertex) -> Self {
+impl From<&TessVertex> for PosColorVertex {
+    fn from(vertex: &TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
             color: [

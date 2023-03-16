@@ -5,10 +5,11 @@ use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
+use crate::matrix::Matrix;
 use crate::quality::StageQuality;
-use crate::shape_utils::DistilledShape;
+use crate::shape_utils::{ShapeFills, ShapeStrokes};
 use gc_arena::MutationContext;
-use swf::Color;
+use swf::{CharacterId, Color};
 
 use super::{Context3D, Context3DCommand};
 
@@ -43,17 +44,24 @@ impl RenderBackend for NullRenderer {
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         self.dimensions = dimensions;
     }
-    fn register_shape(
+    fn register_shape_fills(&mut self, _shape: &ShapeFills, _id: CharacterId) -> ShapeHandle {
+        ShapeHandle(0)
+    }
+    fn replace_shape_fills(&mut self, _shape: &ShapeFills, _id: CharacterId, _handle: ShapeHandle) {
+    }
+    fn register_shape_strokes(
         &mut self,
-        _shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
+        _shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
     ) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn replace_shape(
+    fn replace_shape_strokes(
         &mut self,
-        _shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
+        _shape: &ShapeStrokes,
+        _id: CharacterId,
+        _matrix: Matrix,
         _handle: ShapeHandle,
     ) {
     }

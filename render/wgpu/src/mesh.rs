@@ -7,8 +7,6 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
-use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
 
@@ -22,13 +20,71 @@ pub struct Mesh {
     pub index_buffer: wgpu::Buffer,
 }
 
+impl Mesh {
+    pub fn build<T: RenderTarget>(
+        backend: &mut WgpuRenderBackend<T>,
+        lyon_mesh: Vec<LyonDraw>,
+        shape_id: CharacterId,
+    ) -> Self {
+        let mut draws = Vec::with_capacity(lyon_mesh.len());
+        let mut uniform_buffer = BufferBuilder::new(
+            backend
+                .descriptors()
+                .limits
+                .min_uniform_buffer_offset_alignment as usize,
+        );
+        let mut vertex_buffer = BufferBuilder::new(0);
+        let mut index_buffer = BufferBuilder::new(0);
+        for draw in lyon_mesh {
+            let draw_id = draws.len();
+            if let Some(draw) = PendingDraw::new(
+                backend,
+                draw,
+                shape_id,
+                draw_id,
+                &mut uniform_buffer,
+                &mut vertex_buffer,
+                &mut index_buffer,
+            ) {
+                draws.push(draw);
+            }
+        }
+
+        let uniform_buffer = uniform_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} uniforms", shape_id),
+            wgpu::BufferUsages::UNIFORM,
+        );
+        let vertex_buffer = vertex_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} vertices", shape_id),
+            wgpu::BufferUsages::VERTEX,
+        );
+        let index_buffer = index_buffer.finish(
+            &backend.descriptors().device,
+            create_debug_label!("Shape {} indices", shape_id),
+            wgpu::BufferUsages::INDEX,
+        );
+
+        let draws = draws
+            .into_iter()
+            .map(|d| d.finish(backend.descriptors(), &uniform_buffer))
+            .collect();
+
+        Self {
+            draws,
+            vertex_buffer,
+            index_buffer,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct PendingDraw {
     pub draw_type: PendingDrawType,
     pub vertices: Range<wgpu::BufferAddress>,
     pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
-    pub num_mask_indices: u32,
 }
 
 impl PendingDraw {
@@ -38,7 +94,6 @@ impl PendingDraw {
             vertices: self.vertices,
             indices: self.indices,
             num_indices: self.num_indices,
-            num_mask_indices: self.num_mask_indices,
         }
     }
 }
@@ -49,14 +104,12 @@ pub struct Draw {
     pub vertices: Range<wgpu::BufferAddress>,
     pub indices: Range<wgpu::BufferAddress>,
     pub num_indices: u32,
-    pub num_mask_indices: u32,
 }
 
 impl PendingDraw {
     #[allow(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
-        source: &dyn BitmapSource,
         draw: LyonDraw,
         shape_id: CharacterId,
         draw_id: usize,
@@ -65,14 +118,10 @@ impl PendingDraw {
         index_buffer: &mut BufferBuilder,
     ) -> Option<Self> {
         let vertices = if matches!(draw.draw_type, TessDrawType::Color) {
-            let vertices: Vec<_> = draw
-                .vertices
-                .into_iter()
-                .map(PosColorVertex::from)
-                .collect();
+            let vertices: Vec<_> = draw.vertices.iter().map(PosColorVertex::from).collect();
             vertex_buffer.add(&vertices)
         } else {
-            let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
+            let vertices: Vec<_> = draw.vertices.iter().map(PosVertex::from).collect();
             vertex_buffer.add(&vertices)
         };
 
@@ -89,7 +138,7 @@ impl PendingDraw {
                 uniform_buffer,
             ),
             TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
+                PendingDrawType::bitmap(bitmap, shape_id, draw_id, uniform_buffer)?
             }
         };
         Some(PendingDraw {
@@ -97,7 +146,6 @@ impl PendingDraw {
             vertices,
             indices,
             num_indices: index_count,
-            num_mask_indices: draw.mask_index_count,
         })
     }
 }
@@ -240,24 +288,26 @@ impl PendingDrawType {
         bitmap: Bitmap,
         shape_id: CharacterId,
         draw_id: usize,
-        source: &dyn BitmapSource,
-        backend: &mut dyn RenderBackend,
         uniform_buffers: &mut BufferBuilder,
     ) -> Option<Self> {
-        let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
-        let texture = as_texture(&handle);
-        let texture_view = texture.texture.create_view(&Default::default());
-        let texture_transforms_index = create_texture_transforms(&bitmap.matrix, uniform_buffers);
-        let bind_group_label =
-            create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
+        if let Some(handle) = &bitmap.handle {
+            let texture = as_texture(handle);
+            let texture_view = texture.texture.create_view(&Default::default());
+            let texture_transforms_index =
+                create_texture_transforms(&bitmap.matrix, uniform_buffers);
+            let bind_group_label =
+                create_debug_label!("Shape {} (bitmap) draw {} bindgroup", shape_id, draw_id);
 
-        Some(PendingDrawType::Bitmap {
-            texture_transforms_index,
-            texture_view,
-            is_repeating: bitmap.is_repeating,
-            is_smoothed: bitmap.is_smoothed,
-            bind_group_label,
-        })
+            Some(PendingDrawType::Bitmap {
+                texture_transforms_index,
+                texture_view,
+                is_repeating: bitmap.is_repeating,
+                is_smoothed: bitmap.is_smoothed,
+                bind_group_label,
+            })
+        } else {
+            None
+        }
     }
 
     pub fn finish(self, descriptors: &Descriptors, uniform_buffer: &wgpu::Buffer) -> DrawType {

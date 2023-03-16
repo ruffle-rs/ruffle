@@ -17,11 +17,12 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::bitmap::BitmapSize;
+use ruffle_render::shape_utils::{DrawCommand, FillStyle, LineStyle};
 use std::str::FromStr;
 use swf::{
-    BlendMode, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
+    BlendMode, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    LineCapStyle, LineJoinStyle, Rectangle, Twips,
 };
 
 macro_rules! mc_method {
@@ -406,14 +407,6 @@ fn begin_bitmap_fill<'gc>(
         } else {
             return Ok(Value::Undefined);
         };
-        let bitmap = ruffle_render::bitmap::BitmapInfo {
-            handle,
-            width: bitmap_data.width() as u16,
-            height: bitmap_data.height() as u16,
-        };
-        let id = movie_clip
-            .drawing(activation.context.gc_context)
-            .add_bitmap(bitmap);
 
         let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
             args.get(1)
@@ -437,7 +430,11 @@ fn begin_bitmap_fill<'gc>(
         movie_clip
             .drawing(activation.context.gc_context)
             .set_fill_style(Some(FillStyle::Bitmap {
-                id,
+                size: Some(BitmapSize {
+                    width: bitmap_data.width() as u16,
+                    height: bitmap_data.height() as u16,
+                }),
+                handle: Some(handle),
                 matrix: matrix.into(),
                 is_smoothed,
                 is_repeating,
