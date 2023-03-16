@@ -272,20 +272,20 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name =
-            QName::from_abc_multiname(unit, abc_instance.name, activation.context.gc_context)?;
+        let mut context = activation.borrow_gc();
+        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(
-                unit.pool_multiname_static(abc_instance.super_name, activation.context.gc_context)?
+                unit.pool_multiname_static(abc_instance.super_name, &mut context)?
                     .deref()
                     .clone(),
             )
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, activation.context.gc_context)?)
+            Some(unit.pool_namespace(*ns, &mut context)?)
         } else {
             None
         };
@@ -293,7 +293,7 @@ impl<'gc> Class<'gc> {
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
             interfaces.push(
-                unit.pool_multiname_static(*interface_name, activation.context.gc_context)?
+                unit.pool_multiname_static(*interface_name, &mut context)?
                     .deref()
                     .clone(),
             );
@@ -495,7 +495,7 @@ impl<'gc> Class<'gc> {
         body: &AbcMethodBody,
     ) -> Result<GcCell<'gc, Self>, Error<'gc>> {
         let name =
-            translation_unit.pool_string(method.name.as_u30(), activation.context.gc_context)?;
+            translation_unit.pool_string(method.name.as_u30(), &mut activation.borrow_gc())?;
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {

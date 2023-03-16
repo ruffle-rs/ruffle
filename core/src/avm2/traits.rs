@@ -191,8 +191,7 @@ impl<'gc> Trait<'gc> {
         abc_trait: &AbcTrait,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let mc = activation.context.gc_context;
-        let name = QName::from_abc_multiname(unit, abc_trait.name, mc)?;
+        let name = QName::from_abc_multiname(unit, abc_trait.name, &mut activation.borrow_gc())?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -201,7 +200,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit
-                    .pool_multiname_static_any(*type_name, mc)?
+                    .pool_multiname_static_any(*type_name, &mut activation.borrow_gc())?
                     .deref()
                     .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
@@ -262,7 +261,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit
-                    .pool_multiname_static_any(*type_name, mc)?
+                    .pool_multiname_static_any(*type_name, &mut activation.borrow_gc())?
                     .deref()
                     .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
