@@ -537,11 +537,6 @@ pub fn load_player_globals<'gc>(
     // defined in the playerglobal swf.
 
     // package `flash.media`
-    class(
-        flash::media::sound::create_class(activation),
-        script,
-        activation,
-    )?;
     avm2_system_class!(
         soundtransform,
         activation,
@@ -553,12 +548,6 @@ pub fn load_player_globals<'gc>(
         script,
         activation,
     )?;
-    avm2_system_class!(
-        soundchannel,
-        activation,
-        flash::media::soundchannel::create_class(activation),
-        script
-    );
 
     Ok(())
 }
@@ -681,6 +670,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
+            ("flash.media", "SoundChannel", soundchannel),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.text", "StaticText", statictext),

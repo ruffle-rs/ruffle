@@ -1,6 +1,6 @@
 //! `flash.media` namespace
 
 pub mod sound;
-pub mod soundchannel;
+pub mod sound_channel;
 pub mod soundmixer;
 pub mod soundtransform;
