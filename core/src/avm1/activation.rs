@@ -861,14 +861,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         action: ConstantPool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.avm1.set_constant_pool(Gc::allocate(
-            self.context.gc_context,
-            action
-                .strings
-                .iter()
-                .map(|s| AvmString::new(self.context.gc_context, s.decode(self.encoding())).into())
-                .collect(),
-        ));
+        let constants = action
+            .strings
+            .iter()
+            .map(|s| {
+                self.context
+                    .interner
+                    .intern_wstr(self.context.gc_context, s.decode(self.encoding()))
+                    .into()
+            })
+            .collect();
+
+        self.context
+            .avm1
+            .set_constant_pool(Gc::allocate(self.context.gc_context, constants));
         self.set_constant_pool(self.context.avm1.constant_pool());
 
         Ok(FrameControl::Continue)
