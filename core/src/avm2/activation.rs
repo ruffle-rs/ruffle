@@ -1030,6 +1030,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::FindProperty { index } => self.op_find_property(method, index),
                 Op::FindPropStrict { index } => self.op_find_prop_strict(method, index),
                 Op::GetLex { index } => self.op_get_lex(method, index),
+                Op::GetDescendants { index } => self.op_get_descendants(method, index),
                 Op::GetSlot { index } => self.op_get_slot(index),
                 Op::SetSlot { index } => self.op_set_slot(index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(index),
@@ -1806,6 +1807,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let result: Value<'gc> = found?.into();
 
         self.push_stack(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_get_descendants(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let descendants = object.call_public_property(
+            "descendants",
+            &[multiname
+                .to_qualified_name_or_star(self.context.gc_context)
+                .into()],
+            self,
+        )?;
+        self.push_stack(descendants);
 
         Ok(FrameControl::Continue)
     }

@@ -13,6 +13,8 @@ package {
         AS3 native function children():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function attributes():XMLList;
+        AS3 native function descendants(name:Object = "*"):XMLList;
+        AS3 native function toXMLString():String;
 
         AS3 native function toString():String;
 
@@ -54,9 +56,19 @@ package {
             return self.AS3::toString();
         }
 
+        prototype.toXMLString = function():String {
+            var self:XMLList = this;
+            return self.AS3::toXMLString();
+        }
+
         prototype.name = function(): Object {
             var self:XMLList = this;
             return self.AS3::name();
+        }
+
+        prototype.descendants = function(name:Object):XMLList {
+            var self:XMLList = this;
+            return self.AS3::descendants(name);
         }
     }
 }

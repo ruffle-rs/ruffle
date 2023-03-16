@@ -93,7 +93,7 @@ pub fn to_xml_string<'gc>(
     Ok(Value::String(node.xml_to_xml_string(activation)?))
 }
 
-fn name_to_multiname<'gc>(
+pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Value<'gc>,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
@@ -254,4 +254,16 @@ pub fn append_child<'gc>(
     xml.node()
         .append_child(activation.context.gc_context, *child)?;
     Ok(Value::Undefined)
+}
+
+pub fn descendants<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0])?;
+    let mut descendants = Vec::new();
+    xml.node().descendants(&multiname, &mut descendants);
+    Ok(XmlListObject::new(activation, descendants, Some(xml.into())).into())
 }

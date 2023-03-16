@@ -19,6 +19,7 @@ package {
         AS3 native function attribute(name:*):XMLList;
         AS3 native function nodeKind():String;
         AS3 native function appendChild(child:Object):XML;
+        AS3 native function descendants(name:Object = "*"):XMLList;
 
 
         AS3 native function toString():String;
@@ -88,6 +89,11 @@ package {
         prototype.appendChild = function(child:Object):XML {
             var self:XML = this;
             return self.AS3::appendChild(child);
+        };
+
+        prototype.descendants = function(name:Object):XMLList {
+            var self:XML = this;
+            return self.AS3::descendants(name);
         };
     }
 }
