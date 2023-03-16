@@ -666,6 +666,13 @@ export class RufflePlayer extends HTMLElement {
         try {
             this.loadedConfig = {
                 ...DEFAULT_CONFIG,
+                ...(window.RufflePlayer?.conflict &&
+                window.RufflePlayer?.conflict["newestName"] === "extension"
+                    ? (window.RufflePlayer?.conflict["config"] as Record<
+                          string,
+                          unknown
+                      >)
+                    : {}),
                 ...(window.RufflePlayer?.config ?? {}),
                 ...this.config,
                 ...options,
