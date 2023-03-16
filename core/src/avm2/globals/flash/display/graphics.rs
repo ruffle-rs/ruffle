@@ -12,7 +12,9 @@ use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::DrawCommand;
 use std::f64::consts::FRAC_1_SQRT_2;
-use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
+use swf::{
+    Color, FillStyle, Fixed16, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Twips,
+};
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
 /// `alpha` is normalized from 0.0 - 1.0.
@@ -41,11 +43,91 @@ pub fn begin_fill<'gc>(
 /// Implements `Graphics.beginBitmapFill`.
 pub fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginBitmapFill");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let bitmap = args
+            .get_object(activation, 0, "bitmap")?
+            .as_bitmap_data()
+            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+            swf_matrix_from_object(activation, matrix)?
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let is_repeating = args.get_bool(2);
+        let is_smoothed = args.get_bool(3);
+
+        let handle = if let Some(handle) = bitmap
+            .write(activation.context.gc_context)
+            .bitmap_handle(activation.context.renderer)
+        {
+            handle
+        } else {
+            return Ok(Value::Undefined);
+        };
+
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
+            handle,
+            width: bitmap.read().width() as u16,
+            height: bitmap.read().height() as u16,
+        };
+        let scale_matrix = Matrix::scale(
+            Fixed16::from_f64(bitmap.width as f64),
+            Fixed16::from_f64(bitmap.height as f64),
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            let id = draw.add_bitmap(bitmap);
+            draw.set_fill_style(Some(FillStyle::Bitmap {
+                id,
+                matrix: matrix * scale_matrix,
+                is_smoothed,
+                is_repeating,
+            }));
+        }
+    }
+
     Ok(Value::Undefined)
+}
+
+fn swf_matrix_from_object<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<Matrix, Error<'gc>> {
+    let a = Fixed16::from_f64(
+        object
+            .get_public_property("a", activation)?
+            .coerce_to_number(activation)?,
+    );
+    let b = Fixed16::from_f64(
+        object
+            .get_public_property("b", activation)?
+            .coerce_to_number(activation)?,
+    );
+    let c = Fixed16::from_f64(
+        object
+            .get_public_property("c", activation)?
+            .coerce_to_number(activation)?,
+    );
+    let d = Fixed16::from_f64(
+        object
+            .get_public_property("d", activation)?
+            .coerce_to_number(activation)?,
+    );
+    let tx = Twips::from_pixels(
+        object
+            .get_public_property("tx", activation)?
+            .coerce_to_number(activation)?,
+    );
+    let ty = Twips::from_pixels(
+        object
+            .get_public_property("ty", activation)?
+            .coerce_to_number(activation)?,
+    );
+    Ok(Matrix { a, b, c, d, tx, ty })
 }
 
 /// Implements `Graphics.beginGradientFill`.
@@ -672,10 +754,53 @@ pub fn draw_graphics_data<'gc>(
 /// Implements `Graphics.lineBitmapStyle`
 pub fn line_bitmap_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "lineBitmapStyle");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let bitmap = args
+            .get_object(activation, 0, "bitmap")?
+            .as_bitmap_data()
+            .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
+            swf_matrix_from_object(activation, matrix)?
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let is_repeating = args.get_bool(2);
+        let is_smoothed = args.get_bool(3);
+
+        let handle = if let Some(handle) = bitmap
+            .write(activation.context.gc_context)
+            .bitmap_handle(activation.context.renderer)
+        {
+            handle
+        } else {
+            return Ok(Value::Undefined);
+        };
+
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
+            handle,
+            width: bitmap.read().width() as u16,
+            height: bitmap.read().height() as u16,
+        };
+        let scale_matrix = Matrix::scale(
+            Fixed16::from_f64(bitmap.width as f64),
+            Fixed16::from_f64(bitmap.height as f64),
+        );
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            let id = draw.add_bitmap(bitmap);
+            draw.set_line_fill_style(FillStyle::Bitmap {
+                id,
+                matrix: matrix * scale_matrix,
+                is_smoothed,
+                is_repeating,
+            });
+        }
+    }
+
     Ok(Value::Undefined)
 }
 
