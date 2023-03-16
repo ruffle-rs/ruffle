@@ -1,41 +1,15 @@
 //! `flash.media.SoundChannel` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{soundchannel_allocator, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::display_object::SoundTransform;
-use gc_arena::GcCell;
 
-/// Implements `flash.media.SoundChannel`'s instance constructor.
-pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        activation.super_init(this, &[])?;
-    }
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `flash.media.SoundChannel`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
+pub use crate::avm2::object::sound_channel_allocator;
 
 /// Implements `SoundChannel.leftPeak`
-pub fn left_peak<'gc>(
+pub fn get_left_peak<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -53,7 +27,7 @@ pub fn left_peak<'gc>(
 }
 
 /// Implements `SoundChannel.rightPeak`
-pub fn right_peak<'gc>(
+pub fn get_right_peak<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -71,7 +45,7 @@ pub fn right_peak<'gc>(
 }
 
 /// Impl `SoundChannel.position`
-pub fn position<'gc>(
+pub fn get_position<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -83,7 +57,7 @@ pub fn position<'gc>(
 }
 
 /// Implements `soundTransform`'s getter
-pub fn sound_transform<'gc>(
+pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -128,53 +102,4 @@ pub fn stop<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `SoundChannel`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.media", mc), "SoundChannel"),
-        Some(Multiname::new(
-            Namespace::package("flash.events", mc),
-            "EventDispatcher",
-        )),
-        Method::from_builtin(instance_init, "<SoundChannel instance initializer>", mc),
-        Method::from_builtin(class_init, "<SoundChannel class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
-    write.set_instance_allocator(soundchannel_allocator);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("leftPeak", Some(left_peak), None),
-        ("rightPeak", Some(right_peak), None),
-        ("position", Some(position), None),
-        (
-            "soundTransform",
-            Some(sound_transform),
-            Some(set_sound_transform),
-        ),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("stop", stop)];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

@@ -1,23 +1,19 @@
 //! `flash.media.Sound` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{sound_allocator, Object, QueuedPlay, SoundChannelObject, TObject};
+use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
 use crate::{avm2_stub_constructor, avm2_stub_getter, avm2_stub_method};
-use gc_arena::GcCell;
 use swf::{SoundEvent, SoundInfo};
 
-/// Implements `flash.media.Sound`'s instance constructor.
-pub fn instance_init<'gc>(
+pub use crate::avm2::object::sound_allocator;
+
+/// Implements `flash.media.Sound`'s 'init' method. which is called from the constructor.
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -58,17 +54,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.media.Sound`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// Implements `Sound.bytesTotal`
-pub fn bytes_total<'gc>(
+pub fn get_bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -85,8 +72,18 @@ pub fn bytes_total<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_bytes_loaded<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // This should have a different value from bytesTotal when the sound is loading.
+    avm2_stub_getter!(activation, "flash.media.Sound", "bytesLoaded");
+    get_bytes_total(activation, this, args)
+}
+
 /// Implements `Sound.isBuffering`
-pub fn is_buffering<'gc>(
+pub fn get_is_buffering<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -96,8 +93,19 @@ pub fn is_buffering<'gc>(
     Ok(false.into())
 }
 
+/// Implements `Sound.isURLInaccessible`
+pub fn get_is_url_inaccessible<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.media.Sound", "isURLInaccessible");
+    //STUB: We do not yet support network-loaded sounds.
+    Ok(false.into())
+}
+
 /// Implements `Sound.url`
-pub fn url<'gc>(
+pub fn get_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -108,7 +116,7 @@ pub fn url<'gc>(
 }
 
 /// Implements `Sound.length`
-pub fn length<'gc>(
+pub fn get_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -263,61 +271,4 @@ pub fn load_pcm_from_byte_array<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
     Ok(Value::Undefined)
-}
-
-/// Construct `Sound`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.media", mc), "Sound"),
-        Some(Multiname::new(
-            Namespace::package("flash.events", mc),
-            "EventDispatcher",
-        )),
-        Method::from_builtin(instance_init, "<Sound instance initializer>", mc),
-        Method::from_builtin(class_init, "<Sound class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-
-    write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_allocator(sound_allocator);
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("bytesLoaded", Some(bytes_total), None),
-        ("bytesTotal", Some(bytes_total), None),
-        ("isBuffering", Some(is_buffering), None),
-        ("isURLInaccessible", Some(is_buffering), None),
-        ("url", Some(url), None),
-        ("length", Some(length), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("play", play),
-        ("extract", extract),
-        ("load", load),
-        ("close", close),
-        (
-            "loadCompressedDataFromByteArray",
-            load_compressed_data_from_byte_array,
-        ),
-        ("loadPCMFromByteArray", load_pcm_from_byte_array),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }
