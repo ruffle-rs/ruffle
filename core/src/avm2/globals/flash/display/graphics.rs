@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
+use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -55,7 +56,7 @@ pub fn begin_bitmap_fill<'gc>(
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
-            swf_matrix_from_object(activation, matrix)?
+            Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -96,43 +97,6 @@ pub fn begin_bitmap_fill<'gc>(
     Ok(Value::Undefined)
 }
 
-fn swf_matrix_from_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: Object<'gc>,
-) -> Result<Matrix, Error<'gc>> {
-    let a = Fixed16::from_f64(
-        object
-            .get_public_property("a", activation)?
-            .coerce_to_number(activation)?,
-    );
-    let b = Fixed16::from_f64(
-        object
-            .get_public_property("b", activation)?
-            .coerce_to_number(activation)?,
-    );
-    let c = Fixed16::from_f64(
-        object
-            .get_public_property("c", activation)?
-            .coerce_to_number(activation)?,
-    );
-    let d = Fixed16::from_f64(
-        object
-            .get_public_property("d", activation)?
-            .coerce_to_number(activation)?,
-    );
-    let tx = Twips::from_pixels(
-        object
-            .get_public_property("tx", activation)?
-            .coerce_to_number(activation)?,
-    );
-    let ty = Twips::from_pixels(
-        object
-            .get_public_property("ty", activation)?
-            .coerce_to_number(activation)?,
-    );
-    Ok(Matrix { a, b, c, d, tx, ty })
-}
-
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -152,7 +116,7 @@ pub fn begin_gradient_fill<'gc>(
             &ratios.as_array_storage().expect("Guaranteed by AS"),
         )?;
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
-            swf_matrix_from_object(activation, matrix)?
+            Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -820,7 +784,7 @@ pub fn line_gradient_style<'gc>(
             &ratios.as_array_storage().expect("Guaranteed by AS"),
         )?;
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
-            swf_matrix_from_object(activation, matrix)?
+            Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -936,7 +900,7 @@ pub fn line_bitmap_style<'gc>(
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
-            swf_matrix_from_object(activation, matrix)?
+            Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
