@@ -1,9 +1,10 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
@@ -596,4 +597,96 @@ pub fn draw_ellipse<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineGradientStyle`
+pub fn line_gradient_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "lineGradientStyle");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.cubicCurveTo`
+pub fn cubic_curve_to<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "cubicCurveTo");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.copyFrom`
+pub fn copy_from<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "copyFrom");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawPath`
+pub fn draw_path<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawPath");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawRoundRectComplex`
+pub fn draw_round_rect_complex<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawRoundRectComplex");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawTriangles`
+pub fn draw_triangles<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawTriangles");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.drawGraphicsData`
+pub fn draw_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "drawGraphicsData");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.lineBitmapStyle`
+pub fn line_bitmap_style<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "lineBitmapStyle");
+    Ok(Value::Undefined)
+}
+
+/// Implements `Graphics.readGraphicsData`
+pub fn read_graphics_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+    let value_type = activation.avm2().classes().igraphicsdata;
+    let new_storage = VectorStorage::new(0, false, value_type, activation);
+    Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }
