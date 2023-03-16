@@ -1,19 +1,22 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::argument_error;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
+use crate::avm2::{ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::tessellator::GradientType;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
-    Color, FillStyle, Fixed16, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Twips,
+    Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
+    GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Twips,
 };
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
@@ -133,11 +136,128 @@ fn swf_matrix_from_object<'gc>(
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "beginGradientFill");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let gradient_type = args.get_string(activation, 0);
+        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let colors = args.get_object(activation, 1, "colors")?;
+        let alphas = args.get_object(activation, 2, "alphas")?;
+        let ratios = args.get_object(activation, 3, "ratios")?;
+        let records = build_gradient_records(
+            activation,
+            &colors.as_array_storage().expect("Guaranteed by AS"),
+            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            &ratios.as_array_storage().expect("Guaranteed by AS"),
+        )?;
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+            swf_matrix_from_object(activation, matrix)?
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let spread = args.get_string(activation, 5);
+        let spread = parse_spread_method(spread?);
+        let interpolation = args.get_string(activation, 6);
+        let interpolation = parse_interpolation_method(interpolation?);
+        let focal_point = args.get_f64(activation, 7)?;
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            match gradient_type {
+                GradientType::Linear => {
+                    draw.set_fill_style(Some(FillStyle::LinearGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    })))
+                }
+                GradientType::Radial if focal_point == 0.0 => {
+                    draw.set_fill_style(Some(FillStyle::RadialGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    })))
+                }
+                _ => draw.set_fill_style(Some(FillStyle::FocalGradient {
+                    gradient: Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    },
+                    focal_point: Fixed8::from_f64(focal_point),
+                })),
+            }
+        }
+    }
     Ok(Value::Undefined)
+}
+
+fn build_gradient_records<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    colors: &ArrayStorage<'gc>,
+    alphas: &ArrayStorage<'gc>,
+    ratios: &ArrayStorage<'gc>,
+) -> Result<Vec<GradientRecord>, Error<'gc>> {
+    let length = colors.length().min(alphas.length()).min(ratios.length());
+    let mut records = Vec::with_capacity(length);
+    for i in 0..length {
+        let color = colors
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_u32(activation)?;
+        let alpha = alphas
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_number(activation)? as f32;
+        let ratio = ratios
+            .get(i)
+            .expect("Length should be guaranteed")
+            .coerce_to_u32(activation)?;
+        records.push(GradientRecord {
+            ratio: ratio.clamp(0, 255) as u8,
+            color: Color::from_rgb(color, (alpha * 255.0) as u8),
+        })
+    }
+    Ok(records)
+}
+
+fn parse_gradient_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    gradient_type: AvmString<'gc>,
+) -> Result<GradientType, Error<'gc>> {
+    if &gradient_type == b"linear" {
+        Ok(GradientType::Linear)
+    } else if &gradient_type == b"radial" {
+        Ok(GradientType::Radial)
+    } else {
+        Err(Error::AvmError(argument_error(
+            activation,
+            "Parameter type must be one of the accepted values.",
+            2008,
+        )?))
+    }
+}
+
+fn parse_interpolation_method(gradient_type: AvmString) -> GradientInterpolation {
+    if &gradient_type == b"linearRGB" {
+        GradientInterpolation::LinearRgb
+    } else {
+        GradientInterpolation::Rgb
+    }
+}
+
+fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
+    if &spread_method == b"repeat" {
+        GradientSpread::Repeat
+    } else if &spread_method == b"reflect" {
+        GradientSpread::Reflect
+    } else {
+        GradientSpread::Pad
+    }
 }
 
 /// Implements `Graphics.clear`
@@ -684,10 +804,63 @@ pub fn draw_ellipse<'gc>(
 /// Implements `Graphics.lineGradientStyle`
 pub fn line_gradient_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.Graphics", "lineGradientStyle");
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let gradient_type = args.get_string(activation, 0);
+        let gradient_type = parse_gradient_type(activation, gradient_type?)?;
+        let colors = args.get_object(activation, 1, "colors")?;
+        let alphas = args.get_object(activation, 2, "alphas")?;
+        let ratios = args.get_object(activation, 3, "ratios")?;
+        let records = build_gradient_records(
+            activation,
+            &colors.as_array_storage().expect("Guaranteed by AS"),
+            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            &ratios.as_array_storage().expect("Guaranteed by AS"),
+        )?;
+        let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
+            swf_matrix_from_object(activation, matrix)?
+        } else {
+            // Users can explicitly pass in `null` to mean identity matrix
+            Matrix::IDENTITY
+        };
+        let spread = args.get_string(activation, 5);
+        let spread = parse_spread_method(spread?);
+        let interpolation = args.get_string(activation, 6);
+        let interpolation = parse_interpolation_method(interpolation?);
+        let focal_point = args.get_f64(activation, 7)?;
+
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            match gradient_type {
+                GradientType::Linear => {
+                    draw.set_line_fill_style(FillStyle::LinearGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    }))
+                }
+                GradientType::Radial if focal_point == 0.0 => {
+                    draw.set_line_fill_style(FillStyle::RadialGradient(Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    }))
+                }
+                _ => draw.set_line_fill_style(FillStyle::FocalGradient {
+                    gradient: Gradient {
+                        matrix,
+                        spread,
+                        interpolation,
+                        records,
+                    },
+                    focal_point: Fixed8::from_f64(focal_point),
+                }),
+            }
+        }
+    }
     Ok(Value::Undefined)
 }
 
