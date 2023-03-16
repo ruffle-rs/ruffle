@@ -298,6 +298,7 @@ include "flash/ui/KeyboardType.as"
 include "flash/ui/KeyLocation.as"
 include "flash/ui/Mouse.as"
 include "flash/ui/MouseCursor.as"
+include "flash/ui/MouseCursorData.as"
 // `MultitouchInputMode` needs to come before `Multitouch`, since `Multitouch` uses constants from
 // `MultitouchInputMode`.
 include "flash/ui/MultitouchInputMode.as"
