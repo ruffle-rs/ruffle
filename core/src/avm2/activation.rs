@@ -4,7 +4,9 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
-use crate::avm2::error::{make_null_or_undefined_error, type_error};
+use crate::avm2::error::{
+    make_null_or_undefined_error, make_reference_error, type_error, ReferenceErrorCode,
+};
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -1801,9 +1803,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
-        let found: Result<Object<'gc>, Error<'gc>> = self
-            .find_definition(&multiname)?
-            .ok_or_else(|| format!("Property does not exist: {:?}", *multiname).into());
+        let found: Result<Object<'gc>, Error<'gc>> =
+            self.find_definition(&multiname)?.ok_or_else(|| {
+                make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
+            });
         let result: Value<'gc> = found?.into();
 
         self.push_stack(result);
@@ -1837,9 +1840,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let multiname = self.pool_multiname_static(method, index)?;
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
-        let found: Result<Value<'gc>, Error<'gc>> = self
-            .resolve_definition(&multiname)?
-            .ok_or_else(|| format!("Property does not exist: {:?}", *multiname).into());
+        let found: Result<Value<'gc>, Error<'gc>> =
+            self.resolve_definition(&multiname)?.ok_or_else(|| {
+                make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
+            });
 
         self.push_stack(found?);
 

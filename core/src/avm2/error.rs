@@ -69,6 +69,7 @@ pub fn make_null_or_undefined_error<'gc>(
 pub enum ReferenceErrorCode {
     AssignToMethod = 1037,
     InvalidWrite = 1056,
+    InvalidLookup = 1065,
     InvalidRead = 1069,
     WriteToReadOnly = 1074,
     ReadFromWriteOnly = 1077,
@@ -100,6 +101,7 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::InvalidWrite => format!(
             "Error #1056: Cannot create property {qualified_name} on {class_name}.",
         ),
+        ReferenceErrorCode::InvalidLookup => format!("Error #1065: Variable {qualified_name} is not defined."),
         ReferenceErrorCode::InvalidRead => format!(
             "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
