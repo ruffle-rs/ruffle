@@ -43,6 +43,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod namespace_object;
+mod netstream_object;
 mod primitive_object;
 mod program_3d_object;
 mod proxy_object;
@@ -77,6 +78,7 @@ pub use crate::avm2::object::loaderinfo_object::{
     loader_info_allocator, LoaderInfoObject, LoaderStream,
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
+pub use crate::avm2::object::netstream_object::{netstream_allocator, NetStreamObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
 pub use crate::avm2::object::program_3d_object::Program3DObject;
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
@@ -132,6 +134,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         VertexBuffer3DObject(VertexBuffer3DObject<'gc>),
         TextureObject(TextureObject<'gc>),
         Program3DObject(Program3DObject<'gc>),
+        NetStreamObject(NetStreamObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1291,6 +1294,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn as_texture(&self) -> Option<TextureObject<'gc>> {
+        None
+    }
+
+    fn as_netstream(self) -> Option<NetStreamObject<'gc>> {
         None
     }
 }
