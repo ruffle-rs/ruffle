@@ -17,7 +17,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
-use swf::{BlendMode, Rectangle, Twips};
+use swf::{BlendMode, Fixed8, Rectangle, Twips};
 use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -804,17 +804,28 @@ impl<'gc> BitmapData<'gc> {
         y_max: u32,
         color_transform: ColorTransform,
     ) {
-        for x in x_min..x_max.min(self.width()) {
-            for y in y_min..y_max.min(self.height()) {
-                let color = self.get_pixel_raw(x, y).unwrap().to_un_multiplied_alpha();
+        // Flash bug: applying a color transform with only an alpha multiplier > 1 has no effect.
+        if color_transform.r_mult != Fixed8::ONE
+            || color_transform.g_mult != Fixed8::ONE
+            || color_transform.b_mult != Fixed8::ONE
+            || color_transform.a_mult < Fixed8::ONE
+            || color_transform.r_add != 0
+            || color_transform.g_add != 0
+            || color_transform.b_add != 0
+            || color_transform.a_add != 0
+        {
+            for x in x_min..x_max.min(self.width()) {
+                for y in y_min..y_max.min(self.height()) {
+                    let color = self.get_pixel_raw(x, y).unwrap().to_un_multiplied_alpha();
 
-                let color = color_transform * swf::Color::from(color);
+                    let color = color_transform * swf::Color::from(color);
 
-                self.set_pixel32_raw(
-                    x,
-                    y,
-                    Color::from(color).to_premultiplied_alpha(self.transparency()),
-                )
+                    self.set_pixel32_raw(
+                        x,
+                        y,
+                        Color::from(color).to_premultiplied_alpha(self.transparency()),
+                    )
+                }
             }
         }
     }
