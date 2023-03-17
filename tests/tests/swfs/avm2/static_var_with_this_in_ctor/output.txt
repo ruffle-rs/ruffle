@@ -1,0 +1,2 @@
+Test(null)
+[object Test]
