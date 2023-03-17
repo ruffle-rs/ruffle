@@ -74,6 +74,7 @@ pub struct SystemClasses<'gc> {
     pub graphicsendfill: ClassObject<'gc>,
     pub graphicsgradientfill: ClassObject<'gc>,
     pub graphicspath: ClassObject<'gc>,
+    pub graphicssolidfill: ClassObject<'gc>,
     pub loaderinfo: ClassObject<'gc>,
     pub bytearray: ClassObject<'gc>,
     pub stage: ClassObject<'gc>,
@@ -178,6 +179,7 @@ impl<'gc> SystemClasses<'gc> {
             graphicsendfill: object,
             graphicsgradientfill: object,
             graphicspath: object,
+            graphicssolidfill: object,
             loaderinfo: object,
             bytearray: object,
             stage: object,
@@ -644,6 +646,7 @@ fn load_playerglobal<'gc>(
                 graphicsgradientfill
             ),
             ("flash.display", "GraphicsPath", graphicspath),
+            ("flash.display", "GraphicsSolidFill", graphicssolidfill),
             ("flash.display", "Graphics", graphics),
             ("flash.display", "LoaderInfo", loaderinfo),
             ("flash.display", "MovieClip", movieclip),
