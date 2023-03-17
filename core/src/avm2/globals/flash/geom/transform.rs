@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::avm2_stub_getter;
@@ -30,7 +31,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.unwrap().set_property(
         &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
-        args[0],
+        args.get_value(0),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -54,7 +55,7 @@ pub fn set_color_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
-    let ct = object_to_color_transform(args[0].coerce_to_object(activation)?, activation)?;
+    let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
     get_display_object(this, activation)?
         .base_mut(activation.context.gc_context)
         .set_color_transform(ct);
@@ -77,7 +78,7 @@ pub fn set_matrix<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
-    let matrix = object_to_matrix(args[0].coerce_to_object(activation)?, activation)?;
+    let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
     get_display_object(this, activation)?
         .base_mut(activation.context.gc_context)
         .set_matrix(matrix);
