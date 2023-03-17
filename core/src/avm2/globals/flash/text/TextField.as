@@ -54,6 +54,9 @@ package flash.text {
         
         public native function get maxChars():int;
         public native function set maxChars(value:int):void;
+
+        public native function get mouseWheelEnabled():Boolean
+        public native function set mouseWheelEnabled(value:Boolean):void
         
         public native function get multiline():Boolean;
         public native function set multiline(value:Boolean):void;
