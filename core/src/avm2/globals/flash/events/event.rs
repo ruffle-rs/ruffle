@@ -6,6 +6,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 pub use crate::avm2::object::event_allocator;
+use crate::avm2::parameters::ParametersExt;
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -14,24 +15,9 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
     let mut evt = this.as_event_mut(activation.context.gc_context).unwrap();
-    evt.set_event_type(
-        args.get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?,
-    );
-    evt.set_bubbles(
-        args.get(1)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean(),
-    );
-    evt.set_cancelable(
-        args.get(2)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean(),
-    );
+    evt.set_event_type(args.get_string(activation, 0)?);
+    evt.set_bubbles(args.get_bool(1));
+    evt.set_cancelable(args.get_bool(2));
     Ok(Value::Undefined)
 }
 
