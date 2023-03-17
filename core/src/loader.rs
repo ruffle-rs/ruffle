@@ -22,11 +22,12 @@ use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::Player;
+use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
-use gc_arena::{Collect, CollectionContext};
+use gc_arena::{Collect, CollectionContext, GcCell};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
@@ -148,6 +149,9 @@ pub enum Error {
     #[error("Non-sound loader spawned as sound loader")]
     NotSoundLoader,
 
+    #[error("Non-NetStream loader spawned as NetStream loader")]
+    NotNetStreamLoader,
+
     #[error("Could not fetch: {0}")]
     FetchError(String),
 
@@ -211,7 +215,8 @@ impl<'gc> LoadManager<'gc> {
             | Loader::LoadVars { self_handle, .. }
             | Loader::LoadURLLoader { self_handle, .. }
             | Loader::SoundAvm1 { self_handle, .. }
-            | Loader::SoundAvm2 { self_handle, .. } => *self_handle = Some(handle),
+            | Loader::SoundAvm2 { self_handle, .. }
+            | Loader::NetStream { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -404,6 +409,21 @@ impl<'gc> LoadManager<'gc> {
         loader.sound_loader_avm2(player, request)
     }
 
+    pub fn load_netstream(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_stream: GcCell<'gc, NetStream>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::NetStream {
+            self_handle: None,
+            target_stream,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.stream_loader(player, request)
+    }
+
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -560,6 +580,16 @@ pub enum Loader<'gc> {
 
         /// The target AVM1 object to load the audio into.
         target_object: Avm2Object<'gc>,
+    },
+
+    /// Loader that is buffering video or audio into a NetStream.
+    NetStream {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The stream to buffer data into.
+        target_stream: GcCell<'gc, NetStream>,
     },
 }
 
@@ -1300,6 +1330,48 @@ impl<'gc> Loader<'gc> {
                                 e
                             );
                         }
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    fn stream_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::SoundAvm2 { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotLoadDataLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let response = fetch.await;
+
+            player.lock().unwrap().update(|uc| {
+                let loader = uc.load_manager.get_loader(handle);
+                let stream = match loader {
+                    Some(&Loader::NetStream { target_stream, .. }) => target_stream,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotNetStreamLoader),
+                };
+
+                match response {
+                    Ok(mut response) => {
+                        stream.write(uc.gc_context).load_buffer(&mut response.body);
+                    }
+                    Err(err) => {
+                        stream.write(uc.gc_context).report_error(err);
                     }
                 }
 
