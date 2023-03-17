@@ -5,8 +5,6 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 
@@ -115,16 +113,7 @@ pub fn set_context_menu<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls_name = Multiname::new(
-            Namespace::package("flash.display", activation.context.gc_context),
-            "NativeMenu",
-        );
-        let cls = activation.resolve_class(&cls_name)?;
-        let value = args
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_type(activation, cls)?;
+        let value = args.get_value(0);
         int.set_context_menu(activation.context.gc_context, value);
     }
 
