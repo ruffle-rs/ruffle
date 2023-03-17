@@ -1,4 +1,4 @@
-num_frames = 3
+num_frames = 4
 
 [image_comparison]
 tolerance = 0

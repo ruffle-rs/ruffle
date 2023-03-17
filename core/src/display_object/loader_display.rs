@@ -117,6 +117,8 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             }
             child.enter_frame(context);
         }
+        self.base_mut(context.gc_context)
+            .set_skip_next_enter_frame(false);
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
