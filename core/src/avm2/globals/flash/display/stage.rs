@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
@@ -59,12 +60,7 @@ pub fn set_align<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let align = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .parse()
-        .unwrap_or_default();
+    let align = args.get_string(activation, 0)?.parse().unwrap_or_default();
     activation
         .context
         .stage
@@ -121,13 +117,7 @@ pub fn set_color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
     {
-        let color = Color::from_rgb(
-            args.get(0)
-                .cloned()
-                .unwrap_or(Value::Undefined)
-                .coerce_to_u32(activation)?,
-            255,
-        );
+        let color = Color::from_rgb(args.get_u32(activation, 0)?, 255);
         dobj.set_background_color(activation.context.gc_context, Some(color));
     }
 
@@ -175,12 +165,7 @@ pub fn set_display_state<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Ok(mut display_state) = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .parse()
-    {
+    if let Ok(mut display_state) = args.get_string(activation, 0)?.parse() {
         // It's not entirely clear why when setting to FullScreen, desktop flash player at least will
         // set its value to FullScreenInteractive. Overriding until flash logic is clearer.
         if display_state == StageDisplayState::FullScreen {
@@ -222,10 +207,10 @@ pub fn set_focus<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
-    match args.get(0).cloned().unwrap_or(Value::Undefined) {
-        Value::Null => focus.set(None, &mut activation.context),
-        val => {
-            if let Some(dobj) = val.as_object().and_then(|o| o.as_display_object()) {
+    match args.try_get_object(activation, 0) {
+        None => focus.set(None, &mut activation.context),
+        Some(obj) => {
+            if let Some(dobj) = obj.as_display_object() {
                 focus.set(Some(dobj), &mut activation.context);
             } else {
                 return Err("Cannot set focus to non-DisplayObject".into());
@@ -251,11 +236,7 @@ pub fn set_frame_rate<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let new_frame_rate = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
+    let new_frame_rate = args.get_f64(activation, 0)?;
     *activation.context.frame_rate = new_frame_rate;
 
     Ok(Value::Undefined)
@@ -274,7 +255,7 @@ pub fn set_show_default_context_menu<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let show_default_context_menu = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+    let show_default_context_menu = args.get_bool(0);
     activation
         .context
         .stage
@@ -301,12 +282,7 @@ pub fn set_scale_mode<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Ok(scale_mode) = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .parse()
-    {
+    if let Ok(scale_mode) = args.get_string(activation, 0)?.parse() {
         activation
             .context
             .stage
@@ -351,7 +327,7 @@ pub fn set_stage_focus_rect<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
     {
-        let rf = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let rf = args.get_bool(0);
         dobj.set_stage_focus_rect(activation.context.gc_context, rf);
     }
 
@@ -451,12 +427,7 @@ pub fn set_quality<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Invalid values result in no change.
-    if let Ok(quality) = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .parse()
-    {
+    if let Ok(quality) = args.get_string(activation, 0)?.parse() {
         activation
             .context
             .stage
