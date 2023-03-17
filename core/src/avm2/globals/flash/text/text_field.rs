@@ -1231,6 +1231,24 @@ pub fn set_max_chars<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_mouse_wheel_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.text.TextField", "mouseWheelEnabled");
+    Ok(true.into())
+}
+
+pub fn set_mouse_wheel_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.text.TextField", "mouseWheelEnabled");
+    Ok(Value::Undefined)
+}
+
 pub fn get_restrict<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
