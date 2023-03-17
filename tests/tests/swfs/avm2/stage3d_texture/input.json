@@ -1,0 +1,12 @@
+[
+    {
+        "type": "MouseDown",
+        "pos": [160, 379],
+        "btn": "Left"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [160, 379],
+        "btn": "Left"
+    }
+]

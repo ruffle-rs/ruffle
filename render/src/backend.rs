@@ -309,6 +309,13 @@ pub enum Context3DCommand<'gc> {
         wants_best_resolution: bool,
         wants_best_resolution_on_browser_zoom: bool,
     },
+    SetRenderToTexture {
+        texture: Rc<dyn Texture>,
+        enable_depth_and_stencil: bool,
+        anti_alias: u32,
+        surface_selector: u32,
+    },
+    SetRenderToBackBuffer,
 
     UploadToIndexBuffer {
         buffer: Rc<dyn IndexBuffer>,
