@@ -112,22 +112,28 @@ impl Mul<Color> for ColorTransform {
     type Output = Color;
 
     fn mul(self, mut color: Color) -> Color {
-        color.r = self
-            .r_mult
-            .wrapping_mul_int(i16::from(color.r))
-            .wrapping_add(self.r_add) as u8;
-        color.g = self
-            .g_mult
-            .wrapping_mul_int(i16::from(color.g))
-            .wrapping_add(self.g_add) as u8;
-        color.b = self
-            .b_mult
-            .wrapping_mul_int(i16::from(color.b))
-            .wrapping_add(self.b_add) as u8;
-        color.a = self
-            .a_mult
-            .wrapping_mul_int(i16::from(color.a))
-            .wrapping_add(self.a_add) as u8;
+        if color.a > 0 {
+            color.r = self
+                .r_mult
+                .mul_int(i16::from(color.r))
+                .saturating_add(self.r_add)
+                .clamp(0, 255) as u8;
+            color.g = self
+                .g_mult
+                .mul_int(i16::from(color.g))
+                .saturating_add(self.g_add)
+                .clamp(0, 255) as u8;
+            color.b = self
+                .b_mult
+                .mul_int(i16::from(color.b))
+                .saturating_add(self.b_add)
+                .clamp(0, 255) as u8;
+            color.a = self
+                .a_mult
+                .mul_int(i16::from(color.a))
+                .saturating_add(self.a_add)
+                .clamp(0, 255) as u8;
+        }
         color
     }
 }
