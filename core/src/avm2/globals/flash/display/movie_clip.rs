@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
@@ -217,7 +218,7 @@ pub fn set_enabled<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let enabled = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let enabled = args.get_bool(0);
 
         mc.set_enabled(&mut activation.context, enabled);
     }
@@ -359,13 +360,13 @@ pub fn goto_frame<'gc>(
 ) -> Result<(), Error<'gc>> {
     let frame_or_label = args.get(0).cloned().unwrap_or(Value::Null);
 
-    let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
-        Value::Null => mc
+    let scene = match args.try_get_string(activation, 1)? {
+        None => mc
             .current_scene()
             .and_then(|scene| mc.scene_label_to_number(&scene.name))
             .map(|v| v.saturating_sub(1)),
-        v => mc
-            .scene_label_to_number(&v.coerce_to_string(activation)?)
+        Some(label) => mc
+            .scene_label_to_number(&label)
             .map(|v| v.saturating_sub(1)),
     }
     .unwrap_or(0) as i32;
