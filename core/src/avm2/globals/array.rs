@@ -29,6 +29,7 @@ const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("lastIndexOf", last_index_of),
     ("pop", pop),
     ("push", push),
+    ("removeAt", remove_at),
     ("reverse", reverse),
     ("shift", shift),
     ("unshift", unshift),
@@ -1257,7 +1258,6 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
-        ("removeAt", remove_at),
     ];
     write.define_builtin_instance_methods(
         mc,
