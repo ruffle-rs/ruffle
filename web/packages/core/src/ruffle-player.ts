@@ -232,7 +232,6 @@ export class RufflePlayer extends HTMLElement {
         this.saveManager = <HTMLDialogElement>(
             this.shadow.getElementById("save-manager")!
         );
-        this.populateSaves();
         this.saveManager.addEventListener("click", () =>
             this.saveManager.close()
         );
@@ -981,6 +980,11 @@ export class RufflePlayer extends HTMLElement {
     private populateSaves(): void {
         const saveTable = this.saveManager.querySelector("#local-saves");
         if (!saveTable) {
+            return;
+        }
+        try {
+            localStorage;
+        } catch (e: unknown) {
             return;
         }
         saveTable.textContent = "";
