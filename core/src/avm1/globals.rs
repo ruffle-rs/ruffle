@@ -42,6 +42,7 @@ mod matrix;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
+pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
 mod point;
@@ -586,6 +587,7 @@ pub fn create_globals<'gc>(
     );
 
     let video_proto = video::create_proto(gc_context, object_proto, function_proto);
+    let netstream_proto = netstream::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
@@ -684,6 +686,7 @@ pub fn create_globals<'gc>(
     let number = number::create_number_object(gc_context, number_proto, function_proto);
     let boolean = boolean::create_boolean_object(gc_context, boolean_proto, function_proto);
     let date = date::create_constructor(gc_context, object_proto, function_proto);
+    let netstream = netstream::create_class(gc_context, netstream_proto, function_proto);
 
     let flash = ScriptObject::new(gc_context, Some(object_proto));
 
@@ -1099,6 +1102,12 @@ pub fn create_globals<'gc>(
             object_proto,
             function_proto,
         )),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "NetStream",
+        netstream.into(),
         Attribute::DONT_ENUM,
     );
 

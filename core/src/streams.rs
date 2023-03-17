@@ -1,5 +1,5 @@
 use crate::loader::Error;
-use gc_arena::Collect;
+use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A stream representing download of some (audiovisual) data.
 #[derive(Clone, Debug, Collect)]
@@ -10,6 +10,10 @@ pub struct NetStream {
 }
 
 impl NetStream {
+    pub fn new<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
+        GcCell::allocate(gc_context, NetStream { buffer: Vec::new() })
+    }
+
     pub fn load_buffer(&mut self, data: &mut Vec<u8>) {
         self.buffer.append(data);
     }
