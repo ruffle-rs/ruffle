@@ -40,21 +40,9 @@ pub fn add_event_listener<'gc>(
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args.get_string(activation, 0)?;
-        let listener = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .as_callable(activation, None, None)?;
-        let use_capture = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean();
-        let priority = args
-            .get(3)
-            .cloned()
-            .unwrap_or(Value::Integer(0))
-            .coerce_to_i32(activation)?;
+        let listener = args.get_value(1).as_callable(activation, None, None)?;
+        let use_capture = args.get_bool(2);
+        let priority = args.get_i32(activation, 3)?;
 
         //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
         dispatch_list
@@ -77,16 +65,8 @@ pub fn remove_event_listener<'gc>(
     if let Some(this) = this {
         let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args.get_string(activation, 0)?;
-        let listener = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .as_callable(activation, None, None)?;
-        let use_capture = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Bool(false))
-            .coerce_to_boolean();
+        let listener = args.get_value(1).as_callable(activation, None, None)?;
+        let use_capture = args.get_bool(2);
 
         dispatch_list
             .as_dispatch_mut(activation.context.gc_context)
@@ -157,14 +137,14 @@ pub fn dispatch_event<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let event = args.get(0).cloned().unwrap_or(Value::Undefined).as_object();
+    let event = args.get_object(activation, 0, "event")?;
 
-    if event.map(|o| o.as_event().is_none()).unwrap_or(true) {
+    if event.as_event().is_none() {
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
     if let Some(this) = this {
-        Ok(dispatch_event_internal(activation, this, event.unwrap())?.into())
+        Ok(dispatch_event_internal(activation, this, event)?.into())
     } else {
         Ok(false.into())
     }
