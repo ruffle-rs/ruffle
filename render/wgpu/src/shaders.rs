@@ -10,6 +10,13 @@ use std::collections::HashMap;
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
     pub bitmap_shader: wgpu::ShaderModule,
+    /// Like `bitmap_shader` but performs saturation after we've
+    /// re-multiplied the alpha. This is used for the Stage3D
+    /// `bitmap_opaque` pipeline, which needs to able to
+    /// avoid changing initially-in-range rgb values (regadless
+    /// of whether dividing by the alpha value would produce
+    /// an out-of-range value).
+    pub bitmap_late_saturate_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
@@ -26,6 +33,11 @@ impl Shaders {
             "use_push_constants".to_owned(),
             ShaderDefValue::Bool(device.limits().max_push_constant_size > 0),
         );
+        shader_defs.insert("early_saturate".to_owned(), ShaderDefValue::Bool(true));
+
+        let mut late_saturate_shader_defs = shader_defs.clone();
+        late_saturate_shader_defs.insert("early_saturate".to_owned(), ShaderDefValue::Bool(false));
+
         let color_shader = make_shader(
             device,
             &mut composer,
@@ -37,6 +49,13 @@ impl Shaders {
             device,
             &mut composer,
             &shader_defs,
+            "bitmap.wgsl",
+            include_str!("../shaders/bitmap.wgsl"),
+        );
+        let bitmap_late_saturate_shader = make_shader(
+            device,
+            &mut composer,
+            &late_saturate_shader_defs,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
         );
@@ -90,6 +109,7 @@ impl Shaders {
         Self {
             color_shader,
             bitmap_shader,
+            bitmap_late_saturate_shader,
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
