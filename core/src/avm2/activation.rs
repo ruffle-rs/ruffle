@@ -287,7 +287,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// This returns an error if a type is named but does not exist; or if the
     /// typed named is not a class object.
-    fn resolve_type(
+    pub fn resolve_type(
         &mut self,
         type_name: &Multiname<'gc>,
     ) -> Result<Option<ClassObject<'gc>>, Error<'gc>> {
@@ -352,13 +352,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .into());
         };
 
-        let param_type = self.resolve_type(&param_config.param_type_name)?;
-
-        if let Some(param_type) = param_type {
-            arg.coerce_to_type(self, param_type)
-        } else {
-            Ok(arg.into_owned())
-        }
+        arg.coerce_to_type_name(self, &param_config.param_type_name)
     }
 
     /// Statically resolve all of the parameters for a given method.
@@ -2978,39 +2972,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
         let type_name = self.pool_multiname_static_any(method, index)?;
-
-        let param_type = match self.resolve_type(&type_name) {
-            Ok(param_type) => param_type,
-            Err(e) => {
-                // While running a class initializer, we might need to resolve the class
-                // itself. For example, a static/const can run a static method, which does
-                // `var foo:ClassBeingInitialized = new ClassBeingInitialized();`
-                //
-                // Since the class initializer is running, we won't be able to resolve the
-                // ClassObject yet. If the normal `resolve_type` lookup fails, then
-                // try resolving the class through `domain().get_class`, and check if the
-                // object's class matches directly (not considering superclasses or interfaces).
-                // Any superclasses or superinterfaces will already have been initialized,
-                // so the `resolve_type` lookup will succeed for them.
-                if let Some(obj) = val.as_object() {
-                    if let Ok(Some(resolved_class)) = self.domain().get_class(&type_name) {
-                        if let Some(obj_class) = obj.instance_of_class_definition() {
-                            if GcCell::ptr_eq(resolved_class, obj_class) {
-                                self.push_stack(val);
-                                return Ok(FrameControl::Continue);
-                            }
-                        }
-                    }
-                }
-                return Err(e);
-            }
-        };
-
-        let x = if let Some(param_type) = param_type {
-            val.coerce_to_type(self, param_type)?
-        } else {
-            val
-        };
+        let x = val.coerce_to_type_name(self, &type_name)?;
 
         self.push_stack(x);
         Ok(FrameControl::Continue)
