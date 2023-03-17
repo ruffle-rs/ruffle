@@ -2,6 +2,24 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public final dynamic class XML {
+        import __ruffle__.stub_method;
+
+        AS3 static function setSettings(settings:Object): void {
+            stub_method("XML", "setSettings");
+        }
+
+        AS3 static function settings():Object {
+            stub_method("XML", "settings");
+
+            return {
+                ignoreComments: true,
+                ignoreProcessingInstructions: true,
+                ignoreWhitespace: true,
+                prettyIndent: 2,
+                prettyPrinting: true
+            };
+        }
+
         public function XML(value:* = undefined) {
             this.init(value);
         }
@@ -20,8 +38,6 @@ package {
         AS3 native function nodeKind():String;
         AS3 native function appendChild(child:Object):XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
-
-
         AS3 native function toString():String;
 
         prototype.name = function():Object {
