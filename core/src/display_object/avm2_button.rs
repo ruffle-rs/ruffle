@@ -137,7 +137,7 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn empty_button(context: &mut UpdateContext<'_, 'gc>) -> Self {
-        let movie = Arc::new(SwfMovie::empty(context.swf.version()));
+        let movie = context.swf.clone();
         let button_record = swf::Button {
             id: 0,
             is_track_as_menu: false,

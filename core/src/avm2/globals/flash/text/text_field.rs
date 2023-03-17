@@ -8,9 +8,7 @@ use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use std::sync::Arc;
 use swf::Color;
 
 /// Implements `flash.text.TextField`'s `init` method, which is called from the constructor.
@@ -23,7 +21,7 @@ pub fn init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+            let movie = activation.context.swf.clone();
             let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
 
             this.init_display_object(&mut activation.context, new_do.into());

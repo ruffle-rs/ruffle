@@ -7,8 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
-use crate::tag_utils::SwfMovie;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
 /// Implements `flash.display.Sprite`'s `init` method, which is called from the constructor
@@ -35,7 +33,7 @@ pub fn init_empty_sprite<'gc>(
     let class_object = this
         .instance_of()
         .ok_or("Attempted to construct Sprite on a bare object")?;
-    let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
+    let movie = activation.context.swf.clone();
     let new_do = MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
 
     this.init_display_object(&mut activation.context, new_do.into());
