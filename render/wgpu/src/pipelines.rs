@@ -218,8 +218,8 @@ impl Pipelines {
 
         let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(
             create_debug_label!("Bitmap opaque copy").as_deref(),
-            &shaders.bitmap_shader,
-            &shaders.bitmap_shader,
+            &shaders.bitmap_late_saturate_shader,
+            &shaders.bitmap_late_saturate_shader,
             &bitmap_opaque_pipeline_layout,
             None,
             &[Some(wgpu::ColorTargetState {
