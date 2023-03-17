@@ -241,8 +241,17 @@ impl<'gc> MovieLibrary<'gc> {
         is_italic: bool,
     ) -> Option<Font<'gc>> {
         let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
-
-        self.fonts.get(&descriptor).copied()
+        if let Some(font) = self.fonts.get(&descriptor) {
+            return Some(*font);
+        }
+        // If we don't have a direct match, fallback to something with the same name
+        // [NA]TODO: This isn't *entirely* correct. I think we're storing fonts wrong.
+        // We might need to merge fonts as they're defined, and there should only be one font per name.
+        self.fonts
+            .iter()
+            .find(|(d, _)| d.class() == name)
+            .map(|(_, f)| f)
+            .copied()
     }
 
     /// Returns the `Graphic` with the given character ID.
