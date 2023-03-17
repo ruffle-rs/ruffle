@@ -38,6 +38,7 @@ package {
         AS3 native function nodeKind():String;
         AS3 native function appendChild(child:Object):XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
+        AS3 native function text():XMLList;
         AS3 native function toString():String;
 
         prototype.name = function():Object {
@@ -101,7 +102,7 @@ package {
             var self:XML = this;
             return self.AS3::nodeKind();
         };
-        
+
         prototype.appendChild = function(child:Object):XML {
             var self:XML = this;
             return self.AS3::appendChild(child);
@@ -110,6 +111,11 @@ package {
         prototype.descendants = function(name:Object):XMLList {
             var self:XML = this;
             return self.AS3::descendants(name);
+        };
+
+        prototype.text = function():XMLList {
+            var self:XML = this;
+            return self.AS3::text();
         };
     }
 }

@@ -267,3 +267,21 @@ pub fn descendants<'gc>(
     xml.node().descendants(&multiname, &mut descendants);
     Ok(XmlListObject::new(activation, descendants, Some(xml.into())).into())
 }
+
+pub fn text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let nodes = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
+        children
+            .iter()
+            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Text(_)))
+            .map(|node| E4XOrXml::E4X(*node))
+            .collect()
+    } else {
+        Vec::new()
+    };
+    Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
+}

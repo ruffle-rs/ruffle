@@ -1,0 +1,4 @@
+xml.text(): ABC
+xml.text(): BeforeAfter
+xml.text(): BeforeAfter
+xml.text(): ABC
