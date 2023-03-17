@@ -640,6 +640,12 @@ impl<'gc> Loader<'gc> {
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(context, None, Instantiator::Movie, false);
             catchup_display_object_to_frame(context, mc.into());
+            // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
+            // and consequently are observed to have their currentFrame lag one
+            // frame behind objects placed by the timeline (even if they were
+            // both placed in the same frame to begin with).
+            mc.base_mut(context.gc_context)
+                .set_skip_next_enter_frame(true);
 
             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
