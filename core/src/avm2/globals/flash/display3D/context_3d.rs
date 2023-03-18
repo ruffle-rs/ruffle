@@ -11,6 +11,7 @@ use crate::avm2::Activation;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
+use crate::avm2_stub_method;
 
 pub fn create_index_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -63,6 +64,31 @@ pub fn configure_back_buffer<'gc>(
         let wants_best_resolution = args.get(4).unwrap_or(&Value::Undefined).coerce_to_boolean();
         let wants_best_resolution_on_browser_zoom =
             args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
+
+        if anti_alias != 0 {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "configureBackBuffer",
+                "antiAlias != 0"
+            );
+        }
+        if wants_best_resolution {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "configureBackBuffer",
+                "wantsBestResolution"
+            );
+        }
+        if wants_best_resolution_on_browser_zoom {
+            avm2_stub_method!(
+                activation,
+                "flash.display3D.Context3D",
+                "configureBackBuffer",
+                "wantsBestResolutionOnBrowserZoom"
+            );
+        }
 
         context.configure_back_buffer(
             activation,
@@ -505,5 +531,67 @@ pub fn set_blend_factors<'gc>(
         };
         context.set_blend_factors(activation, source_factor, destination_factor);
     }
+    Ok(Value::Undefined)
+}
+
+pub fn set_render_to_texture<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let context = this.unwrap().as_context_3d().unwrap();
+    let texture = args
+        .get_object(activation, 0, "texture")?
+        .as_texture()
+        .unwrap();
+    let enable_depth_and_stencil = args.get_bool(1);
+    let anti_alias = args.get_u32(activation, 2)?;
+    let surface_selector = args.get_u32(activation, 3)?;
+    let color_output_index = args.get_u32(activation, 4)?;
+
+    if anti_alias != 0 {
+        avm2_stub_method!(
+            activation,
+            "flash.display3D.Context3D",
+            "setRenderToTexture",
+            "antiAlias != 0"
+        );
+    }
+
+    if surface_selector != 0 {
+        avm2_stub_method!(
+            activation,
+            "flash.display3D.Context3D",
+            "setRenderToTexture",
+            "surfaceSelector != 0"
+        );
+    }
+
+    if color_output_index != 0 {
+        avm2_stub_method!(
+            activation,
+            "flash.display3D.Context3D",
+            "setRenderToTexture",
+            "colorOutputIndex != 0"
+        );
+    }
+
+    context.set_render_to_texture(
+        activation,
+        texture.handle(),
+        enable_depth_and_stencil,
+        anti_alias,
+        surface_selector,
+    );
+    Ok(Value::Undefined)
+}
+
+pub fn set_render_to_back_buffer<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let context = this.unwrap().as_context_3d().unwrap();
+    context.set_render_to_back_buffer(activation);
     Ok(Value::Undefined)
 }

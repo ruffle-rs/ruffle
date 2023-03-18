@@ -1004,19 +1004,10 @@ impl<'a> NagaBuilder<'a> {
         source1: &SourceField,
         source2: &Source2,
     ) -> Result<()> {
-        // On the ActionScript side, the user might have specified something *other* than
-        // vec4f. In that case, we need to extend the source to a vec4f if we're writing to
-        // a vec4f register.
-        // FIXME - do we need to do this extension in other cases?
-        let do_extend = matches!(
-            dest.register_type,
-            RegisterType::Output | RegisterType::Varying
-        );
-
         match opcode {
             // Copy the source register to the destination register
             Opcode::Mov => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 self.emit_dest_store(dest, source)?;
             }
             Opcode::Mul => {
@@ -1156,7 +1147,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, tex)?;
             }
             Opcode::Cos => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let cos = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Cos,
                     arg: source,
@@ -1167,7 +1158,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, cos)?;
             }
             Opcode::Sin => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let sin = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Sin,
                     arg: source,
@@ -1178,9 +1169,8 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, sin)?;
             }
             Opcode::Add => {
-                let source1 = self.emit_source_field_load(source1, do_extend)?;
-                let source2 =
-                    self.emit_source_field_load(source2.assert_source_field(), do_extend)?;
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
                 let add = self.evaluate_expr(Expression::Binary {
                     op: BinaryOperator::Add,
                     left: source1,
@@ -1189,9 +1179,8 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, add)?;
             }
             Opcode::Sub => {
-                let source1 = self.emit_source_field_load(source1, do_extend)?;
-                let source2 =
-                    self.emit_source_field_load(source2.assert_source_field(), do_extend)?;
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
                 let sub = self.evaluate_expr(Expression::Binary {
                     op: BinaryOperator::Subtract,
                     left: source1,
@@ -1200,9 +1189,8 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, sub)?;
             }
             Opcode::Div => {
-                let source1 = self.emit_source_field_load(source1, do_extend)?;
-                let source2 =
-                    self.emit_source_field_load(source2.assert_source_field(), do_extend)?;
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
                 let div = self.evaluate_expr(Expression::Binary {
                     op: BinaryOperator::Divide,
                     left: source1,
@@ -1211,9 +1199,8 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, div)?;
             }
             Opcode::Max => {
-                let source1 = self.emit_source_field_load(source1, do_extend)?;
-                let source2 =
-                    self.emit_source_field_load(source2.assert_source_field(), do_extend)?;
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
                 let max = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Max,
                     arg: source1,
@@ -1225,11 +1212,8 @@ impl<'a> NagaBuilder<'a> {
             }
             Opcode::Nrm => {
                 // This opcode only looks at the first three components of the source, so load it as a Vec3
-                let source = self.emit_source_field_load_with_swizzle_out(
-                    source1,
-                    do_extend,
-                    VectorSize::Tri,
-                )?;
+                let source =
+                    self.emit_source_field_load_with_swizzle_out(source1, true, VectorSize::Tri)?;
                 let nrm = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Normalize,
                     arg: source,
@@ -1240,7 +1224,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, nrm)?;
             }
             Opcode::Rcp => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let rcp = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Inverse,
                     arg: source,
@@ -1251,7 +1235,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, rcp)?;
             }
             Opcode::Sqt => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let sqt = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Sqrt,
                     arg: source,
@@ -1280,9 +1264,8 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, extended)?;
             }
             Opcode::Ife | Opcode::Ine | Opcode::Ifg | Opcode::Ifl => {
-                let source1 = self.emit_source_field_load(source1, do_extend)?;
-                let source2 =
-                    self.emit_source_field_load(source2.assert_source_field(), do_extend)?;
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
                 let condition = self.evaluate_expr(Expression::Binary {
                     op: match opcode {
                         Opcode::Ife => BinaryOperator::Equal,
@@ -1381,7 +1364,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, dp3)?;
             }
             Opcode::Neg => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let neg = self.evaluate_expr(Expression::Unary {
                     op: UnaryOperator::Negate,
                     expr: source,
@@ -1413,7 +1396,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, result)?;
             }
             Opcode::Sat => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let sat = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Saturate,
                     arg: source,
@@ -1424,7 +1407,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, sat)?;
             }
             Opcode::Frc => {
-                let source = self.emit_source_field_load(source1, do_extend)?;
+                let source = self.emit_source_field_load(source1, true)?;
                 let frc = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Fract,
                     arg: source,

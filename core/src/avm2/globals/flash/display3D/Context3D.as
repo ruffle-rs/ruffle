@@ -42,10 +42,7 @@ package flash.display3D {
             stub_method("flash.display3D.Context3D", "setScissorRectangle");
         }
 
-        public function setRenderToBackBuffer():void {
-            stub_method("flash.display3D.Context3D", "setRenderToBackBuffer");
-        }
-
+        public native function setRenderToBackBuffer():void;
         public native function setBlendFactors(sourceFactor:String, destinationFactor:String):void;
 
         public native function setTextureAt(sampler:int, texture:TextureBase):void;
@@ -71,6 +68,18 @@ package flash.display3D {
 
         public function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void {
             stub_method("flash.display3D.Context3D", "setSamplerStateAt");
+        }
+
+        public native function setRenderToTexture(texture:TextureBase, enableDepthAndStencil:Boolean = false, antiAlias:int = 0, surfaceSelector:int = 0, colorOutputIndex:int = 0):void;
+
+        public function setStencilActions(
+            triangleFace:String = "frontAndBack",
+            compareMode:String = "always",
+            actionOnBothPass:String = "keep",
+            actionOnDepthFail:String = "keep",
+            actionOnDepthPassStencilFail:String = "keep"
+        ):void {
+            stub_method("flash.display3D.Context3D", "setStencilActions");
         }
     }
 }

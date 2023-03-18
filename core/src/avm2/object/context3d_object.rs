@@ -292,6 +292,31 @@ impl<'gc> Context3DObject<'gc> {
         );
     }
 
+    pub fn set_render_to_texture(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        texture: Rc<dyn Texture>,
+        enable_depth_and_stencil: bool,
+        anti_alias: u32,
+        surface_selector: u32,
+    ) {
+        self.0.write(activation.context.gc_context).commands.push(
+            Context3DCommand::SetRenderToTexture {
+                texture,
+                enable_depth_and_stencil,
+                anti_alias,
+                surface_selector,
+            },
+        );
+    }
+
+    pub fn set_render_to_back_buffer(&self, activation: &mut Activation<'_, 'gc>) {
+        self.0
+            .write(activation.context.gc_context)
+            .commands
+            .push(Context3DCommand::SetRenderToBackBuffer);
+    }
+
     pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let commands = std::mem::take(&mut write.commands);

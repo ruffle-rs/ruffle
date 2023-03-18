@@ -274,5 +274,8 @@ package flash.geom {
 			return new Matrix3D(this.rawData);
 		}
 
+		public function copyToMatrix3D(other:Matrix3D):void {
+			other.rawData = rawData
+		}
 	}
 }
