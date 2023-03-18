@@ -16,7 +16,8 @@ mod util;
 
 fn set_logger() {
     let _ = env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info,ruffle_render_wgpu=warn"),
+        env_logger::Env::default()
+            .default_filter_or("info,ruffle_render_wgpu=warn,wgpu_core=warn,wgpu_hal=warn"),
     )
     .format_timestamp(None)
     .is_test(true)
