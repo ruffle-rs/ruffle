@@ -4,3 +4,4 @@ pub mod sound;
 pub mod sound_channel;
 pub mod soundmixer;
 pub mod soundtransform;
+pub mod video;
