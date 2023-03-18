@@ -16,3 +16,14 @@ XML.ignoreComments = false;
 XML.ignoreProcessingInstructions = false;
 xml = <a>A<!-- bla -->B<?something ?>C<b>D</b></a>;
 trace("xml.text(): " + xml.text());
+
+xml = <outer>
+  <div>abc</div>|
+  <div>before<b/>after</div>|
+  <div>a<b>b</b>c</div>
+</outer>;
+
+var texts = xml.children().text();
+trace('texts.length(): ' + texts.length());
+trace('texts.toString(): ' + texts.toString());
+trace('xml.child("unknown").text(): ' + xml.child("unknown").text());

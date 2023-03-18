@@ -212,3 +212,23 @@ pub fn descendants<'gc>(
     }
     Ok(XmlListObject::new(activation, descendants, Some(xml_list.into())).into())
 }
+
+pub fn text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_list = this.unwrap().as_xml_list_object().unwrap();
+    let mut nodes = Vec::new();
+    for child in xml_list.children().iter() {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            nodes.extend(
+                children
+                    .iter()
+                    .filter(|node| matches!(&*node.kind(), E4XNodeKind::Text(_)))
+                    .map(|node| E4XOrXml::E4X(*node)),
+            );
+        }
+    }
+    Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
+}
