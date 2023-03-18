@@ -1,25 +1,25 @@
 //Creating left aligned indented text w/ wordwrap, multiline & long text
 //field.textWidth
-369.75
+370.1
 //field.textHeight
-76
+94.75
 //Creating center aligned indented text w/ wordwrap, multiline & long text
 //field.textWidth
-367.2
+367.55
 //field.textHeight
-76
+94.75
 //Creating right aligned indented text w/ wordwrap, multiline & long text
 //field.textWidth
-367.2
+367.55
 //field.textHeight
-76
+94.75
 //Creating justified indented text w/ wordwrap, multiline & long text
 //field.textWidth
-367.2
+367.55
 //field.textHeight
-76
+94.75
 //Creating marginless text w/ wordwrap, multiline & long text
 //field.textWidth
-375.85
+376.25
 //field.textHeight
-60.4
+75.4
