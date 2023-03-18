@@ -181,10 +181,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0
-            .read()
-            .exec
-            .exec(receiver, arguments, activation, self.into())
+        // NOTE: Cloning an executable does not allocate new memory
+        let exec = self.0.read().exec.clone();
+
+        exec.exec(receiver, arguments, activation, self.into())
     }
 
     fn construct(
