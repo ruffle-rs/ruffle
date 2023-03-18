@@ -110,6 +110,23 @@ impl HeaderExt {
         }
     }
 
+    /// Returns the header for a loaded image (JPEG, GIF or PNG).
+    pub fn default_with_uncompressed_len(length: u32) -> Self {
+        let header = Header {
+            compression: Compression::None,
+            version: 0,
+            stage_size: Default::default(),
+            frame_rate: Fixed8::ONE,
+            num_frames: 1,
+        };
+        Self {
+            header,
+            file_attributes: Default::default(),
+            background_color: None,
+            uncompressed_len: length,
+        }
+    }
+
     /// The background color of the SWF from the SetBackgroundColor tag.
     ///
     /// `None` will be returned if the SetBackgroundColor tag was not found.

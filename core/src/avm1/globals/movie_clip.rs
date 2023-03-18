@@ -76,6 +76,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getInstanceAtDepth" => method(mc_method!(get_instance_at_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
     "getNextHighestDepth" => method(mc_method!(get_next_highest_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
     "getRect" => method(mc_method!(get_rect); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "getSWFVersion" => method(mc_method!(get_swf_version); DONT_ENUM | DONT_DELETE);
     "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE);
     "globalToLocal" => method(mc_method!(global_to_local); DONT_ENUM | DONT_DELETE);
     "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE);
@@ -1230,6 +1231,19 @@ fn get_rect<'gc>(
     // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
     // Just defer to getBounds for now. Will have to store edge_bounds vs. shape_bounds in Graphic.
     get_bounds(movie_clip, activation, args)
+}
+
+fn get_swf_version<'gc>(
+    movie_clip: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let version = movie_clip.movie().version();
+    Ok(if version > 0 {
+        version.into()
+    } else {
+        (-1).into()
+    })
 }
 
 pub fn get_url<'gc>(
