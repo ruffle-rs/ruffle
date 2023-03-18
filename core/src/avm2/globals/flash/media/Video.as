@@ -1,6 +1,7 @@
 package flash.media
 {
     import flash.display.DisplayObject
+    import flash.net.NetStream
     
     public class Video extends DisplayObject
     {
@@ -19,5 +20,7 @@ package flash.media
         public function get videoHeight():int {
             return this._videoHeight;
         }
+
+        public native function attachNetStream(netStream: NetStream);
     }
 }

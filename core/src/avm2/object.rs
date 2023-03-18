@@ -21,6 +21,7 @@ use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
+use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -1297,7 +1298,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_netstream(self) -> Option<NetStreamObject<'gc>> {
+    fn as_netstream(self) -> Option<GcCell<'gc, NetStream>> {
         None
     }
 }

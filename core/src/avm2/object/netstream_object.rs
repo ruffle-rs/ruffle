@@ -54,8 +54,8 @@ impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
         Ok(Value::Object((*self).into()))
     }
 
-    fn as_netstream(self) -> Option<NetStreamObject<'gc>> {
-        Some(self)
+    fn as_netstream(self) -> Option<GcCell<'gc, NetStream>> {
+        Some(self.0.read().ns)
     }
 }
 
