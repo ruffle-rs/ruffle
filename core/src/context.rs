@@ -20,6 +20,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
+use crate::streams::StreamManager;
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
@@ -183,6 +184,9 @@ pub struct UpdateContext<'a, 'gc> {
     ///
     /// If we are not doing frame processing, then this is `FramePhase::Enter`.
     pub frame_phase: &'a mut FramePhase,
+
+    /// Manager of in-progress media streams.
+    pub stream_manager: &'a mut StreamManager<'gc>,
 }
 
 /// Convenience methods for controlling audio.
@@ -347,6 +351,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             frame_rate: self.frame_rate,
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
+            stream_manager: self.stream_manager,
         }
     }
 

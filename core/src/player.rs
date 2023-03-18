@@ -39,6 +39,7 @@ use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
+use crate::streams::StreamManager;
 use crate::string::AvmString;
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
@@ -153,6 +154,9 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
+
+    /// List of actively playing streams to decode.
+    stream_manager: StreamManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -176,6 +180,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<ContextMenuState<'gc>>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
+        &mut StreamManager<'gc>,
     ) {
         (
             self.stage,
@@ -192,6 +197,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.current_context_menu,
             &mut self.external_interface,
             &mut self.audio_manager,
+            &mut self.stream_manager,
         )
     }
 }
@@ -526,10 +532,12 @@ impl Player {
             });
 
             self.update_timers(dt);
+            self.update(|context| {
+                StreamManager::tick(context, dt);
+            });
             self.audio.tick();
         }
     }
-
     pub fn time_til_next_timer(&self) -> Option<f64> {
         self.time_til_next_timer
     }
@@ -1731,6 +1739,7 @@ impl Player {
                 current_context_menu,
                 external_interface,
                 audio_manager,
+                stream_manager,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1777,6 +1786,7 @@ impl Player {
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
+                stream_manager,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -2273,6 +2283,7 @@ impl PlayerBuilder {
                                 ),
                                 timers: Timers::new(),
                                 unbound_text_fields: Vec::new(),
+                                stream_manager: StreamManager::new(),
                             },
                         ),
                     },
