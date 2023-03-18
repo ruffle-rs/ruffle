@@ -28,6 +28,10 @@
                 <label for="show_swf_download">Show SWF download in context menu</label>
             </div>
             <div class="option checkbox">
+                <input type="checkbox" id="autostart" />
+                <label for="autostart">Play automatically without splash screen (then click to unmute)</label>
+            </div>
+            <div class="option checkbox">
                 <input type="checkbox" id="warn_on_unsupported_content" />
                 <label for="warn_on_unsupported_content">Warn on unsupported content</label>
             </div>
@@ -51,10 +55,6 @@
                     <option value="canvas">Canvas2D</option>
                 </select>
                 <label for="preferred_renderer">Preferred renderer</label>
-            </div>
-            <div class="option checkbox">
-                <input type="checkbox" id="autostart" />
-                <label for="autostart">Play automatically without splash screen (then click to unmute)</label>
             </div>
         </div>
         <script src="dist/options.js"></script>
