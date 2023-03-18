@@ -1481,10 +1481,14 @@ impl<'gc> Loader<'gc> {
                         Loader::movie_loader_progress(handle, uc, 0, length)?;
                     }
 
+                    let movie = Arc::new(SwfMovie::from_loaded_image(url, length));
+
                     let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
                     let bitmap_obj = Bitmap::new(uc, 0, bitmap)?;
 
-                    if let Some(mc) = clip.as_movie_clip() {
+                    if let Some(mut mc) = clip.as_movie_clip() {
+                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        mc.replace_with_movie(&mut activation.context, Some(movie), None);
                         mc.replace_at_depth(uc, bitmap_obj.into(), 1);
                     }
                 }

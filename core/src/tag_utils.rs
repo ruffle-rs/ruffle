@@ -112,6 +112,19 @@ impl SwfMovie {
         })
     }
 
+    /// Construct a movie based on a loaded image (JPEG, GIF or PNG).
+    pub fn from_loaded_image(url: String, length: usize) -> Self {
+        Self {
+            header: HeaderExt::default_with_uncompressed_len(length as u32),
+            data: vec![],
+            url,
+            loader_url: None,
+            parameters: Vec::new(),
+            encoding: swf::UTF_8,
+            compressed_len: length,
+        }
+    }
+
     pub fn header(&self) -> &HeaderExt {
         &self.header
     }
