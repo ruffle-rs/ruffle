@@ -1,0 +1,13 @@
+cls(): 
+String(undefined): undefined
+String(null): null
+String(42): 42
+String(false): false
+String("abc"): abc
+String({}): [object Object]
+String(undefined).split(""): u,n,d,e,f,i,n,e,d
+String(null).split(""): n,u,l,l
+String(42).split(""): 4,2
+String(false).split(""): f,a,l,s,e
+String("abc").split(""): a,b,c
+String({}).split(""): [,o,b,j,e,c,t, ,O,b,j,e,c,t,]

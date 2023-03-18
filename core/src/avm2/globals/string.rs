@@ -92,6 +92,18 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(args
+        .get(0)
+        .unwrap_or(&Value::String("".into()))
+        .coerce_to_string(activation)?
+        .into())
+}
+
 /// Implements `length` property's getter
 fn length<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -693,6 +705,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_allocator(primitive_allocator);
+    write.set_call_handler(Method::from_builtin(
+        call_handler,
+        "<String call handler>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
