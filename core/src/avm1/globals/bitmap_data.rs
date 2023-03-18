@@ -756,15 +756,131 @@ pub fn perlin_noise<'gc>(
 pub fn hit_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            avm1_stub!(activation, "BitmapData", "hitTest");
-            return Ok(Value::Undefined);
+            let first_point = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+            let top_left = if let (Some(x), Some(y)) = (
+                first_point.get_local_stored("x", activation),
+                first_point.get_local_stored("y", activation),
+            ) {
+                (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
+            } else {
+                // Despite the AS docs saying this function returns `Boolean`, it returns a negative int on error conditions.
+                // Invalid `firstPoint`.
+                return Ok((-2).into());
+            };
+            let source_threshold = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
+            let compare_object = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation);
+
+            // Overload based on the object we are hit-testing against.
+            // BitmapData vs. BitmapData
+            if let Some(other_bmd) = compare_object.as_bitmap_data_object() {
+                let other_bmd = other_bmd.bitmap_data();
+                if other_bmd.read().disposed() {
+                    return Ok((-3).into());
+                }
+
+                let second_point = args
+                    .get(3)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_object(activation);
+                let second_point = if let (Some(x), Some(y)) = (
+                    second_point.get_local_stored("x", activation),
+                    second_point.get_local_stored("y", activation),
+                ) {
+                    (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
+                } else {
+                    // Invalid `secondPoint`.
+                    return Ok((-4).into());
+                };
+                let second_threshold = args
+                    .get(4)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_u32(activation)?;
+
+                let bitmap_data = bitmap_data.bitmap_data();
+                let result = if GcCell::ptr_eq(bitmap_data, other_bmd) {
+                    bitmap_data.read().hit_test_bitmapdata(
+                        top_left,
+                        source_threshold,
+                        None,
+                        second_point,
+                        second_threshold,
+                    )
+                } else {
+                    bitmap_data.read().hit_test_bitmapdata(
+                        top_left,
+                        source_threshold,
+                        Some(&other_bmd.read()),
+                        second_point,
+                        second_threshold,
+                    )
+                };
+                return Ok(Value::Bool(result));
+            } else {
+                // Determine what kind of Object we have, point or rectangle.
+                // Duck-typed dumb objects are allowed.
+                let compare_fields = (
+                    compare_object.get_local_stored("x", activation),
+                    compare_object.get_local_stored("y", activation),
+                    compare_object.get_local_stored("width", activation),
+                    compare_object.get_local_stored("height", activation),
+                );
+                match compare_fields {
+                    // BitmapData vs. point
+                    (Some(test_x), Some(test_y), None, None) => {
+                        let test_point = (
+                            test_x.coerce_to_i32(activation)? - top_left.0,
+                            test_y.coerce_to_i32(activation)? - top_left.1,
+                        );
+                        return Ok(Value::Bool(
+                            bitmap_data
+                                .bitmap_data()
+                                .read()
+                                .hit_test_point(source_threshold, test_point),
+                        ));
+                    }
+
+                    // BitmapData vs. rectangle
+                    (Some(test_x), Some(test_y), Some(test_width), Some(test_height)) => {
+                        let test_point = (
+                            test_x.coerce_to_i32(activation)? - top_left.0,
+                            test_y.coerce_to_i32(activation)? - top_left.1,
+                        );
+                        let size = (
+                            test_width.coerce_to_i32(activation)?,
+                            test_height.coerce_to_i32(activation)?,
+                        );
+                        return Ok(Value::Bool(
+                            bitmap_data.bitmap_data().read().hit_test_rectangle(
+                                source_threshold,
+                                test_point,
+                                size,
+                            ),
+                        ));
+                    }
+
+                    // Invalid compare object.
+                    _ => {
+                        return Ok((-3).into());
+                    }
+                }
+            }
         }
     }
 
+    // Disposed or invalid bitmap.
     Ok((-1).into())
 }
 
