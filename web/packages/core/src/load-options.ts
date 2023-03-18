@@ -119,29 +119,31 @@ export const enum WindowMode {
 
 /**
  * The render backend of a Ruffle player.
+ *
+ * The available backends may change in future releases.
  */
 export const enum RenderBackend {
-    /*
-     * A draft API that is currently unavailable, but will be preferred if available in the future.
+    /**
+     * An [in-development API](https://caniuse.com/webgpu) that will be preferred if available in the future.
      * Should behave the same as wgpu-webgl, except with lower overhead and thus better performance.
      */
     WebGpu = "webgpu",
 
-    /*
+    /**
      * The most featureful and currently preferred backend.
      * Rendering is done the same way as in the desktop app, then translated to WebGL on-the-fly.
      */
     WgpuWebgl = "wgpu-webgl",
 
-    /*
-     * A vanilla WebGL backend. Was previously the default backend,
+    /**
+     * A vanilla WebGL backend. Was the default backend until the start of 2023,
      * but is now used as a fallback for devices that do not support WebGL 2.
      * Supports fewer features and has a faster initialization time;
      * may be useful for content that does not need advanced features like bitmap drawing or blend modes.
      */
     Webgl = "webgl",
 
-    /*
+    /**
      * The slowest and most basic backend, used as a fallback when all else fails.
      * However, this is currently the only backend that accurately scales hairline strokes.
      * If you notice excessively thick strokes in specific content,
@@ -363,7 +365,7 @@ export interface BaseLoadOptions {
      * The preferred render backend of the Ruffle player.
      *
      * This option should only be used for testing;
-     * The available backends may change in future releases.
+     * the available backends may change in future releases.
      * By default, Ruffle chooses the most featureful backend supported by the user's system,
      * falling back to more basic backends if necessary.
      * The available values in order of default preference are:
