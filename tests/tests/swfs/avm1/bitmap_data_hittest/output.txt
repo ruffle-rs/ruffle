@@ -1,0 +1,133 @@
+/// hitTest with bmd
+// bmd.hitTest(new Point(0, 0), 0, bmd, new Point(0, 0), 0)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, bmd, new Point(3, 3), 160)
+false
+
+// bmd.hitTest(new Point(2, 1), 160, bmd, new Point(1, 3), 160)
+true
+
+// bmd.hitTest(new Point(3, 1), 160, bmd, new Point(1, 2), 255)
+false
+
+// bmd.hitTest(new Point(0, 0), 160, bmd, new Point(1, 0), 255)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, bmd, new Point(1, 1), 255)
+true
+
+// bmd.hitTest(new Point(-1, -1), 160, bmd, new Point(1, 1), 160)
+true
+
+
+/// hitTest with other bmd
+// bmd.hitTest(new Point(0, 0), 0, otherBitmapData, new Point(0, 0), 0)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, otherBitmapData, new Point(3, 3), 160)
+false
+
+// bmd.hitTest(new Point(2, 1), 160, otherBitmapData, new Point(1, 3), 160)
+true
+
+// bmd.hitTest(new Point(3, 1), 160, otherBitmapData, new Point(1, 2), 255)
+false
+
+// bmd.hitTest(new Point(0, 0), 160, otherBitmapData, new Point(1, 0), 255)
+true
+
+// bmd.hitTest(new Point(1, 1), 255, otherBitmapData, new Point(1, 1), 255)
+true
+
+
+/// hitTest with rect
+// bmd.hitTest(new Point(0, 0), 160, new Rectangle(2, 2, 2, 2), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Rectangle(0, 0, 3, 4), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Rectangle(2, 2, 1, 1), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(2, 2), 255, new Rectangle(4, 4, 1, 1), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(-1, 0), 160, new Rectangle(2, 2, 5, 5), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(-10, 10), 0, new Rectangle(0, 0, 1, 1), undefined, undefined)
+false
+
+
+/// hitTest with point
+// bmd.hitTest(new Point(0, 0), 160, new Point(2, 2), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(0, 0), 255, new Point(0, 0), undefined, undefined)
+false
+
+// bmd.hitTest(new Point(0, 0), 255, new Point(2, 2), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(2, 2), 255, new Point(4, 4), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(3, 3), 255, new Point(-1, -1), undefined, undefined)
+false
+
+// bmd.hitTest(new Point(-1, -1), 160, new Point(2, 2), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(-1, -1), 160, new Point(0, 0), undefined, undefined)
+true
+
+// bmd.hitTest(new Point(-10, -10), 0, new Point(0, 0), undefined, undefined)
+false
+
+
+/// hitTest with duck-typed objects
+// bmd.hitTest({x:0, y:0}, 0, {x:2, y:2}, undefined, undefined)
+true
+
+valueOf
+// bmd.hitTest({x:0, y:0}, 0, {x:2, y:2}, undefined, undefined)
+valueOf
+true
+
+// bmd.hitTest({x:0, y:0}, 0, {x:0, y:0, width:1, height:1}, undefined, undefined)
+true
+
+// bmd.hitTest(new Point(0, 0), 0, otherBitmapData, {x:0, y:0}, 0)
+true
+
+
+/// Error cases
+// bmd.hitTest(undefined, undefined, undefined, undefined, undefined)
+-2
+
+// bmd.hitTest(null, 0, bmd, undefined, undefined)
+-2
+
+// bmd.hitTest({x:0}, 0, bmd, undefined, undefined)
+-2
+
+// bmd.hitTest({x:0, y:0}, 0, bmd, undefined, undefined)
+-2
+
+// bmd.hitTest(new Point(0, 0), 0, {}, undefined, undefined)
+-3
+
+// bmd.hitTest(new Point(0, 0), 0, {y:0}, undefined, undefined)
+-3
+
+// bmd.hitTest(new Point(0, 0), 0, bmd, null, undefined)
+-4
+
+// bmd.hitTest(new Point(0, 0), 0, otherBitmapData, new Point(0, 0), 0)
+-3
+
+// bmd.hitTest(new Point(0, 0), 0, otherBitmapData, new Point(0, 0), 0)
+-1
+
