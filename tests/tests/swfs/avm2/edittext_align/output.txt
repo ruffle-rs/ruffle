@@ -2,59 +2,59 @@
 //field.textWidth
 131.9
 //field.textHeight
-15.6
+19.35
 //Creating center aligned text w/ wordwrap, multiline
 //field.textWidth
 131.9
 //field.textHeight
-15.6
+19.35
 //Creating right aligned text w/ wordwrap, multiline
 //field.textWidth
 131.9
 //field.textHeight
-15.6
+19.35
 //Creating justified text w/ wordwrap, multiline
 //field.textWidth
 131.9
 //field.textHeight
-15.6
+19.35
 //Creating left aligned text w/ wordwrap, multiline & long text
 //field.textWidth
-388.1
+388.4
 //field.textHeight
-60.4
+75.4
 //Creating center aligned text w/ wordwrap, multiline & long text
 //field.textWidth
-385.55
+385.85
 //field.textHeight
-60.4
+75.4
 //Creating right aligned text w/ wordwrap, multiline & long text
 //field.textWidth
-385.55
+385.85
 //field.textHeight
-60.4
+75.4
 //Creating justified text w/ wordwrap, multiline & long text
 //field.textWidth
-385.55
+385.85
 //field.textHeight
-60.4
+75.4
 //Creating left aligned text w/ NO wordwrap, multiline & long text
 //field.textWidth
-1461.7
+1462.85
 //field.textHeight
-15.6
+19.35
 //Creating center aligned text w/ NO wordwrap, multiline & long text
 //field.textWidth
-1461.7
+1462.85
 //field.textHeight
-15.6
+19.35
 //Creating right aligned text w/ NO wordwrap, multiline & long text
 //field.textWidth
-1461.7
+1462.85
 //field.textHeight
-15.6
+19.35
 //Creating justified text w/ NO wordwrap, multiline & long text
 //field.textWidth
-1461.7
+1462.85
 //field.textHeight
-15.6
+19.35
