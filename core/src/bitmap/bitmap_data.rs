@@ -562,10 +562,12 @@ impl<'gc> BitmapData<'gc> {
         self.pixels.get((x + y * self.width()) as usize).copied()
     }
 
-    pub fn get_pixel32(&self, x: i32, y: i32) -> Color {
-        self.get_pixel_raw(x as u32, y as u32)
-            .map(|f| f.to_un_multiplied_alpha())
-            .unwrap_or_else(|| 0.into())
+    pub fn get_pixel32(&self, x: u32, y: u32) -> Color {
+        if x < self.width && y < self.height {
+            self.get_pixel32_raw(x, y).to_un_multiplied_alpha()
+        } else {
+            Color(0)
+        }
     }
 
     pub fn get_pixel(&self, x: u32, y: u32) -> i32 {

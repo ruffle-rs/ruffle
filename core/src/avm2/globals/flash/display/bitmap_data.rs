@@ -365,8 +365,8 @@ pub fn get_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = args.get_i32(activation, 0)?;
-        let y = args.get_i32(activation, 1)?;
+        let x = args.get_u32(activation, 0)?;
+        let y = args.get_u32(activation, 1)?;
         let pixel = i32::from(bitmap_data.read().get_pixel32(x, y));
         return Ok((pixel as u32).into());
     }
