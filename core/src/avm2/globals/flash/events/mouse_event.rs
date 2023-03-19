@@ -74,3 +74,12 @@ pub fn get_stage_y<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn update_after_event<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    *activation.context.needs_render = true;
+    Ok(Value::Undefined)
+}

@@ -12,9 +12,6 @@ package flash.events {
 			return new TimerEvent(this.type,this.bubbles,this.cancelable);
 		}
 
-		public function updateAfterEvent():void {
-			// TODO - determine when we should actually force a frame to be rendered.
-			stub_method("flash.events.TimerEvent", "updateAfterEvent");
-		}
+		public native function updateAfterEvent():void;
 	}
 }
