@@ -42,9 +42,11 @@ impl ShapeTessellator {
         self.lyon_mesh = VertexBuffers::new();
         for path in shape.paths {
             let (fill_style, lyon_path, next_is_stroke) = match &path {
-                DrawPath::Fill { style, commands } => {
-                    (*style, ruffle_path_to_lyon_path(commands, true), false)
-                }
+                DrawPath::Fill {
+                    style,
+                    commands,
+                    winding_rule: _,
+                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
                 DrawPath::Stroke {
                     style,
                     commands,
@@ -133,9 +135,9 @@ impl ShapeTessellator {
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
             let result = match path {
-                DrawPath::Fill { .. } => self.fill_tess.tessellate_path(
+                DrawPath::Fill { winding_rule, .. } => self.fill_tess.tessellate_path(
                     &lyon_path,
-                    &FillOptions::even_odd(),
+                    &FillOptions::default().with_fill_rule(winding_rule),
                     &mut buffers_builder,
                 ),
                 DrawPath::Stroke { style, .. } => {
