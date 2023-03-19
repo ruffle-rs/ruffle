@@ -97,6 +97,9 @@
 			// Specifying an alphaPoint of 'undefined' should use 'new Point(0, 0)''
 			weirdDest.copyPixels(weirdSource, new Rectangle(0, 0, 2, 2), new Point(0, 0), weirdAlphaSource, undefined, true);
 			printImage(weirdDest);
+			
+			// Allow self for alpha source
+			weirdDest.copyPixels(weirdSource, new Rectangle(0, 0, 2, 2), new Point(0, 0), weirdDest, undefined, true);
 		}
 	
 		static function printImage(target:BitmapData) {

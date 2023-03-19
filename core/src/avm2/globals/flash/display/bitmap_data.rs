@@ -253,13 +253,25 @@ pub fn copy_pixels<'gc>(
             let merge_alpha = args.get_bool(5);
 
             if let Some((alpha_bitmap, alpha_point)) = alpha_source {
+                let alpha_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+                let alpha_bitmap_data_cell = alpha_bitmap;
+                let alpha_bitmap_gc_ref; // only initialized if source is a different object than self
+                let alpha_bitmap_ref = // holds the reference to either of the ones above
+                    if GcCell::ptr_eq(alpha_bitmap, bitmap_data) {
+                        alpha_bitmap_clone = alpha_bitmap_data_cell.read().clone();
+                        &alpha_bitmap_clone
+                    } else {
+                        alpha_bitmap_gc_ref = alpha_bitmap_data_cell.read();
+                        &alpha_bitmap_gc_ref
+                    };
+
                 bitmap_data
                     .write(activation.context.gc_context)
                     .copy_pixels(
                         source_bitmap_ref,
                         (src_min_x, src_min_y, src_width, src_height),
                         (dest_x, dest_y),
-                        Some((&*alpha_bitmap.read(), alpha_point)),
+                        Some((alpha_bitmap_ref, alpha_point)),
                         merge_alpha,
                     );
             } else {
