@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
@@ -21,6 +22,8 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "status" => property(status);
     "createElement" => method(create_element);
     "createTextNode" => method(create_text_node);
+    "getBytesLoaded" => method(get_bytes_loaded);
+    "getBytesTotal" => method(get_bytes_total);
     "parseXML" => method(parse_xml);
     "load" => method(load);
     "sendAndLoad" => method(send_and_load);
@@ -83,6 +86,24 @@ fn create_text_node<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+fn get_bytes_loaded<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Forwards to undocumented property on the object.
+    this.get("_bytesLoaded", activation)
+}
+
+fn get_bytes_total<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Forwards to undocumented property on the object.
+    this.get("_bytesTotal", activation)
 }
 
 fn parse_xml<'gc>(
@@ -272,7 +293,39 @@ fn spawn_xml_fetch<'gc>(
         Request::get(url)
     };
 
-    this.set("loaded", false.into(), activation)?;
+    // Create hidden properties on object.
+    if !this.has_property(activation, "_bytesLoaded".into()) {
+        this.define_value(
+            activation.context.gc_context,
+            "_bytesLoaded",
+            0.into(),
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
+        );
+    } else {
+        this.set("_bytesLoaded", 0.into(), activation)?;
+    }
+
+    if !this.has_property(activation, "_bytesTotal".into()) {
+        this.define_value(
+            activation.context.gc_context,
+            "_bytesTotal",
+            Value::Undefined,
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
+        );
+    } else {
+        this.set("_bytesTotal", Value::Undefined, activation)?;
+    }
+
+    if !this.has_property(activation, "loaded".into()) {
+        this.define_value(
+            activation.context.gc_context,
+            "loaded",
+            false.into(),
+            Attribute::DONT_DELETE | Attribute::DONT_ENUM,
+        );
+    } else {
+        this.set("loaded", false.into(), activation)?;
+    }
 
     let future = activation.context.load_manager.load_form_into_load_vars(
         activation.context.player.clone(),
