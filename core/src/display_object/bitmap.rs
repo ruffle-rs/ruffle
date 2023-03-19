@@ -146,6 +146,9 @@ impl<'gc> Bitmap<'gc> {
             match bitmap.format() {
                 BitmapFormat::Rgba => true,
                 BitmapFormat::Rgb => false,
+                _ => unreachable!(
+                    "Bitmap objects can only be constructed from RGB or RGBA source bitmaps"
+                ),
             },
             pixels,
         );
