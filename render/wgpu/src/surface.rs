@@ -5,7 +5,7 @@ use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
 use crate::mesh::Mesh;
-use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
+use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer, LayerRef};
 use crate::uniform_buffer::BufferStorage;
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{
@@ -100,7 +100,7 @@ impl Surface {
             &mut color_buffer,
             &mut uniform_encoder,
             &mut draw_encoder,
-            None,
+            LayerRef::None,
             texture_pool,
         );
 
@@ -152,7 +152,7 @@ impl Surface {
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
         uniform_encoder: &'frame mut wgpu::CommandEncoder,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
-        nearest_layer: Option<&'frame CommandTarget>,
+        nearest_layer: LayerRef<'frame>,
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
         let target = CommandTarget::new(
@@ -178,7 +178,10 @@ impl Surface {
             self.quality,
             target.width(),
             target.height(),
-            nearest_layer.unwrap_or(&target),
+            match nearest_layer {
+                LayerRef::Current => LayerRef::Parent(&target),
+                layer => layer,
+            },
             texture_pool,
         );
 
@@ -226,9 +229,14 @@ impl Surface {
                 }
                 Chunk::Blend(texture, blend_mode, needs_depth) => {
                     let parent = match blend_mode {
-                        ComplexBlend::Alpha | ComplexBlend::Erase => {
-                            nearest_layer.unwrap_or(&target)
-                        }
+                        ComplexBlend::Alpha | ComplexBlend::Erase => match nearest_layer {
+                            LayerRef::None => {
+                                // An Alpha or Erase with no Layer above it should be ignored
+                                continue;
+                            }
+                            LayerRef::Current => &target,
+                            LayerRef::Parent(layer) => layer,
+                        },
                         _ => &target,
                     };
 
