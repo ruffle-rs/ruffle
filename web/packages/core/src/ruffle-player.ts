@@ -923,8 +923,8 @@ export class RufflePlayer extends HTMLElement {
                         this.load(this.loadedConfig);
                         this.populateSaves();
                         this.saveManager.close();
-                        return;
                     }
+                    return;
                 } else {
                     replace
                         ? localStorage.setItem(solKey, b64SolData)
