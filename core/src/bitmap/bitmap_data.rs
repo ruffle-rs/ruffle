@@ -645,12 +645,17 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
-    pub fn fill_rect(&mut self, x: u32, y: u32, width: u32, height: u32, color: Color) {
-        for x_offset in 0..width {
-            for y_offset in 0..height {
-                self.set_pixel32((x + x_offset) as i32, (y + y_offset) as i32, color)
+    pub fn fill_rect(&mut self, x0: u32, y0: u32, width: u32, height: u32, color: Color) {
+        let x1 = (x0 + width).min(self.width);
+        let y1 = (y0 + height).min(self.height);
+        let color = color.to_premultiplied_alpha(self.transparency());
+
+        for x in x0..x1 {
+            for y in y0..y1 {
+                self.set_pixel32_raw(x, y, color);
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
