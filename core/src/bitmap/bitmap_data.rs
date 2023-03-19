@@ -632,7 +632,6 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
         let width = self.width();
         self.pixels[(x + y * width) as usize] = color;
-        self.set_cpu_dirty(true);
     }
 
     pub fn set_pixel32(&mut self, x: i32, y: i32, color: Color) {
@@ -641,7 +640,8 @@ impl<'gc> BitmapData<'gc> {
                 x as u32,
                 y as u32,
                 color.to_premultiplied_alpha(self.transparency()),
-            )
+            );
+            self.set_cpu_dirty(true);
         }
     }
 
@@ -679,6 +679,7 @@ impl<'gc> BitmapData<'gc> {
                 }
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn noise(
@@ -739,6 +740,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(x, y, pixel_color);
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn copy_channel(
@@ -828,6 +830,7 @@ impl<'gc> BitmapData<'gc> {
                 }
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn color_bounds_rect(
@@ -962,6 +965,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn merge(
@@ -1022,6 +1026,7 @@ impl<'gc> BitmapData<'gc> {
                 );
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     // Unlike `copy_channel` and `copy_pixels`, this function seems to
@@ -1069,6 +1074,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, mix_color);
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1175,6 +1181,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(x, y, Color::argb(color[3], color[0], color[1], color[2]));
             }
         }
+        self.set_cpu_dirty(true);
     }
 
     pub fn scroll(&mut self, x: i32, y: i32) {
@@ -1217,6 +1224,8 @@ impl<'gc> BitmapData<'gc> {
             }
             src_y += dy;
         }
+
+        self.set_cpu_dirty(true);
     }
 
     /// This implements the threshold operation generically over the test operation performed for each pixel
@@ -1279,6 +1288,7 @@ impl<'gc> BitmapData<'gc> {
                 }
             }
         }
+        self.set_cpu_dirty(true);
 
         modified_count
     }
@@ -1607,6 +1617,7 @@ fn copy_pixels_to_bitmapdata(write: &mut BitmapData, buffer: &[u8], buffer_width
             write.set_pixel32_raw(x, y, nc);
         }
     }
+    write.set_cpu_dirty(true);
 }
 
 #[derive(Copy, Clone, Debug)]
