@@ -515,16 +515,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        rgba: Vec<u8>,
+        bitmap: Bitmap,
         region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = as_texture(handle);
 
         let extent = wgpu::Extent3d {
-            width: region.width(),
-            height: region.height(),
+            width: bitmap.width(),
+            height: bitmap.height(),
             depth_or_array_layers: 1,
         };
+        let bitmap = bitmap.to_rgba();
 
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -537,8 +538,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &rgba[(region.y_min * texture.width * 4) as usize
-                ..(region.y_max * texture.width * 4) as usize],
+            bitmap.data(),
             wgpu::ImageDataLayout {
                 offset: (region.x_min * 4) as wgpu::BufferAddress,
                 bytes_per_row: NonZeroU32::new(4 * texture.width),

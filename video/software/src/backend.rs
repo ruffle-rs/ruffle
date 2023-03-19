@@ -81,7 +81,12 @@ impl VideoBackend for SoftwareVideoBackend {
         let handle = if let Some(bitmap) = stream.bitmap.clone() {
             renderer.update_texture(
                 &bitmap,
-                frame.rgba,
+                Bitmap::new(
+                    frame.width.into(),
+                    frame.height.into(),
+                    BitmapFormat::Rgba,
+                    frame.rgba,
+                ),
                 PixelRegion::for_whole_size(frame.width.into(), frame.height.into()),
             )?;
             bitmap

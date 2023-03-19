@@ -58,8 +58,8 @@ pub trait RenderBackend: Downcast {
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
-        bitmap: &BitmapHandle,
-        rgba: Vec<u8>,
+        handle: &BitmapHandle,
+        bitmap: Bitmap,
         region: PixelRegion,
     ) -> Result<(), Error>;
 
