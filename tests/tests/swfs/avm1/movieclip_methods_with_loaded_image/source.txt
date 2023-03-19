@@ -1,0 +1,15 @@
+_root.createEmptyMovieClip("ruffle", 1);
+_root.ruffle.loadMovie("target.png");
+_root.onEnterFrame = function() {
+   _root.bytesTotal = ruffle.getBytesTotal();
+   _root.bytesLoaded = ruffle.getBytesLoaded();
+   if(bytesTotal > 0 && bytesLoaded >= bytesTotal) {
+      trace("ruffle.getBytesTotal(): " + bytesTotal);
+      trace("ruffle.getBytesLoaded(): " + bytesLoaded);
+      trace("ruffle.getSWFVersion(): " + ruffle.getSWFVersion());
+      _root.url = unescape(ruffle._url).split("/");
+      url = url[url.length - 2] + "/" + url[url.length - 1];
+      trace("ruffle._url (unescaped & split): " + url);
+      delete onEnterFrame;
+   }
+};
