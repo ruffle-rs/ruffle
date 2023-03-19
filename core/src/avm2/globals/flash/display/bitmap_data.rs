@@ -425,6 +425,73 @@ pub fn set_pixels<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.setPixels`.
+pub fn set_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let rectangle = args.get_object(activation, 0, "rect")?;
+    let vec = args.get_object(activation, 1, "inputVector")?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_number(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_number(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_number(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_number(activation)?;
+
+        // Clamp to bitmap rect.
+        let bitmap_width = f64::from(bitmap_data.width());
+        let bitmap_height = f64::from(bitmap_data.height());
+        let x_min = x.clamp(0.0, bitmap_width);
+        let y_min = y.clamp(0.0, bitmap_height);
+        let x_max = (x + width).clamp(x_min, bitmap_width);
+        let y_max = (y + height).clamp(y_min, bitmap_height);
+
+        let x_min = x_min as u32;
+        let x_max = x_max as u32;
+        let y_min = y_min as u32;
+        let y_max = y_max as u32;
+
+        // If the vector doesn't contain enough data, no change happens and error immediately.
+        let width = (x_max - x_min) as usize;
+        let height = (y_max - y_min) as usize;
+        let vec_read = vec
+            .as_vector_storage()
+            .expect("BitmapData.setVector: Expected vector");
+        if vec_read.length() < width * height {
+            return Err(Error::AvmError(range_error(
+                activation,
+                "Error #2006: The supplied index is out of bounds.",
+                2006,
+            )?));
+        }
+
+        let bitmap_data = bitmap_data.sync();
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let mut iter = vec_read.iter();
+        for y in y_min..y_max {
+            for x in x_min..x_max {
+                let color = iter
+                    .next()
+                    .expect("BitmapData.setVector: Expected element")
+                    .as_u32(activation.context.gc_context)
+                    .expect("BitmapData.setVector: Expected uint vector");
+                bitmap_data.set_pixel32_raw(x, y, color.into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `BitmapData.copyChannel`.
 pub fn copy_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,

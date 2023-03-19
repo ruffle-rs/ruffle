@@ -173,6 +173,12 @@ impl From<i32> for Color {
     }
 }
 
+impl From<u32> for Color {
+    fn from(i: u32) -> Self {
+        Color(i as i32)
+    }
+}
+
 impl From<swf::Color> for Color {
     fn from(c: swf::Color) -> Self {
         Self::argb(c.a, c.r, c.g, c.b)
