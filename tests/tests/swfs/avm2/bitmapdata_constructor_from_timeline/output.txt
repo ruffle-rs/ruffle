@@ -1,0 +1,1 @@
+Logo constructor called with: 1, 1

@@ -35,7 +35,9 @@ pub fn init<'gc>(
             //hold bitmap data.
 
             let bd_object = if let Some(bd_class) = bitmap.avm2_bitmapdata_class() {
-                bd_class.construct(activation, &[])?
+                // We call the custom BitmapData class with width and height...
+                // but, it always seems to be 1 in Flash Player when constructed from timeline?
+                bd_class.construct(activation, &[1.into(), 1.into()])?
             } else if let Some(b_class) = bitmap.avm2_bitmap_class() {
                 // Instantiating Bitmap from a Flex-style bitmap asset.
                 // Contrary to the above comment, this code path DOES
