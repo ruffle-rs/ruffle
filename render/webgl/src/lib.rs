@@ -734,6 +734,7 @@ impl WebGlRenderBackend {
         };
     }
 
+    #[allow(dead_code)]
     fn delete_mesh(&self, mesh: &Mesh) {
         if let Some(gl2) = &self.gl2 {
             for draw in &mesh.draws {
@@ -994,19 +995,6 @@ impl RenderBackend for WebGlRenderBackend {
             Err(e) => log::error!("Couldn't register shape: {:?}", e),
         }
         handle
-    }
-
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
-        self.delete_mesh(&self.meshes[handle.0]);
-        match self.register_shape_internal(shape, bitmap_source) {
-            Ok(mesh) => self.meshes[handle.0] = mesh,
-            Err(e) => log::error!("Couldn't replace shape: {:?}", e),
-        }
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {

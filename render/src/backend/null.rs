@@ -50,13 +50,6 @@ impl RenderBackend for NullRenderer {
     ) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn replace_shape(
-        &mut self,
-        _shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
-        _handle: ShapeHandle,
-    ) {
-    }
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
