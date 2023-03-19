@@ -43,7 +43,7 @@ impl LehmerRng {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
 #[collect(no_drop)]
 pub struct Color(i32);
 
@@ -759,25 +759,31 @@ impl<'gc> BitmapData<'gc> {
         let (min_x, min_y) = dest_point;
         let (src_min_x, src_min_y, src_max_x, src_max_y) = src_rect;
 
+        let channel_shift: u32 = match source_channel {
+            // red
+            1 => 16,
+            // green
+            2 => 8,
+            // blue
+            4 => 0,
+            // alpha
+            8 => 24,
+            _ => 0,
+        };
+
         for x in src_min_x.max(0)..src_max_x.min(source_bitmap.width()) {
             for y in src_min_y.max(0)..src_max_y.min(source_bitmap.height()) {
                 if self.is_point_in_bounds(x as i32 + min_x as i32, y as i32 + min_y as i32) {
                     let original_color: u32 = self
-                        .get_pixel32(x as i32 + min_x as i32, y as i32 + min_y as i32)
+                        .get_pixel_raw(x + min_x, y + min_y)
+                        .unwrap_or_default()
+                        .to_un_multiplied_alpha()
                         .into();
-                    let source_color: u32 = source_bitmap.get_pixel32(x as i32, y as i32).into();
-
-                    let channel_shift: u32 = match source_channel {
-                        // red
-                        1 => 16,
-                        // green
-                        2 => 8,
-                        // blue
-                        4 => 0,
-                        // alpha
-                        8 => 24,
-                        _ => 0,
-                    };
+                    let source_color: u32 = source_bitmap
+                        .get_pixel_raw(x, y)
+                        .unwrap_or_default()
+                        .to_un_multiplied_alpha()
+                        .into();
 
                     let source_part = (source_color >> channel_shift) & 0xFF;
 
@@ -793,14 +799,16 @@ impl<'gc> BitmapData<'gc> {
                         _ => original_color,
                     };
 
-                    self.set_pixel32(
-                        x as i32 + min_x as i32,
-                        y as i32 + min_y as i32,
-                        (result_color as i32).into(),
+                    self.set_pixel32_raw(
+                        x + min_x,
+                        y + min_y,
+                        Color(result_color as i32).to_premultiplied_alpha(self.transparency),
                     );
                 }
             }
         }
+
+        self.set_cpu_dirty(true);
     }
 
     pub fn color_transform(
