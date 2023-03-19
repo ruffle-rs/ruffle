@@ -989,10 +989,8 @@ impl RenderBackend for WebGlRenderBackend {
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let (format, bitmap) = match bitmap.format() {
-            BitmapFormat::Rgb => (Gl::RGB, bitmap),
-            BitmapFormat::Rgba | BitmapFormat::Yuv420p | BitmapFormat::Yuva420p => {
-                (Gl::RGBA, bitmap.to_rgba())
-            }
+            BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
+            BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
         };
 
         let texture = self
