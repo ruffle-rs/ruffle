@@ -445,16 +445,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         handle
     }
 
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    ) {
-        let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
-        self.shapes[handle.0] = data;
-    }
-
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         self.register_shape((&shape).into(), &NullBitmapSource)

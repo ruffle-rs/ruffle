@@ -304,12 +304,8 @@ impl Drawing {
                 edge_bounds: self.edge_bounds.clone(),
                 id: 0,
             };
-            if let Some(handle) = self.render_handle.get() {
-                context.renderer.replace_shape(shape, self, handle);
-            } else {
-                self.render_handle
-                    .set(Some(context.renderer.register_shape(shape, self)));
-            }
+            self.render_handle
+                .set(Some(context.renderer.register_shape(shape, self)));
         }
 
         if let Some(handle) = self.render_handle.get() {

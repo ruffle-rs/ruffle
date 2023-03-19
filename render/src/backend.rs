@@ -24,12 +24,6 @@ pub trait RenderBackend: Downcast {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
-    fn replace_shape(
-        &mut self,
-        shape: DistilledShape,
-        bitmap_source: &dyn BitmapSource,
-        handle: ShapeHandle,
-    );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
     /// Creates a new `RenderBackend` which renders directly
