@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import fs_callback from "fs";
 import { createRequire } from "module";
 import tempDir from "temp-dir";
 import { signAddon } from "sign-addon";
@@ -38,7 +39,7 @@ async function sign(
             extensionId
         )}/versions/${encodeURIComponent(version)}/`,
         formData: {
-            source: fs.createReadStream(sourcePath),
+            source: fs_callback.createReadStream(sourcePath),
         },
     });
 
