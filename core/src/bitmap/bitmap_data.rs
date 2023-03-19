@@ -841,7 +841,7 @@ impl<'gc> BitmapData<'gc> {
         {
             for x in x_min..x_max.min(self.width()) {
                 for y in y_min..y_max.min(self.height()) {
-                    let color = self.get_pixel_raw(x, y).unwrap().to_un_multiplied_alpha();
+                    let color = self.get_pixel32_raw(x, y).to_un_multiplied_alpha();
 
                     let color = color_transform * swf::Color::from(color);
 
@@ -852,8 +852,8 @@ impl<'gc> BitmapData<'gc> {
                     )
                 }
             }
+            self.set_cpu_dirty(true);
         }
-        self.set_cpu_dirty(true);
     }
 
     pub fn color_bounds_rect(
