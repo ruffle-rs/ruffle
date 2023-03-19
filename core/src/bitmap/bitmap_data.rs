@@ -629,9 +629,9 @@ impl<'gc> BitmapData<'gc> {
         self.set_pixel32(x as i32, y as i32, color.with_alpha(current_alpha));
     }
 
+    #[inline]
     pub fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
-        let width = self.width();
-        self.pixels[(x + y * width) as usize] = color;
+        self.pixels[(x + y * self.width) as usize] = color;
     }
 
     pub fn set_pixel32(&mut self, x: i32, y: i32, color: Color) {
