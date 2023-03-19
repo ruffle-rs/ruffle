@@ -3,6 +3,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 
+pub mod local_connection;
 pub mod object_encoding;
 pub mod shared_object;
 pub mod url_loader;
