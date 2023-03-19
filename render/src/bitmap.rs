@@ -88,6 +88,32 @@ impl Bitmap {
         }
     }
 
+    pub fn to_rgb(mut self) -> Self {
+        // Converts this bitmap to RGB, if it is not already.
+        match self.format {
+            BitmapFormat::Rgb => {} // no-op
+            BitmapFormat::Rgba => unreachable!("Can't convert RGBA Bitmap to RGB"),
+            BitmapFormat::Yuv420p => {
+                let luma_len = (self.width * self.height) as usize;
+                let chroma_len = (self.chroma_width() * self.chroma_height()) as usize;
+
+                let y = &self.data[0..luma_len];
+                let u = &self.data[luma_len..luma_len + chroma_len];
+                let v = &self.data[luma_len + chroma_len..luma_len + 2 * chroma_len];
+
+                self.data = yuv420_to_rgba(y, u, v, self.width as usize)
+                    .chunks_exact(4)
+                    .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
+                    .collect();
+            }
+            BitmapFormat::Yuva420p => unreachable!("Can't convert YUVA Bitmap to RGB"),
+        }
+
+        self.format = BitmapFormat::Rgb;
+
+        self
+    }
+
     pub fn to_rgba(mut self) -> Self {
         // Converts this bitmap to RGBA, if it is not already.
         match self.format {
