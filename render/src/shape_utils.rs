@@ -1300,7 +1300,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         id: 0,
         shape_bounds: bounds.clone(),
         edge_bounds: bounds,
-        flags: swf::ShapeFlag::HAS_SCALING_STROKES,
+        flags: swf::ShapeFlag::HAS_SCALING_STROKES | swf::ShapeFlag::HAS_FILL_WINDING_RULE,
         styles: swf::ShapeStyles {
             fill_styles: vec![swf::FillStyle::Color(swf::Color {
                 r: 255,
