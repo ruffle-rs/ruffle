@@ -2,7 +2,9 @@
 
 use crate::avm2::e4x::{E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::{E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject};
+use crate::avm2::object::{
+    E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject, XmlObject,
+};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, Error, Multiname, Object, Value};
@@ -145,6 +147,18 @@ pub fn children<'gc>(
     };
 
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+}
+
+pub fn parent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let node = xml.node();
+    Ok(node.parent().map_or(Value::Undefined, |parent| {
+        XmlObject::new(parent, activation).into()
+    }))
 }
 
 pub fn elements<'gc>(
