@@ -2,6 +2,7 @@
 // written by Kostya Shishkov, with permission.
 
 use crate::decoder::VideoDecoder;
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 
 use flate2::Decompress;
@@ -203,11 +204,15 @@ impl VideoDecoder for ScreenVideoDecoder {
 
         self.last_frame = Some(data);
 
-        Ok(DecodedFrame {
-            width: w as u16,
-            height: h as u16,
+        // NOTE: We could get away with only storing RGB data (saving some memory), as there is no
+        // alpha support in Screen V1, but since the render backends always want RGBA right now,
+        // it's better to do the pixel format conversion here, all at once.
+        Ok(DecodedFrame::new(
+            w as u32,
+            h as u32,
+            BitmapFormat::Rgba,
             rgba,
-        })
+        ))
     }
 }
 

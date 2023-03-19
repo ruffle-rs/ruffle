@@ -1,4 +1,5 @@
 use crate::decoder::VideoDecoder;
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 
 use h263_rs_yuv::bt601::yuv420_to_rgba;
@@ -229,11 +230,12 @@ impl VideoDecoder for Vp6Decoder {
         height = usize::min(height, bounds.1 as usize);
         rgba.truncate(width * height * 4);
 
-        Ok(DecodedFrame {
-            width: width as u16,
-            height: height as u16,
+        Ok(DecodedFrame::new(
+            width as u32,
+            height as u32,
+            BitmapFormat::Rgba,
             rgba,
-        })
+        ))
     }
 }
 
