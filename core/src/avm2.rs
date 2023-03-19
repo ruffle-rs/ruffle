@@ -53,7 +53,7 @@ mod string;
 mod stubs;
 mod traits;
 mod value;
-mod vector;
+pub mod vector;
 mod vtable;
 
 pub use crate::avm2::activation::Activation;

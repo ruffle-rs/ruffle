@@ -440,6 +440,60 @@ pub fn set_pixels<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.setVector`.
+pub fn set_vector<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let rectangle = args.get_object(activation, 0, "rect")?;
+    // Note - flash player misspells this as 'imputVector'.
+    let vec = args.get_object(activation, 1, "imputVector")?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = rectangle
+            .get_public_property("x", activation)?
+            .coerce_to_number(activation)?;
+        let y = rectangle
+            .get_public_property("y", activation)?
+            .coerce_to_number(activation)?;
+        let width = rectangle
+            .get_public_property("width", activation)?
+            .coerce_to_number(activation)?;
+        let height = rectangle
+            .get_public_property("height", activation)?
+            .coerce_to_number(activation)?;
+
+        // Clamp to bitmap rect.
+        let bitmap_width = f64::from(bitmap_data.width());
+        let bitmap_height = f64::from(bitmap_data.height());
+        let x_min = x.clamp(0.0, bitmap_width);
+        let y_min = y.clamp(0.0, bitmap_height);
+        let x_max = (x + width).clamp(x_min, bitmap_width);
+        let y_max = (y + height).clamp(y_min, bitmap_height);
+
+        let x_min = x_min as u32;
+        let x_max = x_max as u32;
+        let y_min = y_min as u32;
+        let y_max = y_max as u32;
+
+        let vec_read = vec
+            .as_vector_storage()
+            .expect("BitmapData.setVector: Expected vector");
+
+        operations::set_vector(
+            activation,
+            bitmap_data,
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+            &vec_read,
+        )?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `BitmapData.copyChannel`.
 pub fn copy_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
