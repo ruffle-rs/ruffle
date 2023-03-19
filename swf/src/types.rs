@@ -649,7 +649,7 @@ bitflags! {
     pub struct ShapeFlag: u8 {
         const HAS_SCALING_STROKES     = 1 << 0;
         const HAS_NON_SCALING_STROKES = 1 << 1;
-        const HAS_FILL_WINDING_RULE   = 1 << 2;
+        const NON_ZERO_WINDING_RULE   = 1 << 2;
     }
 }
 
