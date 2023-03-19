@@ -499,10 +499,6 @@ impl<'gc> BitmapData<'gc> {
         self.transparency
     }
 
-    pub fn set_transparency(&mut self, transparency: bool) {
-        self.transparency = transparency;
-    }
-
     pub fn set_cpu_dirty(&mut self, dirty: bool) {
         let new_state = if dirty {
             DirtyState::CpuModified
