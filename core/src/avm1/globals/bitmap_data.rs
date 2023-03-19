@@ -226,8 +226,8 @@ pub fn set_pixel32<'gc>(
             if let (Some(x_val), Some(y_val), Some(color_val)) =
                 (args.get(0), args.get(1), args.get(2))
             {
-                let x = x_val.coerce_to_i32(activation)?;
-                let y = y_val.coerce_to_i32(activation)?;
+                let x = x_val.coerce_to_u32(activation)?;
+                let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
                 bitmap_data

@@ -399,8 +399,8 @@ pub fn set_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let x = args.get_i32(activation, 0)?;
-        let y = args.get_i32(activation, 1)?;
+        let x = args.get_u32(activation, 0)?;
+        let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
         bitmap_data
             .write(activation.context.gc_context)
@@ -447,7 +447,7 @@ pub fn set_pixels<'gc>(
             for x in x..x + width {
                 // Copy data from bytearray until EOFError or finished
                 if let Ok(color) = ba_read.read_int_at(ind) {
-                    bitmap_data.set_pixel32(x as i32, y as i32, color.into());
+                    bitmap_data.set_pixel32(x, y, color.into());
                     ind += 4;
                 } else {
                     return Err(Error::AvmError(crate::avm2::error::eof_error(
