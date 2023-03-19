@@ -554,14 +554,6 @@ impl<'gc> BitmapData<'gc> {
         x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
     }
 
-    pub fn get_pixel_raw(&self, x: u32, y: u32) -> Option<Color> {
-        if x >= self.width() || y >= self.height() {
-            return None;
-        }
-
-        self.pixels.get((x + y * self.width()) as usize).copied()
-    }
-
     pub fn get_pixel32(&self, x: u32, y: u32) -> Color {
         if x < self.width && y < self.height {
             self.get_pixel32_raw(x, y).to_un_multiplied_alpha()
@@ -628,7 +620,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         if x < self.width && y < self.height {
             if self.transparency {
-                let current_alpha = self.get_pixel_raw(x, y).unwrap_or_default().alpha();
+                let current_alpha = self.get_pixel32_raw(x, y).alpha();
                 let color = color.with_alpha(current_alpha).to_premultiplied_alpha(true);
                 self.set_pixel32_raw(x, y, color);
             } else {
@@ -669,28 +661,30 @@ impl<'gc> BitmapData<'gc> {
     }
 
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
-        let expected_color = self.get_pixel_raw(x, y).unwrap_or_else(|| 0.into());
+        if x >= self.width || y >= self.height {
+            return;
+        }
+        let expected_color = self.get_pixel32_raw(x, y);
 
         let mut pending = vec![(x, y)];
 
         while !pending.is_empty() {
             if let Some((x, y)) = pending.pop() {
-                if let Some(old_color) = self.get_pixel_raw(x, y) {
-                    if old_color == expected_color {
-                        if x > 0 {
-                            pending.push((x - 1, y));
-                        }
-                        if y > 0 {
-                            pending.push((x, y - 1));
-                        }
-                        if x < self.width() - 1 {
-                            pending.push((x + 1, y))
-                        }
-                        if y < self.height() - 1 {
-                            pending.push((x, y + 1));
-                        }
-                        self.set_pixel32_raw(x, y, replace_color);
+                let old_color = self.get_pixel32_raw(x, y);
+                if old_color == expected_color {
+                    if x > 0 {
+                        pending.push((x - 1, y));
                     }
+                    if y > 0 {
+                        pending.push((x, y - 1));
+                    }
+                    if x < self.width() - 1 {
+                        pending.push((x + 1, y))
+                    }
+                    if y < self.height() - 1 {
+                        pending.push((x, y + 1));
+                    }
+                    self.set_pixel32_raw(x, y, replace_color);
                 }
             }
         }
@@ -785,13 +779,11 @@ impl<'gc> BitmapData<'gc> {
             for y in src_min_y.max(0)..src_max_y.min(source_bitmap.height()) {
                 if self.is_point_in_bounds(x as i32 + min_x as i32, y as i32 + min_y as i32) {
                     let original_color: u32 = self
-                        .get_pixel_raw(x + min_x, y + min_y)
-                        .unwrap_or_default()
+                        .get_pixel32_raw(x + min_x, y + min_y)
                         .to_un_multiplied_alpha()
                         .into();
                     let source_color: u32 = source_bitmap
-                        .get_pixel_raw(x, y)
-                        .unwrap_or_default()
+                        .get_pixel32_raw(x, y)
                         .to_un_multiplied_alpha()
                         .into();
 
@@ -869,7 +861,7 @@ impl<'gc> BitmapData<'gc> {
 
         for x in 0..self.width() {
             for y in 0..self.height() {
-                let pixel_raw: i32 = self.get_pixel_raw(x, y).unwrap().into();
+                let pixel_raw: i32 = self.get_pixel32_raw(x, y).into();
                 let color_matches = if find_color {
                     (pixel_raw & mask) == color
                 } else {
@@ -919,11 +911,9 @@ impl<'gc> BitmapData<'gc> {
                     continue;
                 }
 
-                let source_color = source_bitmap
-                    .get_pixel_raw(src_x as u32, src_y as u32)
-                    .unwrap();
+                let source_color = source_bitmap.get_pixel32_raw(src_x as u32, src_y as u32);
 
-                let mut dest_color = self.get_pixel_raw(dest_x as u32, dest_y as u32).unwrap();
+                let mut dest_color = self.get_pixel32_raw(dest_x as u32, dest_y as u32);
 
                 if let Some((alpha_bitmap, (alpha_min_x, alpha_min_y))) = alpha_source {
                     let alpha_x = src_x - src_min_x + alpha_min_x;
@@ -937,8 +927,7 @@ impl<'gc> BitmapData<'gc> {
 
                     let final_alpha = if alpha_bitmap.transparency {
                         let a = alpha_bitmap
-                            .get_pixel_raw(alpha_x as u32, alpha_y as u32)
-                            .unwrap()
+                            .get_pixel32_raw(alpha_x as u32, alpha_y as u32)
                             .alpha();
 
                         if source_bitmap.transparency {
@@ -1013,13 +1002,11 @@ impl<'gc> BitmapData<'gc> {
                 }
 
                 let source_color = source_bitmap
-                    .get_pixel_raw(src_x as u32, src_y as u32)
-                    .unwrap()
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
                     .to_un_multiplied_alpha();
 
                 let dest_color = self
-                    .get_pixel_raw(dest_x as u32, dest_y as u32)
-                    .unwrap()
+                    .get_pixel32_raw(dest_x as u32, dest_y as u32)
                     .to_un_multiplied_alpha();
 
                 let red_mult = rgba_mult.0.clamp(0, 256) as u16;
@@ -1082,8 +1069,7 @@ impl<'gc> BitmapData<'gc> {
 
                 let source_color = source_bitmap
                     .unwrap_or(self)
-                    .get_pixel_raw(src_x as u32, src_y as u32)
-                    .unwrap()
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
                     .to_un_multiplied_alpha();
 
                 let r = channel_arrays.0[source_color.red() as usize];
@@ -1241,7 +1227,7 @@ impl<'gc> BitmapData<'gc> {
         while src_y != y_to {
             let mut src_x = x_from;
             while src_x != x_to {
-                let color = self.get_pixel_raw(src_x as u32, src_y as u32).unwrap();
+                let color = self.get_pixel32_raw(src_x as u32, src_y as u32);
                 self.set_pixel32_raw((src_x + x) as u32, (src_y + y) as u32, color);
                 src_x += dx;
             }
@@ -1290,8 +1276,7 @@ impl<'gc> BitmapData<'gc> {
 
                 // Extract source colour
                 let source_color = source_bitmap
-                    .get_pixel_raw(src_x as u32, src_y as u32)
-                    .unwrap()
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
                     .to_un_multiplied_alpha();
 
                 // If the test, as defined by the operation pass then set to input colour
@@ -1302,8 +1287,7 @@ impl<'gc> BitmapData<'gc> {
                     // If the test fails, but copy_source is true then take the colour from the source
                     if copy_source {
                         let new_color = source_bitmap
-                            .get_pixel_raw(dest_x as u32, dest_y as u32)
-                            .unwrap()
+                            .get_pixel32_raw(dest_x as u32, dest_y as u32)
                             .to_un_multiplied_alpha();
 
                         self.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
