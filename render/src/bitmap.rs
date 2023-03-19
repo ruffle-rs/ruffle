@@ -74,8 +74,8 @@ impl Bitmap {
         if data.len() != expected_len {
             tracing::warn!(
                 "Incorrect bitmap data size, expected {} bytes, got {}",
+                expected_len,
                 data.len(),
-                expected_len
             );
             // Truncate or zero pad to the expected size.
             data.resize(expected_len, 0);

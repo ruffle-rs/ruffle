@@ -3623,7 +3623,6 @@ dependencies = [
  "flate2",
  "generational-arena",
  "h263-rs",
- "h263-rs-yuv",
  "log",
  "nihav_codec_support",
  "nihav_core",
