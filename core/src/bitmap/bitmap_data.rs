@@ -625,8 +625,16 @@ impl<'gc> BitmapData<'gc> {
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
-        let current_alpha = self.get_pixel_raw(x, y).map(|p| p.alpha()).unwrap_or(0);
-        self.set_pixel32(x as i32, y as i32, color.with_alpha(current_alpha));
+        if x < self.width && y < self.height {
+            if self.transparency {
+                let current_alpha = self.get_pixel_raw(x, y).unwrap_or_default().alpha();
+                let color = color.with_alpha(current_alpha).to_premultiplied_alpha(true);
+                self.set_pixel32_raw(x, y, color);
+            } else {
+                self.set_pixel32_raw(x, y, color.with_alpha(0xFF));
+            }
+            self.set_cpu_dirty(true);
+        }
     }
 
     #[inline]
