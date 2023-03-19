@@ -29,6 +29,7 @@ package flash.display {
         public native function setPixel(x:int, y:int, color:uint):void;
         public native function setPixel32(x:int, y:int, color:uint):void;
         public native function setPixels(rect:Rectangle, inputByteArray:ByteArray):void;
+        public native function setVector(rect:Rectangle, inputVector:Vector.<uint>):void;
         public native function copyChannel(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, sourceChannel:uint, destChannel:uint):void;
         public native function floodFill(x:int, y:int, color:uint):void;
         public native function noise(randomSeed:int, low:uint = 0, high:uint = 255, channelOptions:uint = 7, grayScale:Boolean = false):void;
