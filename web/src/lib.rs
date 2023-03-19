@@ -1174,6 +1174,12 @@ impl ExternalInterfaceMethod for JavascriptMethod {
     }
 }
 
+#[wasm_bindgen(raw_module = "./ruffle-imports")]
+extern "C" {
+    #[wasm_bindgen(catch, js_name = "getProperty")]
+    pub fn get_property(target: &JsValue, key: &JsValue) -> Result<JsValue, JsValue>;
+}
+
 impl JavascriptInterface {
     fn new(js_player: JavascriptPlayer) -> Self {
         Self { js_player }
@@ -1184,7 +1190,7 @@ impl JavascriptInterface {
         let mut value = root;
         for key in name.split('.') {
             parent = value;
-            value = js_sys::Reflect::get(&parent, &JsValue::from_str(key)).ok()?;
+            value = get_property(&parent, &JsValue::from_str(key)).ok()?;
         }
         if value.is_function() {
             Some(JavascriptMethod {
