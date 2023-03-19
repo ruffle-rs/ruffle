@@ -1430,7 +1430,9 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn hit_test_point(&self, alpha_threshold: u32, test_point: (i32, i32)) -> bool {
         if self.is_point_in_bounds(test_point.0, test_point.1) {
-            self.get_pixel32(test_point.0, test_point.1).alpha() as u32 >= alpha_threshold
+            self.get_pixel32_raw(test_point.0 as u32, test_point.1 as u32)
+                .alpha() as u32
+                >= alpha_threshold
         } else {
             false
         }
