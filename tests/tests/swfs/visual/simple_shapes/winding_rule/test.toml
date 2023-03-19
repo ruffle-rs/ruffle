@@ -1,0 +1,9 @@
+# SWF was manually made as Flash doesn't generate these normally
+
+num_frames = 1
+
+[image_comparison]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }
