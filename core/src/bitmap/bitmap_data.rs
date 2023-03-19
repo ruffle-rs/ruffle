@@ -642,13 +642,9 @@ impl<'gc> BitmapData<'gc> {
         self.pixels[(x + y * self.width) as usize] = color;
     }
 
-    pub fn set_pixel32(&mut self, x: i32, y: i32, color: Color) {
-        if self.is_point_in_bounds(x, y) {
-            self.set_pixel32_raw(
-                x as u32,
-                y as u32,
-                color.to_premultiplied_alpha(self.transparency()),
-            );
+    pub fn set_pixel32(&mut self, x: u32, y: u32, color: Color) {
+        if x < self.width && y < self.height {
+            self.set_pixel32_raw(x, y, color.to_premultiplied_alpha(self.transparency()));
             self.set_cpu_dirty(true);
         }
     }
