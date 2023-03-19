@@ -568,9 +568,12 @@ impl<'gc> BitmapData<'gc> {
             .unwrap_or_else(|| 0.into())
     }
 
-    pub fn get_pixel(&self, x: i32, y: i32) -> i32 {
-        if self.is_point_in_bounds(x, y) {
-            self.get_pixel32(x, y).with_alpha(0x0).into()
+    pub fn get_pixel(&self, x: u32, y: u32) -> i32 {
+        if x < self.width && y < self.height {
+            self.get_pixel32_raw(x, y)
+                .to_un_multiplied_alpha()
+                .with_alpha(0x0)
+                .into()
         } else {
             0
         }
@@ -634,8 +637,13 @@ impl<'gc> BitmapData<'gc> {
     }
 
     #[inline]
-    pub fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
+    fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
         self.pixels[(x + y * self.width) as usize] = color;
+    }
+
+    #[inline]
+    fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
+        self.pixels[(x + y * self.width()) as usize]
     }
 
     pub fn set_pixel32(&mut self, x: u32, y: u32, color: Color) {
