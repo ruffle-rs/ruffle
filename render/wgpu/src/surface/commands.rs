@@ -3,7 +3,7 @@ use crate::blend::TrivialBlend;
 use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_pool::TexturePool;
 use crate::globals::Globals;
-use crate::mesh::{DrawType, Mesh};
+use crate::mesh::{as_mesh, DrawType, Mesh};
 use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{
@@ -24,7 +24,6 @@ use super::target::PoolOrArcTexture;
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
-    meshes: &'global Vec<Mesh>,
     descriptors: &'global Descriptors,
     num_masks: u32,
     mask_state: MaskState,
@@ -39,7 +38,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pipelines: &'frame Pipelines,
-        meshes: &'global Vec<Mesh>,
         descriptors: &'global Descriptors,
         uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
         color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
@@ -51,7 +49,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     ) -> Self {
         Self {
             pipelines,
-            meshes,
             num_masks,
             mask_state,
             render_pass,
@@ -93,7 +90,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform,
                 blend_mode,
             } => self.render_texture(transform, binds, *blend_mode),
-            DrawCommand::RenderShape { shape, transform } => self.render_shape(*shape, transform),
+            DrawCommand::RenderShape { shape, transform } => self.render_shape(shape, transform),
             DrawCommand::DrawRect { color, matrix } => self.draw_rect(color, matrix),
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
@@ -297,13 +294,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
-    pub fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+    pub fn render_shape(&mut self, shape: &'frame ShapeHandle, transform: &Transform) {
         if cfg!(feature = "render_debug_labels") {
-            self.render_pass
-                .push_debug_group(&format!("render_shape {}", shape.0));
+            self.render_pass.push_debug_group("render_shape");
         }
 
-        let mesh = &self.meshes[shape.0];
+        let mesh = as_mesh(shape);
         for draw in &mesh.draws {
             let num_indices = if self.mask_state != MaskState::DrawMaskStencil
                 && self.mask_state != MaskState::ClearMaskStencil

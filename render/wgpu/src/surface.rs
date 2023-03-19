@@ -209,7 +209,6 @@ impl Surface {
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
-                        meshes,
                         descriptors,
                         uniform_buffers,
                         color_buffers,

@@ -4,13 +4,13 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath, FillRule};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use swf::{FillStyle, LineStyle, Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct Drawing {
-    render_handle: Cell<Option<ShapeHandle>>,
+    render_handle: RefCell<Option<ShapeHandle>>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
     dirty: Cell<bool>,
@@ -33,7 +33,7 @@ impl Default for Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: Cell::new(None),
+            render_handle: RefCell::new(None),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
             dirty: Cell::new(false),
@@ -50,7 +50,7 @@ impl Drawing {
 
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
-            render_handle: Cell::new(None),
+            render_handle: RefCell::new(None),
             shape_bounds: shape.shape_bounds.clone(),
             edge_bounds: shape.edge_bounds.clone(),
             dirty: Cell::new(true),
@@ -305,10 +305,10 @@ impl Drawing {
                 id: 0,
             };
             self.render_handle
-                .set(Some(context.renderer.register_shape(shape, self)));
+                .replace(Some(context.renderer.register_shape(shape, self)));
         }
 
-        if let Some(handle) = self.render_handle.get() {
+        if let Some(handle) = self.render_handle.borrow().to_owned() {
             context
                 .commands
                 .render_shape(handle, context.transform_stack.transform());

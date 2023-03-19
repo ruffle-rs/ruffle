@@ -7,7 +7,7 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 
 use crate::buffer_builder::BufferBuilder;
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl};
 use ruffle_render::bitmap::BitmapSource;
 use ruffle_render::tessellator::{Bitmap, Draw as LyonDraw, DrawType as TessDrawType, Gradient};
 use swf::{CharacterId, GradientInterpolation};
@@ -20,6 +20,12 @@ pub struct Mesh {
     pub draws: Vec<Draw>,
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+}
+
+impl ShapeHandleImpl for Mesh {}
+
+pub fn as_mesh(handle: &ShapeHandle) -> &Mesh {
+    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be a WGPU ShapeData")
 }
 
 #[derive(Debug)]

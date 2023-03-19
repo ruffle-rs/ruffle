@@ -190,7 +190,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = &self.0.read().drawing {
             drawing.render(context);
-        } else if let Some(render_handle) = self.0.read().static_data.render_handle {
+        } else if let Some(render_handle) = self.0.read().static_data.render_handle.clone() {
             context
                 .commands
                 .render_shape(render_handle, context.transform_stack.transform())
