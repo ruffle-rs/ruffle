@@ -424,22 +424,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal(shape, bitmap_source);
-        self.meshes.push(mesh);
-        handle
+        ShapeHandle(Arc::new(mesh))
     }
 
     #[instrument(level = "debug", skip_all)]
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal(
             (&shape).into(),
             &ruffle_render::backend::null::NullBitmapSource,
         );
-        self.meshes.push(mesh);
-        handle
+        ShapeHandle(Arc::new(mesh))
     }
 
     #[instrument(level = "debug", skip_all)]

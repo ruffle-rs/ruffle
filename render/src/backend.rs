@@ -11,7 +11,9 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_wstr::WStr;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+use std::fmt::Debug;
 use std::rc::Rc;
+use std::sync::Arc;
 use swf;
 
 pub trait RenderBackend: Downcast {
@@ -376,8 +378,12 @@ pub enum Context3DCommand<'gc> {
     },
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct ShapeHandle(pub usize);
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
+
+pub trait ShapeHandleImpl: Downcast + Debug {}
+impl_downcast!(ShapeHandleImpl);
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -194,7 +194,7 @@ impl MorphShapeStatic {
         ratio: u16,
     ) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
-        if let Some(handle) = frame.shape_handle {
+        if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
@@ -205,7 +205,7 @@ impl MorphShapeStatic {
                     gc_context: context.gc_context,
                 },
             );
-            frame.shape_handle = Some(handle);
+            frame.shape_handle = Some(handle.clone());
             handle
         }
     }

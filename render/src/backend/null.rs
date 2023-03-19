@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use crate::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
@@ -32,9 +32,14 @@ impl NullRenderer {
         Self { dimensions }
     }
 }
+
 #[derive(Clone, Debug)]
 struct NullBitmapHandle;
 impl BitmapHandleImpl for NullBitmapHandle {}
+
+#[derive(Clone, Debug)]
+struct NullShapeHandle;
+impl ShapeHandleImpl for NullShapeHandle {}
 
 impl RenderBackend for NullRenderer {
     fn viewport_dimensions(&self) -> ViewportDimensions {
@@ -48,10 +53,10 @@ impl RenderBackend for NullRenderer {
         _shape: DistilledShape,
         _bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        ShapeHandle(0)
+        ShapeHandle(Arc::new(NullShapeHandle))
     }
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
-        ShapeHandle(0)
+        ShapeHandle(Arc::new(NullShapeHandle))
     }
 
     fn render_offscreen(

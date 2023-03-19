@@ -4,7 +4,7 @@ use crate::string::WStr;
 use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Ref, RefCell};
 use std::cmp::max;
 
 pub use swf::TextGridFit;
@@ -126,7 +126,7 @@ impl<'gc> Font<'gc> {
             };
             let glyph_code = swf_glyph.code;
             let glyph = Glyph {
-                shape_handle: Cell::new(handle),
+                shape_handle: RefCell::new(handle),
                 advance: swf_glyph.advance,
                 shape: RefCell::new(None),
                 swf_glyph,
@@ -419,7 +419,7 @@ pub struct Glyph {
     pub advance: i16,
     // Handle to registered shape.
     // If None, it'll be loaded lazily on first render of this glyph.
-    shape_handle: Cell<Option<ShapeHandle>>,
+    shape_handle: RefCell<Option<ShapeHandle>>,
     // Same shape as one in swf_glyph, but wrapped in an swf::Shape;
     // For use in hit tests. Created lazily on first use.
     // (todo: refactor hit tests to not require this?
@@ -431,11 +431,11 @@ pub struct Glyph {
 
 impl Glyph {
     pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
-        if self.shape_handle.get().is_none() {
+        if self.shape_handle.borrow().is_none() {
             self.shape_handle
-                .set(Some(renderer.register_glyph_shape(&self.swf_glyph)))
+                .replace(Some(renderer.register_glyph_shape(&self.swf_glyph)));
         }
-        self.shape_handle.get().unwrap()
+        self.shape_handle.borrow().clone().unwrap()
     }
 
     pub fn as_shape(&self) -> Ref<'_, swf::Shape> {
