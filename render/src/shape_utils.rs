@@ -2,6 +2,8 @@ use crate::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
+pub use lyon::path::FillRule;
+
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
@@ -61,7 +63,7 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 /// `DrawPath` represents a solid fill or a stroke.
 /// Fills are always closed paths, while strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DrawPath<'a> {
     Stroke {
         style: &'a LineStyle,
@@ -71,12 +73,13 @@ pub enum DrawPath<'a> {
     Fill {
         style: &'a FillStyle,
         commands: Vec<DrawCommand>,
+        winding_rule: FillRule,
     },
 }
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
     pub shape_bounds: Rectangle<Twips>,
@@ -332,6 +335,7 @@ pub struct ShapeConverter<'a> {
     fill_style0: ActivePath,
     fill_style1: ActivePath,
     line_style: ActivePath,
+    winding_rule: FillRule,
 
     // Paths. These get flushed for each new layer.
     fills: Vec<PendingPath>,
@@ -362,6 +366,12 @@ impl<'a> ShapeConverter<'a> {
             strokes: vec![PendingPath::new(); shape.styles.line_styles.len()],
 
             commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
+
+            winding_rule: if shape.flags.contains(swf::ShapeFlag::HAS_FILL_WINDING_RULE) {
+                FillRule::NonZero
+            } else {
+                FillRule::EvenOdd
+            },
         }
     }
 
@@ -512,6 +522,7 @@ impl<'a> ShapeConverter<'a> {
             self.commands.push(DrawPath::Fill {
                 style,
                 commands: path.to_draw_commands().collect(),
+                winding_rule: self.winding_rule,
             });
             path.segments.clear();
         }
@@ -620,6 +631,7 @@ mod tests {
                     y: Twips::from_pixels(100.0),
                 },
             ],
+            winding_rule: FillRule::EvenOdd,
         }];
         assert_eq!(commands, expected);
     }
@@ -684,6 +696,7 @@ mod tests {
                     y: Twips::from_pixels(100.0),
                 },
             ],
+            winding_rule: FillRule::EvenOdd,
         }];
         assert_eq!(commands, expected);
     }

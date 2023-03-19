@@ -3,7 +3,7 @@ use gc_arena::Collect;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath, FillRule};
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Rectangle, Twips};
 
@@ -77,7 +77,11 @@ impl Drawing {
 
                     this.set_line_style(None);
                 }
-                DrawPath::Fill { style, commands } => {
+                DrawPath::Fill {
+                    style,
+                    commands,
+                    winding_rule: _, // TODO: Add winding rule to drawing API :)
+                } => {
                     this.set_fill_style(Some(style.clone()));
 
                     for command in commands {
@@ -225,6 +229,7 @@ impl Drawing {
                         paths.push(DrawPath::Fill {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
+                            winding_rule: FillRule::EvenOdd,
                         });
                     }
                     DrawingPath::Line(line) => {
@@ -241,6 +246,7 @@ impl Drawing {
                 paths.push(DrawPath::Fill {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
+                    winding_rule: FillRule::EvenOdd,
                 })
             }
 
