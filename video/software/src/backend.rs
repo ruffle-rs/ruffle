@@ -1,7 +1,7 @@
 use crate::decoder::VideoDecoder;
 use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, PixelRegion};
+use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
@@ -78,33 +78,22 @@ impl VideoBackend for SoftwareVideoBackend {
             .ok_or(Error::VideoStreamIsNotRegistered)?;
 
         let frame = stream.decoder.decode_frame(encoded_frame)?;
+
+        let w = frame.width();
+        let h = frame.height();
+
         let handle = if let Some(bitmap) = stream.bitmap.clone() {
-            renderer.update_texture(
-                &bitmap,
-                Bitmap::new(
-                    frame.width(),
-                    frame.height(),
-                    BitmapFormat::Rgba,
-                    frame.data().to_vec(),
-                ),
-                PixelRegion::for_whole_size(frame.width(), frame.height()),
-            )?;
+            renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(w, h))?;
             bitmap
         } else {
-            let bitmap = Bitmap::new(
-                frame.width(),
-                frame.height(),
-                BitmapFormat::Rgba,
-                frame.data().to_vec(),
-            );
-            renderer.register_bitmap(bitmap)?
+            renderer.register_bitmap(frame)?
         };
         stream.bitmap = Some(handle.clone());
 
         Ok(BitmapInfo {
             handle,
-            width: frame.width() as u16,
-            height: frame.height() as u16,
+            width: w as u16,
+            height: h as u16,
         })
     }
 }
