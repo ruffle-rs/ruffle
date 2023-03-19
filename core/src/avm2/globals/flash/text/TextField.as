@@ -113,7 +113,7 @@ package flash.text {
 
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;
-        public native function getTextFormat():TextFormat;
+        public native function getTextFormat(beginIndex:int = -1, endIndex:int = -1):TextFormat;
         public native function setTextFormat(format:TextFormat, beginIndex:int = -1, endIndex:int = -1):void;
         public native function replaceSelectedText(value:String):void;
         public native function replaceText(beginIndex:int, endIndex:int, newText:String):void;
