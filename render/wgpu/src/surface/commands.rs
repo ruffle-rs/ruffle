@@ -447,6 +447,13 @@ pub enum DrawCommand {
     PopMask,
 }
 
+#[derive(Copy, Clone)]
+pub enum LayerRef<'a> {
+    None,
+    Current,
+    Parent(&'a CommandTarget),
+}
+
 /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
 /// Every complex blend will be its own item, but every other draw will be chunked together
 #[allow(clippy::too_many_arguments)]
@@ -461,7 +468,7 @@ pub fn chunk_blends<'a>(
     quality: StageQuality,
     width: u32,
     height: u32,
-    nearest_layer: &CommandTarget,
+    nearest_layer: LayerRef,
     texture_pool: &mut TexturePool,
 ) -> Vec<Chunk> {
     let mut result = vec![];
@@ -490,9 +497,9 @@ pub fn chunk_blends<'a>(
                     uniform_encoder,
                     draw_encoder,
                     if blend_mode == BlendMode::Layer {
-                        None
+                        LayerRef::Current
                     } else {
-                        Some(nearest_layer)
+                        nearest_layer
                     },
                     texture_pool,
                 );
