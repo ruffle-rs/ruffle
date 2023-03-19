@@ -101,9 +101,7 @@ public class TouchEvent extends Event {
     }
 
     // Instructs Flash Player or Adobe AIR to render after processing of this event completes, if the display list has been modified.
-    public function updateAfterEvent(): void {
-        stub_method("flash.events.TouchEvent", "updateAfterEvent");
-    }
+    public native function updateAfterEvent(): void;
 
     public function get stageX(): Number {
         return this._stageX;
