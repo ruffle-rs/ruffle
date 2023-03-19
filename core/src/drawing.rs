@@ -21,6 +21,7 @@ pub struct Drawing {
     pending_lines: Vec<DrawingLine>,
     cursor: (Twips, Twips),
     fill_start: (Twips, Twips),
+    winding_rule: FillRule,
 }
 
 impl Default for Drawing {
@@ -43,6 +44,7 @@ impl Drawing {
             pending_lines: Vec::new(),
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
+            winding_rule: FillRule::EvenOdd,
         }
     }
 
@@ -59,6 +61,11 @@ impl Drawing {
             pending_lines: Vec::new(),
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
+            winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+                FillRule::NonZero
+            } else {
+                FillRule::EvenOdd
+            },
         };
 
         let shape: DistilledShape = shape.into();
@@ -80,8 +87,9 @@ impl Drawing {
                 DrawPath::Fill {
                     style,
                     commands,
-                    winding_rule: _, // TODO: Add winding rule to drawing API :)
+                    winding_rule,
                 } => {
+                    this.set_winding_rule(winding_rule);
                     this.set_fill_style(Some(style.clone()));
 
                     for command in commands {
@@ -94,6 +102,10 @@ impl Drawing {
         }
 
         this
+    }
+
+    pub fn set_winding_rule(&mut self, rule: FillRule) {
+        self.winding_rule = rule;
     }
 
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
