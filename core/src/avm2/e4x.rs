@@ -326,6 +326,10 @@ impl<'gc> E4XNode<'gc> {
         self.0.read().local_name
     }
 
+    pub fn parent(&self) -> Option<E4XNode<'gc>> {
+        self.0.read().parent
+    }
+
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
         // FIXME - we need to handle namespaces here
         if name.is_any_name() {
