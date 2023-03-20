@@ -16,9 +16,9 @@ use ruffle_render::bitmap::{
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::quality::StageQuality;
-use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::shape_utils::{DistilledShape, GradientType};
 use ruffle_render::tessellator::{
-    Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
+    Gradient as TessGradient, ShapeTessellator, Vertex as TessVertex,
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
