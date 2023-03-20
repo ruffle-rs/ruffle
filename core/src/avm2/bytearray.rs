@@ -132,14 +132,18 @@ impl ByteArrayStorage {
         Ok(bytes)
     }
 
-    /// Same as `read_bytes`, but cuts the result at the first null byte to recreate a bug in FP.
+    /// Same as `read_bytes`, but:
+    /// - cuts the result at the first null byte to recreate a bug in FP
+    /// - strips off an optional UTF8 BOM at the beginning
     pub fn read_utf_bytes(&self, amnt: usize) -> Result<&[u8], EofError> {
-        let bytes = self.read_bytes(amnt)?;
-        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
-            Ok(&bytes[..null])
-        } else {
-            Ok(bytes)
+        let mut bytes = self.read_bytes(amnt)?;
+        if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+            bytes = without_bom;
         }
+        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
+            bytes = &bytes[..null];
+        }
+        Ok(bytes)
     }
 
     /// Reads any amount of bytes at any offset in the ByteArray
