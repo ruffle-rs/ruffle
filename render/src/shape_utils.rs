@@ -1,8 +1,30 @@
 use crate::matrix::Matrix;
+use enum_map::Enum;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
-pub use lyon::path::FillRule;
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum FillRule {
+    EvenOdd,
+    NonZero,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
+pub enum GradientType {
+    Linear,
+    Radial,
+    Focal,
+}
+
+#[cfg(feature = "tessellator")]
+impl From<FillRule> for lyon::path::FillRule {
+    fn from(rule: FillRule) -> lyon::path::FillRule {
+        match rule {
+            FillRule::EvenOdd => lyon::path::FillRule::EvenOdd,
+            FillRule::NonZero => lyon::path::FillRule::NonZero,
+        }
+    }
+}
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle<Twips> {
     let mut bounds = swf::Rectangle {

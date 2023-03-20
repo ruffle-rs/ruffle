@@ -1,6 +1,5 @@
 use crate::bitmap::BitmapSource;
-use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
-use enum_map::Enum;
+use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
 use lyon::path::Path;
 use lyon::tessellation::{
     self,
@@ -137,7 +136,7 @@ impl ShapeTessellator {
             let result = match path {
                 DrawPath::Fill { winding_rule, .. } => self.fill_tess.tessellate_path(
                     &lyon_path,
-                    &FillOptions::default().with_fill_rule(winding_rule),
+                    &FillOptions::default().with_fill_rule(winding_rule.into()),
                     &mut buffers_builder,
                 ),
                 DrawPath::Stroke { style, .. } => {
@@ -406,11 +405,4 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             color: self.color.clone(),
         }
     }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
-pub enum GradientType {
-    Linear,
-    Radial,
-    Focal,
 }
