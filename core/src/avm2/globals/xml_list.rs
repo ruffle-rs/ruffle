@@ -232,3 +232,13 @@ pub fn text<'gc>(
     }
     Ok(XmlListObject::new(activation, nodes, Some(xml_list.into())).into())
 }
+
+pub fn copy<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let children = (*list.children()).clone();
+    Ok(XmlListObject::new(activation, children, None).into())
+}
