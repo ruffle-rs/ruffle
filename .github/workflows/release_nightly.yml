@@ -17,6 +17,7 @@ jobs:
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
+      tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle'
@@ -330,18 +331,14 @@ jobs:
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
-        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/*
+        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/* && cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./reproducible-source.zip
-          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Build web
         env:
