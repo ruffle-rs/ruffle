@@ -925,11 +925,10 @@ export class RufflePlayer extends HTMLElement {
                         this.saveManager.close();
                     }
                     return;
-                } else {
-                    replace
-                        ? localStorage.setItem(solKey, b64SolData)
-                        : localStorage.removeItem(solKey);
                 }
+                replace
+                    ? localStorage.setItem(solKey, b64SolData)
+                    : localStorage.removeItem(solKey);
                 this.populateSaves();
                 this.saveManager.close();
             }
