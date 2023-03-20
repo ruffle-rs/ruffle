@@ -1,4 +1,4 @@
 // removeChild(null);
-Error 2007
+TypeError: Error #2007: Parameter child must be non-null.
 // removeChild(undefined);
-Error 2007
+TypeError: Error #2007: Parameter child must be non-null.
