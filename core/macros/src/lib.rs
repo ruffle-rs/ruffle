@@ -3,7 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemMethod, ItemEnum, ItemTrait, Pat,
+    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Pat,
     TraitItem, Visibility,
 };
 
@@ -64,7 +64,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         .items
         .iter()
         .map(|item| match item {
-            TraitItem::Method(method) => {
+            TraitItem::Fn(method) => {
                 let method_name = method.sig.ident.clone();
                 let params: Vec<_> = method
                     .sig
@@ -97,7 +97,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 });
 
-                ImplItem::Method(ImplItemMethod {
+                ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
                     defaultness: None,
