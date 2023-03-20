@@ -7,8 +7,8 @@ package flash.net {
 
         public static var defaultObjectEncoding:uint = 3;
 
-        public function NetConnection() {}
         public var objectEncoding:uint = NetConnection.defaultObjectEncoding; // NOPMD WronglyNamedVariable
+
 
         public function connect(command:String, ... arguments):void {
             stub_method("flash.net.NetConnection", "connect");
@@ -16,6 +16,10 @@ package flash.net {
 
         public function call(command:String, responder:Responder, ... arguments):void {
             stub_method("flash.net.NetConnection", "call");
+        }
+        
+        public function close():void {
+            stub_method("flash.net.NetConnection", "close");
         }
     }
 }
