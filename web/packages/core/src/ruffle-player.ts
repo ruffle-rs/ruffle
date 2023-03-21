@@ -708,7 +708,12 @@ export class RufflePlayer extends HTMLElement {
             }
         } catch (e) {
             console.error(`Serious error occurred loading SWF file: ${e}`);
-            throw e;
+            const err = new Error(e as string);
+            if (err.message.includes("Error parsing config")) {
+                err.ruffleIndexError = PanicError.JavascriptConfiguration;
+            }
+            this.panic(err);
+            throw err;
         }
     }
 
