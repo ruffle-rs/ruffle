@@ -180,7 +180,8 @@ pub fn elements<'gc>(
                 if is_asterisk {
                     matches!(&*node.kind(), E4XNodeKind::Element { .. })
                 } else {
-                    matches!(&*node.kind(), E4XNodeKind::Element { .. }) && node.local_name().unwrap() == element_name
+                    matches!(&*node.kind(), E4XNodeKind::Element { .. })
+                        && node.local_name().unwrap() == element_name
                 }
             })
             .map(|node| E4XOrXml::E4X(*node))
