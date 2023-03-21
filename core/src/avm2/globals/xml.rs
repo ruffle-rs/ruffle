@@ -106,7 +106,7 @@ pub fn name_to_multiname<'gc>(
     }
 
     let name = name.coerce_to_string(activation)?;
-    Ok(if &*name == b"*" {
+    Ok(if &*name == b"*" || &*name == b"undefined" {
         Multiname::any(activation.context.gc_context)
     } else {
         Multiname::new(activation.avm2().public_namespace, name)
@@ -167,22 +167,12 @@ pub fn elements<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
-    let element_name = if args[0] == Value::Undefined {
-        AvmString::from("*")
-    } else {
-        args[0].coerce_to_string(activation)?
-    };
-    let is_asterisk = element_name == AvmString::from("*");
+    let multiname = name_to_multiname(activation, &args[0])?;
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
             .filter(|node| {
-                if is_asterisk {
-                    matches!(&*node.kind(), E4XNodeKind::Element { .. })
-                } else {
-                    matches!(&*node.kind(), E4XNodeKind::Element { .. })
-                        && node.local_name().unwrap() == element_name
-                }
+                matches!(&*node.kind(), E4XNodeKind::Element { .. }) && node.matches_name(&multiname)
             })
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
