@@ -21,7 +21,7 @@ thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.84", optional = true }
 gc-arena = { workspace = true }
 enum-map = "2.5.0"
-serde = { version = "1.0.157", features = ["derive"] }
+serde = { version = "1.0.158", features = ["derive"] }
 clap = { version = "4.1.11", features = ["derive"], optional = true }
 
 [dependencies.jpeg-decoder]
