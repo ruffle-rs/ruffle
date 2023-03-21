@@ -105,11 +105,11 @@ pub fn name_to_multiname<'gc>(
         }
     }
 
-    let name = name.coerce_to_string(activation)?;
-    Ok(if &*name == b"*" || &*name == b"undefined" {
+    let name_string = name.coerce_to_string(activation)?;
+    Ok(if &*name_string == b"*" || *name == Value::Undefined {
         Multiname::any(activation.context.gc_context)
     } else {
-        Multiname::new(activation.avm2().public_namespace, name)
+        Multiname::new(activation.avm2().public_namespace, name_string)
     })
 }
 
@@ -172,7 +172,8 @@ pub fn elements<'gc>(
         children
             .iter()
             .filter(|node| {
-                matches!(&*node.kind(), E4XNodeKind::Element { .. }) && node.matches_name(&multiname)
+                matches!(&*node.kind(), E4XNodeKind::Element { .. })
+                    && node.matches_name(&multiname)
             })
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
