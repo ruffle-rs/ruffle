@@ -164,13 +164,25 @@ pub fn parent<'gc>(
 pub fn elements<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
+    let element_name = if args[0] == Value::Undefined {
+        AvmString::from("*")
+    } else {
+        args[0].coerce_to_string(activation)?
+    };
+    let is_asterisk = element_name == AvmString::from("*");
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
-            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Element { .. }))
+            .filter(|node| {
+                if is_asterisk {
+                    matches!(&*node.kind(), E4XNodeKind::Element { .. })
+                } else {
+                    matches!(&*node.kind(), E4XNodeKind::Element { .. }) && node.local_name().unwrap() == element_name
+                }
+            })
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
     } else {
