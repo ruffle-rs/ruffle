@@ -1,3 +1,6 @@
 elements() length: 2
 elements() element toString: foo1
 elements() element toString: bar2
+elements(foo) length: 2
+elements(bar) length: 1
+elements(baz) length: 0
