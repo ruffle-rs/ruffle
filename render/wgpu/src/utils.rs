@@ -1,3 +1,4 @@
+use crate::buffer_pool::BufferDescription;
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::mem::size_of;
@@ -113,6 +114,22 @@ impl BufferDimensions {
             height,
             unpadded_bytes_per_row,
             padded_bytes_per_row,
+        }
+    }
+
+    pub fn size(&self) -> u64 {
+        self.padded_bytes_per_row.get() as u64 * self.height as u64
+    }
+}
+
+impl BufferDescription for BufferDimensions {
+    type Cost = u64;
+
+    fn cost_to_use(&self, other: &Self) -> Option<Self::Cost> {
+        if self.size() < other.size() {
+            Some(other.size() - self.size())
+        } else {
+            None
         }
     }
 }

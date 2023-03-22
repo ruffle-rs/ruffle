@@ -2,6 +2,7 @@
 #![allow(clippy::extra_unused_type_parameters)]
 
 use crate::bitmaps::BitmapSamplers;
+use crate::buffer_pool::PoolEntry;
 use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
@@ -17,7 +18,6 @@ use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
-use std::cell::Cell;
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;
@@ -164,18 +164,11 @@ impl From<TessGradient> for GradientUniforms {
 }
 
 #[derive(Debug)]
-pub enum QueueSyncHandle {
-    AlreadyCopied {
-        index: wgpu::SubmissionIndex,
-        buffer: Arc<wgpu::Buffer>,
-        buffer_dimensions: BufferDimensions,
-        descriptors: Arc<Descriptors>,
-    },
-    NotCopied {
-        handle: BitmapHandle,
-        size: wgpu::Extent3d,
-        descriptors: Arc<Descriptors>,
-    },
+pub struct QueueSyncHandle {
+    index: wgpu::SubmissionIndex,
+    buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
+    copy_dimensions: BufferDimensions,
+    descriptors: Arc<Descriptors>,
 }
 
 impl SyncHandle for QueueSyncHandle {
@@ -193,99 +186,15 @@ impl QueueSyncHandle {
     pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(
         self,
         with_rgba: F,
-        area: (u32, u32, u32, u32),
+        _area: (u32, u32, u32, u32),
     ) -> R {
-        match self {
-            QueueSyncHandle::AlreadyCopied {
-                index,
-                buffer,
-                buffer_dimensions,
-                descriptors,
-            } => capture_image(
-                &descriptors.device,
-                &buffer,
-                &buffer_dimensions,
-                Some(index),
-                with_rgba,
-            ),
-            QueueSyncHandle::NotCopied {
-                handle,
-                size,
-                descriptors,
-            } => {
-                let texture = as_texture(&handle);
-
-                let buffer_label = create_debug_label!("Render target buffer");
-                let buffer_dimensions =
-                    BufferDimensions::new(size.width as usize, size.height as usize);
-                // Despite the area possibly being smaller than the full image,
-                // make a full size buffer for future retrievals which may be bigger
-                let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
-                    label: buffer_label.as_deref(),
-                    size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                        * buffer_dimensions.height as u64),
-                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                    mapped_at_creation: false,
-                });
-                let copy_width = area.2 - area.0;
-                let copy_height = area.3 - area.1;
-                let copy_dimensions =
-                    BufferDimensions::new(copy_width as usize, copy_height as usize);
-                let label = create_debug_label!("Render target transfer encoder");
-                let mut encoder =
-                    descriptors
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: label.as_deref(),
-                        });
-                encoder.copy_texture_to_buffer(
-                    wgpu::ImageCopyTexture {
-                        texture: &texture.texture,
-                        mip_level: 0,
-                        origin: wgpu::Origin3d {
-                            x: area.0,
-                            y: area.1,
-                            z: 0,
-                        },
-                        aspect: wgpu::TextureAspect::All,
-                    },
-                    wgpu::ImageCopyBuffer {
-                        buffer: &buffer,
-                        layout: wgpu::ImageDataLayout {
-                            offset: 0,
-                            bytes_per_row: Some(copy_dimensions.padded_bytes_per_row),
-                            rows_per_image: None,
-                        },
-                    },
-                    wgpu::Extent3d {
-                        width: copy_width,
-                        height: copy_height,
-                        depth_or_array_layers: 1,
-                    },
-                );
-                let index = descriptors.queue.submit(Some(encoder.finish()));
-
-                let image = capture_image(
-                    &descriptors.device,
-                    &buffer,
-                    &copy_dimensions,
-                    Some(index),
-                    with_rgba,
-                );
-
-                // After we've read pixels from a texture enough times, we'll store this buffer so that
-                // future reads will be faster (it'll copy as part of the draw process instead)
-                texture.copy_count.set(texture.copy_count.get() + 1);
-                if texture.copy_count.get() >= 2 {
-                    let _ = texture.texture_offscreen.set(TextureOffscreen {
-                        buffer: Arc::new(buffer),
-                        buffer_dimensions,
-                    });
-                }
-
-                image
-            }
-        }
+        capture_image(
+            &self.descriptors.device,
+            &self.buffer,
+            &self.copy_dimensions,
+            Some(self.index),
+            with_rgba,
+        )
     }
 }
 
@@ -294,8 +203,6 @@ pub struct Texture {
     pub(crate) texture: Arc<wgpu::Texture>,
     bind_linear: OnceCell<BitmapBinds>,
     bind_nearest: OnceCell<BitmapBinds>,
-    texture_offscreen: OnceCell<TextureOffscreen>,
-    copy_count: Cell<u8>,
     width: u32,
     height: u32,
 }
@@ -326,10 +233,4 @@ impl Texture {
             )
         })
     }
-}
-
-#[derive(Debug)]
-struct TextureOffscreen {
-    buffer: Arc<wgpu::Buffer>,
-    buffer_dimensions: BufferDimensions,
 }
