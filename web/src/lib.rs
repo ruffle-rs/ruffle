@@ -1164,10 +1164,10 @@ impl ExternalInterfaceMethod for JavascriptMethod {
             if let Ok(result) = function.apply(&self.this, &args_array) {
                 js_to_external_value(&result)
             } else {
-                ExternalValue::Null
+                ExternalValue::Undefined
             }
         } else {
-            ExternalValue::Null
+            ExternalValue::Undefined
         };
         CURRENT_CONTEXT.with(|v| v.replace(old_context));
         result
@@ -1252,14 +1252,17 @@ fn js_to_external_value(js: &JsValue) -> ExternalValue {
             }
         }
         ExternalValue::Object(values)
-    } else {
+    } else if js.is_null() {
         ExternalValue::Null
+    } else {
+        ExternalValue::Undefined
     }
 }
 
 fn external_to_js_value(external: ExternalValue) -> JsValue {
     match external {
         Value::Null => JsValue::NULL,
+        Value::Undefined => JsValue::UNDEFINED,
         Value::Bool(value) => JsValue::from_bool(value),
         Value::Number(value) => JsValue::from_f64(value),
         Value::String(value) => JsValue::from_str(&value),
