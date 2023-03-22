@@ -22,7 +22,7 @@ pub struct WebAudioBackend {
     /// When the last submitted buffer is expected to play out completely, in seconds.
     time: Arc<RwLock<f64>>,
     /// For how many seconds were we able to continuously fill the next buffer "at a sufficiently early time".
-    probation_time: Arc<RwLock<f32>>,
+    probation_elapsed: Arc<RwLock<f32>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
@@ -55,7 +55,7 @@ impl WebAudioBackend {
             buffer_size: Arc::new(RwLock::new(Self::INITIAL_BUFFER_SIZE)),
             buffers: Vec::with_capacity(2),
             time: Arc::new(RwLock::new(0.0)),
-            probation_time: Arc::new(RwLock::new(0.0)),
+            probation_elapsed: Arc::new(RwLock::new(0.0)),
             log_subscriber,
         };
 
@@ -130,7 +130,7 @@ impl Buffer {
             audio_node: None,
             on_ended_handler: Closure::new(|| {}),
             time: audio.time.clone(),
-            probation_elapsed: audio.probation_time.clone(),
+            probation_elapsed: audio.probation_elapsed.clone(),
             log_subscriber: audio.log_subscriber.clone(),
         }));
 
