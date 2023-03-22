@@ -2,6 +2,14 @@
 65
 // li8(0) after si8(255, 0)
 255
+// li8(0) after si8(0xFFFFFFFF, 0)
+255
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
 // li8(0) after si16(256, 0)
 0
 // li8(1) after si16(256, 0)
@@ -14,6 +22,14 @@
 255
 // li16(0) after si16(0xFFFF, 0)
 65535
+// li8(0) after si16(0xFFFFFFFF, 0)
+255
+// li8(1) after si16(0xFFFFFFFF, 0)
+255
+// li8(1) after si16(0xFFFFFFFF, 0)
+0
+// li8(1) after si16(0xFFFFFFFF, 0)
+0
 // li8(0) after si32(0xFFFFFFFF, 0)
 255
 // li8(1) after si32(0xFFFFFFFF, 0)

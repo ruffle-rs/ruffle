@@ -2985,7 +2985,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Si8`
     fn op_si8(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
-        let val = self.pop_stack().coerce_to_i32(self)?;
+        let val = self.pop_stack().coerce_to_i32(self)? as i8;
 
         let dm = self.domain_memory();
         let mut dm = dm
@@ -3002,7 +3002,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Si16`
     fn op_si16(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let address = self.pop_stack().coerce_to_i32(self)?;
-        let val = self.pop_stack().coerce_to_i32(self)?;
+        let val = self.pop_stack().coerce_to_i32(self)? as i16;
 
         let dm = self.domain_memory();
         let mut dm = dm
