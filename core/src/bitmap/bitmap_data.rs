@@ -297,12 +297,9 @@ mod wrapper {
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
                 DirtyState::GpuModified(sync_handle, bounds) => {
                     sync_handle
-                        .retrieve_offscreen_texture(
-                            Box::new(|buffer, buffer_width| {
-                                copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width, bounds)
-                            }),
-                            bounds,
-                        )
+                        .retrieve_offscreen_texture(Box::new(|buffer, buffer_width| {
+                            copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width, bounds)
+                        }))
                         .expect("Failed to sync BitmapData");
                     write.dirty_state = DirtyState::Clean
                 }

@@ -5,6 +5,7 @@ use ruffle_render::backend::{
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
+use std::cell::Cell;
 
 use wgpu::util::StagingBelt;
 use wgpu::{
@@ -277,6 +278,7 @@ impl WgpuContext3D {
                             bind_nearest: Default::default(),
                             width: *width,
                             height: *height,
+                            copy_count: Cell::new(0),
                         }));
                     } else {
                         // In non-multisample mode, we don't have a separate resolve buffer,
@@ -287,6 +289,7 @@ impl WgpuContext3D {
                             bind_nearest: Default::default(),
                             width: *width,
                             height: *height,
+                            copy_count: Cell::new(0),
                         }));
                         self.current_texture_resolve_view = None;
                     }

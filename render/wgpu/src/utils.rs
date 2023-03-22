@@ -126,7 +126,7 @@ impl BufferDescription for BufferDimensions {
     type Cost = u64;
 
     fn cost_to_use(&self, other: &Self) -> Option<Self::Cost> {
-        if self.size() < other.size() {
+        if self.size() <= other.size() {
             Some(other.size() - self.size())
         } else {
             None
