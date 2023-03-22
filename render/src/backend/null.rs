@@ -2,7 +2,9 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use crate::backend::{RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, SyncHandle};
+use crate::bitmap::{
+    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, SyncHandle,
+};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::quality::StageQuality;
@@ -61,7 +63,7 @@ impl RenderBackend for NullRenderer {
         _handle: BitmapHandle,
         _commands: CommandList,
         _quality: StageQuality,
-        _bounds: (u32, u32, u32, u32),
+        _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }

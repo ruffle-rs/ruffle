@@ -6,7 +6,7 @@ use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
@@ -921,7 +921,7 @@ impl RenderBackend for WebGlRenderBackend {
         _handle: BitmapHandle,
         _commands: CommandList,
         _quality: StageQuality,
-        _bounds: (u32, u32, u32, u32),
+        _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }

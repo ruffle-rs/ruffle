@@ -15,7 +15,7 @@ use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use once_cell::sync::OnceCell;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, RgbaBufRead, SyncHandle};
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
 use std::sync::Arc;
@@ -175,7 +175,7 @@ impl SyncHandle for QueueSyncHandle {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
         with_rgba: RgbaBufRead,
-        area: (u32, u32, u32, u32),
+        area: PixelRegion,
     ) -> Result<(), ruffle_render::error::Error> {
         self.capture(with_rgba, area);
         Ok(())
@@ -183,11 +183,7 @@ impl SyncHandle for QueueSyncHandle {
 }
 
 impl QueueSyncHandle {
-    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(
-        self,
-        with_rgba: F,
-        _area: (u32, u32, u32, u32),
-    ) -> R {
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F, _area: PixelRegion) -> R {
         capture_image(
             &self.descriptors.device,
             &self.buffer,

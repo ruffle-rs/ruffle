@@ -1,6 +1,7 @@
 use crate::buffer_pool::PoolEntry;
 use crate::utils::BufferDimensions;
 use crate::Error;
+use ruffle_render::bitmap::PixelRegion;
 use std::fmt::Debug;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -158,7 +159,7 @@ impl MaybeOwnedBuffer {
 #[derive(Debug)]
 pub struct TextureBufferInfo {
     pub buffer: MaybeOwnedBuffer,
-    pub copy_area: (u32, u32, u32, u32),
+    pub copy_area: PixelRegion,
 }
 
 #[derive(Debug)]
@@ -229,7 +230,7 @@ impl TextureTarget {
             format,
             buffer: Some(TextureBufferInfo {
                 buffer: MaybeOwnedBuffer::Owned(buffer, buffer_dimensions),
-                copy_area: (0, 0, size.width, size.height),
+                copy_area: PixelRegion::for_whole_size(size.width, size.height),
             }),
         })
     }
@@ -288,8 +289,8 @@ impl RenderTarget for TextureTarget {
                     texture: &self.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d {
-                        x: copy_area.0,
-                        y: copy_area.1,
+                        x: copy_area.min_x,
+                        y: copy_area.min_y,
                         z: 0,
                     },
                     aspect: wgpu::TextureAspect::All,
@@ -303,8 +304,8 @@ impl RenderTarget for TextureTarget {
                     },
                 },
                 wgpu::Extent3d {
-                    width: copy_area.2 - copy_area.0,
-                    height: copy_area.3 - copy_area.1,
+                    width: copy_area.width(),
+                    height: copy_area.height(),
                     depth_or_array_layers: 1,
                 },
             );

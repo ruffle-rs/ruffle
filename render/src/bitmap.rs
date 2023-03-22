@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use downcast_rs::{impl_downcast, Downcast};
+use swf::Twips;
 
 use crate::backend::RenderBackend;
 
@@ -44,7 +45,7 @@ pub trait SyncHandle: Downcast + Debug {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
         with_rgba: RgbaBufRead,
-        area: (u32, u32, u32, u32),
+        area: PixelRegion,
     ) -> Result<(), crate::error::Error>;
 }
 impl_downcast!(SyncHandle);
@@ -157,5 +158,65 @@ impl BitmapFormat {
             BitmapFormat::Rgb => 3,
             BitmapFormat::Rgba => 4,
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct PixelRegion {
+    pub min_x: u32,
+    pub min_y: u32,
+    pub max_x: u32,
+    pub max_y: u32,
+}
+
+impl PixelRegion {
+    pub fn encompassing_twips(a: (Twips, Twips), b: (Twips, Twips)) -> Self {
+        // Figure out what our two ranges are
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        // Increase max by one pixel as we've calculated the *encompassed* max
+        let max = (
+            max.0 + Twips::from_pixels_i32(1),
+            max.1 + Twips::from_pixels_i32(1),
+        );
+
+        // Make sure we're never going below 0
+        Self {
+            min_x: min.0.to_pixels().floor().max(0.0) as u32,
+            min_y: min.1.to_pixels().floor().max(0.0) as u32,
+            max_x: max.0.to_pixels().ceil().max(0.0) as u32,
+            max_y: max.1.to_pixels().ceil().max(0.0) as u32,
+        }
+    }
+
+    pub fn for_whole_size(width: u32, height: u32) -> Self {
+        Self {
+            min_x: 0,
+            min_y: 0,
+            max_x: width,
+            max_y: height,
+        }
+    }
+
+    pub fn clamp(&mut self, width: u32, height: u32) {
+        self.min_x = self.min_x.min(width);
+        self.min_y = self.min_y.min(height);
+        self.max_x = self.max_x.min(width);
+        self.max_y = self.max_y.min(height);
+    }
+
+    pub fn union(&mut self, other: PixelRegion) {
+        self.min_x = self.min_x.min(other.min_x);
+        self.min_y = self.min_y.min(other.min_y);
+        self.max_x = self.max_x.max(other.max_x);
+        self.max_y = self.max_y.max(other.max_y);
+    }
+
+    pub fn width(&self) -> u32 {
+        self.max_x - self.min_x
+    }
+
+    pub fn height(&self) -> u32 {
+        self.max_y - self.min_y
     }
 }

@@ -8,7 +8,7 @@ use bitflags::bitflags;
 use core::fmt;
 use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, SyncHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
@@ -236,14 +236,14 @@ enum DirtyState {
     // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
     CpuModified,
     // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
-    GpuModified(Box<dyn SyncHandle>, (u32, u32, u32, u32)),
+    GpuModified(Box<dyn SyncHandle>, PixelRegion),
 }
 
 mod wrapper {
     use crate::context::RenderContext;
     use crate::{avm2::Value as Avm2Value, context::UpdateContext};
     use gc_arena::{Collect, GcCell, MutationContext};
-    use ruffle_render::bitmap::BitmapHandle;
+    use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
     use ruffle_render::commands::CommandHandler;
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
@@ -331,7 +331,7 @@ mod wrapper {
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             context: &mut UpdateContext<'_, 'gc>,
-        ) -> (GcCell<'gc, BitmapData<'gc>>, Option<(u32, u32, u32, u32)>) {
+        ) -> (GcCell<'gc, BitmapData<'gc>>, Option<PixelRegion>) {
             let mut write = self.0.write(context.gc_context);
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
@@ -1412,8 +1412,10 @@ impl<'gc> BitmapData<'gc> {
         match sync_handle {
             Some(sync_handle) => match self.dirty_state {
                 DirtyState::Clean => {
-                    self.dirty_state =
-                        DirtyState::GpuModified(sync_handle, (0, 0, self.width, self.height))
+                    self.dirty_state = DirtyState::GpuModified(
+                        sync_handle,
+                        PixelRegion::for_whole_size(self.width, self.height),
+                    )
                 }
                 DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
@@ -1506,7 +1508,7 @@ impl<'gc> BitmapData<'gc> {
         clip_rect: Option<Rectangle<Twips>>,
         quality: StageQuality,
         context: &mut UpdateContext<'_, 'gc>,
-        include_dirty_area: Option<(u32, u32, u32, u32)>,
+        include_dirty_area: Option<PixelRegion>,
     ) -> Result<(), BitmapDataDrawError> {
         let bitmapdata_width = self.width();
         let bitmapdata_height = self.height();
@@ -1519,41 +1521,15 @@ impl<'gc> BitmapData<'gc> {
         let matrix = transform_stack.transform().matrix;
         let source_size = source.size();
 
-        // First we use the matrix and source size to calculate the min and max bounds
-        let min = matrix * (Twips::ZERO, Twips::ZERO);
-        let max = matrix * source_size;
-
-        // Scale could be negative so we need to normalize the region here,
-        // to make sure min is really min and max is really max
-        let (min, max) = (
-            (min.0.min(max.0), min.1.min(max.1)),
-            (min.0.max(max.0), min.1.max(max.1)),
+        let mut dirty_region = PixelRegion::encompassing_twips(
+            matrix * (Twips::ZERO, Twips::ZERO),
+            matrix * source_size,
         );
-
-        // Increase max by one pixel as we've calculated the *inclusive* max
-        let max = (
-            max.0 + Twips::from_pixels_i32(1),
-            max.1 + Twips::from_pixels_i32(1),
-        );
-
-        // This is now the biggest possible region that could be changed by this specific draw
-        let max_width = bitmapdata_width as f64;
-        let max_height = bitmapdata_height as f64;
-        let mut bounds = (
-            min.0.to_pixels().floor().clamp(0.0, max_width) as u32,
-            min.1.to_pixels().floor().clamp(0.0, max_height) as u32,
-            max.0.to_pixels().ceil().clamp(0.0, max_width) as u32,
-            max.1.to_pixels().ceil().clamp(0.0, max_height) as u32,
-        );
+        dirty_region.clamp(bitmapdata_width, bitmapdata_height);
 
         // If we have another dirty area to preserve, expand this to include it
         if let Some(old) = include_dirty_area {
-            bounds = (
-                bounds.0.min(old.0),
-                bounds.1.min(old.1),
-                bounds.2.max(old.2),
-                bounds.3.max(old.3),
-            );
+            dirty_region.union(old);
         }
 
         let mut render_context = RenderContext {
@@ -1624,13 +1600,13 @@ impl<'gc> BitmapData<'gc> {
 
         let image = context
             .renderer
-            .render_offscreen(handle, commands, quality, bounds);
+            .render_offscreen(handle, commands, quality, dirty_region);
 
         match image {
             Some(sync_handle) => {
                 match self.dirty_state {
                     DirtyState::Clean => {
-                        self.dirty_state = DirtyState::GpuModified(sync_handle, bounds)
+                        self.dirty_state = DirtyState::GpuModified(sync_handle, dirty_region)
                     }
                     DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
                         "Called BitmapData.render while already dirty: {:?}",
@@ -1669,14 +1645,14 @@ fn copy_pixels_to_bitmapdata(
     write: &mut BitmapData,
     buffer: &[u8],
     buffer_width: u32,
-    area: (u32, u32, u32, u32),
+    area: PixelRegion,
 ) {
     let buffer_width_pixels = buffer_width / 4;
 
-    for y in area.1..area.3 {
-        for x in area.0..area.2 {
+    for y in area.min_y..area.max_y {
+        for x in area.min_x..area.max_x {
             // note: this order of conversions helps llvm realize the index is 4-byte-aligned
-            let ind = (((x - area.0) + (y - area.1) * buffer_width_pixels) as usize) * 4;
+            let ind = (((x - area.min_x) + (y - area.min_y) * buffer_width_pixels) as usize) * 4;
 
             // TODO(mid): optimize this A LOT
             let r = buffer[ind];
