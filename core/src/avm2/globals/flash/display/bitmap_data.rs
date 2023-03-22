@@ -851,7 +851,8 @@ pub fn draw<'gc>(
         // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
         // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
         // if we're actually going to draw something.
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        let (bitmap_data, dirty_area) =
+            bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         // If the bitmapdata is invalid, it's fine to return early, since the pixels
         // are inaccessible
         bitmap_data.read().check_valid(activation)?;
@@ -863,6 +864,7 @@ pub fn draw<'gc>(
             clip_rect,
             activation.context.stage.quality(),
             &mut activation.context,
+            dirty_area,
         ) {
             Ok(()) => {}
             Err(BitmapDataDrawError::Unimplemented) => {
@@ -881,7 +883,8 @@ pub fn draw_with_quality<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         // Drawing onto a BitmapData doesn't use any of the CPU-side pixels
-        let bitmap_data = bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        let (bitmap_data, dirty_area) =
+            bitmap_data.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         bitmap_data.read().check_valid(activation)?;
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -954,6 +957,7 @@ pub fn draw_with_quality<'gc>(
             clip_rect,
             quality,
             &mut activation.context,
+            dirty_area,
         ) {
             Ok(()) => {}
             Err(BitmapDataDrawError::Unimplemented) => {
@@ -1041,7 +1045,8 @@ pub fn apply_filter<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
-        let dest_bitmap_data = dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        let (dest_bitmap_data, _dirty_area) =
+            dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
         dest_bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
             .as_bitmap_data()

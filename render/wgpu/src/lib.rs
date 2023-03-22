@@ -182,14 +182,19 @@ impl SyncHandle for QueueSyncHandle {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
         with_rgba: RgbaBufRead,
+        area: (u32, u32, u32, u32),
     ) -> Result<(), ruffle_render::error::Error> {
-        self.capture(with_rgba);
+        self.capture(with_rgba, area);
         Ok(())
     }
 }
 
 impl QueueSyncHandle {
-    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F) -> R {
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(
+        self,
+        with_rgba: F,
+        area: (u32, u32, u32, u32),
+    ) -> R {
         match self {
             QueueSyncHandle::AlreadyCopied {
                 index,
@@ -213,6 +218,8 @@ impl QueueSyncHandle {
                 let buffer_label = create_debug_label!("Render target buffer");
                 let buffer_dimensions =
                     BufferDimensions::new(size.width as usize, size.height as usize);
+                // Despite the area possibly being smaller than the full image,
+                // make a full size buffer for future retrievals which may be bigger
                 let buffer = descriptors.device.create_buffer(&wgpu::BufferDescriptor {
                     label: buffer_label.as_deref(),
                     size: (buffer_dimensions.padded_bytes_per_row.get() as u64
@@ -220,6 +227,10 @@ impl QueueSyncHandle {
                     usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                     mapped_at_creation: false,
                 });
+                let copy_width = area.2 - area.0;
+                let copy_height = area.3 - area.1;
+                let copy_dimensions =
+                    BufferDimensions::new(copy_width as usize, copy_height as usize);
                 let label = create_debug_label!("Render target transfer encoder");
                 let mut encoder =
                     descriptors
@@ -231,25 +242,33 @@ impl QueueSyncHandle {
                     wgpu::ImageCopyTexture {
                         texture: &texture.texture,
                         mip_level: 0,
-                        origin: wgpu::Origin3d::ZERO,
+                        origin: wgpu::Origin3d {
+                            x: area.0,
+                            y: area.1,
+                            z: 0,
+                        },
                         aspect: wgpu::TextureAspect::All,
                     },
                     wgpu::ImageCopyBuffer {
                         buffer: &buffer,
                         layout: wgpu::ImageDataLayout {
                             offset: 0,
-                            bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
+                            bytes_per_row: Some(copy_dimensions.padded_bytes_per_row),
                             rows_per_image: None,
                         },
                     },
-                    size,
+                    wgpu::Extent3d {
+                        width: copy_width,
+                        height: copy_height,
+                        depth_or_array_layers: 1,
+                    },
                 );
                 let index = descriptors.queue.submit(Some(encoder.finish()));
 
                 let image = capture_image(
                     &descriptors.device,
                     &buffer,
-                    &buffer_dimensions,
+                    &copy_dimensions,
                     Some(index),
                     with_rgba,
                 );

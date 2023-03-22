@@ -236,7 +236,7 @@ enum DirtyState {
     // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
     CpuModified,
     // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
-    GpuModified(Box<dyn SyncHandle>),
+    GpuModified(Box<dyn SyncHandle>, (u32, u32, u32, u32)),
 }
 
 mod wrapper {
@@ -295,11 +295,14 @@ mod wrapper {
             // `RefCell` instead of a `GcCell`.
             let mut write = unsafe { self.0.borrow_mut() };
             match std::mem::replace(&mut write.dirty_state, DirtyState::Clean) {
-                DirtyState::GpuModified(sync_handle) => {
+                DirtyState::GpuModified(sync_handle, bounds) => {
                     sync_handle
-                        .retrieve_offscreen_texture(Box::new(|buffer, buffer_width| {
-                            copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width)
-                        }))
+                        .retrieve_offscreen_texture(
+                            Box::new(|buffer, buffer_width| {
+                                copy_pixels_to_bitmapdata(&mut write, buffer, buffer_width, bounds)
+                            }),
+                            bounds,
+                        )
                         .expect("Failed to sync BitmapData");
                     write.dirty_state = DirtyState::Clean
                 }
@@ -324,19 +327,24 @@ mod wrapper {
         // This should only be used when you will be overwriting the entire
         // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
         // If the CPU pixels are dirty, syncs them to the GPU.
+        #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
             context: &mut UpdateContext<'_, 'gc>,
-        ) -> GcCell<'gc, BitmapData<'gc>> {
+        ) -> (GcCell<'gc, BitmapData<'gc>>, Option<(u32, u32, u32, u32)>) {
             let mut write = self.0.write(context.gc_context);
-            match write.dirty_state {
-                DirtyState::GpuModified(_) => write.dirty_state = DirtyState::Clean,
+            let dirty_rect = match write.dirty_state {
+                DirtyState::GpuModified(_, rect) => {
+                    write.dirty_state = DirtyState::Clean;
+                    Some(rect)
+                }
                 DirtyState::CpuModified => {
                     write.update_dirty_texture(context.renderer);
+                    None
                 }
-                DirtyState::Clean => {}
-            }
-            self.0
+                DirtyState::Clean => None,
+            };
+            (self.0, dirty_rect)
         }
 
         // These methods do not require a sync to complete, as they do not depend on the
@@ -506,7 +514,7 @@ impl<'gc> BitmapData<'gc> {
         };
         match self.dirty_state {
             DirtyState::CpuModified | DirtyState::Clean => self.dirty_state = new_state,
-            DirtyState::GpuModified(_) => {
+            DirtyState::GpuModified(_, _) => {
                 panic!("Attempted to modify CPU dirty state while GPU sync is in progress!")
             }
         }
@@ -1317,7 +1325,7 @@ impl<'gc> BitmapData<'gc> {
                 }
                 self.set_cpu_dirty(false);
             }
-            DirtyState::Clean | DirtyState::GpuModified(_) => {}
+            DirtyState::Clean | DirtyState::GpuModified(_, _) => {}
         }
     }
 
@@ -1403,8 +1411,11 @@ impl<'gc> BitmapData<'gc> {
         );
         match sync_handle {
             Some(sync_handle) => match self.dirty_state {
-                DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
-                DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                DirtyState::Clean => {
+                    self.dirty_state =
+                        DirtyState::GpuModified(sync_handle, (0, 0, self.width, self.height))
+                }
+                DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
                     self.dirty_state
                 ),
@@ -1495,6 +1506,7 @@ impl<'gc> BitmapData<'gc> {
         clip_rect: Option<Rectangle<Twips>>,
         quality: StageQuality,
         context: &mut UpdateContext<'_, 'gc>,
+        include_dirty_area: Option<(u32, u32, u32, u32)>,
     ) -> Result<(), BitmapDataDrawError> {
         let bitmapdata_width = self.width();
         let bitmapdata_height = self.height();
@@ -1502,6 +1514,47 @@ impl<'gc> BitmapData<'gc> {
         let mut transform_stack = ruffle_render::transform::TransformStack::new();
         transform_stack.push(&transform);
         let handle = self.bitmap_handle(context.renderer).unwrap();
+
+        // Calculate the maximum potential area that this draw call will affect
+        let matrix = transform_stack.transform().matrix;
+        let source_size = source.size();
+
+        // First we use the matrix and source size to calculate the min and max bounds
+        let min = matrix * (Twips::ZERO, Twips::ZERO);
+        let max = matrix * source_size;
+
+        // Scale could be negative so we need to normalize the region here,
+        // to make sure min is really min and max is really max
+        let (min, max) = (
+            (min.0.min(max.0), min.1.min(max.1)),
+            (min.0.max(max.0), min.1.max(max.1)),
+        );
+
+        // Increase max by one pixel as we've calculated the *inclusive* max
+        let max = (
+            max.0 + Twips::from_pixels_i32(1),
+            max.1 + Twips::from_pixels_i32(1),
+        );
+
+        // This is now the biggest possible region that could be changed by this specific draw
+        let max_width = bitmapdata_width as f64;
+        let max_height = bitmapdata_height as f64;
+        let mut bounds = (
+            min.0.to_pixels().floor().clamp(0.0, max_width) as u32,
+            min.1.to_pixels().floor().clamp(0.0, max_height) as u32,
+            max.0.to_pixels().ceil().clamp(0.0, max_width) as u32,
+            max.1.to_pixels().ceil().clamp(0.0, max_height) as u32,
+        );
+
+        // If we have another dirty area to preserve, expand this to include it
+        if let Some(old) = include_dirty_area {
+            bounds = (
+                bounds.0.min(old.0),
+                bounds.1.min(old.1),
+                bounds.2.max(old.2),
+                bounds.3.max(old.3),
+            );
+        }
 
         let mut render_context = RenderContext {
             renderer: context.renderer,
@@ -1569,19 +1622,17 @@ impl<'gc> BitmapData<'gc> {
             commands
         };
 
-        let image = context.renderer.render_offscreen(
-            handle,
-            bitmapdata_width,
-            bitmapdata_height,
-            commands,
-            quality,
-        );
+        let image = context
+            .renderer
+            .render_offscreen(handle, commands, quality, bounds);
 
         match image {
             Some(sync_handle) => {
                 match self.dirty_state {
-                    DirtyState::Clean => self.dirty_state = DirtyState::GpuModified(sync_handle),
-                    DirtyState::CpuModified | DirtyState::GpuModified(_) => panic!(
+                    DirtyState::Clean => {
+                        self.dirty_state = DirtyState::GpuModified(sync_handle, bounds)
+                    }
+                    DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
                         "Called BitmapData.render while already dirty: {:?}",
                         self.dirty_state
                     ),
@@ -1598,16 +1649,34 @@ pub enum IBitmapDrawable<'gc> {
     DisplayObject(DisplayObject<'gc>),
 }
 
+impl IBitmapDrawable<'_> {
+    pub fn size(&self) -> (Twips, Twips) {
+        match self {
+            IBitmapDrawable::BitmapData(bmd) => (
+                Twips::from_pixels(bmd.width() as f64),
+                Twips::from_pixels(bmd.height() as f64),
+            ),
+            IBitmapDrawable::DisplayObject(o) => {
+                let bounds = o.bounds();
+                (bounds.x_max, bounds.y_max)
+            }
+        }
+    }
+}
+
 #[instrument(level = "debug", skip_all)]
-fn copy_pixels_to_bitmapdata(write: &mut BitmapData, buffer: &[u8], buffer_width: u32) {
-    let height = write.height();
-    let width = write.width();
+fn copy_pixels_to_bitmapdata(
+    write: &mut BitmapData,
+    buffer: &[u8],
+    buffer_width: u32,
+    area: (u32, u32, u32, u32),
+) {
     let buffer_width_pixels = buffer_width / 4;
 
-    for y in 0..height {
-        for x in 0..width {
+    for y in area.1..area.3 {
+        for x in area.0..area.2 {
             // note: this order of conversions helps llvm realize the index is 4-byte-aligned
-            let ind = ((x + y * buffer_width_pixels) as usize) * 4;
+            let ind = (((x - area.0) + (y - area.1) * buffer_width_pixels) as usize) * 4;
 
             // TODO(mid): optimize this A LOT
             let r = buffer[ind];

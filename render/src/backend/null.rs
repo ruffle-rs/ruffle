@@ -59,10 +59,9 @@ impl RenderBackend for NullRenderer {
     fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
-        _width: u32,
-        _height: u32,
         _commands: CommandList,
         _quality: StageQuality,
+        _bounds: (u32, u32, u32, u32),
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }

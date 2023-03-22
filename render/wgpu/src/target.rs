@@ -139,11 +139,18 @@ impl RenderTarget for SwapChainTarget {
 }
 
 #[derive(Debug)]
+pub struct TextureBufferInfo {
+    pub buffer: Arc<wgpu::Buffer>,
+    pub dimensions: BufferDimensions,
+    pub copy_area: (u32, u32, u32, u32),
+}
+
+#[derive(Debug)]
 pub struct TextureTarget {
     pub size: wgpu::Extent3d,
     pub texture: Arc<wgpu::Texture>,
     pub format: wgpu::TextureFormat,
-    pub buffer: Option<(Arc<wgpu::Buffer>, BufferDimensions)>,
+    pub buffer: Option<TextureBufferInfo>,
 }
 
 #[derive(Debug)]
@@ -204,7 +211,11 @@ impl TextureTarget {
             size,
             texture: Arc::new(texture),
             format,
-            buffer: Some((Arc::new(buffer), buffer_dimensions)),
+            buffer: Some(TextureBufferInfo {
+                buffer: Arc::new(buffer),
+                dimensions: buffer_dimensions,
+                copy_area: (0, 0, size.width, size.height),
+            }),
         })
     }
 
@@ -247,7 +258,12 @@ impl RenderTarget for TextureTarget {
         command_buffers: I,
         _frame: Self::Frame,
     ) -> wgpu::SubmissionIndex {
-        if let Some((buffer, dimensions)) = &self.buffer {
+        if let Some(TextureBufferInfo {
+            buffer,
+            dimensions,
+            copy_area,
+        }) = &self.buffer
+        {
             let label = create_debug_label!("Render target transfer encoder");
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: label.as_deref(),
@@ -256,7 +272,11 @@ impl RenderTarget for TextureTarget {
                 wgpu::ImageCopyTexture {
                     texture: &self.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
+                    origin: wgpu::Origin3d {
+                        x: copy_area.0,
+                        y: copy_area.1,
+                        z: 0,
+                    },
                     aspect: wgpu::TextureAspect::All,
                 },
                 wgpu::ImageCopyBuffer {
@@ -267,7 +287,11 @@ impl RenderTarget for TextureTarget {
                         rows_per_image: None,
                     },
                 },
-                self.size,
+                wgpu::Extent3d {
+                    width: copy_area.2 - copy_area.0,
+                    height: copy_area.3 - copy_area.1,
+                    depth_or_array_layers: 1,
+                },
             );
             queue.submit(command_buffers.into_iter().chain(Some(encoder.finish())))
         } else {
