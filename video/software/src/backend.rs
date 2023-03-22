@@ -1,7 +1,7 @@
 use crate::decoder::VideoDecoder;
 use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo};
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
@@ -81,9 +81,8 @@ impl VideoBackend for SoftwareVideoBackend {
         let handle = if let Some(bitmap) = stream.bitmap.clone() {
             renderer.update_texture(
                 &bitmap,
-                frame.width.into(),
-                frame.height.into(),
                 frame.rgba,
+                PixelRegion::for_whole_size(frame.width.into(), frame.height.into()),
             )?;
             bitmap
         } else {

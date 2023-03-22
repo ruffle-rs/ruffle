@@ -1034,11 +1034,11 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        _region: PixelRegion,
     ) -> Result<(), BitmapError> {
-        let texture = &as_registry_data(handle).texture;
+        let data = as_registry_data(handle);
+        let texture = &data.texture;
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
 
@@ -1047,8 +1047,8 @@ impl RenderBackend for WebGlRenderBackend {
                 Gl::TEXTURE_2D,
                 0,
                 Gl::RGBA as i32,
-                width as i32,
-                height as i32,
+                data.bitmap.width() as i32,
+                data.bitmap.height() as i32,
                 0,
                 Gl::RGBA,
                 Gl::UNSIGNED_BYTE,

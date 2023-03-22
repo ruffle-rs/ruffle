@@ -76,9 +76,8 @@ impl RenderBackend for NullRenderer {
     fn update_texture(
         &mut self,
         _bitmap: &BitmapHandle,
-        _width: u32,
-        _height: u32,
         _rgba: Vec<u8>,
+        _region: PixelRegion,
     ) -> Result<(), Error> {
         Ok(())
     }

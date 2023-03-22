@@ -189,12 +189,44 @@ impl PixelRegion {
         }
     }
 
+    pub fn encompassing_pixels_i32(a: (i32, i32), b: (i32, i32)) -> Self {
+        Self::encompassing_pixels(
+            (a.0.max(0) as u32, a.1.max(0) as u32),
+            (b.0.max(0) as u32, b.1.max(0) as u32),
+        )
+    }
+
+    pub fn encompassing_pixels(a: (u32, u32), b: (u32, u32)) -> Self {
+        // Figure out what our two ranges are
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        // Increase max by one pixel as we've calculated the *encompassed* max
+        let max = (max.0.saturating_add(1), max.1.saturating_add(1));
+
+        // Make sure we're never going below 0
+        Self {
+            min_x: min.0.max(0),
+            min_y: min.1.max(0),
+            max_x: max.0.max(0),
+            max_y: max.1.max(0),
+        }
+    }
+
     pub fn for_whole_size(width: u32, height: u32) -> Self {
         Self {
             min_x: 0,
             min_y: 0,
             max_x: width,
             max_y: height,
+        }
+    }
+
+    pub fn for_pixel(x: u32, y: u32) -> Self {
+        Self {
+            min_x: x,
+            min_y: y,
+            max_x: x + 1,
+            max_y: y + 1,
         }
     }
 
@@ -210,6 +242,13 @@ impl PixelRegion {
         self.min_y = self.min_y.min(other.min_y);
         self.max_x = self.max_x.max(other.max_x);
         self.max_y = self.max_y.max(other.max_y);
+    }
+
+    pub fn encompass(&mut self, x: u32, y: u32) {
+        self.min_x = self.min_x.min(x);
+        self.min_y = self.min_y.min(y);
+        self.max_x = self.max_x.max(x + 1);
+        self.max_y = self.max_y.max(y + 1);
     }
 
     pub fn width(&self) -> u32 {
