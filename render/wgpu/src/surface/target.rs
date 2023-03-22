@@ -1,5 +1,5 @@
 use crate::backend::RenderTargetMode;
-use crate::buffer_pool::{AlwaysIncompatible, PoolEntry, TexturePool};
+use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::surface::commands::run_copy_pipeline;
@@ -68,7 +68,7 @@ pub struct FrameBuffer {
 /// (when rendering to the main screen), or rendering to a non-pooled `Texture`
 /// (when doing an offscreen render to a BitmapData texture)
 pub enum PoolOrArcTexture {
-    Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysIncompatible>),
+    Pool(PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>),
     Manual((Arc<wgpu::Texture>, wgpu::TextureView)),
 }
 
@@ -133,7 +133,7 @@ impl FrameBuffer {
 
 #[derive(Debug)]
 pub struct BlendBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysIncompatible>,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
 
 impl BlendBuffer {
@@ -160,7 +160,7 @@ impl BlendBuffer {
 
 #[derive(Debug)]
 pub struct DepthBuffer {
-    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysIncompatible>,
+    texture: PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>,
 }
 
 impl DepthBuffer {
