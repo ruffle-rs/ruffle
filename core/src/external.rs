@@ -20,6 +20,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Null,
+    Undefined,
     Bool(bool),
     Number(f64),
     String(String),
@@ -118,12 +119,26 @@ impl From<Vec<Value>> for Value {
 }
 
 impl Value {
+    pub fn check_avm1_value(value: Avm1Value) -> Avm1Value {
+        match value {
+            Avm1Value::Undefined => {
+                if cfg!(not(target_family = "wasm")) {
+                    Avm1Value::Null
+                } else {
+                    value
+                }
+            }
+            _ => value,
+        }
+    }
+
     pub fn from_avm1<'gc>(
         activation: &mut Avm1Activation<'_, 'gc>,
         value: Avm1Value<'gc>,
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
-            Avm1Value::Undefined | Avm1Value::Null => Value::Null,
+            Avm1Value::Null => Value::Null,
+            Avm1Value::Undefined => Value::Undefined,
             Avm1Value::Bool(value) => value.into(),
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
@@ -154,6 +169,7 @@ impl Value {
     pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc>) -> Avm1Value<'gc> {
         match self {
             Value::Null => Avm1Value::Null,
+            Value::Undefined => Avm1Value::Undefined,
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
@@ -186,9 +202,23 @@ impl Value {
         }
     }
 
+    pub fn check_avm2_value(value: Avm2Value) -> Avm2Value {
+        match value {
+            Avm2Value::Undefined => {
+                if cfg!(not(target_family = "wasm")) {
+                    Avm2Value::Null
+                } else {
+                    value
+                }
+            }
+            _ => value,
+        }
+    }
+
     pub fn from_avm2(value: Avm2Value) -> Value {
         match value {
-            Avm2Value::Undefined | Avm2Value::Null => Value::Null,
+            Avm2Value::Null => Value::Null,
+            Avm2Value::Undefined => Value::Undefined,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
@@ -215,6 +245,7 @@ impl Value {
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
         match self {
             Value::Null => Avm2Value::Null,
+            Value::Undefined => Avm2Value::Undefined,
             Value::Bool(value) => Avm2Value::Bool(value),
             Value::Number(value) => Avm2Value::Number(value),
             Value::String(value) => {
@@ -271,12 +302,14 @@ impl<'gc> Callback<'gc> {
                     let name = AvmString::new_utf8(activation.context.gc_context, name);
                     if let Ok(result) = method
                         .call(name, &mut activation, this.into(), &args)
-                        .and_then(|value| Value::from_avm1(&mut activation, value))
+                        .and_then(|value| {
+                            Value::from_avm1(&mut activation, Value::check_avm1_value(value))
+                        })
                     {
                         return result;
                     }
                 }
-                Value::Null
+                Value::Undefined
             }
             Callback::Avm2 { method } => {
                 let domain = context
@@ -290,13 +323,13 @@ impl<'gc> Callback<'gc> {
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
                 match method.call(None, &args, &mut activation) {
-                    Ok(result) => Value::from_avm2(result),
+                    Ok(result) => Value::from_avm2(Value::check_avm2_value(result)),
                     Err(e) => {
                         tracing::error!(
                             "Unhandled error in External Interface callback {name}: {}",
                             e.detailed_message(&mut activation)
                         );
-                        Value::Null
+                        Value::Undefined
                     }
                 }
             }

@@ -54,7 +54,7 @@ pub fn call<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        return Ok(Value::Null);
+        return Ok(ExternalValue::check_avm1_value(Value::Undefined));
     }
 
     let name = args.get(0).unwrap().coerce_to_string(activation)?;
@@ -71,7 +71,7 @@ pub fn call<'gc>(
             .call(&mut activation.context, &external_args)
             .into_avm1(activation))
     } else {
-        Ok(Value::Null)
+        Ok(ExternalValue::check_avm1_value(Value::Undefined))
     }
 }
 
