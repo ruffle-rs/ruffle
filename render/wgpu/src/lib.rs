@@ -2,7 +2,7 @@
 #![allow(clippy::extra_unused_type_parameters)]
 
 use crate::bitmaps::BitmapSamplers;
-use crate::buffer_pool::PoolEntry;
+use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
@@ -18,6 +18,7 @@ use once_cell::sync::OnceCell;
 use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
+use std::cell::Cell;
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;
@@ -164,33 +165,108 @@ impl From<TessGradient> for GradientUniforms {
 }
 
 #[derive(Debug)]
-pub struct QueueSyncHandle {
-    index: wgpu::SubmissionIndex,
-    buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
-    copy_dimensions: BufferDimensions,
-    descriptors: Arc<Descriptors>,
+pub enum QueueSyncHandle {
+    AlreadyCopied {
+        index: wgpu::SubmissionIndex,
+        buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
+        copy_dimensions: BufferDimensions,
+        descriptors: Arc<Descriptors>,
+    },
+    NotCopied {
+        handle: BitmapHandle,
+        copy_area: PixelRegion,
+        descriptors: Arc<Descriptors>,
+        pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
+    },
 }
 
 impl SyncHandle for QueueSyncHandle {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
         with_rgba: RgbaBufRead,
-        area: PixelRegion,
     ) -> Result<(), ruffle_render::error::Error> {
-        self.capture(with_rgba, area);
+        self.capture(with_rgba);
         Ok(())
     }
 }
 
 impl QueueSyncHandle {
-    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F, _area: PixelRegion) -> R {
-        capture_image(
-            &self.descriptors.device,
-            &self.buffer,
-            &self.copy_dimensions,
-            Some(self.index),
-            with_rgba,
-        )
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F) -> R {
+        match self {
+            QueueSyncHandle::AlreadyCopied {
+                index,
+                buffer,
+                copy_dimensions,
+                descriptors,
+            } => capture_image(
+                &descriptors.device,
+                &buffer,
+                &copy_dimensions,
+                Some(index),
+                with_rgba,
+            ),
+            QueueSyncHandle::NotCopied {
+                handle,
+                copy_area,
+                descriptors,
+                pool,
+            } => {
+                let texture = as_texture(&handle);
+
+                let buffer_dimensions =
+                    BufferDimensions::new(copy_area.width() as usize, copy_area.height() as usize);
+                let buffer = pool.take(&descriptors, buffer_dimensions.clone());
+                let label = create_debug_label!("Render target transfer encoder");
+                let mut encoder =
+                    descriptors
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: label.as_deref(),
+                        });
+                encoder.copy_texture_to_buffer(
+                    wgpu::ImageCopyTexture {
+                        texture: &texture.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d {
+                            x: copy_area.min_x,
+                            y: copy_area.min_y,
+                            z: 0,
+                        },
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    wgpu::ImageCopyBuffer {
+                        buffer: &buffer,
+                        layout: wgpu::ImageDataLayout {
+                            offset: 0,
+                            bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
+                            rows_per_image: None,
+                        },
+                    },
+                    wgpu::Extent3d {
+                        width: copy_area.width(),
+                        height: copy_area.height(),
+                        depth_or_array_layers: 1,
+                    },
+                );
+                let index = descriptors.queue.submit(Some(encoder.finish()));
+
+                let image = capture_image(
+                    &descriptors.device,
+                    &buffer,
+                    &buffer_dimensions,
+                    Some(index),
+                    with_rgba,
+                );
+
+                // After we've read pixels from a texture enough times, we'll store this buffer so that
+                // future reads will be faster (it'll copy as part of the draw process instead)
+                texture
+                    .copy_count
+                    .set(texture.copy_count.get().saturating_add(1));
+
+                image
+            }
+        }
     }
 }
 
@@ -201,6 +277,7 @@ pub struct Texture {
     bind_nearest: OnceCell<BitmapBinds>,
     width: u32,
     height: u32,
+    copy_count: Cell<u8>,
 }
 
 impl Texture {

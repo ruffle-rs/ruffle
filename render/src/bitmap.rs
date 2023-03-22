@@ -45,7 +45,6 @@ pub trait SyncHandle: Downcast + Debug {
     fn retrieve_offscreen_texture(
         self: Box<Self>,
         with_rgba: RgbaBufRead,
-        area: PixelRegion,
     ) -> Result<(), crate::error::Error>;
 }
 impl_downcast!(SyncHandle);

@@ -100,7 +100,7 @@ struct GlobalsKey {
     viewport_height: u32,
 }
 
-pub trait BufferDescription: Clone {
+pub trait BufferDescription: Clone + Debug {
     type Cost: Ord;
 
     /// If the potential buffer represented by this description (`self`)
