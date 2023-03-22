@@ -5,7 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_null_or_undefined_error, make_reference_error, type_error, ReferenceErrorCode,
+    argument_error, make_null_or_undefined_error, make_reference_error, type_error,
+    ReferenceErrorCode,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::object::{
@@ -345,11 +346,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else if param_config.param_type_name.is_any_name() {
             return Ok(Value::Undefined);
         } else {
-            return Err(format!(
-                "Param {} (index {index}) was missing when calling {method_name}",
-                param_config.param_name
-            )
-            .into());
+            return Err(Error::AvmError(argument_error(
+                self,
+                &format!(
+                    "Error #1063: Argument count mismatch on {} on index {}.",
+                    method_name, index
+                ),
+                1063,
+            )?));
         };
 
         arg.coerce_to_type_name(self, &param_config.param_type_name)
