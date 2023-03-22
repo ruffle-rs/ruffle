@@ -164,15 +164,9 @@ package flash.net {
             stub_setter("flash.net.NetStream", "bufferTimeMax");
         }
 
-        public function get bytesLoaded():uint {
-            stub_getter("flash.net.NetStream", "bytesLoaded");
-            return 0;
-        }
+        public native function get bytesLoaded():uint;
 
-        public function get bytesTotal():uint {
-            stub_getter("flash.net.NetStream", "bytesTotal");
-            return 0;
-        }
+        public native function get bytesTotal():uint;
 
         public function get checkPolicyFile():Boolean {
             stub_getter("flash.net.NetStream", "checkPolicyFile");

@@ -75,4 +75,12 @@ impl NetStream {
     pub fn report_error(&mut self, _error: Error) {
         //TODO: Report an `asyncError` to AVM1 or 2.
     }
+
+    pub fn bytes_loaded(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn bytes_total(&self) -> usize {
+        self.buffer.len()
+    }
 }
