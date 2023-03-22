@@ -24,6 +24,9 @@ button {
 
 #version-text {
     text-align: center;
+    font-size: 12px;
+    opacity: 0.8;
+    margin: 2px 0 6px;
 }
 
 #status-container {
