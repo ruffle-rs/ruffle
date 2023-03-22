@@ -549,7 +549,7 @@ pub fn draw<'gc>(
 
             // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
             // if we're actually going to draw something.
-            let bmd = bitmap_data
+            let (bmd, dirty_area) = bitmap_data
                 .bitmap_data_wrapper()
                 .overwrite_cpu_pixels_from_gpu(&mut activation.context);
             let mut write = bmd.write(activation.context.gc_context);
@@ -564,6 +564,7 @@ pub fn draw<'gc>(
                 None,
                 activation.context.stage.quality(),
                 &mut activation.context,
+                dirty_area,
             ) {
                 Ok(()) => {}
                 Err(BitmapDataDrawError::Unimplemented) => {
