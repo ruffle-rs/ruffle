@@ -35,6 +35,16 @@ package
             trace("// li8(0) after si8(255, 0)");
             trace(li8(0));
 
+            si8(0xFFFFFFFF, 0);
+            trace("// li8(0) after si8(0xFFFFFFFF, 0)");
+            trace(li8(0));
+            trace("// li8(1) after si8(0xFFFFFFFF, 0)");
+            trace(li8(1));
+            trace("// li8(1) after si8(0xFFFFFFFF, 0)");
+            trace(li8(2));
+            trace("// li8(1) after si8(0xFFFFFFFF, 0)");
+            trace(li8(3));
+
 			si16(256, 0);
             trace("// li8(0) after si16(256, 0)");
             trace(li8(0));
@@ -50,6 +60,16 @@ package
             trace(li8(1));
 			trace("// li16(0) after si16(0xFFFF, 0)");
             trace(li16(0));
+
+            si16(0xFFFFFFFF, 0);
+            trace("// li8(0) after si16(0xFFFFFFFF, 0)");
+            trace(li8(0));
+            trace("// li8(1) after si16(0xFFFFFFFF, 0)");
+            trace(li8(1));
+            trace("// li8(1) after si16(0xFFFFFFFF, 0)");
+            trace(li8(2));
+            trace("// li8(1) after si16(0xFFFFFFFF, 0)");
+            trace(li8(3));
 
 			si32(0xFFFFFFFF, 0);
             trace("// li8(0) after si32(0xFFFFFFFF, 0)");
