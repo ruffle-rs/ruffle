@@ -1555,12 +1555,10 @@ impl<'gc> BitmapData<'gc> {
 
         // Calculate the maximum potential area that this draw call will affect
         let matrix = transform_stack.transform().matrix;
-        let source_size = source.size();
+        let bounds = source.bounds();
 
-        let mut dirty_region = PixelRegion::encompassing_twips(
-            matrix * (Twips::ZERO, Twips::ZERO),
-            matrix * source_size,
-        );
+        let mut dirty_region =
+            PixelRegion::encompassing_twips(matrix * bounds.0, matrix * bounds.1);
         dirty_region.clamp(bitmapdata_width, bitmapdata_height);
 
         // If we have another dirty area to preserve, expand this to include it
@@ -1662,15 +1660,18 @@ pub enum IBitmapDrawable<'gc> {
 }
 
 impl IBitmapDrawable<'_> {
-    pub fn size(&self) -> (Twips, Twips) {
+    pub fn bounds(&self) -> ((Twips, Twips), (Twips, Twips)) {
         match self {
             IBitmapDrawable::BitmapData(bmd) => (
-                Twips::from_pixels(bmd.width() as f64),
-                Twips::from_pixels(bmd.height() as f64),
+                (Twips::ZERO, Twips::ZERO),
+                (
+                    Twips::from_pixels(bmd.width() as f64),
+                    Twips::from_pixels(bmd.height() as f64),
+                ),
             ),
             IBitmapDrawable::DisplayObject(o) => {
                 let bounds = o.bounds();
-                (bounds.x_max, bounds.y_max)
+                ((bounds.x_min, bounds.y_min), (bounds.x_max, bounds.y_max))
             }
         }
     }
