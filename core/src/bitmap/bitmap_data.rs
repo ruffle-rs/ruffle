@@ -657,12 +657,14 @@ impl<'gc> BitmapData<'gc> {
         let y1 = (y0 + height).min(self.height);
         let color = color.to_premultiplied_alpha(self.transparency());
 
-        for x in x0..x1 {
-            for y in y0..y1 {
-                self.set_pixel32_raw(x, y, color);
+        if x1 > x0 && y1 > y0 {
+            for x in x0..x1 {
+                for y in y0..y1 {
+                    self.set_pixel32_raw(x, y, color);
+                }
             }
+            self.set_cpu_dirty(PixelRegion::encompassing_pixels((x0, y0), (x1 - 1, y1 - 1)));
         }
-        self.set_cpu_dirty(PixelRegion::encompassing_pixels((x0, y0), (x1 - 1, y1 - 1)));
     }
 
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
