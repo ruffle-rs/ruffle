@@ -59,9 +59,8 @@ pub trait RenderBackend: Downcast {
     fn update_texture(
         &mut self,
         bitmap: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;

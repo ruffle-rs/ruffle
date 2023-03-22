@@ -468,13 +468,17 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
-        data.update_pixels(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
-            .map_err(Error::JavascriptError)?;
+        data.update_pixels(Bitmap::new(
+            data.bitmap.width(),
+            data.bitmap.height(),
+            BitmapFormat::Rgba,
+            rgba,
+        ))
+        .map_err(Error::JavascriptError)?;
         Ok(())
     }
 

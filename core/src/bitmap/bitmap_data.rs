@@ -234,7 +234,7 @@ enum DirtyState {
     #[default]
     Clean,
     // The CPU pixels have been modified, and need to be synced to the GPU via `update_dirty_texture`
-    CpuModified,
+    CpuModified(PixelRegion),
     // The GPU pixels have been modified, and need to be synced to the CPU via `BitmapDataWrapper::sync`
     GpuModified(Box<dyn SyncHandle>, PixelRegion),
 }
@@ -338,7 +338,7 @@ mod wrapper {
                     write.dirty_state = DirtyState::Clean;
                     Some(rect)
                 }
-                DirtyState::CpuModified => {
+                DirtyState::CpuModified(_) => {
                     write.update_dirty_texture(context.renderer);
                     None
                 }
@@ -451,7 +451,7 @@ impl<'gc> BitmapData<'gc> {
             Color(fill_color).to_premultiplied_alpha(self.transparency());
             width as usize * height as usize
         ];
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::for_whole_size(width, height));
     }
 
     pub fn check_valid(
@@ -506,14 +506,12 @@ impl<'gc> BitmapData<'gc> {
         self.transparency
     }
 
-    pub fn set_cpu_dirty(&mut self, dirty: bool) {
-        let new_state = if dirty {
-            DirtyState::CpuModified
-        } else {
-            DirtyState::Clean
-        };
-        match self.dirty_state {
-            DirtyState::CpuModified | DirtyState::Clean => self.dirty_state = new_state,
+    pub fn set_cpu_dirty(&mut self, region: PixelRegion) {
+        debug_assert!(region.max_x <= self.width);
+        debug_assert!(region.max_y <= self.height);
+        match &mut self.dirty_state {
+            DirtyState::CpuModified(old_region) => old_region.union(region),
+            DirtyState::Clean => self.dirty_state = DirtyState::CpuModified(region),
             DirtyState::GpuModified(_, _) => {
                 panic!("Attempted to modify CPU dirty state while GPU sync is in progress!")
             }
@@ -529,7 +527,7 @@ impl<'gc> BitmapData<'gc> {
         self.height = height;
         self.transparency = transparency;
         self.pixels = pixels;
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::for_whole_size(width, height));
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {
@@ -633,7 +631,7 @@ impl<'gc> BitmapData<'gc> {
             } else {
                 self.set_pixel32_raw(x, y, color.with_alpha(0xFF));
             }
-            self.set_cpu_dirty(true);
+            self.set_cpu_dirty(PixelRegion::for_whole_size(x, y));
         }
     }
 
@@ -650,7 +648,7 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_pixel32(&mut self, x: u32, y: u32, color: Color) {
         if x < self.width && y < self.height {
             self.set_pixel32_raw(x, y, color.to_premultiplied_alpha(self.transparency()));
-            self.set_cpu_dirty(true);
+            self.set_cpu_dirty(PixelRegion::for_pixel(x, y));
         }
     }
 
@@ -664,7 +662,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(x, y, color);
             }
         }
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::encompassing_pixels((x0, y0), (x1 - 1, y1 - 1)));
     }
 
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
@@ -674,6 +672,7 @@ impl<'gc> BitmapData<'gc> {
         let expected_color = self.get_pixel32_raw(x, y);
 
         let mut pending = vec![(x, y)];
+        let mut dirty_region = PixelRegion::for_pixel(x, y);
 
         while !pending.is_empty() {
             if let Some((x, y)) = pending.pop() {
@@ -692,10 +691,11 @@ impl<'gc> BitmapData<'gc> {
                         pending.push((x, y + 1));
                     }
                     self.set_pixel32_raw(x, y, replace_color);
+                    dirty_region.encompass(x, y);
                 }
             }
         }
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(dirty_region);
     }
 
     pub fn noise(
@@ -756,7 +756,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(x, y, pixel_color);
             }
         }
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::for_whole_size(self.width, self.height));
     }
 
     pub fn copy_channel(
@@ -818,8 +818,18 @@ impl<'gc> BitmapData<'gc> {
                 }
             }
         }
-
-        self.set_cpu_dirty(true);
+        let mut dirty_region = PixelRegion::encompassing_pixels(
+            (
+                (src_min_x.saturating_add(min_x)),
+                (src_min_y.saturating_add(min_y)),
+            ),
+            (
+                (src_max_x.saturating_add(min_x)),
+                (src_max_y.saturating_add(min_y)),
+            ),
+        );
+        dirty_region.clamp(self.width, self.height);
+        self.set_cpu_dirty(dirty_region);
     }
 
     pub fn color_transform(
@@ -840,20 +850,27 @@ impl<'gc> BitmapData<'gc> {
             || color_transform.b_add != 0
             || color_transform.a_add != 0
         {
-            for x in x_min..x_max.min(self.width()) {
-                for y in y_min..y_max.min(self.height()) {
-                    let color = self.get_pixel32_raw(x, y).to_un_multiplied_alpha();
+            let x_max = x_max.min(self.width());
+            let y_max = y_max.min(self.height());
+            if x_max > 0 && y_max > 0 {
+                for x in x_min..x_max {
+                    for y in y_min..y_max {
+                        let color = self.get_pixel32_raw(x, y).to_un_multiplied_alpha();
 
-                    let color = color_transform * swf::Color::from(color);
+                        let color = color_transform * swf::Color::from(color);
 
-                    self.set_pixel32_raw(
-                        x,
-                        y,
-                        Color::from(color).to_premultiplied_alpha(self.transparency()),
-                    )
+                        self.set_pixel32_raw(
+                            x,
+                            y,
+                            Color::from(color).to_premultiplied_alpha(self.transparency()),
+                        )
+                    }
                 }
+                self.set_cpu_dirty(PixelRegion::encompassing_pixels(
+                    (x_min, y_min),
+                    (x_max - 1, y_max - 1),
+                ));
             }
-            self.set_cpu_dirty(true);
         }
     }
 
@@ -986,7 +1003,12 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
             }
         }
-        self.set_cpu_dirty(true);
+        let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+            ((dest_min_x), (dest_min_y)),
+            ((dest_min_x + src_width), (dest_min_y + src_height)),
+        );
+        dirty_region.clamp(self.width, self.height);
+        self.set_cpu_dirty(dirty_region);
     }
 
     pub fn merge(
@@ -1045,7 +1067,13 @@ impl<'gc> BitmapData<'gc> {
                 );
             }
         }
-        self.set_cpu_dirty(true);
+
+        let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+            ((dest_min_x), (dest_min_y)),
+            ((dest_min_x + src_width), (dest_min_y + src_height)),
+        );
+        dirty_region.clamp(self.width, self.height);
+        self.set_cpu_dirty(dirty_region);
     }
 
     // Unlike `copy_channel` and `copy_pixels`, this function seems to
@@ -1092,7 +1120,12 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(dest_x as u32, dest_y as u32, mix_color);
             }
         }
-        self.set_cpu_dirty(true);
+        let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+            ((dest_min_x), (dest_min_y)),
+            ((dest_min_x + src_width), (dest_min_y + src_height)),
+        );
+        dirty_region.clamp(self.width, self.height);
+        self.set_cpu_dirty(dirty_region);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1199,7 +1232,7 @@ impl<'gc> BitmapData<'gc> {
                 self.set_pixel32_raw(x, y, Color::argb(color[3], color[0], color[1], color[2]));
             }
         }
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::for_whole_size(self.width, self.height));
     }
 
     pub fn scroll(&mut self, x: i32, y: i32) {
@@ -1243,7 +1276,7 @@ impl<'gc> BitmapData<'gc> {
             src_y += dy;
         }
 
-        self.set_cpu_dirty(true);
+        self.set_cpu_dirty(PixelRegion::for_whole_size(self.width, self.height));
     }
 
     /// This implements the threshold operation generically over the test operation performed for each pixel
@@ -1270,6 +1303,7 @@ impl<'gc> BitmapData<'gc> {
         // The number of modified pixels
         // This doesn't seem to include pixels changed due to copy_source
         let mut modified_count = 0;
+        let mut dirty_area: Option<PixelRegion> = None;
 
         // Check each pixel
         for src_y in src_min_y..(src_min_y + src_height) {
@@ -1302,9 +1336,16 @@ impl<'gc> BitmapData<'gc> {
                         self.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
                     }
                 }
+                if let Some(dirty_area) = &mut dirty_area {
+                    dirty_area.encompass(dest_x as u32, dest_y as u32);
+                } else {
+                    dirty_area = Some(PixelRegion::for_pixel(dest_x as u32, dest_y as u32));
+                }
             }
         }
-        self.set_cpu_dirty(true);
+        if let Some(dirty_area) = dirty_area {
+            self.set_cpu_dirty(dirty_area);
+        }
 
         modified_count
     }
@@ -1314,16 +1355,11 @@ impl<'gc> BitmapData<'gc> {
     pub fn update_dirty_texture(&mut self, renderer: &mut dyn RenderBackend) {
         let handle = self.bitmap_handle(renderer).unwrap();
         match &self.dirty_state {
-            DirtyState::CpuModified => {
-                if let Err(e) = renderer.update_texture(
-                    &handle,
-                    self.width(),
-                    self.height(),
-                    self.pixels_rgba(),
-                ) {
+            DirtyState::CpuModified(region) => {
+                if let Err(e) = renderer.update_texture(&handle, self.pixels_rgba(), *region) {
                     tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
                 }
-                self.set_cpu_dirty(false);
+                self.dirty_state = DirtyState::Clean;
             }
             DirtyState::Clean | DirtyState::GpuModified(_, _) => {}
         }
@@ -1417,7 +1453,7 @@ impl<'gc> BitmapData<'gc> {
                         PixelRegion::for_whole_size(self.width, self.height),
                     )
                 }
-                DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
+                DirtyState::CpuModified(_) | DirtyState::GpuModified(_, _) => panic!(
                     "Called BitmapData.render while already dirty: {:?}",
                     self.dirty_state
                 ),
@@ -1608,7 +1644,7 @@ impl<'gc> BitmapData<'gc> {
                     DirtyState::Clean => {
                         self.dirty_state = DirtyState::GpuModified(sync_handle, dirty_region)
                     }
-                    DirtyState::CpuModified | DirtyState::GpuModified(_, _) => panic!(
+                    DirtyState::CpuModified(_) | DirtyState::GpuModified(_, _) => panic!(
                         "Called BitmapData.render while already dirty: {:?}",
                         self.dirty_state
                     ),
@@ -1672,7 +1708,7 @@ fn copy_pixels_to_bitmapdata(
             write.set_pixel32_raw(x, y, nc);
         }
     }
-    write.set_cpu_dirty(true);
+    write.set_cpu_dirty(area);
 }
 
 #[derive(Copy, Clone, Debug)]
