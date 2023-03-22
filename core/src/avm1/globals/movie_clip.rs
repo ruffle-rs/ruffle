@@ -1045,11 +1045,18 @@ fn set_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mask = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)
-        .as_display_object();
+    let mask = match args.get(0) {
+        None => return Ok(Value::Undefined),
+        Some(Value::Undefined | Value::Null) => None,
+        Some(m) => {
+            let start_clip = activation.target_clip_or_root();
+            let mask = activation.resolve_target_display_object(start_clip, *m, false)?;
+            if mask.is_none() {
+                return Ok(Value::Bool(false));
+            }
+            mask
+        }
+    };
     let mc = DisplayObject::MovieClip(movie_clip);
     let context = &mut activation.context;
     mc.set_clip_depth(context.gc_context, 0);
@@ -1057,7 +1064,7 @@ fn set_mask<'gc>(
     if let Some(m) = mask {
         m.set_maskee(context.gc_context, Some(mc), true);
     }
-    Ok(Value::Undefined)
+    Ok(Value::Bool(true))
 }
 
 fn start_drag<'gc>(
