@@ -10,8 +10,7 @@ type Constructor<Type, Description> = Box<dyn Fn(&Descriptors, &Description) -> 
 
 #[derive(Debug)]
 pub struct TexturePool {
-    pools:
-        FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView), AlwaysIncompatible>>,
+    pools: FnvHashMap<TextureKey, BufferPool<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible>>,
     globals_cache: FnvHashMap<GlobalsKey, Arc<Globals>>,
 }
 
@@ -30,7 +29,7 @@ impl TexturePool {
         usage: wgpu::TextureUsages,
         format: wgpu::TextureFormat,
         sample_count: u32,
-    ) -> PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysIncompatible> {
+    ) -> PoolEntry<(wgpu::Texture, wgpu::TextureView), AlwaysCompatible> {
         let key = TextureKey {
             size,
             usage,
@@ -61,7 +60,7 @@ impl TexturePool {
                 (texture, view)
             }))
         });
-        pool.take(descriptors, AlwaysIncompatible)
+        pool.take(descriptors, AlwaysCompatible)
     }
 
     pub fn get_globals(
@@ -114,13 +113,13 @@ pub trait BufferDescription: Clone {
 }
 
 #[derive(Clone, Debug)]
-pub struct AlwaysIncompatible;
+pub struct AlwaysCompatible;
 
-impl BufferDescription for AlwaysIncompatible {
+impl BufferDescription for AlwaysCompatible {
     type Cost = ();
 
     fn cost_to_use(&self, _other: &Self) -> Option<()> {
-        None
+        Some(())
     }
 }
 
