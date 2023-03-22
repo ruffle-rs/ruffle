@@ -1,11 +1,12 @@
 use crate::buffer_builder::BufferBuilder;
-use crate::buffer_pool::TexturePool;
+use crate::buffer_pool::{BufferPool, TexturePool};
 use crate::context3d::WgpuContext3D;
 use crate::mesh::{Mesh, PendingDraw};
 use crate::surface::Surface;
-use crate::target::TextureTarget;
+use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
 use crate::uniform_buffer::BufferStorage;
+use crate::utils::BufferDimensions;
 use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
@@ -21,7 +22,6 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::mem;
 use std::num::NonZeroU32;
 use std::path::Path;
@@ -43,6 +43,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     viewport_scale_factor: f64,
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
+    offscreen_buffer_pool: BufferPool<wgpu::Buffer, BufferDimensions>,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -134,10 +135,11 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
     pub fn capture_frame(&self) -> Option<image::RgbaImage> {
         use crate::utils::buffer_to_image;
         if let Some(buffer) = &self.target.buffer {
+            let (buffer, dimensions) = buffer.buffer.inner();
             Some(buffer_to_image(
                 &self.descriptors.device,
-                &buffer.buffer,
-                &buffer.dimensions,
+                buffer,
+                dimensions,
                 None,
                 self.target.size,
             ))
@@ -175,6 +177,17 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let color_buffers_storage =
             BufferStorage::from_alignment(descriptors.limits.min_uniform_buffer_offset_alignment);
 
+        let offscreen_buffer_pool = BufferPool::new(Box::new(
+            |descriptors: &Descriptors, dimensions: &BufferDimensions| {
+                descriptors.device.create_buffer(&wgpu::BufferDescriptor {
+                    label: None,
+                    size: dimensions.size(),
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
+                })
+            },
+        ));
+
         Ok(Self {
             descriptors,
             uniform_buffers_storage,
@@ -186,6 +199,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             viewport_scale_factor: 1.0,
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
+            offscreen_buffer_pool,
         })
     }
 
@@ -348,10 +362,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
             texture: Arc::new(dummy_texture),
-            texture_offscreen: Default::default(),
             width: 0,
             height: 0,
-            copy_count: Cell::new(0),
         }));
         Ok(Box::new(WgpuContext3D::new(
             self.descriptors.clone(),
@@ -523,10 +535,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             texture: Arc::new(texture),
             bind_linear: Default::default(),
             bind_nearest: Default::default(),
-            texture_offscreen: Default::default(),
             width: bitmap.width(),
             height: bitmap.height(),
-            copy_count: Cell::new(0),
         }));
 
         Ok(handle)
@@ -583,15 +593,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let texture_offscreen = texture.texture_offscreen.get();
+        let copy_dimensions = BufferDimensions::new(
+            (bounds.2 - bounds.0) as usize,
+            (bounds.3 - bounds.1) as usize,
+        );
+        let buffer = self
+            .offscreen_buffer_pool
+            .take(&self.descriptors, copy_dimensions.clone());
 
         let mut target = TextureTarget {
             size: extent,
             texture: texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: texture_offscreen.map(|t| TextureBufferInfo {
-                buffer: t.buffer.clone(),
-                dimensions: t.buffer_dimensions.clone(),
+            buffer: Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
                 copy_area: bounds,
             }),
         };
@@ -626,19 +641,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.uniform_buffers_storage.recall();
         self.color_buffers_storage.recall();
 
-        match texture_offscreen {
-            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
-                index,
-                buffer: texture_offscreen.buffer.clone(),
-                buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
-                descriptors: self.descriptors.clone(),
-            })),
-            None => Some(Box::new(QueueSyncHandle::NotCopied {
-                handle: handle.clone(),
-                size: target.size,
-                descriptors: self.descriptors.clone(),
-            })),
-        }
+        let MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions) = target.take_buffer().expect("Offscreen texture must have buffer").buffer else {
+            unreachable!("Offscreen texture must be from pool");
+        };
+
+        Some(Box::new(QueueSyncHandle {
+            index,
+            buffer,
+            copy_dimensions,
+            descriptors: self.descriptors.clone(),
+        }))
     }
 
     fn apply_filter(
@@ -653,6 +665,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let source_texture = as_texture(&source);
         let dest_texture = as_texture(&destination);
 
+        let copy_dimensions =
+            BufferDimensions::new(dest_texture.width as usize, dest_texture.height as usize);
+        let buffer = self
+            .offscreen_buffer_pool
+            .take(&self.descriptors, copy_dimensions.clone());
+
         let mut target = TextureTarget {
             size: wgpu::Extent3d {
                 width: dest_texture.width,
@@ -661,16 +679,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             texture: dest_texture.texture.clone(),
             format: wgpu::TextureFormat::Rgba8Unorm,
-            buffer: dest_texture
-                .texture_offscreen
-                .get()
-                .map(|t| TextureBufferInfo {
-                    buffer: t.buffer.clone(),
-                    dimensions: t.buffer_dimensions.clone(),
-                    copy_area: (0, 0, dest_texture.width, dest_texture.height),
-                }),
+            buffer: Some(TextureBufferInfo {
+                buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
+                copy_area: (0, 0, dest_texture.width, dest_texture.height),
+            }),
         };
-        let texture_offscreen = dest_texture.texture_offscreen.get();
         let frame_output = target
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
@@ -705,19 +718,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             Some(draw_encoder.finish()),
             frame_output,
         );
-        match texture_offscreen {
-            Some(texture_offscreen) => Some(Box::new(QueueSyncHandle::AlreadyCopied {
-                index,
-                buffer: texture_offscreen.buffer.clone(),
-                buffer_dimensions: texture_offscreen.buffer_dimensions.clone(),
-                descriptors: self.descriptors.clone(),
-            })),
-            None => Some(Box::new(QueueSyncHandle::NotCopied {
-                handle: destination.clone(),
-                size: target.size,
-                descriptors: self.descriptors.clone(),
-            })),
-        }
+
+        let MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions) = target.take_buffer().expect("Offscreen texture must have buffer").buffer else {
+            unreachable!("Offscreen texture must be from pool");
+        };
+
+        Some(Box::new(QueueSyncHandle {
+            index,
+            buffer,
+            copy_dimensions,
+            descriptors: self.descriptors.clone(),
+        }))
     }
 }
 

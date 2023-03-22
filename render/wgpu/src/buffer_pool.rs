@@ -102,20 +102,24 @@ struct GlobalsKey {
 }
 
 pub trait BufferDescription: Clone {
+    type Cost: Ord;
+
     /// If the potential buffer represented by this description (`self`)
     /// fits another existing buffer and its description (`other`),
     /// return the cost to use that buffer instead of making a new one.
     ///
     /// Cost is an arbitrary unit, but lower is better.
     /// None means that the other buffer cannot be used in place of this one.
-    fn cost_to_use(&self, other: &Self) -> Option<usize>;
+    fn cost_to_use(&self, other: &Self) -> Option<Self::Cost>;
 }
 
 #[derive(Clone, Debug)]
 pub struct AlwaysIncompatible;
 
 impl BufferDescription for AlwaysIncompatible {
-    fn cost_to_use(&self, _other: &Self) -> Option<usize> {
+    type Cost = ();
+
+    fn cost_to_use(&self, _other: &Self) -> Option<()> {
         None
     }
 }
@@ -148,7 +152,7 @@ impl<Type, Description: BufferDescription> BufferPool<Type, Description> {
             .available
             .lock()
             .expect("Should not be able to lock recursively");
-        let mut best: Option<(usize, usize)> = None;
+        let mut best: Option<(Description::Cost, usize)> = None;
         for i in 0..guard.len() {
             if let Some(cost) = description.cost_to_use(&guard[i].1) {
                 if let Some(best) = &mut best {

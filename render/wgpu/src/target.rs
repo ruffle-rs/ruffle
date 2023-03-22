@@ -1,6 +1,8 @@
+use crate::buffer_pool::PoolEntry;
 use crate::utils::BufferDimensions;
 use crate::Error;
 use std::fmt::Debug;
+use std::ops::Deref;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -139,9 +141,23 @@ impl RenderTarget for SwapChainTarget {
 }
 
 #[derive(Debug)]
+pub enum MaybeOwnedBuffer {
+    Borrowed(PoolEntry<wgpu::Buffer, BufferDimensions>, BufferDimensions),
+    Owned(wgpu::Buffer, BufferDimensions),
+}
+
+impl MaybeOwnedBuffer {
+    pub fn inner(&self) -> (&wgpu::Buffer, &BufferDimensions) {
+        match &self {
+            MaybeOwnedBuffer::Borrowed(entry, dimensions) => ((*entry).deref(), dimensions),
+            MaybeOwnedBuffer::Owned(buffer, dimensions) => (buffer, dimensions),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct TextureBufferInfo {
-    pub buffer: Arc<wgpu::Buffer>,
-    pub dimensions: BufferDimensions,
+    pub buffer: MaybeOwnedBuffer,
     pub copy_area: (u32, u32, u32, u32),
 }
 
@@ -212,8 +228,7 @@ impl TextureTarget {
             texture: Arc::new(texture),
             format,
             buffer: Some(TextureBufferInfo {
-                buffer: Arc::new(buffer),
-                dimensions: buffer_dimensions,
+                buffer: MaybeOwnedBuffer::Owned(buffer, buffer_dimensions),
                 copy_area: (0, 0, size.width, size.height),
             }),
         })
@@ -221,6 +236,10 @@ impl TextureTarget {
 
     pub fn get_texture(&self) -> Arc<wgpu::Texture> {
         self.texture.clone()
+    }
+
+    pub fn take_buffer(self) -> Option<TextureBufferInfo> {
+        self.buffer
     }
 }
 
@@ -258,16 +277,12 @@ impl RenderTarget for TextureTarget {
         command_buffers: I,
         _frame: Self::Frame,
     ) -> wgpu::SubmissionIndex {
-        if let Some(TextureBufferInfo {
-            buffer,
-            dimensions,
-            copy_area,
-        }) = &self.buffer
-        {
+        if let Some(TextureBufferInfo { buffer, copy_area }) = &self.buffer {
             let label = create_debug_label!("Render target transfer encoder");
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: label.as_deref(),
             });
+            let (buffer, dimensions) = buffer.inner();
             encoder.copy_texture_to_buffer(
                 wgpu::ImageCopyTexture {
                     texture: &self.texture,
