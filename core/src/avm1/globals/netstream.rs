@@ -19,7 +19,34 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {};
+const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "bytesLoaded" => property(get_bytes_loaded);
+    "bytesTotal" => property(get_bytes_total);
+};
+
+fn get_bytes_loaded<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        return Ok(ns.read().bytes_loaded().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn get_bytes_total<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        return Ok(ns.read().bytes_total().into());
+    }
+
+    Ok(Value::Undefined)
+}
 
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
