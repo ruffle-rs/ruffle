@@ -282,10 +282,10 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
-        if write.target.is_some() {
+        if let Some(target) = write.target {
             return Err(format!(
                 "Modifying an XMLList object is not yet implemented: target {:?}",
-                self.0.read().target
+                target
             )
             .into());
         }
