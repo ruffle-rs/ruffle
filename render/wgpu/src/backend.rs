@@ -14,7 +14,7 @@ use crate::{
 use gc_arena::MutationContext;
 use ruffle_render::backend::{Context3D, Context3DCommand};
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
@@ -583,7 +583,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         handle: BitmapHandle,
         commands: CommandList,
         quality: StageQuality,
-        bounds: (u32, u32, u32, u32),
+        bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         let texture = as_texture(&handle);
 
@@ -593,10 +593,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             depth_or_array_layers: 1,
         };
 
-        let copy_dimensions = BufferDimensions::new(
-            (bounds.2 - bounds.0) as usize,
-            (bounds.3 - bounds.1) as usize,
-        );
+        let copy_dimensions =
+            BufferDimensions::new(bounds.width() as usize, bounds.height() as usize);
         let buffer = self
             .offscreen_buffer_pool
             .take(&self.descriptors, copy_dimensions.clone());
@@ -681,7 +679,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             format: wgpu::TextureFormat::Rgba8Unorm,
             buffer: Some(TextureBufferInfo {
                 buffer: MaybeOwnedBuffer::Borrowed(buffer, copy_dimensions),
-                copy_area: (0, 0, dest_texture.width, dest_texture.height),
+                copy_area: PixelRegion::for_whole_size(dest_texture.width, dest_texture.height),
             }),
         };
         let frame_output = target

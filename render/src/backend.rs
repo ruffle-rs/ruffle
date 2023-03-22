@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
@@ -32,7 +32,7 @@ pub trait RenderBackend: Downcast {
         handle: BitmapHandle,
         commands: CommandList,
         quality: StageQuality,
-        bounds: (u32, u32, u32, u32),
+        bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
