@@ -452,7 +452,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(&self, mc: MutationContext<'gc, '_>, calling: Executable<'gc>) {
+    pub fn push_call(&self, mc: MutationContext<'gc, '_>, calling: &Executable<'gc>) {
         self.call_stack.write(mc).push(calling)
     }
 
