@@ -105,11 +105,11 @@ pub fn name_to_multiname<'gc>(
         }
     }
 
-    let name_string = name.coerce_to_string(activation)?;
-    Ok(if &*name_string == b"*" || *name == Value::Undefined {
+    let name = name.coerce_to_string(activation)?;
+    Ok(if &*name == b"*" {
         Multiname::any(activation.context.gc_context)
     } else {
-        Multiname::new(activation.avm2().public_namespace, name_string)
+        Multiname::new(activation.avm2().public_namespace, name)
     })
 }
 
@@ -167,7 +167,11 @@ pub fn elements<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0])?;
+    let multiname = if args[0] == Value::Undefined {
+        Multiname::any(activation.context.gc_context)
+    } else {
+        name_to_multiname(activation, &args[0])?
+    };
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
