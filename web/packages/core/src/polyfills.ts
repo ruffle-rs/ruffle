@@ -199,7 +199,12 @@ export function pluginPolyfill(): void {
  */
 export function polyfill(isExt: boolean): void {
     isExtension = isExt;
-    polyfillFlashInstances();
-    polyfillFrames();
-    initMutationObserver();
+    const usingExtension =
+        navigator.plugins.namedItem("Ruffle Extension")?.filename ===
+        "ruffle.js";
+    if (isExtension || !usingExtension) {
+        polyfillFlashInstances();
+        polyfillFrames();
+        initMutationObserver();
+    }
 }
