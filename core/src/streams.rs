@@ -1,7 +1,9 @@
 //! NetStream implementation
 
+use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
 use crate::loader::Error;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Manager for all media streams.
@@ -32,6 +34,12 @@ impl<'gc> StreamManager<'gc> {
         }
     }
 
+    pub fn ensure_playing(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+        if !context.stream_manager.playing_streams.contains(&stream) {
+            context.stream_manager.playing_streams.push(stream);
+        }
+    }
+
     /// Process all playing media streams.
     ///
     /// This is an unlocked timestep; the `dt` parameter indicates how many
@@ -39,7 +47,7 @@ impl<'gc> StreamManager<'gc> {
     /// support video framerates separate from the Stage frame rate.
     ///
     /// This does not borrow `&mut self` as we need the `UpdateContext`, too.
-    pub fn tick(_context: &mut UpdateContext<'gc, '_>, _dt: f64) {}
+    pub fn tick(_context: &mut UpdateContext<'_, 'gc>, _dt: f64) {}
 }
 
 /// A stream representing download of some (audiovisual) data.
@@ -59,6 +67,14 @@ impl<'gc> StreamManager<'gc> {
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
 pub struct NetStream<'gc>(GcCell<'gc, NetStreamData>);
+
+impl<'gc> PartialEq for NetStream<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ptr() == other.0.as_ptr()
+    }
+}
+
+impl<'gc> Eq for NetStream<'gc> {}
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -89,5 +105,21 @@ impl<'gc> NetStream<'gc> {
 
     pub fn bytes_total(self) -> usize {
         self.0.read().buffer.len()
+    }
+
+    /// Start playing media from this NetStream.
+    ///
+    /// If `name` is specified, this will also trigger streaming download of
+    /// the given resource. Otherwise, the stream will play whatever data is
+    /// available in the buffer.
+    pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
+        if let Some(name) = name {
+            let request = Request::get(name.to_string());
+            context
+                .load_manager
+                .load_netstream(context.player.clone(), self, request);
+        }
+
+        StreamManager::ensure_playing(context, self);
     }
 }

@@ -53,9 +53,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "pause");
         }
         
-        public function play(...args) {
-            stub_method("flash.net.NetStream", "play");
-        }
+        public native function play(...args);
         
         public function play2(param:NetStreamPlayOptions) {
             stub_method("flash.net.NetStream", "play2");
