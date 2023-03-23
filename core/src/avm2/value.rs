@@ -909,34 +909,27 @@ impl<'gc> Value<'gc> {
         name: Option<&Multiname<'gc>>,
         receiver: Option<Object<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        self.as_object()
-            .filter(|o| o.as_class_object().is_some() || o.as_executable().is_some())
-            .ok_or_else(|| {
-                if let Some(receiver) = receiver {
-                    if let Some(name) = name {
-                        format!(
-                            "Cannot call null or undefined method {} of class {}",
-                            name.to_qualified_name(activation.context.gc_context),
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    } else {
-                        format!(
-                            "Cannot call null or undefined method of class {}",
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    }
-                } else if let Some(name) = name {
-                    format!(
-                        "Cannot call null or undefined function {}",
-                        name.to_qualified_name(activation.context.gc_context)
-                    )
-                    .into()
+        match self.as_object() {
+            Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
+            _ => {
+                // Undefined function
+                let name = if let Some(name) = name {
+                    name.to_qualified_name(activation.context.gc_context)
                 } else {
-                    "Cannot call null or undefined function".into()
-                }
-            })
+                    "value".into()
+                };
+                let msg = if let Some(receiver) = receiver {
+                    format!(
+                        "Error #1006: {} is not a function of class {}.",
+                        name,
+                        receiver.instance_of_class_name(activation.context.gc_context)
+                    )
+                } else {
+                    format!("Error #1006: {} is not a function.", name)
+                };
+                Err(Error::AvmError(type_error(activation, &msg, 1006)?))
+            }
+        }
     }
 
     /// Like `coerce_to_type`, but also performs resolution of the type name.
