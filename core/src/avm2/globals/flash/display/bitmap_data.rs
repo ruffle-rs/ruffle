@@ -10,7 +10,7 @@ use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
-use crate::bitmap::is_size_valid;
+use crate::bitmap::{bitmap_data_operations, is_size_valid};
 use crate::character::Character;
 use crate::display_object::Bitmap;
 use crate::swf::BlendMode;
@@ -978,7 +978,7 @@ pub fn fill_rect<'gc>(
 
     let color = args.get_i32(activation, 1)?;
 
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_u32(activation)?;
@@ -992,12 +992,14 @@ pub fn fill_rect<'gc>(
             .get_public_property("height", activation)?
             .coerce_to_u32(activation)?;
 
-        bitmap_data.write(activation.context.gc_context).fill_rect(
+        bitmap_data_operations::fill_rect(
+            &mut activation.context,
+            bitmap_data,
             x,
             y,
             width,
             height,
-            color.into(),
+            color,
         );
     }
     Ok(Value::Undefined)
