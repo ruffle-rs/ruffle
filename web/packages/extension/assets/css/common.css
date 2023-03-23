@@ -29,11 +29,11 @@ body {
 
 .logo {
     width: 100%;
-    transition: opacity 0.5s;
+    transition: transform 0.2s;
 }
 
 .logo:hover {
-    opacity: 0.5;
+    transform: scale(104%);
 }
 
 /* Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW */
