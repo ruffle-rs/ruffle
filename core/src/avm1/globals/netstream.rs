@@ -22,6 +22,7 @@ pub fn constructor<'gc>(
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "bytesLoaded" => property(get_bytes_loaded);
     "bytesTotal" => property(get_bytes_total);
+    "play" => method(play; DONT_ENUM | DONT_DELETE);
 };
 
 fn get_bytes_loaded<'gc>(
@@ -43,6 +44,24 @@ fn get_bytes_total<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
         return Ok(ns.bytes_loaded().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn play<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        let name = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        ns.play(&mut activation.context, Some(name));
     }
 
     Ok(Value::Undefined)

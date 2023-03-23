@@ -25,3 +25,22 @@ pub fn get_bytes_total<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn play<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+        let name = args
+            .get(0)
+            .cloned()
+            .filter(|v| !matches!(v, Value::Null))
+            .map(|v| v.coerce_to_string(activation))
+            .transpose()?;
+
+        ns.play(&mut activation.context, name);
+    }
+
+    Ok(Value::Undefined)
+}
