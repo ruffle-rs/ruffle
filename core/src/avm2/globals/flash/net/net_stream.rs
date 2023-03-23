@@ -8,7 +8,7 @@ pub fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.and_then(|o| o.as_netstream()) {
-        return Ok(ns.read().bytes_loaded().into());
+        return Ok(ns.bytes_loaded().into());
     }
 
     Ok(Value::Undefined)
@@ -20,7 +20,7 @@ pub fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.and_then(|o| o.as_netstream()) {
-        return Ok(ns.read().bytes_total().into());
+        return Ok(ns.bytes_total().into());
     }
 
     Ok(Value::Undefined)

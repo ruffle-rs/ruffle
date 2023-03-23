@@ -27,7 +27,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
-use gc_arena::{Collect, CollectionContext, GcCell};
+use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
@@ -412,7 +412,7 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_netstream(
         &mut self,
         player: Weak<Mutex<Player>>,
-        target_stream: GcCell<'gc, NetStream>,
+        target_stream: NetStream<'gc>,
         request: Request,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::NetStream {
@@ -589,7 +589,7 @@ pub enum Loader<'gc> {
         self_handle: Option<Handle>,
 
         /// The stream to buffer data into.
-        target_stream: GcCell<'gc, NetStream>,
+        target_stream: NetStream<'gc>,
     },
 }
 
@@ -1368,10 +1368,10 @@ impl<'gc> Loader<'gc> {
 
                 match response {
                     Ok(mut response) => {
-                        stream.write(uc.gc_context).load_buffer(&mut response.body);
+                        stream.load_buffer(uc.gc_context, &mut response.body);
                     }
                     Err(err) => {
-                        stream.write(uc.gc_context).report_error(err);
+                        stream.report_error(err);
                     }
                 }
 

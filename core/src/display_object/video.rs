@@ -107,7 +107,7 @@ pub enum VideoSource<'gc> {
         movie: Arc<SwfMovie>,
 
         /// The stream the video is downloaded from.
-        stream: GcCell<'gc, NetStream>,
+        stream: NetStream<'gc>,
 
         /// The number of frames in the source media, if known.
         num_frames: Option<usize>,
@@ -150,11 +150,7 @@ impl<'gc> Video<'gc> {
     /// Convert this Video into a NetStream sourced video.
     ///
     /// Existing video state related to the old video stream will be dropped.
-    pub fn attach_netstream(
-        self,
-        context: &mut UpdateContext<'_, 'gc>,
-        stream: GcCell<'gc, NetStream>,
-    ) {
+    pub fn attach_netstream(self, context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
         let movie = self.movie();
         let mut video = self.0.write(context.gc_context);
 
