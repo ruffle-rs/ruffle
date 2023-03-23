@@ -1,3 +1,12 @@
+// testfunc("arg1", "arg2", "arg3");
 arg1
 arg2
 arg3
+
+// o();
+Error: 1006
+// o.foo();
+Error: 1006
+
+// o["foo"]();
+Error: 1006
