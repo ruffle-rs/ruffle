@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
-use crate::bitmap::is_size_valid;
+use crate::bitmap::{bitmap_data_operations, is_size_valid};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
@@ -347,26 +347,29 @@ pub fn fill_rect<'gc>(
         .coerce_to_object(activation);
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        if !bitmap_data.disposed() {
-            if let Some(color_val) = args.get(1) {
-                let color = color_val.coerce_to_i32(activation)?;
+        if let Some(color_val) = args.get(1) {
+            let color = color_val.coerce_to_i32(activation)?;
 
-                let x = rectangle.get("x", activation)?.coerce_to_u32(activation)?;
-                let y = rectangle.get("y", activation)?.coerce_to_u32(activation)?;
-                let width = rectangle
-                    .get("width", activation)?
-                    .coerce_to_u32(activation)?;
-                let height = rectangle
-                    .get("height", activation)?
-                    .coerce_to_u32(activation)?;
+            let x = rectangle.get("x", activation)?.coerce_to_u32(activation)?;
+            let y = rectangle.get("y", activation)?.coerce_to_u32(activation)?;
+            let width = rectangle
+                .get("width", activation)?
+                .coerce_to_u32(activation)?;
+            let height = rectangle
+                .get("height", activation)?
+                .coerce_to_u32(activation)?;
 
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .fill_rect(x, y, width, height, color.into());
-            }
-            return Ok(Value::Undefined);
+            bitmap_data_operations::fill_rect(
+                &mut activation.context,
+                bitmap_data.bitmap_data_wrapper(),
+                x,
+                y,
+                width,
+                height,
+                color,
+            );
         }
+        return Ok(Value::Undefined);
     }
 
     Ok((-1).into())
