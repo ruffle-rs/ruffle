@@ -633,12 +633,12 @@ impl<'gc> BitmapData<'gc> {
     }
 
     #[inline]
-    fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
+    pub fn set_pixel32_raw(&mut self, x: u32, y: u32, color: Color) {
         self.pixels[(x + y * self.width) as usize] = color;
     }
 
     #[inline]
-    fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
+    pub fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
         self.pixels[(x + y * self.width()) as usize]
     }
 
@@ -646,21 +646,6 @@ impl<'gc> BitmapData<'gc> {
         if x < self.width && y < self.height {
             self.set_pixel32_raw(x, y, color.to_premultiplied_alpha(self.transparency()));
             self.set_cpu_dirty(PixelRegion::for_pixel(x, y));
-        }
-    }
-
-    pub fn fill_rect(&mut self, x0: u32, y0: u32, width: u32, height: u32, color: Color) {
-        let x1 = (x0 + width).min(self.width);
-        let y1 = (y0 + height).min(self.height);
-        let color = color.to_premultiplied_alpha(self.transparency());
-
-        if x1 > x0 && y1 > y0 {
-            for x in x0..x1 {
-                for y in y0..y1 {
-                    self.set_pixel32_raw(x, y, color);
-                }
-            }
-            self.set_cpu_dirty(PixelRegion::encompassing_pixels((x0, y0), (x1 - 1, y1 - 1)));
         }
     }
 

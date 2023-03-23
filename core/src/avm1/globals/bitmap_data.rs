@@ -350,14 +350,14 @@ pub fn fill_rect<'gc>(
         if let Some(color_val) = args.get(1) {
             let color = color_val.coerce_to_i32(activation)?;
 
-            let x = rectangle.get("x", activation)?.coerce_to_u32(activation)?;
-            let y = rectangle.get("y", activation)?.coerce_to_u32(activation)?;
+            let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
+            let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
             let width = rectangle
                 .get("width", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
             let height = rectangle
                 .get("height", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
 
             bitmap_data_operations::fill_rect(
                 &mut activation.context,
