@@ -33,6 +33,15 @@ false
 true
 
 
+// Square
+// square.hitTest(50, 50)
+true
+
+// Square, no scale
+// square.hitTest(50, 50)
+true
+
+
 // Above and to the right of the circle, not overlapping at all.
 // circle.hitTest(upper)
 false

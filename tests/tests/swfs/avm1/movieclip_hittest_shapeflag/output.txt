@@ -275,3 +275,15 @@ false
 // _level0.clip.hitTest(159.25, 648.9, true)
 false
 
+// square, no scaleX
+// _level0.clip.hitTest(400, 400, true)
+false
+
+// square, no scaleY
+// _level0.clip.hitTest(400, 400, true)
+false
+
+// square, no scale
+// _level0.clip.hitTest(400, 400, true)
+false
+
