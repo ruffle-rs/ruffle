@@ -839,10 +839,10 @@ impl<'gc> ChildContainer<'gc> {
     ) {
         let prev_depth = child.depth();
         child.set_depth(context.gc_context, depth);
-        child.set_clip_depth(context.gc_context, 0);
         child.set_parent(context, Some(parent));
 
         if let Some(prev_child) = self.depth_list.insert(depth, child) {
+            child.set_clip_depth(context.gc_context, 0);
             prev_child.set_depth(context.gc_context, prev_depth);
             prev_child.set_clip_depth(context.gc_context, 0);
             prev_child.set_transformed_by_script(context.gc_context, true);
