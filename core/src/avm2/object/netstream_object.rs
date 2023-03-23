@@ -34,7 +34,7 @@ pub struct NetStreamObject<'gc>(GcCell<'gc, NetStreamObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct NetStreamObjectData<'gc> {
     base: ScriptObjectData<'gc>,
-    ns: GcCell<'gc, NetStream>,
+    ns: NetStream<'gc>,
 }
 
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
@@ -54,7 +54,7 @@ impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
         Ok(Value::Object((*self).into()))
     }
 
-    fn as_netstream(self) -> Option<GcCell<'gc, NetStream>> {
+    fn as_netstream(self) -> Option<NetStream<'gc>> {
         Some(self.0.read().ns)
     }
 }

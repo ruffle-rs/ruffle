@@ -60,7 +60,7 @@ pub enum NativeObject<'gc> {
     BevelFilter(GcCell<'gc, BevelFilterObject>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
-    NetStream(GcCell<'gc, NetStream>),
+    NetStream(NetStream<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM

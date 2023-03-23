@@ -30,7 +30,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        return Ok(ns.read().bytes_loaded().into());
+        return Ok(ns.bytes_loaded().into());
     }
 
     Ok(Value::Undefined)
@@ -42,7 +42,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
-        return Ok(ns.read().bytes_total().into());
+        return Ok(ns.bytes_loaded().into());
     }
 
     Ok(Value::Undefined)

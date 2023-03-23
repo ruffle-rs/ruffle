@@ -1298,7 +1298,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_netstream(self) -> Option<GcCell<'gc, NetStream>> {
+    fn as_netstream(self) -> Option<NetStream<'gc>> {
         None
     }
 }

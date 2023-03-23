@@ -16,7 +16,7 @@ pub struct StreamManager<'gc> {
     ///
     /// This is not the total list of all created NetStreams; only the ones
     /// that have been configured to play media.
-    playing_streams: Vec<GcCell<'gc, NetStream>>,
+    playing_streams: Vec<NetStream<'gc>>,
 }
 
 impl<'gc> Default for StreamManager<'gc> {
@@ -56,31 +56,38 @@ impl<'gc> StreamManager<'gc> {
 ///
 /// It corresponds directly to the AVM1 and AVM2 `NetStream` classes; it's API
 /// is intended to be a VM-agnostic version of those.
+#[derive(Clone, Debug, Collect, Copy)]
+#[collect(no_drop)]
+pub struct NetStream<'gc>(GcCell<'gc, NetStreamData>);
+
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
-pub struct NetStream {
+pub struct NetStreamData {
     /// All data currently loaded in the stream.
     buffer: Vec<u8>,
 }
 
-impl NetStream {
-    pub fn new<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
-        GcCell::allocate(gc_context, NetStream { buffer: Vec::new() })
+impl<'gc> NetStream<'gc> {
+    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+        Self(GcCell::allocate(
+            gc_context,
+            NetStreamData { buffer: Vec::new() },
+        ))
     }
 
-    pub fn load_buffer(&mut self, data: &mut Vec<u8>) {
-        self.buffer.append(data);
+    pub fn load_buffer(self, gc_context: MutationContext<'gc, '_>, data: &mut Vec<u8>) {
+        self.0.write(gc_context).buffer.append(data);
     }
 
-    pub fn report_error(&mut self, _error: Error) {
+    pub fn report_error(self, _error: Error) {
         //TODO: Report an `asyncError` to AVM1 or 2.
     }
 
-    pub fn bytes_loaded(&self) -> usize {
-        self.buffer.len()
+    pub fn bytes_loaded(self) -> usize {
+        self.0.read().buffer.len()
     }
 
-    pub fn bytes_total(&self) -> usize {
-        self.buffer.len()
+    pub fn bytes_total(self) -> usize {
+        self.0.read().buffer.len()
     }
 }
