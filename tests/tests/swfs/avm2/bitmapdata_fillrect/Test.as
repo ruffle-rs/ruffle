@@ -1,51 +1,50 @@
 ﻿package {
-	public class Test {
-		public function Test() {
-			import flash.display.BitmapData;
-			import flash.geom.Rectangle;
-			import flash.geom.Point;
-			
-			trace("Non-transparent BitmapData:");
-
-			var background = 0;
-			var data = new BitmapData(10, 10, false, background);
-			var rect = new Rectangle(1, 1, 4, 5);
-			var fill = 2;
-			data.fillRect(rect, fill);
-			for (var py = 0; py < 10; py++) {
-				var line = "";
-				for (var px = 0; px < 10; px++) {
-					var actual = data.getPixel(px, py);
-					line += actual + " ";
-				}
-				trace(line);
-			}
-			
-			trace();
-			
-			printTransparent(0, 1);
-			printTransparent(0xFFFFFFFF, 0);
-		
-		}
-	}
-}
-
-function printTransparent(background:uint, fill:uint) {
 	import flash.display.BitmapData;
+	import flash.display.Bitmap;
 	import flash.geom.Rectangle;
-	import flash.geom.Point;
-	
-	trace("Transparent BitmapData: background=" + background + " fill=" + fill);
-	var data = new BitmapData(10, 10, true, background);
-	var rect = new Rectangle(1, 1, 4, 5);
-	data.fillRect(rect, fill);
-	for (var py = 0; py < 10; py++) {
-		var line = "";
-		for (var px = 0; px < 10; px++) {
-			var actual = data.getPixel32(px, py);
-			line += actual + " ";
+	import flash.display.MovieClip;
+
+	public class Test extends MovieClip {
+		var numTests: int = 0;
+		
+		public function Test() {
+			test();
 		}
-		trace(line);
+
+		function test() {
+			testFill(new Rectangle(0, 0, 0, 0));
+			testFill(new Rectangle(0, 0, 5, 5));
+			testFill(new Rectangle(-5, -5, 8, 8));
+			testFill(new Rectangle(15, 15, -8, -8));
+			testFill(new Rectangle(-10, -10, 100, 100));
+			testFill(new Rectangle(0, 0, 0, 0));
+		}
+		
+		function testFill(rect) {
+			testFillOpaque(rect);
+			testFillTransparent(rect);
+		}
+		
+		function testFillOpaque(rect) {
+			var bmd = new BitmapData(10, 10, false, 0x000000BB);
+			bmd.fillRect(rect, 0x00FF0000);
+			addBitmap(bmd);
+		}
+		
+		function testFillTransparent(rect) {
+			var bmd = new BitmapData(10, 10, true, 0x440000BB);
+			bmd.fillRect(rect, 0xAAFF0000);
+			addBitmap(bmd);
+		}
+		
+		function addBitmap(bmd: BitmapData) {
+			var i = this.numTests++;
+			var x = Math.floor(i % 10);
+			var y = Math.floor(i / 10);
+			var bitmap = new Bitmap(bmd);
+			bitmap.x = 20 + (x * 20);
+			bitmap.y = 20 + (y * 20);
+			addChild(bitmap);
+		}
 	}
-	trace();
 }

@@ -188,6 +188,28 @@ impl PixelRegion {
         }
     }
 
+    pub fn for_region_i32(x: i32, y: i32, width: i32, height: i32) -> Self {
+        Self::for_region(
+            x.max(0) as u32,
+            y.max(0) as u32,
+            width.max(0) as u32,
+            height.max(0) as u32,
+        )
+    }
+
+    pub fn for_region(x: u32, y: u32, width: u32, height: u32) -> Self {
+        let a = (x, y);
+        let b = (x.saturating_add(width), y.saturating_add(height));
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        Self {
+            min_x: min.0,
+            min_y: min.1,
+            max_x: max.0,
+            max_y: max.1,
+        }
+    }
+
     pub fn encompassing_pixels_i32(a: (i32, i32), b: (i32, i32)) -> Self {
         Self::encompassing_pixels(
             (a.0.max(0) as u32, a.1.max(0) as u32),
@@ -202,12 +224,11 @@ impl PixelRegion {
         // Increase max by one pixel as we've calculated the *encompassed* max
         let max = (max.0.saturating_add(1), max.1.saturating_add(1));
 
-        // Make sure we're never going below 0
         Self {
-            min_x: min.0.max(0),
-            min_y: min.1.max(0),
-            max_x: max.0.max(0),
-            max_y: max.1.max(0),
+            min_x: min.0,
+            min_y: min.1,
+            max_x: max.0,
+            max_y: max.1,
         }
     }
 

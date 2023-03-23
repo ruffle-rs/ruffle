@@ -981,16 +981,16 @@ pub fn fill_rect<'gc>(
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         let x = rectangle
             .get_public_property("x", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let y = rectangle
             .get_public_property("y", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let width = rectangle
             .get_public_property("width", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let height = rectangle
             .get_public_property("height", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
 
         bitmap_data_operations::fill_rect(
             &mut activation.context,
