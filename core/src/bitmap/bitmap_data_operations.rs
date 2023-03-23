@@ -29,7 +29,13 @@ pub fn fill_rect<'gc>(
         return;
     }
 
-    let target = target.sync();
+    let target = if rect.width() == target.width() && rect.height() == target.height() {
+        // If we're filling the whole region, we can discard the gpu data
+        target.overwrite_cpu_pixels_from_gpu(context).0
+    } else {
+        // If we're filling a partial region, finish any gpu->cpu sync
+        target.sync()
+    };
     let mut write = target.write(context.gc_context);
     let color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
