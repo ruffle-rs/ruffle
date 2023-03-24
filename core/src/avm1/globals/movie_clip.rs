@@ -400,13 +400,8 @@ fn begin_bitmap_fill<'gc>(
         .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
     {
         // Register the bitmap data with the drawing.
-        let bitmap_data = bitmap_data.bitmap_data();
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        let handle = if let Some(handle) = bitmap_data.bitmap_handle(activation.context.renderer) {
-            handle
-        } else {
-            return Ok(Value::Undefined);
-        };
+        let bitmap_data = bitmap_data.bitmap_data_wrapper();
+        let handle = bitmap_data.bitmap_handle(&mut activation.context);
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
             width: bitmap_data.width() as u16,
