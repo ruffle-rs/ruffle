@@ -398,13 +398,12 @@ pub fn set_pixel32<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
-        bitmap_data
-            .write(activation.context.gc_context)
-            .set_pixel32(x, y, color.into());
+
+        bitmap_data_operations::set_pixel32(&mut activation.context, bitmap_data, x, y, color);
     }
 
     Ok(Value::Undefined)
@@ -441,13 +440,18 @@ pub fn set_pixels<'gc>(
             .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let transparency = bitmap_data.transparency();
         let mut ind = 0;
 
         for y in y..y + height {
             for x in x..x + width {
                 // Copy data from bytearray until EOFError or finished
                 if let Ok(color) = ba_read.read_int_at(ind) {
-                    bitmap_data.set_pixel32(x, y, color.into());
+                    bitmap_data.set_pixel32_raw(
+                        x,
+                        y,
+                        Color::from(color).to_premultiplied_alpha(transparency),
+                    );
                     ind += 4;
                 } else {
                     return Err(Error::AvmError(crate::avm2::error::eof_error(

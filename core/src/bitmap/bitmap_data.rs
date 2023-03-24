@@ -642,13 +642,6 @@ impl<'gc> BitmapData<'gc> {
         self.pixels[(x + y * self.width()) as usize]
     }
 
-    pub fn set_pixel32(&mut self, x: u32, y: u32, color: Color) {
-        if x < self.width && y < self.height {
-            self.set_pixel32_raw(x, y, color.to_premultiplied_alpha(self.transparency()));
-            self.set_cpu_dirty(PixelRegion::for_pixel(x, y));
-        }
-    }
-
     pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
         if x >= self.width || y >= self.height {
             return;

@@ -46,3 +46,24 @@ pub fn fill_rect<'gc>(
     }
     write.set_cpu_dirty(rect);
 }
+
+pub fn set_pixel32<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x: u32,
+    y: u32,
+    color: i32,
+) {
+    if target.disposed() || x >= target.width() || y >= target.height() {
+        return;
+    }
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+    let transparency = write.transparency();
+    write.set_pixel32_raw(
+        x,
+        y,
+        Color::from(color).to_premultiplied_alpha(transparency),
+    );
+    write.set_cpu_dirty(PixelRegion::for_pixel(x, y));
+}
