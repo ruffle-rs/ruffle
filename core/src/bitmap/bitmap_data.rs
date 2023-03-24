@@ -428,6 +428,10 @@ mod wrapper {
         pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
             x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
         }
+
+        pub fn ptr_eq(&self, other: BitmapDataWrapper<'gc>) -> bool {
+            GcCell::ptr_eq(self.0, other.0)
+        }
     }
 }
 
