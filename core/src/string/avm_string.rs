@@ -1,9 +1,10 @@
-use ruffle_wstr::{wstr_impl_traits, WStr, WString};
-
+use std::borrow::Cow;
 use std::ops::Deref;
 
 use gc_arena::{Collect, Gc, MutationContext};
-use std::borrow::Cow;
+use ruffle_wstr::{wstr_impl_traits, WStr, WString};
+
+use crate::string::OwnedWStr;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -12,10 +13,6 @@ enum Source<'gc> {
     Static(&'static WStr),
 }
 
-#[derive(Collect)]
-#[collect(require_static)]
-struct OwnedWStr(WString);
-
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct AvmString<'gc> {
@@ -23,6 +20,19 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
+    pub(super) fn from_owned(atom: Gc<'gc, OwnedWStr>) -> Self {
+        Self {
+            source: Source::Owned(atom),
+        }
+    }
+
+    pub(super) fn to_owned(self, gc_context: MutationContext<'gc, '_>) -> Gc<'gc, OwnedWStr> {
+        match self.source {
+            Source::Owned(s) => s,
+            Source::Static(s) => Gc::allocate(gc_context, OwnedWStr(s.into())),
+        }
+    }
+
     pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
         gc_context: MutationContext<'gc, '_>,
         string: S,
