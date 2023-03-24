@@ -1,3 +1,4 @@
+use crate::avm2::Value as Avm2Value;
 use crate::bitmap::bitmap_data::{
     BitmapData, BitmapDataDrawError, BitmapDataWrapper, ChannelOptions, Color, IBitmapDrawable,
     LehmerRng, ThresholdOperation,
@@ -1303,4 +1304,32 @@ pub fn draw<'gc>(
         }
         None => Err(BitmapDataDrawError::Unimplemented),
     }
+}
+
+pub fn get_vector(
+    target: BitmapDataWrapper,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+) -> Vec<Avm2Value> {
+    let x0 = x.max(0) as u32;
+    let y0 = y.max(0) as u32;
+    let x1 = (x + width).clamp(0, target.width() as i32) as u32;
+    let y1 = (y + height).clamp(0, target.height() as i32) as u32;
+
+    let capacity = (y1 - y0) * (x1 - x0);
+    let mut result = Vec::with_capacity(capacity as usize);
+
+    let target = target.sync();
+    let read = target.read();
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let color = read.get_pixel32_raw(x, y);
+            let color = u32::from(color.to_un_multiplied_alpha());
+            result.push(color.into());
+        }
+    }
+
+    result
 }
