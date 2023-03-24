@@ -1,4 +1,6 @@
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper, ChannelOptions, Color, LehmerRng};
+use crate::bitmap::bitmap_data::{
+    BitmapData, BitmapDataWrapper, ChannelOptions, Color, LehmerRng, ThresholdOperation,
+};
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::UpdateContext;
 use gc_arena::GcCell;
@@ -462,4 +464,93 @@ pub fn color_transform<'gc>(
         (x_min, y_min),
         (x_max - 1, y_max - 1),
     ));
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn threshold<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    operation: ThresholdOperation,
+    threshold: u32,
+    colour: i32,
+    mask: u32,
+    copy_source: bool,
+) -> u32 {
+    // Pre-compute the masked threshold
+    let masked_threshold = threshold & mask;
+
+    // Extract coords
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+    let (dest_min_x, dest_min_y) = dest_point;
+
+    // The number of modified pixels
+    // This doesn't seem to include pixels changed due to copy_source
+    let mut modified_count = 0;
+    let mut dirty_area: Option<PixelRegion> = None;
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+
+    // dealing with object aliasing...
+    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+    let src_bitmap_data_cell = source_bitmap;
+    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+    let source_bitmap_ref = // holds the reference to either of the ones above
+        if GcCell::ptr_eq(source_bitmap, target) {
+            src_bitmap_clone = src_bitmap_data_cell.read().clone();
+            &src_bitmap_clone
+        } else {
+            src_bitmap_gc_ref = src_bitmap_data_cell.read();
+            &src_bitmap_gc_ref
+        };
+
+    let mut write = target.write(context.gc_context);
+
+    // Check each pixel
+    for src_y in src_min_y..(src_min_y + src_height) {
+        for src_x in src_min_x..(src_min_x + src_width) {
+            let dest_x = src_x - src_min_x + dest_min_x;
+            let dest_y = src_y - src_min_y + dest_min_y;
+
+            if !write.is_point_in_bounds(dest_x, dest_y)
+                || !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
+            {
+                continue;
+            }
+
+            // Extract source colour
+            let source_color = source_bitmap_ref
+                .get_pixel32_raw(src_x as u32, src_y as u32)
+                .to_un_multiplied_alpha();
+
+            // If the test, as defined by the operation pass then set to input colour
+            if operation.matches(i32::from(source_color) as u32 & mask, masked_threshold) {
+                modified_count += 1;
+                write.set_pixel32_raw(dest_x as u32, dest_y as u32, Color::from(colour));
+            } else {
+                // If the test fails, but copy_source is true then take the colour from the source
+                if copy_source {
+                    let new_color = source_bitmap_ref
+                        .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                        .to_un_multiplied_alpha();
+
+                    write.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
+                }
+            }
+            if let Some(dirty_area) = &mut dirty_area {
+                dirty_area.encompass(dest_x as u32, dest_y as u32);
+            } else {
+                dirty_area = Some(PixelRegion::for_pixel(dest_x as u32, dest_y as u32));
+            }
+        }
+    }
+
+    if let Some(dirty_area) = dirty_area {
+        write.set_cpu_dirty(dirty_area);
+    }
+
+    modified_count
 }
