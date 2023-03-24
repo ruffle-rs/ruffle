@@ -180,7 +180,7 @@ pub fn noise<'gc>(
     if target.disposed() {
         return;
     }
-    let target = target.sync();
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
     let mut write = target.write(context.gc_context);
 
     let true_seed = if seed <= 0 {
@@ -253,7 +253,7 @@ pub fn perlin_noise<'gc>(
     if target.disposed() {
         return;
     }
-    let target = target.sync();
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
     let mut write = target.write(context.gc_context);
 
     let turb = Turbulence::from_seed(random_seed);
