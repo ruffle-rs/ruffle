@@ -1173,26 +1173,14 @@ pub fn palette_map<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    // dealing with object aliasing...
-                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
-                    let read;
-                    let source: Option<&BitmapData> =
-                        if GcCell::ptr_eq(src_bitmap_data_cell, bitmap_data.bitmap_data()) {
-                            None
-                        } else {
-                            read = src_bitmap_data_cell.read();
-                            Some(&read)
-                        };
-
-                    bitmap_data
-                        .bitmap_data()
-                        .write(activation.context.gc_context)
-                        .palette_map(
-                            source,
-                            (src_min_x, src_min_y, src_width, src_height),
-                            (dest_x, dest_y),
-                            (red_array, green_array, blue_array, alpha_array),
-                        );
+                    bitmap_data_operations::palette_map(
+                        &mut activation.context,
+                        bitmap_data.bitmap_data_wrapper(),
+                        src_bitmap.bitmap_data_wrapper(),
+                        (src_min_x, src_min_y, src_width, src_height),
+                        (dest_x, dest_y),
+                        (red_array, green_array, blue_array, alpha_array),
+                    );
                 }
             }
 
