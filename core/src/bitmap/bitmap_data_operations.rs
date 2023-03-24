@@ -1,4 +1,5 @@
-use crate::avm2::Value as Avm2Value;
+use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::{Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
     BitmapData, BitmapDataDrawError, BitmapDataWrapper, ChannelOptions, Color, IBitmapDrawable,
     LehmerRng, ThresholdOperation,
@@ -1332,4 +1333,30 @@ pub fn get_vector(
     }
 
     result
+}
+
+pub fn get_pixels_as_byte_array<'gc>(
+    target: BitmapDataWrapper,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+) -> Result<ByteArrayStorage, Error<'gc>> {
+    let mut result = ByteArrayStorage::new();
+
+    let x0 = x.max(0) as u32;
+    let y0 = y.max(0) as u32;
+    let x1 = (x + width).clamp(0, target.width() as i32) as u32;
+    let y1 = (y + height).clamp(0, target.height() as i32) as u32;
+
+    let target = target.sync();
+    let read = target.read();
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let color = read.get_pixel32_raw(x, y);
+            result.write_int(color.to_un_multiplied_alpha().into())?;
+        }
+    }
+
+    Ok(result)
 }

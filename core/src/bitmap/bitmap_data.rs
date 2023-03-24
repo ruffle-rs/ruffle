@@ -1,4 +1,4 @@
-use crate::avm2::{Error, Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use bitflags::bitflags;
 use core::fmt;
@@ -401,7 +401,6 @@ mod wrapper {
     }
 }
 
-use crate::avm2::bytearray::ByteArrayStorage;
 pub use wrapper::BitmapDataWrapper;
 
 impl fmt::Debug for BitmapData<'_> {
@@ -571,30 +570,6 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
         x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
-    }
-
-    pub fn get_pixels(
-        &self,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-    ) -> Result<ByteArrayStorage, Error<'gc>> {
-        let mut result = ByteArrayStorage::new();
-
-        let x0 = x.max(0) as u32;
-        let y0 = y.max(0) as u32;
-        let x1 = (x + width).clamp(0, self.width as i32) as u32;
-        let y1 = (y + height).clamp(0, self.height as i32) as u32;
-
-        for y in y0..y1 {
-            for x in x0..x1 {
-                let color = self.pixels[(x + y * self.width) as usize];
-                result.write_int(color.to_un_multiplied_alpha().0)?;
-            }
-        }
-
-        Ok(result)
     }
 
     #[inline]

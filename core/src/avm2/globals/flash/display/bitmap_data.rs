@@ -271,8 +271,8 @@ pub fn get_pixels<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let x = rectangle
             .get_public_property("x", activation)?
@@ -288,7 +288,7 @@ pub fn get_pixels<'gc>(
             .coerce_to_i32(activation)?;
         let bytearray = ByteArrayObject::from_storage(
             activation,
-            bitmap_data.read().get_pixels(x, y, width, height)?,
+            bitmap_data_operations::get_pixels_as_byte_array(bitmap_data, x, y, width, height)?,
         )?;
         return Ok(bytearray.into());
     }
