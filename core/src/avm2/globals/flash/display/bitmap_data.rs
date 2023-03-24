@@ -1275,8 +1275,8 @@ pub fn threshold<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        if !bitmap_data.read().disposed() {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        if !bitmap_data.disposed() {
             let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
             let source_rect = args.get_object(activation, 1, "sourceRect")?;
             let dest_point = args.get_object(activation, 2, "dstPoint")?;
@@ -1290,7 +1290,7 @@ pub fn threshold<'gc>(
             );
             let operation = args.try_get_string(activation, 3)?;
             let threshold = args.get_u32(activation, 4)?;
-            let color = args.get_u32(activation, 5)?;
+            let color = args.get_i32(activation, 5)?;
             let mask = args.get_u32(activation, 6)?;
             let copy_source = args.get_bool(7);
 
@@ -1322,33 +1322,22 @@ pub fn threshold<'gc>(
                 .get_public_property("height", activation)?
                 .coerce_to_i32(activation)?;
 
-            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
-                src_bitmap.read().check_valid(activation)?;
-                // dealing with object aliasing...
-                let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-                let src_bitmap_data_cell = src_bitmap;
-                let src_bitmap_gc_ref; // only initialized if source is a different object than self
-                let source_bitmap_ref = // holds the reference to either of the ones above
-                    if GcCell::ptr_eq(src_bitmap, bitmap_data) {
-                        src_bitmap_clone = src_bitmap_data_cell.read().clone();
-                        &src_bitmap_clone
-                    } else {
-                        src_bitmap_gc_ref = src_bitmap_data_cell.read();
-                        &src_bitmap_gc_ref
-                    };
-                return Ok(bitmap_data
-                    .write(activation.context.gc_context)
-                    .threshold(
-                        source_bitmap_ref,
-                        (src_min_x, src_min_y, src_width, src_height),
-                        dest_point,
-                        operation,
-                        threshold,
-                        color,
-                        mask,
-                        copy_source,
-                    )
-                    .into());
+            if let Some(src_bitmap) = src_bitmap.as_bitmap_data_wrapper() {
+                src_bitmap.check_valid(activation)?;
+
+                return Ok(bitmap_data_operations::threshold(
+                    &mut activation.context,
+                    bitmap_data,
+                    src_bitmap,
+                    (src_min_x, src_min_y, src_width, src_height),
+                    dest_point,
+                    operation,
+                    threshold,
+                    color,
+                    mask,
+                    copy_source,
+                )
+                .into());
             }
         }
     }

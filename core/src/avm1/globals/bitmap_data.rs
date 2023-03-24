@@ -1299,7 +1299,7 @@ pub fn threshold<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
 
-            let colour = args.get(5).unwrap_or(&0.into()).coerce_to_u32(activation)?;
+            let colour = args.get(5).unwrap_or(&0.into()).coerce_to_i32(activation)?;
 
             let mask = args
                 .get(6)
@@ -1313,32 +1313,18 @@ pub fn threshold<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    // dealing with object aliasing...
-                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
-                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-                    let source_bitmap_ref = // holds the reference to either of the ones above
-                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
-                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
-                            &src_bitmap_clone
-                        } else {
-                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
-                            &src_bitmap_gc_ref
-                        };
-
-                    let modified_count = bitmap_data
-                        .bitmap_data()
-                        .write(activation.context.gc_context)
-                        .threshold(
-                            source_bitmap_ref,
-                            (src_min_x, src_min_y, src_width, src_height),
-                            (dest_x, dest_y),
-                            operation,
-                            threshold,
-                            colour,
-                            mask,
-                            copy_source,
-                        );
+                    let modified_count = bitmap_data_operations::threshold(
+                        &mut activation.context,
+                        bitmap_data.bitmap_data_wrapper(),
+                        src_bitmap.bitmap_data_wrapper(),
+                        (src_min_x, src_min_y, src_width, src_height),
+                        (dest_x, dest_y),
+                        operation,
+                        threshold,
+                        colour,
+                        mask,
+                        copy_source,
+                    );
 
                     return Ok(modified_count.into());
                 }
