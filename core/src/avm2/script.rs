@@ -62,7 +62,7 @@ struct TranslationUnitData<'gc> {
     scripts: Vec<Option<Script<'gc>>>,
 
     /// All strings loaded from the ABC's strings list.
-    /// They're lazy loaded and offset by 1, with the 0th element being always None.
+    /// They're lazy loaded and offset by 1, with the 0th element being always the empty string.
     strings: Vec<Option<AvmString<'gc>>>,
 
     /// All namespaces loaded from the ABC's scripts list.
@@ -233,28 +233,11 @@ impl<'gc> TranslationUnit<'gc> {
         string_index: u32,
         context: &mut GcContext<'_, 'gc>,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
-        let mut write = self.0.write(context.gc_context);
-        if let Some(Some(string)) = write.strings.get(string_index as usize) {
-            return Ok(Some(*string));
-        }
-
         if string_index == 0 {
-            return Ok(None);
+            Ok(None)
+        } else {
+            self.pool_string(string_index, context).map(Some)
         }
-
-        let raw = write
-            .abc
-            .constant_pool
-            .strings
-            .get(string_index as usize - 1)
-            .ok_or_else(|| format!("Unknown string constant {string_index}"))?;
-
-        let avm_string = context
-            .interner
-            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
-
-        write.strings[string_index as usize] = Some(avm_string);
-        Ok(Some(avm_string))
     }
 
     /// Load a string from the ABC's constant pool.
@@ -268,9 +251,28 @@ impl<'gc> TranslationUnit<'gc> {
         string_index: u32,
         context: &mut GcContext<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        Ok(self
-            .pool_string_option(string_index, context)?
-            .unwrap_or_else(AvmString::default))
+        let mut write = self.0.write(context.gc_context);
+        if let Some(Some(string)) = write.strings.get(string_index as usize) {
+            return Ok(*string);
+        }
+
+        let raw = if string_index == 0 {
+            ""
+        } else {
+            write
+                .abc
+                .constant_pool
+                .strings
+                .get(string_index as usize - 1)
+                .ok_or_else(|| format!("Unknown string constant {string_index}"))?
+        };
+
+        let avm_string = context
+            .interner
+            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
+
+        write.strings[string_index as usize] = Some(avm_string);
+        Ok(avm_string)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
