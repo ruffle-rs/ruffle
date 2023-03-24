@@ -1,12 +1,18 @@
 use crate::bitmap::bitmap_data::{
-    BitmapData, BitmapDataWrapper, ChannelOptions, Color, LehmerRng, ThresholdOperation,
+    BitmapData, BitmapDataDrawError, BitmapDataWrapper, ChannelOptions, Color, IBitmapDrawable,
+    LehmerRng, ThresholdOperation,
 };
 use crate::bitmap::turbulence::Turbulence;
-use crate::context::UpdateContext;
+use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::TDisplayObject;
 use gc_arena::GcCell;
 use ruffle_render::bitmap::PixelRegion;
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
-use swf::{ColorTransform, Fixed8};
+use ruffle_render::matrix::Matrix;
+use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::Transform;
+use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
 /// Instead of directly manipulating the BitmapData in each place, they should call
@@ -1184,5 +1190,117 @@ pub fn apply_filter<'gc>(
         None => {
             tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
         }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn draw<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    mut source: IBitmapDrawable<'gc>,
+    transform: Transform,
+    smoothing: bool,
+    blend_mode: BlendMode,
+    clip_rect: Option<Rectangle<Twips>>,
+    quality: StageQuality,
+) -> Result<(), BitmapDataDrawError> {
+    let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context);
+    let mut write = target.write(context.gc_context);
+
+    let bitmapdata_width = write.width();
+    let bitmapdata_height = write.height();
+
+    let mut transform_stack = ruffle_render::transform::TransformStack::new();
+    transform_stack.push(&transform);
+    let handle = write.bitmap_handle(context.renderer).unwrap();
+
+    // Calculate the maximum potential area that this draw call will affect
+    let matrix = transform_stack.transform().matrix;
+    let bounds = source.bounds();
+
+    let mut dirty_region = PixelRegion::encompassing_twips(matrix * bounds.0, matrix * bounds.1);
+    dirty_region.clamp(bitmapdata_width, bitmapdata_height);
+
+    // If we have another dirty area to preserve, expand this to include it
+    if let Some(old) = include_dirty_area {
+        dirty_region.union(old);
+    }
+
+    let mut render_context = RenderContext {
+        renderer: context.renderer,
+        commands: CommandList::new(),
+        gc_context: context.gc_context,
+        library: context.library,
+        transform_stack: &mut transform_stack,
+        is_offscreen: true,
+        stage: context.stage,
+        allow_mask: true,
+    };
+
+    // Make the screen opacity match the opacity of this bitmap
+
+    let clip_mat = clip_rect.map(|clip_rect| {
+        // Note - we do *not* apply the matrix to the clip rect,
+        // to match Flash's behavior.
+        let clip_mat = Matrix {
+            a: (clip_rect.x_max - clip_rect.x_min).to_pixels() as f32,
+            b: 0.0,
+            c: 0.0,
+            d: (clip_rect.y_max - clip_rect.y_min).to_pixels() as f32,
+            tx: clip_rect.x_min,
+            ty: clip_rect.y_min,
+        };
+
+        render_context.commands.push_mask();
+        // The color doesn't matter, as this is a mask.
+        render_context
+            .commands
+            .draw_rect(swf::Color::BLACK, clip_mat);
+        render_context.commands.activate_mask();
+
+        clip_mat
+    });
+
+    match &mut source {
+        IBitmapDrawable::BitmapData(data) => {
+            data.render(smoothing, &mut render_context);
+        }
+        IBitmapDrawable::DisplayObject(object) => {
+            // Note that we do *not* use `render_base`,
+            // as we want to ignore the object's mask and normal transform
+            object.render_self(&mut render_context);
+        }
+    }
+
+    if let Some(clip_mat) = clip_mat {
+        // Draw the rectangle again after deactivating the mask,
+        // to reset the stencil buffer.
+        render_context.commands.deactivate_mask();
+        render_context
+            .commands
+            .draw_rect(swf::Color::BLACK, clip_mat);
+        render_context.commands.pop_mask();
+    }
+
+    write.update_dirty_texture(render_context.renderer);
+
+    let commands = if blend_mode == BlendMode::Normal {
+        render_context.commands
+    } else {
+        let mut commands = CommandList::new();
+        commands.blend(render_context.commands, blend_mode);
+        commands
+    };
+
+    let image = context
+        .renderer
+        .render_offscreen(handle, commands, quality, dirty_region);
+
+    match image {
+        Some(sync_handle) => {
+            write.set_gpu_dirty(sync_handle, dirty_region);
+            Ok(())
+        }
+        None => Err(BitmapDataDrawError::Unimplemented),
     }
 }
