@@ -1307,18 +1307,15 @@ pub fn get_vector(
     width: i32,
     height: i32,
 ) -> Vec<Avm2Value> {
-    let x0 = x.max(0) as u32;
-    let y0 = y.max(0) as u32;
-    let x1 = (x + width).clamp(0, target.width() as i32) as u32;
-    let y1 = (y + height).clamp(0, target.height() as i32) as u32;
+    let mut region = PixelRegion::for_region_i32(x, y, width, height);
+    region.clamp(target.width(), target.height());
 
-    let capacity = (y1 - y0) * (x1 - x0);
-    let mut result = Vec::with_capacity(capacity as usize);
+    let mut result = Vec::with_capacity((region.width() * region.height()) as usize);
 
-    let target = target.sync();
-    let read = target.read();
-    for y in y0..y1 {
-        for x in x0..x1 {
+    let read = target.read_area(region);
+
+    for y in region.min_y..region.max_y {
+        for x in region.min_x..region.max_x {
             let color = read.get_pixel32_raw(x, y);
             let color = u32::from(color.to_un_multiplied_alpha());
             result.push(color.into());
