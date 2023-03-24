@@ -1121,6 +1121,84 @@ pub fn clone<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `BitmapData.paletteMap`
+pub fn palette_map<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        bitmap_data.read().check_valid(activation)?;
+        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
+        .as_bitmap_data()
+        .ok_or_else(|| {
+            Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
+        })?;
+
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
+        let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let source_point = (
+            source_rect.x_min.to_pixels().floor() as i32,
+            source_rect.y_min.to_pixels().floor() as i32,
+        );
+        let source_size = (
+            source_rect.width().to_pixels().ceil() as i32,
+            source_rect.height().to_pixels().ceil() as i32,
+        );
+        let dest_point = args.get_object(activation, 2, "dstPoint")?;
+        let dest_point = (
+            dest_point
+                .get_public_property("x", activation)?
+                .coerce_to_i32(activation)?,
+            dest_point
+                .get_public_property("x", activation)?
+                .coerce_to_i32(activation)?,
+        );
+
+        let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
+            let arg = args.get(index).unwrap_or(&Value::Null);
+            let mut array = [0_u32; 256];
+            for (i, item) in array.iter_mut().enumerate() {
+                *item = if let Value::Object(arg) = arg {
+                    arg
+                        .get_enumerant_value(i as u32, activation)?
+                        .coerce_to_u32(activation)?
+                } else {
+                    // This is an "identity mapping", fulfilling the part of the spec that
+                    // says that channels which have no array provided are simply copied.
+                    (i << shift) as u32
+                }
+            }
+            Ok(array)
+        };
+
+        let red_array = get_channel(3, 16)?;
+        let green_array = get_channel(4, 8)?;
+        let blue_array = get_channel(5, 0)?;
+        let alpha_array = get_channel(6, 24)?;
+
+        let read;
+        let source: Option<&BitmapData> = if GcCell::ptr_eq(source_bitmap, bitmap_data) {
+            None
+        } else {
+            read = source_bitmap.read();
+            read.check_valid(activation)?;
+            Some(&read)
+        };
+
+        bitmap_data
+            .write(activation.context.gc_context)
+            .palette_map(
+                source, 
+                (source_point.0, source_point.1, source_size.0, source_size.1),
+                dest_point,
+                (red_array, green_array, blue_array, alpha_array),
+            );
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implement `BitmapData.perlinNoise`
 pub fn perlin_noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
