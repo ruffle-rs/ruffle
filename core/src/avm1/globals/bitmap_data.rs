@@ -1069,28 +1069,14 @@ pub fn merge<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    // dealing with object aliasing...
-                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
-                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-                    let source_bitmap_ref = // holds the reference to either of the ones above
-                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
-                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
-                            &src_bitmap_clone
-                        } else {
-                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
-                            &src_bitmap_gc_ref
-                        };
-
-                    bitmap_data
-                        .bitmap_data()
-                        .write(activation.context.gc_context)
-                        .merge(
-                            source_bitmap_ref,
-                            (src_min_x, src_min_y, src_width, src_height),
-                            (dest_x, dest_y),
-                            (red_mult, green_mult, blue_mult, alpha_mult),
-                        );
+                    bitmap_data_operations::merge(
+                        &mut activation.context,
+                        bitmap_data.bitmap_data_wrapper(),
+                        src_bitmap.bitmap_data_wrapper(),
+                        (src_min_x, src_min_y, src_width, src_height),
+                        (dest_x, dest_y),
+                        (red_mult, green_mult, blue_mult, alpha_mult),
+                    );
                 }
             }
 
