@@ -6,7 +6,7 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{bitmap_data_operations, is_size_valid};
 use crate::character::Character;
@@ -441,14 +441,13 @@ pub fn flood_fill<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let color: Color = color.into();
-                let color: Color =
-                    color.to_premultiplied_alpha(bitmap_data.bitmap_data().read().transparency());
-
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .flood_fill(x, y, color);
+                bitmap_data_operations::flood_fill(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    x,
+                    y,
+                    color,
+                );
             }
             return Ok(Value::Undefined);
         }
