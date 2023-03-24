@@ -55,9 +55,6 @@ impl RenderBackend for NullRenderer {
     ) -> ShapeHandle {
         ShapeHandle(Arc::new(NullShapeHandle))
     }
-    fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
-        ShapeHandle(Arc::new(NullShapeHandle))
-    }
 
     fn render_offscreen(
         &mut self,

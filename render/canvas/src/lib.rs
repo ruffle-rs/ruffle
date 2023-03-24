@@ -1,7 +1,6 @@
 #![deny(clippy::unwrap_used)]
 
 use gc_arena::MutationContext;
-use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
@@ -454,11 +453,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> ShapeHandle {
         let data = swf_shape_to_canvas_commands(&shape, bitmap_source, self);
         ShapeHandle(Arc::new(ShapeData(data)))
-    }
-
-    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into(), &NullBitmapSource)
     }
 
     fn render_offscreen(
