@@ -1199,27 +1199,17 @@ pub fn draw<'gc>(
     clip_rect: Option<Rectangle<Twips>>,
     quality: StageQuality,
 ) -> Result<(), BitmapDataDrawError> {
-    let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context);
-    let mut write = target.write(context.gc_context);
-
-    let bitmapdata_width = write.width();
-    let bitmapdata_height = write.height();
+    // Calculate the maximum potential area that this draw call will affect
+    let bounds = source.bounds();
+    let mut dirty_region =
+        PixelRegion::encompassing_twips(transform.matrix * bounds.0, transform.matrix * bounds.1);
+    dirty_region.clamp(target.width(), target.height());
+    if dirty_region.width() == 0 || dirty_region.height() == 0 {
+        return Ok(());
+    }
 
     let mut transform_stack = ruffle_render::transform::TransformStack::new();
     transform_stack.push(&transform);
-    let handle = write.bitmap_handle(context.renderer).unwrap();
-
-    // Calculate the maximum potential area that this draw call will affect
-    let matrix = transform_stack.transform().matrix;
-    let bounds = source.bounds();
-
-    let mut dirty_region = PixelRegion::encompassing_twips(matrix * bounds.0, matrix * bounds.1);
-    dirty_region.clamp(bitmapdata_width, bitmapdata_height);
-
-    // If we have another dirty area to preserve, expand this to include it
-    if let Some(old) = include_dirty_area {
-        dirty_region.union(old);
-    }
 
     let mut render_context = RenderContext {
         renderer: context.renderer,
@@ -1277,7 +1267,7 @@ pub fn draw<'gc>(
         render_context.commands.pop_mask();
     }
 
-    write.update_dirty_texture(render_context.renderer);
+    let handle = target.bitmap_handle(render_context.gc_context, render_context.renderer);
 
     let commands = if blend_mode == BlendMode::Normal {
         render_context.commands
@@ -1286,6 +1276,13 @@ pub fn draw<'gc>(
         commands.blend(render_context.commands, blend_mode);
         commands
     };
+
+    let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context);
+    let mut write = target.write(context.gc_context);
+    // If we have another dirty area to preserve, expand this to include it
+    if let Some(old) = include_dirty_area {
+        dirty_region.union(old);
+    }
 
     let image = context
         .renderer
