@@ -307,14 +307,12 @@ pub fn copy_channel<'gc>(
                 let src_height = source_rect
                     .get("height", activation)?
                     .coerce_to_u32(activation)?;
-                let src_max_x = src_min_x + src_width;
-                let src_max_y = src_min_y + src_height;
 
                 bitmap_data_operations::copy_channel(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     (min_x, min_y),
-                    (src_min_x, src_min_y, src_max_x, src_max_y),
+                    (src_min_x, src_min_y, src_width, src_height),
                     source_bitmap.bitmap_data_wrapper(),
                     source_channel,
                     dest_channel,

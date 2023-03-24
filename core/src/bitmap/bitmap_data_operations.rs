@@ -360,7 +360,7 @@ pub fn copy_channel<'gc>(
     dest_channel: i32,
 ) {
     let (min_x, min_y) = dest_point;
-    let (src_min_x, src_min_y, src_max_x, src_max_y) = src_rect;
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
 
     let channel_shift: u32 = match source_channel {
         // red
@@ -375,26 +375,18 @@ pub fn copy_channel<'gc>(
     };
     let transparency = target.transparency();
 
+    let source_region = PixelRegion::for_region(src_min_x, src_min_y, src_width, src_height);
+    let source = if source_bitmap.ptr_eq(target) {
+        None
+    } else {
+        Some(source_bitmap.read_area(source_region))
+    };
+
     let target = target.sync();
-    let source_bitmap = source_bitmap.sync();
-
-    // dealing with object aliasing...
-    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-    let src_bitmap_data_cell = source_bitmap;
-    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-    let source_bitmap_ref = // holds the reference to either of the ones above
-        if GcCell::ptr_eq(source_bitmap, target) {
-            src_bitmap_clone = src_bitmap_data_cell.read().clone();
-            &src_bitmap_clone
-        } else {
-            src_bitmap_gc_ref = src_bitmap_data_cell.read();
-            &src_bitmap_gc_ref
-        };
-
     let mut write = target.write(context.gc_context);
 
-    for x in src_min_x.max(0)..src_max_x.min(source_bitmap_ref.width()) {
-        for y in src_min_y.max(0)..src_max_y.min(source_bitmap_ref.height()) {
+    for x in source_region.min_x..source_region.max_x {
+        for y in source_region.min_y..source_region.max_y {
             let dst_x = x as i32 + min_x as i32;
             let dst_y = y as i32 + min_y as i32;
             if write.is_point_in_bounds(dst_x, dst_y) {
@@ -402,10 +394,12 @@ pub fn copy_channel<'gc>(
                     .get_pixel32_raw(dst_x as u32, dst_y as u32)
                     .to_un_multiplied_alpha()
                     .into();
-                let source_color: u32 = source_bitmap_ref
-                    .get_pixel32_raw(x, y)
-                    .to_un_multiplied_alpha()
-                    .into();
+
+                let source_color: u32 = if let Some(source) = &source {
+                    source.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+                } else {
+                    write.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+                };
 
                 let source_part = (source_color >> channel_shift) & 0xFF;
 
@@ -436,8 +430,8 @@ pub fn copy_channel<'gc>(
             (src_min_y.saturating_add(min_y)),
         ),
         (
-            (src_max_x.saturating_add(min_x)),
-            (src_max_y.saturating_add(min_y)),
+            (source_region.max_x.saturating_add(min_x)),
+            (source_region.max_y.saturating_add(min_y)),
         ),
     );
     dirty_region.clamp(write.width(), write.height());
