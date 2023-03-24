@@ -1160,8 +1160,7 @@ pub fn palette_map<'gc>(
             let mut array = [0_u32; 256];
             for (i, item) in array.iter_mut().enumerate() {
                 *item = if let Value::Object(arg) = arg {
-                    arg
-                        .get_enumerant_value(i as u32, activation)?
+                    arg.get_enumerant_value(i as u32, activation)?
                         .coerce_to_u32(activation)?
                 } else {
                     // This is an "identity mapping", fulfilling the part of the spec that
@@ -1189,7 +1188,7 @@ pub fn palette_map<'gc>(
         bitmap_data
             .write(activation.context.gc_context)
             .palette_map(
-                source, 
+                source,
                 (source_point.0, source_point.1, source_size.0, source_size.1),
                 dest_point,
                 (red_array, green_array, blue_array, alpha_array),
