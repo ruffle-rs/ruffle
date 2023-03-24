@@ -515,22 +515,16 @@ pub fn threshold<'gc>(
     let mut modified_count = 0;
     let mut dirty_area: Option<PixelRegion> = None;
 
+    let mut source_region =
+        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
+    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+    let source = if source_bitmap.ptr_eq(target) {
+        None
+    } else {
+        Some(source_bitmap.read_area(source_region))
+    };
+
     let target = target.sync();
-    let source_bitmap = source_bitmap.sync();
-
-    // dealing with object aliasing...
-    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-    let src_bitmap_data_cell = source_bitmap;
-    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-    let source_bitmap_ref = // holds the reference to either of the ones above
-        if GcCell::ptr_eq(source_bitmap, target) {
-            src_bitmap_clone = src_bitmap_data_cell.read().clone();
-            &src_bitmap_clone
-        } else {
-            src_bitmap_gc_ref = src_bitmap_data_cell.read();
-            &src_bitmap_gc_ref
-        };
-
     let mut write = target.write(context.gc_context);
 
     // Check each pixel
@@ -539,16 +533,26 @@ pub fn threshold<'gc>(
             let dest_x = src_x - src_min_x + dest_min_x;
             let dest_y = src_y - src_min_y + dest_min_y;
 
-            if !write.is_point_in_bounds(dest_x, dest_y)
-                || !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
-            {
+            if !write.is_point_in_bounds(dest_x, dest_y) {
                 continue;
             }
 
             // Extract source colour
-            let source_color = source_bitmap_ref
-                .get_pixel32_raw(src_x as u32, src_y as u32)
-                .to_un_multiplied_alpha();
+            let source_color = if let Some(source) = &source {
+                if !source.is_point_in_bounds(src_x, src_y) {
+                    continue;
+                }
+                source
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .to_un_multiplied_alpha()
+            } else {
+                if !write.is_point_in_bounds(src_x, src_y) {
+                    continue;
+                }
+                write
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .to_un_multiplied_alpha()
+            };
 
             // If the test, as defined by the operation pass then set to input colour
             if operation.matches(i32::from(source_color) as u32 & mask, masked_threshold) {
@@ -557,9 +561,15 @@ pub fn threshold<'gc>(
             } else {
                 // If the test fails, but copy_source is true then take the colour from the source
                 if copy_source {
-                    let new_color = source_bitmap_ref
-                        .get_pixel32_raw(dest_x as u32, dest_y as u32)
-                        .to_un_multiplied_alpha();
+                    let new_color = if let Some(source) = &source {
+                        source
+                            .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                            .to_un_multiplied_alpha()
+                    } else {
+                        write
+                            .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                            .to_un_multiplied_alpha()
+                    };
 
                     write.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
                 }
