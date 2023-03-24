@@ -162,7 +162,9 @@ pub fn get_pixel<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                return Ok(bitmap_data.bitmap_data().read().get_pixel(x, y).into());
+                let col =
+                    bitmap_data_operations::get_pixel(bitmap_data.bitmap_data_wrapper(), x, y);
+                return Ok(col.into());
             }
         }
     }
