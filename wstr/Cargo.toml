@@ -6,6 +6,3 @@ homepage.workspace = true
 license.workspace = true
 repository.workspace = true
 version.workspace = true
-
-[dependencies]
-static_assertions = "1.1.0"
