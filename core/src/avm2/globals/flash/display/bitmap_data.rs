@@ -301,8 +301,8 @@ pub fn get_vector<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let x = rectangle
             .get_public_property("x", activation)?
@@ -317,7 +317,7 @@ pub fn get_vector<'gc>(
             .get_public_property("height", activation)?
             .coerce_to_i32(activation)?;
 
-        let pixels = bitmap_data.read().get_vector(x, y, width, height);
+        let pixels = bitmap_data_operations::get_vector(bitmap_data, x, y, width, height);
 
         let value_type = activation.avm2().classes().uint;
         let new_storage = VectorStorage::from_values(pixels, false, value_type);
