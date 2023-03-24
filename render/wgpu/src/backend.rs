@@ -131,7 +131,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         Self::new(Arc::new(descriptors), target)
     }
 
-    pub fn capture_frame(&self, premultiplied_alpha: bool) -> Option<image::RgbaImage> {
+    pub fn capture_frame(&self) -> Option<image::RgbaImage> {
         use crate::utils::buffer_to_image;
         if let Some((buffer, dimensions)) = &self.target.buffer {
             Some(buffer_to_image(
@@ -140,7 +140,6 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
                 dimensions,
                 None,
                 self.target.size,
-                premultiplied_alpha,
             ))
         } else {
             None

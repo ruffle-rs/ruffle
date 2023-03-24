@@ -178,10 +178,7 @@ pub fn run_swf(
                 .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                 .unwrap();
 
-            // Use straight alpha, since we want to save this as a PNG
-            let actual_image = renderer
-                .capture_frame(false)
-                .expect("Failed to capture image");
+            let actual_image = renderer.capture_frame().expect("Failed to capture image");
 
             let expected_image_path = base_path.join("expected.png");
             if expected_image_path.is_file() {
