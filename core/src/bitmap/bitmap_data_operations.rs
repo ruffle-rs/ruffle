@@ -1,4 +1,4 @@
-use crate::bitmap::bitmap_data::{BitmapDataWrapper, Color};
+use crate::bitmap::bitmap_data::{BitmapDataWrapper, ChannelOptions, Color, LehmerRng};
 use crate::context::UpdateContext;
 use ruffle_render::bitmap::PixelRegion;
 
@@ -129,4 +129,73 @@ pub fn flood_fill<'gc>(
         }
     }
     write.set_cpu_dirty(dirty_region);
+}
+
+pub fn noise<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    seed: i32,
+    low: u8,
+    high: u8,
+    channel_options: ChannelOptions,
+    gray_scale: bool,
+) {
+    if target.disposed() {
+        return;
+    }
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+
+    let true_seed = if seed <= 0 {
+        (-seed + 1) as u32
+    } else {
+        seed as u32
+    };
+
+    let mut rng = LehmerRng::with_seed(true_seed);
+
+    for y in 0..write.height() {
+        for x in 0..write.width() {
+            let pixel_color = if gray_scale {
+                let gray = rng.gen_range(low..high);
+                let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
+                    rng.gen_range(low..high)
+                } else {
+                    255
+                };
+
+                Color::argb(alpha, gray, gray, gray)
+            } else {
+                let r = if channel_options.contains(ChannelOptions::RED) {
+                    rng.gen_range(low..high)
+                } else {
+                    0
+                };
+
+                let g = if channel_options.contains(ChannelOptions::GREEN) {
+                    rng.gen_range(low..high)
+                } else {
+                    0
+                };
+
+                let b = if channel_options.contains(ChannelOptions::BLUE) {
+                    rng.gen_range(low..high)
+                } else {
+                    0
+                };
+
+                let a = if channel_options.contains(ChannelOptions::ALPHA) {
+                    rng.gen_range(low..high)
+                } else {
+                    255
+                };
+
+                Color::argb(a, r, g, b)
+            };
+
+            write.set_pixel32_raw(x, y, pixel_color);
+        }
+    }
+    let region = PixelRegion::for_whole_size(write.width(), write.height());
+    write.set_cpu_dirty(region);
 }
