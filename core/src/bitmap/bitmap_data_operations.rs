@@ -867,3 +867,87 @@ pub fn color_bounds_rect(
         (0, 0, 0, 0)
     }
 }
+
+pub fn merge<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    rgba_mult: (i32, i32, i32, i32),
+) {
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+    let (dest_min_x, dest_min_y) = dest_point;
+    let transparency = target.transparency();
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+
+    // dealing with object aliasing...
+    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+    let source_bitmap_ref = // holds the reference to either of the ones above
+        if GcCell::ptr_eq(source_bitmap, target) {
+            src_bitmap_clone = source_bitmap.read().clone();
+            &src_bitmap_clone
+        } else {
+            src_bitmap_gc_ref = source_bitmap.read();
+            &src_bitmap_gc_ref
+        };
+
+    let mut write = target.write(context.gc_context);
+
+    for src_y in src_min_y..(src_min_y + src_height) {
+        for src_x in src_min_x..(src_min_x + src_width) {
+            let dest_x = src_x - src_min_x + dest_min_x;
+            let dest_y = src_y - src_min_y + dest_min_y;
+
+            if !write.is_point_in_bounds(dest_x, dest_y)
+                || !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
+            {
+                continue;
+            }
+
+            let source_color = source_bitmap_ref
+                .get_pixel32_raw(src_x as u32, src_y as u32)
+                .to_un_multiplied_alpha();
+
+            let dest_color = write
+                .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                .to_un_multiplied_alpha();
+
+            let red_mult = rgba_mult.0.clamp(0, 256) as u16;
+            let green_mult = rgba_mult.1.clamp(0, 256) as u16;
+            let blue_mult = rgba_mult.2.clamp(0, 256) as u16;
+            let alpha_mult = rgba_mult.3.clamp(0, 256) as u16;
+
+            let red = (source_color.red() as u16 * red_mult
+                + dest_color.red() as u16 * (256 - red_mult))
+                / 256;
+            let green = (source_color.green() as u16 * green_mult
+                + dest_color.green() as u16 * (256 - green_mult))
+                / 256;
+            let blue = (source_color.blue() as u16 * blue_mult
+                + dest_color.blue() as u16 * (256 - blue_mult))
+                / 256;
+            let alpha = (source_color.alpha() as u16 * alpha_mult
+                + dest_color.alpha() as u16 * (256 - alpha_mult))
+                / 256;
+
+            let mix_color = Color::argb(alpha as u8, red as u8, green as u8, blue as u8);
+
+            write.set_pixel32_raw(
+                dest_x as u32,
+                dest_y as u32,
+                mix_color.to_premultiplied_alpha(transparency),
+            );
+        }
+    }
+
+    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dirty_region.clamp(write.width(), write.height());
+    write.set_cpu_dirty(dirty_region);
+}
