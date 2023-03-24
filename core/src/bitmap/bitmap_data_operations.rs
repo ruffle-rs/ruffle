@@ -1333,16 +1333,12 @@ pub fn get_pixels_as_byte_array<'gc>(
     height: i32,
 ) -> Result<ByteArrayStorage, Error<'gc>> {
     let mut result = ByteArrayStorage::new();
+    let mut region = PixelRegion::for_region_i32(x, y, width, height);
+    region.clamp(target.width(), target.height());
 
-    let x0 = x.max(0) as u32;
-    let y0 = y.max(0) as u32;
-    let x1 = (x + width).clamp(0, target.width() as i32) as u32;
-    let y1 = (y + height).clamp(0, target.height() as i32) as u32;
-
-    let target = target.sync();
-    let read = target.read();
-    for y in y0..y1 {
-        for x in x0..x1 {
+    let read = target.read_area(region);
+    for y in region.min_y..region.max_y {
+        for x in region.min_x..region.max_x {
             let color = read.get_pixel32_raw(x, y);
             result.write_int(color.to_un_multiplied_alpha().into())?;
         }
