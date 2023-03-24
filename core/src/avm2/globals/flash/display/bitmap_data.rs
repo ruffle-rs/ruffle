@@ -1216,8 +1216,8 @@ pub fn perlin_noise<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        if !bitmap_data.read().disposed() {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        if !bitmap_data.disposed() {
             let base_x = args.get_f64(activation, 0)?;
             let base_y = args.get_f64(activation, 1)?;
             let num_octaves = args.get_u32(activation, 2)? as usize;
@@ -1254,18 +1254,18 @@ pub fn perlin_noise<'gc>(
                 .collect();
             let octave_offsets = octave_offsets?;
 
-            bitmap_data
-                .write(activation.context.gc_context)
-                .perlin_noise(
-                    (base_x, base_y),
-                    num_octaves,
-                    seed,
-                    stitch,
-                    fractal_noise,
-                    channel_options,
-                    grayscale,
-                    octave_offsets,
-                );
+            bitmap_data_operations::perlin_noise(
+                &mut activation.context,
+                bitmap_data,
+                (base_x, base_y),
+                num_octaves,
+                seed,
+                stitch,
+                fractal_noise,
+                channel_options,
+                grayscale,
+                octave_offsets,
+            );
         }
     }
 
