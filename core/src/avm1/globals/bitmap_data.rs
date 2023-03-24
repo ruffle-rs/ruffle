@@ -1365,10 +1365,8 @@ pub fn compare<'gc>(
         return Ok(BITMAP_DISPOSED.into());
     }
 
-    let this_bitmap_data = this_bitmap_data.bitmap_data();
-    let this_bitmap_data = this_bitmap_data.read();
-    let other_bitmap_data = other_bitmap_data.bitmap_data();
-    let other_bitmap_data = other_bitmap_data.read();
+    let this_bitmap_data = this_bitmap_data.bitmap_data_wrapper();
+    let other_bitmap_data = other_bitmap_data.bitmap_data_wrapper();
 
     if this_bitmap_data.width() != other_bitmap_data.width() {
         return Ok(DIFFERENT_WIDTHS.into());
@@ -1378,7 +1376,7 @@ pub fn compare<'gc>(
         return Ok(DIFFERENT_HEIGHTS.into());
     }
 
-    match BitmapData::compare(&this_bitmap_data, &other_bitmap_data) {
+    match bitmap_data_operations::compare(this_bitmap_data, other_bitmap_data) {
         Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
             activation.context.gc_context,
             activation.context.avm1.prototypes().bitmap_data,
