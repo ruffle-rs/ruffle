@@ -625,15 +625,15 @@ pub fn get_color_bounds_rect<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let bitmap_data = bitmap_data.read();
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         if !bitmap_data.disposed() {
             let find_color = args.get_bool(2);
 
             let mask = args.get_i32(activation, 0)?;
             let color = args.get_i32(activation, 1)?;
 
-            let (x, y, w, h) = bitmap_data.color_bounds_rect(find_color, mask, color);
+            let (x, y, w, h) =
+                bitmap_data_operations::color_bounds_rect(bitmap_data, find_color, mask, color);
 
             let rect = activation
                 .avm2()

@@ -644,47 +644,6 @@ impl<'gc> BitmapData<'gc> {
         self.pixels[(x + y * self.width()) as usize]
     }
 
-    pub fn color_bounds_rect(
-        &self,
-        find_color: bool,
-        mask: i32,
-        color: i32,
-    ) -> (u32, u32, u32, u32) {
-        let mut min_x = self.width();
-        let mut max_x = 0;
-        let mut min_y = self.height();
-        let mut max_y = 0;
-
-        for x in 0..self.width() {
-            for y in 0..self.height() {
-                let pixel_raw: i32 = self.get_pixel32_raw(x, y).into();
-                let color_matches = if find_color {
-                    (pixel_raw & mask) == color
-                } else {
-                    (pixel_raw & mask) != color
-                };
-
-                if color_matches {
-                    min_x = min_x.min(x);
-                    max_x = max_x.max(x);
-                    min_y = min_y.min(y);
-                    max_y = max_y.max(y);
-                }
-            }
-        }
-
-        // Flash treats a match of (0, 0) alone as none.
-        if max_x > 0 || max_y > 0 {
-            let x = min_x;
-            let y = min_y;
-            let w = max_x - min_x + 1;
-            let h = max_y - min_y + 1;
-            (x, y, w, h)
-        } else {
-            (0, 0, 0, 0)
-        }
-    }
-
     pub fn copy_pixels(
         &mut self,
         source_bitmap: &Self,

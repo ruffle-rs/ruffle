@@ -662,10 +662,12 @@ pub fn get_color_bounds_rect<'gc>(
                 let mask = mask_val.coerce_to_i32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let (x, y, w, h) = bitmap_data
-                    .bitmap_data()
-                    .read()
-                    .color_bounds_rect(find_color, mask, color);
+                let (x, y, w, h) = bitmap_data_operations::color_bounds_rect(
+                    bitmap_data.bitmap_data_wrapper(),
+                    find_color,
+                    mask,
+                    color,
+                );
 
                 let proto = activation.context.avm1.prototypes().rectangle_constructor;
                 let rect =
