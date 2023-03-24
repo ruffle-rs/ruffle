@@ -176,8 +176,8 @@ pub fn copy_pixels<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -207,20 +207,8 @@ pub fn copy_pixels<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_i32(activation)?;
 
-        if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
-            src_bitmap.read().check_valid(activation)?;
-            // dealing with object aliasing...
-            let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-            let src_bitmap_data_cell = src_bitmap;
-            let src_bitmap_gc_ref; // only initialized if source is a different object than self
-            let source_bitmap_ref = // holds the reference to either of the ones above
-                if GcCell::ptr_eq(src_bitmap, bitmap_data) {
-                    src_bitmap_clone = src_bitmap_data_cell.read().clone();
-                    &src_bitmap_clone
-                } else {
-                    src_bitmap_gc_ref = src_bitmap_data_cell.read();
-                    &src_bitmap_gc_ref
-                };
+        if let Some(src_bitmap) = source_bitmap.as_bitmap_data_wrapper() {
+            src_bitmap.check_valid(activation)?;
 
             let mut alpha_source = None;
 
@@ -228,7 +216,7 @@ pub fn copy_pixels<'gc>(
                 if let Some(alpha_bitmap) = args
                     .get(3)
                     .and_then(|o| o.as_object())
-                    .and_then(|o| o.as_bitmap_data())
+                    .and_then(|o| o.as_bitmap_data_wrapper())
                 {
                     // Testing shows that a null/undefined 'alphaPoint' parameter is treated
                     // as 'new Point(0, 0)'
@@ -251,25 +239,25 @@ pub fn copy_pixels<'gc>(
             let merge_alpha = args.get_bool(5);
 
             if let Some((alpha_bitmap, alpha_point)) = alpha_source {
-                bitmap_data
-                    .write(activation.context.gc_context)
-                    .copy_pixels(
-                        source_bitmap_ref,
-                        (src_min_x, src_min_y, src_width, src_height),
-                        (dest_x, dest_y),
-                        Some((&*alpha_bitmap.read(), alpha_point)),
-                        merge_alpha,
-                    );
+                bitmap_data_operations::copy_pixels_with_alpha_source(
+                    &mut activation.context,
+                    bitmap_data,
+                    src_bitmap,
+                    (src_min_x, src_min_y, src_width, src_height),
+                    (dest_x, dest_y),
+                    alpha_bitmap,
+                    alpha_point,
+                    merge_alpha,
+                );
             } else {
-                bitmap_data
-                    .write(activation.context.gc_context)
-                    .copy_pixels(
-                        source_bitmap_ref,
-                        (src_min_x, src_min_y, src_width, src_height),
-                        (dest_x, dest_y),
-                        None,
-                        merge_alpha,
-                    );
+                bitmap_data_operations::copy_pixels(
+                    &mut activation.context,
+                    bitmap_data,
+                    src_bitmap,
+                    (src_min_x, src_min_y, src_width, src_height),
+                    (dest_x, dest_y),
+                    merge_alpha,
+                );
             }
         }
     }

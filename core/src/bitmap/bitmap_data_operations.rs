@@ -974,3 +974,183 @@ pub fn merge<'gc>(
     dirty_region.clamp(write.width(), write.height());
     write.set_cpu_dirty(dirty_region);
 }
+
+pub fn copy_pixels<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    merge_alpha: bool,
+) {
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+    let (dest_min_x, dest_min_y) = dest_point;
+    let transparency = target.transparency();
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+
+    // dealing with object aliasing...
+    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+    let source_bitmap_ref = // holds the reference to either of the ones above
+        if GcCell::ptr_eq(source_bitmap, target) {
+            src_bitmap_clone = source_bitmap.read().clone();
+            &src_bitmap_clone
+        } else {
+            src_bitmap_gc_ref = source_bitmap.read();
+            &src_bitmap_gc_ref
+        };
+
+    let mut write = target.write(context.gc_context);
+
+    for src_y in src_min_y..(src_min_y + src_height) {
+        for src_x in src_min_x..(src_min_x + src_width) {
+            let dest_x = src_x - src_min_x + dest_min_x;
+            let dest_y = src_y - src_min_y + dest_min_y;
+
+            if !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
+                || !write.is_point_in_bounds(dest_x, dest_y)
+            {
+                continue;
+            }
+
+            let source_color = source_bitmap_ref.get_pixel32_raw(src_x as u32, src_y as u32);
+
+            let mut dest_color = write.get_pixel32_raw(dest_x as u32, dest_y as u32);
+
+            dest_color = if (source_bitmap_ref.transparency() && !transparency) || merge_alpha {
+                dest_color.blend_over(&source_color)
+            } else {
+                source_color
+            };
+
+            if !transparency {
+                dest_color = dest_color.with_alpha(0xFF)
+            }
+
+            write.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
+        }
+    }
+    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dirty_region.clamp(write.width(), write.height());
+    write.set_cpu_dirty(dirty_region);
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn copy_pixels_with_alpha_source<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    alpha_bitmap: BitmapDataWrapper<'gc>,
+    alpha_point: (i32, i32),
+    merge_alpha: bool,
+) {
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+    let (dest_min_x, dest_min_y) = dest_point;
+    let transparency = target.transparency();
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+    let alpha_bitmap = alpha_bitmap.sync();
+
+    // dealing with object aliasing...
+    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+    let source_bitmap_ref = // holds the reference to either of the ones above
+        if GcCell::ptr_eq(source_bitmap, target) {
+            src_bitmap_clone = source_bitmap.read().clone();
+            &src_bitmap_clone
+        } else {
+            src_bitmap_gc_ref = source_bitmap.read();
+            &src_bitmap_gc_ref
+        };
+
+    let alpha_bitmap_clone: BitmapData;
+    let alpha_bitmap_gc_ref;
+    let alpha_bitmap_ref = if GcCell::ptr_eq(alpha_bitmap, target) {
+        alpha_bitmap_clone = alpha_bitmap.read().clone();
+        &alpha_bitmap_clone
+    } else {
+        alpha_bitmap_gc_ref = alpha_bitmap.read();
+        &alpha_bitmap_gc_ref
+    };
+
+    let mut write = target.write(context.gc_context);
+
+    for src_y in src_min_y..(src_min_y + src_height) {
+        for src_x in src_min_x..(src_min_x + src_width) {
+            let dest_x = src_x - src_min_x + dest_min_x;
+            let dest_y = src_y - src_min_y + dest_min_y;
+
+            if !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
+                || !write.is_point_in_bounds(dest_x, dest_y)
+            {
+                continue;
+            }
+
+            let source_color = source_bitmap_ref.get_pixel32_raw(src_x as u32, src_y as u32);
+
+            let mut dest_color = write.get_pixel32_raw(dest_x as u32, dest_y as u32);
+
+            let alpha_x = src_x - src_min_x + alpha_point.0;
+            let alpha_y = src_y - src_min_y + alpha_point.1;
+
+            if alpha_bitmap_ref.transparency()
+                && !alpha_bitmap_ref.is_point_in_bounds(alpha_x, alpha_y)
+            {
+                continue;
+            }
+
+            let final_alpha = if alpha_bitmap_ref.transparency() {
+                let a = alpha_bitmap_ref
+                    .get_pixel32_raw(alpha_x as u32, alpha_y as u32)
+                    .alpha();
+
+                if source_bitmap_ref.transparency() {
+                    ((a as u16 * source_color.alpha() as u16) >> 8) as u8
+                } else {
+                    a
+                }
+            } else if source_bitmap_ref.transparency() {
+                source_color.alpha()
+            } else {
+                255
+            };
+
+            // there could be a faster or more accurate way to do this,
+            // (without converting to floats and back, twice),
+            // but for now this should suffice
+            let a = source_color.alpha() as f64 / 255.0;
+            let r = (source_color.red() as f64 / a).round() as u8;
+            let g = (source_color.green() as f64 / a).round() as u8;
+            let b = (source_color.blue() as f64 / a).round() as u8;
+            let intermediate_color = Color::argb(source_color.alpha(), r, g, b)
+                .with_alpha(final_alpha)
+                .to_premultiplied_alpha(true);
+
+            // there are some interesting conditions in the following
+            // lines, these are a result of comparing the output in
+            // many parameter combinations with that of Adobe's player,
+            // and finding patterns in the differences.
+            dest_color = if merge_alpha || !transparency {
+                dest_color.blend_over(&intermediate_color)
+            } else {
+                intermediate_color
+            };
+
+            write.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
+        }
+    }
+    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dirty_region.clamp(write.width(), write.height());
+    write.set_cpu_dirty(dirty_region);
+}
