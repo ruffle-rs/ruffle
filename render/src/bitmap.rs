@@ -189,12 +189,16 @@ impl PixelRegion {
     }
 
     pub fn for_region_i32(x: i32, y: i32, width: i32, height: i32) -> Self {
-        Self::for_region(
-            x.max(0) as u32,
-            y.max(0) as u32,
-            width.max(0) as u32,
-            height.max(0) as u32,
-        )
+        let a = (x, y);
+        let b = (x.saturating_add(width), y.saturating_add(height));
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        Self {
+            min_x: min.0.max(0) as u32,
+            min_y: min.1.max(0) as u32,
+            max_x: max.0.max(0) as u32,
+            max_y: max.1.max(0) as u32,
+        }
     }
 
     pub fn for_region(x: u32, y: u32, width: u32, height: u32) -> Self {
@@ -269,6 +273,13 @@ impl PixelRegion {
         self.min_y = self.min_y.min(y);
         self.max_x = self.max_x.max(x + 1);
         self.max_y = self.max_y.max(y + 1);
+    }
+
+    pub fn intersects(&self, other: PixelRegion) -> bool {
+        self.min_x <= other.max_x
+            && self.max_x >= other.min_x
+            && self.min_y <= other.max_y
+            && self.max_y >= other.min_y
     }
 
     pub fn width(&self) -> u32 {
