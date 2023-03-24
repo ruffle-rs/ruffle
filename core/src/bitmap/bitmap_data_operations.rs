@@ -672,3 +672,57 @@ pub fn palette_map<'gc>(
     dirty_region.clamp(write.width(), write.height());
     write.set_cpu_dirty(dirty_region);
 }
+
+/// Compare two BitmapData objects.
+/// Returns `None` if the bitmaps are equivalent.
+pub fn compare<'gc>(
+    left: BitmapDataWrapper<'gc>,
+    right: BitmapDataWrapper<'gc>,
+) -> Option<BitmapData<'gc>> {
+    // This function expects that the two bitmaps have the same dimensions.
+    // TODO: Relax this assumption and return a special value instead?
+    debug_assert_eq!(left.width(), right.width());
+    debug_assert_eq!(left.height(), right.height());
+
+    let left = left.sync();
+    let left = left.read();
+    let right = right.sync();
+    let right = right.read();
+
+    let mut different = false;
+    let pixels = left
+        .pixels()
+        .iter()
+        .zip(right.pixels())
+        .map(|(bitmap_pixel, other_pixel)| {
+            let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
+            let other_pixel = other_pixel.to_un_multiplied_alpha();
+            if bitmap_pixel == other_pixel {
+                Color::argb(0, 0, 0, 0)
+            } else if bitmap_pixel.with_alpha(0) != other_pixel.with_alpha(0) {
+                different = true;
+                Color::argb(
+                    0xff,
+                    bitmap_pixel.red().wrapping_sub(other_pixel.red()),
+                    bitmap_pixel.green().wrapping_sub(other_pixel.green()),
+                    bitmap_pixel.blue().wrapping_sub(other_pixel.blue()),
+                )
+            } else {
+                different = true;
+                let alpha = bitmap_pixel.alpha().wrapping_sub(other_pixel.alpha());
+                Color::argb(alpha, alpha, alpha, alpha)
+            }
+        })
+        .collect();
+
+    if different {
+        Some(BitmapData::new_with_pixels(
+            left.width(),
+            left.height(),
+            true,
+            pixels,
+        ))
+    } else {
+        None
+    }
+}

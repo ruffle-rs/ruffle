@@ -450,6 +450,24 @@ impl<'gc> BitmapData<'gc> {
         self.set_cpu_dirty(PixelRegion::for_whole_size(width, height));
     }
 
+    pub fn new_with_pixels(
+        width: u32,
+        height: u32,
+        transparency: bool,
+        pixels: Vec<Color>,
+    ) -> Self {
+        Self {
+            pixels,
+            width,
+            height,
+            transparency,
+            bitmap_handle: None,
+            avm2_object: None,
+            disposed: false,
+            dirty_state: DirtyState::Clean,
+        }
+    }
+
     pub fn check_valid(
         &self,
         activation: &mut crate::avm2::Activation<'_, 'gc>,
@@ -836,56 +854,6 @@ impl<'gc> BitmapData<'gc> {
                 self.dirty_state = DirtyState::Clean;
             }
             DirtyState::Clean | DirtyState::GpuModified(_, _) => {}
-        }
-    }
-
-    /// Compare two BitmapData objects.
-    /// Returns `None` if the bitmaps are equivalent.
-    pub fn compare(bitmap: &Self, other: &Self) -> Option<Self> {
-        // This function expects that the two bitmaps have the same dimensions.
-        // TODO: Relax this assumption and return a special value instead?
-        debug_assert_eq!(bitmap.width, other.width);
-        debug_assert_eq!(bitmap.height, other.height);
-
-        let mut different = false;
-        let pixels = bitmap
-            .pixels
-            .iter()
-            .zip(&other.pixels)
-            .map(|(bitmap_pixel, other_pixel)| {
-                let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
-                let other_pixel = other_pixel.to_un_multiplied_alpha();
-                if bitmap_pixel == other_pixel {
-                    Color::argb(0, 0, 0, 0)
-                } else if bitmap_pixel.with_alpha(0) != other_pixel.with_alpha(0) {
-                    different = true;
-                    Color::argb(
-                        0xff,
-                        bitmap_pixel.red().wrapping_sub(other_pixel.red()),
-                        bitmap_pixel.green().wrapping_sub(other_pixel.green()),
-                        bitmap_pixel.blue().wrapping_sub(other_pixel.blue()),
-                    )
-                } else {
-                    different = true;
-                    let alpha = bitmap_pixel.alpha().wrapping_sub(other_pixel.alpha());
-                    Color::argb(alpha, alpha, alpha, alpha)
-                }
-            })
-            .collect();
-
-        if different {
-            Some(Self {
-                pixels,
-                width: bitmap.width,
-                height: bitmap.height,
-                transparency: true,
-                bitmap_handle: None,
-                avm2_object: None,
-                disposed: false,
-                dirty_state: DirtyState::Clean,
-            })
-        } else {
-            None
         }
     }
 
