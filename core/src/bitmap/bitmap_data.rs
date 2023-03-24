@@ -402,6 +402,10 @@ mod wrapper {
                 //this is caused by recursive render attempt. TODO: support this.
             }
         }
+
+        pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
+            x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
+        }
     }
 }
 
@@ -904,76 +908,6 @@ impl<'gc> BitmapData<'gc> {
                 tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
             }
         }
-    }
-
-    pub fn hit_test_point(&self, alpha_threshold: u32, test_point: (i32, i32)) -> bool {
-        if self.is_point_in_bounds(test_point.0, test_point.1) {
-            self.get_pixel32_raw(test_point.0 as u32, test_point.1 as u32)
-                .alpha() as u32
-                >= alpha_threshold
-        } else {
-            false
-        }
-    }
-
-    pub fn hit_test_rectangle(
-        &self,
-        alpha_threshold: u32,
-        top_left: (i32, i32),
-        size: (i32, i32),
-    ) -> bool {
-        for x in 0..size.0 {
-            for y in 0..size.1 {
-                if self.hit_test_point(alpha_threshold, (top_left.0 + x, top_left.1 + y)) {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    pub fn hit_test_bitmapdata(
-        &self,
-        self_point: (i32, i32),
-        self_threshold: u32,
-        test: Option<&BitmapData>,
-        test_point: (i32, i32),
-        test_threshold: u32,
-    ) -> bool {
-        let xd = test_point.0 - self_point.0;
-        let yd = test_point.1 - self_point.1;
-        let self_width = self.width as i32;
-        let self_height = self.height as i32;
-        let (test_width, test_height) = if let Some(test) = test {
-            (test.width as i32, test.height as i32)
-        } else {
-            (self_width, self_height)
-        };
-        let (self_x0, test_x0, width) = if xd < 0 {
-            (0, -xd, self_width.min(test_width + xd))
-        } else {
-            (xd, 0, test_width.min(self_width - xd))
-        };
-        let (self_y0, test_y0, height) = if yd < 0 {
-            (0, -yd, self_height.min(test_height + yd))
-        } else {
-            (yd, 0, test_height.min(self_height - yd))
-        };
-        for x in 0..width {
-            for y in 0..height {
-                let self_is_opaque =
-                    self.hit_test_point(self_threshold, (self_x0 + x, self_y0 + y));
-                let test_is_opaque = if let Some(test) = test {
-                    test.hit_test_point(test_threshold, (test_x0 + x, test_y0 + y))
-                } else {
-                    self.hit_test_point(test_threshold, (test_x0 + x, test_y0 + y))
-                };
-                if self_is_opaque && test_is_opaque {
-                    return true;
-                }
-            }
-        }
-        false
     }
 
     #[allow(clippy::too_many_arguments)]

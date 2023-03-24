@@ -726,3 +726,100 @@ pub fn compare<'gc>(
         None
     }
 }
+
+pub fn hit_test_point(
+    target: BitmapDataWrapper,
+    alpha_threshold: u32,
+    test_point: (i32, i32),
+) -> bool {
+    if target.is_point_in_bounds(test_point.0, test_point.1) {
+        target
+            .sync()
+            .read()
+            .get_pixel32_raw(test_point.0 as u32, test_point.1 as u32)
+            .alpha() as u32
+            >= alpha_threshold
+    } else {
+        false
+    }
+}
+
+pub fn hit_test_rectangle(
+    target: BitmapDataWrapper,
+    alpha_threshold: u32,
+    top_left: (i32, i32),
+    size: (i32, i32),
+) -> bool {
+    let target = target.sync();
+    let read = target.read();
+
+    for x in 0..size.0 {
+        for y in 0..size.1 {
+            if read.is_point_in_bounds(top_left.0 + x, top_left.1 + y)
+                && read
+                    .get_pixel32_raw((top_left.0 + x) as u32, (top_left.1 + y) as u32)
+                    .alpha() as u32
+                    >= alpha_threshold
+            {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+pub fn hit_test_bitmapdata<'gc>(
+    target: BitmapDataWrapper<'gc>,
+    self_point: (i32, i32),
+    self_threshold: u32,
+    test: BitmapDataWrapper<'gc>,
+    test_point: (i32, i32),
+    test_threshold: u32,
+) -> bool {
+    let xd = test_point.0 - self_point.0;
+    let yd = test_point.1 - self_point.1;
+    let self_width = target.width() as i32;
+    let self_height = target.height() as i32;
+    let test_width = test.width() as i32;
+    let test_height = test.height() as i32;
+    let (self_x0, test_x0, width) = if xd < 0 {
+        (
+            0,
+            (-xd) as u32,
+            self_width.min(test_width + xd).max(0) as u32,
+        )
+    } else {
+        (xd as u32, 0, test_width.min(self_width - xd).max(0) as u32)
+    };
+    let (self_y0, test_y0, height) = if yd < 0 {
+        (
+            0,
+            (-yd) as u32,
+            self_height.min(test_height + yd).max(0) as u32,
+        )
+    } else {
+        (
+            yd as u32,
+            0,
+            test_height.min(self_height - yd).max(0) as u32,
+        )
+    };
+
+    let target = target.sync();
+    let test = test.sync();
+    let target = target.read();
+    let test = test.read();
+
+    for x in 0..width {
+        for y in 0..height {
+            let self_is_opaque =
+                target.get_pixel32_raw(self_x0 + x, self_y0 + y).alpha() as u32 >= self_threshold;
+            let test_is_opaque =
+                test.get_pixel32_raw(test_x0 + x, test_y0 + y).alpha() as u32 >= test_threshold;
+            if self_is_opaque && test_is_opaque {
+                return true;
+            }
+        }
+    }
+    false
+}

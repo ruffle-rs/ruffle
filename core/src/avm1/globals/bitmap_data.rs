@@ -787,8 +787,7 @@ pub fn hit_test<'gc>(
             // Overload based on the object we are hit-testing against.
             // BitmapData vs. BitmapData
             if let Some(other_bmd) = compare_object.as_bitmap_data_object() {
-                let other_bmd = other_bmd.bitmap_data();
-                if other_bmd.read().disposed() {
+                if other_bmd.disposed() {
                     return Ok((-3).into());
                 }
 
@@ -810,24 +809,14 @@ pub fn hit_test<'gc>(
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_u32(activation)?;
 
-                let bitmap_data = bitmap_data.bitmap_data();
-                let result = if GcCell::ptr_eq(bitmap_data, other_bmd) {
-                    bitmap_data.read().hit_test_bitmapdata(
-                        top_left,
-                        source_threshold,
-                        None,
-                        second_point,
-                        second_threshold,
-                    )
-                } else {
-                    bitmap_data.read().hit_test_bitmapdata(
-                        top_left,
-                        source_threshold,
-                        Some(&other_bmd.read()),
-                        second_point,
-                        second_threshold,
-                    )
-                };
+                let result = bitmap_data_operations::hit_test_bitmapdata(
+                    bitmap_data.bitmap_data_wrapper(),
+                    top_left,
+                    source_threshold,
+                    other_bmd.bitmap_data_wrapper(),
+                    second_point,
+                    second_threshold,
+                );
                 return Ok(Value::Bool(result));
             } else {
                 // Determine what kind of Object we have, point or rectangle.
@@ -845,12 +834,11 @@ pub fn hit_test<'gc>(
                             test_x.coerce_to_i32(activation)? - top_left.0,
                             test_y.coerce_to_i32(activation)? - top_left.1,
                         );
-                        return Ok(Value::Bool(
-                            bitmap_data
-                                .bitmap_data()
-                                .read()
-                                .hit_test_point(source_threshold, test_point),
-                        ));
+                        return Ok(Value::Bool(bitmap_data_operations::hit_test_point(
+                            bitmap_data.bitmap_data_wrapper(),
+                            source_threshold,
+                            test_point,
+                        )));
                     }
 
                     // BitmapData vs. rectangle
@@ -863,13 +851,12 @@ pub fn hit_test<'gc>(
                             test_width.coerce_to_i32(activation)?,
                             test_height.coerce_to_i32(activation)?,
                         );
-                        return Ok(Value::Bool(
-                            bitmap_data.bitmap_data().read().hit_test_rectangle(
-                                source_threshold,
-                                test_point,
-                                size,
-                            ),
-                        ));
+                        return Ok(Value::Bool(bitmap_data_operations::hit_test_rectangle(
+                            bitmap_data.bitmap_data_wrapper(),
+                            source_threshold,
+                            test_point,
+                            size,
+                        )));
                     }
 
                     // Invalid compare object.
