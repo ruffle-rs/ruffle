@@ -145,9 +145,9 @@ pub fn get_transparent<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
-        return Ok(bitmap_data.read().transparency().into());
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
+        return Ok(bitmap_data.transparency().into());
     }
 
     Ok(Value::Undefined)
