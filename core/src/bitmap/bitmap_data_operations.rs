@@ -7,7 +7,6 @@ use crate::bitmap::bitmap_data::{
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::TDisplayObject;
-use gc_arena::GcCell;
 use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::filters::Filter;
@@ -1068,33 +1067,28 @@ pub fn copy_pixels_with_alpha_source<'gc>(
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
     let (dest_min_x, dest_min_y) = dest_point;
     let transparency = target.transparency();
+    let source_transparency = source_bitmap.transparency();
+    let alpha_transparency = alpha_bitmap.transparency();
 
-    let target = target.sync();
-    let source_bitmap = source_bitmap.sync();
-    let alpha_bitmap = alpha_bitmap.sync();
-
-    // dealing with object aliasing...
-    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-    let source_bitmap_ref = // holds the reference to either of the ones above
-        if GcCell::ptr_eq(source_bitmap, target) {
-            src_bitmap_clone = source_bitmap.read().clone();
-            &src_bitmap_clone
-        } else {
-            src_bitmap_gc_ref = source_bitmap.read();
-            &src_bitmap_gc_ref
-        };
-
-    let alpha_bitmap_clone: BitmapData;
-    let alpha_bitmap_gc_ref;
-    let alpha_bitmap_ref = if GcCell::ptr_eq(alpha_bitmap, target) {
-        alpha_bitmap_clone = alpha_bitmap.read().clone();
-        &alpha_bitmap_clone
+    let mut source_region =
+        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
+    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+    let source_bitmap = if source_bitmap.ptr_eq(target) {
+        None
     } else {
-        alpha_bitmap_gc_ref = alpha_bitmap.read();
-        &alpha_bitmap_gc_ref
+        Some(source_bitmap.read_area(source_region))
     };
 
+    let mut alpha_region =
+        PixelRegion::for_region_i32(alpha_point.0, alpha_point.1, src_width, src_height);
+    alpha_region.clamp(alpha_bitmap.width(), alpha_bitmap.height());
+    let alpha_bitmap = if alpha_bitmap.ptr_eq(target) {
+        None
+    } else {
+        Some(alpha_bitmap.read_area(alpha_region))
+    };
+
+    let target = target.sync();
     let mut write = target.write(context.gc_context);
 
     for src_y in src_min_y..(src_min_y + src_height) {
@@ -1102,36 +1096,50 @@ pub fn copy_pixels_with_alpha_source<'gc>(
             let dest_x = src_x - src_min_x + dest_min_x;
             let dest_y = src_y - src_min_y + dest_min_y;
 
-            if !source_bitmap_ref.is_point_in_bounds(src_x, src_y)
-                || !write.is_point_in_bounds(dest_x, dest_y)
-            {
+            if !write.is_point_in_bounds(dest_x, dest_y) {
                 continue;
             }
 
-            let source_color = source_bitmap_ref.get_pixel32_raw(src_x as u32, src_y as u32);
+            let source_color = if let Some(source_bitmap) = &source_bitmap {
+                if !source_bitmap.is_point_in_bounds(src_x, src_y) {
+                    continue;
+                }
+                source_bitmap.get_pixel32_raw(src_x as u32, src_y as u32)
+            } else {
+                if !write.is_point_in_bounds(src_x, src_y) {
+                    continue;
+                }
+                write.get_pixel32_raw(src_x as u32, src_y as u32)
+            };
 
             let mut dest_color = write.get_pixel32_raw(dest_x as u32, dest_y as u32);
 
             let alpha_x = src_x - src_min_x + alpha_point.0;
             let alpha_y = src_y - src_min_y + alpha_point.1;
 
-            if alpha_bitmap_ref.transparency()
-                && !alpha_bitmap_ref.is_point_in_bounds(alpha_x, alpha_y)
-            {
-                continue;
-            }
+            let final_alpha = if alpha_transparency {
+                let a = if let Some(alpha_bitmap) = &alpha_bitmap {
+                    if !alpha_bitmap.is_point_in_bounds(alpha_x, alpha_y) {
+                        continue;
+                    }
+                    alpha_bitmap
+                        .get_pixel32_raw(alpha_x as u32, alpha_y as u32)
+                        .alpha()
+                } else {
+                    if !write.is_point_in_bounds(alpha_x, alpha_y) {
+                        continue;
+                    }
+                    write
+                        .get_pixel32_raw(alpha_x as u32, alpha_y as u32)
+                        .alpha()
+                };
 
-            let final_alpha = if alpha_bitmap_ref.transparency() {
-                let a = alpha_bitmap_ref
-                    .get_pixel32_raw(alpha_x as u32, alpha_y as u32)
-                    .alpha();
-
-                if source_bitmap_ref.transparency() {
+                if source_transparency {
                     ((a as u16 * source_color.alpha() as u16) >> 8) as u8
                 } else {
                     a
                 }
-            } else if source_bitmap_ref.transparency() {
+            } else if source_transparency {
                 source_color.alpha()
             } else {
                 255
