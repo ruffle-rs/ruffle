@@ -763,10 +763,11 @@ pub fn hit_test_point(
     test_point: (i32, i32),
 ) -> bool {
     if target.is_point_in_bounds(test_point.0, test_point.1) {
+        let x = test_point.0 as u32;
+        let y = test_point.1 as u32;
         target
-            .sync()
-            .read()
-            .get_pixel32_raw(test_point.0 as u32, test_point.1 as u32)
+            .read_area(PixelRegion::for_pixel(x, y))
+            .get_pixel32_raw(x, y)
             .alpha() as u32
             >= alpha_threshold
     } else {
@@ -780,17 +781,13 @@ pub fn hit_test_rectangle(
     top_left: (i32, i32),
     size: (i32, i32),
 ) -> bool {
-    let target = target.sync();
-    let read = target.read();
+    let mut region = PixelRegion::for_region_i32(top_left.0, top_left.1, size.0, size.1);
+    region.clamp(target.width(), target.height());
+    let read = target.read_area(region);
 
-    for x in 0..size.0 {
-        for y in 0..size.1 {
-            if read.is_point_in_bounds(top_left.0 + x, top_left.1 + y)
-                && read
-                    .get_pixel32_raw((top_left.0 + x) as u32, (top_left.1 + y) as u32)
-                    .alpha() as u32
-                    >= alpha_threshold
-            {
+    for x in region.min_x..region.max_x {
+        for y in region.min_y..region.max_y {
+            if read.get_pixel32_raw(x, y).alpha() as u32 >= alpha_threshold {
                 return true;
             }
         }
@@ -835,10 +832,8 @@ pub fn hit_test_bitmapdata<'gc>(
         )
     };
 
-    let target = target.sync();
-    let test = test.sync();
-    let target = target.read();
-    let test = test.read();
+    let target = target.read_area(PixelRegion::for_region(self_x0, self_y0, width, height));
+    let test = test.read_area(PixelRegion::for_region(test_x0, test_y0, width, height));
 
     for x in 0..width {
         for y in 0..height {
