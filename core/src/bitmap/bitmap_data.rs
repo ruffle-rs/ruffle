@@ -234,6 +234,7 @@ mod wrapper {
     use crate::context::RenderContext;
     use crate::{avm2::Value as Avm2Value, context::UpdateContext};
     use gc_arena::{Collect, GcCell, MutationContext};
+    use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
     use ruffle_render::commands::CommandHandler;
 
@@ -305,10 +306,14 @@ mod wrapper {
         /// without waiting for the sync to complete, as a BitmapHandle can
         /// only be used to access the GPU data. Unlike `overwrite_cpu_pixels_from_gpu`,
         /// this does not cancel the GPU -> CPU sync.
-        pub fn bitmap_handle(&self, context: &mut UpdateContext<'_, 'gc>) -> BitmapHandle {
-            let mut bitmap_data = self.0.write(context.gc_context);
-            bitmap_data.update_dirty_texture(context.renderer);
-            bitmap_data.bitmap_handle(context.renderer).unwrap()
+        pub fn bitmap_handle(
+            &self,
+            gc_context: MutationContext<'gc, '_>,
+            renderer: &mut dyn RenderBackend,
+        ) -> BitmapHandle {
+            let mut bitmap_data = self.0.write(gc_context);
+            bitmap_data.update_dirty_texture(renderer);
+            bitmap_data.bitmap_handle(renderer).unwrap()
         }
 
         // Provides access to the underlying `BitmapData`.
