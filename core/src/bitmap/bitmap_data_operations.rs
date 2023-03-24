@@ -86,8 +86,7 @@ pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
     if target.disposed() || x >= target.width() || y >= target.height() {
         return 0;
     }
-    let target = target.sync();
-    let read = target.read();
+    let read = target.read_area(PixelRegion::for_pixel(x, y));
     read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
 }
 
@@ -118,8 +117,7 @@ pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
     if target.disposed() || x >= target.width() || y >= target.height() {
         return 0;
     }
-    let target = target.sync();
-    let read = target.read();
+    let read = target.read_area(PixelRegion::for_pixel(x, y));
     read.get_pixel32_raw(x, y)
         .to_un_multiplied_alpha()
         .with_alpha(0x0)

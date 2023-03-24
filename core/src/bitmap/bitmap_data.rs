@@ -237,6 +237,7 @@ mod wrapper {
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
     use ruffle_render::commands::CommandHandler;
+    use std::cell::Ref;
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
 
@@ -338,6 +339,21 @@ mod wrapper {
                 DirtyState::Clean => None,
             };
             (self.0, dirty_rect)
+        }
+
+        /// Provides read access to the BitmapData pixels.
+        /// Only the provided region is guaranteed to be up-to-date.
+        /// It is an error to access any other pixels outside of that region.
+        pub fn read_area(&self, read_area: PixelRegion) -> Ref<'_, BitmapData<'gc>> {
+            let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
+                area.intersects(read_area)
+            } else {
+                false
+            };
+            if needs_update {
+                self.sync();
+            }
+            self.0.read()
         }
 
         // These methods do not require a sync to complete, as they do not depend on the
