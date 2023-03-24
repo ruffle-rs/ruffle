@@ -483,10 +483,15 @@ pub fn noise<'gc>(
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
                 let random_seed = random_seed_val.coerce_to_i32(activation)?;
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .noise(random_seed, low, high.max(low), channel_options, gray_scale)
+                bitmap_data_operations::noise(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    random_seed,
+                    low,
+                    high.max(low),
+                    channel_options,
+                    gray_scale,
+                )
             }
 
             return Ok(Value::Undefined);

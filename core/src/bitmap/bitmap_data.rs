@@ -623,67 +623,6 @@ impl<'gc> BitmapData<'gc> {
         self.pixels[(x + y * self.width()) as usize]
     }
 
-    pub fn noise(
-        &mut self,
-        seed: i32,
-        low: u8,
-        high: u8,
-        channel_options: ChannelOptions,
-        gray_scale: bool,
-    ) {
-        let true_seed = if seed <= 0 {
-            (-seed + 1) as u32
-        } else {
-            seed as u32
-        };
-
-        let mut rng = LehmerRng::with_seed(true_seed);
-
-        for y in 0..self.height() {
-            for x in 0..self.width() {
-                let pixel_color = if gray_scale {
-                    let gray = rng.gen_range(low..high);
-                    let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
-                        rng.gen_range(low..high)
-                    } else {
-                        255
-                    };
-
-                    Color::argb(alpha, gray, gray, gray)
-                } else {
-                    let r = if channel_options.contains(ChannelOptions::RED) {
-                        rng.gen_range(low..high)
-                    } else {
-                        0
-                    };
-
-                    let g = if channel_options.contains(ChannelOptions::GREEN) {
-                        rng.gen_range(low..high)
-                    } else {
-                        0
-                    };
-
-                    let b = if channel_options.contains(ChannelOptions::BLUE) {
-                        rng.gen_range(low..high)
-                    } else {
-                        0
-                    };
-
-                    let a = if channel_options.contains(ChannelOptions::ALPHA) {
-                        rng.gen_range(low..high)
-                    } else {
-                        255
-                    };
-
-                    Color::argb(a, r, g, b)
-                };
-
-                self.set_pixel32_raw(x, y, pixel_color);
-            }
-        }
-        self.set_cpu_dirty(PixelRegion::for_whole_size(self.width, self.height));
-    }
-
     pub fn copy_channel(
         &mut self,
         dest_point: (u32, u32),

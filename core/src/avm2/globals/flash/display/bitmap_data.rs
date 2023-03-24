@@ -569,12 +569,17 @@ pub fn noise<'gc>(
 
     let gray_scale = args.get_bool(4);
 
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        if !bitmap_data.disposed() {
-            let random_seed = args.get_i32(activation, 0)?;
-            bitmap_data.noise(random_seed, low, high.max(low), channel_options, gray_scale)
-        }
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        let random_seed = args.get_i32(activation, 0)?;
+        bitmap_data_operations::noise(
+            &mut activation.context,
+            bitmap_data,
+            random_seed,
+            low,
+            high.max(low),
+            channel_options,
+            gray_scale,
+        );
     }
     Ok(Value::Undefined)
 }
