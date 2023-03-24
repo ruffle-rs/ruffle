@@ -413,10 +413,8 @@ fn avm2_to_displacement_map_filter<'gc>(
         .coerce_to_number(activation)?;
     let map_bitmap =
         if let Value::Object(bitmap) = object.get_public_property("mapBitmap", activation)? {
-            if let Some(bitmap) = bitmap.as_bitmap_data() {
-                bitmap
-                    .write(activation.context.gc_context)
-                    .bitmap_handle(activation.context.renderer)
+            if let Some(bitmap) = bitmap.as_bitmap_data_wrapper() {
+                Some(bitmap.bitmap_handle(&mut activation.context))
             } else {
                 return Err(Error::AvmError(type_error(
                     activation,
