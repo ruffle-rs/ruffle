@@ -653,17 +653,16 @@ pub fn palette_map<'gc>(
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
     let (dest_min_x, dest_min_y) = dest_point;
 
-    let target = target.sync();
-    let source_bitmap = source_bitmap.sync();
-
-    // Unlike `copy_channel` and `copy_pixels`, this function seems to
-    // operate "in-place" if the source bitmap is the same object as the destination.
-    let source_bitmap = if GcCell::ptr_eq(source_bitmap, target) {
+    let mut source_region =
+        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
+    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+    let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
-        Some(source_bitmap.read())
+        Some(source_bitmap.read_area(source_region))
     };
 
+    let target = target.sync();
     let mut write = target.write(context.gc_context);
 
     for src_y in src_min_y..(src_min_y + src_height) {
@@ -675,7 +674,7 @@ pub fn palette_map<'gc>(
                 continue;
             }
 
-            let source_color = if let Some(source) = &source_bitmap {
+            let source_color = if let Some(source) = &source {
                 if !source.is_point_in_bounds(src_x, src_y) {
                     continue;
                 }
