@@ -578,8 +578,7 @@ pub fn color_transform<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         if !bitmap_data.disposed() {
             // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
             let rectangle = args.get_object(activation, 0, "rect")?;
@@ -607,7 +606,16 @@ pub fn color_transform<'gc>(
                     color_transform,
                     activation,
                 )?;
-            bitmap_data.color_transform(x_min, y_min, x_max, y_max, &color_transform);
+
+            bitmap_data_operations::color_transform(
+                &mut activation.context,
+                bitmap_data,
+                x_min,
+                y_min,
+                x_max,
+                y_max,
+                &color_transform,
+            );
         }
     }
 

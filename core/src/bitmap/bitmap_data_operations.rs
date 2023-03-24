@@ -3,6 +3,7 @@ use crate::bitmap::turbulence::Turbulence;
 use crate::context::UpdateContext;
 use gc_arena::GcCell;
 use ruffle_render::bitmap::PixelRegion;
+use swf::{ColorTransform, Fixed8};
 
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
 /// Instead of directly manipulating the BitmapData in each place, they should call
@@ -409,4 +410,56 @@ pub fn copy_channel<'gc>(
     );
     dirty_region.clamp(write.width(), write.height());
     write.set_cpu_dirty(dirty_region);
+}
+
+pub fn color_transform<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x_min: u32,
+    y_min: u32,
+    x_max: u32,
+    y_max: u32,
+    color_transform: &ColorTransform,
+) {
+    // Flash bug: applying a color transform with only an alpha multiplier > 1 has no effect.
+    if color_transform.r_multiply == Fixed8::ONE
+        && color_transform.g_multiply == Fixed8::ONE
+        && color_transform.b_multiply == Fixed8::ONE
+        && color_transform.a_multiply >= Fixed8::ONE
+        && color_transform.r_add == 0
+        && color_transform.g_add == 0
+        && color_transform.b_add == 0
+        && color_transform.a_add == 0
+    {
+        return;
+    }
+
+    let x_max = x_max.min(target.width());
+    let y_max = y_max.min(target.height());
+
+    if x_max == 0 || y_max == 0 {
+        return;
+    }
+
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+    let transparency = write.transparency();
+
+    for x in x_min..x_max {
+        for y in y_min..y_max {
+            let color = write.get_pixel32_raw(x, y).to_un_multiplied_alpha();
+
+            let color = color_transform * swf::Color::from(color);
+
+            write.set_pixel32_raw(
+                x,
+                y,
+                Color::from(color).to_premultiplied_alpha(transparency),
+            )
+        }
+    }
+    write.set_cpu_dirty(PixelRegion::encompassing_pixels(
+        (x_min, y_min),
+        (x_max - 1, y_max - 1),
+    ));
 }

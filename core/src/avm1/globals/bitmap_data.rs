@@ -630,10 +630,15 @@ pub fn color_transform<'gc>(
                     None => return Ok((-3).into()),
                 };
 
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .color_transform(x_min, y_min, x_max, y_max, &color_transform.into());
+                bitmap_data_operations::color_transform(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    x_min,
+                    y_min,
+                    x_max,
+                    y_max,
+                    &color_transform.into(),
+                );
             }
         }
     }

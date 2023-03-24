@@ -15,7 +15,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStr;
 use std::ops::Range;
-use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
+use swf::{BlendMode, Rectangle, Twips};
 use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -620,48 +620,6 @@ impl<'gc> BitmapData<'gc> {
     #[inline]
     pub fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
         self.pixels[(x + y * self.width()) as usize]
-    }
-
-    pub fn color_transform(
-        &mut self,
-        x_min: u32,
-        y_min: u32,
-        x_max: u32,
-        y_max: u32,
-        color_transform: &ColorTransform,
-    ) {
-        // Flash bug: applying a color transform with only an alpha multiplier > 1 has no effect.
-        if color_transform.r_multiply != Fixed8::ONE
-            || color_transform.g_multiply != Fixed8::ONE
-            || color_transform.b_multiply != Fixed8::ONE
-            || color_transform.a_multiply < Fixed8::ONE
-            || color_transform.r_add != 0
-            || color_transform.g_add != 0
-            || color_transform.b_add != 0
-            || color_transform.a_add != 0
-        {
-            let x_max = x_max.min(self.width());
-            let y_max = y_max.min(self.height());
-            if x_max > 0 && y_max > 0 {
-                for x in x_min..x_max {
-                    for y in y_min..y_max {
-                        let color = self.get_pixel32_raw(x, y).to_un_multiplied_alpha();
-
-                        let color = color_transform * swf::Color::from(color);
-
-                        self.set_pixel32_raw(
-                            x,
-                            y,
-                            Color::from(color).to_premultiplied_alpha(self.transparency()),
-                        )
-                    }
-                }
-                self.set_cpu_dirty(PixelRegion::encompassing_pixels(
-                    (x_min, y_min),
-                    (x_max - 1, y_max - 1),
-                ));
-            }
-        }
     }
 
     pub fn color_bounds_rect(
