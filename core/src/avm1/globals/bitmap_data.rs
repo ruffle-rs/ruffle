@@ -1234,10 +1234,12 @@ pub fn scroll<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            bitmap_data
-                .bitmap_data()
-                .write(activation.context.gc_context)
-                .scroll(x, y);
+            bitmap_data_operations::scroll(
+                &mut activation.context,
+                bitmap_data.bitmap_data_wrapper(),
+                x,
+                y,
+            );
 
             return Ok(Value::Undefined);
         }

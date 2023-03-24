@@ -554,3 +554,56 @@ pub fn threshold<'gc>(
 
     modified_count
 }
+
+pub fn scroll<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x: i32,
+    y: i32,
+) {
+    let width = target.width() as i32;
+    let height = target.height() as i32;
+
+    if (x == 0 && y == 0) || x.abs() >= width || y.abs() >= height {
+        return; // no-op
+    }
+
+    // since this is an "in-place copy", we have to iterate from bottom to top
+    // when scrolling downwards - so if y is positive
+    let reverse_y = y > 0;
+    // and if only scrolling horizontally, we have to iterate from right to left
+    // when scrolling right - so if x is positive
+    let reverse_x = y == 0 && x > 0;
+
+    // iteration ranges to use as source for the copy, from is inclusive, to is exclusive
+    let y_from = if reverse_y { height - y - 1 } else { -y };
+    let y_to = if reverse_y { -1 } else { height };
+    let dy = if reverse_y { -1 } else { 1 };
+
+    let x_from = if reverse_x {
+        // we know x > 0
+        width - x - 1
+    } else {
+        // x can be any sign
+        (-x).max(0)
+    };
+    let x_to = if reverse_x { -1 } else { width.min(width - x) };
+    let dx = if reverse_x { -1 } else { 1 };
+
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+
+    let mut src_y = y_from;
+    while src_y != y_to {
+        let mut src_x = x_from;
+        while src_x != x_to {
+            let color = write.get_pixel32_raw(src_x as u32, src_y as u32);
+            write.set_pixel32_raw((src_x + x) as u32, (src_y + y) as u32, color);
+            src_x += dx;
+        }
+        src_y += dy;
+    }
+
+    let region = PixelRegion::for_whole_size(write.width(), write.height());
+    write.set_cpu_dirty(region);
+}
