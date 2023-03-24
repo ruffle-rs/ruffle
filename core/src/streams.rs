@@ -40,6 +40,30 @@ impl<'gc> StreamManager<'gc> {
         }
     }
 
+    pub fn ensure_paused(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+        let index = context
+            .stream_manager
+            .playing_streams
+            .iter()
+            .position(|x| *x == stream);
+        if let Some(index) = index {
+            context.stream_manager.playing_streams.remove(index);
+        }
+    }
+
+    pub fn toggle_paused(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+        let index = context
+            .stream_manager
+            .playing_streams
+            .iter()
+            .position(|x| *x == stream);
+        if let Some(index) = index {
+            context.stream_manager.playing_streams.remove(index);
+        } else {
+            context.stream_manager.playing_streams.push(stream);
+        }
+    }
+
     /// Process all playing media streams.
     ///
     /// This is an unlocked timestep; the `dt` parameter indicates how many
@@ -121,5 +145,20 @@ impl<'gc> NetStream<'gc> {
         }
 
         StreamManager::ensure_playing(context, self);
+    }
+
+    /// Pause stream playback.
+    pub fn pause(self, context: &mut UpdateContext<'_, 'gc>) {
+        StreamManager::ensure_paused(context, self);
+    }
+
+    /// Resume stream playback.
+    pub fn resume(self, context: &mut UpdateContext<'_, 'gc>) {
+        StreamManager::ensure_playing(context, self);
+    }
+
+    /// Resume stream playback if paused, pause otherwise.
+    pub fn toggle_pause(self, context: &mut UpdateContext<'_, 'gc>) {
+        StreamManager::toggle_paused(context, self);
     }
 }

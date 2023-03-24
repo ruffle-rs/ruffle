@@ -23,6 +23,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "bytesLoaded" => property(get_bytes_loaded);
     "bytesTotal" => property(get_bytes_total);
     "play" => method(play; DONT_ENUM | DONT_DELETE);
+    "pause" => method(pause; DONT_ENUM | DONT_DELETE);
 };
 
 fn get_bytes_loaded<'gc>(
@@ -62,6 +63,27 @@ fn play<'gc>(
             .coerce_to_string(activation)?;
 
         ns.play(&mut activation.context, Some(name));
+    }
+
+    Ok(Value::Undefined)
+}
+
+fn pause<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let NativeObject::NetStream(ns) = this.native() {
+        let action = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let is_pause = action.as_bool(activation.swf_version());
+
+        if matches!(action, Value::Undefined) {
+            ns.toggle_pause(&mut activation.context);
+        } else if is_pause {
+            ns.pause(&mut activation.context);
+        } else {
+            ns.resume(&mut activation.context);
+        }
     }
 
     Ok(Value::Undefined)

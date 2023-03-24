@@ -49,9 +49,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "dispose");
         }
 
-        public function pause() {
-            stub_method("flash.net.NetStream", "pause");
-        }
+        public native function pause();
         
         public native function play(...args);
         
@@ -83,9 +81,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "resetDRMVouchers");
         }
 
-        public function resume() {
-            stub_method("flash.net.NetStream", "resume");
-        }
+        public native function resume();
 
         public function seek(offset:Number) {
             stub_method("flash.net.NetStream", "seek");
@@ -103,9 +99,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "step");
         }
 
-        public function togglePause() {
-            stub_method("flash.net.NetStream", "togglePause");
-        }
+        public native function togglePause();
 
         public function get audioReliable():Boolean {
             stub_getter("flash.net.NetStream", "audioReliable");
