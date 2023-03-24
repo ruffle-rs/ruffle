@@ -671,8 +671,8 @@ pub fn hit_test<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        if !bitmap_data.read().disposed() {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        if !bitmap_data.disposed() {
             let first_point = args.get_object(activation, 0, "firstPoint")?;
             let top_left = (
                 first_point
@@ -698,11 +698,11 @@ pub fn hit_test<'gc>(
                         .coerce_to_i32(activation)?
                         - top_left.1,
                 );
-                return Ok(Value::Bool(
-                    bitmap_data
-                        .read()
-                        .hit_test_point(source_threshold, test_point),
-                ));
+                return Ok(Value::Bool(bitmap_data_operations::hit_test_point(
+                    bitmap_data,
+                    source_threshold,
+                    test_point,
+                )));
             } else if compare_object.is_of_type(rectangle_class, activation) {
                 let test_point = (
                     compare_object
@@ -722,13 +722,14 @@ pub fn hit_test<'gc>(
                         .get_public_property("height", activation)?
                         .coerce_to_i32(activation)?,
                 );
-                return Ok(Value::Bool(bitmap_data.read().hit_test_rectangle(
+                return Ok(Value::Bool(bitmap_data_operations::hit_test_rectangle(
+                    bitmap_data,
                     source_threshold,
                     test_point,
                     size,
                 )));
-            } else if let Some(other_bmd) = compare_object.as_bitmap_data() {
-                other_bmd.read().check_valid(activation)?;
+            } else if let Some(other_bmd) = compare_object.as_bitmap_data_wrapper() {
+                other_bmd.check_valid(activation)?;
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
                     second_point
@@ -740,30 +741,21 @@ pub fn hit_test<'gc>(
                 );
                 let second_threshold = args.get_u32(activation, 4)?;
 
-                let result = if GcCell::ptr_eq(bitmap_data, other_bmd) {
-                    bitmap_data.read().hit_test_bitmapdata(
-                        top_left,
-                        source_threshold,
-                        None,
-                        second_point,
-                        second_threshold,
-                    )
-                } else {
-                    bitmap_data.read().hit_test_bitmapdata(
-                        top_left,
-                        source_threshold,
-                        Some(&other_bmd.read()),
-                        second_point,
-                        second_threshold,
-                    )
-                };
+                let result = bitmap_data_operations::hit_test_bitmapdata(
+                    bitmap_data,
+                    top_left,
+                    source_threshold,
+                    other_bmd,
+                    second_point,
+                    second_threshold,
+                );
                 return Ok(Value::Bool(result));
             } else if let Some(bitmap) = compare_object
                 .as_display_object()
                 .and_then(|dobj| dobj.as_bitmap())
             {
-                let other_bmd = bitmap.bitmap_data_wrapper().sync();
-                other_bmd.read().check_valid(activation)?;
+                let other_bmd = bitmap.bitmap_data_wrapper();
+                other_bmd.check_valid(activation)?;
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
                     second_point
@@ -775,10 +767,11 @@ pub fn hit_test<'gc>(
                 );
                 let second_threshold = args.get_u32(activation, 4)?;
 
-                return Ok(Value::Bool(bitmap_data.read().hit_test_bitmapdata(
+                return Ok(Value::Bool(bitmap_data_operations::hit_test_bitmapdata(
+                    bitmap_data,
                     top_left,
                     source_threshold,
-                    Some(&other_bmd.read()),
+                    other_bmd,
                     second_point,
                     second_threshold,
                 )));
