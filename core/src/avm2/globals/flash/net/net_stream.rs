@@ -44,3 +44,39 @@ pub fn play<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn pause<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+        ns.pause(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn resume<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+        ns.resume(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn toggle_pause<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(ns) = this.and_then(|o| o.as_netstream()) {
+        ns.toggle_pause(&mut activation.context);
+    }
+
+    Ok(Value::Undefined)
+}
