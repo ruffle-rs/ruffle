@@ -1,6 +1,5 @@
 ﻿package {
 	public class Test {
-		import flash.utils.*;
 		public static function run() {
 			var soapXML:XML = 
 					<soap:Envelope xmlns:soap="http://www.w3.org/2001/12/soap-envelope"
