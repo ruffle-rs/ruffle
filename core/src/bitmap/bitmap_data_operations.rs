@@ -607,3 +607,68 @@ pub fn scroll<'gc>(
     let region = PixelRegion::for_whole_size(write.width(), write.height());
     write.set_cpu_dirty(region);
 }
+
+pub fn palette_map<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source_bitmap: BitmapDataWrapper<'gc>,
+    src_rect: (i32, i32, i32, i32),
+    dest_point: (i32, i32),
+    channel_arrays: ([u32; 256], [u32; 256], [u32; 256], [u32; 256]),
+) {
+    let (src_min_x, src_min_y, src_width, src_height) = src_rect;
+    let (dest_min_x, dest_min_y) = dest_point;
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+
+    // Unlike `copy_channel` and `copy_pixels`, this function seems to
+    // operate "in-place" if the source bitmap is the same object as the destination.
+    let source_bitmap = if GcCell::ptr_eq(source_bitmap, target) {
+        None
+    } else {
+        Some(source_bitmap.read())
+    };
+
+    let mut write = target.write(context.gc_context);
+
+    for src_y in src_min_y..(src_min_y + src_height) {
+        for src_x in src_min_x..(src_min_x + src_width) {
+            let dest_x = src_x - src_min_x + dest_min_x;
+            let dest_y = src_y - src_min_y + dest_min_y;
+
+            if !write.is_point_in_bounds(dest_x, dest_y) {
+                continue;
+            }
+
+            let source_color = if let Some(source) = &source_bitmap {
+                if !source.is_point_in_bounds(src_x, src_y) {
+                    continue;
+                }
+                source
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .to_un_multiplied_alpha()
+            } else {
+                write
+                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .to_un_multiplied_alpha()
+            };
+
+            let r = channel_arrays.0[source_color.red() as usize];
+            let g = channel_arrays.1[source_color.green() as usize];
+            let b = channel_arrays.2[source_color.blue() as usize];
+            let a = channel_arrays.3[source_color.alpha() as usize];
+
+            let sum = u32::wrapping_add(u32::wrapping_add(r, g), u32::wrapping_add(b, a));
+            let mix_color = Color::from(sum as i32).to_premultiplied_alpha(true);
+
+            write.set_pixel32_raw(dest_x as u32, dest_y as u32, mix_color);
+        }
+    }
+    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dirty_region.clamp(write.width(), write.height());
+    write.set_cpu_dirty(dirty_region);
+}

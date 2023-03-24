@@ -1135,11 +1135,11 @@ pub fn palette_map<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get_object(activation, 0, "sourceBitmapData")?
-            .as_bitmap_data()
+            .as_bitmap_data_wrapper()
             .unwrap();
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
@@ -1183,23 +1183,14 @@ pub fn palette_map<'gc>(
         let blue_array = get_channel(5, 0)?;
         let alpha_array = get_channel(6, 24)?;
 
-        let read;
-        let source: Option<&BitmapData> = if GcCell::ptr_eq(source_bitmap, bitmap_data) {
-            None
-        } else {
-            read = source_bitmap.read();
-            read.check_valid(activation)?;
-            Some(&read)
-        };
-
-        bitmap_data
-            .write(activation.context.gc_context)
-            .palette_map(
-                source,
-                (source_point.0, source_point.1, source_size.0, source_size.1),
-                dest_point,
-                (red_array, green_array, blue_array, alpha_array),
-            );
+        bitmap_data_operations::palette_map(
+            &mut activation.context,
+            bitmap_data,
+            source_bitmap,
+            (source_point.0, source_point.1, source_size.0, source_size.1),
+            dest_point,
+            (red_array, green_array, blue_array, alpha_array),
+        );
     }
 
     Ok(Value::Undefined)
