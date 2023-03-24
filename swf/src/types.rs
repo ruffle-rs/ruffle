@@ -22,6 +22,7 @@ mod gradient_filter;
 mod matrix;
 mod point;
 mod rectangle;
+mod tag;
 mod twips;
 
 pub use bevel_filter::{BevelFilter, BevelFilterFlags};
@@ -36,6 +37,7 @@ pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
 pub use point::Point;
 pub use rectangle::Rectangle;
+pub use tag::Tag;
 pub use twips::Twips;
 
 /// A complete header and tags in the SWF file.
@@ -511,114 +513,6 @@ bitflags! {
 
 /// A key code used in `ButtonAction` and `ClipAction` key press events.
 pub type KeyCode = u8;
-
-/// Represents a tag in an SWF file.
-///
-/// The SWF format is made up of a stream of tags. Each tag either
-/// defines a character (Graphic, Sound, MovieClip), or places/modifies
-/// an instance of these characters on the display list.
-///
-// [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
-#[derive(Debug, PartialEq)]
-pub enum Tag<'a> {
-    ExportAssets(ExportAssets<'a>),
-    ScriptLimits {
-        max_recursion_depth: u16,
-        timeout_in_seconds: u16,
-    },
-    ShowFrame,
-
-    Protect(Option<&'a SwfStr>),
-    CsmTextSettings(CsmTextSettings),
-    DebugId(DebugId),
-    DefineBinaryData(DefineBinaryData<'a>),
-    DefineBits {
-        id: CharacterId,
-        jpeg_data: &'a [u8],
-    },
-    DefineBitsJpeg2 {
-        id: CharacterId,
-        jpeg_data: &'a [u8],
-    },
-    DefineBitsJpeg3(DefineBitsJpeg3<'a>),
-    DefineBitsLossless(DefineBitsLossless<'a>),
-    DefineButton(Box<Button<'a>>),
-    DefineButton2(Box<Button<'a>>),
-    DefineButtonColorTransform(ButtonColorTransform),
-    DefineButtonSound(Box<ButtonSounds>),
-    DefineEditText(Box<EditText<'a>>),
-    DefineFont(Box<FontV1>),
-    DefineFont2(Box<Font<'a>>),
-    DefineFont4(Font4<'a>),
-    DefineFontAlignZones {
-        id: CharacterId,
-        thickness: FontThickness,
-        zones: Vec<FontAlignZone>,
-    },
-    DefineFontInfo(Box<FontInfo<'a>>),
-    DefineFontName {
-        id: CharacterId,
-        name: &'a SwfStr,
-        copyright_info: &'a SwfStr,
-    },
-    DefineMorphShape(Box<DefineMorphShape>),
-    DefineScalingGrid {
-        id: CharacterId,
-        splitter_rect: Rectangle<Twips>,
-    },
-    DefineShape(Shape),
-    DefineSound(Box<Sound<'a>>),
-    DefineSprite(Sprite<'a>),
-    DefineText(Box<Text>),
-    DefineVideoStream(DefineVideoStream),
-    DoAbc(&'a [u8]),
-    DoAbc2(DoAbc2<'a>),
-    DoAction(DoAction<'a>),
-    DoInitAction {
-        id: CharacterId,
-        action_data: &'a [u8],
-    },
-    EnableDebugger(&'a SwfStr),
-    EnableTelemetry {
-        password_hash: &'a [u8],
-    },
-    End,
-    Metadata(&'a SwfStr),
-    ImportAssets {
-        url: &'a SwfStr,
-        imports: Vec<ExportedAsset<'a>>,
-    },
-    JpegTables(JpegTables<'a>),
-    NameCharacter(NameCharacter<'a>),
-    SetBackgroundColor(SetBackgroundColor),
-    SetTabIndex {
-        depth: Depth,
-        tab_index: u16,
-    },
-    SoundStreamBlock(SoundStreamBlock<'a>),
-    SoundStreamHead(Box<SoundStreamHead>),
-    SoundStreamHead2(Box<SoundStreamHead>),
-    StartSound(StartSound),
-    StartSound2 {
-        class_name: &'a SwfStr,
-        sound_info: Box<SoundInfo>,
-    },
-    SymbolClass(Vec<SymbolClassLink<'a>>),
-    PlaceObject(Box<PlaceObject<'a>>),
-    RemoveObject(RemoveObject),
-    VideoFrame(VideoFrame<'a>),
-    FileAttributes(FileAttributes),
-
-    FrameLabel(FrameLabel<'a>),
-    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData<'a>),
-
-    ProductInfo(ProductInfo),
-
-    Unknown {
-        tag_code: u16,
-        data: &'a [u8],
-    },
-}
 
 pub type ExportAssets<'a> = Vec<ExportedAsset<'a>>;
 
