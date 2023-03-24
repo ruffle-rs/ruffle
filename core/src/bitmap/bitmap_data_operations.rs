@@ -82,6 +82,29 @@ pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
     read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
 }
 
+pub fn set_pixel<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x: u32,
+    y: u32,
+    color: Color,
+) {
+    if x >= target.width() || y >= target.height() {
+        return;
+    }
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+
+    if write.transparency() {
+        let current_alpha = write.get_pixel32_raw(x, y).alpha();
+        let color = color.with_alpha(current_alpha).to_premultiplied_alpha(true);
+        write.set_pixel32_raw(x, y, color);
+    } else {
+        write.set_pixel32_raw(x, y, color.with_alpha(0xFF));
+    }
+    write.set_cpu_dirty(PixelRegion::for_whole_size(x, y));
+}
+
 pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
     if target.disposed() || x >= target.width() || y >= target.height() {
         return 0;

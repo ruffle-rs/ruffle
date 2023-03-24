@@ -379,13 +379,11 @@ pub fn set_pixel<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
-        bitmap_data
-            .write(activation.context.gc_context)
-            .set_pixel(x, y, color.into());
+        bitmap_data_operations::set_pixel(&mut activation.context, bitmap_data, x, y, color.into());
     }
 
     Ok(Value::Undefined)

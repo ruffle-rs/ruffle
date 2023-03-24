@@ -206,10 +206,13 @@ pub fn set_pixel<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data
-                    .bitmap_data()
-                    .write(activation.context.gc_context)
-                    .set_pixel(x, y, color.into());
+                bitmap_data_operations::set_pixel(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    x,
+                    y,
+                    color.into(),
+                );
 
                 return Ok(Value::Undefined);
             }
