@@ -411,22 +411,23 @@ fn avm2_to_displacement_map_filter<'gc>(
     let scale_y = object
         .get_public_property("scaleY", activation)?
         .coerce_to_number(activation)?;
-    let map_bitmap =
-        if let Value::Object(bitmap) = object.get_public_property("mapBitmap", activation)? {
-            if let Some(bitmap) = bitmap.as_bitmap_data_wrapper() {
-                Some(bitmap.bitmap_handle(&mut activation.context))
-            } else {
-                return Err(Error::AvmError(type_error(
-                    activation,
-                    &format!(
+    let map_bitmap = if let Value::Object(bitmap) =
+        object.get_public_property("mapBitmap", activation)?
+    {
+        if let Some(bitmap) = bitmap.as_bitmap_data_wrapper() {
+            Some(bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer))
+        } else {
+            return Err(Error::AvmError(type_error(
+                activation,
+                &format!(
                     "Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."
                 ),
-                    1034,
-                )?));
-            }
-        } else {
-            None
-        };
+                1034,
+            )?));
+        }
+    } else {
+        None
+    };
     Ok(Filter::DisplacementMapFilter(DisplacementMapFilter {
         color: Color::from_rgb(color, (alpha * 255.0) as u8),
         component_x: component_x as u8,

@@ -1173,7 +1173,7 @@ pub fn apply_filter<'gc>(
     dest_point: (u32, u32),
     filter: Filter,
 ) {
-    let source_handle = source.bitmap_handle(context);
+    let source_handle = source.bitmap_handle(context.gc_context, context.renderer);
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
     let mut write = target.write(context.gc_context);
     let dest = write.bitmap_handle(context.renderer).unwrap();

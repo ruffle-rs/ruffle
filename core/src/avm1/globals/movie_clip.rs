@@ -401,7 +401,8 @@ fn begin_bitmap_fill<'gc>(
     {
         // Register the bitmap data with the drawing.
         let bitmap_data = bitmap_data.bitmap_data_wrapper();
-        let handle = bitmap_data.bitmap_handle(&mut activation.context);
+        let handle =
+            bitmap_data.bitmap_handle(activation.context.gc_context, activation.context.renderer);
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
             width: bitmap_data.width() as u16,
