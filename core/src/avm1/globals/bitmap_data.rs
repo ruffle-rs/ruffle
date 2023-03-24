@@ -307,32 +307,15 @@ pub fn copy_channel<'gc>(
                 let src_max_x = src_min_x + src_width;
                 let src_max_y = src_min_y + src_height;
 
-                let src_bitmap_data = source_bitmap.bitmap_data();
-
-                if GcCell::ptr_eq(bitmap_data.bitmap_data(), src_bitmap_data) {
-                    let src_bitmap_data_clone = src_bitmap_data.read().clone();
-                    bitmap_data
-                        .bitmap_data()
-                        .write(activation.context.gc_context)
-                        .copy_channel(
-                            (min_x, min_y),
-                            (src_min_x, src_min_y, src_max_x, src_max_y),
-                            &src_bitmap_data_clone,
-                            source_channel,
-                            dest_channel,
-                        );
-                } else {
-                    bitmap_data
-                        .bitmap_data()
-                        .write(activation.context.gc_context)
-                        .copy_channel(
-                            (min_x, min_y),
-                            (src_min_x, src_min_y, src_max_x, src_max_y),
-                            &src_bitmap_data.read(),
-                            source_channel,
-                            dest_channel,
-                        );
-                }
+                bitmap_data_operations::copy_channel(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    (min_x, min_y),
+                    (src_min_x, src_min_y, src_max_x, src_max_y),
+                    source_bitmap.bitmap_data_wrapper(),
+                    source_channel,
+                    dest_channel,
+                );
             }
 
             return Ok(Value::Undefined);

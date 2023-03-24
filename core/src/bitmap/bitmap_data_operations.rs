@@ -1,6 +1,7 @@
-use crate::bitmap::bitmap_data::{BitmapDataWrapper, ChannelOptions, Color, LehmerRng};
+use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper, ChannelOptions, Color, LehmerRng};
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::UpdateContext;
+use gc_arena::GcCell;
 use ruffle_render::bitmap::PixelRegion;
 
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
@@ -314,4 +315,98 @@ pub fn perlin_noise<'gc>(
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
     write.set_cpu_dirty(region);
+}
+
+pub fn copy_channel<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    dest_point: (u32, u32),
+    src_rect: (u32, u32, u32, u32),
+    source_bitmap: BitmapDataWrapper<'gc>,
+    source_channel: i32,
+    dest_channel: i32,
+) {
+    let (min_x, min_y) = dest_point;
+    let (src_min_x, src_min_y, src_max_x, src_max_y) = src_rect;
+
+    let channel_shift: u32 = match source_channel {
+        // red
+        1 => 16,
+        // green
+        2 => 8,
+        // blue
+        4 => 0,
+        // alpha
+        8 => 24,
+        _ => 0,
+    };
+    let transparency = target.transparency();
+
+    let target = target.sync();
+    let source_bitmap = source_bitmap.sync();
+
+    // dealing with object aliasing...
+    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
+    let src_bitmap_data_cell = source_bitmap;
+    let src_bitmap_gc_ref; // only initialized if source is a different object than self
+    let source_bitmap_ref = // holds the reference to either of the ones above
+        if GcCell::ptr_eq(source_bitmap, target) {
+            src_bitmap_clone = src_bitmap_data_cell.read().clone();
+            &src_bitmap_clone
+        } else {
+            src_bitmap_gc_ref = src_bitmap_data_cell.read();
+            &src_bitmap_gc_ref
+        };
+
+    let mut write = target.write(context.gc_context);
+
+    for x in src_min_x.max(0)..src_max_x.min(source_bitmap_ref.width()) {
+        for y in src_min_y.max(0)..src_max_y.min(source_bitmap_ref.height()) {
+            let dst_x = x as i32 + min_x as i32;
+            let dst_y = y as i32 + min_y as i32;
+            if write.is_point_in_bounds(dst_x, dst_y) {
+                let original_color: u32 = write
+                    .get_pixel32_raw(dst_x as u32, dst_y as u32)
+                    .to_un_multiplied_alpha()
+                    .into();
+                let source_color: u32 = source_bitmap_ref
+                    .get_pixel32_raw(x, y)
+                    .to_un_multiplied_alpha()
+                    .into();
+
+                let source_part = (source_color >> channel_shift) & 0xFF;
+
+                let result_color: u32 = match dest_channel {
+                    // red
+                    1 => (original_color & 0xFF00FFFF) | source_part << 16,
+                    // green
+                    2 => (original_color & 0xFFFF00FF) | source_part << 8,
+                    // blue
+                    4 => (original_color & 0xFFFFFF00) | source_part,
+                    // alpha
+                    8 => (original_color & 0x00FFFFFF) | source_part << 24,
+                    _ => original_color,
+                };
+
+                write.set_pixel32_raw(
+                    dst_x as u32,
+                    dst_y as u32,
+                    Color::from(result_color as i32).to_premultiplied_alpha(transparency),
+                );
+            }
+        }
+    }
+
+    let mut dirty_region = PixelRegion::encompassing_pixels(
+        (
+            (src_min_x.saturating_add(min_x)),
+            (src_min_y.saturating_add(min_y)),
+        ),
+        (
+            (src_max_x.saturating_add(min_x)),
+            (src_max_y.saturating_add(min_y)),
+        ),
+    );
+    dirty_region.clamp(write.width(), write.height());
+    write.set_cpu_dirty(dirty_region);
 }
