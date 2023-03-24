@@ -9,7 +9,6 @@ use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_render::commands::{CommandHandler, CommandList};
-use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
@@ -524,6 +523,10 @@ impl<'gc> BitmapData<'gc> {
         self.transparency
     }
 
+    pub fn set_gpu_dirty(&mut self, sync_handle: Box<dyn SyncHandle>, region: PixelRegion) {
+        self.dirty_state = DirtyState::GpuModified(sync_handle, region);
+    }
+
     pub fn set_cpu_dirty(&mut self, region: PixelRegion) {
         debug_assert!(region.max_x <= self.width);
         debug_assert!(region.max_y <= self.height);
@@ -654,45 +657,6 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
         self.avm2_object = Some(object)
-    }
-
-    pub fn apply_filter(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        source: BitmapHandle,
-        source_point: (u32, u32),
-        source_size: (u32, u32),
-        dest_point: (u32, u32),
-        filter: Filter,
-    ) {
-        let dest = self.bitmap_handle(context.renderer).unwrap();
-
-        self.update_dirty_texture(context.renderer);
-        let sync_handle = context.renderer.apply_filter(
-            source,
-            source_point,
-            source_size,
-            dest,
-            dest_point,
-            filter,
-        );
-        match sync_handle {
-            Some(sync_handle) => match self.dirty_state {
-                DirtyState::Clean => {
-                    self.dirty_state = DirtyState::GpuModified(
-                        sync_handle,
-                        PixelRegion::for_whole_size(self.width, self.height),
-                    )
-                }
-                DirtyState::CpuModified(_) | DirtyState::GpuModified(_, _) => panic!(
-                    "Called BitmapData.render while already dirty: {:?}",
-                    self.dirty_state
-                ),
-            },
-            None => {
-                tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
-            }
-        }
     }
 
     #[allow(clippy::too_many_arguments)]
