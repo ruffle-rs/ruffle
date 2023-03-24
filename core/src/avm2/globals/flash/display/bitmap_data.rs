@@ -543,17 +543,13 @@ pub fn flood_fill<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         if !bitmap_data.disposed() {
             let x = args.get_u32(activation, 0)?;
             let y = args.get_u32(activation, 1)?;
             let color = args.get_i32(activation, 2)?;
 
-            let color: Color = color.into();
-            let color: Color = color.to_premultiplied_alpha(bitmap_data.transparency());
-
-            bitmap_data.flood_fill(x, y, color);
+            bitmap_data_operations::flood_fill(&mut activation.context, bitmap_data, x, y, color);
         }
     }
 

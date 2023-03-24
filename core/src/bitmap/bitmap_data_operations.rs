@@ -88,3 +88,45 @@ pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
         .with_alpha(0x0)
         .into()
 }
+
+pub fn flood_fill<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    x: u32,
+    y: u32,
+    color: i32,
+) {
+    if target.disposed() || x >= target.width() || y >= target.height() {
+        return;
+    }
+    let target = target.sync();
+    let mut write = target.write(context.gc_context);
+    let expected_color = write.get_pixel32_raw(x, y);
+    let replace_color = Color::from(color).to_premultiplied_alpha(write.transparency());
+
+    let mut pending = vec![(x, y)];
+    let mut dirty_region = PixelRegion::for_pixel(x, y);
+
+    while !pending.is_empty() {
+        if let Some((x, y)) = pending.pop() {
+            let old_color = write.get_pixel32_raw(x, y);
+            if old_color == expected_color {
+                if x > 0 {
+                    pending.push((x - 1, y));
+                }
+                if y > 0 {
+                    pending.push((x, y - 1));
+                }
+                if x < write.width() - 1 {
+                    pending.push((x + 1, y))
+                }
+                if y < write.height() - 1 {
+                    pending.push((x, y + 1));
+                }
+                write.set_pixel32_raw(x, y, replace_color);
+                dirty_region.encompass(x, y);
+            }
+        }
+    }
+    write.set_cpu_dirty(dirty_region);
+}

@@ -623,39 +623,6 @@ impl<'gc> BitmapData<'gc> {
         self.pixels[(x + y * self.width()) as usize]
     }
 
-    pub fn flood_fill(&mut self, x: u32, y: u32, replace_color: Color) {
-        if x >= self.width || y >= self.height {
-            return;
-        }
-        let expected_color = self.get_pixel32_raw(x, y);
-
-        let mut pending = vec![(x, y)];
-        let mut dirty_region = PixelRegion::for_pixel(x, y);
-
-        while !pending.is_empty() {
-            if let Some((x, y)) = pending.pop() {
-                let old_color = self.get_pixel32_raw(x, y);
-                if old_color == expected_color {
-                    if x > 0 {
-                        pending.push((x - 1, y));
-                    }
-                    if y > 0 {
-                        pending.push((x, y - 1));
-                    }
-                    if x < self.width() - 1 {
-                        pending.push((x + 1, y))
-                    }
-                    if y < self.height() - 1 {
-                        pending.push((x, y + 1));
-                    }
-                    self.set_pixel32_raw(x, y, replace_color);
-                    dirty_region.encompass(x, y);
-                }
-            }
-        }
-        self.set_cpu_dirty(dirty_region);
-    }
-
     pub fn noise(
         &mut self,
         seed: i32,
