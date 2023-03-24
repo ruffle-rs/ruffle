@@ -6,14 +6,14 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
+use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{bitmap_data_operations, is_size_valid};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
 
@@ -927,19 +927,6 @@ pub fn copy_pixels<'gc>(
                         None
                     };
 
-                    // dealing with object aliasing...
-                    let src_bitmap_clone: BitmapData; // only initialized if source is the same object as self
-                    let src_bitmap_data_cell = src_bitmap.bitmap_data();
-                    let src_bitmap_gc_ref; // only initialized if source is a different object than self
-                    let source_bitmap_ref = // holds the reference to either of the ones above
-                        if GcCell::ptr_eq(src_bitmap.bitmap_data(), bitmap_data.bitmap_data()) {
-                            src_bitmap_clone = src_bitmap_data_cell.read().clone();
-                            &src_bitmap_clone
-                        } else {
-                            src_bitmap_gc_ref = src_bitmap_data_cell.read();
-                            &src_bitmap_gc_ref
-                        };
-
                     let alpha_bitmap = args
                         .get(3)
                         .unwrap_or(&Value::Undefined)
@@ -962,45 +949,28 @@ pub fn copy_pixels<'gc>(
                                 .coerce_to_f64(activation)?
                                 as i32;
 
-                            // dealing with aliasing the same way as for the source
-                            let alpha_bitmap_clone: BitmapData;
-                            let alpha_bitmap_data_cell = alpha_bitmap.bitmap_data();
-                            let alpha_bitmap_gc_ref;
-                            let alpha_bitmap_ref = if GcCell::ptr_eq(
-                                alpha_bitmap.bitmap_data(),
-                                bitmap_data.bitmap_data(),
-                            ) {
-                                alpha_bitmap_clone = alpha_bitmap_data_cell.read().clone();
-                                &alpha_bitmap_clone
-                            } else {
-                                alpha_bitmap_gc_ref = alpha_bitmap_data_cell.read();
-                                &alpha_bitmap_gc_ref
-                            };
-
-                            bitmap_data
-                                .bitmap_data()
-                                .write(activation.context.gc_context)
-                                .copy_pixels(
-                                    source_bitmap_ref,
-                                    (src_min_x, src_min_y, src_width, src_height),
-                                    (dest_x, dest_y),
-                                    Some((alpha_bitmap_ref, (alpha_x, alpha_y))),
-                                    merge_alpha.unwrap_or(true),
-                                );
-                        }
-                    } else {
-                        bitmap_data
-                            .bitmap_data()
-                            .write(activation.context.gc_context)
-                            .copy_pixels(
-                                source_bitmap_ref,
+                            bitmap_data_operations::copy_pixels_with_alpha_source(
+                                &mut activation.context,
+                                bitmap_data.bitmap_data_wrapper(),
+                                src_bitmap.bitmap_data_wrapper(),
                                 (src_min_x, src_min_y, src_width, src_height),
                                 (dest_x, dest_y),
-                                None,
-                                // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
-                                // when no 'alphaBitmap' is specified (e.g. only 3 args are passed)
-                                merge_alpha.unwrap_or(false),
+                                alpha_bitmap.bitmap_data_wrapper(),
+                                (alpha_x, alpha_y),
+                                merge_alpha.unwrap_or(true),
                             );
+                        }
+                    } else {
+                        bitmap_data_operations::copy_pixels(
+                            &mut activation.context,
+                            bitmap_data.bitmap_data_wrapper(),
+                            src_bitmap.bitmap_data_wrapper(),
+                            (src_min_x, src_min_y, src_width, src_height),
+                            (dest_x, dest_y),
+                            // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
+                            // when no 'alphaBitmap' is specified (e.g. only 3 args are passed)
+                            merge_alpha.unwrap_or(false),
+                        );
                     }
                 }
             }
