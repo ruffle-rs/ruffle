@@ -428,16 +428,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        let mesh = self.register_shape_internal(
-            (&shape).into(),
-            &ruffle_render::backend::null::NullBitmapSource,
-        );
-        ShapeHandle(Arc::new(mesh))
-    }
-
-    #[instrument(level = "debug", skip_all)]
     fn submit_frame(&mut self, clear: Color, commands: CommandList) {
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
