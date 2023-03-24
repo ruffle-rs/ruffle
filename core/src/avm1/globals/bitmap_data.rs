@@ -748,19 +748,18 @@ pub fn perlin_noise<'gc>(
                 .collect();
             let octave_offsets = octave_offsets?;
 
-            bitmap_data
-                .bitmap_data()
-                .write(activation.context.gc_context)
-                .perlin_noise(
-                    (base_x, base_y),
-                    num_octaves,
-                    seed,
-                    stitch,
-                    fractal_noise,
-                    channel_options,
-                    grayscale,
-                    octave_offsets,
-                );
+            bitmap_data_operations::perlin_noise(
+                &mut activation.context,
+                bitmap_data.bitmap_data_wrapper(),
+                (base_x, base_y),
+                num_octaves,
+                seed,
+                stitch,
+                fractal_noise,
+                channel_options,
+                grayscale,
+                octave_offsets,
+            );
         }
     }
 
