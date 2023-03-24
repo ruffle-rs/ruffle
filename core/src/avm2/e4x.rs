@@ -222,11 +222,14 @@ impl<'gc> E4XNode<'gc> {
                     let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
                     let is_whitespace_text = text.iter().all(is_whitespace_char);
                     if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let text = AvmString::new_utf8(activation.context.gc_context, if matches!(event, Event::Text {..}) {
-                            std::str::from_utf8(&text).unwrap().trim()
-                        } else {
-                            std::str::from_utf8(&text).unwrap()
-                        });
+                        let text = AvmString::new_utf8(
+                            activation.context.gc_context,
+                            if matches!(event, Event::Text { .. }) {
+                                std::str::from_utf8(&text).unwrap().trim()
+                            } else {
+                                std::str::from_utf8(&text).unwrap()
+                            },
+                        );
                         let node = E4XNode(GcCell::allocate(
                             activation.context.gc_context,
                             E4XNodeData {
