@@ -5,6 +5,7 @@ use crate::bitmap::turbulence::Turbulence;
 use crate::context::UpdateContext;
 use gc_arena::GcCell;
 use ruffle_render::bitmap::PixelRegion;
+use ruffle_render::filters::Filter;
 use swf::{ColorTransform, Fixed8};
 
 /// AVM1 and AVM2 have a shared set of operations they can perform on BitmapDatas.
@@ -1153,4 +1154,35 @@ pub fn copy_pixels_with_alpha_source<'gc>(
     );
     dirty_region.clamp(write.width(), write.height());
     write.set_cpu_dirty(dirty_region);
+}
+
+pub fn apply_filter<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    target: BitmapDataWrapper<'gc>,
+    source: BitmapDataWrapper<'gc>,
+    source_point: (u32, u32),
+    source_size: (u32, u32),
+    dest_point: (u32, u32),
+    filter: Filter,
+) {
+    let source_handle = source.bitmap_handle(context);
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
+    let mut write = target.write(context.gc_context);
+    let dest = write.bitmap_handle(context.renderer).unwrap();
+
+    let sync_handle = context.renderer.apply_filter(
+        source_handle,
+        source_point,
+        source_size,
+        dest,
+        dest_point,
+        filter,
+    );
+    let region = PixelRegion::for_whole_size(write.width(), write.height());
+    match sync_handle {
+        Some(sync_handle) => write.set_gpu_dirty(sync_handle, region),
+        None => {
+            tracing::warn!("BitmapData.apply_filter: Renderer not yet implemented")
+        }
+    }
 }

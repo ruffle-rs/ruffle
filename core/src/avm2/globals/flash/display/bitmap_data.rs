@@ -1027,24 +1027,11 @@ pub fn apply_filter<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dest_bitmap) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
-        let (dest_bitmap_data, _dirty_area) =
-            dest_bitmap.overwrite_cpu_pixels_from_gpu(&mut activation.context);
-        dest_bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
-            .as_bitmap_data()
+            .as_bitmap_data_wrapper()
             .ok_or_else(|| {
                 Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
             })?;
-        let source_handle = match source_bitmap
-            .write(activation.context.gc_context)
-            .bitmap_handle(activation.context.renderer)
-        {
-            Some(handle) => handle,
-            None => {
-                tracing::warn!("Ignoring BitmapData.apply_filter() with an undrawable source");
-                return Ok(Value::Undefined);
-            }
-        };
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
         let source_point = (
@@ -1066,10 +1053,10 @@ pub fn apply_filter<'gc>(
         );
         let filter = args.get_object(activation, 3, "filter")?;
         let filter = Filter::from_avm2_object(activation, filter)?;
-        let mut dest_bitmap_data = dest_bitmap_data.write(activation.context.gc_context);
-        dest_bitmap_data.apply_filter(
+        bitmap_data_operations::apply_filter(
             &mut activation.context,
-            source_handle,
+            dest_bitmap,
+            source_bitmap,
             source_point,
             source_size,
             dest_point,
