@@ -474,8 +474,8 @@ pub fn copy_channel<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let source_bitmap = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -496,7 +496,7 @@ pub fn copy_channel<'gc>(
 
         let dest_channel = args.get_i32(activation, 4)?;
 
-        if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
+        if let Some(source_bitmap) = source_bitmap.as_bitmap_data_wrapper() {
             //TODO: what if source is disposed
             let src_min_x = source_rect
                 .get_public_property("x", activation)?
@@ -513,26 +513,15 @@ pub fn copy_channel<'gc>(
             let src_max_x = src_min_x + src_width;
             let src_max_y = src_min_y + src_height;
 
-            if GcCell::ptr_eq(bitmap_data, source_bitmap) {
-                let src_bitmap_data_clone = source_bitmap.read().clone();
-                let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
-                bitmap_data_write.copy_channel(
-                    (dest_x, dest_y),
-                    (src_min_x, src_min_y, src_max_x, src_max_y),
-                    &src_bitmap_data_clone,
-                    source_channel,
-                    dest_channel,
-                );
-            } else {
-                let mut bitmap_data_write = bitmap_data.write(activation.context.gc_context);
-                bitmap_data_write.copy_channel(
-                    (dest_x, dest_y),
-                    (src_min_x, src_min_y, src_max_x, src_max_y),
-                    &source_bitmap.read(),
-                    source_channel,
-                    dest_channel,
-                );
-            }
+            bitmap_data_operations::copy_channel(
+                &mut activation.context,
+                bitmap_data,
+                (dest_x, dest_y),
+                (src_min_x, src_min_y, src_max_x, src_max_y),
+                source_bitmap,
+                source_channel,
+                dest_channel,
+            );
         }
     }
     Ok(Value::Undefined)
