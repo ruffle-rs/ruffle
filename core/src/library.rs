@@ -364,12 +364,10 @@ impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.library.get_bitmap(id).and_then(|bitmap| {
-            Some(
-                bitmap
-                    .bitmap_data_wrapper()
-                    .bitmap_handle(self.gc_context, backend),
-            )
+        self.library.get_bitmap(id).map(|bitmap| {
+            bitmap
+                .bitmap_data_wrapper()
+                .bitmap_handle(self.gc_context, backend)
         })
     }
 }
