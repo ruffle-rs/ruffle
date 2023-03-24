@@ -317,10 +317,10 @@ mod wrapper {
             bitmap_data.bitmap_handle(renderer).unwrap()
         }
 
-        // Provides access to the underlying `BitmapData`.
-        // This should only be used when you will be overwriting the entire
-        // `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
-        // If the CPU pixels are dirty, syncs them to the GPU.
+        /// Provides access to the underlying `BitmapData`.
+        /// This should only be used when you will be overwriting the entire
+        /// `pixels` vec without reading from it. Cancels any in-progress GPU -> CPU sync.
+        /// This does not sync from cpu to gpu.
         #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
@@ -332,11 +332,7 @@ mod wrapper {
                     write.dirty_state = DirtyState::Clean;
                     Some(rect)
                 }
-                DirtyState::CpuModified(_) => {
-                    write.update_dirty_texture(context.renderer);
-                    None
-                }
-                DirtyState::Clean => None,
+                DirtyState::CpuModified(_) | DirtyState::Clean => None,
             };
             (self.0, dirty_rect)
         }
@@ -346,7 +342,12 @@ mod wrapper {
         /// It is an error to access any other pixels outside of that region.
         pub fn read_area(&self, read_area: PixelRegion) -> Ref<'_, BitmapData<'gc>> {
             let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
-                area.intersects(read_area)
+                if area.intersects(read_area) {
+                    true
+                } else {
+                    tracing::info!("SKIPPED");
+                    false
+                }
             } else {
                 false
             };
