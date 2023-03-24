@@ -121,7 +121,7 @@ pub fn get_transparent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().read().transparency().into());
+            return Ok(bitmap_data.bitmap_data_wrapper().transparency().into());
         }
     }
 

@@ -363,7 +363,16 @@ mod wrapper {
             &self,
             activation: &mut crate::avm2::Activation<'_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
-            self.0.read().check_valid(activation)
+            if self.disposed() {
+                return Err(crate::avm2::Error::AvmError(
+                    crate::avm2::error::argument_error(
+                        activation,
+                        "Error #2015: Invalid BitmapData.",
+                        2015,
+                    )?,
+                ));
+            }
+            Ok(())
         }
 
         pub fn dispose(&self, mc: MutationContext<'gc, '_>) {
@@ -461,22 +470,6 @@ impl<'gc> BitmapData<'gc> {
             disposed: false,
             dirty_state: DirtyState::Clean,
         }
-    }
-
-    pub fn check_valid(
-        &self,
-        activation: &mut crate::avm2::Activation<'_, 'gc>,
-    ) -> Result<(), crate::avm2::Error<'gc>> {
-        if self.disposed() {
-            return Err(crate::avm2::Error::AvmError(
-                crate::avm2::error::argument_error(
-                    activation,
-                    "Error #2015: Invalid BitmapData.",
-                    2015,
-                )?,
-            ));
-        }
-        Ok(())
     }
 
     pub fn disposed(&self) -> bool {
