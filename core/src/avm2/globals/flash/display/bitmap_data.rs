@@ -348,11 +348,12 @@ pub fn get_pixel<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
-        bitmap_data.read().check_valid(activation)?;
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
-        return Ok((bitmap_data.read().get_pixel(x, y) as u32).into());
+        let col = bitmap_data_operations::get_pixel(bitmap_data, x, y);
+        return Ok(col.into());
     }
 
     Ok(Value::Undefined)
