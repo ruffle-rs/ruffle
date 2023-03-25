@@ -2127,9 +2127,11 @@ impl<'gc> MovieClip<'gc> {
             let result: Result<(), Avm2Error> = constr_thing();
 
             if let Err(e) = result {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                
                 tracing::error!(
-                    "Got {} when constructing AVM2 side of movie clip of type {}",
-                    e,
+                    "Got \"{}\" when constructing AVM2 side of movie clip of type {}",
+                    e.detailed_message(&mut activation),
                     class_object
                         .try_inner_class_definition()
                         .map(|c| c.read().name().to_qualified_name(context.gc_context))
