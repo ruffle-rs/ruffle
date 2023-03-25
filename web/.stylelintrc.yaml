@@ -1,5 +1,3 @@
 extends:
   - stylelint-config-standard
   - stylelint-prettier/recommended
-rules:
-  indentation: 4
