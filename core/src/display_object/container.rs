@@ -640,14 +640,18 @@ impl<'gc> ChildContainer<'gc> {
             let position = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
-                .unwrap();
+                .position(|x| DisplayObject::ptr_eq(*x, prev_child));
 
-            if !prev_child.placed_by_script() {
-                self.replace_id(position, child);
-                Some(prev_child)
+            if let Some(position) = position {
+                if !prev_child.placed_by_script() {
+                    self.replace_id(position, child);
+                    Some(prev_child)
+                } else {
+                    self.insert_id(position + 1, child);
+                    None
+                }
             } else {
-                self.insert_id(position + 1, child);
+                self.push_id(child);
                 None
             }
         } else {
