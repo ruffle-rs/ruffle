@@ -23,9 +23,9 @@ async function sign(
         downloadDir: tempDir,
     });
 
-    //Since sign-addon doesn't support source upload, let's make the request
-    //ourselves. We aren't actually using any API methods on AMOClient, just
-    //the authentication mechanism, so this should be safe.
+    // Since sign-addon doesn't support source upload, let's make the request
+    // ourselves. We aren't actually using any API methods on AMOClient, just
+    // the authentication mechanism, so this should be safe.
     const client = new AMOClient({
         apiKey,
         apiSecret,
@@ -33,7 +33,7 @@ async function sign(
         downloadDir: tempDir,
     });
 
-    //NOTE: The extension ID is already wrapped in curly braces in GitHub
+    // NOTE: The extension ID is already wrapped in curly braces in GitHub.
     var sourceCodeUpload = client.patch({
         url: `/addons/addon/${encodeURIComponent(
             extensionId
