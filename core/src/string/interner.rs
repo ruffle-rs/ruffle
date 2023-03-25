@@ -1,3 +1,4 @@
+use core::fmt;
 use std::borrow::{Borrow, Cow};
 use std::cell::Cell;
 use std::hash::{BuildHasher, Hash, Hasher};
@@ -42,6 +43,18 @@ impl<'gc> Eq for AvmAtom<'gc> {}
 impl<'gc> Hash for AvmAtom<'gc> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Gc::as_ptr(self.0).hash(state);
+    }
+}
+
+impl<'gc> fmt::Debug for AvmAtom<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self.as_wstr(), f)
+    }
+}
+
+impl<'gc> fmt::Display for AvmAtom<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self.as_wstr(), f)
     }
 }
 

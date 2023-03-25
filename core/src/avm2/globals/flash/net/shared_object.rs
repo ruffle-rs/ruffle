@@ -138,7 +138,7 @@ pub fn get_local<'gc>(
 
     // Set the internal name
     let ruffle_name = Multiname::new(
-        Namespace::package("__ruffle__", activation.context.gc_context),
+        Namespace::package("__ruffle__", &mut activation.borrow_gc()),
         "_ruffleName",
     );
     this.set_property(
@@ -186,7 +186,7 @@ pub fn flush<'gc>(
             .coerce_to_object(activation)?;
 
         let ruffle_name = Multiname::new(
-            Namespace::package("__ruffle__", activation.context.gc_context),
+            Namespace::package("__ruffle__", &mut activation.borrow_gc()),
             "_ruffleName",
         );
         let name = this
@@ -238,7 +238,7 @@ pub fn clear<'gc>(
 
         // Delete data from storage backend.
         let ruffle_name = Multiname::new(
-            Namespace::package("__ruffle__", activation.context.gc_context),
+            Namespace::package("__ruffle__", &mut activation.borrow_gc()),
             "_ruffleName",
         );
         let name = this

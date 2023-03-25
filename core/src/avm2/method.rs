@@ -57,9 +57,11 @@ impl<'gc> ParamConfig<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
-            txunit.pool_string(name.0, &mut activation.borrow_gc())?
+            txunit
+                .pool_string(name.0, &mut activation.borrow_gc())?
+                .into()
         } else {
-            "<Unnamed Parameter>".into()
+            AvmString::from("<Unnamed Parameter>")
         };
         let param_type_name = txunit
             .pool_multiname_static_any(config.kind, &mut activation.borrow_gc())?

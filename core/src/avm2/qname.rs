@@ -1,7 +1,5 @@
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::Activation;
-use crate::avm2::Error;
-use crate::avm2::{Namespace, NamespaceData};
+use crate::avm2::{Activation, Error, Namespace};
 use crate::context::GcContext;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
@@ -66,7 +64,7 @@ impl<'gc> QName<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
                 ns: translation_unit.pool_namespace(*namespace, context)?,
-                name: translation_unit.pool_string(name.0, context)?,
+                name: translation_unit.pool_string(name.0, context)?.into(),
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
         })
@@ -79,7 +77,6 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
     pub fn from_qualified_name(name: AvmString<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        let mc = activation.context.gc_context;
         // If we have a type like 'some::namespace::Vector.<other::namespace::MyType>',
         // we want to look at 'some::namespace::Vector' when splitting out the namespace
         let before_type_param = if let Some(type_param_start) = name.find(WStr::from_units(b".<")) {
@@ -104,9 +101,13 @@ impl<'gc> QName<'gc> {
         };
 
         if let Some((package_name, local_name)) = parts {
+            let mut context = activation.borrow_gc();
+            let package_name = context
+                .interner
+                .intern_wstr(context.gc_context, package_name);
             Self {
-                ns: Namespace::package(AvmString::new(mc, package_name), mc),
-                name: AvmString::new(mc, local_name),
+                ns: Namespace::package(package_name, &mut context),
+                name: AvmString::new(context.gc_context, local_name),
             }
         } else {
             Self {
@@ -170,19 +171,12 @@ impl<'gc> QName<'gc> {
 
     /// Get the string value of this QName, including the namespace URI.
     pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        let ns = match &*self.ns.0 {
-            NamespaceData::Namespace(s) => s,
-            NamespaceData::PackageInternal(s) => s,
-            NamespaceData::Protected(s) => s,
-            NamespaceData::Explicit(s) => s,
-            NamespaceData::StaticProtected(s) => s,
-            NamespaceData::Private(s) => s,
-            NamespaceData::Any => WStr::from_units(b"*"),
+        let ns_uri = self.ns.as_uri_opt();
+        let ns = match &ns_uri {
+            Some(s) if s.is_empty() => return self.name,
+            Some(s) => s,
+            None => WStr::from_units(b"*"),
         };
-
-        if ns.is_empty() {
-            return self.name;
-        }
 
         let mut uri = WString::from(ns);
         uri.push_str(WStr::from_units(b"::"));

@@ -24,7 +24,7 @@ pub fn init<'gc>(
             Value::Undefined | Value::Null => None,
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
-                activation.context.gc_context,
+                &mut activation.borrow_gc(),
             )),
         };
         if let Value::Object(Object::QNameObject(qname)) = local_arg {

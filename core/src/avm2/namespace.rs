@@ -1,5 +1,5 @@
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{AvmAtom, AvmString};
 use crate::{avm2::script::TranslationUnit, context::GcContext};
 use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt::Debug;
@@ -7,7 +7,7 @@ use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
 #[derive(Clone, Copy, Collect, Debug)]
 #[collect(no_drop)]
-pub struct Namespace<'gc>(pub Gc<'gc, NamespaceData<'gc>>);
+pub struct Namespace<'gc>(Gc<'gc, NamespaceData<'gc>>);
 
 impl<'gc> PartialEq for Namespace<'gc> {
     fn eq(&self, other: &Self) -> bool {
@@ -24,17 +24,19 @@ impl<'gc> Eq for Namespace<'gc> {}
 
 /// Represents the name of a namespace.
 #[allow(clippy::enum_variant_names)]
-#[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
 #[collect(no_drop)]
-pub enum NamespaceData<'gc> {
+enum NamespaceData<'gc> {
     // note: this is the default "public namespace", corresponding to both
     // ABC Namespace and PackageNamespace
-    Namespace(AvmString<'gc>),
-    PackageInternal(AvmString<'gc>),
-    Protected(AvmString<'gc>),
-    Explicit(AvmString<'gc>),
-    StaticProtected(AvmString<'gc>),
-    Private(AvmString<'gc>),
+    Namespace(AvmAtom<'gc>),
+    PackageInternal(AvmAtom<'gc>),
+    Protected(AvmAtom<'gc>),
+    Explicit(AvmAtom<'gc>),
+    StaticProtected(AvmAtom<'gc>),
+    // note: private namespaces are always compared by pointer identity
+    // of the enclosing `Gc`.
+    Private(AvmAtom<'gc>),
     Any,
 }
 
@@ -90,28 +92,36 @@ impl<'gc> Namespace<'gc> {
         Self(Gc::allocate(mc, NamespaceData::Any))
     }
 
-    pub fn package(package_name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+    // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
+    pub fn package(
+        package_name: impl Into<AvmString<'gc>>,
+        context: &mut GcContext<'_, 'gc>,
+    ) -> Self {
+        let atom = context
+            .interner
+            .intern(context.gc_context, package_name.into());
         Self(Gc::allocate(
-            mc,
-            NamespaceData::Namespace(package_name.into()),
+            context.gc_context,
+            NamespaceData::Namespace(atom),
         ))
     }
 
-    pub fn internal(package_name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+    // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
+    pub fn internal(
+        package_name: impl Into<AvmString<'gc>>,
+        context: &mut GcContext<'_, 'gc>,
+    ) -> Self {
+        let atom = context
+            .interner
+            .intern(context.gc_context, package_name.into());
         Self(Gc::allocate(
-            mc,
-            NamespaceData::PackageInternal(package_name.into()),
+            context.gc_context,
+            NamespaceData::PackageInternal(atom),
         ))
-    }
-
-    // note: since private namespaces are compared by identity,
-    // if you try using it to create temporary namespaces it will likely not work.
-    pub fn private(name: impl Into<AvmString<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
-        Self(Gc::allocate(mc, NamespaceData::Private(name.into())))
     }
 
     pub fn is_public(&self) -> bool {
-        matches!(*self.0, NamespaceData::Namespace(name) if name.is_empty())
+        matches!(*self.0, NamespaceData::Namespace(name) if name.as_wstr().is_empty())
     }
 
     pub fn is_any(&self) -> bool {
@@ -126,18 +136,22 @@ impl<'gc> Namespace<'gc> {
         matches!(*self.0, NamespaceData::Namespace(_))
     }
 
+    pub fn as_uri_opt(&self) -> Option<AvmString<'gc>> {
+        match *self.0 {
+            NamespaceData::Namespace(a) => Some(a.into()),
+            NamespaceData::PackageInternal(a) => Some(a.into()),
+            NamespaceData::Protected(a) => Some(a.into()),
+            NamespaceData::Explicit(a) => Some(a.into()),
+            NamespaceData::StaticProtected(a) => Some(a.into()),
+            NamespaceData::Private(a) => Some(a.into()),
+            NamespaceData::Any => None,
+        }
+    }
+
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
     pub fn as_uri(&self) -> AvmString<'gc> {
-        match &*self.0 {
-            NamespaceData::Namespace(s) => *s,
-            NamespaceData::PackageInternal(s) => *s,
-            NamespaceData::Protected(s) => *s,
-            NamespaceData::Explicit(s) => *s,
-            NamespaceData::StaticProtected(s) => *s,
-            NamespaceData::Private(s) => *s,
-            NamespaceData::Any => "".into(),
-        }
+        self.as_uri_opt().unwrap_or_else(|| "".into())
     }
 }
