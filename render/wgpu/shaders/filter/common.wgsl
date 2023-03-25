@@ -33,8 +33,7 @@ fn main_vertex(in: FilterVertexInput) -> VertexOutput {
     #if use_push_constants == true
         var transforms = pc.transforms;
     #endif
-    let matrix_ = textureTransforms.texture_matrix;
-    let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
+    let uv = (textureTransforms.texture_matrix * vec4<f32>(in.position, 0.0, 1.0)).xy;
     let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, uv);
 }
