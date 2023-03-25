@@ -264,7 +264,7 @@ fn function<'gc>(
     let mc = activation.context.gc_context;
     let scope = activation.create_scopechain();
     let qname = QName::new(
-        Namespace::package(package, activation.context.gc_context),
+        Namespace::package(package, &mut activation.borrow_gc()),
         name,
     );
     let method = Method::from_builtin(nf, name, mc);
@@ -597,10 +597,12 @@ fn load_playerglobal<'gc>(
     let _ = tag_utils::decode_tags(&mut reader, tag_callback);
     macro_rules! avm2_system_classes_playerglobal {
         ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
+            let activation = $activation;
             $(
-                let name = Multiname::new(Namespace::package($package, activation.context.gc_context), $class_name);
+                let ns = Namespace::package($package, &mut activation.borrow_gc());
+                let name = Multiname::new(ns, $class_name);
                 let class_object = activation.resolve_class(&name)?;
-                let sc = $activation.avm2().system_classes.as_mut().unwrap();
+                let sc = activation.avm2().system_classes.as_mut().unwrap();
                 sc.$field = class_object;
             )*
         }
@@ -610,7 +612,7 @@ fn load_playerglobal<'gc>(
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
     // and are stored in 'avm2().system_classes'
     avm2_system_classes_playerglobal!(
-        activation,
+        &mut *activation,
         script,
         [
             ("", "Error", error),

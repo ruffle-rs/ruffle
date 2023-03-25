@@ -21,7 +21,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
-use crate::string::AvmString;
+use crate::string::{AvmAtom, AvmString};
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell};
 use smallvec::SmallVec;
@@ -823,7 +823,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: &'b BytecodeMethod<'gc>,
         index: Index<String>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
         method
             .translation_unit()
             .pool_string(index.0, &mut self.borrow_gc())

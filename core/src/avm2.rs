@@ -61,7 +61,7 @@ pub use crate::avm2::domain::Domain;
 pub use crate::avm2::error::Error;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
-pub use crate::avm2::namespace::{Namespace, NamespaceData};
+pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
     ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
     TObject,
@@ -143,29 +143,28 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
-        let mc = context.gc_context;
-        let globals = Domain::global_domain(mc);
+        let globals = Domain::global_domain(context.gc_context);
 
         Self {
             stack: Vec::new(),
             scope_stack: Vec::new(),
-            call_stack: GcCell::allocate(mc, CallStack::new()),
+            call_stack: GcCell::allocate(context.gc_context, CallStack::new()),
             globals,
             system_classes: None,
 
-            public_namespace: Namespace::package("", mc),
-            as3_namespace: Namespace::package("http://adobe.com/AS3/2006/builtin", mc),
-            vector_public_namespace: Namespace::package("__AS3__.vec", mc),
-            vector_internal_namespace: Namespace::internal("__AS3__.vec", mc),
+            public_namespace: Namespace::package("", context),
+            as3_namespace: Namespace::package("http://adobe.com/AS3/2006/builtin", context),
+            vector_public_namespace: Namespace::package("__AS3__.vec", context),
+            vector_internal_namespace: Namespace::internal("__AS3__.vec", context),
             proxy_namespace: Namespace::package(
                 "http://www.adobe.com/2006/actionscript/flash/proxy",
-                mc,
+                context,
             ),
             // these are required to facilitate shared access between Rust and AS
-            flash_display_internal: Namespace::internal("flash.display", mc),
-            flash_utils_internal: Namespace::internal("flash.utils", mc),
-            flash_geom_internal: Namespace::internal("flash.geom", mc),
-            flash_events_internal: Namespace::internal("flash.events", mc),
+            flash_display_internal: Namespace::internal("flash.display", context),
+            flash_utils_internal: Namespace::internal("flash.utils", context),
+            flash_geom_internal: Namespace::internal("flash.geom", context),
+            flash_events_internal: Namespace::internal("flash.events", context),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),

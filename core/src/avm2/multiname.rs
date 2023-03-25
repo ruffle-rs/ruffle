@@ -159,14 +159,18 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
                     ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, context)?),
-                    name: translation_unit.pool_string_option(name.0, context)?,
+                    name: translation_unit
+                        .pool_string_option(name.0, context)?
+                        .map(|v| v.into()),
                     params: Vec::new(),
                     flags: Default::default(),
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
-                name: translation_unit.pool_string_option(name.0, context)?,
+                name: translation_unit
+                    .pool_string_option(name.0, context)?
+                    .map(|v| v.into()),
                 params: Vec::new(),
                 flags: MultinameFlags::HAS_LAZY_NS,
             },
@@ -185,7 +189,9 @@ impl<'gc> Multiname<'gc> {
                 name,
             } => Self {
                 ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
-                name: translation_unit.pool_string_option(name.0, context)?,
+                name: translation_unit
+                    .pool_string_option(name.0, context)?
+                    .map(|v| v.into()),
                 params: Vec::new(),
                 flags: Default::default(),
             },

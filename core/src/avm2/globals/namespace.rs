@@ -31,11 +31,11 @@ pub fn instance_init<'gc>(
         let namespace = match uri_value {
             Some(Value::Object(Object::QNameObject(qname))) => qname
                 .uri()
-                .map(|uri| Namespace::package(uri, activation.context.gc_context))
+                .map(|uri| Namespace::package(uri, &mut activation.borrow_gc()))
                 .unwrap_or_else(|| Namespace::any(activation.context.gc_context)),
             Some(val) => Namespace::package(
                 val.coerce_to_string(activation)?,
-                activation.context.gc_context,
+                &mut activation.borrow_gc(),
             ),
             None => activation.avm2().public_namespace,
         };

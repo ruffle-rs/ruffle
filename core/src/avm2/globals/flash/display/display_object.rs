@@ -267,7 +267,7 @@ pub fn set_filters<'gc>(
             if let Some(filters_array) = new_filters.as_array_object() {
                 if let Some(filters_storage) = filters_array.as_array_storage() {
                     let filters_namespace =
-                        Namespace::package("flash.filters", activation.context.gc_context);
+                        Namespace::package("flash.filters", &mut activation.borrow_gc());
                     let filter_class = Multiname::new(filters_namespace, "BitmapFilter");
 
                     let filter_class_object = activation.resolve_class(&filter_class)?;

@@ -232,7 +232,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         string_index: u32,
         context: &mut GcContext<'_, 'gc>,
-    ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
+    ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
         if string_index == 0 {
             Ok(None)
         } else {
@@ -250,10 +250,10 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         string_index: u32,
         context: &mut GcContext<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
+    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
         if let Some(Some(atom)) = write.strings.get(string_index as usize) {
-            return Ok((*atom).into());
+            return Ok(*atom);
         }
 
         let raw = if string_index == 0 {
@@ -272,7 +272,7 @@ impl<'gc> TranslationUnit<'gc> {
             .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
 
         write.strings[string_index as usize] = Some(atom);
-        Ok(atom.into())
+        Ok(atom)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
