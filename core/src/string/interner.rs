@@ -9,6 +9,52 @@ use hashbrown::raw::{Bucket, RawTable};
 
 use crate::string::{AvmString, OwnedWStr, WStr};
 
+// An interned `AvmString`, with fast by-pointer equality and hashing.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct AvmAtom<'gc>(Gc<'gc, OwnedWStr>);
+
+impl<'gc> PartialEq for AvmAtom<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        Gc::ptr_eq(self.0, other.0)
+    }
+}
+
+impl<'gc> PartialEq<AvmString<'gc>> for AvmAtom<'gc> {
+    fn eq(&self, other: &AvmString<'gc>) -> bool {
+        if let Some(atom) = other.as_interned() {
+            *self == atom
+        } else {
+            self.as_wstr() == other.as_wstr()
+        }
+    }
+}
+
+impl<'gc> PartialEq<AvmAtom<'gc>> for AvmString<'gc> {
+    #[inline(always)]
+    fn eq(&self, other: &AvmAtom<'gc>) -> bool {
+        PartialEq::eq(other, self)
+    }
+}
+
+impl<'gc> Eq for AvmAtom<'gc> {}
+
+impl<'gc> Hash for AvmAtom<'gc> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Gc::as_ptr(self.0).hash(state);
+    }
+}
+
+impl<'gc> AvmAtom<'gc> {
+    pub fn as_wstr(&self) -> &WStr {
+        &self.0
+    }
+
+    pub(super) fn as_owned(self) -> Gc<'gc, OwnedWStr> {
+        self.0
+    }
+}
+
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 pub struct AvmStringInterner<'gc> {
@@ -25,7 +71,7 @@ impl<'gc> AvmStringInterner<'gc> {
     }
 
     #[must_use]
-    pub fn intern_wstr<'a, S>(&mut self, mc: MutationContext<'gc, '_>, s: S) -> AvmString<'gc>
+    pub fn intern_wstr<'a, S>(&mut self, mc: MutationContext<'gc, '_>, s: S) -> AvmAtom<'gc>
     where
         S: Into<Cow<'a, WStr>>,
     {
@@ -35,22 +81,26 @@ impl<'gc> AvmStringInterner<'gc> {
             (None, h) => self.interned.insert_fresh(mc, h, Self::alloc(mc, s)),
         };
 
-        AvmString::from_owned(atom)
+        AvmAtom(atom)
     }
 
     #[must_use]
-    pub fn get<'a>(&self, mc: MutationContext<'gc, '_>, s: &WStr) -> Option<AvmString<'gc>> {
-        self.interned.get(mc, s).map(AvmString::from_owned)
+    pub fn get(&self, mc: MutationContext<'gc, '_>, s: &WStr) -> Option<AvmAtom<'gc>> {
+        self.interned.get(mc, s).map(AvmAtom)
     }
 
     #[must_use]
-    pub fn intern(&mut self, mc: MutationContext<'gc, '_>, s: AvmString<'gc>) -> AvmString<'gc> {
+    pub fn intern(&mut self, mc: MutationContext<'gc, '_>, s: AvmString<'gc>) -> AvmAtom<'gc> {
+        if let Some(atom) = s.as_interned() {
+            return atom;
+        }
+
         let atom = match self.interned.entry(mc, s.as_wstr()) {
             (Some(atom), _) => atom,
             (None, h) => self.interned.insert_fresh(mc, h, s.to_owned(mc)),
         };
 
-        AvmString::from_owned(atom)
+        AvmAtom(atom)
     }
 }
 

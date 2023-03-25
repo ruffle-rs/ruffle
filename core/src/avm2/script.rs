@@ -13,7 +13,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
-use crate::string::AvmString;
+use crate::string::{AvmAtom, AvmString};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::Ref;
 use std::mem::drop;
@@ -63,7 +63,7 @@ struct TranslationUnitData<'gc> {
 
     /// All strings loaded from the ABC's strings list.
     /// They're lazy loaded and offset by 1, with the 0th element being always the empty string.
-    strings: Vec<Option<AvmString<'gc>>>,
+    strings: Vec<Option<AvmAtom<'gc>>>,
 
     /// All namespaces loaded from the ABC's scripts list.
     namespaces: Vec<Option<Namespace<'gc>>>,
@@ -252,8 +252,8 @@ impl<'gc> TranslationUnit<'gc> {
         context: &mut GcContext<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
-        if let Some(Some(string)) = write.strings.get(string_index as usize) {
-            return Ok(*string);
+        if let Some(Some(atom)) = write.strings.get(string_index as usize) {
+            return Ok((*atom).into());
         }
 
         let raw = if string_index == 0 {
@@ -267,12 +267,12 @@ impl<'gc> TranslationUnit<'gc> {
                 .ok_or_else(|| format!("Unknown string constant {string_index}"))?
         };
 
-        let avm_string = context
+        let atom = context
             .interner
             .intern_wstr(context.gc_context, ruffle_wstr::from_utf8(raw));
 
-        write.strings[string_index as usize] = Some(avm_string);
-        Ok(avm_string)
+        write.strings[string_index as usize] = Some(atom);
+        Ok(atom.into())
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant

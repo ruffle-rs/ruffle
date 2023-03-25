@@ -77,7 +77,7 @@ impl Declaration {
                 let setter = setter.map(|setter| {
                     FunctionObject::function(mc, Executable::Native(setter), fn_proto, fn_proto)
                 });
-                this.add_property(mc, name, getter, setter, self.attributes);
+                this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
             DeclKind::Method(func) => {
