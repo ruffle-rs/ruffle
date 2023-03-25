@@ -158,7 +158,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Resume stream playback if paused, pause otherwise.
-    pub fn toggle_pause(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn toggle_paused(self, context: &mut UpdateContext<'_, 'gc>) {
         StreamManager::toggle_paused(context, self);
     }
 }

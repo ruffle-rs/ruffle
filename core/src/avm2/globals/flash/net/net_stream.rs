@@ -75,7 +75,7 @@ pub fn toggle_pause<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.and_then(|o| o.as_netstream()) {
-        ns.toggle_pause(&mut activation.context);
+        ns.toggle_paused(&mut activation.context);
     }
 
     Ok(Value::Undefined)
