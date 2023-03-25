@@ -34,7 +34,9 @@ package flash.display
         public native function cubicCurveTo(controlX1:Number, controlY1:Number, controlX2:Number, controlY2:Number, anchorX:Number, anchorY:Number):void;
         public native function copyFrom(sourceGraphics:Graphics):void;
         public native function drawPath(commands:Vector.<int>, data:Vector.<Number>, winding:String = "evenOdd"):void;
-        public native function drawRoundRectComplex(x:Number, y:Number, width:Number, height:Number, ellipseWidth:Number, ellipseHeight:Number = NaN):void;
+        public native function drawRoundRectComplex(
+            x:Number, y:Number, width:Number, height:Number, topLeftRadius:Number, topRightRadius:Number, bottomLeftRadius:Number, bottomRightRadius:Number
+        ):void;
         public native function drawTriangles(vertices:Vector.<Number>, indices:Vector.<int> = null, uvtData:Vector.<Number> = null, culling:String = "none"):void;
         public native function drawGraphicsData(graphicsData:Vector.<IGraphicsData>):void;
         //public native function lineShaderStyle(shader:Shader, matrix:Matrix = null):void;
