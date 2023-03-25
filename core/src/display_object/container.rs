@@ -637,12 +637,11 @@ impl<'gc> ChildContainer<'gc> {
     ) -> Option<DisplayObject<'gc>> {
         let prev_child = self.insert_child_into_depth_list(depth, child);
         if let Some(prev_child) = prev_child {
-            let position = self
+            if let Some(position) = self
                 .render_list
                 .iter()
-                .position(|x| DisplayObject::ptr_eq(*x, prev_child));
-
-            if let Some(position) = position {
+                .position(|x| DisplayObject::ptr_eq(*x, prev_child))
+            {
                 if !prev_child.placed_by_script() {
                     self.replace_id(position, child);
                     Some(prev_child)
