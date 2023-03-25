@@ -2128,7 +2128,7 @@ impl<'gc> MovieClip<'gc> {
 
             if let Err(e) = result {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                
+
                 tracing::error!(
                     "Got \"{}\" when constructing AVM2 side of movie clip of type {}",
                     e.detailed_message(&mut activation),
