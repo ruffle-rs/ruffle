@@ -78,7 +78,7 @@ fn pause<'gc>(
         let is_pause = action.as_bool(activation.swf_version());
 
         if matches!(action, Value::Undefined) {
-            ns.toggle_pause(&mut activation.context);
+            ns.toggle_paused(&mut activation.context);
         } else if is_pause {
             ns.pause(&mut activation.context);
         } else {
