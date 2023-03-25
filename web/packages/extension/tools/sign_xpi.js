@@ -75,7 +75,7 @@ As this is indeed a complicated build process, please let me know if there is an
     });
 
     try {
-        await Promise.all(sourceCodeUpload, notesUpload);
+        await Promise.all([sourceCodeUpload, notesUpload]);
         console.log("Successfully uploaded source code and approval notes");
     } catch (e) {
         console.error(`Got exception when uploading submission data: ${e}`);
