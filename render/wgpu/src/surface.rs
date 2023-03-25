@@ -442,8 +442,10 @@ impl Surface {
                 aspect: Default::default(),
             },
             wgpu::Extent3d {
-                width: (target.width()).min(dest_texture.width - dest_point.0),
-                height: (target.height()).min(dest_texture.height - dest_point.1),
+                // FIXME - for some filters, this should be larger than the source size.
+                // Figure out exactly how much larger
+                width: (target.width()).min(source_size.0),
+                height: (target.height()).min(source_size.1),
                 depth_or_array_layers: 1,
             },
         )
@@ -474,30 +476,7 @@ impl Surface {
             draw_encoder,
         );
         let texture_transform =
-            descriptors
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(&[TextureTransforms {
-                        u_matrix: [
-                            [
-                                1.0,
-                                0.0,
-                                0.0,
-                                (source_point.0 as f32 / source_size.0 as f32),
-                            ],
-                            [
-                                0.0,
-                                1.0,
-                                0.0,
-                                (source_point.1 as f32 / source_size.1 as f32),
-                            ],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                    }]),
-                    usage: wgpu::BufferUsages::UNIFORM,
-                });
+            make_texture_transform(descriptors, source_size, source_point, source_texture);
         let source_view = source_texture.texture.create_view(&Default::default());
         let bitmap_group = descriptors
             .device
@@ -553,8 +532,8 @@ impl Surface {
                 bytemuck::cast_slice(&[PushConstants {
                     transforms: Transforms {
                         world_matrix: [
-                            [self.size.width as f32, 0.0, 0.0, 0.0],
-                            [0.0, self.size.height as f32, 0.0, 0.0],
+                            [target.width() as f32, 0.0, 0.0, 0.0],
+                            [0.0, target.height() as f32, 0.0, 0.0],
                             [0.0, 0.0, 1.0, 0.0],
                             [0.0, 0.0, 0.0, 1.0],
                         ],
@@ -620,31 +599,9 @@ impl Surface {
                 draw_encoder,
             ),
         ];
+
         let texture_transform =
-            descriptors
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(&[TextureTransforms {
-                        u_matrix: [
-                            [
-                                1.0,
-                                0.0,
-                                0.0,
-                                (source_point.0 as f32 / source_size.0 as f32),
-                            ],
-                            [
-                                0.0,
-                                1.0,
-                                0.0,
-                                (source_point.1 as f32 / source_size.1 as f32),
-                            ],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                    }]),
-                    usage: wgpu::BufferUsages::UNIFORM,
-                });
+            make_texture_transform(descriptors, source_size, source_point, source_texture);
         let source_view = source_texture.texture.create_view(&Default::default());
         for i in 0..2 {
             let blur_x = (filter.blur_x.to_f32() - 1.0).max(0.0);
@@ -750,9 +707,54 @@ impl Surface {
             );
             render_pass.draw_indexed(0..6, 0, 0..1);
         }
+
         targets
             .into_iter()
             .last()
             .expect("Targets should not be empty")
     }
+}
+
+fn make_texture_transform(
+    descriptors: &Descriptors,
+    source_size: (u32, u32),
+    source_point: (u32, u32),
+    source_texture: &Texture,
+) -> wgpu::Buffer {
+    descriptors
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[TextureTransforms {
+                // This is is column-major order.
+                u_matrix: [
+                    [
+                        // If we're applying the filter to a source rectangle that's smaller than
+                        // the full source texture, then the scale factor will be less than 1.
+                        // This will produce U-V coordinates that do not extend to the full [0, 1]
+                        // range, which makes us sample just the source region.
+                        source_size.0 as f32 / source_texture.width as f32,
+                        0.0,
+                        0.0,
+                        0.0,
+                    ],
+                    [
+                        0.0,
+                        source_size.1 as f32 / source_texture.height as f32,
+                        0.0,
+                        0.0,
+                    ],
+                    [0.0, 0.0, 1.0, 0.0],
+                    // Offset to 'source_point'. Note that we divide by the full texture size,
+                    // since that's what the UV coordinates are sampling from.
+                    [
+                        source_point.0 as f32 / source_texture.width as f32,
+                        source_point.1 as f32 / source_texture.height as f32,
+                        0.0,
+                        0.0,
+                    ],
+                ],
+            }]),
+            usage: wgpu::BufferUsages::UNIFORM,
+        })
 }

@@ -1075,7 +1075,7 @@ pub fn apply_filter<'gc>(
                 .get_public_property("x", activation)?
                 .coerce_to_u32(activation)?,
             dest_point
-                .get_public_property("x", activation)?
+                .get_public_property("y", activation)?
                 .coerce_to_u32(activation)?,
         );
         let filter = args.get_object(activation, 3, "filter")?;
