@@ -308,7 +308,7 @@ impl<'gc> Video<'gc> {
                     }
                 }
             },
-            VideoSource::NetStream { .. } => unimplemented!(),
+            VideoSource::NetStream { .. } => return,
         };
 
         drop(read);
