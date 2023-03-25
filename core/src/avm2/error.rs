@@ -212,6 +212,17 @@ pub fn eof_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn uri_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().urierror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
 pub fn error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,

@@ -111,6 +111,7 @@ pub struct SystemClasses<'gc> {
     pub verifyerror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
+    pub urierror: ClassObject<'gc>,
     pub error: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
     pub statictext: ClassObject<'gc>,
@@ -219,6 +220,7 @@ impl<'gc> SystemClasses<'gc> {
             verifyerror: object,
             ioerror: object,
             eoferror: object,
+            urierror: object,
             error: object,
             uncaughterrorevents: object,
             statictext: object,
@@ -520,6 +522,14 @@ pub fn load_player_globals<'gc>(
         toplevel::encode_uri_component,
         script,
     )?;
+    function(activation, "", "decodeURI", toplevel::decode_uri, script)?;
+    function(
+        activation,
+        "",
+        "decodeURIComponent",
+        toplevel::decode_uri_component,
+        script,
+    )?;
     function(activation, "", "unescape", toplevel::unescape, script)?;
 
     avm2_system_class!(vector, activation, vector::create_class(activation), script);
@@ -606,6 +616,7 @@ fn load_playerglobal<'gc>(
             ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
             ("", "TypeError", typeerror),
+            ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
