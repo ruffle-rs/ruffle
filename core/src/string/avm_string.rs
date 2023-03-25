@@ -4,12 +4,13 @@ use std::ops::Deref;
 use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_wstr::{wstr_impl_traits, WStr, WString};
 
-use crate::string::OwnedWStr;
+use crate::string::{AvmAtom, OwnedWStr};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
     Owned(Gc<'gc, OwnedWStr>),
+    Interned(AvmAtom<'gc>),
     Static(&'static WStr),
 }
 
@@ -20,15 +21,10 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub(super) fn from_owned(atom: Gc<'gc, OwnedWStr>) -> Self {
-        Self {
-            source: Source::Owned(atom),
-        }
-    }
-
     pub(super) fn to_owned(self, gc_context: MutationContext<'gc, '_>) -> Gc<'gc, OwnedWStr> {
         match self.source {
             Source::Owned(s) => s,
+            Source::Interned(s) => s.as_owned(),
             Source::Static(s) => Gc::allocate(gc_context, OwnedWStr(s.into())),
         }
     }
@@ -60,7 +56,16 @@ impl<'gc> AvmString<'gc> {
     pub fn as_wstr(&self) -> &WStr {
         match &self.source {
             Source::Owned(s) => &s.0,
+            Source::Interned(s) => s.as_wstr(),
             Source::Static(s) => s,
+        }
+    }
+
+    pub fn as_interned(&self) -> Option<AvmAtom<'gc>> {
+        if let Source::Interned(s) = self.source {
+            Some(s)
+        } else {
+            None
         }
     }
 
@@ -82,10 +87,15 @@ impl<'gc> AvmString<'gc> {
 
     #[inline]
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
-        match (this.source, other.source) {
-            (Source::Owned(this), Source::Owned(other)) => Gc::ptr_eq(this, other),
-            (Source::Static(this), Source::Static(other)) => std::ptr::eq(this, other),
-            _ => false,
+        std::ptr::eq(this.as_wstr(), other.as_wstr())
+    }
+}
+
+impl<'gc> From<AvmAtom<'gc>> for AvmString<'gc> {
+    #[inline]
+    fn from(atom: AvmAtom<'gc>) -> Self {
+        Self {
+            source: Source::Interned(atom),
         }
     }
 }

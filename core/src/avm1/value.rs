@@ -9,7 +9,7 @@ use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
-use crate::string::{AvmString, Integer, WStr};
+use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::Collect;
 use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
@@ -29,15 +29,22 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-#[cfg(target_pointer_width = "32")]
-const _: () = assert!(size_of::<Value<'_>>() == 16);
+// TODO(moulins): shrink `Value` down again.
+// #[cfg(target_pointer_width = "32")]
+// const _: () = assert!(size_of::<Value<'_>>() == 16);
 
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Value<'_>>() == 24);
+// #[cfg(target_pointer_width = "64")]
+// const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
+    }
+}
+
+impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    fn from(atom: AvmAtom<'gc>) -> Self {
+        Value::String(atom.into())
     }
 }
 

@@ -9,7 +9,7 @@ mod interner;
 pub use ruffle_wstr::*;
 
 pub use avm_string::AvmString;
-pub use interner::AvmStringInterner;
+pub use interner::{AvmAtom, AvmStringInterner};
 
 pub trait SwfStrExt {
     /// Converts a SWF-encoded string into a `WStr`.

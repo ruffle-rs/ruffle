@@ -10,7 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 use std::mem::size_of;
@@ -59,6 +59,12 @@ const _: () = assert!(size_of::<Value<'_>>() == 24);
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
+    }
+}
+
+impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    fn from(atom: AvmAtom<'gc>) -> Self {
+        Value::String(atom.into())
     }
 }
 
