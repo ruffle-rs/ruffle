@@ -150,8 +150,11 @@ pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> core::cmp::Ordering {
 }
 
 pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
+    state.write_u32(s.len() as u32);
     match s.units() {
-        Units::Bytes(us) => state.write(us),
+        // Using `state.write_bytes(us)` would be incorrect here, as `Hash`
+        // doesn't guarantee any equivalence between its various methods.
+        Units::Bytes(us) => us.iter().for_each(|u| state.write_u8(*u)),
         Units::Wide(us) => us.iter().for_each(|u| {
             if *u <= 0xFF {
                 state.write_u8(*u as u8)
@@ -160,7 +163,6 @@ pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
             }
         }),
     }
-    state.write_u8(0xff);
 }
 
 pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
