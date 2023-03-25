@@ -78,6 +78,7 @@ jobs:
 
       - name: Build
         env:
+          RUSTFLAGS: -D warnings
           # Verify that all features build.
           CARGO_FLAGS: --locked --all-features
         working-directory: web

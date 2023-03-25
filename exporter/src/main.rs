@@ -143,8 +143,7 @@ fn take_screenshot(
                     .renderer_mut()
                     .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                     .unwrap();
-                // Use straight alpha
-                renderer.capture_frame(false)
+                renderer.capture_frame()
             }) {
                 Ok(Some(image)) => result.push(image),
                 Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),

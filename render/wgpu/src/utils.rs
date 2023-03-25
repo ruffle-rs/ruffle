@@ -1,5 +1,4 @@
 use ruffle_render::quality::StageQuality;
-use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::borrow::Cow;
 use std::mem::size_of;
 use std::num::NonZeroU32;
@@ -143,13 +142,13 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     result
 }
 
+#[cfg(not(target_family = "wasm"))]
 pub fn buffer_to_image(
     device: &wgpu::Device,
     buffer: &wgpu::Buffer,
     dimensions: &BufferDimensions,
     index: Option<wgpu::SubmissionIndex>,
     size: wgpu::Extent3d,
-    premultiplied_alpha: bool,
 ) -> image::RgbaImage {
     capture_image(device, buffer, dimensions, index, |rgba, _buffer_width| {
         let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
@@ -160,9 +159,7 @@ pub fn buffer_to_image(
 
         // The image copied from the GPU uses premultiplied alpha, so
         // convert to straight alpha if requested by the user.
-        if !premultiplied_alpha {
-            unmultiply_alpha_rgba(&mut bytes);
-        }
+        ruffle_render::utils::unmultiply_alpha_rgba(&mut bytes);
 
         image::RgbaImage::from_raw(size.width, size.height, bytes)
             .expect("Retrieved texture buffer must be a valid RgbaImage")

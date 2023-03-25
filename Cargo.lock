@@ -3361,11 +3361,9 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "ruffle_wstr",
- "rustversion",
  "serde",
  "serde_json",
  "smallvec",
- "static_assertions",
  "swf",
  "symphonia",
  "thiserror",
@@ -3600,9 +3598,6 @@ dependencies = [
 [[package]]
 name = "ruffle_wstr"
 version = "0.1.0"
-dependencies = [
- "static_assertions",
-]
 
 [[package]]
 name = "rustc-demangle"

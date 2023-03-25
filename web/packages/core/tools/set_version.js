@@ -25,7 +25,7 @@ let version_seal = {};
 
 if (process.env.ENABLE_VERSION_SEAL === "true") {
     if (fs.existsSync("version_seal.json")) {
-        //Using the version seal stored previously.
+        // Using the version seal stored previously.
         version_seal = JSON.parse(fs.readFileSync("version_seal.json"));
 
         version_number = version_seal.version_number;

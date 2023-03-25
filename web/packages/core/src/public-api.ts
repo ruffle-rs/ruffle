@@ -64,7 +64,7 @@ export class PublicAPI {
 
         if (prev !== undefined && prev !== null) {
             if (prev instanceof PublicAPI) {
-                /// We're upgrading from a previous API to a new one.
+                // We're upgrading from a previous API to a new one.
                 this.sources = prev.sources;
                 this.config = prev.config;
                 this.invoked = prev.invoked;
@@ -76,10 +76,10 @@ export class PublicAPI {
                 prev.constructor === Object &&
                 prev["config"] instanceof Object
             ) {
-                /// We're the first, install user configuration
+                // We're the first, install user configuration.
                 this.config = prev["config"];
             } else {
-                /// We're the first, but conflicting with someone else.
+                // We're the first, but conflicting with someone else.
                 this.conflict = prev;
             }
         }
