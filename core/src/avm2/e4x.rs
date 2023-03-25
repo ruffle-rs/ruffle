@@ -79,6 +79,20 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
+        E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: Some(parent),
+                local_name: Some(name),
+                kind: E4XNodeKind::Element {
+                    attributes: vec![],
+                    children: vec![],
+                },
+            },
+        ))
+    }
+
     pub fn attribute(
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
@@ -92,6 +106,17 @@ impl<'gc> E4XNode<'gc> {
                 kind: E4XNodeKind::Attribute(value),
             },
         ))
+    }
+
+    pub fn remove_all_children(&self, gc_context: MutationContext<'gc, '_>) {
+        let mut this = self.0.write(gc_context);
+        if let E4XNodeKind::Element { children, .. } = &mut this.kind {
+            for child in children.iter_mut() {
+                let mut child_data = child.0.write(gc_context);
+                child_data.parent = None;
+            }
+            children.clear()
+        }
     }
 
     pub fn append_child(
