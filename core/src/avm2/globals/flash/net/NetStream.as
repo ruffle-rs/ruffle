@@ -14,8 +14,8 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class NetStream extends EventDispatcher {
-        public static const CONNECT_TO_FMS = "connectToFMS";
-        public static const DIRECT_CONNECTIONS = "directConnections";
+        public static const CONNECT_TO_FMS: String = "connectToFMS";
+        public static const DIRECT_CONNECTIONS: String = "directConnections";
 
         public function NetStream(connection:NetConnection, peer:String = CONNECT_TO_FMS) {
 
