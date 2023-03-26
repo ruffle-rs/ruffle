@@ -223,9 +223,29 @@ pub fn close<'gc>(
 
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.net.SharedObject", "clear");
+    if let Some(mut this) = this {
+        // Create a fresh data object.
+        let data = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])?
+            .into();
+        this.set_public_property("data", data, activation)?;
+
+        // Delete data from storage backend.
+        let ruffle_name = Multiname::new(
+            Namespace::package("__ruffle__", activation.context.gc_context),
+            "_ruffleName",
+        );
+        let name = this
+            .get_property(&ruffle_name, activation)?
+            .coerce_to_string(activation)?;
+        let name = name.to_utf8_lossy();
+        activation.context.storage.remove_key(&name);
+    }
     Ok(Value::Undefined)
 }
