@@ -3,7 +3,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::SystemProperties;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
+use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
