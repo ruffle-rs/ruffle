@@ -247,7 +247,7 @@ pub fn object_to_matrix<'gc>(
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
-pub fn get_pixel_bounds<'gc>(
+fn get_pixel_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
