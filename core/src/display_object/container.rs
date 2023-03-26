@@ -637,17 +637,23 @@ impl<'gc> ChildContainer<'gc> {
     ) -> Option<DisplayObject<'gc>> {
         let prev_child = self.insert_child_into_depth_list(depth, child);
         if let Some(prev_child) = prev_child {
-            let position = self
+            if let Some(position) = self
                 .render_list
                 .iter()
                 .position(|x| DisplayObject::ptr_eq(*x, prev_child))
-                .unwrap();
-
-            if !prev_child.placed_by_script() {
-                self.replace_id(position, child);
-                Some(prev_child)
+            {
+                if !prev_child.placed_by_script() {
+                    self.replace_id(position, child);
+                    Some(prev_child)
+                } else {
+                    self.insert_id(position + 1, child);
+                    None
+                }
             } else {
-                self.insert_id(position + 1, child);
+                tracing::error!(
+                    "ChildContainer::replace_at_depth: Previous child is not in render list"
+                );
+                self.push_id(child);
                 None
             }
         } else {
