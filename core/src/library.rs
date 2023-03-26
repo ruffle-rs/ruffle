@@ -90,6 +90,21 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
+        if let Some(old) = self.class_map.get(&class_object) {
+            // We should never have multiple symbols in the same movie pointing the same class
+            if Arc::ptr_eq(&movie, &old.0) {
+                panic!(
+                    "Tried to overwrite class {:?} with symbol from same movie",
+                    class_object
+                );
+            }
+            // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
+            // then just ignore it. This handles the case where a Loader has a class that shadows
+            // a class in the main swf (possibly with a different ApplicationDomain). This will
+            // result in the original class from the parent being used, even when the child swf
+            // instantiates the clip on the timeline.
+            return;
+        }
         self.class_map
             .insert(class_object, MovieSymbol(movie, symbol));
     }
