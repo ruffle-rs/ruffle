@@ -34,7 +34,7 @@
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"dist/${OUT_NAME}_bg.wasm\" -O -g \"dist/${OUT_NAME}_bg.wasm\" $WASM_OPT_FLAGS || npm run build:wasm-opt-failed",
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
 
-        "build": "tsc --build",
+        "build": "tsc --build --force",
         "postbuild": "node tools/set_version.js",
 
         "docs": "typedoc",
