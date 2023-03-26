@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, EventObject as Avm2EventObject, Object as Avm2Object,
+    Domain as Avm2Domain, Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -1495,7 +1495,7 @@ impl Player {
             } else {
                 Avm1::run_frame(context);
             }
-            context.update_sounds();
+            AudioManager::update_sounds(context);
         });
 
         self.needs_render = true;
@@ -1695,13 +1695,6 @@ impl Player {
                     if let Err(e) =
                         Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
                     {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
-                }
-
-                ActionType::Event2 { event_type, target } => {
-                    let event = Avm2EventObject::bare_default_event(context, event_type);
-                    if let Err(e) = Avm2::dispatch_event(context, event, target) {
                         tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
                     }
                 }
