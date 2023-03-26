@@ -264,6 +264,7 @@ include "flash/printing/PrintJobOrientation.as"
 include "flash/profiler.as"
 
 include "flash/security/CertificateStatus.as"
+include "flash/system/ApplicationDomain.as"
 include "flash/system/Capabilities.as"
 include "flash/system/IME.as"
 include "flash/system/IMEConversionMode.as"

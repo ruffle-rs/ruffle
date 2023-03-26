@@ -479,13 +479,6 @@ pub enum ActionType<'gc> {
         method: &'static str,
         args: Vec<Avm1Value<'gc>>,
     },
-
-    /// An AVM2 callable, e.g. a frame script or event handler.
-    Callable2 {
-        callable: Avm2Object<'gc>,
-        reciever: Option<Avm2Object<'gc>>,
-        args: Vec<Avm2Value<'gc>>,
-    },
 }
 
 impl ActionType<'_> {
@@ -531,16 +524,6 @@ impl fmt::Debug for ActionType<'_> {
                 .debug_struct("ActionType::NotifyListeners")
                 .field("listener", listener)
                 .field("method", method)
-                .field("args", args)
-                .finish(),
-            ActionType::Callable2 {
-                callable,
-                reciever,
-                args,
-            } => f
-                .debug_struct("ActionType::Callable2")
-                .field("callable", callable)
-                .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
         }

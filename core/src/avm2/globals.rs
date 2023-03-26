@@ -526,14 +526,6 @@ pub fn load_player_globals<'gc>(
 
     avm2_system_class!(date, activation, date::create_class(activation), script);
 
-    // package `flash.system`
-    avm2_system_class!(
-        application_domain,
-        activation,
-        flash::system::application_domain::create_class(activation),
-        script
-    );
-
     // package `flash.text`
     class(
         flash::text::font::create_class(activation),
@@ -687,6 +679,7 @@ fn load_playerglobal<'gc>(
             ("flash.media", "SoundTransform", soundtransform),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
+            ("flash.system", "ApplicationDomain", application_domain),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),

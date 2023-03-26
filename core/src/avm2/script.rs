@@ -203,7 +203,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let mut activation = Activation::from_nothing(uc.reborrow());
+        let mut activation = Activation::from_domain(uc.reborrow(), domain);
         let global_class = activation.avm2().classes().global;
         let global_obj = global_class.construct(&mut activation, &[])?;
         global_obj.fork_vtable(activation.context.gc_context);

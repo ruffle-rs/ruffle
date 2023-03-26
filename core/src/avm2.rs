@@ -180,7 +180,7 @@ impl<'gc> Avm2<'gc> {
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.globals;
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_domain(context.reborrow(), globals);
         globals::load_player_globals(&mut activation, globals)
     }
 
@@ -400,9 +400,10 @@ impl<'gc> Avm2<'gc> {
         callable: Object<'gc>,
         reciever: Option<Object<'gc>>,
         args: &[Value<'gc>],
+        domain: Domain<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), String> {
-        let mut evt_activation = Activation::from_nothing(context.reborrow());
+        let mut evt_activation = Activation::from_domain(context.reborrow(), domain);
         callable
             .call(reciever, args, &mut evt_activation)
             .map_err(|e| e.detailed_message(&mut evt_activation))?;

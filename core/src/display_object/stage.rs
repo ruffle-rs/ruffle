@@ -745,7 +745,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let global_domain = context.avm2.global_domain();
+        let mut activation = Avm2Activation::from_domain(context.reborrow(), global_domain);
         let avm2_stage = Avm2StageObject::for_display_object_childless(
             &mut activation,
             (*self).into(),

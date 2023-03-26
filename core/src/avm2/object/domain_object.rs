@@ -11,7 +11,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates AppDomain objects.
-pub fn appdomain_allocator<'gc>(
+pub fn application_domain_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
@@ -65,8 +65,12 @@ impl<'gc> DomainObject<'gc> {
         .into();
         this.install_instance_slots(activation);
 
-        class.call_init(Some(this), &[], activation)?;
-
+        // Note - we do *not* call the normal constructor, since that
+        // creates a new domain using the system domain as a parent.
+        class
+            .superclass_object()
+            .unwrap()
+            .call_native_init(Some(this), &[], activation)?;
         Ok(this)
     }
 }
@@ -86,6 +90,10 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
 
     fn as_application_domain(&self) -> Option<Domain<'gc>> {
         Some(self.0.read().domain)
+    }
+
+    fn init_application_domain(&self, mc: MutationContext<'gc, '_>, domain: Domain<'gc>) {
+        self.0.write(mc).domain = domain;
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error<'gc>> {
