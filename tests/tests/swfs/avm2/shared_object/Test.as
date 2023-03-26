@@ -82,6 +82,22 @@
 				trace()
 				trace("otherObj dump:")
 				dump(otherObj.data.props)
+				
+				// Test SharedObject.clear()
+				trace();
+				var previousData = obj.data;
+				trace("obj.clear()");
+				obj.clear();
+				trace("obj == previousData: " + (obj.data == previousData));
+				
+				trace();
+				trace("obj dump:");
+				dump(obj.data);
+				
+				trace();
+				trace("obj dump again:");
+				obj = SharedObject.getLocal("RuffleTest", "/");
+				dump(obj.data);
 			}
 		}
 	}	
