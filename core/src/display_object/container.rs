@@ -650,7 +650,9 @@ impl<'gc> ChildContainer<'gc> {
                     None
                 }
             } else {
-                tracing::error!("ChildContainer::replace_at_depth: Previous child is not in render list");
+                tracing::error!(
+                    "ChildContainer::replace_at_depth: Previous child is not in render list"
+                );
                 self.push_id(child);
                 None
             }
