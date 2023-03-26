@@ -69,6 +69,8 @@ pub struct CurrentPipeline {
     color_component: wgpu::BlendComponent,
     alpha_component: wgpu::BlendComponent,
 
+    sample_count: u32,
+
     dirty: Cell<bool>,
 }
 
@@ -112,6 +114,7 @@ impl CurrentPipeline {
             pass_compare_mode: wgpu::CompareFunction::LessEqual,
             color_component: wgpu::BlendComponent::REPLACE,
             alpha_component: wgpu::BlendComponent::REPLACE,
+            sample_count: 1,
         }
     }
     pub fn set_vertex_shader(&mut self, shader: Rc<ShaderModuleAgal>) {
@@ -171,6 +174,13 @@ impl CurrentPipeline {
         if self.has_depth_texture != has_depth_texture {
             self.dirty.set(true);
             self.has_depth_texture = has_depth_texture;
+        }
+    }
+
+    pub fn update_sample_count(&mut self, sample_count: u32) {
+        if self.sample_count != sample_count {
+            self.dirty.set(true);
+            self.sample_count = sample_count;
         }
     }
 
@@ -520,7 +530,11 @@ impl CurrentPipeline {
                     ..Default::default()
                 },
                 depth_stencil,
-                multisample: Default::default(),
+                multisample: wgpu::MultisampleState {
+                    count: self.sample_count,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
                 multiview: Default::default(),
             });
         Some((compiled, bind_group))
