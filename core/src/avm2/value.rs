@@ -1046,7 +1046,7 @@ impl<'gc> Value<'gc> {
 
         Err(Error::AvmError(type_error(
             activation,
-            &format!("Type Coercion failed: cannot convert {self:?} to {name}."),
+            &format!("Error #1034: Type Coercion failed: cannot convert {self:?} to {name}."),
             1034,
         )?))
     }
