@@ -108,7 +108,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
         let read = self.0.read();
 
-        if name.contains_public_namespace() {
+        if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 // The only supported numerical index is 0
                 if let Ok(index) = local_name.parse::<usize>() {
@@ -195,7 +195,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // FIXME - see if we can deduplicate this with get_property_local in
         // an efficient way
-        if name.contains_public_namespace() {
+        if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 // The only supported numerical index is 0
                 if let Ok(index) = local_name.parse::<usize>() {
@@ -226,8 +226,12 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if !name.contains_public_namespace() {
-            return Err("Can not set non-public name yet".into());
+        if name.has_explicit_namespace() {
+            return Err(format!(
+                "Can not set property {:?} with an explicit namespace yet",
+                name
+            )
+            .into());
         }
 
         let mc = activation.context.gc_context;

@@ -184,7 +184,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         // FIXME - implement everything from E4X spec (XMLListObject::getMultinameProperty in avmplus)
         let mut write = self.0.write(activation.context.gc_context);
 
-        if name.contains_public_namespace() {
+        if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
                     if let Some(child) = write.children.get_mut(index) {
