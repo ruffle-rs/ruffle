@@ -1129,9 +1129,10 @@ pub fn palette_map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
         bitmap_data.read().check_valid(activation)?;
-        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
-        .as_bitmap_data()
-        .unwrap();
+        let source_bitmap = args
+            .get_object(activation, 0, "sourceBitmapData")?
+            .as_bitmap_data()
+            .unwrap();
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
