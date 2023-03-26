@@ -247,7 +247,7 @@ pub fn object_to_matrix<'gc>(
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
-fn get_pixel_bounds<'gc>(
+pub fn get_pixel_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -257,7 +257,7 @@ fn get_pixel_bounds<'gc>(
     rectangle_to_object(display_object.world_bounds(), activation)
 }
 
-pub fn rectangle_to_object<'gc>(
+fn rectangle_to_object<'gc>(
     rectangle: Rectangle<Twips>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
