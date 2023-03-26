@@ -324,6 +324,13 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    pub fn has_explicit_namespace(&self) -> bool {
+        match self.ns {
+            NamespaceSet::Single(ns) => ns.is_namespace() && !ns.is_public(),
+            NamespaceSet::Multiple(_) => false,
+        }
+    }
+
     /// Indicates if this multiname matches any type.
     pub fn is_any_name(&self) -> bool {
         self.name.is_none()
