@@ -72,7 +72,7 @@
             //trace( "3D driver: " + renderContext.driverInfo );
 
             //renderContext.enableErrorChecking = true; //Can slow rendering - only turn on when developing/testing
-            renderContext.configureBackBuffer( viewWidth, viewHeight, 2, false );
+            renderContext.configureBackBuffer( viewWidth, viewHeight, 4, false );
             
             //Create vertex index list for the triangles
             var triangles:Vector.<uint> = Vector.<uint>( [ 0, 1, 2, 0, 3, 4 ] );
