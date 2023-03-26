@@ -91,11 +91,15 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         symbol: CharacterId,
     ) {
         if let Some(old) = self.class_map.get(&class_object) {
-            // We should never have multiple symbols in the same movie pointing the same class
-            if Arc::ptr_eq(&movie, &old.0) {
+            // We should never have multiple distinct symbols in the same movie linked
+            // with the same class.
+            // However, flash player *does* allow duplicate SymbolClass entires in the same
+            // movie - the same (symbol, class) pair can show up across multiple SymbolClass
+            // tags.
+            if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 panic!(
-                    "Tried to overwrite class {:?} with symbol from same movie",
-                    class_object
+                    "Tried to overwrite class {:?} id={:?} with symbol id={:?} from same movie",
+                    class_object, old.1, symbol,
                 );
             }
             // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
