@@ -191,17 +191,6 @@ pub struct UpdateContext<'a, 'gc> {
 
 /// Convenience methods for controlling audio.
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
-    pub fn update_sounds(&mut self) {
-        if let Some(root_clip) = self.stage.root_clip() {
-            self.audio_manager.update_sounds(
-                self.audio,
-                self.gc_context,
-                self.action_queue,
-                root_clip,
-            );
-        }
-    }
-
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }
@@ -497,13 +486,6 @@ pub enum ActionType<'gc> {
         reciever: Option<Avm2Object<'gc>>,
         args: Vec<Avm2Value<'gc>>,
     },
-
-    /// An AVM2 event to be dispatched. This translates to an Event class instance.
-    /// Creating an Event subclass via this dispatch is TODO.
-    Event2 {
-        event_type: &'static str,
-        target: Avm2Object<'gc>,
-    },
 }
 
 impl ActionType<'_> {
@@ -560,11 +542,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("callable", callable)
                 .field("reciever", reciever)
                 .field("args", args)
-                .finish(),
-            ActionType::Event2 { event_type, target } => f
-                .debug_struct("ActionType::Event2")
-                .field("event_type", event_type)
-                .field("target", target)
                 .finish(),
         }
     }
