@@ -1131,9 +1131,7 @@ pub fn palette_map<'gc>(
         bitmap_data.read().check_valid(activation)?;
         let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
         .as_bitmap_data()
-        .ok_or_else(|| {
-            Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
-        })?;
+        .unwrap();
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
