@@ -678,7 +678,12 @@ impl<'gc> Loader<'gc> {
                 .set_skip_next_enter_frame(true);
 
             if let Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)) = event_handler {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let domain = context
+                    .library
+                    .library_for_movie(mc.movie())
+                    .unwrap()
+                    .avm2_domain();
+                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
                 let mut loader = loader_info
                     .get_public_property("loader", &mut activation)
                     .map_err(|e| Error::Avm2Error(e.to_string()))?

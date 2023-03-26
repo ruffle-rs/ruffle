@@ -70,7 +70,7 @@ pub use crate::avm2::object::context3d_object::Context3DObject;
 pub use crate::avm2::object::date_object::{date_allocator, DateObject};
 pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::domain_object::{application_domain_allocator, DomainObject};
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
@@ -1153,6 +1153,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// If not, then this function does nothing.
     fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
+    }
+
+    fn init_application_domain(&self, _mc: MutationContext<'gc, '_>, _domain: Domain<'gc>) {
+        panic!("Tried to init an application domain on a non-ApplicationDomain object!")
     }
 
     /// Unwrap this object as an ApplicationDomain.

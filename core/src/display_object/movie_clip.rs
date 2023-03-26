@@ -2490,10 +2490,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
 
                             drop(write);
+
+                            let movie = self.movie();
+                            let domain = context
+                                .library
+                                .library_for_movie(movie)
+                                .unwrap()
+                                .avm2_domain();
+
                             if let Err(e) = Avm2::run_stack_frame_for_callable(
                                 callable,
                                 Some(avm2_object),
                                 &[],
+                                domain,
                                 context,
                             ) {
                                 tracing::error!(

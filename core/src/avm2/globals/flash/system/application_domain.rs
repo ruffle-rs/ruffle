@@ -1,40 +1,40 @@
 //! `flash.system.ApplicationDomain` class
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{appdomain_allocator, DomainObject, Object, TObject};
+use crate::avm2::object::{DomainObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
-use gc_arena::GcCell;
+use crate::avm2::{Domain, Error};
 
-/// Implements `flash.system.ApplicationDomain`'s instance constructor.
-pub fn instance_init<'gc>(
+pub use crate::avm2::object::application_domain_allocator;
+
+/// Implements `flash.system.ApplicationDomain`'s init method, which
+/// is called from the constructor
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         activation.super_init(this, &[])?;
+
+        let parent_domain = if matches!(args[0], Value::Null) {
+            activation.avm2().global_domain()
+        } else {
+            args.get_object(activation, 0, "parentDomain")?
+                .as_application_domain()
+                .expect("Invalid parent domain")
+        };
+        let fresh_domain = Domain::movie_domain(activation, parent_domain);
+        this.init_application_domain(activation.context.gc_context, fresh_domain);
     }
 
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.system.ApplicationDomain`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
 /// `currentDomain` static property.
-pub fn current_domain<'gc>(
+pub fn get_current_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -45,7 +45,7 @@ pub fn current_domain<'gc>(
 }
 
 /// `parentDomain` property
-pub fn parent_domain<'gc>(
+pub fn get_parent_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -120,7 +120,7 @@ pub fn set_domain_memory<'gc>(
 }
 
 /// `domainMemory` property getter
-pub fn domain_memory<'gc>(
+pub fn get_domain_memory<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -131,57 +131,4 @@ pub fn domain_memory<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `ApplicationDomain`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(Namespace::package("flash.system", mc), "ApplicationDomain"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin(
-            instance_init,
-            "<ApplicationDomain instance initializer>",
-            mc,
-        ),
-        Method::from_builtin(class_init, "<ApplicationDomain class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-    write.set_instance_allocator(appdomain_allocator);
-
-    const PUBLIC_CLASS_PROPERTIES: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] =
-        &[("currentDomain", Some(current_domain), None)];
-    write.define_builtin_class_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_CLASS_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("domainMemory", Some(domain_memory), Some(set_domain_memory)),
-        ("parentDomain", Some(parent_domain), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("getDefinition", get_definition),
-        ("hasDefinition", has_definition),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
-    class
 }

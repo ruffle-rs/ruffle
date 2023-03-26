@@ -279,7 +279,12 @@ impl<'gc> Callback<'gc> {
                 Value::Null
             }
             Callback::Avm2 { method } => {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let domain = context
+                    .library
+                    .library_for_movie(context.swf.clone())
+                    .unwrap()
+                    .avm2_domain();
+                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))

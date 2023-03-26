@@ -358,9 +358,13 @@ impl Player {
                 .stage
                 .set_movie(context.gc_context, context.swf.clone());
 
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let global_domain = activation.avm2().global_domain();
-            let domain = Avm2Domain::movie_domain(&mut activation, global_domain);
+            let global_domain = context.avm2.global_domain();
+            let mut global_activation =
+                Avm2Activation::from_domain(context.reborrow(), global_domain);
+            let domain = Avm2Domain::movie_domain(&mut global_activation, global_domain);
+
+            let mut activation =
+                Avm2Activation::from_domain(global_activation.context.reborrow(), domain);
 
             activation
                 .context
@@ -1685,18 +1689,6 @@ impl Player {
                         method.into(),
                         &args,
                     );
-                }
-
-                ActionType::Callable2 {
-                    callable,
-                    reciever,
-                    args,
-                } => {
-                    if let Err(e) =
-                        Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
-                    {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
                 }
             }
 
