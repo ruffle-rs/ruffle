@@ -93,18 +93,23 @@ struct TextureTransforms {
 pub struct ColorAdjustments {
     mult_color: [f32; 4],
     add_color: [f32; 4],
+    // This is part of ColorAdjustments for convenience, but it's
+    // only used in `bitmap.wgsl`
+    discard_transparent: i32,
 }
 
 pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
     mult_color: [1.0, 1.0, 1.0, 1.0],
     add_color: [0.0, 0.0, 0.0, 0.0],
+    discard_transparent: 0,
 };
 
-impl From<&swf::ColorTransform> for ColorAdjustments {
-    fn from(transform: &swf::ColorTransform) -> Self {
+impl ColorAdjustments {
+    pub fn new(transform: &swf::ColorTransform, discard_transparent: bool) -> Self {
         Self {
             mult_color: transform.mult_rgba_normalized(),
             add_color: transform.add_rgba_normalized(),
+            discard_transparent: discard_transparent as i32,
         }
     }
 }

@@ -762,6 +762,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 is_offscreen: true,
                 use_bitmap_cache: true,
                 stage: context.stage,
+                stub_tracker: context.stub_tracker,
             };
             render_base_inner(this, &mut offscreen_context);
             let mut filters = this.filters();
@@ -788,6 +789,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 color_transform: base_transform.color_transform,
             },
             true,
+            false,
         );
     } else {
         if let Some(background) = this.opaque_background() {

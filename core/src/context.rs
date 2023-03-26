@@ -497,6 +497,9 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
+
+    /// A collection of stubs encountered during this movie.
+    pub stub_tracker: &'a mut StubCollection,
 }
 
 /// The type of action being run.

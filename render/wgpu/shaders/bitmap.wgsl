@@ -50,5 +50,8 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
             color = saturate(color);
         #endif
     }
+    if (colorTransforms.discard_transparent == 1 && color.a == 0.0) {
+        discard;
+    }
     return color;
 }

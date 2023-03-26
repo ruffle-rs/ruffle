@@ -124,6 +124,7 @@ pub enum PendingDrawType {
         is_repeating: bool,
         is_smoothed: bool,
         bind_group_label: Option<String>,
+        discard_transparent: bool,
     },
 }
 
@@ -263,6 +264,8 @@ impl PendingDrawType {
             is_repeating: bitmap.is_repeating,
             is_smoothed: bitmap.is_smoothed,
             bind_group_label,
+            // This bitmap does not have a mask, so we keep transparent pixels
+            discard_transparent: false,
         })
     }
 
@@ -321,6 +324,7 @@ impl PendingDrawType {
                 is_repeating,
                 is_smoothed,
                 bind_group_label,
+                discard_transparent,
             } => {
                 let binds = BitmapBinds::new(
                     &descriptors.device,
@@ -334,7 +338,10 @@ impl PendingDrawType {
                     bind_group_label,
                 );
 
-                DrawType::Bitmap { binds }
+                DrawType::Bitmap {
+                    binds,
+                    discard_transparent,
+                }
             }
         }
     }
@@ -344,8 +351,13 @@ impl PendingDrawType {
 #[derive(Debug)]
 pub enum DrawType {
     Color,
-    Gradient { bind_group: wgpu::BindGroup },
-    Bitmap { binds: BitmapBinds },
+    Gradient {
+        bind_group: wgpu::BindGroup,
+    },
+    Bitmap {
+        binds: BitmapBinds,
+        discard_transparent: bool,
+    },
 }
 
 #[derive(Debug)]

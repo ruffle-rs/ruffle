@@ -5,7 +5,13 @@ use crate::transform::Transform;
 use swf::{BlendMode, Color};
 
 pub trait CommandHandler {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool);
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        discard_transparent: bool,
+    );
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
@@ -39,7 +45,8 @@ impl CommandList {
                     bitmap,
                     transform,
                     smoothing,
-                } => handler.render_bitmap(bitmap, transform, smoothing),
+                    discard_transparent,
+                } => handler.render_bitmap(bitmap, transform, smoothing, discard_transparent),
                 Command::RenderShape { shape, transform } => handler.render_shape(shape, transform),
                 Command::RenderStage3D { bitmap, transform } => {
                     handler.render_stage3d(bitmap, transform)
@@ -57,12 +64,19 @@ impl CommandList {
 
 impl CommandHandler for CommandList {
     #[inline]
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        discard_transparent: bool,
+    ) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::RenderBitmap {
                 bitmap,
                 transform,
                 smoothing,
+                discard_transparent,
             });
         }
     }
@@ -136,6 +150,7 @@ pub enum Command {
         bitmap: BitmapHandle,
         transform: Transform,
         smoothing: bool,
+        discard_transparent: bool,
     },
     RenderStage3D {
         bitmap: BitmapHandle,

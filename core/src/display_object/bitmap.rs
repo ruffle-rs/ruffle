@@ -1,6 +1,5 @@
 //! Bitmap display object
 
-use crate::avm1;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject, TObject,
@@ -12,6 +11,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
+use crate::{avm1, avm2_render_stub};
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapFormat;
@@ -331,10 +331,30 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             return;
         }
 
+        let mut discard_transparent = false;
+        if let Some(maskee) = self.maskee() {
+            // When both the bitmap mask and the maskee have cacheAsBitmap=true, we discard
+            // transparent pixels from the mask. This has the effect of only showing
+            // pixels from the DisplayObject where the BitmapData mask is non-transparent
+            discard_transparent = maskee.is_bitmap_cached() && self.is_bitmap_cached();
+        }
+
         let bitmap_data = self.0.read();
+
+        if discard_transparent && bitmap_data.bitmap_data.transparency() {
+            // If the BitmapData has any opaque pixels when used as a mask with cacheAsBitmap=true
+            // on both the masker and maskee, we currently render it incorrectly.
+            avm2_render_stub!(
+                context,
+                "flash.display.Bitmap",
+                "<render>",
+                "mask with transparency"
+            );
+        }
+
         bitmap_data
             .bitmap_data
-            .render(bitmap_data.smoothing, context);
+            .render(bitmap_data.smoothing, discard_transparent, context);
     }
 
     fn object2(&self) -> Avm2Value<'gc> {

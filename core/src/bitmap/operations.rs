@@ -1465,6 +1465,7 @@ pub fn draw<'gc>(
         is_offscreen: true,
         use_bitmap_cache: false,
         stage: context.stage,
+        stub_tracker: context.stub_tracker,
     };
 
     // Make the screen opacity match the opacity of this bitmap
@@ -1493,7 +1494,7 @@ pub fn draw<'gc>(
 
     match &mut source {
         IBitmapDrawable::BitmapData(data) => {
-            data.render(smoothing, &mut render_context);
+            data.render(smoothing, false, &mut render_context);
         }
         IBitmapDrawable::DisplayObject(object) => {
             // Note that we do *not* use `render_base`,

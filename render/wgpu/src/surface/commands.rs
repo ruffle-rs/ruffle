@@ -80,7 +80,15 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 smoothing,
                 blend_mode,
                 render_stage3d,
-            } => self.render_bitmap(bitmap, transform, *smoothing, *blend_mode, *render_stage3d),
+                discard_transparent,
+            } => self.render_bitmap(
+                bitmap,
+                transform,
+                *smoothing,
+                *blend_mode,
+                *render_stage3d,
+                *discard_transparent,
+            ),
             DrawCommand::RenderTexture {
                 _texture,
                 binds,
@@ -174,7 +182,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 
-    pub fn apply_transform(&mut self, matrix: &Matrix, color_adjustments: &ColorTransform) {
+    pub fn apply_transform(
+        &mut self,
+        matrix: &Matrix,
+        color_adjustments: &ColorTransform,
+        discard_transparent: bool,
+    ) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -193,7 +206,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 0,
                 bytemuck::cast_slice(&[PushConstants {
                     transforms: Transforms { world_matrix },
-                    colors: color_adjustments.into(),
+                    colors: ColorAdjustments::new(color_adjustments, discard_transparent),
                 }]),
             );
         } else {
@@ -219,7 +232,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     self.uniform_encoder,
                     &mut self.render_pass,
                     2,
-                    &color_adjustments.into(),
+                    &ColorAdjustments::new(color_adjustments, discard_transparent),
                 );
             }
         }
@@ -232,6 +245,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        discard_transparent: bool,
     ) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass
@@ -256,6 +270,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     texture.texture.height() as f32,
                 )),
             &transform.color_transform,
+            discard_transparent,
         );
 
         self.draw(
@@ -278,7 +293,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.render_pass.push_debug_group("render_texture");
         }
         self.prep_bitmap(bind_group, blend_mode, false);
-        self.apply_transform(&transform.matrix, &transform.color_transform);
+        self.apply_transform(&transform.matrix, &transform.color_transform, false);
 
         self.draw(
             self.descriptors.quad.vertices_pos.slice(..),
@@ -309,18 +324,30 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 continue;
             }
 
-            match &draw.draw_type {
+            let discard_transparent = match &draw.draw_type {
                 DrawType::Color => {
                     self.prep_color();
+                    false
                 }
                 DrawType::Gradient { bind_group, .. } => {
                     self.prep_gradient(bind_group);
+                    false
                 }
-                DrawType::Bitmap { binds, .. } => {
+                DrawType::Bitmap {
+                    binds,
+                    discard_transparent,
+                    ..
+                } => {
                     self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
+                    *discard_transparent
                 }
-            }
-            self.apply_transform(&transform.matrix, &transform.color_transform);
+            };
+
+            self.apply_transform(
+                &transform.matrix,
+                &transform.color_transform,
+                discard_transparent,
+            );
 
             self.draw(
                 mesh.vertex_buffer.slice(draw.vertices.clone()),
@@ -340,7 +367,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         self.prep_color();
 
         if color == &Color::WHITE {
-            self.apply_transform(matrix, &ColorTransform::IDENTITY);
+            self.apply_transform(matrix, &ColorTransform::IDENTITY, false);
         } else {
             self.apply_transform(
                 matrix,
@@ -351,6 +378,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
                     ..Default::default()
                 },
+                false,
             );
         }
 
@@ -418,6 +446,7 @@ pub enum DrawCommand {
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        discard_transparent: bool,
     },
     RenderTexture {
         _texture: PoolOrArcTexture,
@@ -558,12 +587,14 @@ pub fn chunk_blends<'a>(
                 bitmap,
                 transform,
                 smoothing,
+                discard_transparent,
             } => current.push(DrawCommand::RenderBitmap {
                 bitmap,
                 transform,
                 smoothing,
                 blend_mode: TrivialBlend::Normal,
                 render_stage3d: false,
+                discard_transparent,
             }),
             Command::RenderStage3D { bitmap, transform } => {
                 current.push(DrawCommand::RenderBitmap {
@@ -572,6 +603,7 @@ pub fn chunk_blends<'a>(
                     smoothing: false,
                     blend_mode: TrivialBlend::Normal,
                     render_stage3d: true,
+                    discard_transparent: false,
                 })
             }
             Command::RenderShape { shape, transform } => {

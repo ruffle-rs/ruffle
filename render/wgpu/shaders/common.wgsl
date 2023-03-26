@@ -22,6 +22,8 @@ struct ColorTransforms {
 
     /// The additive color transform of this object.
     add_color: vec4<f32>,
+
+    discard_transparent: i32,
 };
 
 /// Uniforms used by texture draws (bitmaps and gradients).

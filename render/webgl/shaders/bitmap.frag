@@ -11,6 +11,7 @@ uniform mat4 world_matrix;
 uniform vec4 mult_color;
 uniform vec4 add_color;
 uniform mat3 u_matrix;
+uniform int discard_transparent;
 
 uniform sampler2D u_texture;
 
@@ -27,5 +28,9 @@ void main() {
         color = vec4(color.rgb * alpha, alpha);
     }
 
-    gl_FragColor = color;
+    if (discard_transparent == 1 && color.a == 0.0) {
+        discard;
+    } else {
+        gl_FragColor = color;
+    }
 }

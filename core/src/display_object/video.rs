@@ -562,7 +562,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
             context
                 .commands
-                .render_bitmap(bitmap.handle, transform, smoothing);
+                .render_bitmap(bitmap.handle, transform, smoothing, false);
         } else if codec != Some(VideoCodec::None) {
             tracing::warn!("Video has no decoded frame to render.");
         }

@@ -1161,7 +1161,13 @@ impl RenderBackend for WebGlRenderBackend {
 }
 
 impl CommandHandler for WebGlRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        discard_transparent: bool,
+    ) {
         self.set_stencil_state();
         let entry = as_registry_data(&bitmap);
         // Adjust the quad draw to use the target bitmap.
@@ -1225,6 +1231,11 @@ impl CommandHandler for WebGlRenderBackend {
         self.gl.active_texture(Gl::TEXTURE0);
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&entry.texture));
         program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
+        program.uniform1i(
+            &self.gl,
+            ShaderUniform::DiscardTransparent,
+            discard_transparent as i32,
+        );
 
         // Set texture parameters.
         let filter = if smoothing {
@@ -1642,7 +1653,7 @@ struct ShaderProgram {
 }
 
 // These should match the uniform names in the shaders.
-const NUM_UNIFORMS: usize = 12;
+const NUM_UNIFORMS: usize = 13;
 const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "world_matrix",
     "view_matrix",
@@ -1656,6 +1667,7 @@ const UNIFORM_NAMES: [&str; NUM_UNIFORMS] = [
     "u_focal_point",
     "u_interpolation",
     "u_texture",
+    "discard_transparent",
 ];
 
 enum ShaderUniform {
@@ -1671,6 +1683,7 @@ enum ShaderUniform {
     GradientFocalPoint,
     GradientInterpolation,
     BitmapTexture,
+    DiscardTransparent,
 }
 
 impl ShaderProgram {

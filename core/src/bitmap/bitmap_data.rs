@@ -425,7 +425,12 @@ mod wrapper {
             self.0.write(mc).avm2_object = Some(object)
         }
 
-        pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
+        pub fn render(
+            &self,
+            smoothing: bool,
+            discard_transparent: bool,
+            context: &mut RenderContext<'_, 'gc>,
+        ) {
             let mut inner_bitmap_data = self.0.write(context.gc_context);
             if inner_bitmap_data.disposed() {
                 return;
@@ -438,9 +443,12 @@ mod wrapper {
                 .bitmap_handle(context.renderer)
                 .expect("Missing bitmap handle");
 
-            context
-                .commands
-                .render_bitmap(handle, context.transform_stack.transform(), smoothing);
+            context.commands.render_bitmap(
+                handle,
+                context.transform_stack.transform(),
+                smoothing,
+                discard_transparent,
+            );
         }
 
         pub fn can_read(&self, read_area: PixelRegion) -> bool {

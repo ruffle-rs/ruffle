@@ -527,10 +527,18 @@ impl RenderBackend for WebCanvasRenderBackend {
 }
 
 impl CommandHandler for WebCanvasRenderBackend {
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        _discard_transparent: bool,
+    ) {
         if self.mask_state == MaskState::ClearMask {
             return;
         }
+
+        // Note - Canvas doesn't appear to support using a bitmap as a mask
 
         self.context.set_image_smoothing_enabled(smoothing);
 
