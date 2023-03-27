@@ -323,7 +323,6 @@ ruffleShadowTemplate.innerHTML = `
 
         #local-saves {
             border-collapse: collapse;
-            margin-left: 0 0.5em;
         }
 
         #local-saves td {
@@ -333,6 +332,7 @@ ruffleShadowTemplate.innerHTML = `
 
         #local-saves tr td:nth-child(1) {
             padding-right: 1em;
+            word-break: break-all;
         }
 
         #local-saves tr:nth-child(even) {
