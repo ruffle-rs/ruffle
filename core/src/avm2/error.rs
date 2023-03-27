@@ -210,6 +210,17 @@ pub fn eof_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
+#[inline(never)]
+#[cold]
+pub fn error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().error;
+    error_constructor(activation, class, message, code)
+}
+
 fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class: ClassObject<'gc>,
