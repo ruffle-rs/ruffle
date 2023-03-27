@@ -607,8 +607,7 @@ impl<'gc> ChildContainer<'gc> {
             return self.depth_list.remove(&depth).is_some();
         }
 
-            false
-        }
+        false
     }
 
     /// Remove a child from the render list.
