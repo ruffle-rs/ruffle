@@ -7,6 +7,7 @@ include "Object.as"
 // are listed before subclasses
 include "Array.as"
 include "Boolean.as"
+include "Class.as"
 include "Date.as"
 
 include "Function.as"

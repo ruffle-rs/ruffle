@@ -528,13 +528,6 @@ pub fn load_player_globals<'gc>(
 
     avm2_system_class!(date, activation, date::create_class(activation), script);
 
-    // package `flash.text`
-    class(
-        flash::text::font::create_class(activation),
-        script,
-        activation,
-    )?;
-
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relative late, so that it can access classes defined before
