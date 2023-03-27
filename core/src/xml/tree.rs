@@ -9,6 +9,7 @@ use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
+use regress::Regex;
 use std::fmt;
 
 pub const ELEMENT_NODE: u8 = 1;
@@ -79,17 +80,22 @@ impl<'gc> XmlNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
         bs: BytesStart<'_>,
         id_map: ScriptObject<'gc>,
+        decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
-        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name());
+        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name().into_inner());
         let mut node = Self::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
 
         // Reverse attributes so they appear in the `PropertyMap` in their definition order.
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
-            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key);
-            let value_bytes = attribute.unescaped_value()?;
-            let value = AvmString::new_utf8_bytes(activation.context.gc_context, &value_bytes);
+            let key = AvmString::new_utf8_bytes(
+                activation.context.gc_context,
+                attribute.key.into_inner(),
+            );
+            let value_str = custom_unescape(&attribute.value, decoder)?;
+            let value =
+                AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
             // Insert an attribute.
             node.attributes().define_value(
@@ -100,7 +106,7 @@ impl<'gc> XmlNode<'gc> {
             );
 
             // Update the ID map.
-            if attribute.key == b"id" {
+            if attribute.key.into_inner() == b"id" {
                 id_map.define_value(
                     activation.context.gc_context,
                     value,
@@ -452,12 +458,12 @@ impl<'gc> XmlNode<'gc> {
                 for (key, value) in self.attributes().own_properties() {
                     let value = value.coerce_to_string(activation)?;
                     let value = value.to_utf8_lossy();
-                    let value = escape(value.as_bytes());
+                    let value = escape(&value);
 
                     result.push_byte(b' ');
                     result.push_str(&key);
                     result.push_str(WStr::from_units(b"=\""));
-                    result.push_str(WStr::from_units(&*value));
+                    result.push_str(WStr::from_units(value.as_bytes()));
                     result.push_byte(b'"');
                 }
 
@@ -480,8 +486,8 @@ impl<'gc> XmlNode<'gc> {
         } else {
             let value = self.0.read().node_value.unwrap();
             let value = value.to_utf8_lossy();
-            let value = escape(value.as_bytes());
-            result.push_str(WStr::from_units(&*value));
+            let value = escape(&value);
+            result.push_str(WStr::from_units(value.as_bytes()));
         }
 
         Ok(())
@@ -515,4 +521,41 @@ impl<'gc> fmt::Debug for XmlNode<'gc> {
             .field("children", &self.0.read().children)
             .finish()
     }
+}
+
+/// Handles flash-specific XML unescaping behavior.
+/// We accept all XML entities, and also accept standalone '&' without
+/// a corresponding ';'
+pub fn custom_unescape(
+    data: &[u8],
+    decoder: quick_xml::Decoder,
+) -> Result<String, quick_xml::Error> {
+    let input = decoder.decode(data)?;
+
+    let re = Regex::new(r"&[^;]*;").unwrap();
+    let mut result = String::new();
+    let mut last_end = 0;
+
+    // Find all entities, and try to unescape them.
+    // Our regular expression will skip over '&' without a matching ';',
+    // which will preserve them as-is in the output
+    for cap in re.find_iter(&input) {
+        let start = cap.start();
+        let end = cap.end();
+        result.push_str(&input[last_end..start]);
+
+        let entity = &input[start..end];
+        // Unfortunately, we need to call this on each entity individually,
+        // since it bails out if *any* entities in the string lack a terminating ';'
+        match quick_xml::escape::unescape(entity) {
+            Ok(decoded) => result.push_str(&decoded),
+            // FIXME - check the actual error once https://github.com/tafia/quick-xml/pull/584 is merged
+            Err(_) => result.push_str(entity),
+        }
+
+        last_end = end;
+    }
+
+    result.push_str(&input[last_end..]);
+    Ok(result)
 }

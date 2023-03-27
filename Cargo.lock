@@ -3169,8 +3169,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.22.0"
-source = "git+https://github.com/ruffle-rs/quick-xml?rev=8496365ec1412eb5ba5de350937b6bce352fa0ba#8496365ec1412eb5ba5de350937b6bce352fa0ba"
+version = "0.28.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5c1a97b1bc42b1d550bfb48d4262153fe400a12bab1511821736f7eac76d7e2"
 dependencies = [
  "memchr",
 ]
