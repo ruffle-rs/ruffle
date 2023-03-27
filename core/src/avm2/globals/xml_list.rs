@@ -99,6 +99,28 @@ pub fn length<'gc>(
     Ok(children.len().into())
 }
 
+pub fn child<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0])?;
+    let children = list.children();
+    let mut sub_children = Vec::new();
+    for child in &*children {
+        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+            sub_children.extend(
+                children
+                    .iter()
+                    .filter(|node| node.matches_name(&multiname))
+                    .map(|node| E4XOrXml::E4X(*node)),
+            );
+        }
+    }
+    Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
+}
+
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
