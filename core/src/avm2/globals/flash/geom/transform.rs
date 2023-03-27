@@ -265,7 +265,7 @@ fn rectangle_to_object<'gc>(
         activation,
         &[
             rectangle.x_min.to_pixels().into(),
-            rectangle.y_max.to_pixels().into(),
+            rectangle.y_min.to_pixels().into(),
             rectangle.width().to_pixels().into(),
             rectangle.height().to_pixels().into(),
         ],
