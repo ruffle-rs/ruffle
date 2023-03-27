@@ -25,6 +25,14 @@ The [Ruffle wiki](https://github.com/ruffle-rs/ruffle/wiki) is a great way to fa
 
 Feel free to ask questions in our [Discord server](https://discord.gg/ruffle).
 
+## Reverse Engineering requirements
+
+Ruffle does not use any proprietary knowledge or code, and is built entirely upon either inspecting the output of Flash Player, or by consulting license-compatible libraries such as [avmplus](https://github.com/adobe/avmplus).
+
+It is strictly forbidden to decompile Flash Player, Flash Professional, Adobe Animate, or any other software that does not explicitly permit doing so. Any contributions to Ruffle must be re-licensable to MIT/Apache and obtained through legitimate methods.
+
+If you're unsure if something is allowed, ask in our [Discord server](https://discord.gg/ruffle)! The rule of thumb though is that if you made it, and you didn't decompile anything to get there, it's probably fine!
+
 ## Ways to Contribute
 
 We love new contributors! You can contribute to Ruffle in several ways:
