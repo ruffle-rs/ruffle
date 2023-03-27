@@ -313,6 +313,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic_refcell"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79d6dc922a2792b006573f60b2648076355daeae5ce9cb59507e5908c9625d31"
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1254,10 +1260,66 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "ecolor"
+version = "0.21.0"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "egui"
+version = "0.21.0"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "ahash 0.8.3",
+ "epaint",
+ "log",
+ "nohash-hasher",
+]
+
+[[package]]
+name = "egui-wgpu"
+version = "0.21.0"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "bytemuck",
+ "epaint",
+ "log",
+ "thiserror",
+ "type-map 0.5.0",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "egui-winit"
+version = "0.21.1"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "arboard",
+ "egui",
+ "instant",
+ "log",
+ "raw-window-handle",
+ "smithay-clipboard",
+ "webbrowser",
+ "winit",
+]
+
+[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
+
+[[package]]
+name = "emath"
+version = "0.21.0"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "embed-resource"
@@ -1340,6 +1402,22 @@ dependencies = [
  "log",
  "regex",
  "termcolor",
+]
+
+[[package]]
+name = "epaint"
+version = "0.21.0"
+source = "git+https://github.com/emilk/egui?rev=ea71b7f#ea71b7f20b631c4d762dae4683e5fe89585f9212"
+dependencies = [
+ "ab_glyph",
+ "ahash 0.8.3",
+ "atomic_refcell",
+ "bytemuck",
+ "ecolor",
+ "emath",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
 ]
 
 [[package]]
@@ -2175,7 +2253,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c310433e4a310918d6ed9243542a6b83ec1183df95dff8f23f87bb88a264a66f"
 dependencies = [
- "type-map",
+ "type-map 0.4.0",
  "unic-langid",
 ]
 
@@ -2806,6 +2884,12 @@ dependencies = [
  "libc",
  "memoffset 0.6.5",
 ]
+
+[[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "nom"
@@ -3638,6 +3722,9 @@ dependencies = [
  "clap",
  "cpal",
  "dirs",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
  "embed-resource",
  "generational-arena",
  "isahc",
@@ -3654,6 +3741,7 @@ dependencies = [
  "unic-langid",
  "url",
  "webbrowser",
+ "wgpu",
  "winapi",
  "winit",
 ]
@@ -4157,6 +4245,16 @@ dependencies = [
  "wayland-client",
  "wayland-cursor",
  "wayland-protocols",
+]
+
+[[package]]
+name = "smithay-clipboard"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a345c870a1fae0b1b779085e81b51e614767c239e93503588e54c5b17f4b0e8"
+dependencies = [
+ "smithay-client-toolkit",
+ "wayland-client",
 ]
 
 [[package]]
@@ -4726,6 +4824,15 @@ name = "type-map"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d3364c5e96cb2ad1603037ab253ddd34d7fb72a58bdddf4b7350760fc69a46"
+dependencies = [
+ "rustc-hash",
+]
+
+[[package]]
+name = "type-map"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb68604048ff8fa93347f02441e4487594adc20bb8a084f9e564d2b827a0a9f"
 dependencies = [
  "rustc-hash",
 ]
