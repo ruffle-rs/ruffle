@@ -92,7 +92,7 @@ impl Surface {
                 });
 
         let target = self.draw_commands(
-            render_target_mode.clone(),
+            render_target_mode,
             descriptors,
             meshes,
             commands,
