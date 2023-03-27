@@ -1,6 +1,7 @@
 //! `RegExp` impl
 
 use crate::avm2::class::Class;
+use crate::avm2::error::type_error;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{regexp_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
@@ -27,16 +28,34 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc_context) {
-            regexp.set_source(
-                args.get(0)
+            let source: AvmString<'gc> = match args.get(0) {
+                Some(Value::Undefined) => "".into(),
+                Some(Value::Object(Object::RegExpObject(o))) => {
+                    if !matches!(args.get(1), Some(Value::Undefined)) {
+                        return Err(Error::AvmError(type_error(
+                            activation,
+                            "Error #1100: Cannot supply flags when constructing one RegExp from another.",
+                            1100,
+                        )?));
+                    }
+                    let other = o.as_regexp().unwrap();
+                    regexp.set_source(other.source());
+                    regexp.set_flags(other.flags());
+                    return Ok(Value::Undefined);
+                }
+                arg => arg
                     .unwrap_or(&Value::String("".into()))
                     .coerce_to_string(activation)?,
-            );
+            };
 
-            let flag_chars = args
-                .get(1)
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?;
+            regexp.set_source(source);
+
+            let flag_chars = match args.get(1) {
+                Some(Value::Undefined) => "".into(),
+                arg => arg
+                    .unwrap_or(&Value::String("".into()))
+                    .coerce_to_string(activation)?,
+            };
 
             let mut flags = RegExpFlags::empty();
             for c in &flag_chars {
@@ -299,16 +318,8 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
             instance_init,
             "<RegExp instance initializer>",
             vec![
-                ParamConfig::optional(
-                    "re",
-                    Multiname::new(activation.avm2().public_namespace, "String"),
-                    "",
-                ),
-                ParamConfig::optional(
-                    "flags",
-                    Multiname::new(activation.avm2().public_namespace, "String"),
-                    "",
-                ),
+                ParamConfig::optional("re", Multiname::any(mc), Value::Undefined),
+                ParamConfig::optional("flags", Multiname::any(mc), Value::Undefined),
             ],
             false,
             mc,
