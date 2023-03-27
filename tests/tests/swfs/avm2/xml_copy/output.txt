@@ -1,0 +1,12 @@
+xml.a[0] === a_copy: false
+a_copy.parent(): undefined
+a_copy.toXMLString(): <a test="it">a</a>
+a_copy.attributes(): it
+a_copy.attributes()[0].parent(): a
+a_copy.attributes()[0].parent() === a_copy true
+///
+xml.b[0] === b_copy: false
+b_copy.parent(): undefined
+b_copy.toXMLString(): <b><c>c1</c><c>c2</c></b>
+b_copy.c[0].parent(): <b><c>c1</c><c>c2</c></b>
+b_copy.c[0].parent() === b_copy: true
