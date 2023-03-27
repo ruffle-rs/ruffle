@@ -46,7 +46,7 @@ use winit::event::{
     ElementState, KeyboardInput, ModifiersState, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 thread_local! {
@@ -278,7 +278,8 @@ fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
 struct App {
     opt: Opt,
     window: Rc<Window>,
-    event_loop: EventLoop<RuffleEvent>,
+    event_loop: Option<EventLoop<RuffleEvent>>,
+    event_loop_proxy: EventLoopProxy<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     gui: Arc<Mutex<GuiController>>,
     player: Arc<Mutex<Player>>,
@@ -416,7 +417,8 @@ impl App {
         Ok(Self {
             opt,
             window,
-            event_loop,
+            event_loop_proxy: event_loop.create_proxy(),
+            event_loop: Some(event_loop),
             executor,
             gui,
             player,
@@ -425,7 +427,7 @@ impl App {
         })
     }
 
-    fn run(self) -> ! {
+    fn run(mut self) -> ! {
         enum LoadingState {
             Loading,
             WaitingForResize,
@@ -440,294 +442,288 @@ impl App {
         let mut fullscreen_down = false;
 
         // Poll UI events.
-        self.event_loop
-            .run(move |event, _window_target, control_flow| {
-                match event {
-                    winit::event::Event::LoopDestroyed => {
-                        self.player
-                            .lock()
-                            .expect("Cannot reenter")
-                            .flush_shared_objects();
-                        shutdown();
+        let event_loop = self.event_loop.take().expect("App already running");
+        event_loop.run(move |event, _window_target, control_flow| {
+            match event {
+                winit::event::Event::LoopDestroyed => {
+                    self.player
+                        .lock()
+                        .expect("Cannot reenter")
+                        .flush_shared_objects();
+                    shutdown();
+                    return;
+                }
+
+                // Core loop
+                winit::event::Event::MainEventsCleared
+                    if matches!(loaded, LoadingState::Loaded) =>
+                {
+                    let new_time = Instant::now();
+                    let dt = new_time.duration_since(time).as_micros();
+                    if dt > 0 {
+                        time = new_time;
+                        let mut player_lock = self.player.lock().expect("Cannot reenter");
+                        player_lock.tick(dt as f64 / 1000.0);
+                        next_frame_time = new_time + player_lock.time_til_next_frame();
+                        if player_lock.needs_render() {
+                            self.window.request_redraw();
+                        }
+                    }
+                }
+
+                // Render
+                winit::event::Event::RedrawRequested(_) => {
+                    // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
+                    if !minimized {
+                        self.player.lock().expect("Cannot reenter").render();
+                        #[cfg(feature = "tracy")]
+                        tracing_tracy::client::Client::running()
+                            .expect("tracy client must be running")
+                            .frame_mark();
+                    }
+                }
+
+                winit::event::Event::WindowEvent { event, .. } => {
+                    if self.gui.lock().expect("Gui lock").handle_event(&event) {
+                        // Event consumed by GUI.
                         return;
                     }
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            *control_flow = ControlFlow::Exit;
+                            return;
+                        }
+                        WindowEvent::Resized(size) => {
+                            // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                            minimized = size.width == 0 && size.height == 0;
 
-                    // Core loop
-                    winit::event::Event::MainEventsCleared
-                        if matches!(loaded, LoadingState::Loaded) =>
-                    {
-                        let new_time = Instant::now();
-                        let dt = new_time.duration_since(time).as_micros();
-                        if dt > 0 {
-                            time = new_time;
+                            let viewport_scale_factor = self.window.scale_factor();
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            player_lock.tick(dt as f64 / 1000.0);
-                            next_frame_time = new_time + player_lock.time_til_next_frame();
+                            player_lock.set_viewport_dimensions(ViewportDimensions {
+                                width: size.width,
+                                height: size.height,
+                                scale_factor: viewport_scale_factor,
+                            });
+                            self.window.request_redraw();
+                            if matches!(loaded, LoadingState::WaitingForResize) {
+                                loaded = LoadingState::Loaded;
+                            }
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            mouse_pos = position;
+                            let event = PlayerEvent::MouseMove {
+                                x: position.x,
+                                y: position.y,
+                            };
+                            player_lock.handle_event(event);
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
                             }
                         }
-                    }
-
-                    // Render
-                    winit::event::Event::RedrawRequested(_) => {
-                        // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
-                        if !minimized {
-                            self.player.lock().expect("Cannot reenter").render();
-                            #[cfg(feature = "tracy")]
-                            tracing_tracy::client::Client::running()
-                                .expect("tracy client must be running")
-                                .frame_mark();
-                        }
-                    }
-
-                    winit::event::Event::WindowEvent { event, .. } => {
-                        if self.gui.lock().expect("Gui lock").handle_event(&event) {
-                            // Event consumed by GUI.
-                            return;
-                        }
-                        match event {
-                            WindowEvent::CloseRequested => {
-                                *control_flow = ControlFlow::Exit;
-                                return;
-                            }
-                            WindowEvent::Resized(size) => {
-                                // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
-                                minimized = size.width == 0 && size.height == 0;
-
-                                let viewport_scale_factor = self.window.scale_factor();
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                player_lock.set_viewport_dimensions(ViewportDimensions {
-                                    width: size.width,
-                                    height: size.height,
-                                    scale_factor: viewport_scale_factor,
-                                });
+                        WindowEvent::MouseInput { button, state, .. } => {
+                            use ruffle_core::events::MouseButton as RuffleMouseButton;
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let x = mouse_pos.x;
+                            let y = mouse_pos.y;
+                            let button = match button {
+                                MouseButton::Left => RuffleMouseButton::Left,
+                                MouseButton::Right => RuffleMouseButton::Right,
+                                MouseButton::Middle => RuffleMouseButton::Middle,
+                                MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                            };
+                            let event = match state {
+                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
+                                ElementState::Released => PlayerEvent::MouseUp { x, y, button },
+                            };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
                                 self.window.request_redraw();
-                                if matches!(loaded, LoadingState::WaitingForResize) {
-                                    loaded = LoadingState::Loaded;
-                                }
                             }
-                            WindowEvent::CursorMoved { position, .. } => {
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                mouse_pos = position;
-                                let event = PlayerEvent::MouseMove {
-                                    x: position.x,
-                                    y: position.y,
-                                };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    self.window.request_redraw();
+                        }
+                        WindowEvent::MouseWheel { delta, .. } => {
+                            use ruffle_core::events::MouseWheelDelta;
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let delta = match delta {
+                                MouseScrollDelta::LineDelta(_, dy) => {
+                                    MouseWheelDelta::Lines(dy.into())
                                 }
+                                MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
+                            };
+                            let event = PlayerEvent::MouseWheel { delta };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                self.window.request_redraw();
                             }
-                            WindowEvent::MouseInput { button, state, .. } => {
-                                use ruffle_core::events::MouseButton as RuffleMouseButton;
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                let x = mouse_pos.x;
-                                let y = mouse_pos.y;
-                                let button = match button {
-                                    MouseButton::Left => RuffleMouseButton::Left,
-                                    MouseButton::Right => RuffleMouseButton::Right,
-                                    MouseButton::Middle => RuffleMouseButton::Middle,
-                                    MouseButton::Other(_) => RuffleMouseButton::Unknown,
-                                };
-                                let event = match state {
+                        }
+                        WindowEvent::CursorEntered { .. } => {
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            player_lock.set_mouse_in_stage(true);
+                            if player_lock.needs_render() {
+                                self.window.request_redraw();
+                            }
+                        }
+                        WindowEvent::CursorLeft { .. } => {
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            player_lock.set_mouse_in_stage(false);
+                            player_lock.handle_event(PlayerEvent::MouseLeave);
+                            if player_lock.needs_render() {
+                                self.window.request_redraw();
+                            }
+                        }
+                        WindowEvent::ModifiersChanged(new_modifiers) => {
+                            modifiers = new_modifiers;
+                        }
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
+                            match input {
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if modifiers.alt() => {
+                                    if !fullscreen_down {
+                                        self.player.lock().expect("Cannot reenter").update(|uc| {
+                                            uc.stage.toggle_display_state(uc);
+                                        });
+                                    }
+                                    fullscreen_down = true;
+                                    return;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Released,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                } if fullscreen_down => {
+                                    fullscreen_down = false;
+                                }
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                } => self.player.lock().expect("Cannot reenter").update(|uc| {
+                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                                }),
+                                _ => (),
+                            }
+
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            if let Some(key) = input.virtual_keycode {
+                                let key_code = winit_to_ruffle_key_code(key);
+                                let key_char = winit_key_to_char(key, modifiers.shift());
+                                match input.state {
                                     ElementState::Pressed => {
-                                        PlayerEvent::MouseDown { x, y, button }
-                                    }
-                                    ElementState::Released => PlayerEvent::MouseUp { x, y, button },
-                                };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    self.window.request_redraw();
-                                }
-                            }
-                            WindowEvent::MouseWheel { delta, .. } => {
-                                use ruffle_core::events::MouseWheelDelta;
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                let delta = match delta {
-                                    MouseScrollDelta::LineDelta(_, dy) => {
-                                        MouseWheelDelta::Lines(dy.into())
-                                    }
-                                    MouseScrollDelta::PixelDelta(pos) => {
-                                        MouseWheelDelta::Pixels(pos.y)
-                                    }
-                                };
-                                let event = PlayerEvent::MouseWheel { delta };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    self.window.request_redraw();
-                                }
-                            }
-                            WindowEvent::CursorEntered { .. } => {
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                player_lock.set_mouse_in_stage(true);
-                                if player_lock.needs_render() {
-                                    self.window.request_redraw();
-                                }
-                            }
-                            WindowEvent::CursorLeft { .. } => {
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                player_lock.set_mouse_in_stage(false);
-                                player_lock.handle_event(PlayerEvent::MouseLeave);
-                                if player_lock.needs_render() {
-                                    self.window.request_redraw();
-                                }
-                            }
-                            WindowEvent::ModifiersChanged(new_modifiers) => {
-                                modifiers = new_modifiers;
-                            }
-                            WindowEvent::KeyboardInput { input, .. } => {
-                                // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                                match input {
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Return),
-                                        ..
-                                    } if modifiers.alt() => {
-                                        if !fullscreen_down {
-                                            self.player.lock().expect("Cannot reenter").update(
-                                                |uc| {
-                                                    uc.stage.toggle_display_state(uc);
-                                                },
-                                            );
-                                        }
-                                        fullscreen_down = true;
-                                        return;
-                                    }
-                                    KeyboardInput {
-                                        state: ElementState::Released,
-                                        virtual_keycode: Some(VirtualKeyCode::Return),
-                                        ..
-                                    } if fullscreen_down => {
-                                        fullscreen_down = false;
-                                    }
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    } => self.player.lock().expect("Cannot reenter").update(|uc| {
-                                        uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                                    }),
-                                    _ => (),
-                                }
-
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                if let Some(key) = input.virtual_keycode {
-                                    let key_code = winit_to_ruffle_key_code(key);
-                                    let key_char = winit_key_to_char(key, modifiers.shift());
-                                    match input.state {
-                                        ElementState::Pressed => {
-                                            player_lock.handle_event(PlayerEvent::KeyDown {
-                                                key_code,
-                                                key_char,
-                                            });
-                                            if let Some(control_code) =
-                                                winit_to_ruffle_text_control(key, modifiers)
-                                            {
-                                                player_lock.handle_event(
-                                                    PlayerEvent::TextControl { code: control_code },
-                                                );
-                                            }
-                                        }
-                                        ElementState::Released => {
-                                            player_lock.handle_event(PlayerEvent::KeyUp {
-                                                key_code,
-                                                key_char,
+                                        player_lock.handle_event(PlayerEvent::KeyDown {
+                                            key_code,
+                                            key_char,
+                                        });
+                                        if let Some(control_code) =
+                                            winit_to_ruffle_text_control(key, modifiers)
+                                        {
+                                            player_lock.handle_event(PlayerEvent::TextControl {
+                                                code: control_code,
                                             });
                                         }
-                                    };
-                                    if player_lock.needs_render() {
-                                        self.window.request_redraw();
                                     }
-                                }
-                            }
-                            WindowEvent::ReceivedCharacter(codepoint) => {
-                                let mut player_lock = self.player.lock().expect("Cannot reenter");
-                                let event = PlayerEvent::TextInput { codepoint };
-                                player_lock.handle_event(event);
+                                    ElementState::Released => {
+                                        player_lock.handle_event(PlayerEvent::KeyUp {
+                                            key_code,
+                                            key_char,
+                                        });
+                                    }
+                                };
                                 if player_lock.needs_render() {
                                     self.window.request_redraw();
                                 }
                             }
-                            _ => (),
                         }
-                    }
-                    winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self
-                        .executor
-                        .lock()
-                        .expect("active executor reference")
-                        .poll_all(),
-                    winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                        let movie_width = swf_header.stage_size().width().to_pixels();
-                        let movie_height = swf_header.stage_size().height().to_pixels();
-
-                        let window_size: Size = match (self.opt.width, self.opt.height) {
-                            (None, None) => LogicalSize::new(movie_width, movie_height).into(),
-                            (Some(width), None) => {
-                                let scale = width / movie_width;
-                                let height = movie_height * scale;
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                        WindowEvent::ReceivedCharacter(codepoint) => {
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            let event = PlayerEvent::TextInput { codepoint };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                self.window.request_redraw();
                             }
-                            (None, Some(height)) => {
-                                let scale = height / movie_height;
-                                let width = movie_width * scale;
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
-                            }
-                            (Some(width), Some(height)) => {
-                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
-                            }
-                        };
-
-                        let window_size = Size::clamp(
-                            window_size,
-                            self.min_window_size.into(),
-                            self.max_window_size.into(),
-                            self.window.scale_factor(),
-                        );
-
-                        self.window.set_inner_size(window_size);
-                        self.window.set_fullscreen(if self.opt.fullscreen {
-                            Some(Fullscreen::Borderless(None))
-                        } else {
-                            None
-                        });
-                        self.window.set_visible(true);
-
-                        let viewport_size = self.window.inner_size();
-
-                        // On X11 (and possibly other platforms), the window size is not updated immediately.
-                        // Wait for the window to be resized to the requested size before we start running
-                        // the SWF (which can observe the viewport size in "noScale" mode)
-                        if window_size != viewport_size.into() {
-                            loaded = LoadingState::WaitingForResize;
-                        } else {
-                            loaded = LoadingState::Loaded;
                         }
+                        _ => (),
+                    }
+                }
+                winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self
+                    .executor
+                    .lock()
+                    .expect("active executor reference")
+                    .poll_all(),
+                winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
+                    let movie_width = swf_header.stage_size().width().to_pixels();
+                    let movie_height = swf_header.stage_size().height().to_pixels();
 
-                        let viewport_scale_factor = self.window.scale_factor();
-                        let mut player_lock = self.player.lock().expect("Cannot reenter");
-                        player_lock.set_viewport_dimensions(ViewportDimensions {
-                            width: viewport_size.width,
-                            height: viewport_size.height,
-                            scale_factor: viewport_scale_factor,
-                        });
+                    let window_size: Size = match (self.opt.width, self.opt.height) {
+                        (None, None) => LogicalSize::new(movie_width, movie_height).into(),
+                        (Some(width), None) => {
+                            let scale = width / movie_width;
+                            let height = movie_height * scale;
+                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                        }
+                        (None, Some(height)) => {
+                            let scale = height / movie_height;
+                            let width = movie_width * scale;
+                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                        }
+                        (Some(width), Some(height)) => {
+                            PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                        }
+                    };
+
+                    let window_size = Size::clamp(
+                        window_size,
+                        self.min_window_size.into(),
+                        self.max_window_size.into(),
+                        self.window.scale_factor(),
+                    );
+
+                    self.window.set_inner_size(window_size);
+                    self.window.set_fullscreen(if self.opt.fullscreen {
+                        Some(Fullscreen::Borderless(None))
+                    } else {
+                        None
+                    });
+                    self.window.set_visible(true);
+
+                    let viewport_size = self.window.inner_size();
+
+                    // On X11 (and possibly other platforms), the window size is not updated immediately.
+                    // Wait for the window to be resized to the requested size before we start running
+                    // the SWF (which can observe the viewport size in "noScale" mode)
+                    if window_size != viewport_size.into() {
+                        loaded = LoadingState::WaitingForResize;
+                    } else {
+                        loaded = LoadingState::Loaded;
                     }
 
-                    winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
-                        *control_flow = ControlFlow::Exit;
-                        return;
-                    }
-
-                    _ => (),
+                    let viewport_scale_factor = self.window.scale_factor();
+                    let mut player_lock = self.player.lock().expect("Cannot reenter");
+                    player_lock.set_viewport_dimensions(ViewportDimensions {
+                        width: viewport_size.width,
+                        height: viewport_size.height,
+                        scale_factor: viewport_scale_factor,
+                    });
                 }
 
-                // After polling events, sleep the event loop until the next event or the next frame.
-                *control_flow = if matches!(loaded, LoadingState::Loaded) {
-                    ControlFlow::WaitUntil(next_frame_time)
-                } else {
-                    ControlFlow::Wait
-                };
-            });
+                winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
+
+                _ => (),
+            }
+
+            // After polling events, sleep the event loop until the next event or the next frame.
+            *control_flow = if matches!(loaded, LoadingState::Loaded) {
+                ControlFlow::WaitUntil(next_frame_time)
+            } else {
+                ControlFlow::Wait
+            };
+        });
     }
 }
 
