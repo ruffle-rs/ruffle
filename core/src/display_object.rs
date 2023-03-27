@@ -96,7 +96,7 @@ pub struct DisplayObjectBase<'gc> {
     maskee: Option<DisplayObject<'gc>>,
 
     /// The blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[collect(require_static)]
     blend_mode: BlendMode,
 
@@ -1164,13 +1164,13 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn blend_mode(&self) -> BlendMode {
         self.base().blend_mode()
     }
 
     /// Sets the blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
     }
