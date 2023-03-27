@@ -402,28 +402,21 @@ mod wrapper {
         }
 
         pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
-            // if try_write fails,
-            // this is caused by recursive render attempt. TODO: support this.
-            if let Ok(mut inner_bitmap_data) = self.0.try_write(context.gc_context) {
-                if inner_bitmap_data.disposed() {
-                    return;
-                }
-
-                // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
-                // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
-                inner_bitmap_data.update_dirty_texture(context.renderer);
-                let handle = inner_bitmap_data
-                    .bitmap_handle(context.renderer)
-                    .expect("Missing bitmap handle");
-
-                context.commands.render_bitmap(
-                    handle,
-                    context.transform_stack.transform(),
-                    smoothing,
-                );
-            } else {
-                //this is caused by recursive render attempt. TODO: support this.
+            let mut inner_bitmap_data = self.0.write(context.gc_context);
+            if inner_bitmap_data.disposed() {
+                return;
             }
+
+            // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
+            // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
+            inner_bitmap_data.update_dirty_texture(context.renderer);
+            let handle = inner_bitmap_data
+                .bitmap_handle(context.renderer)
+                .expect("Missing bitmap handle");
+
+            context
+                .commands
+                .render_bitmap(handle, context.transform_stack.transform(), smoothing);
         }
 
         pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {

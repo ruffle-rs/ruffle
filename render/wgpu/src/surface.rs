@@ -111,27 +111,25 @@ impl Surface {
 
         let mut buffers = vec![draw_encoder.finish()];
 
-        if let RenderTargetMode::FreshBuffer(_) = render_target_mode {
-            let mut copy_encoder =
-                descriptors
-                    .device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: create_debug_label!("Frame copy command encoder").as_deref(),
-                    });
-            run_copy_pipeline(
-                descriptors,
-                self.format,
-                self.actual_surface_format,
-                self.size,
-                frame_view,
-                target.color_view(),
-                target.whole_frame_bind_group(descriptors),
-                target.globals(),
-                1,
-                &mut copy_encoder,
-            );
-            buffers.push(copy_encoder.finish());
-        }
+        let mut copy_encoder =
+            descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: create_debug_label!("Frame copy command encoder").as_deref(),
+                });
+        run_copy_pipeline(
+            descriptors,
+            self.format,
+            self.actual_surface_format,
+            self.size,
+            frame_view,
+            target.color_view(),
+            target.whole_frame_bind_group(descriptors),
+            target.globals(),
+            1,
+            &mut copy_encoder,
+        );
+        buffers.push(copy_encoder.finish());
 
         buffers.insert(0, uniform_encoder.finish());
         uniform_buffer.finish();
