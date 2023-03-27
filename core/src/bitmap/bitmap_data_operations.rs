@@ -1220,9 +1220,8 @@ pub fn draw<'gc>(
     quality: StageQuality,
 ) -> Result<(), BitmapDataDrawError> {
     // Calculate the maximum potential area that this draw call will affect
-    let bounds = source.bounds();
-    let mut dirty_region =
-        PixelRegion::encompassing_twips(transform.matrix * bounds.0, transform.matrix * bounds.1);
+    let bounds = transform.matrix * source.bounds();
+    let mut dirty_region = PixelRegion::from(bounds);
     dirty_region.clamp(target.width(), target.height());
     if dirty_region.width() == 0 || dirty_region.height() == 0 {
         return Ok(());

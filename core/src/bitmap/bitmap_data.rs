@@ -7,7 +7,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_wstr::WStr;
 use std::ops::Range;
-use swf::Twips;
+use swf::{Rectangle, Twips};
 use tracing::instrument;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -626,19 +626,15 @@ pub enum IBitmapDrawable<'gc> {
 }
 
 impl IBitmapDrawable<'_> {
-    pub fn bounds(&self) -> ((Twips, Twips), (Twips, Twips)) {
+    pub fn bounds(&self) -> Rectangle<Twips> {
         match self {
-            IBitmapDrawable::BitmapData(bmd) => (
-                (Twips::ZERO, Twips::ZERO),
-                (
-                    Twips::from_pixels(bmd.width() as f64),
-                    Twips::from_pixels(bmd.height() as f64),
-                ),
-            ),
-            IBitmapDrawable::DisplayObject(o) => {
-                let bounds = o.bounds();
-                ((bounds.x_min, bounds.y_min), (bounds.x_max, bounds.y_max))
-            }
+            IBitmapDrawable::BitmapData(bmd) => Rectangle {
+                x_min: Twips::ZERO,
+                x_max: Twips::from_pixels(bmd.width() as f64),
+                y_min: Twips::ZERO,
+                y_max: Twips::from_pixels(bmd.height() as f64),
+            },
+            IBitmapDrawable::DisplayObject(o) => o.bounds(),
         }
     }
 }
