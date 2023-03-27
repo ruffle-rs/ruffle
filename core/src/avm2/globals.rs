@@ -32,7 +32,7 @@ mod namespace;
 mod number;
 mod object;
 mod qname;
-mod regexp;
+mod reg_exp;
 mod string;
 mod toplevel;
 mod r#uint;
@@ -523,7 +523,6 @@ pub fn load_player_globals<'gc>(
     )?;
     function(activation, "", "unescape", toplevel::unescape, script)?;
 
-    avm2_system_class!(regexp, activation, regexp::create_class(activation), script);
     avm2_system_class!(vector, activation, vector::create_class(activation), script);
 
     avm2_system_class!(date, activation, date::create_class(activation), script);
@@ -604,6 +603,7 @@ fn load_playerglobal<'gc>(
             ("", "Error", error),
             ("", "ArgumentError", argumenterror),
             ("", "RangeError", rangeerror),
+            ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
             ("", "TypeError", typeerror),
             ("", "VerifyError", verifyerror),

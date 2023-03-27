@@ -84,7 +84,7 @@ pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveOb
 pub use crate::avm2::object::program_3d_object::Program3DObject;
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
 pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
-pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
+pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{sound_channel_allocator, SoundChannelObject};

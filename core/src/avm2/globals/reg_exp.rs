@@ -1,32 +1,22 @@
 //! `RegExp` impl
 
-use crate::avm2::class::Class;
 use crate::avm2::error::type_error;
-use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::object::{regexp_allocator, ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
 use crate::string::{AvmString, WString};
-use gc_arena::GcCell;
 
-// All of these methods will be defined as both
-// AS3 instance methods and methods on the `Array` class prototype.
-const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] =
-    &[("exec", exec), ("test", test)];
+pub use crate::avm2::object::reg_exp_allocator;
 
-/// Implements `RegExp`'s instance initializer.
-pub fn instance_init<'gc>(
+/// Implements `RegExp`'s `init` method, which is called from the constructor
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
-
         if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc_context) {
             let source: AvmString<'gc> = match args.get(0) {
                 Some(Value::Undefined) => "".into(),
@@ -76,7 +66,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-fn class_call<'gc>(
+pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -92,39 +82,8 @@ fn class_call<'gc>(
     return this_class.construct(activation, args).map(|o| o.into());
 }
 
-/// Implements `RegExp`'s class initializer.
-pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this {
-        let scope = activation.create_scopechain();
-        let gc_context = activation.context.gc_context;
-        let this_class = this.as_class_object().unwrap();
-        let regexp_proto = this_class.prototype();
-
-        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
-            regexp_proto.set_string_property_local(
-                *name,
-                FunctionObject::from_method(
-                    activation,
-                    Method::from_builtin(*method, name, gc_context),
-                    scope,
-                    None,
-                    Some(this_class),
-                )
-                .into(),
-                activation,
-            )?;
-            regexp_proto.set_local_property_is_enumerable(gc_context, (*name).into(), false);
-        }
-    }
-    Ok(Value::Undefined)
-}
-
 /// Implements `RegExp.dotall`
-pub fn dotall<'gc>(
+pub fn get_dotall<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -139,7 +98,7 @@ pub fn dotall<'gc>(
 }
 
 /// Implements `RegExp.extended`
-pub fn extended<'gc>(
+pub fn get_extended<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -154,7 +113,7 @@ pub fn extended<'gc>(
 }
 
 /// Implements `RegExp.global`
-pub fn global<'gc>(
+pub fn get_global<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -169,7 +128,7 @@ pub fn global<'gc>(
 }
 
 /// Implements `RegExp.ignoreCase`
-pub fn ignore_case<'gc>(
+pub fn get_ignore_case<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -184,7 +143,7 @@ pub fn ignore_case<'gc>(
 }
 
 /// Implements `RegExp.multiline`
-pub fn multiline<'gc>(
+pub fn get_multiline<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -199,7 +158,7 @@ pub fn multiline<'gc>(
 }
 
 /// Implements `RegExp.lastIndex`'s getter
-pub fn last_index<'gc>(
+pub fn get_last_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -233,7 +192,7 @@ pub fn set_last_index<'gc>(
 }
 
 /// Implements `RegExp.source`
-pub fn source<'gc>(
+pub fn get_source<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -306,60 +265,4 @@ pub fn test<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct `RegExp`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "RegExp"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
-        Method::from_builtin_and_params(
-            instance_init,
-            "<RegExp instance initializer>",
-            vec![
-                ParamConfig::optional("re", Multiname::any(mc), Value::Undefined),
-                ParamConfig::optional("flags", Multiname::any(mc), Value::Undefined),
-            ],
-            false,
-            mc,
-        ),
-        Method::from_builtin(class_init, "<RegExp class initializer>", mc),
-        mc,
-    );
-
-    let mut write = class.write(mc);
-    write.set_instance_allocator(regexp_allocator);
-    write.set_call_handler(Method::from_builtin(
-        class_call,
-        "<RegExp call handler>",
-        mc,
-    ));
-
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("dotall", Some(dotall), None),
-        ("extended", Some(extended), None),
-        ("global", Some(global), None),
-        ("ignoreCase", Some(ignore_case), None),
-        ("multiline", Some(multiline), None),
-        ("lastIndex", Some(last_index), Some(set_last_index)),
-        ("source", Some(source), None),
-    ];
-    write.define_builtin_instance_properties(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_PROPERTIES,
-    );
-
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        PUBLIC_INSTANCE_AND_PROTO_METHODS,
-    );
-
-    class
 }
