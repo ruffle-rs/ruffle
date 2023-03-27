@@ -12,7 +12,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates RegExp objects.
-pub fn regexp_allocator<'gc>(
+pub fn reg_exp_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
