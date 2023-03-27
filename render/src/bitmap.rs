@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use downcast_rs::{impl_downcast, Downcast};
-use swf::Twips;
+use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
 
@@ -288,5 +288,16 @@ impl PixelRegion {
 
     pub fn height(&self) -> u32 {
         self.max_y - self.min_y
+    }
+}
+
+impl From<Rectangle<Twips>> for PixelRegion {
+    fn from(value: Rectangle<Twips>) -> Self {
+        Self {
+            min_x: value.x_min.to_pixels().floor().max(0.0) as u32,
+            min_y: value.y_min.to_pixels().floor().max(0.0) as u32,
+            max_x: value.x_max.to_pixels().ceil().max(0.0) as u32,
+            max_y: value.y_max.to_pixels().ceil().max(0.0) as u32,
+        }
     }
 }
