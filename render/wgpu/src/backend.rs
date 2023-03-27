@@ -49,6 +49,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     texture_pool: TexturePool,
     offscreen_texture_pool: TexturePool,
     offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
+    external_render_callback: Option<Box<ExternalRenderCallback>>,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -205,6 +206,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             texture_pool: TexturePool::new(),
             offscreen_texture_pool: TexturePool::new(),
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
+            external_render_callback: None,
         })
     }
 
@@ -331,6 +333,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
     pub fn device(&self) -> &wgpu::Device {
         &self.descriptors.device
+    }
+
+    pub fn set_render_callback(&mut self, f: Option<Box<ExternalRenderCallback>>) {
+        self.external_render_callback = f;
     }
 }
 
@@ -464,7 +470,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
         };
 
-        let command_buffers = self.surface.draw_commands_to(
+        let mut command_buffers = self.surface.draw_commands_to(
             frame_output.view(),
             RenderTargetMode::FreshBuffer(wgpu::Color {
                 r: f64::from(clear.r) / 255.0,
@@ -479,6 +485,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             commands,
             &mut self.texture_pool,
         );
+
+        if let Some(callback) = self.external_render_callback.as_deref_mut() {
+            let params = RenderCallbackParams {
+                device: &self.descriptors.device,
+                queue: &self.descriptors.queue,
+                texture_view: frame_output.view(),
+            };
+            command_buffers.extend(callback(params));
+        }
 
         self.target.submit(
             &self.descriptors.device,
@@ -839,4 +854,12 @@ pub enum RenderTargetMode {
     // This is used in `render_offscreen`, as we need to blend with the previous
     // contents of our `BitmapData` texture
     ExistingTexture(Arc<wgpu::Texture>),
+}
+
+type ExternalRenderCallback = dyn FnMut(RenderCallbackParams) -> Vec<wgpu::CommandBuffer>;
+
+pub struct RenderCallbackParams<'a> {
+    pub device: &'a wgpu::Device,
+    pub queue: &'a wgpu::Queue,
+    pub texture_view: &'a wgpu::TextureView,
 }

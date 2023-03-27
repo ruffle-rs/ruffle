@@ -9,6 +9,7 @@
 mod audio;
 mod custom_event;
 mod executor;
+mod gui;
 mod navigator;
 mod storage;
 mod task;
@@ -18,6 +19,7 @@ use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use anyhow::{anyhow, Context, Error};
 use clap::Parser;
+use gui::GuiController;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::backend::audio::AudioBackend;
@@ -278,6 +280,7 @@ struct App {
     window: Rc<Window>,
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    gui: Arc<Mutex<GuiController>>,
     player: Arc<Mutex<Player>>,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
@@ -343,7 +346,7 @@ impl App {
         );
 
         let viewport_size = window.inner_size();
-        let renderer = WgpuRenderBackend::for_window(
+        let mut renderer = WgpuRenderBackend::for_window(
             &window,
             (viewport_size.width, viewport_size.height),
             opt.graphics.into(),
@@ -359,6 +362,19 @@ impl App {
         if cfg!(feature = "software_video") {
             builder =
                 builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+        }
+
+        let gui = Arc::new(Mutex::new(GuiController::new(
+            &renderer,
+            window.clone(),
+            &event_loop,
+        )));
+        {
+            let gui = gui.clone();
+            renderer.set_render_callback(Some(Box::new(move |render_ctx| {
+                let mut gui = gui.lock().expect("Gui lock");
+                gui.render(render_ctx)
+            })));
         }
 
         builder = builder
@@ -402,6 +418,7 @@ impl App {
             window,
             event_loop,
             executor,
+            gui,
             player,
             min_window_size,
             max_window_size,
@@ -464,165 +481,177 @@ impl App {
                         }
                     }
 
-                    winit::event::Event::WindowEvent { event, .. } => match event {
-                        WindowEvent::CloseRequested => {
-                            *control_flow = ControlFlow::Exit;
+                    winit::event::Event::WindowEvent { event, .. } => {
+                        if self.gui.lock().expect("Gui lock").handle_event(&event) {
+                            // Event consumed by GUI.
                             return;
                         }
-                        WindowEvent::Resized(size) => {
-                            // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
-                            minimized = size.width == 0 && size.height == 0;
+                        match event {
+                            WindowEvent::CloseRequested => {
+                                *control_flow = ControlFlow::Exit;
+                                return;
+                            }
+                            WindowEvent::Resized(size) => {
+                                // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                                minimized = size.width == 0 && size.height == 0;
 
-                            let viewport_scale_factor = self.window.scale_factor();
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            player_lock.set_viewport_dimensions(ViewportDimensions {
-                                width: size.width,
-                                height: size.height,
-                                scale_factor: viewport_scale_factor,
-                            });
-                            self.window.request_redraw();
-                            if matches!(loaded, LoadingState::WaitingForResize) {
-                                loaded = LoadingState::Loaded;
-                            }
-                        }
-                        WindowEvent::CursorMoved { position, .. } => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            mouse_pos = position;
-                            let event = PlayerEvent::MouseMove {
-                                x: position.x,
-                                y: position.y,
-                            };
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
+                                let viewport_scale_factor = self.window.scale_factor();
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                player_lock.set_viewport_dimensions(ViewportDimensions {
+                                    width: size.width,
+                                    height: size.height,
+                                    scale_factor: viewport_scale_factor,
+                                });
                                 self.window.request_redraw();
-                            }
-                        }
-                        WindowEvent::MouseInput { button, state, .. } => {
-                            use ruffle_core::events::MouseButton as RuffleMouseButton;
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            let x = mouse_pos.x;
-                            let y = mouse_pos.y;
-                            let button = match button {
-                                MouseButton::Left => RuffleMouseButton::Left,
-                                MouseButton::Right => RuffleMouseButton::Right,
-                                MouseButton::Middle => RuffleMouseButton::Middle,
-                                MouseButton::Other(_) => RuffleMouseButton::Unknown,
-                            };
-                            let event = match state {
-                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
-                                ElementState::Released => PlayerEvent::MouseUp { x, y, button },
-                            };
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
-                        }
-                        WindowEvent::MouseWheel { delta, .. } => {
-                            use ruffle_core::events::MouseWheelDelta;
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            let delta = match delta {
-                                MouseScrollDelta::LineDelta(_, dy) => {
-                                    MouseWheelDelta::Lines(dy.into())
+                                if matches!(loaded, LoadingState::WaitingForResize) {
+                                    loaded = LoadingState::Loaded;
                                 }
-                                MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
-                            };
-                            let event = PlayerEvent::MouseWheel { delta };
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
                             }
-                        }
-                        WindowEvent::CursorEntered { .. } => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            player_lock.set_mouse_in_stage(true);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
-                        }
-                        WindowEvent::CursorLeft { .. } => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            player_lock.set_mouse_in_stage(false);
-                            player_lock.handle_event(PlayerEvent::MouseLeave);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
-                        }
-                        WindowEvent::ModifiersChanged(new_modifiers) => {
-                            modifiers = new_modifiers;
-                        }
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                            match input {
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                } if modifiers.alt() => {
-                                    if !fullscreen_down {
-                                        self.player.lock().expect("Cannot reenter").update(|uc| {
-                                            uc.stage.toggle_display_state(uc);
-                                        });
-                                    }
-                                    fullscreen_down = true;
-                                    return;
-                                }
-                                KeyboardInput {
-                                    state: ElementState::Released,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                } if fullscreen_down => {
-                                    fullscreen_down = false;
-                                }
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                } => self.player.lock().expect("Cannot reenter").update(|uc| {
-                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                                }),
-                                _ => (),
-                            }
-
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            if let Some(key) = input.virtual_keycode {
-                                let key_code = winit_to_ruffle_key_code(key);
-                                let key_char = winit_key_to_char(key, modifiers.shift());
-                                match input.state {
-                                    ElementState::Pressed => {
-                                        player_lock.handle_event(PlayerEvent::KeyDown {
-                                            key_code,
-                                            key_char,
-                                        });
-                                        if let Some(control_code) =
-                                            winit_to_ruffle_text_control(key, modifiers)
-                                        {
-                                            player_lock.handle_event(PlayerEvent::TextControl {
-                                                code: control_code,
-                                            });
-                                        }
-                                    }
-                                    ElementState::Released => {
-                                        player_lock.handle_event(PlayerEvent::KeyUp {
-                                            key_code,
-                                            key_char,
-                                        });
-                                    }
-                                }
+                            WindowEvent::CursorMoved { position, .. } => {
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                mouse_pos = position;
+                                let event = PlayerEvent::MouseMove {
+                                    x: position.x,
+                                    y: position.y,
+                                };
+                                player_lock.handle_event(event);
                                 if player_lock.needs_render() {
                                     self.window.request_redraw();
                                 }
                             }
-                        }
-                        WindowEvent::ReceivedCharacter(codepoint) => {
-                            let mut player_lock = self.player.lock().expect("Cannot reenter");
-                            let event = PlayerEvent::TextInput { codepoint };
-                            player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
+                            WindowEvent::MouseInput { button, state, .. } => {
+                                use ruffle_core::events::MouseButton as RuffleMouseButton;
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                let x = mouse_pos.x;
+                                let y = mouse_pos.y;
+                                let button = match button {
+                                    MouseButton::Left => RuffleMouseButton::Left,
+                                    MouseButton::Right => RuffleMouseButton::Right,
+                                    MouseButton::Middle => RuffleMouseButton::Middle,
+                                    MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                                };
+                                let event = match state {
+                                    ElementState::Pressed => {
+                                        PlayerEvent::MouseDown { x, y, button }
+                                    }
+                                    ElementState::Released => PlayerEvent::MouseUp { x, y, button },
+                                };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    self.window.request_redraw();
+                                }
                             }
+                            WindowEvent::MouseWheel { delta, .. } => {
+                                use ruffle_core::events::MouseWheelDelta;
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                let delta = match delta {
+                                    MouseScrollDelta::LineDelta(_, dy) => {
+                                        MouseWheelDelta::Lines(dy.into())
+                                    }
+                                    MouseScrollDelta::PixelDelta(pos) => {
+                                        MouseWheelDelta::Pixels(pos.y)
+                                    }
+                                };
+                                let event = PlayerEvent::MouseWheel { delta };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    self.window.request_redraw();
+                                }
+                            }
+                            WindowEvent::CursorEntered { .. } => {
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                player_lock.set_mouse_in_stage(true);
+                                if player_lock.needs_render() {
+                                    self.window.request_redraw();
+                                }
+                            }
+                            WindowEvent::CursorLeft { .. } => {
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                player_lock.set_mouse_in_stage(false);
+                                player_lock.handle_event(PlayerEvent::MouseLeave);
+                                if player_lock.needs_render() {
+                                    self.window.request_redraw();
+                                }
+                            }
+                            WindowEvent::ModifiersChanged(new_modifiers) => {
+                                modifiers = new_modifiers;
+                            }
+                            WindowEvent::KeyboardInput { input, .. } => {
+                                // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
+                                match input {
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Return),
+                                        ..
+                                    } if modifiers.alt() => {
+                                        if !fullscreen_down {
+                                            self.player.lock().expect("Cannot reenter").update(
+                                                |uc| {
+                                                    uc.stage.toggle_display_state(uc);
+                                                },
+                                            );
+                                        }
+                                        fullscreen_down = true;
+                                        return;
+                                    }
+                                    KeyboardInput {
+                                        state: ElementState::Released,
+                                        virtual_keycode: Some(VirtualKeyCode::Return),
+                                        ..
+                                    } if fullscreen_down => {
+                                        fullscreen_down = false;
+                                    }
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    } => self.player.lock().expect("Cannot reenter").update(|uc| {
+                                        uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                                    }),
+                                    _ => (),
+                                }
+
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                if let Some(key) = input.virtual_keycode {
+                                    let key_code = winit_to_ruffle_key_code(key);
+                                    let key_char = winit_key_to_char(key, modifiers.shift());
+                                    match input.state {
+                                        ElementState::Pressed => {
+                                            player_lock.handle_event(PlayerEvent::KeyDown {
+                                                key_code,
+                                                key_char,
+                                            });
+                                            if let Some(control_code) =
+                                                winit_to_ruffle_text_control(key, modifiers)
+                                            {
+                                                player_lock.handle_event(
+                                                    PlayerEvent::TextControl { code: control_code },
+                                                );
+                                            }
+                                        }
+                                        ElementState::Released => {
+                                            player_lock.handle_event(PlayerEvent::KeyUp {
+                                                key_code,
+                                                key_char,
+                                            });
+                                        }
+                                    };
+                                    if player_lock.needs_render() {
+                                        self.window.request_redraw();
+                                    }
+                                }
+                            }
+                            WindowEvent::ReceivedCharacter(codepoint) => {
+                                let mut player_lock = self.player.lock().expect("Cannot reenter");
+                                let event = PlayerEvent::TextInput { codepoint };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    self.window.request_redraw();
+                                }
+                            }
+                            _ => (),
                         }
-                        _ => (),
-                    },
+                    }
                     winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self
                         .executor
                         .lock()
@@ -683,6 +712,12 @@ impl App {
                             scale_factor: viewport_scale_factor,
                         });
                     }
+
+                    winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
+                        *control_flow = ControlFlow::Exit;
+                        return;
+                    }
+
                     _ => (),
                 }
 

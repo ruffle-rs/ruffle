@@ -7,4 +7,10 @@ pub enum RuffleEvent {
 
     /// Indicates that an asynchronous SWF metadata load has been completed.
     OnMetadata(ruffle_core::swf::HeaderExt),
+
+    /// The user requested to open a new local SWF.
+    OpenFile,
+
+    /// The user requested to exit Ruffle.
+    ExitRequested,
 }
