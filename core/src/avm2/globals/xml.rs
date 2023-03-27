@@ -134,6 +134,35 @@ pub fn child<'gc>(
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
 }
 
+pub fn child_index<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let node = xml.node();
+
+    let parent = if let Some(parent) = node.parent() {
+        parent
+    } else {
+        return Ok(Value::Number(-1.0));
+    };
+
+    if let E4XNodeKind::Attribute(_) = &*node.kind() {
+        return Ok(Value::Number(-1.0));
+    }
+
+    if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
+        let index = children
+            .iter()
+            .position(|child| E4XNode::ptr_eq(*child, *node))
+            .unwrap();
+        return Ok(Value::Number(index as f64));
+    }
+
+    unreachable!("parent must be an element")
+}
+
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
