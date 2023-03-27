@@ -31,6 +31,7 @@ package {
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
         AS3 native function child(name:Object):XMLList;
+        AS3 native function childIndex():int;
         AS3 native function children():XMLList;
         AS3 native function copy():XML;
         AS3 native function parent():*;
@@ -70,6 +71,11 @@ package {
         prototype.child = function(name:Object):XMLList {
             var self:XML = this;
             return self.AS3::child(name);
+        };
+
+        prototype.childIndex = function():XMLList {
+            var self:XML = this;
+            return self.AS3::childIndex();
         };
 
         prototype.children = function():XMLList {
