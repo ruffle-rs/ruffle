@@ -111,6 +111,7 @@ pub struct SystemClasses<'gc> {
     pub verifyerror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
+    pub error: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
     pub statictext: ClassObject<'gc>,
     pub textlinemetrics: ClassObject<'gc>,
@@ -218,6 +219,7 @@ impl<'gc> SystemClasses<'gc> {
             verifyerror: object,
             ioerror: object,
             eoferror: object,
+            error: object,
             uncaughterrorevents: object,
             statictext: object,
             textlinemetrics: object,
@@ -606,6 +608,7 @@ fn load_playerglobal<'gc>(
         activation,
         script,
         [
+            ("", "Error", error),
             ("", "ArgumentError", argumenterror),
             ("", "RangeError", rangeerror),
             ("", "ReferenceError", referenceerror),

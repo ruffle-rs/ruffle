@@ -30,5 +30,7 @@ package flash.display {
         public native function get parameters():Object;
         public native function get sharedEvents():EventDispatcher;
         public native function get uncaughtErrorEvents():UncaughtErrorEvents;
+        public native function get sameDomain():Boolean;
+        public native function get childAllowsParent():Boolean;
     }
 }
