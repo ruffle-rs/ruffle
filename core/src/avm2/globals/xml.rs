@@ -149,6 +149,16 @@ pub fn children<'gc>(
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
 }
 
+pub fn copy<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let node = xml.node();
+    Ok(XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into())
+}
+
 pub fn parent<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,

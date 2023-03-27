@@ -108,6 +108,54 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    pub fn deep_copy(&self, mc: MutationContext<'gc, '_>) -> Self {
+        let this = self.0.read();
+
+        let kind = match &this.kind {
+            E4XNodeKind::Text(string) => E4XNodeKind::Text(*string),
+            E4XNodeKind::CData(string) => E4XNodeKind::CData(*string),
+            E4XNodeKind::Comment(string) => E4XNodeKind::Comment(*string),
+            E4XNodeKind::ProcessingInstruction(string) => {
+                E4XNodeKind::ProcessingInstruction(*string)
+            }
+            E4XNodeKind::Attribute(string) => E4XNodeKind::Attribute(*string),
+            E4XNodeKind::Element {
+                attributes,
+                children,
+            } => E4XNodeKind::Element {
+                attributes: attributes.iter().map(|attr| attr.deep_copy(mc)).collect(),
+                children: children.iter().map(|child| child.deep_copy(mc)).collect(),
+            },
+        };
+
+        let node = E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: None,
+                local_name: this.local_name,
+                kind,
+            },
+        ));
+
+        if let E4XNodeKind::Element {
+            attributes,
+            children,
+        } = &mut node.0.write(mc).kind
+        {
+            for attr in attributes.iter_mut() {
+                let mut data = attr.0.write(mc);
+                data.parent = Some(node);
+            }
+
+            for child in children.iter_mut() {
+                let mut data = child.0.write(mc);
+                data.parent = Some(node);
+            }
+        }
+
+        node
+    }
+
     pub fn remove_all_children(&self, gc_context: MutationContext<'gc, '_>) {
         let mut this = self.0.write(gc_context);
         if let E4XNodeKind::Element { children, .. } = &mut this.kind {
