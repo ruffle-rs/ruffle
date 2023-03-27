@@ -10,6 +10,7 @@ package {
 
         AS3 native function hasSimpleContent():Boolean;
         AS3 native function length():int;
+        AS3 native function child(name:Object):XMLList;
         AS3 native function children():XMLList;
         AS3 native function copy():XMLList;
         AS3 native function attribute(name:*):XMLList;
@@ -36,6 +37,11 @@ package {
             var self:XMLList = this;
             return self.AS3::length();
         }
+
+        prototype.child = function(name:Object):XMLList {
+            var self:XML = this;
+            return self.AS3::child(name);
+        };
 
         prototype.children = function():XMLList {
             var self:XMLList = this;
