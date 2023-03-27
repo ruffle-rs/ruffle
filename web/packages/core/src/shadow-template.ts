@@ -2,8 +2,7 @@
  * The shadow template which is used to fill the actual Ruffle player element
  * on the page.
  */
-export const ruffleShadowTemplate = document.createElement("template");
-ruffleShadowTemplate.innerHTML = `
+export const ruffleShadowTemplateHTML = `
     <style>
         :host {
             --ruffle-blue: #37528c;

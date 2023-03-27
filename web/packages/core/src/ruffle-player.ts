@@ -1,6 +1,6 @@
 import type { Ruffle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
-import { ruffleShadowTemplate } from "./shadow-template";
+import { ruffleShadowTemplateHTML } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
 import {
@@ -209,6 +209,9 @@ export class RufflePlayer extends HTMLElement {
      */
     constructor() {
         super();
+        
+        const ruffleShadowTemplate = document.createElement("template");
+        ruffleShadowTemplate.innerHTML = ruffleShadowTemplateHTML;
 
         this.shadow = this.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
