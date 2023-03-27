@@ -209,7 +209,7 @@ export class RufflePlayer extends HTMLElement {
      */
     constructor() {
         super();
-        
+
         const ruffleShadowTemplate = document.createElement("template");
         ruffleShadowTemplate.innerHTML = ruffleShadowTemplateHTML;
 
