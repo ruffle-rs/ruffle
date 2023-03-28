@@ -140,6 +140,7 @@ pub struct RuffleGui {
     esc_start_time: Option<Instant>,
     is_esc_down: bool,
     is_ui_visible: bool,
+    is_about_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
 }
 
@@ -150,6 +151,7 @@ impl RuffleGui {
             esc_start_time: None,
             is_esc_down: false,
             is_ui_visible: false,
+            is_about_visible: false,
             context_menu: vec![],
         }
     }
@@ -190,6 +192,7 @@ impl RuffleGui {
 
         if self.is_ui_visible {
             self.main_menu_bar(egui_ctx);
+            self.about_window(egui_ctx);
         }
 
         if !self.context_menu.is_empty() {
@@ -261,6 +264,23 @@ impl RuffleGui {
         });
     }
 
+    fn about_window(&mut self, egui_ctx: &egui::Context) {
+        egui::Window::new("About Ruffle")
+            .collapsible(false)
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .open(&mut self.is_about_visible)
+            .show(egui_ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.label(
+                        RichText::new("Ruffle")
+                            .color(Color32::from_rgb(0xFF, 0xAD, 0x33))
+                            .size(24.0),
+                    );
+                    ui.label(crate::RUFFLE_VERSION);
+                })
+            });
+    }
+
     /// Renders the right-click context menu.
     fn context_menu(&mut self, egui_ctx: &egui::Context) {
         let mut item_clicked = false;
@@ -316,7 +336,7 @@ impl RuffleGui {
     }
 
     fn show_about_screen(&mut self, ui: &mut egui::Ui) {
-        // TODO
+        self.is_about_visible = true;
         ui.close_menu();
     }
 }
