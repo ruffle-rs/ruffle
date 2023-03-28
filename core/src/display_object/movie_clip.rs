@@ -2904,7 +2904,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             let mut result = None;
             let mut options = HitTestOptions::SKIP_INVISIBLE;
             options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-            // AVM2 allows movie clips to recieve mouse events without explicitly enabling button mode.
+            // AVM2 allows movie clips to receive mouse events without explicitly enabling button mode.
             let check_non_interactive = !require_button_mode;
 
             for child in self.iter_render_list().rev() {

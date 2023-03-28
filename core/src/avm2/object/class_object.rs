@@ -516,17 +516,17 @@ impl<'gc> ClassObject<'gc> {
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
     /// such superclass exists, you should use the class object for the
-    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// receiver's actual type (i.e. the lowest in the chain). This ensures
     /// that repeated supercalls to the same method will call parent and
     /// grandparent methods, and so on.
     ///
     /// If no method exists with the given name, this falls back to calling a
-    /// property of the `reciever`. This fallback only triggers if the property
+    /// property of the `receiver`. This fallback only triggers if the property
     /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a method trait with the given name. If it
-    /// is found, it will be called with the reciever and arguments you
+    /// is found, it will be called with the receiver and arguments you
     /// provided, as if it were defined on the target instance object.
     ///
     /// The class that defined the method being called will also be provided to
@@ -538,7 +538,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn call_super(
         self,
         multiname: &Multiname<'gc>,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -558,11 +558,11 @@ impl<'gc> ClassObject<'gc> {
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee =
-                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
+                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(reciever), arguments, activation)
+            callee.call(Some(receiver), arguments, activation)
         } else {
-            reciever.call_property(multiname, arguments, activation)
+            receiver.call_property(multiname, arguments, activation)
         }
     }
 
@@ -571,17 +571,17 @@ impl<'gc> ClassObject<'gc> {
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
     /// such superclass exists, you should use the class object for the
-    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// receiver's actual type (i.e. the lowest in the chain). This ensures
     /// that repeated supercalls to the same getter will call parent and
     /// grandparent getters, and so on.
     ///
     /// If no getter exists with the given name, this falls back to getting a
-    /// property of the `reciever`. This fallback only triggers if the property
+    /// property of the `receiver`. This fallback only triggers if the property
     /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a getter trait with the given name. If it
-    /// is found, it will be called with the reciever you provided, as if it
+    /// is found, it will be called with the receiver you provided, as if it
     /// were defined on the target instance object.
     ///
     /// The class that defined the getter being called will also be provided to
@@ -593,7 +593,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn get_super(
         self,
         multiname: &Multiname<'gc>,
-        reciever: Object<'gc>,
+        receiver: Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
@@ -615,11 +615,11 @@ impl<'gc> ClassObject<'gc> {
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee =
-                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
+                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(reciever), &[], activation)
+            callee.call(Some(receiver), &[], activation)
         } else {
-            reciever.get_property(multiname, activation)
+            receiver.get_property(multiname, activation)
         }
     }
 
@@ -628,17 +628,17 @@ impl<'gc> ClassObject<'gc> {
     /// This is intended to be called on the class object that is the
     /// superclass of the one that defined the currently called property. If no
     /// such superclass exists, you should use the class object for the
-    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// receiver's actual type (i.e. the lowest in the chain). This ensures
     /// that repeated supercalls to the same setter will call parent and
     /// grandparent setter, and so on.
     ///
     /// If no setter exists with the given name, this falls back to setting a
-    /// property of the `reciever`. This fallback only triggers if the property
+    /// property of the `receiver`. This fallback only triggers if the property
     /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a setter trait with the given name. If it
-    /// is found, it will be called with the reciever and value you provided,
+    /// is found, it will be called with the receiver and value you provided,
     /// as if it were defined on the target instance object.
     ///
     /// The class that defined the setter being called will also be provided to
@@ -652,7 +652,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        mut reciever: Object<'gc>,
+        mut receiver: Object<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
@@ -674,13 +674,13 @@ impl<'gc> ClassObject<'gc> {
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee =
-                FunctionObject::from_method(activation, method, scope, Some(reciever), Some(class));
+                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(reciever), &[value], activation)?;
+            callee.call(Some(receiver), &[value], activation)?;
 
             Ok(())
         } else {
-            reciever.set_property(multiname, value, activation)
+            receiver.set_property(multiname, value, activation)
         }
     }
 

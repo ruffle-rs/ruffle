@@ -783,7 +783,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call the object.
     fn call(
         self,
-        _reciever: Option<Object<'gc>>,
+        _receiver: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -802,7 +802,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// 2. Associate the instance object with the class's explicit `prototype`.
     /// 3. If the class has instance traits, install them at this time.
     /// 4. Call the constructor method with the newly-allocated object as
-    /// reciever. For ES3 classes, this is just the function's associated
+    /// receiver. For ES3 classes, this is just the function's associated
     /// method.
     /// 5. Yield the allocated object. (The return values of constructors are
     /// ignored.)
