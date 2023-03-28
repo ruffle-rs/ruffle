@@ -54,6 +54,7 @@ fluent-templates = "0.8.0"
 egui = { version = "0.22.0", optional = true }
 egui_extras = { version = "0.22.0", optional = true }
 png = { version = "0.17.9", optional = true }
+sys-locale = "0.3.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.28"

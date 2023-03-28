@@ -129,11 +129,7 @@ pub fn get_language<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        activation
-            .context
-            .system
-            .language
-            .get_language_code(activation.context.avm1.player_version()),
+        activation.context.system.get_language_string(),
     )
     .into())
 }

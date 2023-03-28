@@ -3758,6 +3758,7 @@ dependencies = [
  "smallvec",
  "swf",
  "symphonia",
+ "sys-locale",
  "thiserror",
  "tracing",
  "url",

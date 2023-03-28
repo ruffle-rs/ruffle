@@ -132,6 +132,7 @@ impl Manufacturer {
 
 /// The language of the host os
 #[allow(dead_code)]
+#[derive(PartialEq)]
 pub enum Language {
     Czech,
     Danish,
@@ -156,19 +157,13 @@ pub enum Language {
     Turkish,
 }
 
-impl Language {
-    pub fn get_language_code(&self, player_version: u8) -> &str {
-        match self {
+impl fmt::Display for Language {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.write_str(match self {
             Language::Czech => "cs",
             Language::Danish => "da",
             Language::Dutch => "nl",
-            Language::English => {
-                if player_version < 7 {
-                    "en-US"
-                } else {
-                    "en"
-                }
-            }
+            Language::English => "en",
             Language::Finnish => "fi",
             Language::French => "fr",
             Language::German => "de",
@@ -186,7 +181,7 @@ impl Language {
             Language::Swedish => "sv",
             Language::TraditionalChinese => "zh-TW",
             Language::Turkish => "tr",
-        }
+        })
     }
 }
 
@@ -287,6 +282,8 @@ pub struct SystemProperties {
     pub dpi: f32,
     /// The language of the host os
     pub language: Language,
+    /// The region code for the language if english and flash player version < 7
+    pub language_region: Option<String>,
     /// The manufacturer of the player
     pub manufacturer: Manufacturer,
     /// The os of the host
@@ -300,7 +297,7 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
-    pub fn new(sandbox_type: SandboxType, ruffle_type: RuffleType) -> Self {
+    pub fn new(sandbox_type: SandboxType, player_version: u8, ruffle_type: RuffleType) -> Self {
         let mut capabilities = SystemCapabilities::empty();
 
         // TODO: Fill the bitmap correctly with the system properties
@@ -371,6 +368,58 @@ impl SystemProperties {
             RuffleType::WebPlayer => PlayerType::PlugIn,
         };
 
+        let locale_language_tag = sys_locale::get_locale().unwrap_or_else(|| "XX-XX".to_string());
+        // TODO: If OS == Windows and player_version >= 7 get UI language and use it instead
+        let language_tag = locale_language_tag;
+
+        let language_vector: Vec<&str> = language_tag.split('-').collect();
+        let language_code = language_vector[0];
+
+        let language = match language_code {
+            "cs" => Language::Czech,
+            "da" => Language::Danish,
+            "nl" => Language::Dutch,
+            "en" => Language::English,
+            "fi" => Language::Finnish,
+            "fr" => Language::French,
+            "de" => Language::German,
+            "hu" => Language::Hungarian,
+            "it" => Language::Italian,
+            "ja" => Language::Japanese,
+            "ko" => Language::Korean,
+            "nb" => Language::Norwegian,
+            "xu" => Language::Unknown,
+            "pl" => Language::Polish,
+            "pt" => Language::Portuguese,
+            "ru" => Language::Russian,
+            "zh" => {
+                if language_vector.len() > 1 {
+                    match language_vector[1].to_uppercase().as_str() {
+                        "HANS" | "CN" | "SG" | "MY" => Language::SimplifiedChinese,
+                        "HANT" | "TW" | "HK" | "MO" => Language::TraditionalChinese,
+                        _ => Language::TraditionalChinese,
+                    }
+                } else {
+                    Language::TraditionalChinese
+                }
+            }
+            "es" => Language::Spanish,
+            "sv" => Language::Swedish,
+            "tr" => Language::Turkish,
+            // Fallback
+            _ => Language::Unknown,
+        };
+
+        let language_region = if language == Language::English && player_version < 7 {
+            if language_vector.len() > 1 {
+                Some(language_vector[1].to_uppercase())
+            } else {
+                Some("US".to_string())
+            }
+        } else {
+            None
+        };
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -379,12 +428,12 @@ impl SystemProperties {
             capabilities,
             player_type,
             screen_color: ScreenColor::Color,
-            // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
-            language: Language::English,
             // source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
             pixel_aspect_ratio: 1_f32,
             // source: https://tracker.adobe.com/#/view/FP-3949775
             dpi: 72_f32,
+            language,
+            language_region,
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
             sandbox_type,
@@ -481,11 +530,7 @@ impl SystemProperties {
             .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.pixel_aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(&self.os.to_string()))
-            .append_pair(
-                "L",
-                self.language
-                    .get_language_code(context.avm1.player_version()),
-            )
+            .append_pair("L", &self.get_language_string())
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(
@@ -498,6 +543,13 @@ impl SystemProperties {
             )
             .append_pair("DP", &self.dpi.to_string())
             .finish()
+    }
+
+    pub fn get_language_string(&self) -> String {
+        match &self.language_region {
+            Some(language_region) => self.language.to_string() + "-" + language_region,
+            None => self.language.to_string(),
+        }
     }
 }
 

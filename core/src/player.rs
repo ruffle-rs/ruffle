@@ -2370,7 +2370,7 @@ impl PlayerBuilder {
 
                 // Misc. state
                 rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
-                system: SystemProperties::new(self.sandbox_type, self.ruffle_type),
+                system: SystemProperties::new(self.sandbox_type, player_version, self.ruffle_type),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
                 player_version,
