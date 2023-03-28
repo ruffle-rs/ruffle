@@ -59,6 +59,12 @@ impl fmt::Display for SandboxType {
     }
 }
 
+/// Type of the Ruffle player
+pub enum RuffleType {
+    DesktopPlayer,
+    WebPlayer,
+}
+
 /// The available host operating systems
 #[allow(dead_code)]
 pub enum OperatingSystem {
@@ -201,6 +207,7 @@ impl fmt::Display for ScreenColor {
         })
     }
 }
+
 /// The type of the player
 #[allow(dead_code)]
 pub enum PlayerType {
@@ -293,7 +300,7 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
-    pub fn new(sandbox_type: SandboxType) -> Self {
+    pub fn new(sandbox_type: SandboxType, ruffle_type: RuffleType) -> Self {
         let mut capabilities = SystemCapabilities::empty();
 
         // TODO: Fill the bitmap correctly with the system properties
@@ -359,13 +366,18 @@ impl SystemProperties {
             capabilities.insert(SystemCapabilities::WINDOW_LESS);
         }
 
+        let player_type = match ruffle_type {
+            RuffleType::DesktopPlayer => PlayerType::StandAlone,
+            RuffleType::WebPlayer => PlayerType::PlugIn,
+        };
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
             //TODO: default to false on fp>=7, true <= 6
             use_codepage: false,
             capabilities,
-            player_type: PlayerType::StandAlone,
+            player_type,
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
             language: Language::English,
