@@ -1364,7 +1364,13 @@ pub trait TDisplayObject<'gc>:
             if self.has_explicit_name() {
                 if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
                     if let Avm2Value::Object(c) = self.object2() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let domain = context
+                            .library
+                            .library_for_movie(self.movie())
+                            .unwrap()
+                            .avm2_domain();
+                        let mut activation =
+                            Avm2Activation::from_domain(context.reborrow(), domain);
                         let name =
                             Avm2Multiname::new(activation.avm2().public_namespace, self.name());
                         if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
