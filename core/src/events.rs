@@ -213,7 +213,7 @@ pub enum ClipEvent<'gc> {
     ///
     /// This is a targeted event with no anycast equivalent. It is targeted to
     /// any interactive object under the mouse cursor, including the stage
-    /// itself. Only AVM2 can recieve these events.
+    /// itself. Only AVM2 can receive these events.
     MouseWheel {
         delta: MouseWheelDelta,
     },

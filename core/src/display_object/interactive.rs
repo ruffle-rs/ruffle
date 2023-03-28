@@ -478,7 +478,7 @@ pub trait TInteractiveObject<'gc>:
     /// mouse cursor.
     ///
     /// Only objects capable of handling mouse input should flag themselves as
-    /// mouse-pickable, as doing so will make them eligible to recieve targeted
+    /// mouse-pickable, as doing so will make them eligible to receive targeted
     /// mouse events. As a result of this, the returned object will always be
     /// an `InteractiveObject`.
     fn mouse_pick_avm1(

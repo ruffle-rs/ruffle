@@ -398,14 +398,14 @@ impl<'gc> Avm2<'gc> {
 
     pub fn run_stack_frame_for_callable(
         callable: Object<'gc>,
-        reciever: Option<Object<'gc>>,
+        receiver: Option<Object<'gc>>,
         args: &[Value<'gc>],
         domain: Domain<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), String> {
         let mut evt_activation = Activation::from_domain(context.reborrow(), domain);
         callable
-            .call(reciever, args, &mut evt_activation)
+            .call(receiver, args, &mut evt_activation)
             .map_err(|e| e.detailed_message(&mut evt_activation))?;
 
         Ok(())

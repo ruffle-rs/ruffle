@@ -19,7 +19,7 @@ pub trait VideoDecoder {
     /// video data should be inspected to determine inter-frame dependencies
     /// between this and any previous frames in the stream.
     ///
-    /// Frames should be preloaded in the order that they are recieved.
+    /// Frames should be preloaded in the order that they are received.
     ///
     /// Any dependencies listed here are inherent to the video bitstream. The
     /// containing video stream is also permitted to introduce additional

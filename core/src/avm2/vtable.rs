@@ -433,7 +433,7 @@ impl<'gc> VTable<'gc> {
     /// ID. You will need the additional properties in order to install the
     /// method into your object.
     ///
-    /// You should only call this method once per reciever/name pair, and cache
+    /// You should only call this method once per receiver/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
     /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
     /// fail.
