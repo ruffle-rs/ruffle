@@ -13,4 +13,7 @@ pub enum RuffleEvent {
 
     /// The user requested to exit Ruffle.
     ExitRequested,
+
+    /// The user selected an item in the right-click context menu.
+    ContextMenuItemClicked(usize),
 }

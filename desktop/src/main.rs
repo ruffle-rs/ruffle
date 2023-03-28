@@ -520,6 +520,10 @@ impl App {
                             }
                         }
                         WindowEvent::CursorMoved { position, .. } => {
+                            if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
+                                return;
+                            }
+
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             mouse_pos = position;
                             let event = PlayerEvent::MouseMove {
@@ -532,6 +536,10 @@ impl App {
                             }
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
+                            if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
+                                return;
+                            }
+
                             use ruffle_core::events::MouseButton as RuffleMouseButton;
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             let x = mouse_pos.x;
@@ -546,6 +554,16 @@ impl App {
                                 ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
                                 ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                             };
+                            if state == ElementState::Pressed && button == RuffleMouseButton::Right
+                            {
+                                // Show context menu.
+                                // TODO: Should be squelched if player consumes the right click event.
+                                let context_menu = player_lock.prepare_context_menu();
+                                self.gui
+                                    .lock()
+                                    .expect("Gui lock")
+                                    .show_context_menu(context_menu);
+                            }
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
@@ -719,10 +737,18 @@ impl App {
                     });
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::ContextMenuItemClicked(index)) => {
+                    self.player
+                        .lock()
+                        .expect("Cannot reenter")
+                        .run_context_menu_callback(index);
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
                     if let Some(path) = pick_file() {
                         // TODO: Show dialog on error.
                         let _ = self.load_swf(&path);
+                        self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }
                 }
 
