@@ -294,12 +294,77 @@ pub struct SystemProperties {
 
 impl SystemProperties {
     pub fn new(sandbox_type: SandboxType) -> Self {
+        let mut capabilities = SystemCapabilities::empty();
+
+        // TODO: Fill the bitmap correctly with the system properties
+        // Currently, there are stubs filling the bitmap with probable entries
+        // (e.g. most systems have audio encoding)
+        // Replace the true or false with the actual properties
+
+        if false {
+            capabilities.insert(SystemCapabilities::AV_HARDWARE);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::ACCESSIBILITY);
+        }
+        // AUDIO is always true, according to specs
+        capabilities.insert(SystemCapabilities::AUDIO);
+        if true {
+            capabilities.insert(SystemCapabilities::AUDIO_ENCODER);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::EMBEDDED_VIDEO);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::IME);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::MP3);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::PRINTING);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::SCREEN_BROADCAST);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::SCREEN_PLAYBACK);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::STREAMING_AUDIO);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::STREAMING_VIDEO);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::VIDEO_ENCODER);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::DEBUGGER);
+        }
+        if false {
+            capabilities.insert(SystemCapabilities::LOCAL_FILE_READ);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::PROCESS_64_BIT);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::PROCESS_32_BIT);
+        }
+        // ACROBAT_EMBEDDED is always false
+        if true {
+            capabilities.insert(SystemCapabilities::TLS);
+        }
+        if true {
+            capabilities.insert(SystemCapabilities::WINDOW_LESS);
+        }
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
             //TODO: default to false on fp>=7, true <= 6
             use_codepage: false,
-            capabilities: SystemCapabilities::empty(),
+            capabilities,
             player_type: PlayerType::StandAlone,
             screen_color: ScreenColor::Color,
             // TODO: note for fp <7 this should be the locale and the ui lang for >= 7, on windows
