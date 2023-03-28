@@ -173,6 +173,7 @@ function isXMLDocument(): boolean {
             warnOnUnsupportedContent: options.warnOnUnsupportedContent,
             logLevel: options.logLevel,
             showSwfDownload: options.showSwfDownload,
+            showReload: options.showReload,
         },
     });
 })();

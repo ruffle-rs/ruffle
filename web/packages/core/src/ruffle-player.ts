@@ -1080,6 +1080,15 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Reloads the loaded SWF.
+     */
+    private reloadSwf(): void {
+        if (this.loadedConfig) {
+            this.load(this.loadedConfig);
+        }
+    }
+
+    /**
      * Fetches the loaded SWF and downloads it.
      */
     async downloadSwf(): Promise<void> {
@@ -1191,6 +1200,14 @@ export class RufflePlayer extends HTMLElement {
             items.push({
                 text: "Download .swf",
                 onClick: this.downloadSwf.bind(this),
+            });
+        }
+
+        if (this.loadedConfig && this.loadedConfig.showReload === true) {
+            items.push(null);
+            items.push({
+                text: "Reload content",
+                onClick: this.reloadSwf.bind(this),
             });
         }
 

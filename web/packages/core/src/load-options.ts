@@ -223,6 +223,14 @@ export interface BaseLoadOptions {
     showSwfDownload?: boolean;
 
     /**
+     * If set to true, the context menu has an option to reload
+     * the content.
+     *
+     * @default false
+     */
+    showReload?: boolean;
+
+    /**
      * Whether or not to show a context menu when right-clicking
      * a Ruffle instance.
      *
