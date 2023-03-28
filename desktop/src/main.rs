@@ -289,15 +289,10 @@ struct App {
 
 impl App {
     fn new(opt: Opt) -> Result<Self, Error> {
-        let path = match opt.input_path.as_ref() {
-            Some(path) => Some(path.to_owned()),
-            None => pick_file(),
-        };
-        let movie_url = if let Some(path) = &path {
-            parse_url(path).context("Couldn't load specified path")?
+        let movie_url = if let Some(path) = &opt.input_path {
+            Some(parse_url(path).context("Couldn't load specified path")?)
         } else {
-            shutdown();
-            std::process::exit(0);
+            None
         };
 
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
@@ -331,7 +326,9 @@ impl App {
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
-            opt.base.to_owned().unwrap_or(movie_url),
+            opt.base.to_owned().unwrap_or(
+                movie_url.unwrap_or_else(|| Url::parse("file:///empty").expect("Dummy Url")),
+            ),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
@@ -406,7 +403,10 @@ impl App {
             max_window_size,
         };
 
-        app.load_swf(&path.expect("Expected path"))?;
+        if let Some(path) = &app.opt.input_path {
+            app.load_swf(&path.clone())?;
+        }
+
         Ok(app)
     }
 
@@ -450,6 +450,12 @@ impl App {
         let mut minimized = false;
         let mut modifiers = ModifiersState::empty();
         let mut fullscreen_down = false;
+
+        if self.opt.input_path.is_none() {
+            // No SWF provided on command line; show window with dummy movie immediately.
+            self.window.set_visible(true);
+            self.gui.lock().expect("Gui lock").set_ui_visible(true);
+        }
 
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
