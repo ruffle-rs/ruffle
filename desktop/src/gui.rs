@@ -12,6 +12,8 @@ pub struct GuiController {
     egui_renderer: egui_wgpu::renderer::Renderer,
     gui: RuffleGui,
     window: Rc<Window>,
+    last_update: Instant,
+    repaint_after: Duration,
 }
 
 impl GuiController {
@@ -36,6 +38,8 @@ impl GuiController {
             egui_renderer,
             gui,
             window,
+            last_update: Instant::now(),
+            repaint_after: Duration::ZERO,
         }
     }
 
@@ -56,6 +60,7 @@ impl GuiController {
         let full_output = self.egui_ctx.run(raw_input, |context| {
             self.gui.update(context);
         });
+        self.repaint_after = full_output.repaint_after;
 
         self.egui_winit.handle_platform_output(
             &self.window,
@@ -129,8 +134,12 @@ impl GuiController {
         self.gui.show_context_menu(menu);
     }
 
-    pub fn is_context_menu_visible(&mut self) -> bool {
+    pub fn is_context_menu_visible(&self) -> bool {
         self.gui.is_context_menu_visible()
+    }
+
+    pub fn needs_render(&self) -> bool {
+        Instant::now().duration_since(self.last_update) >= self.repaint_after
     }
 }
 
