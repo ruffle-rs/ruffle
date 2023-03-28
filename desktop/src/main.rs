@@ -455,6 +455,7 @@ impl App {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
             self.gui.lock().expect("Gui lock").set_ui_visible(true);
+            loaded = LoadingState::Loaded;
         }
 
         // Poll UI events.
