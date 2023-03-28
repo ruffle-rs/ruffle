@@ -460,6 +460,7 @@ impl App {
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
         event_loop.run(move |event, _window_target, control_flow| {
+            let mut check_redraw = false;
             match event {
                 winit::event::Event::LoopDestroyed => {
                     self.player
@@ -481,9 +482,7 @@ impl App {
                         let mut player_lock = self.player.lock().expect("Cannot reenter");
                         player_lock.tick(dt as f64 / 1000.0);
                         next_frame_time = new_time + player_lock.time_til_next_frame();
-                        if player_lock.needs_render() {
-                            self.window.request_redraw();
-                        }
+                        check_redraw = true;
                     }
                 }
 
@@ -537,9 +536,7 @@ impl App {
                                 y: position.y,
                             };
                             player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
+                            check_redraw = true;
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
                             if self.gui.lock().expect("Gui lock").is_context_menu_visible() {
@@ -571,9 +568,7 @@ impl App {
                                     .show_context_menu(context_menu);
                             }
                             player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
+                            check_redraw = true;
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
                             use ruffle_core::events::MouseWheelDelta;
@@ -586,9 +581,7 @@ impl App {
                             };
                             let event = PlayerEvent::MouseWheel { delta };
                             player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
+                            check_redraw = true;
                         }
                         WindowEvent::CursorEntered { .. } => {
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
@@ -601,9 +594,7 @@ impl App {
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             player_lock.set_mouse_in_stage(false);
                             player_lock.handle_event(PlayerEvent::MouseLeave);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
+                            check_redraw = true;
                         }
                         WindowEvent::ModifiersChanged(new_modifiers) => {
                             modifiers = new_modifiers;
@@ -675,9 +666,7 @@ impl App {
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
                             let event = PlayerEvent::TextInput { codepoint };
                             player_lock.handle_event(event);
-                            if player_lock.needs_render() {
-                                self.window.request_redraw();
-                            }
+                            check_redraw = true;
                         }
                         _ => (),
                     }
@@ -764,6 +753,15 @@ impl App {
                 }
 
                 _ => (),
+            }
+
+            // Check for a redraw request.
+            if check_redraw {
+                let player = self.player.lock().expect("Player lock");
+                let gui = self.gui.lock().expect("Gui lock");
+                if player.needs_render() || gui.needs_render() {
+                    self.window.request_redraw();
+                }
             }
 
             // After polling events, sleep the event loop until the next event or the next frame.
