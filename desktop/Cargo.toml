@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.1.11", features = ["derive"] }
+clap = { version = "4.1.13", features = ["derive"] }
 cpal = "0.15.1"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -23,7 +23,7 @@ url = "2.3.1"
 arboard = "3.2.0"
 dirs = "5.0"
 isahc = "1.7.2"
-rfd = "0.11.2"
+rfd = "0.11.3"
 anyhow = "1.0"
 bytemuck = "1.13.1"
 os_info = { version = "3", default-features = false }
