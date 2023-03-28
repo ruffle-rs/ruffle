@@ -29,12 +29,11 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// TODO(moulins): shrink `Value` down again.
-// #[cfg(target_pointer_width = "32")]
-// const _: () = assert!(size_of::<Value<'_>>() == 16);
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<Value<'_>>() == 16);
 
-// #[cfg(target_pointer_width = "64")]
-// const _: () = assert!(size_of::<Value<'_>>() == 24);
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {

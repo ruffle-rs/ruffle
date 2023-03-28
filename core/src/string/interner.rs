@@ -8,33 +8,16 @@ use std::ops::DerefMut;
 use gc_arena::{Collect, CollectionContext, Gc, GcWeak, MutationContext};
 use hashbrown::raw::{Bucket, RawTable};
 
-use crate::string::{AvmString, OwnedWStr, WStr};
+use crate::string::{AvmString, AvmStringRepr, WStr};
 
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct AvmAtom<'gc>(Gc<'gc, OwnedWStr>);
+pub struct AvmAtom<'gc>(pub(super) Gc<'gc, AvmStringRepr>);
 
 impl<'gc> PartialEq for AvmAtom<'gc> {
     fn eq(&self, other: &Self) -> bool {
         Gc::ptr_eq(self.0, other.0)
-    }
-}
-
-impl<'gc> PartialEq<AvmString<'gc>> for AvmAtom<'gc> {
-    fn eq(&self, other: &AvmString<'gc>) -> bool {
-        if let Some(atom) = other.as_interned() {
-            *self == atom
-        } else {
-            self.as_wstr() == other.as_wstr()
-        }
-    }
-}
-
-impl<'gc> PartialEq<AvmAtom<'gc>> for AvmString<'gc> {
-    #[inline(always)]
-    fn eq(&self, other: &AvmAtom<'gc>) -> bool {
-        PartialEq::eq(other, self)
     }
 }
 
@@ -62,16 +45,12 @@ impl<'gc> AvmAtom<'gc> {
     pub fn as_wstr(&self) -> &WStr {
         &self.0
     }
-
-    pub(super) fn as_owned(self) -> Gc<'gc, OwnedWStr> {
-        self.0
-    }
 }
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 pub struct AvmStringInterner<'gc> {
-    interned: WeakSet<'gc, OwnedWStr>,
+    interned: WeakSet<'gc, AvmStringRepr>,
 }
 
 impl<'gc> AvmStringInterner<'gc> {
@@ -79,8 +58,9 @@ impl<'gc> AvmStringInterner<'gc> {
         Self::default()
     }
 
-    fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, OwnedWStr> {
-        Gc::allocate(mc, OwnedWStr(s.into_owned()))
+    fn alloc(mc: MutationContext<'gc, '_>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr> {
+        let repr = AvmStringRepr::from_raw(s.into_owned(), true);
+        Gc::allocate(mc, repr)
     }
 
     #[must_use]
@@ -110,7 +90,11 @@ impl<'gc> AvmStringInterner<'gc> {
 
         let atom = match self.interned.entry(mc, s.as_wstr()) {
             (Some(atom), _) => atom,
-            (None, h) => self.interned.insert_fresh(mc, h, s.to_owned(mc)),
+            (None, h) => {
+                let repr = s.to_owned(mc);
+                repr.mark_interned();
+                self.interned.insert_fresh(mc, h, repr)
+            }
         };
 
         AvmAtom(atom)

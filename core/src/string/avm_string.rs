@@ -4,13 +4,12 @@ use std::ops::Deref;
 use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_wstr::{wstr_impl_traits, WStr, WString};
 
-use crate::string::{AvmAtom, OwnedWStr};
+use crate::string::{AvmAtom, AvmStringRepr};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    Owned(Gc<'gc, OwnedWStr>),
-    Interned(AvmAtom<'gc>),
+    Owned(Gc<'gc, AvmStringRepr>),
     Static(&'static WStr),
 }
 
@@ -21,11 +20,13 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub(super) fn to_owned(self, gc_context: MutationContext<'gc, '_>) -> Gc<'gc, OwnedWStr> {
+    pub(super) fn to_owned(self, gc_context: MutationContext<'gc, '_>) -> Gc<'gc, AvmStringRepr> {
         match self.source {
             Source::Owned(s) => s,
-            Source::Interned(s) => s.as_owned(),
-            Source::Static(s) => Gc::allocate(gc_context, OwnedWStr(s.into())),
+            Source::Static(s) => {
+                let repr = AvmStringRepr::from_raw(s.into(), false);
+                Gc::allocate(gc_context, repr)
+            }
         }
     }
 
@@ -37,8 +38,9 @@ impl<'gc> AvmString<'gc> {
             Cow::Owned(utf8) => WString::from_utf8_owned(utf8),
             Cow::Borrowed(utf8) => WString::from_utf8(utf8),
         };
+        let repr = AvmStringRepr::from_raw(buf, false);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(buf))),
+            source: Source::Owned(Gc::allocate(gc_context, repr)),
         }
     }
 
@@ -48,24 +50,23 @@ impl<'gc> AvmString<'gc> {
     }
 
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+        let repr = AvmStringRepr::from_raw(string.into(), false);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(string.into()))),
+            source: Source::Owned(Gc::allocate(gc_context, repr)),
         }
     }
 
     pub fn as_wstr(&self) -> &WStr {
         match &self.source {
-            Source::Owned(s) => &s.0,
-            Source::Interned(s) => s.as_wstr(),
+            Source::Owned(s) => s,
             Source::Static(s) => s,
         }
     }
 
     pub fn as_interned(&self) -> Option<AvmAtom<'gc>> {
-        if let Source::Interned(s) = self.source {
-            Some(s)
-        } else {
-            None
+        match self.source {
+            Source::Owned(s) if s.is_interned() => Some(AvmAtom(s)),
+            _ => None,
         }
     }
 
@@ -95,7 +96,7 @@ impl<'gc> From<AvmAtom<'gc>> for AvmString<'gc> {
     #[inline]
     fn from(atom: AvmAtom<'gc>) -> Self {
         Self {
-            source: Source::Interned(atom),
+            source: Source::Owned(atom.0),
         }
     }
 }
@@ -135,4 +136,41 @@ impl<'gc> Deref for AvmString<'gc> {
     }
 }
 
-wstr_impl_traits!(impl['gc] for AvmString<'gc>);
+// Manual equality implementation with fast paths for owned strings.
+impl<'gc> PartialEq for AvmString<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        if let (Source::Owned(left), Source::Owned(right)) = (self.source, other.source) {
+            // Fast accept for identical strings.
+            if Gc::ptr_eq(left, right) {
+                return true;
+            // Fast reject for distinct interned strings.
+            } else if left.is_interned() && right.is_interned() {
+                return false;
+            }
+        }
+
+        // Fallback case.
+        self.as_wstr() == other.as_wstr()
+    }
+}
+
+impl<'gc> PartialEq<AvmString<'gc>> for AvmAtom<'gc> {
+    fn eq(&self, other: &AvmString<'gc>) -> bool {
+        if let Some(atom) = other.as_interned() {
+            *self == atom
+        } else {
+            self.as_wstr() == other.as_wstr()
+        }
+    }
+}
+
+impl<'gc> PartialEq<AvmAtom<'gc>> for AvmString<'gc> {
+    #[inline(always)]
+    fn eq(&self, other: &AvmAtom<'gc>) -> bool {
+        PartialEq::eq(other, self)
+    }
+}
+
+impl<'gc> Eq for AvmString<'gc> {}
+
+wstr_impl_traits!(impl['gc] manual_eq for AvmString<'gc>);
