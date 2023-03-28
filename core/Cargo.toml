@@ -15,7 +15,7 @@ flate2 = "1.0.25"
 fnv = "1.0.7"
 gc-arena = { workspace = true }
 generational-arena = "0.2.8"
-indexmap = "1.9.2"
+indexmap = "1.9.3"
 tracing = "0.1.37"
 ruffle_render = { path = "../render" }
 ruffle_video = { path = "../video" }
@@ -46,7 +46,7 @@ dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = 
 symphonia = { version = "0.5.2", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.0.12"
 bytemuck = "1.13.1"
-clap = { version = "4.1.11", features = ["derive"], optional=true }
+clap = { version = "4.1.13", features = ["derive"], optional=true }
 realfft = "3.2.0"
 once_cell = "1.17.1"
 
