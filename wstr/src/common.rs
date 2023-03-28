@@ -492,6 +492,8 @@ impl core::cmp::PartialEq<WStr> for WStr {
     }
 }
 
+impl core::cmp::Eq for WStr {}
+
 impl core::cmp::Ord for WStr {
     #[inline]
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -580,9 +582,6 @@ macro_rules! __wstr_impl_internal {
     };
 
     (@eq_ord_self [$($generics:tt)*] for $ty:ty) => {
-
-        impl<$($generics)*> ::core::cmp::Eq for $ty {}
-
         impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
             #[inline]
             fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
@@ -594,6 +593,17 @@ macro_rules! __wstr_impl_internal {
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
         $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
+    };
+
+    (@eq_base [$($generics:tt)*] for $ty:ty) => {
+        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
+            #[inline]
+            fn eq(&self, other: &$ty) -> bool {
+                ::core::cmp::PartialEq::eq(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
+            }
+        }
+
+        impl<$($generics)*> ::core::cmp::Eq for $ty {}
     };
 
     (@base [$($generics:tt)*] for $ty:ty) => {
@@ -608,13 +618,6 @@ macro_rules! __wstr_impl_internal {
             #[inline]
             fn borrow(&self) -> &$crate::WStr {
                 ::core::ops::Deref::deref(self)
-            }
-        }
-
-        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
-            #[inline]
-            fn eq(&self, other: &$ty) -> bool {
-                ::core::cmp::PartialEq::eq(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
             }
         }
 
@@ -666,7 +669,7 @@ macro_rules! __wstr_impl_internal {
         }
     };
 
-    (@full [$($generics:tt)*] for $ty:ty) => {
+    (@full_no_eq [$($generics:tt)*] for $ty:ty) => {
         $crate::__wstr_impl_internal!(@base [$($generics)*] for $ty);
         $crate::__wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
         $crate::__wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
@@ -682,7 +685,8 @@ macro_rules! __wstr_impl_internal {
 /// delegating impls for the following traits:
 ///
 ///   - [`AsRef<WStr>`], [`Borrow<WStr>`][core::borrow::Borrow];
-///   - [`Eq`], [`PartialEq`], [`Ord`], [`PartialOrd`];
+///   - [`Eq`], [`PartialEq`] (this can be disabled with `manual_eq`);
+///   - [`Ord`], [`PartialOrd`],
 ///   - [`PartialEq<_>`], [`PartialOrd<_>`] for [`WStr`], [`&WStr`][WStr],
 ///     `[u8]`, `[u16]`, `[u8; N]` and `[u16; N]`;
 ///   - [`Display`][core::fmt::Display], [`Debug`][core::fmt::Debug];
@@ -690,11 +694,20 @@ macro_rules! __wstr_impl_internal {
 ///   - [`IntoIterator<Item=u16>`][IntoIterator].
 #[macro_export]
 macro_rules! wstr_impl_traits {
+    (impl manual_eq for $ty_name:ty) => {
+        $crate::__wstr_impl_internal!(@full_no_eq [] for $ty_name);
+    };
     (impl for $ty_name:ty) => {
-        $crate::__wstr_impl_internal!(@full [] for $ty_name);
+        $crate::__wstr_impl_internal!(@full_no_eq [] for $ty_name);
+        $crate::__wstr_impl_internal!(@eq_base [] for $ty_name);
+    };
+    (impl[$($generics:tt)+] manual_eq for $ty_name:ty) => {
+        $crate::__wstr_impl_internal!(@full_no_eq [$($generics)*,] for $ty_name);
     };
     (impl [$($generics:tt)+] for $ty_name:ty) => {
-        $crate::__wstr_impl_internal!(@full [$($generics)*,] for $ty_name);
+        $crate::__wstr_impl_internal!(@full_no_eq [$($generics)*,] for $ty_name);
+        $crate::__wstr_impl_internal!(@eq_base [$($generics)*,] for $ty_name);
+
     };
 }
 
