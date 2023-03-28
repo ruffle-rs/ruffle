@@ -147,9 +147,11 @@ impl GuiController {
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     esc_start_time: Option<Instant>,
+    open_url_text: String,
     is_esc_down: bool,
     is_ui_visible: bool,
     is_about_visible: bool,
+    is_open_url_prompt_visible: bool,
     context_menu: Vec<ruffle_core::ContextMenuItem>,
 }
 
@@ -158,9 +160,11 @@ impl RuffleGui {
         Self {
             event_loop,
             esc_start_time: None,
+            open_url_text: String::new(),
             is_esc_down: false,
             is_ui_visible: false,
             is_about_visible: false,
+            is_open_url_prompt_visible: false,
             context_menu: vec![],
         }
     }
@@ -202,6 +206,7 @@ impl RuffleGui {
         if self.is_ui_visible {
             self.main_menu_bar(egui_ctx);
             self.about_window(egui_ctx);
+            self.open_url_prompt(egui_ctx);
         }
 
         if !self.context_menu.is_empty() {
@@ -242,13 +247,18 @@ impl RuffleGui {
                     let mut shortcut;
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
 
-                    if Button::new("Open...")
+                    if Button::new("Open File...")
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
                     {
                         self.open_file(ui);
                     }
+
+                    if Button::new("Open URL...").ui(ui).clicked() {
+                        self.show_open_url_prompt(ui);
+                    }
+
                     ui.separator();
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
@@ -333,6 +343,42 @@ impl RuffleGui {
         ui.close_menu();
     }
 
+    fn open_url_prompt(&mut self, egui_ctx: &egui::Context) {
+        let mut close_prompt = false;
+        egui::Window::new("Open URL")
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .collapsible(false)
+            .open(&mut self.is_open_url_prompt_visible)
+            .show(egui_ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    let (enter_pressed, esc_pressed) = ui.ctx().input_mut(|input| {
+                        (
+                            input.consume_key(Modifiers::NONE, Key::Enter),
+                            input.consume_key(Modifiers::NONE, Key::Escape),
+                        )
+                    });
+                    ui.text_edit_singleline(&mut self.open_url_text);
+                    ui.horizontal(|ui| {
+                        if ui.button("OK").clicked() || enter_pressed {
+                            if let Ok(url) = url::Url::parse(&self.open_url_text) {
+                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(url));
+                            } else {
+                                // TODO: Show error prompt.
+                                tracing::error!("Invalid URL: {}", self.open_url_text);
+                            }
+                            close_prompt = true;
+                        }
+                        if ui.button("Cancel").clicked() || esc_pressed {
+                            close_prompt = true;
+                        }
+                    });
+                });
+            });
+        if close_prompt {
+            self.is_open_url_prompt_visible = false;
+        }
+    }
+
     fn request_exit(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::ExitRequested);
         ui.close_menu();
@@ -346,6 +392,11 @@ impl RuffleGui {
 
     fn show_about_screen(&mut self, ui: &mut egui::Ui) {
         self.is_about_visible = true;
+        ui.close_menu();
+    }
+
+    fn show_open_url_prompt(&mut self, ui: &mut egui::Ui) {
+        self.is_open_url_prompt_visible = true;
         ui.close_menu();
     }
 }

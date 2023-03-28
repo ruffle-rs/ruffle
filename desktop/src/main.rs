@@ -327,7 +327,9 @@ impl App {
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or(
-                movie_url.unwrap_or_else(|| Url::parse("file:///empty").expect("Dummy Url")),
+                movie_url
+                    .clone()
+                    .unwrap_or_else(|| Url::parse("file:///empty").expect("Dummy Url")),
             ),
             channel,
             event_loop.create_proxy(),
@@ -403,20 +405,18 @@ impl App {
             max_window_size,
         };
 
-        if let Some(path) = &app.opt.input_path {
-            app.load_swf(&path.clone())?;
+        if let Some(movie_url) = movie_url {
+            app.load_swf(movie_url)?;
         }
 
         Ok(app)
     }
 
-    fn load_swf(&mut self, movie_path: &Path) -> Result<(), Error> {
-        let movie_url = parse_url(movie_path).context("Couldn't load specified path")?;
-
-        let filename = movie_url
+    fn load_swf(&mut self, url: Url) -> Result<(), Error> {
+        let filename = url
             .path_segments()
             .and_then(|segments| segments.last())
-            .unwrap_or_else(|| movie_url.as_str());
+            .unwrap_or_else(|| url.as_str());
         let title = format!("Ruffle - {filename}");
         self.window.set_title(&title);
         SWF_INFO.with(|i| *i.borrow_mut() = Some(filename.to_string()));
@@ -426,10 +426,10 @@ impl App {
             let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
         };
 
-        let mut parameters: Vec<(String, String)> = movie_url.query_pairs().into_owned().collect();
+        let mut parameters: Vec<(String, String)> = url.query_pairs().into_owned().collect();
         parameters.extend(parse_parameters(&self.opt));
         self.player.lock().expect("Player lock").fetch_root_movie(
-            movie_url.to_string(),
+            url.to_string(),
             parameters,
             Box::new(on_metadata),
         );
@@ -743,9 +743,15 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::OpenFile) => {
                     if let Some(path) = pick_file() {
                         // TODO: Show dialog on error.
-                        let _ = self.load_swf(&path);
+                        let url = parse_url(&path).expect("Couldn't load specified path");
+                        let _ = self.load_swf(url);
                         self.gui.lock().expect("Gui lock").set_ui_visible(false);
                     }
+                }
+
+                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url)) => {
+                    let _ = self.load_swf(url);
+                    self.gui.lock().expect("Gui lock").set_ui_visible(false);
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
