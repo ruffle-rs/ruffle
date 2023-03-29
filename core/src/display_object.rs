@@ -1405,15 +1405,8 @@ pub trait TDisplayObject<'gc>:
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc>) {
         let frame_constructed_evt =
             Avm2EventObject::bare_default_event(context, "frameConstructed");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting frameConstructed event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
     }
 
     /// Run any frame scripts (if they exist and this object needs to run them).
@@ -1428,15 +1421,8 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `exitFrame` broadcast event.
     fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, exit_frame_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting exitFrame event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
 
         self.on_exit_frame(context);
     }

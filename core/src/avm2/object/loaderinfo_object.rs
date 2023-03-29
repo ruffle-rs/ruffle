@@ -217,13 +217,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             // TODO - 'init' should be fired earlier during the download.
             // Right now, we fire it when downloading is fully completed.
             let init_evt = EventObject::bare_default_event(context, "init");
-
-            if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
-                tracing::error!(
-                    "Encountered AVM2 error when broadcasting `init` event: {}",
-                    e
-                );
-            }
+            Avm2::dispatch_event(context, init_evt, (*self).into());
         }
 
         if !self.0.read().complete_event_fired {
@@ -240,13 +234,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             if should_complete {
                 self.0.write(context.gc_context).complete_event_fired = true;
                 let complete_evt = EventObject::bare_default_event(context, "complete");
-
-                if let Err(e) = Avm2::dispatch_event(context, complete_evt, (*self).into()) {
-                    tracing::error!(
-                        "Encountered AVM2 error when broadcasting `complete` event: {}",
-                        e
-                    );
-                }
+                Avm2::dispatch_event(context, complete_evt, (*self).into());
             }
         }
     }

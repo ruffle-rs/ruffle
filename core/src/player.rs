@@ -1037,15 +1037,7 @@ impl Player {
                         .coerce_to_object(&mut activation)
                         .expect("DisplayObject is not an object!");
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, keyboard_event, target)
-                    {
-                        tracing::error!(
-                            "Encountered AVM2 error when broadcasting `{}` event: {}",
-                            event_name,
-                            e
-                        );
-                    }
+                    Avm2::dispatch_event(&mut activation.context, keyboard_event, target);
                 }
             }
 
@@ -1426,40 +1418,35 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let mut did_finish = true;
 
-            if let Some(root) = context.stage.root_clip().and_then(|root| root.as_movie_clip()) {
+            if let Some(root) = context
+                .stage
+                .root_clip()
+                .and_then(|root| root.as_movie_clip())
+            {
                 let was_root_movie_loaded = root.loaded_bytes() == root.total_bytes();
                 did_finish = root.preload(context, limit);
 
-                if !was_root_movie_loaded {
-                    if let Some(loader_info) = root.loader_info() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                        let progress_evt = activation.avm2().classes().progressevent.construct(
-                            &mut activation,
-                            &[
-                                "progress".into(),
-                                false.into(),
-                                false.into(),
-                                root.compressed_loaded_bytes().into(),
-                                root.compressed_total_bytes().into(),
-                            ],
-                        );
+                    let progress_evt = activation.avm2().classes().progressevent.construct(
+                        &mut activation,
+                        &[
+                            "progress".into(),
+                            false.into(),
+                            false.into(),
+                            root.compressed_loaded_bytes().into(),
+                            root.compressed_total_bytes().into(),
+                        ],
+                    );
 
-                        match progress_evt {
-                            Err(e) => tracing::error!(
-                                "Encountered AVM2 error when broadcasting `progress` event: {}",
-                                e
-                            ),
-                            Ok(progress_evt) => {
-                                if let Err(e) =
-                                    Avm2::dispatch_event(context, progress_evt, loader_info)
-                                {
-                                    tracing::error!(
-                                        "Encountered AVM2 error when broadcasting `progress` event: {}",
-                                        e
-                                    );
-                                }
-                            }
+                    match progress_evt {
+                        Err(e) => tracing::error!(
+                            "Encountered AVM2 error when constructing `progress` event: {}",
+                            e,
+                        ),
+                        Ok(progress_evt) => {
+                            Avm2::dispatch_event(context, progress_evt, loader_info);
                         }
                     }
                 }
