@@ -1,7 +1,7 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
-use crate::avm1::globals::bevel_filter::BevelFilterObject;
+use crate::avm1::globals::bevel_filter::BevelFilter;
 use crate::avm1::globals::blur_filter::BlurFilter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::date::Date;
@@ -57,7 +57,7 @@ pub enum NativeObject<'gc> {
     None,
     Date(GcCell<'gc, Date>),
     BlurFilter(BlurFilter<'gc>),
-    BevelFilter(GcCell<'gc, BevelFilterObject>),
+    BevelFilter(BevelFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
