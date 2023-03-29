@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "clone" => method(clone);
@@ -28,10 +28,9 @@ pub fn clone<'gc>(
         NativeObject::BlurFilter(blur_filter) => {
             NativeObject::BlurFilter(blur_filter.duplicate(activation.context.gc_context))
         }
-        NativeObject::BevelFilter(bevel_filter) => NativeObject::BevelFilter(GcCell::allocate(
-            activation.context.gc_context,
-            bevel_filter.read().clone(),
-        )),
+        NativeObject::BevelFilter(bevel_filter) => {
+            NativeObject::BevelFilter(bevel_filter.duplicate(activation.context.gc_context))
+        }
         _ => NativeObject::None,
     };
     if !matches!(native, NativeObject::None) {
