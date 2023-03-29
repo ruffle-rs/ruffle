@@ -22,7 +22,7 @@ use std::io::{self, Write};
 ///     num_frames: 1,
 /// };
 /// let tags = [
-///     Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
+///     Tag::SetBackgroundColor(SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 })),
 ///     Tag::ShowFrame,
 /// ];
 /// let output = Vec::new();
@@ -470,13 +470,13 @@ impl<W: Write> Writer<W> {
         match *tag {
             Tag::ShowFrame => self.write_tag_header(TagCode::ShowFrame, 0)?,
 
-            Tag::ExportAssets(ref exports) => self.write_export_assets(&exports[..])?,
+            Tag::ExportAssets(ref exports) => self.write_export_assets(exports)?,
 
-            Tag::Protect(password) => {
-                if let Some(password_md5) = password {
-                    self.write_tag_header(TagCode::Protect, password_md5.len() as u32 + 3)?;
+            Tag::Protect(ref tag) => {
+                if let Some(password_hash) = &tag.password_hash {
+                    self.write_tag_header(TagCode::Protect, password_hash.len() as u32 + 3)?;
                     self.write_u16(0)?; // Two null bytes? Not specified in SWF19.
-                    self.write_string(password_md5)?;
+                    self.write_string(password_hash)?;
                 } else {
                     self.write_tag_header(TagCode::Protect, 0)?;
                 }
@@ -500,16 +500,16 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineBinaryData(ref binary_data) => self.write_define_binary_data(binary_data)?,
 
-            Tag::DefineBits { id, jpeg_data } => {
-                self.write_tag_header(TagCode::DefineBits, jpeg_data.len() as u32 + 2)?;
-                self.write_u16(id)?;
-                self.output.write_all(jpeg_data)?;
+            Tag::DefineBits(ref tag) => {
+                self.write_tag_header(TagCode::DefineBits, tag.jpeg_data.len() as u32 + 2)?;
+                self.write_u16(tag.id)?;
+                self.output.write_all(tag.jpeg_data)?;
             }
 
-            Tag::DefineBitsJpeg2 { id, jpeg_data } => {
-                self.write_tag_header(TagCode::DefineBitsJpeg2, jpeg_data.len() as u32 + 2)?;
-                self.write_u16(id)?;
-                self.output.write_all(jpeg_data)?;
+            Tag::DefineBitsJpeg2(ref tag) => {
+                self.write_tag_header(TagCode::DefineBitsJpeg2, tag.jpeg_data.len() as u32 + 2)?;
+                self.write_u16(tag.id)?;
+                self.output.write_all(tag.jpeg_data)?;
             }
 
             Tag::DefineBitsJpeg3(ref jpeg) => {
@@ -649,15 +649,14 @@ impl<W: Write> Writer<W> {
             Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
             #[allow(clippy::unusual_byte_groupings)]
-            Tag::DefineFontAlignZones {
-                id,
-                thickness,
-                ref zones,
-            } => {
-                self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
-                self.write_character_id(id)?;
-                self.write_u8((thickness as u8) << 6)?;
-                for zone in zones {
+            Tag::DefineFontAlignZones(ref tag) => {
+                self.write_tag_header(
+                    TagCode::DefineFontAlignZones,
+                    3 + 10 * tag.zones.len() as u32,
+                )?;
+                self.write_character_id(tag.id)?;
+                self.write_u8((tag.thickness as u8) << 6)?;
+                for zone in &tag.zones {
                     self.write_u8(2)?; // Always 2 dimensions.
                     self.write_i16(zone.left)?;
                     self.write_i16(zone.width)?;
@@ -669,31 +668,24 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineFontInfo(ref font_info) => self.write_define_font_info(font_info)?,
 
-            Tag::DefineFontName {
-                id,
-                name,
-                copyright_info,
-            } => {
-                let len = name.len() + copyright_info.len() + 4;
+            Tag::DefineFontName(ref tag) => {
+                let len = tag.name.len() + tag.copyright_info.len() + 4;
                 self.write_tag_header(TagCode::DefineFontName, len as u32)?;
-                self.write_character_id(id)?;
-                self.write_string(name)?;
-                self.write_string(copyright_info)?;
+                self.write_character_id(tag.id)?;
+                self.write_string(tag.name)?;
+                self.write_string(tag.copyright_info)?;
             }
 
             Tag::DefineMorphShape(ref define_morph_shape) => {
                 self.write_define_morph_shape(define_morph_shape)?
             }
 
-            Tag::DefineScalingGrid {
-                id,
-                ref splitter_rect,
-            } => {
+            Tag::DefineScalingGrid(ref tag) => {
                 let mut buf = Vec::new();
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
-                    writer.write_u16(id)?;
-                    writer.write_rectangle(splitter_rect)?;
+                    writer.write_u16(tag.id)?;
+                    writer.write_rectangle(&tag.splitter_rect)?;
                 }
                 self.write_tag_header(TagCode::DefineScalingGrid, buf.len() as u32)?;
                 self.output.write_all(&buf)?;
@@ -704,9 +696,9 @@ impl<W: Write> Writer<W> {
             Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
             Tag::DefineText(ref text) => self.write_define_text(text)?,
             Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
-            Tag::DoAbc(data) => {
-                self.write_tag_header(TagCode::DoAbc, data.len() as u32)?;
-                self.output.write_all(data)?;
+            Tag::DoAbc(ref tag) => {
+                self.write_tag_header(TagCode::DoAbc, tag.data.len() as u32)?;
+                self.output.write_all(tag.data)?;
             }
             Tag::DoAbc2(ref do_abc) => {
                 let len = do_abc.data.len() + do_abc.name.len() + 5;
@@ -715,18 +707,18 @@ impl<W: Write> Writer<W> {
                 self.write_string(do_abc.name)?;
                 self.output.write_all(do_abc.data)?;
             }
-            Tag::DoAction(action_data) => {
-                self.write_tag_header(TagCode::DoAction, action_data.len() as u32)?;
-                self.output.write_all(action_data)?;
+            Tag::DoAction(ref tag) => {
+                self.write_tag_header(TagCode::DoAction, tag.action_data.len() as u32)?;
+                self.output.write_all(tag.action_data)?;
             }
-            Tag::DoInitAction { id, action_data } => {
-                self.write_tag_header(TagCode::DoInitAction, action_data.len() as u32 + 2)?;
-                self.write_u16(id)?;
-                self.output.write_all(action_data)?;
+            Tag::DoInitAction(ref tag) => {
+                self.write_tag_header(TagCode::DoInitAction, tag.action_data.len() as u32 + 2)?;
+                self.write_u16(tag.id)?;
+                self.output.write_all(tag.action_data)?;
             }
 
-            Tag::EnableDebugger(password_md5) => {
-                let len = password_md5.len() as u32 + 1;
+            Tag::EnableDebugger(ref tag) => {
+                let len = tag.password_hash.len() as u32 + 1;
                 if self.version >= 6 {
                     // SWF v6+ uses EnableDebugger2 tag.
                     self.write_tag_header(TagCode::EnableDebugger2, len + 2)?;
@@ -735,14 +727,14 @@ impl<W: Write> Writer<W> {
                     self.write_tag_header(TagCode::EnableDebugger, len)?;
                 }
 
-                self.write_string(password_md5)?;
+                self.write_string(tag.password_hash)?;
             }
 
-            Tag::EnableTelemetry { password_hash } => {
-                if !password_hash.is_empty() {
+            Tag::EnableTelemetry(ref tag) => {
+                if !tag.password_hash.is_empty() {
                     self.write_tag_header(TagCode::EnableTelemetry, 34)?;
                     self.write_u16(0)?;
-                    self.output.write_all(&password_hash[0..32])?;
+                    self.output.write_all(&tag.password_hash[0..32])?;
                 } else {
                     self.write_tag_header(TagCode::EnableTelemetry, 2)?;
                     self.write_u16(0)?;
@@ -751,57 +743,58 @@ impl<W: Write> Writer<W> {
 
             Tag::End => self.write_tag_header(TagCode::End, 0)?,
 
-            Tag::ImportAssets { url, ref imports } => {
-                let len = imports.iter().map(|e| e.name.len() as u32 + 3).sum::<u32>()
-                    + url.len() as u32
+            Tag::ImportAssets(ref tag) => {
+                let len = tag
+                    .imports
+                    .iter()
+                    .map(|e| e.name.len() as u32 + 3)
+                    .sum::<u32>()
+                    + tag.url.len() as u32
                     + 1
                     + 2;
                 // SWF v8 and later use ImportAssets2 tag.
                 if self.version >= 8 {
                     self.write_tag_header(TagCode::ImportAssets2, len + 2)?;
-                    self.write_string(url)?;
+                    self.write_string(tag.url)?;
                     self.write_u8(1)?;
                     self.write_u8(0)?;
                 } else {
                     self.write_tag_header(TagCode::ImportAssets, len)?;
-                    self.write_string(url)?;
+                    self.write_string(tag.url)?;
                 }
-                self.write_u16(imports.len() as u16)?;
-                for &ExportedAsset { id, name } in imports {
+                self.write_u16(tag.imports.len() as u16)?;
+                for &ExportedAsset { id, name } in &tag.imports {
                     self.write_u16(id)?;
                     self.write_string(name)?;
                 }
             }
 
-            Tag::JpegTables(data) => {
-                self.write_tag_header(TagCode::JpegTables, data.len() as u32)?;
-                self.output.write_all(data)?;
+            Tag::JpegTables(ref tag) => {
+                self.write_tag_header(TagCode::JpegTables, tag.0.len() as u32)?;
+                self.output.write_all(tag.0)?;
             }
 
-            Tag::Metadata(metadata) => {
-                self.write_tag_header(TagCode::Metadata, metadata.len() as u32 + 1)?;
-                self.write_string(metadata)?;
+            Tag::Metadata(ref tag) => {
+                self.write_tag_header(TagCode::Metadata, tag.metadata.len() as u32 + 1)?;
+                self.write_string(tag.metadata)?;
             }
 
             // TODO: Allow clone of color.
-            Tag::SetBackgroundColor(ref color) => {
+            Tag::SetBackgroundColor(ref tag) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
-                self.write_rgb(color)?;
+                self.write_rgb(&tag.0)?;
             }
 
-            Tag::ScriptLimits {
-                max_recursion_depth,
-                timeout_in_seconds,
-            } => {
+            Tag::ScriptLimits(ref tag) => {
                 self.write_tag_header(TagCode::ScriptLimits, 4)?;
-                self.write_u16(max_recursion_depth)?;
-                self.write_u16(timeout_in_seconds)?;
+                self.write_u16(tag.max_recursion_depth)?;
+                self.write_u16(tag.timeout_in_seconds)?;
             }
 
-            Tag::SetTabIndex { depth, tab_index } => {
+            Tag::SetTabIndex(ref tag) => {
                 self.write_tag_header(TagCode::SetTabIndex, 4)?;
-                self.write_u16(depth)?;
-                self.write_u16(tab_index)?;
+                self.write_u16(tag.depth)?;
+                self.write_u16(tag.tab_index)?;
             }
 
             Tag::PlaceObject(ref place_object) => match place_object.version {
@@ -822,9 +815,9 @@ impl<W: Write> Writer<W> {
                 self.write_u16(remove_object.depth)?;
             }
 
-            Tag::SoundStreamBlock(data) => {
-                self.write_tag_header(TagCode::SoundStreamBlock, data.len() as u32)?;
-                self.output.write_all(data)?;
+            Tag::SoundStreamBlock(ref tag) => {
+                self.write_tag_header(TagCode::SoundStreamBlock, tag.data.len() as u32)?;
+                self.output.write_all(tag.data)?;
             }
 
             Tag::SoundStreamHead(ref sound_stream_head) => {
@@ -855,40 +848,42 @@ impl<W: Write> Writer<W> {
                 self.write_sound_info(sound_info)?;
             }
 
-            Tag::StartSound2 {
-                class_name,
-                ref sound_info,
-            } => {
-                let length = class_name.len() as u32
+            Tag::StartSound2(ref tag) => {
+                let length = tag.class_name.len() as u32
                     + 2
-                    + if sound_info.in_sample.is_some() { 4 } else { 0 }
-                    + if sound_info.out_sample.is_some() {
+                    + if tag.sound_info.in_sample.is_some() {
                         4
                     } else {
                         0
                     }
-                    + if sound_info.num_loops > 1 { 2 } else { 0 }
-                    + if let Some(ref e) = sound_info.envelope {
+                    + if tag.sound_info.out_sample.is_some() {
+                        4
+                    } else {
+                        0
+                    }
+                    + if tag.sound_info.num_loops > 1 { 2 } else { 0 }
+                    + if let Some(ref e) = tag.sound_info.envelope {
                         e.len() as u32 * 8 + 1
                     } else {
                         0
                     };
                 self.write_tag_header(TagCode::StartSound2, length)?;
-                self.write_string(class_name)?;
-                self.write_sound_info(sound_info)?;
+                self.write_string(tag.class_name)?;
+                self.write_sound_info(&tag.sound_info)?;
             }
 
-            Tag::SymbolClass(ref symbols) => {
-                let len = symbols
+            Tag::SymbolClass(ref tag) => {
+                let len = tag
+                    .0
                     .iter()
                     .map(|e| e.class_name.len() as u32 + 3)
                     .sum::<u32>()
                     + 2;
                 self.write_tag_header(TagCode::SymbolClass, len)?;
-                self.write_u16(symbols.len() as u16)?;
-                for &SymbolClassLink { id, class_name } in symbols {
-                    self.write_u16(id)?;
-                    self.write_string(class_name)?;
+                self.write_u16(tag.0.len() as u16)?;
+                for symbol in &tag.0 {
+                    self.write_u16(symbol.id)?;
+                    self.write_string(symbol.class_name)?;
                 }
             }
 
@@ -921,9 +916,9 @@ impl<W: Write> Writer<W> {
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
             Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
             Tag::NameCharacter(ref name_character) => self.write_name_character(name_character)?,
-            Tag::Unknown { tag_code, data } => {
-                self.write_tag_code_and_length(tag_code, data.len() as u32)?;
-                self.output.write_all(data)?;
+            Tag::Unknown(ref tag) => {
+                self.write_tag_code_and_length(tag.tag_code, tag.data.len() as u32)?;
+                self.output.write_all(tag.data)?;
             }
         }
         Ok(())
@@ -1332,13 +1327,17 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_export_assets(&mut self, exports: &[ExportedAsset]) -> Result<()> {
-        let len = exports.iter().map(|e| e.name.len() as u32 + 1).sum::<u32>()
-            + exports.len() as u32 * 2
+    fn write_export_assets(&mut self, exports: &ExportAssets) -> Result<()> {
+        let len = exports
+            .0
+            .iter()
+            .map(|e| e.name.len() as u32 + 1)
+            .sum::<u32>()
+            + exports.0.len() as u32 * 2
             + 2;
         self.write_tag_header(TagCode::ExportAssets, len)?;
-        self.write_u16(exports.len() as u16)?;
-        for &ExportedAsset { id, name } in exports {
+        self.write_u16(exports.0.len() as u16)?;
+        for &ExportedAsset { id, name } in &exports.0 {
             self.write_u16(id)?;
             self.write_string(name)?;
         }
@@ -2321,9 +2320,9 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
-        self.write_tag_header(TagCode::DebugId, debug_id.len() as u32)?;
-        self.output.write_all(debug_id)?;
+    fn write_debug_id(&mut self, tag: &DebugId) -> Result<()> {
+        self.write_tag_header(TagCode::DebugId, tag.uuid.len() as u32)?;
+        self.output.write_all(&tag.uuid)?;
         Ok(())
     }
 
@@ -2709,10 +2708,10 @@ mod tests {
                 let mut writer = Writer::new(&mut buf, 1);
                 writer
                     .write_tag_list(&[
-                        Tag::Unknown {
+                        Tag::Unknown(Unknown {
                             tag_code: 512,
                             data: &[0; 100],
-                        },
+                        }),
                         Tag::ShowFrame,
                     ])
                     .unwrap();

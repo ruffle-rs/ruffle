@@ -49,7 +49,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineBits {
+            Tag::DefineBits(DefineBits {
                 id: 1,
                 jpeg_data: &[
                     255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 255,
@@ -57,7 +57,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     1, 0, 2, 17, 3, 17, 0, 63, 0, 252, 215, 162, 138, 43, 248, 28, 255, 0, 180, 3,
                     255, 217,
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBits-JpegTables-MX.swf",
                 TagCode::DefineBits,
@@ -65,7 +65,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineBitsJpeg2 {
+            Tag::DefineBitsJpeg2(DefineBitsJpeg2 {
                 id: 1,
                 jpeg_data: &[
                     255, 216, 255, 219, 0, 67, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -101,7 +101,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     0, 5, 3, 1, 34, 0, 2, 17, 1, 3, 17, 1, 255, 218, 0, 12, 3, 1, 0, 2, 17, 3, 17,
                     0, 63, 0, 252, 215, 162, 138, 43, 248, 28, 255, 0, 180, 3, 255, 217,
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBitsJpeg2-MX.swf",
                 TagCode::DefineBitsJpeg2,
@@ -611,7 +611,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         */
         (
             8,
-            Tag::DefineFontAlignZones {
+            Tag::DefineFontAlignZones(DefineFontAlignZones {
                 id: 1,
                 thickness: FontThickness::Thin,
                 zones: vec![
@@ -628,7 +628,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         height: 17102,
                     },
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineFont3-CS6.swf",
                 TagCode::DefineFontAlignZones,
@@ -674,11 +674,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             9,
-            Tag::DefineFontName {
+            Tag::DefineFontName(DefineFontName {
                 id: 2,
                 name: "Dummy".into(),
                 copyright_info: "Dummy font for swf-rs tests".into(),
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineFont4.swf", TagCode::DefineFontName),
         ),
         (
@@ -1274,7 +1274,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             8,
-            Tag::DefineScalingGrid {
+            Tag::DefineScalingGrid(DefineScalingGrid {
                 id: 2,
                 splitter_rect: Rectangle {
                     x_min: Twips::from_pixels(10.0),
@@ -1282,7 +1282,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_min: Twips::from_pixels(10.0),
                     y_max: Twips::from_pixels(40.0),
                 },
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineScalingGrid.swf",
                 TagCode::DefineScalingGrid,
@@ -1804,22 +1804,26 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             5,
-            Tag::DoAction(&[
-                150, 10, 0, 0, 84, 101, 115, 116, 105, 110, 103, 33, 0, 38, 0,
-            ]),
+            Tag::DoAction(DoAction {
+                action_data: &[
+                    150, 10, 0, 0, 84, 101, 115, 116, 105, 110, 103, 33, 0, 38, 0,
+                ],
+            }),
             read_tag_bytes_from_file("tests/swfs/DoAction-CS6.swf", TagCode::DoAction),
         ),
         (
             6,
-            Tag::DoInitAction {
+            Tag::DoInitAction(DoInitAction {
                 id: 2,
                 action_data: &[150, 6, 0, 0, 116, 101, 115, 116, 0, 38, 0],
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/DoInitAction-CS6.swf", TagCode::DoInitAction),
         ),
         (
             6,
-            Tag::EnableDebugger("$1$ve$EG3LE6bumvJ2pR8F5qXny/".into()),
+            Tag::EnableDebugger(EnableDebugger {
+                password_hash: "$1$ve$EG3LE6bumvJ2pR8F5qXny/".into(),
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/EnableDebugger2-CS6.swf",
                 TagCode::EnableDebugger2,
@@ -1827,17 +1831,17 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             10,
-            Tag::EnableTelemetry { password_hash: &[] },
+            Tag::EnableTelemetry(EnableTelemetry { password_hash: &[] }),
             read_tag_bytes_from_file("tests/swfs/EnableTelemetry.swf", TagCode::EnableTelemetry),
         ),
         (
             10,
-            Tag::EnableTelemetry {
+            Tag::EnableTelemetry(EnableTelemetry {
                 password_hash: &[
                     207, 128, 205, 138, 237, 72, 45, 93, 21, 39, 215, 220, 114, 252, 239, 248, 78,
                     99, 38, 89, 40, 72, 68, 125, 45, 192, 176, 232, 125, 252, 154, 144,
                 ],
-            },
+            }),
             read_tag_bytes_from_file(
                 "tests/swfs/EnableTelemetry-password.swf",
                 TagCode::EnableTelemetry,
@@ -1845,10 +1849,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             6,
-            Tag::ExportAssets(vec![ExportedAsset {
+            Tag::ExportAssets(ExportAssets(vec![ExportedAsset {
                 id: 2,
                 name: "Test💯".into(),
-            }]),
+            }])),
             read_tag_bytes_from_file("tests/swfs/ExportAssets-CS6.swf", TagCode::ExportAssets),
         ),
         (
@@ -1882,29 +1886,29 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             7,
-            Tag::ImportAssets {
+            Tag::ImportAssets(ImportAssets {
                 url: "ExportAssets-CS6.swf".into(),
                 imports: vec![ExportedAsset {
                     id: 1,
                     name: "Test💯".into(),
                 }],
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/ImportAssets-CS6.swf", TagCode::ImportAssets),
         ),
         (
             8,
-            Tag::ImportAssets {
+            Tag::ImportAssets(ImportAssets {
                 url: "ExportAssets-CS6.swf".into(),
                 imports: vec![ExportedAsset {
                     id: 1,
                     name: "Test💯".into(),
                 }],
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/ImportAssets2-CS6.swf", TagCode::ImportAssets2),
         ),
         (
             1,
-            Tag::JpegTables(&[
+            Tag::JpegTables(JpegTables(&[
                 255, 216, 255, 219, 0, 67, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 255, 219, 0, 67, 1, 1, 1, 1,
@@ -1933,7 +1937,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210,
                 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229, 230, 231, 232, 233,
                 234, 242, 243, 244, 245, 246, 247, 248, 249, 250, 255, 217,
-            ]),
+            ])),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBits-JpegTables-MX.swf",
                 TagCode::JpegTables,
@@ -1941,7 +1945,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::Metadata(SwfStr::from_str_with_encoding("aa!", WINDOWS_1252).unwrap()),
+            Tag::Metadata(crate::types::Metadata {
+                metadata: SwfStr::from_str_with_encoding("aa!", WINDOWS_1252).unwrap(),
+            }),
             vec![0b01_000100, 0b000_10011, b'a', b'a', b'!', 0],
         ),
         (
@@ -2239,41 +2245,45 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             2,
-            Tag::Protect(None),
+            Tag::Protect(Protect {
+                password_hash: None,
+            }),
             read_tag_bytes_from_file("tests/swfs/ProtectNoPassword.swf", TagCode::Protect),
         ),
         (
             5, // Password supported in SWF version 5 or later.
-            Tag::Protect(Some(
-                SwfStr::from_str_with_encoding("$1$d/$yMscKH17OJ0paJT.e67iz0", WINDOWS_1252)
-                    .unwrap(),
-            )),
+            Tag::Protect(Protect {
+                password_hash: Some(
+                    SwfStr::from_str_with_encoding("$1$d/$yMscKH17OJ0paJT.e67iz0", WINDOWS_1252)
+                        .unwrap(),
+                ),
+            }),
             read_tag_bytes_from_file("tests/swfs/Protect.swf", TagCode::Protect),
         ),
         (
             1,
-            Tag::SetBackgroundColor(Color {
+            Tag::SetBackgroundColor(SetBackgroundColor(Color {
                 r: 64,
                 g: 150,
                 b: 255,
                 a: 255,
-            }),
+            })),
             vec![0b01_000011, 0b00000010, 64, 150, 255],
         ),
         (
             7,
-            Tag::SetTabIndex {
+            Tag::SetTabIndex(SetTabIndex {
                 depth: 2,
                 tab_index: 1,
-            },
+            }),
             vec![0b10_000100, 0b000_10000, 2, 0, 1, 0],
         ),
         (
             7,
-            Tag::ScriptLimits {
+            Tag::ScriptLimits(ScriptLimits {
                 max_recursion_depth: 256,
                 timeout_in_seconds: 42,
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/ScriptLimits.swf", TagCode::ScriptLimits),
         ),
         (1, Tag::ShowFrame, vec![0b01_000000, 0]),
@@ -2299,7 +2309,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             9,
-            Tag::SymbolClass(vec![
+            Tag::SymbolClass(SymbolClass(vec![
                 SymbolClassLink {
                     id: 2,
                     class_name: "foo.Test".into(),
@@ -2308,7 +2318,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     id: 0,
                     class_name: "DocumentTest".into(),
                 },
-            ]),
+            ])),
             read_tag_bytes_from_file("tests/swfs/SymbolClass.swf", TagCode::SymbolClass),
         ),
         (
@@ -2327,7 +2337,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             9,
-            Tag::StartSound2 {
+            Tag::StartSound2(StartSound2 {
                 class_name: "TestSound".into(),
                 sound_info: Box::new(SoundInfo {
                     event: SoundEvent::Event,
@@ -2340,7 +2350,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         right_volume: 1.0,
                     }]),
                 }),
-            },
+            }),
             read_tag_bytes_from_file("tests/swfs/StartSound2.swf", TagCode::StartSound2),
         ),
         (
@@ -2354,26 +2364,26 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::Unknown {
+            Tag::Unknown(crate::types::Unknown {
                 tag_code: 512,
                 data: &[],
-            },
+            }),
             vec![0b00_000000, 0b10000000],
         ),
         (
             1,
-            Tag::Unknown {
+            Tag::Unknown(crate::types::Unknown {
                 tag_code: 513,
                 data: &[1, 2],
-            },
+            }),
             vec![0b01_000010, 0b10000000, 1, 2],
         ),
         (
             1,
-            Tag::Unknown {
+            Tag::Unknown(crate::types::Unknown {
                 tag_code: 513,
                 data: &[0; 64],
-            },
+            }),
             vec![
                 0b01_111111,
                 0b10000000,
@@ -2709,7 +2719,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             1,
-            Action::Unknown(Unknown {
+            Action::Unknown(crate::avm1::types::Unknown {
                 opcode: 0x79,
                 data: &[],
             }),
@@ -2717,7 +2727,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             1,
-            Action::Unknown(Unknown {
+            Action::Unknown(crate::avm1::types::Unknown {
                 opcode: 0xA0,
                 data: &[2, 3],
             }),

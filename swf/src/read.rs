@@ -144,8 +144,8 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // return `None` in this case.
     let mut background_color = None;
     for _ in 0..2 {
-        if let Ok(Tag::SetBackgroundColor(color)) = tag {
-            background_color = Some(color);
+        if let Ok(Tag::SetBackgroundColor(tag)) = tag {
+            background_color = Some(tag.0);
             break;
         };
         tag = reader.read_tag();
@@ -376,7 +376,7 @@ impl<'a> Reader<'a> {
             self.read_tag_with_code(tag_code, length)
         } else {
             self.read_slice(length)
-                .map(|data| Tag::Unknown { tag_code, data })
+                .map(|data| Tag::Unknown(Unknown { tag_code, data }))
         }
         .map_err(|e| Error::swf_parse_error(tag_code, e))
     }
@@ -384,27 +384,27 @@ impl<'a> Reader<'a> {
     fn read_tag_with_code(&mut self, tag_code: TagCode, length: usize) -> Result<Tag<'a>> {
         let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
         let tag = match tag_code {
-            TagCode::End => Tag::End,
-            TagCode::ShowFrame => Tag::ShowFrame,
             TagCode::CsmTextSettings => Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?),
+            TagCode::DebugId => Tag::DebugId(tag_reader.read_debug_id()?),
             TagCode::DefineBinaryData => {
                 Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
-            TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
-                Tag::DefineBits { id, jpeg_data }
-            }
-            TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
-                Tag::DefineBitsJpeg2 { id, jpeg_data }
-            }
+            TagCode::DefineBits => Tag::DefineBits(tag_reader.read_define_bits()?),
+            TagCode::DefineBitsJpeg2 => Tag::DefineBitsJpeg2(tag_reader.read_define_bits_jpeg_2()?),
             TagCode::DefineBitsJpeg3 => {
                 Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(3)?)
             }
             TagCode::DefineBitsJpeg4 => {
                 Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(4)?)
+            }
+            TagCode::DefineBitsLossless => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
+            }
+            TagCode::DefineBitsLossless2 => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
+            }
+            TagCode::DefineScalingGrid => {
+                Tag::DefineScalingGrid(tag_reader.read_define_scaling_grid()?)
             }
             TagCode::DefineButton => {
                 Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
@@ -425,176 +425,52 @@ impl<'a> Reader<'a> {
             TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
             TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
             TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
-            TagCode::DefineFontAlignZones => tag_reader.read_define_font_align_zones()?,
+            TagCode::DefineFontAlignZones => {
+                Tag::DefineFontAlignZones(tag_reader.read_define_font_align_zones()?)
+            }
             TagCode::DefineFontInfo => {
                 Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(1)?))
             }
             TagCode::DefineFontInfo2 => {
                 Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(2)?))
             }
-            TagCode::DefineFontName => tag_reader.read_define_font_name()?,
+            TagCode::DefineFontName => Tag::DefineFontName(tag_reader.read_define_font_name()?),
             TagCode::DefineMorphShape => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
             }
             TagCode::DefineMorphShape2 => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
             }
+            TagCode::DefineSceneAndFrameLabelData => Tag::DefineSceneAndFrameLabelData(
+                tag_reader.read_define_scene_and_frame_label_data()?,
+            ),
             TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
             TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
             TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
             TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
             TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
             TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
             TagCode::DefineVideoStream => {
                 Tag::DefineVideoStream(tag_reader.read_define_video_stream()?)
             }
-            TagCode::EnableTelemetry => {
-                tag_reader.read_u16()?; // Reserved
-                let password_hash = if length > 2 {
-                    tag_reader.read_slice(32)?
-                } else {
-                    &[]
-                };
-                Tag::EnableTelemetry { password_hash }
-            }
-            TagCode::ImportAssets => {
-                let url = tag_reader.read_str()?;
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::ImportAssets { url, imports }
-            }
-            TagCode::ImportAssets2 => {
-                let url = tag_reader.read_str()?;
-                tag_reader.read_u8()?; // Reserved; must be 1
-                tag_reader.read_u8()?; // Reserved; must be 0
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::ImportAssets { url, imports }
-            }
-
-            TagCode::JpegTables => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::JpegTables(data)
-            }
-
-            TagCode::Metadata => Tag::Metadata(tag_reader.read_str()?),
-
-            TagCode::SetBackgroundColor => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
-
-            TagCode::SoundStreamBlock => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::SoundStreamBlock(data)
-            }
-
-            TagCode::SoundStreamHead => Tag::SoundStreamHead(
-                // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_head()?),
-            ),
-
-            TagCode::SoundStreamHead2 => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
-            }
-
-            TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
-
-            TagCode::StartSound2 => Tag::StartSound2 {
-                class_name: tag_reader.read_str()?,
-                sound_info: Box::new(tag_reader.read_sound_info()?),
-            },
-
-            TagCode::DebugId => Tag::DebugId(tag_reader.read_debug_id()?),
-
-            TagCode::DefineBitsLossless => {
-                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
-            }
-            TagCode::DefineBitsLossless2 => {
-                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
-            }
-
-            TagCode::DefineScalingGrid => Tag::DefineScalingGrid {
-                id: tag_reader.read_u16()?,
-                splitter_rect: tag_reader.read_rectangle()?,
-            },
-
-            TagCode::DoAbc => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::DoAbc(data)
-            }
+            TagCode::DoAbc => Tag::DoAbc(tag_reader.read_do_abc()?),
             TagCode::DoAbc2 => Tag::DoAbc2(tag_reader.read_do_abc_2()?),
-
-            TagCode::DoAction => {
-                let action_data = tag_reader.read_slice_to_end();
-                Tag::DoAction(action_data)
-            }
-
-            TagCode::DoInitAction => {
-                let id = tag_reader.read_u16()?;
-                let action_data = tag_reader.read_slice_to_end();
-                Tag::DoInitAction { id, action_data }
-            }
-
-            TagCode::EnableDebugger => Tag::EnableDebugger(tag_reader.read_str()?),
-            TagCode::EnableDebugger2 => {
-                tag_reader.read_u16()?; // Reserved
-                Tag::EnableDebugger(tag_reader.read_str()?)
-            }
-
-            TagCode::ScriptLimits => Tag::ScriptLimits {
-                max_recursion_depth: tag_reader.read_u16()?,
-                timeout_in_seconds: tag_reader.read_u16()?,
-            },
-
-            TagCode::SetTabIndex => Tag::SetTabIndex {
-                depth: tag_reader.read_u16()?,
-                tab_index: tag_reader.read_u16()?,
-            },
-
-            TagCode::SymbolClass => {
-                let num_symbols = tag_reader.read_u16()?;
-                let mut symbols = Vec::with_capacity(num_symbols as usize);
-                for _ in 0..num_symbols {
-                    symbols.push(SymbolClassLink {
-                        id: tag_reader.read_u16()?,
-                        class_name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::SymbolClass(symbols)
-            }
-
+            TagCode::DoAction => Tag::DoAction(tag_reader.read_do_action()?),
+            TagCode::DoInitAction => Tag::DoInitAction(tag_reader.read_do_init_action()?),
+            TagCode::EnableDebugger => Tag::EnableDebugger(tag_reader.read_enable_debugger()?),
+            TagCode::EnableDebugger2 => Tag::EnableDebugger(tag_reader.read_enable_debugger_2()?),
+            TagCode::EnableTelemetry => Tag::EnableTelemetry(tag_reader.read_enable_telemetry()?),
+            TagCode::End => Tag::End,
             TagCode::ExportAssets => Tag::ExportAssets(tag_reader.read_export_assets()?),
-
             TagCode::FileAttributes => Tag::FileAttributes(tag_reader.read_file_attributes()?),
-
-            TagCode::Protect => {
-                Tag::Protect(if length > 0 {
-                    tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
-                    Some(tag_reader.read_str()?)
-                } else {
-                    None
-                })
-            }
-
-            TagCode::DefineSceneAndFrameLabelData => Tag::DefineSceneAndFrameLabelData(
-                tag_reader.read_define_scene_and_frame_label_data()?,
-            ),
-
             TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label()?),
-
-            TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
-
+            TagCode::ImportAssets => Tag::ImportAssets(tag_reader.read_import_assets()?),
+            TagCode::ImportAssets2 => Tag::ImportAssets(tag_reader.read_import_assets_2()?),
+            TagCode::JpegTables => Tag::JpegTables(tag_reader.read_jpeg_tables()?),
+            TagCode::Metadata => Tag::Metadata(tag_reader.read_metadata()?),
+            TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
             TagCode::PlaceObject => Tag::PlaceObject(Box::new(tag_reader.read_place_object()?)),
             TagCode::PlaceObject2 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
@@ -605,14 +481,29 @@ impl<'a> Reader<'a> {
             TagCode::PlaceObject4 => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(4)?))
             }
-
-            TagCode::RemoveObject => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
-
-            TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
-
-            TagCode::VideoFrame => Tag::VideoFrame(tag_reader.read_video_frame()?),
             TagCode::ProductInfo => Tag::ProductInfo(tag_reader.read_product_info()?),
-            TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
+            TagCode::Protect => Tag::Protect(tag_reader.read_protect()?),
+            TagCode::RemoveObject => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
+            TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
+            TagCode::ScriptLimits => Tag::ScriptLimits(tag_reader.read_script_limits()?),
+            TagCode::SetBackgroundColor => {
+                Tag::SetBackgroundColor(tag_reader.read_set_background_color()?)
+            }
+            TagCode::SetTabIndex => Tag::SetTabIndex(tag_reader.read_set_tab_index()?),
+            TagCode::ShowFrame => Tag::ShowFrame,
+            TagCode::SoundStreamBlock => {
+                Tag::SoundStreamBlock(tag_reader.read_sound_stream_block()?)
+            }
+            TagCode::SoundStreamHead => {
+                Tag::SoundStreamHead(Box::new(tag_reader.read_sound_stream_head()?))
+            }
+            TagCode::SoundStreamHead2 => {
+                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
+            }
+            TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
+            TagCode::StartSound2 => Tag::StartSound2(tag_reader.read_start_sound_2()?),
+            TagCode::SymbolClass => Tag::SymbolClass(tag_reader.read_symbol_class()?),
+            TagCode::VideoFrame => Tag::VideoFrame(tag_reader.read_video_frame()?),
         };
 
         if !tag_reader.input.is_empty() {
@@ -733,6 +624,18 @@ impl<'a> Reader<'a> {
         Ok((tag_code, length))
     }
 
+    pub fn read_define_bits(&mut self) -> Result<DefineBits<'a>> {
+        let id = self.read_u16()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok(DefineBits { id, jpeg_data })
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<DefineBitsJpeg2<'a>> {
+        let id = self.read_u16()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok(DefineBitsJpeg2 { id, jpeg_data })
+    }
+
     pub fn read_define_button_1(&mut self) -> Result<Button<'a>> {
         let id = self.read_u16()?;
         let mut records = Vec::new();
@@ -834,6 +737,131 @@ impl<'a> Reader<'a> {
         })
     }
 
+    pub fn read_do_action(&mut self) -> Result<DoAction<'a>> {
+        let action_data = self.read_slice_to_end();
+        Ok(DoAction { action_data })
+    }
+
+    pub fn read_do_init_action(&mut self) -> Result<DoInitAction<'a>> {
+        let id = self.read_u16()?;
+        let action_data = self.read_slice_to_end();
+        Ok(DoInitAction { id, action_data })
+    }
+
+    pub fn read_enable_debugger(&mut self) -> Result<EnableDebugger<'a>> {
+        Ok(EnableDebugger {
+            password_hash: self.read_str()?,
+        })
+    }
+
+    pub fn read_enable_debugger_2(&mut self) -> Result<EnableDebugger<'a>> {
+        let _ = self.read_u16()?; // Reserved
+        Ok(EnableDebugger {
+            password_hash: self.read_str()?,
+        })
+    }
+
+    pub fn read_enable_telemetry(&mut self) -> Result<EnableTelemetry<'a>> {
+        let _ = self.read_u16()?; // Reserved
+        let password_hash = if self.as_slice().len() > 2 {
+            self.read_slice(32)?
+        } else {
+            &[]
+        };
+        Ok(EnableTelemetry { password_hash })
+    }
+
+    pub fn read_import_assets(&mut self) -> Result<ImportAssets<'a>> {
+        let url = self.read_str()?;
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+        Ok(ImportAssets { url, imports })
+    }
+
+    pub fn read_import_assets_2(&mut self) -> Result<ImportAssets<'a>> {
+        let url = self.read_str()?;
+        self.read_u8()?; // Reserved; must be 1
+        self.read_u8()?; // Reserved; must be 0
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+        Ok(ImportAssets { url, imports })
+    }
+
+    pub fn read_jpeg_tables(&mut self) -> Result<JpegTables<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(JpegTables(data))
+    }
+
+    pub fn read_metadata(&mut self) -> Result<Metadata<'a>> {
+        Ok(Metadata {
+            metadata: self.read_str()?,
+        })
+    }
+
+    pub fn read_protect(&mut self) -> Result<Protect<'a>> {
+        let password_hash = if !self.as_slice().is_empty() {
+            let _ = self.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
+            Some(self.read_str()?)
+        } else {
+            None
+        };
+        Ok(Protect { password_hash })
+    }
+
+    pub fn read_script_limits(&mut self) -> Result<ScriptLimits> {
+        Ok(ScriptLimits {
+            max_recursion_depth: self.read_u16()?,
+            timeout_in_seconds: self.read_u16()?,
+        })
+    }
+
+    pub fn read_set_background_color(&mut self) -> Result<SetBackgroundColor> {
+        Ok(SetBackgroundColor(self.read_rgb()?))
+    }
+
+    pub fn read_set_tab_index(&mut self) -> Result<SetTabIndex> {
+        Ok(SetTabIndex {
+            depth: self.read_u16()?,
+            tab_index: self.read_u16()?,
+        })
+    }
+
+    pub fn read_sound_stream_block(&mut self) -> Result<SoundStreamBlock<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(SoundStreamBlock { data })
+    }
+
+    pub fn read_start_sound_2(&mut self) -> Result<StartSound2<'a>> {
+        Ok(StartSound2 {
+            class_name: self.read_str()?,
+            sound_info: Box::new(self.read_sound_info()?),
+        })
+    }
+
+    pub fn read_symbol_class(&mut self) -> Result<SymbolClass<'a>> {
+        let num_symbols = self.read_u16()?;
+        let mut symbols = Vec::with_capacity(num_symbols as usize);
+        for _ in 0..num_symbols {
+            symbols.push(SymbolClassLink {
+                id: self.read_u16()?,
+                class_name: self.read_str()?,
+            });
+        }
+        Ok(SymbolClass(symbols))
+    }
+
     fn read_button_record(&mut self, version: u8) -> Result<Option<ButtonRecord>> {
         let flags = self.read_u8()?;
         if flags == 0 {
@@ -912,6 +940,13 @@ impl<'a> Reader<'a> {
                 .ok_or_else(|| Error::invalid_data("Invalid text grid fitting"))?,
             thickness,
             sharpness,
+        })
+    }
+
+    pub fn read_define_scaling_grid(&mut self) -> Result<DefineScalingGrid> {
+        Ok(DefineScalingGrid {
+            id: self.read_u16()?,
+            splitter_rect: self.read_rectangle()?,
         })
     }
 
@@ -1167,7 +1202,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_font_align_zones(&mut self) -> Result<Tag<'a>> {
+    fn read_define_font_align_zones(&mut self) -> Result<DefineFontAlignZones> {
         let id = self.read_character_id()?;
         let thickness = FontThickness::from_u8(self.read_u8()? >> 6)
             .ok_or_else(|| Error::invalid_data("Invalid font thickness type."))?;
@@ -1175,7 +1210,7 @@ impl<'a> Reader<'a> {
         while let Ok(zone) = self.read_font_align_zone() {
             zones.push(zone);
         }
-        Ok(Tag::DefineFontAlignZones {
+        Ok(DefineFontAlignZones {
             id,
             thickness,
             zones,
@@ -1228,8 +1263,8 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_font_name(&mut self) -> Result<Tag<'a>> {
-        Ok(Tag::DefineFontName {
+    fn read_define_font_name(&mut self) -> Result<DefineFontName<'a>> {
+        Ok(DefineFontName {
             id: self.read_character_id()?,
             name: self.read_str()?,
             copyright_info: self.read_str()?,
@@ -1537,7 +1572,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_sound_stream_head(&mut self) -> Result<SoundStreamHead> {
-        // TODO: Verify version requirements.
+        // TODO: Verify version requirements. Disallow certain compressions for v1.
         let playback_format = self.read_sound_format()?;
         let stream_format = self.read_sound_format()?;
         let num_samples_per_block = self.read_u16()?;
@@ -1833,7 +1868,7 @@ impl<'a> Reader<'a> {
                 name: self.read_str()?,
             });
         }
-        Ok(exports)
+        Ok(ExportAssets(exports))
     }
 
     pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
@@ -2482,6 +2517,11 @@ impl<'a> Reader<'a> {
         })
     }
 
+    pub fn read_do_abc(&mut self) -> Result<DoAbc<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(DoAbc { data })
+    }
+
     pub fn read_do_abc_2(&mut self) -> Result<DoAbc2<'a>> {
         let flags = DoAbc2Flag::from_bits_truncate(self.read_u32()?);
         let name = self.read_str()?;
@@ -2505,9 +2545,9 @@ impl<'a> Reader<'a> {
     pub fn read_debug_id(&mut self) -> Result<DebugId> {
         // Not documented in SWF19 reference.
         // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
-        let mut debug_id = [0u8; 16];
-        self.get_mut().read_exact(&mut debug_id)?;
-        Ok(debug_id)
+        let mut uuid = [0u8; 16];
+        self.get_mut().read_exact(&mut uuid)?;
+        Ok(DebugId { uuid })
     }
 
     pub fn read_name_character(&mut self) -> Result<NameCharacter<'a>> {

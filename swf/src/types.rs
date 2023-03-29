@@ -37,7 +37,7 @@ pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
 pub use point::Point;
 pub use rectangle::Rectangle;
-pub use tag::Tag;
+pub use tag::*;
 pub use twips::Twips;
 
 /// A complete header and tags in the SWF file.
@@ -96,7 +96,7 @@ impl Header {
 pub struct HeaderExt {
     pub(crate) header: Header,
     pub(crate) file_attributes: FileAttributes,
-    pub(crate) background_color: Option<SetBackgroundColor>,
+    pub(crate) background_color: Option<Color>,
     pub(crate) uncompressed_len: u32,
 }
 
@@ -514,7 +514,8 @@ bitflags! {
 /// A key code used in `ButtonAction` and `ClipAction` key press events.
 pub type KeyCode = u8;
 
-pub type ExportAssets<'a> = Vec<ExportedAsset<'a>>;
+#[derive(Debug, PartialEq)]
+pub struct ExportAssets<'a>(pub Vec<ExportedAsset<'a>>);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ExportedAsset<'a> {
@@ -528,7 +529,8 @@ pub struct RemoveObject {
     pub character_id: Option<CharacterId>,
 }
 
-pub type SetBackgroundColor = Color;
+#[derive(Clone, Debug, PartialEq)]
+pub struct SetBackgroundColor(pub Color);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SymbolClassLink<'a> {
@@ -953,8 +955,6 @@ pub struct SoundStreamHead {
     pub num_samples_per_block: u16,
     pub latency_seek: i16,
 }
-
-pub type SoundStreamBlock<'a> = &'a [u8];
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Button<'a> {
@@ -1658,9 +1658,10 @@ bitflags! {
     }
 }
 
-pub type DoAction<'a> = &'a [u8];
-
-pub type JpegTables<'a> = &'a [u8];
+#[derive(Debug, PartialEq)]
+pub struct DoAction<'a> {
+    pub action_data: &'a [u8],
+}
 
 /// `ProductInfo` contains information about the software used to generate the SWF.
 /// Not documented in the SWF19 reference. Emitted by mxmlc.
@@ -1676,7 +1677,10 @@ pub struct ProductInfo {
 }
 
 /// `DebugId` is a UUID written to debug SWFs and used by the Flash Debugger.
-pub type DebugId = [u8; 16];
+#[derive(Debug, PartialEq)]
+pub struct DebugId {
+    pub uuid: [u8; 16],
+}
 
 /// An undocumented and unused tag to set the instance name of a character.
 /// This seems to have no effect in the official Flash Player.
@@ -1685,4 +1689,108 @@ pub type DebugId = [u8; 16];
 pub struct NameCharacter<'a> {
     pub id: CharacterId,
     pub name: &'a SwfStr,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineBits<'a> {
+    pub id: CharacterId,
+    pub jpeg_data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineBitsJpeg2<'a> {
+    pub id: CharacterId,
+    pub jpeg_data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineFontAlignZones {
+    pub id: CharacterId,
+    pub thickness: FontThickness,
+    pub zones: Vec<FontAlignZone>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineFontName<'a> {
+    pub id: CharacterId,
+    pub name: &'a SwfStr,
+    pub copyright_info: &'a SwfStr,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DefineScalingGrid {
+    pub id: CharacterId,
+    pub splitter_rect: Rectangle<Twips>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DoAbc<'a> {
+    pub data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DoInitAction<'a> {
+    pub id: CharacterId,
+    pub action_data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct EnableDebugger<'a> {
+    pub password_hash: &'a SwfStr,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct EnableTelemetry<'a> {
+    pub password_hash: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ImportAssets<'a> {
+    pub url: &'a SwfStr,
+    pub imports: Vec<ExportedAsset<'a>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct JpegTables<'a>(pub &'a [u8]);
+
+#[derive(Debug, PartialEq)]
+pub struct Metadata<'a> {
+    pub metadata: &'a SwfStr,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Protect<'a> {
+    pub password_hash: Option<&'a SwfStr>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ScriptLimits {
+    pub max_recursion_depth: u16,
+    pub timeout_in_seconds: u16,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SetTabIndex {
+    pub depth: Depth,
+    pub tab_index: u16,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SoundStreamBlock<'a> {
+    pub data: &'a [u8],
+}
+
+#[derive(Debug, PartialEq)]
+pub struct StartSound2<'a> {
+    pub class_name: &'a SwfStr,
+    pub sound_info: Box<SoundInfo>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SymbolClass<'a>(pub Vec<SymbolClassLink<'a>>);
+
+#[derive(Debug, PartialEq)]
+pub struct Unknown<'a> {
+    pub tag_code: u16,
+    pub data: &'a [u8],
 }

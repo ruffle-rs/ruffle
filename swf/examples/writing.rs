@@ -14,12 +14,12 @@ fn main() {
         num_frames: 1,
     };
     let tags = [
-        Tag::SetBackgroundColor(Color {
+        Tag::SetBackgroundColor(SetBackgroundColor(Color {
             r: 255,
             g: 0,
             b: 0,
             a: 255,
-        }),
+        })),
         Tag::ShowFrame,
     ];
     let file = std::fs::File::create("tests/swfs/SimpleRedBackground.swf").unwrap();
