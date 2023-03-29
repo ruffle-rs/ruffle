@@ -82,7 +82,10 @@ pub fn load<'gc>(
 
         let stringified_url = url.to_string();
 
-        if stringified_url.ends_with(".jpg") || stringified_url.ends_with(".png") || stringified_url.ends_with(".gif") {
+        if stringified_url.ends_with(".jpg")
+            || stringified_url.ends_with(".png")
+            || stringified_url.ends_with(".gif")
+        {
             avm2_stub_method!(activation, "flash.display.Loader", "load", "loading images");
         }
 
@@ -90,7 +93,7 @@ pub fn load<'gc>(
             activation.context.player.clone(),
             content.into(),
             // FIXME - set options from the `URLRequest`
-            Request::get(stringified_url),
+            Request::get(stringified_url.clone()),
             Some(stringified_url),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
             Some(Avm2LoaderData {
