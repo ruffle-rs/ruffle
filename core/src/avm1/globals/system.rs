@@ -655,7 +655,7 @@ impl SystemProperties {
             cpu_address_size,
         }
     }
-    pub fn get_version_string(&self, avm: &mut Avm1) -> String {
+    pub fn get_version_string(&self, avm: &Avm1) -> String {
         format!(
             "{} {},0,0,0",
             self.manufacturer.get_platform_name(),
@@ -688,6 +688,13 @@ impl SystemProperties {
     }
 
     pub fn get_server_string(&self, context: &UpdateContext) -> String {
+        // The server string varies depending on the flash player version (since new
+        // variables have been added in later flash player versions).
+        // This is the server string returned by the last flash player version (32).
+        // It is independent of the SWF version.
+        // Since the server string is usually parsed, the additional variables
+        // (if emulating older flash player versions) shouldn't be a big problem,
+        // but it might still be better to return the proper string of each flash player version.
         let viewport_dimensions = context.renderer.viewport_dimensions();
         url::form_urlencoded::Serializer::new(String::new())
             .append_pair("A", self.encode_capability(SystemCapabilities::AUDIO))
@@ -714,7 +721,7 @@ impl SystemProperties {
             )
             .append_pair(
                 "ACC",
-                self.encode_not_capability(SystemCapabilities::ACCESSIBILITY),
+                self.encode_capability(SystemCapabilities::ACCESSIBILITY),
             )
             .append_pair("PR", self.encode_capability(SystemCapabilities::PRINTING))
             .append_pair(
@@ -726,6 +733,10 @@ impl SystemProperties {
                 self.encode_capability(SystemCapabilities::SCREEN_BROADCAST),
             )
             .append_pair("DEB", self.encode_capability(SystemCapabilities::DEBUGGER))
+            .append_pair(
+                "V",
+                &self.encode_string(self.get_version_string(context.avm1).as_str()),
+            )
             .append_pair(
                 "M",
                 &self.encode_string(
@@ -744,8 +755,18 @@ impl SystemProperties {
             .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.pixel_aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(&self.os.to_string()))
+            .append_pair("ARCH", self.cpu_architecture.to_string().as_str())
             .append_pair("L", &self.get_language_string())
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
+            .append_pair(
+                "PR32",
+                self.encode_capability(SystemCapabilities::PROCESS_32_BIT),
+            )
+            .append_pair(
+                "PR64",
+                self.encode_capability(SystemCapabilities::PROCESS_64_BIT),
+            )
+            .append_pair("CAS", &self.cpu_address_size.to_string())
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(
                 "AVD",
@@ -755,6 +776,12 @@ impl SystemProperties {
                 "LFD",
                 self.encode_not_capability(SystemCapabilities::LOCAL_FILE_READ),
             )
+            .append_pair(
+                "WD",
+                self.encode_not_capability(SystemCapabilities::WINDOW_LESS),
+            )
+            .append_pair("TLS", self.encode_capability(SystemCapabilities::TLS))
+            .append_pair("ML", self.idc_level.as_str())
             .append_pair("DP", &self.dpi.to_string())
             .finish()
     }
