@@ -12,6 +12,7 @@ use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
 use crate::tag_utils::SwfMovie;
+use crate::avm2_stub_method;
 use std::sync::Arc;
 
 pub fn init<'gc>(
@@ -78,12 +79,18 @@ pub fn load<'gc>(
             )?
             .as_object()
             .unwrap();
+        
+        let stringified_url = url.to_string();
+        
+        if stringified_url.ends_with(".jpg") || stringified_url.ends_with(".png") {
+            avm2_stub_method!(activation, "flash.display.Loader", "load", "loading images");
+        }
 
         let future = activation.context.load_manager.load_movie_into_clip(
             activation.context.player.clone(),
             content.into(),
             // FIXME - set options from the `URLRequest`
-            Request::get(url.to_string()),
+            Request::get(stringified_url),
             Some(url.to_string()),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
             Some(Avm2LoaderData {
