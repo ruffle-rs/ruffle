@@ -7,12 +7,12 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
+use crate::avm2_stub_method;
 use crate::backend::navigator::Request;
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
 use crate::tag_utils::SwfMovie;
-use crate::avm2_stub_method;
 use std::sync::Arc;
 
 pub fn init<'gc>(
