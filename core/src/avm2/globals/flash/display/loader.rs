@@ -79,9 +79,9 @@ pub fn load<'gc>(
             )?
             .as_object()
             .unwrap();
-        
+
         let stringified_url = url.to_string();
-        
+
         if stringified_url.ends_with(".jpg") || stringified_url.ends_with(".png") {
             avm2_stub_method!(activation, "flash.display.Loader", "load", "loading images");
         }
