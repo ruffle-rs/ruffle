@@ -27,7 +27,7 @@ pub(crate) mod context_menu_item;
 pub mod convolution_filter;
 pub(crate) mod date;
 pub mod displacement_map_filter;
-pub mod drop_shadow_filter;
+pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 mod function;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub drop_shadow_filter: Object<'gc>,
-    pub drop_shadow_filter_constructor: Object<'gc>,
     pub color_matrix_filter: Object<'gc>,
     pub color_matrix_filter_constructor: Object<'gc>,
     pub displacement_map_filter: Object<'gc>,
@@ -759,15 +757,8 @@ pub fn create_globals<'gc>(
     let glow_filter =
         glow_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
-    let drop_shadow_filter_proto =
-        drop_shadow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
-    let drop_shadow_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(drop_shadow_filter::constructor),
-        constructor_to_fn!(drop_shadow_filter::constructor),
-        function_proto,
-        drop_shadow_filter_proto,
-    );
+    let drop_shadow_filter =
+        drop_shadow_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
     let color_matrix_filter_proto =
         color_matrix_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
@@ -1139,8 +1130,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            drop_shadow_filter: drop_shadow_filter_proto,
-            drop_shadow_filter_constructor: drop_shadow_filter,
             color_matrix_filter: color_matrix_filter_proto,
             color_matrix_filter_constructor: color_matrix_filter,
             displacement_map_filter: displacement_map_filter_proto,
