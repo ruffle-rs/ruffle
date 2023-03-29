@@ -20,7 +20,7 @@ pub(crate) mod blur_filter;
 pub(crate) mod boolean;
 pub(crate) mod button;
 mod color;
-pub mod color_matrix_filter;
+pub(crate) mod color_matrix_filter;
 pub(crate) mod color_transform;
 pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub color_matrix_filter: Object<'gc>,
-    pub color_matrix_filter_constructor: Object<'gc>,
     pub displacement_map_filter: Object<'gc>,
     pub displacement_map_filter_constructor: Object<'gc>,
     pub convolution_filter: Object<'gc>,
@@ -760,15 +758,8 @@ pub fn create_globals<'gc>(
     let drop_shadow_filter =
         drop_shadow_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
-    let color_matrix_filter_proto =
-        color_matrix_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
-    let color_matrix_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(color_matrix_filter::constructor),
-        constructor_to_fn!(color_matrix_filter::constructor),
-        function_proto,
-        color_matrix_filter_proto,
-    );
+    let color_matrix_filter =
+        color_matrix_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
     let displacement_map_filter_proto =
         displacement_map_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
@@ -1130,8 +1121,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            color_matrix_filter: color_matrix_filter_proto,
-            color_matrix_filter_constructor: color_matrix_filter,
             displacement_map_filter: displacement_map_filter_proto,
             displacement_map_filter_constructor: displacement_map_filter,
             convolution_filter: convolution_filter_proto,

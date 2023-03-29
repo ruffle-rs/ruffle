@@ -37,6 +37,9 @@ pub fn clone<'gc>(
         NativeObject::DropShadowFilter(drop_shadow_filter) => NativeObject::DropShadowFilter(
             drop_shadow_filter.duplicate(activation.context.gc_context),
         ),
+        NativeObject::ColorMatrixFilter(color_matrix_filter) => NativeObject::ColorMatrixFilter(
+            color_matrix_filter.duplicate(activation.context.gc_context),
+        ),
         _ => NativeObject::None,
     };
     if !matches!(native, NativeObject::None) {
@@ -54,20 +57,6 @@ pub fn clone<'gc>(
         }
         cloned.set_native(activation.context.gc_context, native);
         return Ok(cloned.into());
-    }
-
-    if let Some(this) = this.as_color_matrix_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .color_matrix_filter_constructor;
-
-        let matrix = this.get("matrix", activation)?;
-
-        let cloned = proto.construct(activation, &[matrix])?;
-
-        return Ok(cloned);
     }
 
     if let Some(this) = this.as_displacement_map_filter_object() {
