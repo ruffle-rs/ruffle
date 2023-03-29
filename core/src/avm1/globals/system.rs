@@ -297,6 +297,8 @@ pub struct SystemProperties {
     pub cpu_architecture: CpuArchitecture,
     /// The highest supported h264 decoder level
     pub idc_level: String,
+    /// Whether the player is running as a 32-bit or 64-bit application
+    pub cpu_address_size: u32,
 }
 
 impl SystemProperties {
@@ -625,6 +627,12 @@ impl SystemProperties {
 
         let cpu_architecture = get_cpu_architecture();
 
+        let cpu_address_size = if 4 * std::mem::size_of::<&char>() <= 32 {
+            32
+        } else {
+            64
+        };
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -644,6 +652,7 @@ impl SystemProperties {
             sandbox_type,
             cpu_architecture,
             idc_level: "5.1".into(),
+            cpu_address_size,
         }
     }
     pub fn get_version_string(&self, avm: &mut Avm1) -> String {

@@ -41,6 +41,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "serverString" => property(get_server_string);
     "version" => property(get_version);
     "maxLevelIDC" => property(get_max_idc_level);
+    "cpuAddressSize" => property(get_cpu_address_size);
 };
 
 macro_rules! capabilities_func {
@@ -249,6 +250,14 @@ pub fn get_max_idc_level<'gc>(
         &activation.context.system.idc_level,
     )
     .into())
+}
+
+pub fn get_cpu_address_size<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation.context.system.cpu_address_size.into())
 }
 
 pub fn create<'gc>(
