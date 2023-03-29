@@ -408,6 +408,8 @@ impl<'gc> CachedText<'gc> {
                 // SAFETY: because `self.utf8` is None, we know `text` contains
                 // a valid UTF8 string.
                 Units::Bytes(s) => unsafe { std::str::from_utf8_unchecked(s) },
+                // NOTES: The only case where a wide string could be valid UTF8 is if it's empty.
+                Units::Wide([]) => "",
                 _ => unreachable!(),
             })
     }
