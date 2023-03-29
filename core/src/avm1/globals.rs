@@ -31,7 +31,7 @@ pub mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 mod function;
-mod glow_filter;
+pub(crate) mod glow_filter;
 pub mod gradient_bevel_filter;
 pub mod gradient_glow_filter;
 mod key;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub glow_filter: Object<'gc>,
-    pub glow_filter_constructor: Object<'gc>,
     pub drop_shadow_filter: Object<'gc>,
     pub drop_shadow_filter_constructor: Object<'gc>,
     pub color_matrix_filter: Object<'gc>,
@@ -758,15 +756,8 @@ pub fn create_globals<'gc>(
     let bevel_filter =
         bevel_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
-    let glow_filter_proto =
-        glow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
-    let glow_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(glow_filter::constructor),
-        constructor_to_fn!(glow_filter::constructor),
-        function_proto,
-        glow_filter_proto,
-    );
+    let glow_filter =
+        glow_filter::create_constructor(gc_context, bitmap_filter_proto, function_proto);
 
     let drop_shadow_filter_proto =
         drop_shadow_filter::create_proto(gc_context, bitmap_filter_proto, function_proto);
@@ -1148,8 +1139,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            glow_filter: glow_filter_proto,
-            glow_filter_constructor: glow_filter,
             drop_shadow_filter: drop_shadow_filter_proto,
             drop_shadow_filter_constructor: drop_shadow_filter,
             color_matrix_filter: color_matrix_filter_proto,

@@ -19,6 +19,9 @@ pub struct Color {
 impl Color {
     pub const BLACK: Self = Self::from_rgb(0, 255);
     pub const WHITE: Self = Self::from_rgb(0xFFFFFF, 255);
+    pub const RED: Self = Self::from_rgb(0xFF0000, 255);
+    pub const GREEN: Self = Self::from_rgb(0x00FF00, 255);
+    pub const BLUE: Self = Self::from_rgb(0x0000FF, 255);
 
     /// Creates a `Color` from a 32-bit `rgb` value and an `alpha` value.
     ///
