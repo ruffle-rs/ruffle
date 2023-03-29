@@ -34,6 +34,9 @@ pub fn clone<'gc>(
         NativeObject::GlowFilter(glow_filter) => {
             NativeObject::GlowFilter(glow_filter.duplicate(activation.context.gc_context))
         }
+        NativeObject::DropShadowFilter(drop_shadow_filter) => NativeObject::DropShadowFilter(
+            drop_shadow_filter.duplicate(activation.context.gc_context),
+        ),
         _ => NativeObject::None,
     };
     if !matches!(native, NativeObject::None) {
@@ -51,44 +54,6 @@ pub fn clone<'gc>(
         }
         cloned.set_native(activation.context.gc_context, native);
         return Ok(cloned.into());
-    }
-
-    if let Some(this) = this.as_drop_shadow_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .drop_shadow_filter_constructor;
-
-        let distance = this.get("distance", activation)?;
-        let angle = this.get("angle", activation)?;
-        let color = this.get("color", activation)?;
-        let alpha = this.get("alpha", activation)?;
-        let blur_x = this.get("blurX", activation)?;
-        let blur_y = this.get("blurY", activation)?;
-        let strength = this.get("strength", activation)?;
-        let quality = this.get("quality", activation)?;
-        let inner = this.get("inner", activation)?;
-        let knockout = this.get("knockout", activation)?;
-        let hide_object = this.get("hide_object", activation)?;
-
-        let cloned = proto.construct(
-            activation,
-            &[
-                distance,
-                angle,
-                color,
-                alpha,
-                blur_x,
-                blur_y,
-                strength,
-                quality,
-                inner,
-                knockout,
-                hide_object,
-            ],
-        )?;
-        return Ok(cloned);
     }
 
     if let Some(this) = this.as_color_matrix_filter_object() {
