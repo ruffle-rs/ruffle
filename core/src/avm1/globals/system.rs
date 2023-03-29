@@ -581,6 +581,50 @@ impl SystemProperties {
 
         let os = get_os();
 
+        #[cfg(not(target_family = "wasm"))]
+        fn get_cpu_architecture() -> CpuArchitecture {
+            const ARCH: &str = std::env::consts::ARCH;
+            match ARCH {
+                "x86" | "x86_64" => CpuArchitecture::X86,
+                "arm" | "aarch64" | "mips" | "mips64" | "riscv64" => CpuArchitecture::Arm,
+                "powerpc" | "powerpc64" => CpuArchitecture::PowerPc,
+                "sparc64" => CpuArchitecture::Sparc,
+                // Fallback
+                _ => CpuArchitecture::X86,
+            }
+        }
+
+        #[cfg(target_family = "wasm")]
+        fn get_cpu_architecture() -> CpuArchitecture {
+            let window = web_sys::window().unwrap();
+            let user_agent: String = window.navigator().user_agent().unwrap();
+
+            // This is a rudimentary implementation since most user agents don't
+            // allow to infer the architecture
+            if user_agent.contains("MacPPC") || user_agent.contains("Mac_PowerPC") {
+                CpuArchitecture::PowerPc
+            } else if user_agent.to_lowercase().contains("x86")
+                || user_agent.to_lowercase().contains("x64")
+            {
+                CpuArchitecture::X86
+            } else if user_agent.to_lowercase().contains("sparc") {
+                CpuArchitecture::Sparc
+            } else if user_agent.contains("iPhone")
+                || user_agent.contains("iPad")
+                || user_agent.contains("iPod")
+                || user_agent.to_lowercase().contains("arm")
+                || user_agent.to_lowercase().contains("aarch64")
+                || user_agent.to_lowercase().contains("apple silicon")
+            {
+                CpuArchitecture::Arm
+            } else {
+                // Fallback
+                CpuArchitecture::X86
+            }
+        }
+
+        let cpu_architecture = get_cpu_architecture();
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -598,7 +642,7 @@ impl SystemProperties {
             manufacturer: Manufacturer::Linux,
             os,
             sandbox_type,
-            cpu_architecture: CpuArchitecture::X86,
+            cpu_architecture,
             idc_level: "5.1".into(),
         }
     }
