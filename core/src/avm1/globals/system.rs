@@ -10,6 +10,9 @@ use crate::context::{GcContext, UpdateContext};
 use bitflags::bitflags;
 use core::fmt;
 
+#[cfg(not(target_family = "wasm"))]
+use {regress::Regex, std::process::Command};
+
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "exactSettings" => property(get_exact_settings, set_exact_settings);
     "useCodepage" => property(get_use_code_page, set_use_code_page);
@@ -420,6 +423,164 @@ impl SystemProperties {
             None
         };
 
+        #[cfg(not(target_family = "wasm"))]
+        fn get_os() -> OperatingSystem {
+            pub const OS: &str = std::env::consts::OS;
+
+            return match OS {
+                "linux" | "android" | "freebsd" | "dragonfly" | "netbsd" | "openbsd"
+                | "solaris" => OperatingSystem::Linux,
+                "macos" | "ios" => OperatingSystem::MacOs,
+                "windows" => {
+                    #[allow(clippy::zero_prefixed_literal)]
+                    fn match_windows_version(
+                        major_version: u64,
+                        minor_version: u64,
+                        build_version: u64,
+                    ) -> OperatingSystem {
+                        let version = (major_version, minor_version);
+                        match version {
+                            (5, 1) => OperatingSystem::WindowsXp,
+                            (5, 0) => OperatingSystem::Windows2k,
+                            (4, 1) | (4, 10) => OperatingSystem::Windows98,
+                            (4, 0) | (4, 03) => {
+                                // 950 - 1216 are Windows 95, 1381 is Windows NT 4.0
+                                if build_version <= 1300 {
+                                    OperatingSystem::Windows95
+                                } else {
+                                    OperatingSystem::WindowsNt
+                                }
+                            }
+                            (3, 51) | (3, 50) | (3, 5) | (3, 10) | (3, 1) => {
+                                OperatingSystem::WindowsNt
+                            }
+                            _ => OperatingSystem::WindowsUnknown,
+                        }
+                    }
+
+                    if let os_info::Version::Semantic(major_version, minor_version, build_version) =
+                        *os_info::get().version()
+                    {
+                        match_windows_version(major_version, minor_version, build_version)
+                    } else {
+                        // Failsafe via shell
+                        let output = Command::new("cmd").arg("ver").output();
+                        let output_string_option = if let Ok(output_value) = output {
+                            Some(String::from_utf8(output_value.stdout).unwrap())
+                        } else {
+                            let output = Command::new("command.com").arg("ver").output();
+                            if let Ok(output_value) = output {
+                                Some(String::from_utf8(output_value.stdout).unwrap())
+                            } else {
+                                None
+                            }
+                        };
+
+                        if let Some(output_string) = output_string_option {
+                            let regex = Regex::new("\\d+(?:\\.\\d+)+").unwrap();
+                            let regex_result = regex.find(&output_string);
+                            if let Some(regex_match) = regex_result {
+                                let range = regex_match.group(0).unwrap();
+                                let version_string = &output_string[range];
+                                let versions_vec: Vec<&str> = version_string.split('.').collect();
+                                let major_version = versions_vec[0].parse::<u64>().unwrap();
+                                let minor_version = versions_vec[1].parse::<u64>().unwrap();
+                                let build_version = if versions_vec.len() > 2 {
+                                    versions_vec[2].parse::<u64>().unwrap()
+                                } else if output_string.contains("NT") {
+                                    1381
+                                } else {
+                                    0
+                                };
+                                match_windows_version(major_version, minor_version, build_version)
+                            } else {
+                                // ver is not a valid command
+                                OperatingSystem::WindowsCe
+                            }
+                        } else {
+                            // System has neither Cmd.exe nor Command.com
+                            OperatingSystem::WindowsCe
+                        }
+                    }
+                }
+
+                // Fallback
+                _ => OperatingSystem::Linux,
+            };
+        }
+
+        #[cfg(target_family = "wasm")]
+        fn get_os() -> OperatingSystem {
+            let window = web_sys::window().unwrap();
+            let user_agent = window.navigator().user_agent().unwrap();
+
+            // Thanks to Christian Ludwig (https://stackoverflow.com/questions/9514179)
+            // for providing user agents
+            return if user_agent.contains("Windows 10.0")
+                || user_agent.contains("Windows NT 10.0")
+                || user_agent.contains("Windows 8.1")
+                || user_agent.contains("Windows NT 6.3")
+                || user_agent.contains("Windows 8")
+                || user_agent.contains("Windows NT 6.2")
+                || user_agent.contains("Windows 7")
+                || user_agent.contains("Windows NT 6.1")
+                || user_agent.contains("Windows NT 6.0")
+                || user_agent.contains("Windows NT 5.2")
+            {
+                OperatingSystem::WindowsUnknown
+            } else if user_agent.contains("Windows NT 5.1") || user_agent.contains("Windows XP") {
+                OperatingSystem::WindowsXp
+            } else if user_agent.contains("Windows NT 5.0") || user_agent.contains("Windows 2000") {
+                OperatingSystem::Windows2k
+            } else if user_agent.contains("Win 9x 4.90")
+                || user_agent.contains("Windows ME")
+                || user_agent.contains("Windows 98")
+                || user_agent.contains("Win98")
+            {
+                OperatingSystem::Windows98
+            } else if user_agent.contains("Windows 95")
+                || user_agent.contains("Win95")
+                || user_agent.contains("Windows_95")
+            {
+                OperatingSystem::Windows95
+            } else if user_agent.contains("Windows NT 4.0")
+                || user_agent.contains("WinNT4.0")
+                || user_agent.contains("WinNT")
+                || user_agent.contains("Windows NT")
+            {
+                OperatingSystem::WindowsNt
+            } else if user_agent.contains("Windows CE") {
+                OperatingSystem::WindowsCe
+            } else if user_agent.contains("Mac OS")
+                || user_agent.contains("MacPPC")
+                || user_agent.contains("MacIntel")
+                || user_agent.contains("Mac_PowerPC")
+                || user_agent.contains("Macintosh")
+                || user_agent.contains("iPhone")
+                || user_agent.contains("iPad")
+                || user_agent.contains("iPod")
+            {
+                OperatingSystem::MacOs
+            } else if user_agent.contains("Linux")
+                || user_agent.contains("X11")
+                || user_agent.contains("Android")
+                || user_agent.contains("BSD")
+            {
+                OperatingSystem::Linux
+            } else if user_agent.contains("Win") {
+                // Fallback Windows
+                OperatingSystem::WindowsUnknown
+            } else if user_agent.contains("Mac") || user_agent.contains("Darwin") {
+                // Fallback macOS
+                OperatingSystem::MacOs
+            } else {
+                // Fallback General
+                OperatingSystem::Linux
+            };
+        }
+
+        let os = get_os();
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -435,7 +596,7 @@ impl SystemProperties {
             language,
             language_region,
             manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
+            os,
             sandbox_type,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
