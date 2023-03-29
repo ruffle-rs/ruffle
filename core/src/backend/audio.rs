@@ -361,12 +361,7 @@ impl<'gc> AudioManager<'gc> {
 
         for target in event_targets {
             let event = Avm2EventObject::bare_default_event(context, "soundComplete");
-            if let Err(e) = Avm2::dispatch_event(context, event, target.into()) {
-                tracing::error!(
-                    "Unhandled AVM2 exception in soundComplete event handler: {}",
-                    e
-                );
-            }
+            Avm2::dispatch_event(context, event, target.into());
         }
 
         // Update sound transforms, if dirty.

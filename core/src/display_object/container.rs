@@ -26,10 +26,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
-
-        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
-            tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-        }
+        Avm2::dispatch_event(context, removed_evt, object);
     }
 
     if let Some(child_container) = child.as_container() {
@@ -47,10 +44,7 @@ pub fn dispatch_removed_event<'gc>(
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
-
-        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
-            tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-        }
+        Avm2::dispatch_event(context, removed_evt, object);
 
         if child.is_on_stage(context) {
             dispatch_removed_from_stage_event(child, context)
@@ -65,10 +59,7 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
-
-        if let Err(e) = Avm2::dispatch_event(context, added_evt, object) {
-            tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-        }
+        Avm2::dispatch_event(context, added_evt, object);
     }
 }
 
@@ -95,10 +86,7 @@ pub fn dispatch_added_event_only<'gc>(
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
-
-        if let Err(e) = Avm2::dispatch_event(context, added_evt, object) {
-            tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-        }
+        Avm2::dispatch_event(context, added_evt, object);
     }
 }
 

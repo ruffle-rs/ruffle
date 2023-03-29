@@ -8,6 +8,7 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use crate::string::AvmString;
+
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm2::read::Reader;
@@ -299,19 +300,29 @@ impl<'gc> Avm2<'gc> {
 
     /// Dispatch an event on an object.
     ///
-    /// This will become its own self contained activation.
-    /// As such, the error is a message and not something actionable.
+    /// This will become its own self-contained activation and swallow
+    /// any resulting resulting error (after logging).
     ///
-    /// The `bool` parameter reads true if the event was cancelled.
+    /// Attempts to dispatch a non-event object will panic.
     pub fn dispatch_event(
         context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) -> Result<bool, String> {
-        use crate::avm2::events::dispatch_event;
+    ) {
+        let event_name = event
+            .as_event()
+            .map(|e| e.event_type())
+            .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
+
         let mut activation = Activation::from_nothing(context.reborrow());
-        dispatch_event(&mut activation, target, event)
-            .map_err(|e| e.detailed_message(&mut activation))
+        if let Err(err) = events::dispatch_event(&mut activation, target, event) {
+            tracing::error!(
+                "Encountered AVM2 error when dispatching `{}` event: {}",
+                event_name,
+                err.detailed_message(&mut activation),
+            );
+            // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+        }
     }
 
     /// Add an object to the broadcast list.
@@ -353,19 +364,23 @@ impl<'gc> Avm2<'gc> {
     ///
     /// Attempts to broadcast a non-broadcast event will do nothing. To add a
     /// new broadcast type, you must add it to the `BROADCAST_WHITELIST` first.
+    ///
+    /// Attempts to broadcast a non-event object will panic.
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         on_type: ClassObject<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let base_event = event.as_event().unwrap(); // TODO: unwrap?
-        let event_name = base_event.event_type();
-        drop(base_event);
+    ) {
+        let event_name = event
+            .as_event()
+            .map(|e| e.event_type())
+            .unwrap_or_else(|| panic!("cannot broadcast non-event object: {:?}", event));
+
         if !BROADCAST_WHITELIST
             .iter()
             .any(|x| AvmString::from(*x) == event_name)
         {
-            return Ok(());
+            return;
         }
 
         let el_length = context
@@ -388,12 +403,17 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
                 if object.is_of_type(on_type, &mut activation) {
-                    Avm2::dispatch_event(&mut activation.context, event, object)?;
+                    if let Err(err) = events::dispatch_event(&mut activation, object, event) {
+                        tracing::error!(
+                            "Encountered AVM2 error when broadcasting `{}` event: {}",
+                            event_name,
+                            err.detailed_message(&mut activation),
+                        );
+                        // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+                    }
                 }
             }
         }
-
-        Ok(())
     }
 
     pub fn run_stack_frame_for_callable(

@@ -237,9 +237,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -252,9 +250,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -281,11 +277,7 @@ pub trait TInteractiveObject<'gc>:
                         0,
                     );
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, target)
-                    {
-                        tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                    }
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = None;
                 } else {
@@ -297,11 +289,7 @@ pub trait TInteractiveObject<'gc>:
                         0,
                     );
 
-                    if let Err(e) =
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, target)
-                    {
-                        tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                    }
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
                 }
@@ -317,9 +305,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 self.raw_interactive_mut(context.gc_context).last_click = None;
 
@@ -334,9 +320,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 let lca = lowest_common_ancestor(
                     self.as_displayobject(),
@@ -354,15 +338,7 @@ pub trait TInteractiveObject<'gc>:
                         Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        if let Err(e) =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                        {
-                            tracing::error!(
-                                "Got error when dispatching {:?} to AVM2: {}",
-                                event,
-                                e
-                            );
-                        }
+                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
                     }
 
                     rollout_target = tgt.parent();
@@ -389,15 +365,7 @@ pub trait TInteractiveObject<'gc>:
                         Avm2EventObject::mouse_event(&mut activation, "rollOver", tgt, from, 0);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        if let Err(e) =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                        {
-                            tracing::error!(
-                                "Got error when dispatching {:?} to AVM2: {}",
-                                event,
-                                e
-                            );
-                        }
+                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
                     }
 
                     rollover_target = tgt.parent();
@@ -411,9 +379,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -426,9 +392,7 @@ pub trait TInteractiveObject<'gc>:
                     delta.lines() as i32,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -441,9 +405,7 @@ pub trait TInteractiveObject<'gc>:
                     0,
                 );
 
-                if let Err(e) = Avm2::dispatch_event(&mut activation.context, avm2_event, target) {
-                    tracing::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }

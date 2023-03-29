@@ -652,9 +652,7 @@ impl<'gc> Stage<'gc> {
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
-            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
-                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+            Avm2::dispatch_event(context, resized_event, stage);
         }
     }
 
@@ -664,15 +662,8 @@ impl<'gc> Stage<'gc> {
     /// broadcast the 'render' event on the first render
     pub fn broadcast_render(&self, context: &mut UpdateContext<'_, 'gc>) {
         let render_evt = Avm2EventObject::bare_default_event(context, "render");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, render_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting render event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, render_evt, dobject_constr);
 
         self.set_invalidated(context.gc_context, false);
     }
@@ -705,9 +696,7 @@ impl<'gc> Stage<'gc> {
                 )
                 .unwrap(); // we don't expect to break here
 
-            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, full_screen_event, stage) {
-                tracing::error!("Encountered AVM2 error when dispatching event: {}", e);
-            }
+            Avm2::dispatch_event(context, full_screen_event, stage);
         }
     }
 }
@@ -826,15 +815,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
 
         let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
-
         let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
-            tracing::error!(
-                "Encountered AVM2 error when broadcasting enterFrame event: {}",
-                e
-            );
-        }
+        Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
