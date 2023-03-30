@@ -1,0 +1,68 @@
+use crate::types::*;
+
+/// Represents a tag in an SWF file.
+///
+/// The SWF format is made up of a stream of tags. Each tag either
+/// defines a character (Graphic, Sound, MovieClip), or places/modifies
+/// an instance of these characters on the display list.
+///
+// [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
+#[derive(Clone, Debug, PartialEq)]
+pub enum Tag<'a> {
+    CsmTextSettings(CsmTextSettings),
+    DebugId(DebugId),
+    DefineBinaryData(DefineBinaryData<'a>),
+    DefineBits(DefineBits<'a>),
+    DefineBitsJpeg2(DefineBitsJpeg2<'a>),
+    DefineBitsJpeg3(DefineBitsJpeg3<'a>),
+    DefineBitsLossless(DefineBitsLossless<'a>),
+    DefineButton(Box<Button<'a>>),
+    DefineButton2(Box<Button<'a>>),
+    DefineButtonColorTransform(ButtonColorTransform),
+    DefineButtonSound(Box<ButtonSounds>),
+    DefineEditText(Box<EditText<'a>>),
+    DefineFont(Box<FontV1>),
+    DefineFont2(Box<Font<'a>>),
+    DefineFont4(Font4<'a>),
+    DefineFontAlignZones(DefineFontAlignZones),
+    DefineFontInfo(Box<FontInfo<'a>>),
+    DefineFontName(DefineFontName<'a>),
+    DefineMorphShape(Box<DefineMorphShape>),
+    DefineScalingGrid(DefineScalingGrid),
+    DefineSceneAndFrameLabelData(DefineSceneAndFrameLabelData<'a>),
+    DefineShape(Shape),
+    DefineSound(Box<Sound<'a>>),
+    DefineSprite(Sprite<'a>),
+    DefineText(Box<Text>),
+    DefineVideoStream(DefineVideoStream),
+    DoAbc(DoAbc<'a>),
+    DoAbc2(DoAbc2<'a>),
+    DoAction(DoAction<'a>),
+    DoInitAction(DoInitAction<'a>),
+    EnableDebugger(EnableDebugger<'a>),
+    EnableTelemetry(EnableTelemetry<'a>),
+    End,
+    ExportAssets(ExportAssets<'a>),
+    FileAttributes(FileAttributes),
+    FrameLabel(FrameLabel<'a>),
+    ImportAssets(ImportAssets<'a>),
+    JpegTables(JpegTables<'a>),
+    Metadata(Metadata<'a>),
+    NameCharacter(NameCharacter<'a>),
+    RemoveObject(RemoveObject),
+    PlaceObject(Box<PlaceObject<'a>>),
+    ProductInfo(ProductInfo),
+    Protect(Protect<'a>),
+    ScriptLimits(ScriptLimits),
+    SetBackgroundColor(SetBackgroundColor),
+    SetTabIndex(SetTabIndex),
+    ShowFrame,
+    SoundStreamBlock(SoundStreamBlock<'a>),
+    SoundStreamHead(Box<SoundStreamHead>),
+    SoundStreamHead2(Box<SoundStreamHead>),
+    StartSound(StartSound),
+    StartSound2(StartSound2<'a>),
+    SymbolClass(SymbolClass<'a>),
+    Unknown(Unknown<'a>),
+    VideoFrame(VideoFrame<'a>),
+}

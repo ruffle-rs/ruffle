@@ -144,8 +144,8 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // return `None` in this case.
     let mut background_color = None;
     for _ in 0..2 {
-        if let Ok(Tag::SetBackgroundColor(color)) = tag {
-            background_color = Some(color);
+        if let Ok(Tag::SetBackgroundColor(tag)) = tag {
+            background_color = Some(tag.0);
             break;
         };
         tag = reader.read_tag();
@@ -348,6 +348,10 @@ impl<'a> Reader<'a> {
         BitReader::new(&mut self.input)
     }
 
+    //=========================================================================
+    // Basic types
+    //=========================================================================
+
     #[inline]
     fn read_fixed8(&mut self) -> Result<Fixed8> {
         Ok(Fixed8::from_bits(self.read_i16()?))
@@ -356,275 +360,6 @@ impl<'a> Reader<'a> {
     #[inline]
     fn read_fixed16(&mut self) -> Result<Fixed16> {
         Ok(Fixed16::from_bits(self.read_i32()?))
-    }
-
-    /// Reads the next SWF tag from the stream.
-    /// # Example
-    /// ```
-    /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
-    /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
-    /// let mut swf_buf = swf::decompress_swf(&data[..]).unwrap();
-    /// let mut reader = swf::read::Reader::new(&swf_buf.data[..], swf_buf.header.version());
-    /// while let Ok(tag) = reader.read_tag() {
-    ///     println!("Tag: {:?}", tag);
-    /// }
-    /// ```
-    pub fn read_tag(&mut self) -> Result<Tag<'a>> {
-        let (tag_code, length) = self.read_tag_code_and_length()?;
-
-        if let Some(tag_code) = TagCode::from_u16(tag_code) {
-            self.read_tag_with_code(tag_code, length)
-        } else {
-            self.read_slice(length)
-                .map(|data| Tag::Unknown { tag_code, data })
-        }
-        .map_err(|e| Error::swf_parse_error(tag_code, e))
-    }
-
-    fn read_tag_with_code(&mut self, tag_code: TagCode, length: usize) -> Result<Tag<'a>> {
-        let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
-        let tag = match tag_code {
-            TagCode::End => Tag::End,
-            TagCode::ShowFrame => Tag::ShowFrame,
-            TagCode::CsmTextSettings => Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?),
-            TagCode::DefineBinaryData => {
-                Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
-            }
-            TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
-                Tag::DefineBits { id, jpeg_data }
-            }
-            TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
-                Tag::DefineBitsJpeg2 { id, jpeg_data }
-            }
-            TagCode::DefineBitsJpeg3 => {
-                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(3)?)
-            }
-            TagCode::DefineBitsJpeg4 => {
-                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(4)?)
-            }
-            TagCode::DefineButton => {
-                Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
-            }
-            TagCode::DefineButton2 => {
-                Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
-            }
-            TagCode::DefineButtonCxform => {
-                Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform()?)
-            }
-            TagCode::DefineButtonSound => {
-                Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
-            }
-            TagCode::DefineEditText => {
-                Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
-            }
-            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
-            TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
-            TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
-            TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
-            TagCode::DefineFontAlignZones => tag_reader.read_define_font_align_zones()?,
-            TagCode::DefineFontInfo => {
-                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(1)?))
-            }
-            TagCode::DefineFontInfo2 => {
-                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(2)?))
-            }
-            TagCode::DefineFontName => tag_reader.read_define_font_name()?,
-            TagCode::DefineMorphShape => {
-                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
-            }
-            TagCode::DefineMorphShape2 => {
-                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
-            }
-            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
-            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
-            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
-            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
-            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
-            TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
-            TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
-            TagCode::DefineVideoStream => {
-                Tag::DefineVideoStream(tag_reader.read_define_video_stream()?)
-            }
-            TagCode::EnableTelemetry => {
-                tag_reader.read_u16()?; // Reserved
-                let password_hash = if length > 2 {
-                    tag_reader.read_slice(32)?
-                } else {
-                    &[]
-                };
-                Tag::EnableTelemetry { password_hash }
-            }
-            TagCode::ImportAssets => {
-                let url = tag_reader.read_str()?;
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::ImportAssets { url, imports }
-            }
-            TagCode::ImportAssets2 => {
-                let url = tag_reader.read_str()?;
-                tag_reader.read_u8()?; // Reserved; must be 1
-                tag_reader.read_u8()?; // Reserved; must be 0
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::ImportAssets { url, imports }
-            }
-
-            TagCode::JpegTables => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::JpegTables(data)
-            }
-
-            TagCode::Metadata => Tag::Metadata(tag_reader.read_str()?),
-
-            TagCode::SetBackgroundColor => Tag::SetBackgroundColor(tag_reader.read_rgb()?),
-
-            TagCode::SoundStreamBlock => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::SoundStreamBlock(data)
-            }
-
-            TagCode::SoundStreamHead => Tag::SoundStreamHead(
-                // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_head()?),
-            ),
-
-            TagCode::SoundStreamHead2 => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
-            }
-
-            TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
-
-            TagCode::StartSound2 => Tag::StartSound2 {
-                class_name: tag_reader.read_str()?,
-                sound_info: Box::new(tag_reader.read_sound_info()?),
-            },
-
-            TagCode::DebugId => Tag::DebugId(tag_reader.read_debug_id()?),
-
-            TagCode::DefineBitsLossless => {
-                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
-            }
-            TagCode::DefineBitsLossless2 => {
-                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
-            }
-
-            TagCode::DefineScalingGrid => Tag::DefineScalingGrid {
-                id: tag_reader.read_u16()?,
-                splitter_rect: tag_reader.read_rectangle()?,
-            },
-
-            TagCode::DoAbc => {
-                let data = tag_reader.read_slice_to_end();
-                Tag::DoAbc(data)
-            }
-            TagCode::DoAbc2 => Tag::DoAbc2(tag_reader.read_do_abc_2()?),
-
-            TagCode::DoAction => {
-                let action_data = tag_reader.read_slice_to_end();
-                Tag::DoAction(action_data)
-            }
-
-            TagCode::DoInitAction => {
-                let id = tag_reader.read_u16()?;
-                let action_data = tag_reader.read_slice_to_end();
-                Tag::DoInitAction { id, action_data }
-            }
-
-            TagCode::EnableDebugger => Tag::EnableDebugger(tag_reader.read_str()?),
-            TagCode::EnableDebugger2 => {
-                tag_reader.read_u16()?; // Reserved
-                Tag::EnableDebugger(tag_reader.read_str()?)
-            }
-
-            TagCode::ScriptLimits => Tag::ScriptLimits {
-                max_recursion_depth: tag_reader.read_u16()?,
-                timeout_in_seconds: tag_reader.read_u16()?,
-            },
-
-            TagCode::SetTabIndex => Tag::SetTabIndex {
-                depth: tag_reader.read_u16()?,
-                tab_index: tag_reader.read_u16()?,
-            },
-
-            TagCode::SymbolClass => {
-                let num_symbols = tag_reader.read_u16()?;
-                let mut symbols = Vec::with_capacity(num_symbols as usize);
-                for _ in 0..num_symbols {
-                    symbols.push(SymbolClassLink {
-                        id: tag_reader.read_u16()?,
-                        class_name: tag_reader.read_str()?,
-                    });
-                }
-                Tag::SymbolClass(symbols)
-            }
-
-            TagCode::ExportAssets => Tag::ExportAssets(tag_reader.read_export_assets()?),
-
-            TagCode::FileAttributes => Tag::FileAttributes(tag_reader.read_file_attributes()?),
-
-            TagCode::Protect => {
-                Tag::Protect(if length > 0 {
-                    tag_reader.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
-                    Some(tag_reader.read_str()?)
-                } else {
-                    None
-                })
-            }
-
-            TagCode::DefineSceneAndFrameLabelData => Tag::DefineSceneAndFrameLabelData(
-                tag_reader.read_define_scene_and_frame_label_data()?,
-            ),
-
-            TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label()?),
-
-            TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
-
-            TagCode::PlaceObject => Tag::PlaceObject(Box::new(tag_reader.read_place_object()?)),
-            TagCode::PlaceObject2 => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
-            }
-            TagCode::PlaceObject3 => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(3)?))
-            }
-            TagCode::PlaceObject4 => {
-                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(4)?))
-            }
-
-            TagCode::RemoveObject => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
-
-            TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
-
-            TagCode::VideoFrame => Tag::VideoFrame(tag_reader.read_video_frame()?),
-            TagCode::ProductInfo => Tag::ProductInfo(tag_reader.read_product_info()?),
-            TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
-        };
-
-        if !tag_reader.input.is_empty() {
-            // There should be no data remaining in the tag if we read it correctly.
-            // If there is data remaining, the most likely scenario is we screwed up parsing.
-            // But sometimes tools will export SWF tags that are larger than they should be.
-            // TODO: It might be worthwhile to have a "strict mode" to determine
-            // whether this should error or not.
-            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
-        }
-
-        Ok(tag)
     }
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle<Twips>> {
@@ -710,6 +445,174 @@ impl<'a> Reader<'a> {
             .ok_or_else(|| Error::invalid_data("Invalid language code"))
     }
 
+    pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
+        BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
+    }
+
+    //=========================================================================
+    // Tag types
+    //=========================================================================
+
+    /// Reads the next SWF tag from the stream.
+    /// # Example
+    /// ```
+    /// # std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"));
+    /// let data = std::fs::read("tests/swfs/DefineSprite.swf").unwrap();
+    /// let mut swf_buf = swf::decompress_swf(&data[..]).unwrap();
+    /// let mut reader = swf::read::Reader::new(&swf_buf.data[..], swf_buf.header.version());
+    /// while let Ok(tag) = reader.read_tag() {
+    ///     println!("Tag: {:?}", tag);
+    /// }
+    /// ```
+    pub fn read_tag(&mut self) -> Result<Tag<'a>> {
+        let (tag_code, length) = self.read_tag_code_and_length()?;
+
+        if let Some(tag_code) = TagCode::from_u16(tag_code) {
+            self.read_tag_with_code(tag_code, length)
+        } else {
+            self.read_slice(length)
+                .map(|data| Tag::Unknown(Unknown { tag_code, data }))
+        }
+        .map_err(|e| Error::swf_parse_error(tag_code, e))
+    }
+
+    fn read_tag_with_code(&mut self, tag_code: TagCode, length: usize) -> Result<Tag<'a>> {
+        let mut tag_reader = Reader::new(self.read_slice(length)?, self.version);
+        let tag = match tag_code {
+            TagCode::CsmTextSettings => Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?),
+            TagCode::DebugId => Tag::DebugId(tag_reader.read_debug_id()?),
+            TagCode::DefineBinaryData => {
+                Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
+            }
+            TagCode::DefineBits => Tag::DefineBits(tag_reader.read_define_bits()?),
+            TagCode::DefineBitsJpeg2 => Tag::DefineBitsJpeg2(tag_reader.read_define_bits_jpeg_2()?),
+            TagCode::DefineBitsJpeg3 => {
+                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(3)?)
+            }
+            TagCode::DefineBitsJpeg4 => {
+                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(4)?)
+            }
+            TagCode::DefineBitsLossless => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(1)?)
+            }
+            TagCode::DefineBitsLossless2 => {
+                Tag::DefineBitsLossless(tag_reader.read_define_bits_lossless(2)?)
+            }
+            TagCode::DefineScalingGrid => {
+                Tag::DefineScalingGrid(tag_reader.read_define_scaling_grid()?)
+            }
+            TagCode::DefineButton => {
+                Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
+            }
+            TagCode::DefineButton2 => {
+                Tag::DefineButton2(Box::new(tag_reader.read_define_button_2()?))
+            }
+            TagCode::DefineButtonCxform => {
+                Tag::DefineButtonColorTransform(tag_reader.read_define_button_cxform()?)
+            }
+            TagCode::DefineButtonSound => {
+                Tag::DefineButtonSound(Box::new(tag_reader.read_define_button_sound()?))
+            }
+            TagCode::DefineEditText => {
+                Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
+            }
+            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
+            TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
+            TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
+            TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
+            TagCode::DefineFontAlignZones => {
+                Tag::DefineFontAlignZones(tag_reader.read_define_font_align_zones()?)
+            }
+            TagCode::DefineFontInfo => {
+                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(1)?))
+            }
+            TagCode::DefineFontInfo2 => {
+                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(2)?))
+            }
+            TagCode::DefineFontName => Tag::DefineFontName(tag_reader.read_define_font_name()?),
+            TagCode::DefineMorphShape => {
+                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
+            }
+            TagCode::DefineMorphShape2 => {
+                Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
+            }
+            TagCode::DefineSceneAndFrameLabelData => Tag::DefineSceneAndFrameLabelData(
+                tag_reader.read_define_scene_and_frame_label_data()?,
+            ),
+            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
+            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
+            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
+            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
+            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
+            TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
+            TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
+            TagCode::DefineVideoStream => {
+                Tag::DefineVideoStream(tag_reader.read_define_video_stream()?)
+            }
+            TagCode::DoAbc => Tag::DoAbc(tag_reader.read_do_abc()?),
+            TagCode::DoAbc2 => Tag::DoAbc2(tag_reader.read_do_abc_2()?),
+            TagCode::DoAction => Tag::DoAction(tag_reader.read_do_action()?),
+            TagCode::DoInitAction => Tag::DoInitAction(tag_reader.read_do_init_action()?),
+            TagCode::EnableDebugger => Tag::EnableDebugger(tag_reader.read_enable_debugger()?),
+            TagCode::EnableDebugger2 => Tag::EnableDebugger(tag_reader.read_enable_debugger_2()?),
+            TagCode::EnableTelemetry => Tag::EnableTelemetry(tag_reader.read_enable_telemetry()?),
+            TagCode::End => Tag::End,
+            TagCode::ExportAssets => Tag::ExportAssets(tag_reader.read_export_assets()?),
+            TagCode::FileAttributes => Tag::FileAttributes(tag_reader.read_file_attributes()?),
+            TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label()?),
+            TagCode::ImportAssets => Tag::ImportAssets(tag_reader.read_import_assets()?),
+            TagCode::ImportAssets2 => Tag::ImportAssets(tag_reader.read_import_assets_2()?),
+            TagCode::JpegTables => Tag::JpegTables(tag_reader.read_jpeg_tables()?),
+            TagCode::Metadata => Tag::Metadata(tag_reader.read_metadata()?),
+            TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
+            TagCode::PlaceObject => Tag::PlaceObject(Box::new(tag_reader.read_place_object()?)),
+            TagCode::PlaceObject2 => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(2)?))
+            }
+            TagCode::PlaceObject3 => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(3)?))
+            }
+            TagCode::PlaceObject4 => {
+                Tag::PlaceObject(Box::new(tag_reader.read_place_object_2_or_3(4)?))
+            }
+            TagCode::ProductInfo => Tag::ProductInfo(tag_reader.read_product_info()?),
+            TagCode::Protect => Tag::Protect(tag_reader.read_protect()?),
+            TagCode::RemoveObject => Tag::RemoveObject(tag_reader.read_remove_object_1()?),
+            TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
+            TagCode::ScriptLimits => Tag::ScriptLimits(tag_reader.read_script_limits()?),
+            TagCode::SetBackgroundColor => {
+                Tag::SetBackgroundColor(tag_reader.read_set_background_color()?)
+            }
+            TagCode::SetTabIndex => Tag::SetTabIndex(tag_reader.read_set_tab_index()?),
+            TagCode::ShowFrame => Tag::ShowFrame,
+            TagCode::SoundStreamBlock => {
+                Tag::SoundStreamBlock(tag_reader.read_sound_stream_block()?)
+            }
+            TagCode::SoundStreamHead => {
+                Tag::SoundStreamHead(Box::new(tag_reader.read_sound_stream_head()?))
+            }
+            TagCode::SoundStreamHead2 => {
+                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
+            }
+            TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
+            TagCode::StartSound2 => Tag::StartSound2(tag_reader.read_start_sound_2()?),
+            TagCode::SymbolClass => Tag::SymbolClass(tag_reader.read_symbol_class()?),
+            TagCode::VideoFrame => Tag::VideoFrame(tag_reader.read_video_frame()?),
+        };
+
+        if !tag_reader.input.is_empty() {
+            // There should be no data remaining in the tag if we read it correctly.
+            // If there is data remaining, the most likely scenario is we screwed up parsing.
+            // But sometimes tools will export SWF tags that are larger than they should be.
+            // TODO: It might be worthwhile to have a "strict mode" to determine
+            // whether this should error or not.
+            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
+        }
+
+        Ok(tag)
+    }
+
     fn read_tag_list(&mut self) -> Result<Vec<Tag<'a>>> {
         let mut tags = Vec::new();
         loop {
@@ -731,6 +634,92 @@ impl<'a> Reader<'a> {
             length = self.read_u32()? as usize;
         }
         Ok((tag_code, length))
+    }
+
+    pub fn read_csm_text_settings(&mut self) -> Result<CsmTextSettings> {
+        let id = self.read_character_id()?;
+        let flags = self.read_u8()?;
+        let thickness = self.read_f32()?;
+        let sharpness = self.read_f32()?;
+        self.read_u8()?; // Reserved (0).
+        Ok(CsmTextSettings {
+            id,
+            use_advanced_rendering: flags & 0b01000000 != 0,
+            grid_fit: TextGridFit::from_u8((flags >> 3) & 0b11)
+                .ok_or_else(|| Error::invalid_data("Invalid text grid fitting"))?,
+            thickness,
+            sharpness,
+        })
+    }
+
+    pub fn read_debug_id(&mut self) -> Result<DebugId> {
+        // Not documented in SWF19 reference.
+        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+        let mut uuid = [0u8; 16];
+        self.get_mut().read_exact(&mut uuid)?;
+        Ok(DebugId { uuid })
+    }
+
+    pub fn read_define_binary_data(&mut self) -> Result<DefineBinaryData<'a>> {
+        let id = self.read_u16()?;
+        self.read_u32()?; // Reserved
+        let data = self.read_slice_to_end();
+        Ok(DefineBinaryData { id, data })
+    }
+
+    pub fn read_define_bits(&mut self) -> Result<DefineBits<'a>> {
+        let id = self.read_u16()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok(DefineBits { id, jpeg_data })
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<DefineBitsJpeg2<'a>> {
+        let id = self.read_u16()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok(DefineBitsJpeg2 { id, jpeg_data })
+    }
+
+    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+        let id = self.read_character_id()?;
+        let data_size = self.read_u32()? as usize;
+        let deblocking = if version >= 4 {
+            self.read_fixed8()?
+        } else {
+            Fixed8::ZERO
+        };
+        let data = self.read_slice(data_size)?;
+        let alpha_data = self.read_slice_to_end();
+        Ok(DefineBitsJpeg3 {
+            id,
+            version,
+            deblocking,
+            data,
+            alpha_data,
+        })
+    }
+
+    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
+        let id = self.read_character_id()?;
+        let format = self.read_u8()?;
+        let width = self.read_u16()?;
+        let height = self.read_u16()?;
+        let format = match format {
+            3 => BitmapFormat::ColorMap8 {
+                num_colors: self.read_u8()?,
+            },
+            4 if version == 1 => BitmapFormat::Rgb15,
+            5 => BitmapFormat::Rgb32,
+            _ => return Err(Error::invalid_data("Invalid bitmap format.")),
+        };
+        let data = self.read_slice_to_end();
+        Ok(DefineBitsLossless {
+            version,
+            id,
+            format,
+            width,
+            height,
+            data,
+        })
     }
 
     pub fn read_define_button_1(&mut self) -> Result<Button<'a>> {
@@ -834,117 +823,73 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_button_record(&mut self, version: u8) -> Result<Option<ButtonRecord>> {
-        let flags = self.read_u8()?;
-        if flags == 0 {
-            return Ok(None);
-        }
-        let states = ButtonState::from_bits_truncate(flags);
-        let id = self.read_u16()?;
-        let depth = self.read_u16()?;
-        let matrix = self.read_matrix()?;
-        let color_transform = if version >= 2 {
-            self.read_color_transform(true)?
-        } else {
-            ColorTransform::new()
-        };
-        let mut filters = vec![];
-        if (flags & 0b1_0000) != 0 {
-            let num_filters = self.read_u8()?;
-            filters.reserve(num_filters as usize);
-            for _ in 0..num_filters {
-                filters.push(self.read_filter()?);
-            }
-        }
-        let blend_mode = if (flags & 0b10_0000) != 0 {
-            self.read_blend_mode()?
-        } else {
-            BlendMode::Normal
-        };
-        Ok(Some(ButtonRecord {
-            states,
-            id,
-            depth,
-            matrix,
-            color_transform,
-            filters,
-            blend_mode,
-        }))
-    }
-
-    fn read_button_action(&mut self) -> Result<(ButtonAction<'a>, bool)> {
-        let length = self.read_u16()?;
-        let flags = self.read_u16()?;
-        let mut conditions = ButtonActionCondition::from_bits_truncate(flags);
-        let key_code = (flags >> 9) as u8;
-        conditions.set(ButtonActionCondition::KEY_PRESS, key_code != 0);
-        let action_data = if length >= 4 {
-            self.read_slice(length as usize - 4)?
-        } else if length == 0 {
-            // Last action, read to end.
-            self.read_slice_to_end()
-        } else {
-            // Some SWFs have phantom action records with an invalid length.
-            // See 401799_pre_Scene_1.swf
-            // TODO: How does Flash handle this?
-            return Err(Error::invalid_data("Button action length is too short"));
-        };
-        Ok((
-            ButtonAction {
-                conditions,
-                key_code: if key_code != 0 { Some(key_code) } else { None },
-                action_data,
-            },
-            length != 0,
-        ))
-    }
-
-    pub fn read_csm_text_settings(&mut self) -> Result<CsmTextSettings> {
+    pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
         let id = self.read_character_id()?;
-        let flags = self.read_u8()?;
-        let thickness = self.read_f32()?;
-        let sharpness = self.read_f32()?;
-        self.read_u8()?; // Reserved (0).
-        Ok(CsmTextSettings {
+        let bounds = self.read_rectangle()?;
+        let flags = EditTextFlag::from_bits_truncate(self.read_u16()?);
+        let font_id = if flags.contains(EditTextFlag::HAS_FONT) {
+            self.read_character_id()?
+        } else {
+            Default::default()
+        };
+        let font_class = if flags.contains(EditTextFlag::HAS_FONT_CLASS) {
+            self.read_str()?
+        } else {
+            Default::default()
+        };
+        let height = if flags.intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS) {
+            // SWF19 errata: The specs say this field is only present if the HasFont flag is set,
+            // but it's also present when the HasFontClass flag is set.
+            Twips::new(self.read_u16()?.into())
+        } else {
+            Twips::ZERO
+        };
+        let color = if flags.contains(EditTextFlag::HAS_TEXT_COLOR) {
+            self.read_rgba()?
+        } else {
+            Color::BLACK
+        };
+        let max_length = if flags.contains(EditTextFlag::HAS_MAX_LENGTH) {
+            self.read_u16()?
+        } else {
+            0
+        };
+        let layout = if flags.contains(EditTextFlag::HAS_LAYOUT) {
+            TextLayout {
+                align: TextAlign::from_u8(self.read_u8()?)
+                    .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
+                left_margin: Twips::new(self.read_u16()?.into()),
+                right_margin: Twips::new(self.read_u16()?.into()),
+                indent: Twips::new(self.read_u16()?.into()),
+                leading: Twips::new(self.read_i16()?.into()),
+            }
+        } else {
+            TextLayout {
+                align: TextAlign::Left,
+                left_margin: Twips::ZERO,
+                right_margin: Twips::ZERO,
+                indent: Twips::ZERO,
+                leading: Twips::ZERO,
+            }
+        };
+        let variable_name = self.read_str()?;
+        let initial_text = if flags.contains(EditTextFlag::HAS_TEXT) {
+            self.read_str()?
+        } else {
+            Default::default()
+        };
+        Ok(EditText {
             id,
-            use_advanced_rendering: flags & 0b01000000 != 0,
-            grid_fit: TextGridFit::from_u8((flags >> 3) & 0b11)
-                .ok_or_else(|| Error::invalid_data("Invalid text grid fitting"))?,
-            thickness,
-            sharpness,
-        })
-    }
-
-    pub fn read_frame_label(&mut self) -> Result<FrameLabel<'a>> {
-        let label = self.read_str()?;
-        let is_anchor = self.version >= 6 && self.read_u8().unwrap_or_default() != 0;
-        Ok(FrameLabel { label, is_anchor })
-    }
-
-    pub fn read_define_scene_and_frame_label_data(
-        &mut self,
-    ) -> Result<DefineSceneAndFrameLabelData<'a>> {
-        let num_scenes = self.read_encoded_u32()? as usize;
-        let mut scenes = Vec::with_capacity(num_scenes);
-        for _ in 0..num_scenes {
-            scenes.push(FrameLabelData {
-                frame_num: self.read_encoded_u32()?,
-                label: self.read_str()?,
-            });
-        }
-
-        let num_frame_labels = self.read_encoded_u32()? as usize;
-        let mut frame_labels = Vec::with_capacity(num_frame_labels);
-        for _ in 0..num_frame_labels {
-            frame_labels.push(FrameLabelData {
-                frame_num: self.read_encoded_u32()?,
-                label: self.read_str()?,
-            });
-        }
-
-        Ok(DefineSceneAndFrameLabelData {
-            scenes,
-            frame_labels,
+            bounds,
+            font_id,
+            font_class,
+            height,
+            color,
+            max_length,
+            layout,
+            variable_name,
+            initial_text,
+            flags,
         })
     }
 
@@ -1151,23 +1096,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
-        Ok(KerningRecord {
-            left_code: if has_wide_codes {
-                self.read_u16()?
-            } else {
-                self.read_u8()?.into()
-            },
-            right_code: if has_wide_codes {
-                self.read_u16()?
-            } else {
-                self.read_u8()?.into()
-            },
-            adjustment: Twips::new(self.read_i16()?.into()),
-        })
-    }
-
-    fn read_define_font_align_zones(&mut self) -> Result<Tag<'a>> {
+    fn read_define_font_align_zones(&mut self) -> Result<DefineFontAlignZones> {
         let id = self.read_character_id()?;
         let thickness = FontThickness::from_u8(self.read_u8()? >> 6)
             .ok_or_else(|| Error::invalid_data("Invalid font thickness type."))?;
@@ -1175,23 +1104,11 @@ impl<'a> Reader<'a> {
         while let Ok(zone) = self.read_font_align_zone() {
             zones.push(zone);
         }
-        Ok(Tag::DefineFontAlignZones {
+        Ok(DefineFontAlignZones {
             id,
             thickness,
             zones,
         })
-    }
-
-    fn read_font_align_zone(&mut self) -> Result<FontAlignZone> {
-        self.read_u8()?; // Always 2.
-        let zone = FontAlignZone {
-            left: self.read_i16()?,
-            width: self.read_i16()?,
-            bottom: self.read_i16()?,
-            height: self.read_i16()?,
-        };
-        self.read_u8()?; // Always 0b000000_11 (2 dimensions).
-        Ok(zone)
     }
 
     fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
@@ -1228,8 +1145,8 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_font_name(&mut self) -> Result<Tag<'a>> {
-        Ok(Tag::DefineFontName {
+    fn read_define_font_name(&mut self) -> Result<DefineFontName<'a>> {
+        Ok(DefineFontName {
             id: self.read_character_id()?,
             name: self.read_str()?,
             copyright_info: self.read_str()?,
@@ -1327,163 +1244,38 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
-        let start_width = Twips::new(self.read_u16()?.into());
-        let end_width = Twips::new(self.read_u16()?.into());
-        if shape_version < 2 {
-            let start_color = self.read_rgba()?;
-            let end_color = self.read_rgba()?;
-
-            Ok((
-                LineStyle::new()
-                    .with_width(start_width)
-                    .with_color(start_color),
-                LineStyle::new().with_width(end_width).with_color(end_color),
-            ))
-        } else {
-            // MorphLineStyle2 in DefineMorphShape2.
-            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
-            // Verify valid cap and join styles.
-            if flags.contains(LineStyleFlag::JOIN_STYLE) {
-                log::warn!("Invalid line join style");
-                flags -= LineStyleFlag::JOIN_STYLE;
-            }
-            if flags.contains(LineStyleFlag::START_CAP_STYLE) {
-                log::warn!("Invalid line start cap style");
-                flags -= LineStyleFlag::START_CAP_STYLE;
-            }
-            if flags.contains(LineStyleFlag::END_CAP_STYLE) {
-                log::warn!("Invalid line end cap style");
-                flags -= LineStyleFlag::END_CAP_STYLE;
-            }
-            let miter_limit = if flags & LineStyleFlag::JOIN_STYLE == LineStyleFlag::MITER {
-                self.read_fixed8()?
-            } else {
-                Fixed8::ZERO
-            };
-            let (start_fill_style, end_fill_style) = if flags.contains(LineStyleFlag::HAS_FILL) {
-                let (start, end) = self.read_morph_fill_style()?;
-                (start, end)
-            } else {
-                (
-                    FillStyle::Color(self.read_rgba()?),
-                    FillStyle::Color(self.read_rgba()?),
-                )
-            };
-            Ok((
-                LineStyle {
-                    width: start_width,
-                    fill_style: start_fill_style,
-                    flags,
-                    miter_limit,
-                },
-                LineStyle {
-                    width: end_width,
-                    fill_style: end_fill_style,
-                    flags,
-                    miter_limit,
-                },
-            ))
-        }
+    pub fn read_define_scaling_grid(&mut self) -> Result<DefineScalingGrid> {
+        Ok(DefineScalingGrid {
+            id: self.read_u16()?,
+            splitter_rect: self.read_rectangle()?,
+        })
     }
 
-    fn read_morph_fill_style(&mut self) -> Result<(FillStyle, FillStyle)> {
-        let fill_style_type = self.read_u8()?;
-        let fill_style = match fill_style_type {
-            0x00 => {
-                let start_color = self.read_rgba()?;
-                let end_color = self.read_rgba()?;
-                (FillStyle::Color(start_color), FillStyle::Color(end_color))
-            }
-
-            0x10 => {
-                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
-                (
-                    FillStyle::LinearGradient(start_gradient),
-                    FillStyle::LinearGradient(end_gradient),
-                )
-            }
-
-            0x12 => {
-                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
-                (
-                    FillStyle::RadialGradient(start_gradient),
-                    FillStyle::RadialGradient(end_gradient),
-                )
-            }
-
-            0x13 => {
-                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineMorphShapeShape2,
-                // but it works even in earlier tags (#2730).
-                // TODO(Herschel): How is focal_point stored?
-                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
-                let start_focal_point = self.read_fixed8()?;
-                let end_focal_point = self.read_fixed8()?;
-                (
-                    FillStyle::FocalGradient {
-                        gradient: start_gradient,
-                        focal_point: start_focal_point,
-                    },
-                    FillStyle::FocalGradient {
-                        gradient: end_gradient,
-                        focal_point: end_focal_point,
-                    },
-                )
-            }
-
-            0x40..=0x43 => {
-                let id = self.read_character_id()?;
-                (
-                    FillStyle::Bitmap {
-                        id,
-                        matrix: self.read_matrix()?,
-                        is_smoothed: (fill_style_type & 0b10) == 0,
-                        is_repeating: (fill_style_type & 0b01) == 0,
-                    },
-                    FillStyle::Bitmap {
-                        id,
-                        matrix: self.read_matrix()?,
-                        is_smoothed: (fill_style_type & 0b10) == 0,
-                        is_repeating: (fill_style_type & 0b01) == 0,
-                    },
-                )
-            }
-
-            _ => return Err(Error::invalid_data("Invalid fill style.")),
-        };
-        Ok(fill_style)
-    }
-
-    fn read_morph_gradient(&mut self) -> Result<(Gradient, Gradient)> {
-        let start_matrix = self.read_matrix()?;
-        let end_matrix = self.read_matrix()?;
-        let (num_records, spread, interpolation) = self.read_gradient_flags()?;
-        let mut start_records = Vec::with_capacity(num_records);
-        let mut end_records = Vec::with_capacity(num_records);
-        for _ in 0..num_records {
-            start_records.push(GradientRecord {
-                ratio: self.read_u8()?,
-                color: self.read_rgba()?,
-            });
-            end_records.push(GradientRecord {
-                ratio: self.read_u8()?,
-                color: self.read_rgba()?,
+    pub fn read_define_scene_and_frame_label_data(
+        &mut self,
+    ) -> Result<DefineSceneAndFrameLabelData<'a>> {
+        let num_scenes = self.read_encoded_u32()? as usize;
+        let mut scenes = Vec::with_capacity(num_scenes);
+        for _ in 0..num_scenes {
+            scenes.push(FrameLabelData {
+                frame_num: self.read_encoded_u32()?,
+                label: self.read_str()?,
             });
         }
-        Ok((
-            Gradient {
-                matrix: start_matrix,
-                spread,
-                interpolation,
-                records: start_records,
-            },
-            Gradient {
-                matrix: end_matrix,
-                spread,
-                interpolation,
-                records: end_records,
-            },
-        ))
+
+        let num_frame_labels = self.read_encoded_u32()? as usize;
+        let mut frame_labels = Vec::with_capacity(num_frame_labels);
+        for _ in 0..num_frame_labels {
+            frame_labels.push(FrameLabelData {
+                frame_num: self.read_encoded_u32()?,
+                label: self.read_str()?,
+            });
+        }
+
+        Ok(DefineSceneAndFrameLabelData {
+            scenes,
+            frame_labels,
+        })
     }
 
     pub fn read_define_shape(&mut self, version: u8) -> Result<Shape> {
@@ -1536,8 +1328,397 @@ impl<'a> Reader<'a> {
         })
     }
 
+    pub fn read_define_sprite(&mut self) -> Result<Sprite<'a>> {
+        Ok(Sprite {
+            id: self.read_u16()?,
+            num_frames: self.read_u16()?,
+            tags: self.read_tag_list()?,
+        })
+    }
+
+    pub fn read_define_text(&mut self, version: u8) -> Result<Text> {
+        let id = self.read_character_id()?;
+        let bounds = self.read_rectangle()?;
+        let matrix = self.read_matrix()?;
+        let num_glyph_bits = self.read_u8()?;
+        let num_advance_bits = self.read_u8()?;
+
+        let mut records = vec![];
+        while let Some(record) = self.read_text_record(num_glyph_bits, num_advance_bits, version)? {
+            records.push(record);
+        }
+
+        Ok(Text {
+            id,
+            bounds,
+            matrix,
+            records,
+        })
+    }
+
+    pub fn read_define_video_stream(&mut self) -> Result<DefineVideoStream> {
+        let id = self.read_character_id()?;
+        let num_frames = self.read_u16()?;
+        let width = self.read_u16()?;
+        let height = self.read_u16()?;
+        let flags = self.read_u8()?;
+        // TODO(Herschel): Check SWF version.
+        let codec = VideoCodec::from_u8(self.read_u8()?)
+            .ok_or_else(|| Error::invalid_data("Invalid video codec."))?;
+        Ok(DefineVideoStream {
+            id,
+            num_frames,
+            width,
+            height,
+            is_smoothed: flags & 0b1 != 0,
+            codec,
+            deblocking: VideoDeblocking::from_u8((flags >> 1) & 0b111)
+                .ok_or_else(|| Error::invalid_data("Invalid video deblocking value."))?,
+        })
+    }
+
+    pub fn read_do_abc(&mut self) -> Result<DoAbc<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(DoAbc { data })
+    }
+
+    pub fn read_do_abc_2(&mut self) -> Result<DoAbc2<'a>> {
+        let flags = DoAbc2Flag::from_bits_truncate(self.read_u32()?);
+        let name = self.read_str()?;
+        let data = self.read_slice_to_end();
+        Ok(DoAbc2 { flags, name, data })
+    }
+
+    pub fn read_do_action(&mut self) -> Result<DoAction<'a>> {
+        let action_data = self.read_slice_to_end();
+        Ok(DoAction { action_data })
+    }
+
+    pub fn read_do_init_action(&mut self) -> Result<DoInitAction<'a>> {
+        let id = self.read_u16()?;
+        let action_data = self.read_slice_to_end();
+        Ok(DoInitAction { id, action_data })
+    }
+
+    pub fn read_enable_debugger(&mut self) -> Result<EnableDebugger<'a>> {
+        Ok(EnableDebugger {
+            password_hash: self.read_str()?,
+        })
+    }
+
+    pub fn read_enable_debugger_2(&mut self) -> Result<EnableDebugger<'a>> {
+        let _ = self.read_u16()?; // Reserved
+        Ok(EnableDebugger {
+            password_hash: self.read_str()?,
+        })
+    }
+
+    pub fn read_enable_telemetry(&mut self) -> Result<EnableTelemetry<'a>> {
+        let _ = self.read_u16()?; // Reserved
+        let password_hash = if self.as_slice().len() > 2 {
+            self.read_slice(32)?
+        } else {
+            &[]
+        };
+        Ok(EnableTelemetry { password_hash })
+    }
+
+    pub fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {
+        let num_exports = self.read_u16()?;
+        let mut exports = Vec::with_capacity(num_exports.into());
+        for _ in 0..num_exports {
+            exports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+        Ok(ExportAssets(exports))
+    }
+
+    pub fn read_file_attributes(&mut self) -> Result<FileAttributes> {
+        let flags = self.read_u32()?;
+        Ok(FileAttributes::from_bits_truncate(flags as u8))
+    }
+
+    pub fn read_frame_label(&mut self) -> Result<FrameLabel<'a>> {
+        let label = self.read_str()?;
+        let is_anchor = self.version >= 6 && self.read_u8().unwrap_or_default() != 0;
+        Ok(FrameLabel { label, is_anchor })
+    }
+
+    pub fn read_import_assets(&mut self) -> Result<ImportAssets<'a>> {
+        let url = self.read_str()?;
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+        Ok(ImportAssets { url, imports })
+    }
+
+    pub fn read_import_assets_2(&mut self) -> Result<ImportAssets<'a>> {
+        let url = self.read_str()?;
+        self.read_u8()?; // Reserved; must be 1
+        self.read_u8()?; // Reserved; must be 0
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+        Ok(ImportAssets { url, imports })
+    }
+
+    pub fn read_jpeg_tables(&mut self) -> Result<JpegTables<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(JpegTables(data))
+    }
+
+    pub fn read_metadata(&mut self) -> Result<Metadata<'a>> {
+        Ok(Metadata {
+            metadata: self.read_str()?,
+        })
+    }
+
+    pub fn read_name_character(&mut self) -> Result<NameCharacter<'a>> {
+        // Not documented in SWF19 reference, and seems to be ignored by the official Flash Player.
+        // Not generated by any version of the Flash IDE, but some 3rd party tools contain it.
+        // See https://www.m2osw.com/swf_tag_namecharacter
+        Ok(NameCharacter {
+            id: self.read_character_id()?,
+            name: self.read_str()?,
+        })
+    }
+
+    pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
+        Ok(PlaceObject {
+            version: 1,
+            action: PlaceObjectAction::Place(self.read_u16()?),
+            depth: self.read_u16()?,
+            matrix: Some(self.read_matrix()?),
+            color_transform: if !self.get_ref().is_empty() {
+                Some(self.read_color_transform(false)?)
+            } else {
+                None
+            },
+            ratio: None,
+            name: None,
+            clip_depth: None,
+            class_name: None,
+            filters: None,
+            background_color: None,
+            blend_mode: None,
+            clip_actions: None,
+            has_image: false,
+            is_bitmap_cached: None,
+            is_visible: None,
+            amf_data: None,
+        })
+    }
+
+    pub fn read_place_object_2_or_3(
+        &mut self,
+        place_object_version: u8,
+    ) -> Result<PlaceObject<'a>> {
+        let flags = if place_object_version >= 3 {
+            PlaceFlag::from_bits_truncate(self.read_u16()?)
+        } else {
+            PlaceFlag::from_bits_truncate(self.read_u8()?.into())
+        };
+
+        let depth = self.read_u16()?;
+
+        // PlaceObject3
+        // SWF19 p.40 incorrectly says class name if (HasClassNameFlag || (HasImage && HasCharacterID))
+        // I think this should be if (HasClassNameFlag || (HasImage && !HasCharacterID)),
+        // you use the class name only if a character ID isn't present.
+        // But what is the case where we'd have an image without either HasCharacterID or HasClassName set?
+        let has_image = flags.contains(PlaceFlag::HAS_IMAGE);
+        let has_character_id = flags.contains(PlaceFlag::HAS_CHARACTER);
+        let has_class_name =
+            flags.contains(PlaceFlag::HAS_CLASS_NAME) || (has_image && !has_character_id);
+        let class_name = if has_class_name {
+            Some(self.read_str()?)
+        } else {
+            None
+        };
+
+        let action = match (flags.contains(PlaceFlag::MOVE), has_character_id) {
+            (true, false) => PlaceObjectAction::Modify,
+            (false, true) => {
+                let id = self.read_u16()?;
+                PlaceObjectAction::Place(id)
+            }
+            (true, true) => {
+                let id = self.read_u16()?;
+                PlaceObjectAction::Replace(id)
+            }
+            _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
+        };
+        let matrix = if flags.contains(PlaceFlag::HAS_MATRIX) {
+            Some(self.read_matrix()?)
+        } else {
+            None
+        };
+        let color_transform = if flags.contains(PlaceFlag::HAS_COLOR_TRANSFORM) {
+            Some(self.read_color_transform(true)?)
+        } else {
+            None
+        };
+        let ratio = if flags.contains(PlaceFlag::HAS_RATIO) {
+            Some(self.read_u16()?)
+        } else {
+            None
+        };
+        let name = if flags.contains(PlaceFlag::HAS_NAME) {
+            Some(self.read_str()?)
+        } else {
+            None
+        };
+        let clip_depth = if flags.contains(PlaceFlag::HAS_CLIP_DEPTH) {
+            Some(self.read_u16()?)
+        } else {
+            None
+        };
+
+        // PlaceObject3
+        let filters = if flags.contains(PlaceFlag::HAS_FILTER_LIST) {
+            let num_filters = self.read_u8()?;
+            let mut filters = Vec::with_capacity(num_filters as usize);
+            for _ in 0..num_filters {
+                filters.push(self.read_filter()?);
+            }
+            Some(filters)
+        } else {
+            None
+        };
+        let blend_mode = if flags.contains(PlaceFlag::HAS_BLEND_MODE) {
+            Some(self.read_blend_mode()?)
+        } else {
+            None
+        };
+        let is_bitmap_cached = if flags.contains(PlaceFlag::HAS_CACHE_AS_BITMAP) {
+            // Some incorrect SWFs appear to end the tag here, without
+            // the expected 'u8'.
+            if self.as_slice().is_empty() {
+                Some(true)
+            } else {
+                Some(self.read_u8()? != 0)
+            }
+        } else {
+            None
+        };
+        let is_visible = if flags.contains(PlaceFlag::HAS_VISIBLE) {
+            Some(self.read_u8()? != 0)
+        } else {
+            None
+        };
+        let background_color = if flags.contains(PlaceFlag::OPAQUE_BACKGROUND) {
+            Some(self.read_rgba()?)
+        } else {
+            None
+        };
+        let clip_actions = if flags.contains(PlaceFlag::HAS_CLIP_ACTIONS) {
+            Some(self.read_clip_actions()?)
+        } else {
+            None
+        };
+
+        // PlaceObject4
+        let amf_data = if place_object_version >= 4 {
+            Some(self.read_slice_to_end())
+        } else {
+            None
+        };
+
+        Ok(PlaceObject {
+            version: place_object_version,
+            action,
+            depth,
+            matrix,
+            color_transform,
+            ratio,
+            name,
+            clip_depth,
+            clip_actions,
+            has_image,
+            is_bitmap_cached,
+            is_visible,
+            class_name,
+            filters,
+            background_color,
+            blend_mode,
+            amf_data,
+        })
+    }
+
+    pub fn read_product_info(&mut self) -> Result<ProductInfo> {
+        // Not documented in SWF19 reference.
+        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+        Ok(ProductInfo {
+            product_id: self.read_u32()?,
+            edition: self.read_u32()?,
+            major_version: self.read_u8()?,
+            minor_version: self.read_u8()?,
+            build_number: self.read_u64()?,
+            compilation_date: self.read_u64()?,
+        })
+    }
+
+    pub fn read_protect(&mut self) -> Result<Protect<'a>> {
+        let password_hash = if !self.as_slice().is_empty() {
+            let _ = self.read_u16()?; // TODO(Herschel): Two null bytes? Not specified in SWF19.
+            Some(self.read_str()?)
+        } else {
+            None
+        };
+        Ok(Protect { password_hash })
+    }
+
+    pub fn read_remove_object_1(&mut self) -> Result<RemoveObject> {
+        Ok(RemoveObject {
+            character_id: Some(self.read_u16()?),
+            depth: self.read_u16()?,
+        })
+    }
+
+    pub fn read_remove_object_2(&mut self) -> Result<RemoveObject> {
+        Ok(RemoveObject {
+            depth: self.read_u16()?,
+            character_id: None,
+        })
+    }
+
+    pub fn read_script_limits(&mut self) -> Result<ScriptLimits> {
+        Ok(ScriptLimits {
+            max_recursion_depth: self.read_u16()?,
+            timeout_in_seconds: self.read_u16()?,
+        })
+    }
+
+    pub fn read_set_background_color(&mut self) -> Result<SetBackgroundColor> {
+        Ok(SetBackgroundColor(self.read_rgb()?))
+    }
+
+    pub fn read_set_tab_index(&mut self) -> Result<SetTabIndex> {
+        Ok(SetTabIndex {
+            depth: self.read_u16()?,
+            tab_index: self.read_u16()?,
+        })
+    }
+
+    pub fn read_sound_stream_block(&mut self) -> Result<SoundStreamBlock<'a>> {
+        let data = self.read_slice_to_end();
+        Ok(SoundStreamBlock { data })
+    }
+
     pub fn read_sound_stream_head(&mut self) -> Result<SoundStreamHead> {
-        // TODO: Verify version requirements.
+        // TODO: Verify version requirements. Disallow certain compressions for v1.
         let playback_format = self.read_sound_format()?;
         let stream_format = self.read_sound_format()?;
         let num_samples_per_block = self.read_u16()?;
@@ -1557,6 +1738,47 @@ impl<'a> Reader<'a> {
             latency_seek,
         })
     }
+
+    pub fn read_start_sound_1(&mut self) -> Result<StartSound> {
+        Ok(StartSound {
+            id: self.read_u16()?,
+            sound_info: Box::new(self.read_sound_info()?),
+        })
+    }
+
+    pub fn read_start_sound_2(&mut self) -> Result<StartSound2<'a>> {
+        Ok(StartSound2 {
+            class_name: self.read_str()?,
+            sound_info: Box::new(self.read_sound_info()?),
+        })
+    }
+
+    pub fn read_symbol_class(&mut self) -> Result<SymbolClass<'a>> {
+        let num_symbols = self.read_u16()?;
+        let mut symbols = Vec::with_capacity(num_symbols as usize);
+        for _ in 0..num_symbols {
+            symbols.push(SymbolClassLink {
+                id: self.read_u16()?,
+                class_name: self.read_str()?,
+            });
+        }
+        Ok(SymbolClass(symbols))
+    }
+
+    pub fn read_video_frame(&mut self) -> Result<VideoFrame<'a>> {
+        let stream_id = self.read_character_id()?;
+        let frame_num = self.read_u16()?;
+        let data = self.read_slice_to_end();
+        Ok(VideoFrame {
+            stream_id,
+            frame_num,
+            data,
+        })
+    }
+
+    //=========================================================================
+    // Shape types
+    //=========================================================================
 
     fn read_shape_styles(&mut self, shape_version: u8) -> Result<(ShapeStyles, u8, u8)> {
         let num_fill_styles = match self.read_u8()? {
@@ -1811,210 +2033,241 @@ impl<'a> Reader<'a> {
         Ok(shape_record)
     }
 
-    pub fn read_define_sprite(&mut self) -> Result<Sprite<'a>> {
-        Ok(Sprite {
-            id: self.read_u16()?,
-            num_frames: self.read_u16()?,
-            tags: self.read_tag_list()?,
-        })
+    //=========================================================================
+    // Morph shape types
+    //=========================================================================
+
+    fn read_morph_line_style(&mut self, shape_version: u8) -> Result<(LineStyle, LineStyle)> {
+        let start_width = Twips::new(self.read_u16()?.into());
+        let end_width = Twips::new(self.read_u16()?.into());
+        if shape_version < 2 {
+            let start_color = self.read_rgba()?;
+            let end_color = self.read_rgba()?;
+
+            Ok((
+                LineStyle::new()
+                    .with_width(start_width)
+                    .with_color(start_color),
+                LineStyle::new().with_width(end_width).with_color(end_color),
+            ))
+        } else {
+            // MorphLineStyle2 in DefineMorphShape2.
+            let mut flags = LineStyleFlag::from_bits_retain(self.read_u16()?);
+            // Verify valid cap and join styles.
+            if flags.contains(LineStyleFlag::JOIN_STYLE) {
+                log::warn!("Invalid line join style");
+                flags -= LineStyleFlag::JOIN_STYLE;
+            }
+            if flags.contains(LineStyleFlag::START_CAP_STYLE) {
+                log::warn!("Invalid line start cap style");
+                flags -= LineStyleFlag::START_CAP_STYLE;
+            }
+            if flags.contains(LineStyleFlag::END_CAP_STYLE) {
+                log::warn!("Invalid line end cap style");
+                flags -= LineStyleFlag::END_CAP_STYLE;
+            }
+            let miter_limit = if flags & LineStyleFlag::JOIN_STYLE == LineStyleFlag::MITER {
+                self.read_fixed8()?
+            } else {
+                Fixed8::ZERO
+            };
+            let (start_fill_style, end_fill_style) = if flags.contains(LineStyleFlag::HAS_FILL) {
+                let (start, end) = self.read_morph_fill_style()?;
+                (start, end)
+            } else {
+                (
+                    FillStyle::Color(self.read_rgba()?),
+                    FillStyle::Color(self.read_rgba()?),
+                )
+            };
+            Ok((
+                LineStyle {
+                    width: start_width,
+                    fill_style: start_fill_style,
+                    flags,
+                    miter_limit,
+                },
+                LineStyle {
+                    width: end_width,
+                    fill_style: end_fill_style,
+                    flags,
+                    miter_limit,
+                },
+            ))
+        }
     }
 
-    pub fn read_file_attributes(&mut self) -> Result<FileAttributes> {
-        let flags = self.read_u32()?;
-        Ok(FileAttributes::from_bits_truncate(flags as u8))
+    fn read_morph_fill_style(&mut self) -> Result<(FillStyle, FillStyle)> {
+        let fill_style_type = self.read_u8()?;
+        let fill_style = match fill_style_type {
+            0x00 => {
+                let start_color = self.read_rgba()?;
+                let end_color = self.read_rgba()?;
+                (FillStyle::Color(start_color), FillStyle::Color(end_color))
+            }
+
+            0x10 => {
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                (
+                    FillStyle::LinearGradient(start_gradient),
+                    FillStyle::LinearGradient(end_gradient),
+                )
+            }
+
+            0x12 => {
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                (
+                    FillStyle::RadialGradient(start_gradient),
+                    FillStyle::RadialGradient(end_gradient),
+                )
+            }
+
+            0x13 => {
+                // SWF19 says focal gradients are only allowed in SWFv8+ and DefineMorphShapeShape2,
+                // but it works even in earlier tags (#2730).
+                // TODO(Herschel): How is focal_point stored?
+                let (start_gradient, end_gradient) = self.read_morph_gradient()?;
+                let start_focal_point = self.read_fixed8()?;
+                let end_focal_point = self.read_fixed8()?;
+                (
+                    FillStyle::FocalGradient {
+                        gradient: start_gradient,
+                        focal_point: start_focal_point,
+                    },
+                    FillStyle::FocalGradient {
+                        gradient: end_gradient,
+                        focal_point: end_focal_point,
+                    },
+                )
+            }
+
+            0x40..=0x43 => {
+                let id = self.read_character_id()?;
+                (
+                    FillStyle::Bitmap {
+                        id,
+                        matrix: self.read_matrix()?,
+                        is_smoothed: (fill_style_type & 0b10) == 0,
+                        is_repeating: (fill_style_type & 0b01) == 0,
+                    },
+                    FillStyle::Bitmap {
+                        id,
+                        matrix: self.read_matrix()?,
+                        is_smoothed: (fill_style_type & 0b10) == 0,
+                        is_repeating: (fill_style_type & 0b01) == 0,
+                    },
+                )
+            }
+
+            _ => return Err(Error::invalid_data("Invalid fill style.")),
+        };
+        Ok(fill_style)
     }
 
-    pub fn read_export_assets(&mut self) -> Result<ExportAssets<'a>> {
-        let num_exports = self.read_u16()?;
-        let mut exports = Vec::with_capacity(num_exports.into());
-        for _ in 0..num_exports {
-            exports.push(ExportedAsset {
-                id: self.read_u16()?,
-                name: self.read_str()?,
+    fn read_morph_gradient(&mut self) -> Result<(Gradient, Gradient)> {
+        let start_matrix = self.read_matrix()?;
+        let end_matrix = self.read_matrix()?;
+        let (num_records, spread, interpolation) = self.read_gradient_flags()?;
+        let mut start_records = Vec::with_capacity(num_records);
+        let mut end_records = Vec::with_capacity(num_records);
+        for _ in 0..num_records {
+            start_records.push(GradientRecord {
+                ratio: self.read_u8()?,
+                color: self.read_rgba()?,
+            });
+            end_records.push(GradientRecord {
+                ratio: self.read_u8()?,
+                color: self.read_rgba()?,
             });
         }
-        Ok(exports)
-    }
-
-    pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
-        Ok(PlaceObject {
-            version: 1,
-            action: PlaceObjectAction::Place(self.read_u16()?),
-            depth: self.read_u16()?,
-            matrix: Some(self.read_matrix()?),
-            color_transform: if !self.get_ref().is_empty() {
-                Some(self.read_color_transform(false)?)
-            } else {
-                None
+        Ok((
+            Gradient {
+                matrix: start_matrix,
+                spread,
+                interpolation,
+                records: start_records,
             },
-            ratio: None,
-            name: None,
-            clip_depth: None,
-            class_name: None,
-            filters: None,
-            background_color: None,
-            blend_mode: None,
-            clip_actions: None,
-            has_image: false,
-            is_bitmap_cached: None,
-            is_visible: None,
-            amf_data: None,
-        })
+            Gradient {
+                matrix: end_matrix,
+                spread,
+                interpolation,
+                records: end_records,
+            },
+        ))
     }
 
-    pub fn read_place_object_2_or_3(
-        &mut self,
-        place_object_version: u8,
-    ) -> Result<PlaceObject<'a>> {
-        let flags = if place_object_version >= 3 {
-            PlaceFlag::from_bits_truncate(self.read_u16()?)
-        } else {
-            PlaceFlag::from_bits_truncate(self.read_u8()?.into())
-        };
+    //=========================================================================
+    // Button types
+    //=========================================================================
 
+    fn read_button_record(&mut self, version: u8) -> Result<Option<ButtonRecord>> {
+        let flags = self.read_u8()?;
+        if flags == 0 {
+            return Ok(None);
+        }
+        let states = ButtonState::from_bits_truncate(flags);
+        let id = self.read_u16()?;
         let depth = self.read_u16()?;
-
-        // PlaceObject3
-        // SWF19 p.40 incorrectly says class name if (HasClassNameFlag || (HasImage && HasCharacterID))
-        // I think this should be if (HasClassNameFlag || (HasImage && !HasCharacterID)),
-        // you use the class name only if a character ID isn't present.
-        // But what is the case where we'd have an image without either HasCharacterID or HasClassName set?
-        let has_image = flags.contains(PlaceFlag::HAS_IMAGE);
-        let has_character_id = flags.contains(PlaceFlag::HAS_CHARACTER);
-        let has_class_name =
-            flags.contains(PlaceFlag::HAS_CLASS_NAME) || (has_image && !has_character_id);
-        let class_name = if has_class_name {
-            Some(self.read_str()?)
+        let matrix = self.read_matrix()?;
+        let color_transform = if version >= 2 {
+            self.read_color_transform(true)?
         } else {
-            None
+            ColorTransform::new()
         };
-
-        let action = match (flags.contains(PlaceFlag::MOVE), has_character_id) {
-            (true, false) => PlaceObjectAction::Modify,
-            (false, true) => {
-                let id = self.read_u16()?;
-                PlaceObjectAction::Place(id)
-            }
-            (true, true) => {
-                let id = self.read_u16()?;
-                PlaceObjectAction::Replace(id)
-            }
-            _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
-        };
-        let matrix = if flags.contains(PlaceFlag::HAS_MATRIX) {
-            Some(self.read_matrix()?)
-        } else {
-            None
-        };
-        let color_transform = if flags.contains(PlaceFlag::HAS_COLOR_TRANSFORM) {
-            Some(self.read_color_transform(true)?)
-        } else {
-            None
-        };
-        let ratio = if flags.contains(PlaceFlag::HAS_RATIO) {
-            Some(self.read_u16()?)
-        } else {
-            None
-        };
-        let name = if flags.contains(PlaceFlag::HAS_NAME) {
-            Some(self.read_str()?)
-        } else {
-            None
-        };
-        let clip_depth = if flags.contains(PlaceFlag::HAS_CLIP_DEPTH) {
-            Some(self.read_u16()?)
-        } else {
-            None
-        };
-
-        // PlaceObject3
-        let filters = if flags.contains(PlaceFlag::HAS_FILTER_LIST) {
+        let mut filters = vec![];
+        if (flags & 0b1_0000) != 0 {
             let num_filters = self.read_u8()?;
-            let mut filters = Vec::with_capacity(num_filters as usize);
+            filters.reserve(num_filters as usize);
             for _ in 0..num_filters {
                 filters.push(self.read_filter()?);
             }
-            Some(filters)
+        }
+        let blend_mode = if (flags & 0b10_0000) != 0 {
+            self.read_blend_mode()?
         } else {
-            None
+            BlendMode::Normal
         };
-        let blend_mode = if flags.contains(PlaceFlag::HAS_BLEND_MODE) {
-            Some(self.read_blend_mode()?)
-        } else {
-            None
-        };
-        let is_bitmap_cached = if flags.contains(PlaceFlag::HAS_CACHE_AS_BITMAP) {
-            // Some incorrect SWFs appear to end the tag here, without
-            // the expected 'u8'.
-            if self.as_slice().is_empty() {
-                Some(true)
-            } else {
-                Some(self.read_u8()? != 0)
-            }
-        } else {
-            None
-        };
-        let is_visible = if flags.contains(PlaceFlag::HAS_VISIBLE) {
-            Some(self.read_u8()? != 0)
-        } else {
-            None
-        };
-        let background_color = if flags.contains(PlaceFlag::OPAQUE_BACKGROUND) {
-            Some(self.read_rgba()?)
-        } else {
-            None
-        };
-        let clip_actions = if flags.contains(PlaceFlag::HAS_CLIP_ACTIONS) {
-            Some(self.read_clip_actions()?)
-        } else {
-            None
-        };
-
-        // PlaceObject4
-        let amf_data = if place_object_version >= 4 {
-            Some(self.read_slice_to_end())
-        } else {
-            None
-        };
-
-        Ok(PlaceObject {
-            version: place_object_version,
-            action,
+        Ok(Some(ButtonRecord {
+            states,
+            id,
             depth,
             matrix,
             color_transform,
-            ratio,
-            name,
-            clip_depth,
-            clip_actions,
-            has_image,
-            is_bitmap_cached,
-            is_visible,
-            class_name,
             filters,
-            background_color,
             blend_mode,
-            amf_data,
-        })
+        }))
     }
 
-    pub fn read_remove_object_1(&mut self) -> Result<RemoveObject> {
-        Ok(RemoveObject {
-            character_id: Some(self.read_u16()?),
-            depth: self.read_u16()?,
-        })
+    fn read_button_action(&mut self) -> Result<(ButtonAction<'a>, bool)> {
+        let length = self.read_u16()?;
+        let flags = self.read_u16()?;
+        let mut conditions = ButtonActionCondition::from_bits_truncate(flags);
+        let key_code = (flags >> 9) as u8;
+        conditions.set(ButtonActionCondition::KEY_PRESS, key_code != 0);
+        let action_data = if length >= 4 {
+            self.read_slice(length as usize - 4)?
+        } else if length == 0 {
+            // Last action, read to end.
+            self.read_slice_to_end()
+        } else {
+            // Some SWFs have phantom action records with an invalid length.
+            // See 401799_pre_Scene_1.swf
+            // TODO: How does Flash handle this?
+            return Err(Error::invalid_data("Button action length is too short"));
+        };
+        Ok((
+            ButtonAction {
+                conditions,
+                key_code: if key_code != 0 { Some(key_code) } else { None },
+                action_data,
+            },
+            length != 0,
+        ))
     }
 
-    pub fn read_remove_object_2(&mut self) -> Result<RemoveObject> {
-        Ok(RemoveObject {
-            depth: self.read_u16()?,
-            character_id: None,
-        })
-    }
-
-    pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
-        BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
-    }
+    //=========================================================================
+    // Sprite types
+    //=========================================================================
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
         self.read_u16()?; // Must be 0
@@ -2064,6 +2317,120 @@ impl<'a> Reader<'a> {
         };
 
         ClipEventFlag::from_bits_truncate(bits)
+    }
+
+    //=========================================================================
+    // Text types
+    //=========================================================================
+
+    fn read_kerning_record(&mut self, has_wide_codes: bool) -> Result<KerningRecord> {
+        Ok(KerningRecord {
+            left_code: if has_wide_codes {
+                self.read_u16()?
+            } else {
+                self.read_u8()?.into()
+            },
+            right_code: if has_wide_codes {
+                self.read_u16()?
+            } else {
+                self.read_u8()?.into()
+            },
+            adjustment: Twips::new(self.read_i16()?.into()),
+        })
+    }
+
+    fn read_font_align_zone(&mut self) -> Result<FontAlignZone> {
+        self.read_u8()?; // Always 2.
+        let zone = FontAlignZone {
+            left: self.read_i16()?,
+            width: self.read_i16()?,
+            bottom: self.read_i16()?,
+            height: self.read_i16()?,
+        };
+        self.read_u8()?; // Always 0b000000_11 (2 dimensions).
+        Ok(zone)
+    }
+
+    fn read_text_record(
+        &mut self,
+        num_glyph_bits: u8,
+        num_advance_bits: u8,
+        version: u8,
+    ) -> Result<Option<TextRecord>> {
+        let flags = self.read_u8()?;
+
+        if flags == 0 {
+            // End of text records.
+            return Ok(None);
+        }
+
+        let font_id = if flags & 0b1000 != 0 {
+            Some(self.read_character_id()?)
+        } else {
+            None
+        };
+        let color = if flags & 0b100 != 0 {
+            if version == 1 {
+                Some(self.read_rgb()?)
+            } else {
+                Some(self.read_rgba()?)
+            }
+        } else {
+            None
+        };
+        let x_offset = if flags & 0b1 != 0 {
+            Some(Twips::new(self.read_i16()?.into()))
+        } else {
+            None
+        };
+        let y_offset = if flags & 0b10 != 0 {
+            Some(Twips::new(self.read_i16()?.into()))
+        } else {
+            None
+        };
+        let height = if flags & 0b1000 != 0 {
+            Some(Twips::new(self.read_u16()?.into()))
+        } else {
+            None
+        };
+        // TODO(Herschel): font_id and height are tied together. Merge them into a struct?
+        let num_glyphs = self.read_u8()?;
+        let mut glyphs = Vec::with_capacity(num_glyphs as usize);
+        let mut bits = self.bits();
+        for _ in 0..num_glyphs {
+            glyphs.push(GlyphEntry {
+                index: bits.read_ubits(num_glyph_bits.into())?,
+                advance: bits.read_sbits(num_advance_bits.into())?,
+            });
+        }
+
+        Ok(Some(TextRecord {
+            font_id,
+            color,
+            x_offset,
+            y_offset,
+            height,
+            glyphs,
+        }))
+    }
+
+    //=========================================================================
+    // Filter types
+    //=========================================================================
+
+    pub fn read_filter(&mut self) -> Result<Filter> {
+        let filter = match self.read_u8()? {
+            0 => Filter::DropShadowFilter(Box::new(self.read_drop_shadow_filter()?)),
+            1 => Filter::BlurFilter(Box::new(self.read_blur_filter()?)),
+            2 => Filter::GlowFilter(Box::new(self.read_glow_filter()?)),
+            3 => Filter::BevelFilter(Box::new(self.read_bevel_filter()?)),
+            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_filter()?)),
+            5 => Filter::ConvolutionFilter(Box::new(self.read_convolution_filter()?)),
+            6 => Filter::ColorMatrixFilter(Box::new(self.read_color_matrix_filter()?)),
+            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_filter()?)),
+            _ => return Err(Error::invalid_data("Invalid filter type")),
+        };
+        Ok(filter)
     }
 
     fn read_drop_shadow_filter(&mut self) -> Result<DropShadowFilter> {
@@ -2163,20 +2530,9 @@ impl<'a> Reader<'a> {
         Ok(ColorMatrixFilter { matrix })
     }
 
-    pub fn read_filter(&mut self) -> Result<Filter> {
-        let filter = match self.read_u8()? {
-            0 => Filter::DropShadowFilter(Box::new(self.read_drop_shadow_filter()?)),
-            1 => Filter::BlurFilter(Box::new(self.read_blur_filter()?)),
-            2 => Filter::GlowFilter(Box::new(self.read_glow_filter()?)),
-            3 => Filter::BevelFilter(Box::new(self.read_bevel_filter()?)),
-            4 => Filter::GradientGlowFilter(Box::new(self.read_gradient_filter()?)),
-            5 => Filter::ConvolutionFilter(Box::new(self.read_convolution_filter()?)),
-            6 => Filter::ColorMatrixFilter(Box::new(self.read_color_matrix_filter()?)),
-            7 => Filter::GradientBevelFilter(Box::new(self.read_gradient_filter()?)),
-            _ => return Err(Error::invalid_data("Invalid filter type")),
-        };
-        Ok(filter)
-    }
+    //=========================================================================
+    // Sound types
+    //=========================================================================
 
     pub fn read_sound_format(&mut self) -> Result<SoundFormat> {
         let flags = self.read_u8()?;
@@ -2237,286 +2593,6 @@ impl<'a> Reader<'a> {
             out_sample,
             num_loops,
             envelope,
-        })
-    }
-
-    pub fn read_start_sound_1(&mut self) -> Result<StartSound> {
-        Ok(StartSound {
-            id: self.read_u16()?,
-            sound_info: Box::new(self.read_sound_info()?),
-        })
-    }
-
-    pub fn read_define_binary_data(&mut self) -> Result<DefineBinaryData<'a>> {
-        let id = self.read_u16()?;
-        self.read_u32()?; // Reserved
-        let data = self.read_slice_to_end();
-        Ok(DefineBinaryData { id, data })
-    }
-
-    pub fn read_define_text(&mut self, version: u8) -> Result<Text> {
-        let id = self.read_character_id()?;
-        let bounds = self.read_rectangle()?;
-        let matrix = self.read_matrix()?;
-        let num_glyph_bits = self.read_u8()?;
-        let num_advance_bits = self.read_u8()?;
-
-        let mut records = vec![];
-        while let Some(record) = self.read_text_record(num_glyph_bits, num_advance_bits, version)? {
-            records.push(record);
-        }
-
-        Ok(Text {
-            id,
-            bounds,
-            matrix,
-            records,
-        })
-    }
-
-    fn read_text_record(
-        &mut self,
-        num_glyph_bits: u8,
-        num_advance_bits: u8,
-        version: u8,
-    ) -> Result<Option<TextRecord>> {
-        let flags = self.read_u8()?;
-
-        if flags == 0 {
-            // End of text records.
-            return Ok(None);
-        }
-
-        let font_id = if flags & 0b1000 != 0 {
-            Some(self.read_character_id()?)
-        } else {
-            None
-        };
-        let color = if flags & 0b100 != 0 {
-            if version == 1 {
-                Some(self.read_rgb()?)
-            } else {
-                Some(self.read_rgba()?)
-            }
-        } else {
-            None
-        };
-        let x_offset = if flags & 0b1 != 0 {
-            Some(Twips::new(self.read_i16()?.into()))
-        } else {
-            None
-        };
-        let y_offset = if flags & 0b10 != 0 {
-            Some(Twips::new(self.read_i16()?.into()))
-        } else {
-            None
-        };
-        let height = if flags & 0b1000 != 0 {
-            Some(Twips::new(self.read_u16()?.into()))
-        } else {
-            None
-        };
-        // TODO(Herschel): font_id and height are tied together. Merge them into a struct?
-        let num_glyphs = self.read_u8()?;
-        let mut glyphs = Vec::with_capacity(num_glyphs as usize);
-        let mut bits = self.bits();
-        for _ in 0..num_glyphs {
-            glyphs.push(GlyphEntry {
-                index: bits.read_ubits(num_glyph_bits.into())?,
-                advance: bits.read_sbits(num_advance_bits.into())?,
-            });
-        }
-
-        Ok(Some(TextRecord {
-            font_id,
-            color,
-            x_offset,
-            y_offset,
-            height,
-            glyphs,
-        }))
-    }
-
-    pub fn read_define_edit_text(&mut self) -> Result<EditText<'a>> {
-        let id = self.read_character_id()?;
-        let bounds = self.read_rectangle()?;
-        let flags = EditTextFlag::from_bits_truncate(self.read_u16()?);
-        let font_id = if flags.contains(EditTextFlag::HAS_FONT) {
-            self.read_character_id()?
-        } else {
-            Default::default()
-        };
-        let font_class = if flags.contains(EditTextFlag::HAS_FONT_CLASS) {
-            self.read_str()?
-        } else {
-            Default::default()
-        };
-        let height = if flags.intersects(EditTextFlag::HAS_FONT | EditTextFlag::HAS_FONT_CLASS) {
-            // SWF19 errata: The specs say this field is only present if the HasFont flag is set,
-            // but it's also present when the HasFontClass flag is set.
-            Twips::new(self.read_u16()?.into())
-        } else {
-            Twips::ZERO
-        };
-        let color = if flags.contains(EditTextFlag::HAS_TEXT_COLOR) {
-            self.read_rgba()?
-        } else {
-            Color::BLACK
-        };
-        let max_length = if flags.contains(EditTextFlag::HAS_MAX_LENGTH) {
-            self.read_u16()?
-        } else {
-            0
-        };
-        let layout = if flags.contains(EditTextFlag::HAS_LAYOUT) {
-            TextLayout {
-                align: TextAlign::from_u8(self.read_u8()?)
-                    .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
-                left_margin: Twips::new(self.read_u16()?.into()),
-                right_margin: Twips::new(self.read_u16()?.into()),
-                indent: Twips::new(self.read_u16()?.into()),
-                leading: Twips::new(self.read_i16()?.into()),
-            }
-        } else {
-            TextLayout {
-                align: TextAlign::Left,
-                left_margin: Twips::ZERO,
-                right_margin: Twips::ZERO,
-                indent: Twips::ZERO,
-                leading: Twips::ZERO,
-            }
-        };
-        let variable_name = self.read_str()?;
-        let initial_text = if flags.contains(EditTextFlag::HAS_TEXT) {
-            self.read_str()?
-        } else {
-            Default::default()
-        };
-        Ok(EditText {
-            id,
-            bounds,
-            font_id,
-            font_class,
-            height,
-            color,
-            max_length,
-            layout,
-            variable_name,
-            initial_text,
-            flags,
-        })
-    }
-
-    pub fn read_define_video_stream(&mut self) -> Result<DefineVideoStream> {
-        let id = self.read_character_id()?;
-        let num_frames = self.read_u16()?;
-        let width = self.read_u16()?;
-        let height = self.read_u16()?;
-        let flags = self.read_u8()?;
-        // TODO(Herschel): Check SWF version.
-        let codec = VideoCodec::from_u8(self.read_u8()?)
-            .ok_or_else(|| Error::invalid_data("Invalid video codec."))?;
-        Ok(DefineVideoStream {
-            id,
-            num_frames,
-            width,
-            height,
-            is_smoothed: flags & 0b1 != 0,
-            codec,
-            deblocking: VideoDeblocking::from_u8((flags >> 1) & 0b111)
-                .ok_or_else(|| Error::invalid_data("Invalid video deblocking value."))?,
-        })
-    }
-
-    pub fn read_video_frame(&mut self) -> Result<VideoFrame<'a>> {
-        let stream_id = self.read_character_id()?;
-        let frame_num = self.read_u16()?;
-        let data = self.read_slice_to_end();
-        Ok(VideoFrame {
-            stream_id,
-            frame_num,
-            data,
-        })
-    }
-
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
-        let id = self.read_character_id()?;
-        let data_size = self.read_u32()? as usize;
-        let deblocking = if version >= 4 {
-            self.read_fixed8()?
-        } else {
-            Fixed8::ZERO
-        };
-        let data = self.read_slice(data_size)?;
-        let alpha_data = self.read_slice_to_end();
-        Ok(DefineBitsJpeg3 {
-            id,
-            version,
-            deblocking,
-            data,
-            alpha_data,
-        })
-    }
-
-    pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
-        let id = self.read_character_id()?;
-        let format = self.read_u8()?;
-        let width = self.read_u16()?;
-        let height = self.read_u16()?;
-        let format = match format {
-            3 => BitmapFormat::ColorMap8 {
-                num_colors: self.read_u8()?,
-            },
-            4 if version == 1 => BitmapFormat::Rgb15,
-            5 => BitmapFormat::Rgb32,
-            _ => return Err(Error::invalid_data("Invalid bitmap format.")),
-        };
-        let data = self.read_slice_to_end();
-        Ok(DefineBitsLossless {
-            version,
-            id,
-            format,
-            width,
-            height,
-            data,
-        })
-    }
-
-    pub fn read_do_abc_2(&mut self) -> Result<DoAbc2<'a>> {
-        let flags = DoAbc2Flag::from_bits_truncate(self.read_u32()?);
-        let name = self.read_str()?;
-        let data = self.read_slice_to_end();
-        Ok(DoAbc2 { flags, name, data })
-    }
-
-    pub fn read_product_info(&mut self) -> Result<ProductInfo> {
-        // Not documented in SWF19 reference.
-        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
-        Ok(ProductInfo {
-            product_id: self.read_u32()?,
-            edition: self.read_u32()?,
-            major_version: self.read_u8()?,
-            minor_version: self.read_u8()?,
-            build_number: self.read_u64()?,
-            compilation_date: self.read_u64()?,
-        })
-    }
-
-    pub fn read_debug_id(&mut self) -> Result<DebugId> {
-        // Not documented in SWF19 reference.
-        // See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
-        let mut debug_id = [0u8; 16];
-        self.get_mut().read_exact(&mut debug_id)?;
-        Ok(debug_id)
-    }
-
-    pub fn read_name_character(&mut self) -> Result<NameCharacter<'a>> {
-        // Not documented in SWF19 reference, and seems to be ignored by the official Flash Player.
-        // Not generated by any version of the Flash IDE, but some 3rd party tools contain it.
-        // See https://www.m2osw.com/swf_tag_namecharacter
-        Ok(NameCharacter {
-            id: self.read_character_id()?,
-            name: self.read_str()?,
         })
     }
 }

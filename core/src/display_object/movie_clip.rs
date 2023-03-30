@@ -3774,7 +3774,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let exports = reader.read_export_assets()?;
-        for export in exports {
+        for export in exports.0 {
             let name = export.name.to_str_lossy(reader.encoding());
             let name = AvmString::new_utf8(context.gc_context, name);
             let character = context
