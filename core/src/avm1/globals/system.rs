@@ -71,6 +71,17 @@ pub enum RuffleType {
 /// The available host operating systems
 #[allow(dead_code)]
 pub enum OperatingSystem {
+    // This might be incomplete; not all Windows versions have been tested.
+    // See https://en.wikipedia.org/wiki/Ver_(command).
+    // Older flash player version don't recognise newer systems. This is
+    // currently not implemented.
+    Windows8,
+    WindowsServer2008R2,
+    Windows7,
+    WindowsServer2008,
+    WindowsVista,
+    WindowsServer2003R2,
+    WindowsXp64,
     WindowsXp,
     Windows2k,
     WindowsNt,
@@ -85,6 +96,13 @@ pub enum OperatingSystem {
 impl fmt::Display for OperatingSystem {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.write_str(match self {
+            OperatingSystem::Windows8 => "Windows 8",
+            OperatingSystem::WindowsServer2008R2 => "Windows Server 2008 R2",
+            OperatingSystem::Windows7 => "Windows 7",
+            OperatingSystem::WindowsServer2008 => "Windows Server 2008",
+            OperatingSystem::WindowsVista => "Windows Vista",
+            OperatingSystem::WindowsServer2003R2 => "Windows Server 2003 R2",
+            OperatingSystem::WindowsXp64 => "Windows XP 64",
             OperatingSystem::WindowsXp => "Windows XP",
             OperatingSystem::Windows2k => "Windows 2000",
             OperatingSystem::WindowsNt => "Windows NT",
@@ -439,9 +457,32 @@ impl SystemProperties {
                         major_version: u64,
                         minor_version: u64,
                         build_version: u64,
+                        server_version: bool,
                     ) -> OperatingSystem {
                         let version = (major_version, minor_version);
                         match version {
+                            (10, 0) | (6, 4) | (6, 3) | (6, 2) => OperatingSystem::Windows8,
+                            (6, 1) => {
+                                if server_version {
+                                    OperatingSystem::WindowsServer2008R2
+                                } else {
+                                    OperatingSystem::Windows7
+                                }
+                            }
+                            (6, 0) => {
+                                if server_version {
+                                    OperatingSystem::WindowsServer2008
+                                } else {
+                                    OperatingSystem::WindowsVista
+                                }
+                            }
+                            (5, 2) => {
+                                if server_version {
+                                    OperatingSystem::WindowsServer2003R2
+                                } else {
+                                    OperatingSystem::WindowsXp
+                                }
+                            }
                             (5, 1) => OperatingSystem::WindowsXp,
                             (5, 0) => OperatingSystem::Windows2k,
                             (4, 1) | (4, 10) => OperatingSystem::Windows98,
@@ -463,7 +504,17 @@ impl SystemProperties {
                     if let os_info::Version::Semantic(major_version, minor_version, build_version) =
                         *os_info::get().version()
                     {
-                        match_windows_version(major_version, minor_version, build_version)
+                        let server_version = os_info::get()
+                            .edition()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains("server");
+                        match_windows_version(
+                            major_version,
+                            minor_version,
+                            build_version,
+                            server_version,
+                        )
                     } else {
                         // Failsafe via shell
                         let output = Command::new("cmd").arg("ver").output();
@@ -494,7 +545,14 @@ impl SystemProperties {
                                 } else {
                                     0
                                 };
-                                match_windows_version(major_version, minor_version, build_version)
+                                let server_version =
+                                    output_string.to_lowercase().contains("server");
+                                match_windows_version(
+                                    major_version,
+                                    minor_version,
+                                    build_version,
+                                    server_version,
+                                )
                             } else {
                                 // ver is not a valid command
                                 OperatingSystem::WindowsCe
@@ -518,20 +576,31 @@ impl SystemProperties {
 
             // Thanks to Christian Ludwig (https://stackoverflow.com/questions/9514179)
             // for providing user agents
-            return if user_agent.contains("Windows 10.0")
+            // Windows Server 2008 (R2) might be misrecognised as Windows 7 / Windows Vista
+            return if user_agent.contains("Windows 11")
+                || user_agent.contains("Windows 10.0")
                 || user_agent.contains("Windows NT 10.0")
                 || user_agent.contains("Windows 8.1")
                 || user_agent.contains("Windows NT 6.3")
                 || user_agent.contains("Windows 8")
                 || user_agent.contains("Windows NT 6.2")
-                || user_agent.contains("Windows 7")
-                || user_agent.contains("Windows NT 6.1")
-                || user_agent.contains("Windows NT 6.0")
-                || user_agent.contains("Windows NT 5.2")
             {
-                OperatingSystem::WindowsUnknown
+                OperatingSystem::Windows8
+            } else if user_agent.contains("Windows Server 2008 R2") {
+                OperatingSystem::WindowsServer2008R2
+            } else if user_agent.contains("Windows 7") || user_agent.contains("Windows NT 6.1") {
+                OperatingSystem::Windows7
+            } else if user_agent.contains("Windows Server 2008") {
+                OperatingSystem::WindowsServer2008
+            } else if user_agent.contains("Windows NT 6.0") || user_agent.contains("Windows Vista")
+            {
+                OperatingSystem::WindowsVista
             } else if user_agent.contains("Windows NT 5.1") || user_agent.contains("Windows XP") {
                 OperatingSystem::WindowsXp
+            } else if user_agent.contains("Windows NT 5.2")
+                || user_agent.contains("Windows Server 2003")
+            {
+                OperatingSystem::WindowsServer2003R2
             } else if user_agent.contains("Windows NT 5.0") || user_agent.contains("Windows 2000") {
                 OperatingSystem::Windows2k
             } else if user_agent.contains("Win 9x 4.90")
