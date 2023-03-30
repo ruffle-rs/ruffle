@@ -1150,7 +1150,7 @@ impl<'gc> EditText<'gc> {
         for layout_box in text.layout.iter() {
             let origin = layout_box.bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
-            matrix.invert();
+            matrix = matrix.inverse().unwrap_or_default(); // TODO: Handle None
             let local_position = matrix * position;
 
             if let Some((text, _tf, font, params, color)) =

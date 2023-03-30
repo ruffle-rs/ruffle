@@ -308,8 +308,13 @@ fn invert<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut matrix = object_to_matrix(this, activation)?;
-    matrix.invert();
+    // FIXME:
+    // 1) `invert` and other Matrix methods need to operate on `f64`, not with `ruffle_render::Matrix`.
+    // 2) If non-invertible, we are always setting to an identity matrix. But Flash only return identity
+    //    if `c != 0 && b != 0`? Otherwise it results in a matrix with infinities.
+    let matrix = object_to_matrix(this, activation)?
+        .inverse()
+        .unwrap_or_default();
     apply_matrix_to_object(matrix, this, activation)?;
 
     Ok(Value::Undefined)

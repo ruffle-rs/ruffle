@@ -194,7 +194,7 @@ impl<'gc> Stage<'gc> {
 
     pub fn inverse_view_matrix(self) -> Matrix {
         let mut inverse_view_matrix = self.0.read().viewport_matrix;
-        inverse_view_matrix.invert();
+        inverse_view_matrix = inverse_view_matrix.inverse().unwrap_or_default(); // TODO: Handle None
 
         inverse_view_matrix
     }
