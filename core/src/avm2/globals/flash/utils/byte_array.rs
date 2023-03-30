@@ -218,9 +218,11 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(
-                AvmString::new_utf8_bytes(activation.context.gc_context, bytearray.bytes()).into(),
-            );
+            let mut bytes = bytearray.bytes();
+            if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+                bytes = without_bom;
+            }
+            return Ok(AvmString::new_utf8_bytes(activation.context.gc_context, bytes).into());
         }
     }
 

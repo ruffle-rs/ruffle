@@ -1,0 +1,15 @@
+ba.toString(): abc
+ba.toString().length: 3
+ba.position: 6
+ba.position: 0
+ba.toString(): abc
+ba.toString().length: 3
+ba.position: 0
+ba.readUnsignedByte().toString(16): ef
+ba.readUnsignedByte().toString(16): bb
+ba.readUnsignedByte().toString(16): bf
+ba2.toString().length: 11
+ba2.position: 11
+ba2.position: 0
+ba2.toString().length: 11
+ba2.position: 0
