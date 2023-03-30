@@ -7,7 +7,6 @@ use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, Ve
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
@@ -623,20 +622,30 @@ pub fn get_color_bounds_rect<'gc>(
 }
 
 pub fn lock<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.BitmapData", "lock");
+    // `BitmapData.lock` tells Flash Player to temporarily stop updating the player's
+    // dirty region for any Bitmap stage instances displaying this BitmapData.
+    // Normally, each call to `setPixel` etc. causes Flash to update the player dirty
+    // region with the changed area.
+    //
+    // Note that `lock` has no effect on future `BitmapData` operations, they will always
+    // see the latest pixel data. Instead, it potentially delays the re-rendering of `Bitmap`
+    // instances on the stage, based on how the player decides to update its dirty region
+    // ("Show Redraw Regions" in Flash Player debugger context menu).
+    //
+    // Ruffle has no concept of a player dirty region for now, so this has no effect.
     Ok(Value::Undefined)
 }
 
 pub fn unlock<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "flash.display.BitmapData", "unlock");
+    // No effect (see comments for `lock`).
     Ok(Value::Undefined)
 }
 
