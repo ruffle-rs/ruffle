@@ -126,7 +126,7 @@ pub enum Manufacturer {
 }
 
 impl Manufacturer {
-    pub fn get_manufacturer_string(&self, version: u8) -> String {
+    pub fn get_manufacturer_string(&self, swf_version: u8) -> String {
         let os_part = match self {
             Manufacturer::Windows => "Windows",
             Manufacturer::Macintosh => "Macintosh",
@@ -134,13 +134,14 @@ impl Manufacturer {
             Manufacturer::Other(name) => name.as_str(),
         };
 
-        if version <= 8 {
+        if swf_version <= 8 {
             format!("Macromedia {os_part}")
         } else {
             format!("Adobe {os_part}")
         }
     }
 
+    // Old flash player versions might return "UNIX" instead of "LNX"
     pub fn get_platform_name(&self) -> &str {
         match self {
             Manufacturer::Windows => "WIN",
@@ -260,25 +261,48 @@ impl SettingsPanel {
 
 bitflags! {
     pub struct SystemCapabilities: u32 {
+        /// Specifies whether access to camera & microphone has been allowed
         const AV_HARDWARE      = 1 << 0;
+        /// Specifies whether the system supports communication with accessibility aids
         const ACCESSIBILITY    = 1 << 1;
+        /// Specifies whether the system has audio capabilities
         const AUDIO            = 1 << 2;
+        /// Specifies whether the system can encode an audio stream
         const AUDIO_ENCODER    = 1 << 3;
+        /// Specifies whether the system supports embedded video
         const EMBEDDED_VIDEO   = 1 << 4;
+        /// Specifies whether the system has an input method editor (IME) installed
         const IME              = 1 << 5;
+        /// Specifies whether the system has an MP3 decoder
         const MP3              = 1 << 6;
+        /// Specifies whether the system supports printing
         const PRINTING         = 1 << 7;
+        /// Specifies whether the system supports the development of screen broadcast
+        /// applications to be run through flash media server
         const SCREEN_BROADCAST = 1 << 8;
+        /// Specifies whether the system supports the playback of screen broadcast
+        /// applications that are being run through flash media server
         const SCREEN_PLAYBACK  = 1 << 9;
+        /// Specifies whether the system can play streaming audio
         const STREAMING_AUDIO  = 1 << 10;
+        /// Specifies whether the system can play streaming video
         const STREAMING_VIDEO  = 1 << 11;
+        /// Specifies whether the system can encode a video stream
         const VIDEO_ENCODER    = 1 << 12;
+        /// Specifies whether the system is a special debugging version
         const DEBUGGER         = 1 << 13;
+        /// Specifies whether read access to the hard disk has been allowed
         const LOCAL_FILE_READ  = 1 << 14;
+        /// Specifies whether the system supports running 64-bit processes
         const PROCESS_64_BIT   = 1 << 15;
+        /// Specifies whether the system support running 32-bit processes
         const PROCESS_32_BIT   = 1 << 16;
+        /// Specifies whether the player is embedded in a PDF file that is
+        /// open in Acrobat 9 or higher
         const ACROBAT_EMBEDDED = 1 << 17;
+        /// Specifies whether the system supports native TLS Sockets through NetConnection
         const TLS              = 1 << 18;
+        /// Specifies whether the windowless mode is not disabled
         const WINDOW_LESS      = 1 << 19;
     }
 }
@@ -702,10 +726,13 @@ impl SystemProperties {
             64
         };
 
+        // TODO: Implement the properties currently set to a default value
         SystemProperties {
-            //TODO: default to true on fp>=7, false <= 6
+            // TODO: default to true on swf version >=7, false <= 6
+            // only after logic has been implemented
             exact_settings: true,
-            //TODO: default to false on fp>=7, true <= 6
+            // TODO: default to false on swf version >=7, true <= 6
+            // only after logic has been implemented
             use_codepage: false,
             capabilities,
             player_type,
@@ -756,7 +783,7 @@ impl SystemProperties {
         percent_encoding::utf8_percent_encode(s, percent_encoding::NON_ALPHANUMERIC).to_string()
     }
 
-    pub fn get_server_string(&self, context: &UpdateContext) -> String {
+    pub fn get_server_string(&self, context: &UpdateContext, swf_version: u8) -> String {
         // The server string varies depending on the flash player version (since new
         // variables have been added in later flash player versions).
         // This is the server string returned by the last flash player version (32).
@@ -810,7 +837,7 @@ impl SystemProperties {
                 "M",
                 &self.encode_string(
                     self.manufacturer
-                        .get_manufacturer_string(context.avm1.player_version())
+                        .get_manufacturer_string(swf_version)
                         .as_str(),
                 ),
             )
