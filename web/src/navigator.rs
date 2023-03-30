@@ -3,7 +3,7 @@ use crate::SocketProxy;
 use async_channel::Receiver;
 use futures_util::{SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
-use js_sys::{Array, ArrayBuffer, Uint8Array};
+use js_sys::{Array, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
     NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
@@ -12,6 +12,7 @@ use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use std::borrow::Cow;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Duration;
@@ -223,7 +224,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+    fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         let url = match self.resolve_url(request.url()) {
             Ok(url) => {
                 if url.scheme() == "file" {
@@ -326,32 +327,9 @@ impl NavigatorBackend for WebNavigatorBackend {
                 return Err(ErrorResponse { url, error });
             }
 
-            let body: ArrayBuffer = JsFuture::from(response.array_buffer().map_err(|_| {
-                ErrorResponse {
-                    url: url.clone(),
-                    error: Error::FetchError("Got JS error".to_string()),
-                }
-            })?)
-            .await
-            .map_err(|_| ErrorResponse {
-                url: url.clone(),
-                error: Error::FetchError(
-                    "Could not allocate array buffer for response".to_string(),
-                ),
-            })?
-            .dyn_into()
-            .map_err(|_| ErrorResponse {
-                url: url.clone(),
-                error: Error::FetchError("array_buffer result wasn't an ArrayBuffer".to_string()),
-            })?;
-            let body = Uint8Array::new(&body).to_vec();
+            let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper(response));
 
-            Ok(SuccessResponse {
-                url,
-                body,
-                status,
-                redirected,
-            })
+            Ok(wrapper)
         })
     }
 
@@ -460,5 +438,42 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             Ok(())
         }));
+    }
+}
+
+struct WebResponseWrapper(WebResponse);
+
+impl SuccessResponse for WebResponseWrapper {
+    fn url(&self) -> Cow<str> {
+        Cow::Owned(self.0.url())
+    }
+
+    fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
+        Box::pin(async move {
+            let body = JsFuture::from(
+                self.0
+                    .array_buffer()
+                    .map_err(|_| Error::FetchError("Got JS error".to_string()))?,
+            )
+            .await
+            .map_err(|_| {
+                Error::FetchError("Could not allocate array buffer for response".to_string())
+            })?
+            .dyn_into()
+            .map_err(|_| {
+                Error::FetchError("array_buffer result wasn't an ArrayBuffer".to_string())
+            })?;
+            let body = Uint8Array::new(&body).to_vec();
+
+            Ok(body)
+        })
+    }
+
+    fn status(&self) -> u16 {
+        self.0.status()
+    }
+
+    fn redirected(&self) -> bool {
+        self.0.redirected()
     }
 }

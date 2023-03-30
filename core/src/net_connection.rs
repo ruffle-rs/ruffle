@@ -2,7 +2,7 @@ use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
-use crate::backend::navigator::{NavigatorBackend, OwnedFuture, Request};
+use crate::backend::navigator::{ErrorResponse, NavigatorBackend, OwnedFuture, Request};
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
@@ -455,7 +455,18 @@ impl FlashRemoting {
                 .expect("Must be able to serialize a packet");
             let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = match fetch.await {
+            let response: Result<_, ErrorResponse> = async {
+                let response = fetch.await?;
+                let url = response.url().to_string();
+                let body = response
+                    .body()
+                    .await
+                    .map_err(|error| ErrorResponse { url, error })?;
+
+                Ok(body)
+            }
+            .await;
+            let response = match response {
                 Ok(response) => response,
                 Err(response) => {
                     player.lock().unwrap().update(|uc| {
@@ -497,7 +508,7 @@ impl FlashRemoting {
             };
 
             // Flash completely ignores invalid responses, it seems
-            if let Ok(response_packet) = flash_lso::packet::read::parse(&response.body) {
+            if let Ok(response_packet) = flash_lso::packet::read::parse(&response) {
                 player.lock().unwrap().update(|uc| {
                     for message in response_packet.messages {
                         if let Some(target_uri) = message.target_uri.strip_prefix('/') {

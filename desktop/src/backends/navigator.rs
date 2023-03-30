@@ -171,7 +171,32 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+    fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+        struct DesktopResponse {
+            url: String,
+            body: Vec<u8>,
+            status: u16,
+            redirected: bool,
+        }
+
+        impl SuccessResponse for DesktopResponse {
+            fn url(&self) -> std::borrow::Cow<str> {
+                std::borrow::Cow::Borrowed(&self.url)
+            }
+
+            fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
+                Box::pin(async { Ok(self.body) })
+            }
+
+            fn status(&self) -> u16 {
+                self.status
+            }
+
+            fn redirected(&self) -> bool {
+                self.redirected
+            }
+        }
+
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let mut processed_url = match self.resolve_url(request.url()) {
             Ok(url) => url,
@@ -236,12 +261,14 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 };
 
-                Ok(SuccessResponse {
+                let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                     url: response_url.to_string(),
                     body,
                     status: 0,
                     redirected: false,
-                })
+                });
+
+                Ok(response)
             }),
             _ => Box::pin(async move {
                 let client = client.ok_or_else(|| ErrorResponse {
@@ -321,12 +348,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         error: Error::FetchError(e.to_string()),
                     })?;
 
-                Ok(SuccessResponse {
+                let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                     url,
                     body,
                     status,
                     redirected,
-                })
+                });
+                Ok(response)
             }),
         }
     }

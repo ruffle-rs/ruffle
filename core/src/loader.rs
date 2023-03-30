@@ -13,7 +13,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
     Object as Avm2Object, Value as Avm2Value,
 };
-use crate::backend::navigator::{OwnedFuture, Request};
+use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
@@ -854,6 +854,21 @@ impl<'gc> Loader<'gc> {
         Ok(did_finish)
     }
 
+    async fn wait_for_full_response(
+        response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
+    ) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
+        let response = response.await?;
+        let url = response.url().to_string();
+        let status = response.status();
+        let redirected = response.redirected();
+        let body = response.body().await;
+
+        match body {
+            Ok(body) => Ok((body, url, status, redirected)),
+            Err(error) => Err(ErrorResponse { url, error }),
+        }
+    }
+
     /// Construct a future for the root movie loader.
     fn root_movie_loader(
         &mut self,
@@ -875,7 +890,6 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-
             let response = fetch.await.map_err(|error| {
                 player
                     .lock()
@@ -884,13 +898,22 @@ impl<'gc> Loader<'gc> {
                     .display_root_movie_download_failed_message(false);
                 error.error
             })?;
+            let url = response.url().into_owned();
+            let body = response.body().await.map_err(|error| {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui()
+                    .display_root_movie_download_failed_message(true);
+                error
+            })?;
 
             // The spoofed root movie URL takes precedence over the actual URL.
             let swf_url = player
                 .lock()
                 .unwrap()
                 .compatibility_rules()
-                .rewrite_swf_url(response.url);
+                .rewrite_swf_url(url);
             let spoofed_or_swf_url = player
                 .lock()
                 .unwrap()
@@ -899,7 +922,7 @@ impl<'gc> Loader<'gc> {
                 .unwrap_or(swf_url);
 
             let mut movie =
-                SwfMovie::from_data(&response.body, spoofed_or_swf_url, None).map_err(|error| {
+                SwfMovie::from_data(&body, spoofed_or_swf_url, None).map_err(|error| {
                     player
                         .lock()
                         .unwrap()
@@ -970,25 +993,25 @@ impl<'gc> Loader<'gc> {
                 Loader::movie_loader_start(handle, uc)
             })?;
 
-            match fetch.await {
-                Ok(response) if replacing_root_movie => {
-                    ContentType::sniff(&response.body).expect(ContentType::Swf)?;
+            match Self::wait_for_full_response(fetch).await {
+                Ok((body, url, _status, _redirected)) if replacing_root_movie => {
+                    ContentType::sniff(&body).expect(ContentType::Swf)?;
 
-                    let movie = SwfMovie::from_data(&response.body, response.url, loader_url)?;
+                    let movie = SwfMovie::from_data(&body, url.to_string(), loader_url)?;
                     player.lock().unwrap().mutate_with_update_context(|uc| {
                         uc.set_root_movie(movie);
                     });
                     return Ok(());
                 }
-                Ok(response) => {
+                Ok((body, url, status, redirected)) => {
                     player.lock().unwrap().mutate_with_update_context(|uc| {
                         Loader::movie_loader_data(
                             handle,
                             uc,
-                            &response.body,
-                            response.url,
-                            response.status,
-                            response.redirected,
+                            &body,
+                            url.to_string(),
+                            status,
+                            redirected,
                             loader_url,
                         )
                     })?;
@@ -1084,6 +1107,7 @@ impl<'gc> Loader<'gc> {
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
             let response = fetch.await.map_err(|e| e.error)?;
+            let body = response.body().await?;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1099,7 +1123,7 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                for (k, v) in form_urlencoded::parse(&response.body) {
+                for (k, v) in form_urlencoded::parse(&body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
@@ -1145,8 +1169,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-
-            let data = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1160,9 +1183,9 @@ impl<'gc> Loader<'gc> {
                 let mut activation =
                     Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
 
-                match data {
-                    Ok(response) => {
-                        let length = response.body.len();
+                match response {
+                    Ok((body, _, status, _)) => {
+                        let length = body.len();
 
                         // Set the properties used by the getBytesTotal and getBytesLoaded methods.
                         that.set("_bytesTotal", length.into(), &mut activation)?;
@@ -1172,7 +1195,7 @@ impl<'gc> Loader<'gc> {
 
                         let _ = that.call_method(
                             "onHTTPStatus".into(),
-                            &[response.status.into()],
+                            &[status.into()],
                             &mut activation,
                             ExecutionReason::Special,
                         );
@@ -1184,7 +1207,7 @@ impl<'gc> Loader<'gc> {
                         } else {
                             AvmString::new_utf8(
                                 activation.context.gc_context,
-                                UTF_8.decode(&response.body).0,
+                                UTF_8.decode(&body).0,
                             )
                             .into()
                         };
@@ -1247,7 +1270,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
@@ -1299,8 +1322,8 @@ impl<'gc> Loader<'gc> {
                 }
 
                 match response {
-                    Ok(response) => {
-                        let total_len = response.body.len();
+                    Ok((body, _, status, redirected)) => {
+                        let total_len = body.len();
 
                         // FIXME - the "open" event should be fired earlier, just before
                         // we start to fetch the data.
@@ -1314,7 +1337,7 @@ impl<'gc> Loader<'gc> {
                         let open_evt =
                             Avm2EventObject::bare_default_event(&mut activation.context, "open");
                         Avm2::dispatch_event(&mut activation.context, open_evt, target);
-                        set_data(response.body, &mut activation, target, data_format);
+                        set_data(body, &mut activation, target, data_format);
 
                         // FIXME - we should fire "progress" events as we receive data, not
                         // just at the end
@@ -1346,8 +1369,8 @@ impl<'gc> Loader<'gc> {
                                     "httpStatus".into(),
                                     false.into(),
                                     false.into(),
-                                    response.status.into(),
-                                    response.redirected.into(),
+                                    status.into(),
+                                    redirected.into(),
                                 ],
                             )
                             .map_err(|e| Error::Avm2Error(e.to_string()))?;
@@ -1436,7 +1459,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let data = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1447,10 +1470,10 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotSoundLoader),
                 };
 
-                let success = data
+                let success = response
                     .map_err(|e| e.error)
-                    .and_then(|data| {
-                        let handle = uc.audio.register_mp3(&data.body)?;
+                    .and_then(|(body, _, _, _)| {
+                        let handle = uc.audio.register_mp3(&body)?;
                         sound_object.set_sound(uc.gc_context, Some(handle));
                         let duration = uc
                             .audio
@@ -1499,7 +1522,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
@@ -1510,8 +1533,8 @@ impl<'gc> Loader<'gc> {
                 };
 
                 match response {
-                    Ok(response) => {
-                        let handle = uc.audio.register_mp3(&response.body)?;
+                    Ok((body, _, _, _)) => {
+                        let handle = uc.audio.register_mp3(&body)?;
                         if let Err(e) = sound_object
                             .as_sound_object()
                             .expect("Not a sound object")
@@ -1520,7 +1543,7 @@ impl<'gc> Loader<'gc> {
                             tracing::error!("Encountered AVM2 error when setting sound: {}", e);
                         }
 
-                        let total_len = response.body.len();
+                        let total_len = body.len();
 
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
                         let mut activation = Avm2Activation::from_nothing(uc.reborrow());
@@ -1598,7 +1621,7 @@ impl<'gc> Loader<'gc> {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await;
+            let response = Self::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
@@ -1609,9 +1632,9 @@ impl<'gc> Loader<'gc> {
                 };
 
                 match response {
-                    Ok(mut response) => {
+                    Ok((mut body, _, _, _)) => {
                         stream.reset_buffer(uc);
-                        stream.load_buffer(uc, &mut response.body);
+                        stream.load_buffer(uc, &mut body);
                     }
                     Err(response) => {
                         stream.report_error(response.error);
@@ -2702,7 +2725,7 @@ impl<'gc> Loader<'gc> {
             let req = Request::get(url.clone());
             // Doing this in two steps to prevent holding the player lock during fetch
             let future = player.lock().unwrap().navigator().fetch(req);
-            let download_res = future.await;
+            let download_res = Self::wait_for_full_response(future).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -2740,7 +2763,7 @@ impl<'gc> Loader<'gc> {
                             )?;
 
                             match download_res {
-                                Ok(download_res) => {
+                                Ok((body, _, _, _)) => {
                                     as_broadcaster::broadcast_internal(
                                         &mut activation,
                                         target_object,
@@ -2753,14 +2776,14 @@ impl<'gc> Loader<'gc> {
                                     // perspective of AS, we want to refresh the file_ref internal data
                                     // before invoking the callbacks
 
-                                    dialog_result.write(&download_res.body);
+                                    dialog_result.write(&body);
                                     dialog_result.refresh();
                                     file_ref.init_from_dialog_result(
                                         &mut activation,
                                         dialog_result.borrow(),
                                     );
 
-                                    let total_bytes = download_res.body.len();
+                                    let total_bytes = body.len();
 
                                     as_broadcaster::broadcast_internal(
                                         &mut activation,
