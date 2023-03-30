@@ -789,7 +789,7 @@ pub trait TDisplayObject<'gc>:
     /// Returns the matrix for transforming from global stage to this object's local space.
     fn global_to_local_matrix(&self) -> Matrix {
         let mut matrix = self.local_to_global_matrix();
-        matrix.invert();
+        matrix = matrix.inverse().unwrap_or_default(); // TODO: Handle None
         matrix
     }
 

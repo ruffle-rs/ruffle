@@ -32,6 +32,15 @@ impl Matrix {
         ty: Twips::ZERO,
     };
 
+    pub const ZERO: Self = Self {
+        a: 0.0,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: 0.0,
+        ty: Twips::ZERO,
+    };
+
     pub fn scale(scale_x: f32, scale_y: f32) -> Self {
         Self {
             a: scale_x,
@@ -109,25 +118,35 @@ impl Matrix {
         )
     }
 
-    pub fn invert(&mut self) {
+    #[inline]
+    pub fn determinant(&self) -> f32 {
+        self.a * self.d - self.b * self.c
+    }
+
+    #[inline]
+    pub fn inverse(&self) -> Option<Self> {
         let (tx, ty) = (self.tx.get() as f32, self.ty.get() as f32);
-        let det = self.a * self.d - self.b * self.c;
-        let a = self.d / det;
-        let b = self.b / -det;
-        let c = self.c / -det;
-        let d = self.a / det;
-        let (out_tx, out_ty) = (
-            round_to_i32((self.d * tx - self.c * ty) / -det),
-            round_to_i32((self.b * tx - self.a * ty) / det),
-        );
-        *self = Matrix {
-            a,
-            b,
-            c,
-            d,
-            tx: Twips::new(out_tx),
-            ty: Twips::new(out_ty),
-        };
+        let det = self.determinant();
+        if det.abs() > f32::EPSILON {
+            let a = self.d / det;
+            let b = self.b / -det;
+            let c = self.c / -det;
+            let d = self.a / det;
+            let (out_tx, out_ty) = (
+                round_to_i32((self.d * tx - self.c * ty) / -det),
+                round_to_i32((self.b * tx - self.a * ty) / det),
+            );
+            Some(Matrix {
+                a,
+                b,
+                c,
+                d,
+                tx: Twips::new(out_tx),
+                ty: Twips::new(out_ty),
+            })
+        } else {
+            None
+        }
     }
 }
 
@@ -210,14 +229,17 @@ mod tests {
     use super::*;
     use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
 
-    macro_rules! test_invert {
+    macro_rules! test_inverse {
         ( $test: ident, $($args: expr),* ) => {
             #[test]
             fn $test() {
                 $(
-                    let (mut input, output) = $args;
-                    input.invert();
-                    assert_ulps_eq!(input, output);
+                    let (input, output) = $args;
+                    match (input.inverse(), output) {
+                        (Some(result), Some(output)) => assert_ulps_eq!(result, output),
+                        (None, None) => (),
+                        (result, output) => panic!("Matrix::inverse: Got {:?}, expected {:?}", result, output),
+                    }
                 )*
             }
         };
@@ -279,14 +301,14 @@ mod tests {
     }
 
     // Identity matrix inverted should be unchanged.
-    test_invert!(
-        invert_identity_matrix,
-        (Matrix::default(), Matrix::default())
+    test_inverse!(
+        inverse_identity_matrix,
+        (Matrix::default(), Some(Matrix::default()))
     );
 
     // Standard test cases; there's nothing special about these matrices.
-    test_invert!(
-        invert_matrices,
+    test_inverse!(
+        inverse_matrix,
         (
             Matrix {
                 a: 1.0,
@@ -296,14 +318,14 @@ mod tests {
                 d: 5.0,
                 ty: Twips::from_pixels(2.0)
             },
-            Matrix {
+            Some(Matrix {
                 a: -1.666_666_6,
                 c: 1.333_333_3,
                 tx: Twips::from_pixels(9.0),
                 b: 0.666_666_6,
                 d: -0.333_333_3,
                 ty: Twips::from_pixels(-4.0)
-            }
+            })
         ),
         (
             Matrix {
@@ -314,14 +336,14 @@ mod tests {
                 d: -5.0,
                 ty: Twips::from_pixels(-2.0)
             },
-            Matrix {
+            Some(Matrix {
                 a: 1.666_666_6,
                 c: -1.333_333_3,
                 tx: Twips::from_pixels(9.0),
                 b: -0.666_666_6,
                 d: 0.333_333_3,
                 ty: Twips::from_pixels(-4.0)
-            }
+            })
         ),
         (
             Matrix {
@@ -332,14 +354,14 @@ mod tests {
                 d: 3.4,
                 ty: Twips::from_pixels(-2.4)
             },
-            Matrix {
+            Some(Matrix {
                 a: 0.407_673_9,
                 c: -0.143_884_9,
                 tx: Twips::from_pixels(-0.752_997_6),
                 b: 0.323_741,
                 d: 0.179_856_1,
                 ty: Twips::from_pixels(0.107_913_67)
-            }
+            })
         ),
         (
             Matrix {
@@ -350,14 +372,31 @@ mod tests {
                 d: -1.0,
                 ty: Twips::from_pixels(5.0)
             },
-            Matrix {
+            Some(Matrix {
                 a: -0.5,
                 c: 0.0,
                 tx: Twips::from_pixels(5.0),
                 b: 0.0,
                 d: -1.0,
                 ty: Twips::from_pixels(5.0)
-            }
+            })
+        )
+    );
+
+    // Non-invertible matrices
+    test_inverse!(
+        inverse_uninvertible_matrices,
+        (Matrix::ZERO, None),
+        (
+            Matrix {
+                a: 8.0,
+                b: 2.0,
+                c: 16.0,
+                d: 4.0,
+                tx: Twips::from_pixels(123.0),
+                ty: Twips::from_pixels(234.0),
+            },
+            None
         )
     );
 
