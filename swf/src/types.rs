@@ -309,19 +309,19 @@ impl Default for FileAttributes {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrameLabel<'a> {
     pub label: &'a SwfStr,
     pub is_anchor: bool,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DefineSceneAndFrameLabelData<'a> {
     pub scenes: Vec<FrameLabelData<'a>>,
     pub frame_labels: Vec<FrameLabelData<'a>>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrameLabelData<'a> {
     pub frame_num: u32,
     pub label: &'a SwfStr,
@@ -330,7 +330,7 @@ pub struct FrameLabelData<'a> {
 pub type Depth = u16;
 pub type CharacterId = u16;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PlaceObject<'a> {
     pub version: u8,
     pub action: PlaceObjectAction,
@@ -514,7 +514,7 @@ bitflags! {
 /// A key code used in `ButtonAction` and `ClipAction` key press events.
 pub type KeyCode = u8;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ExportAssets<'a>(pub Vec<ExportedAsset<'a>>);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -614,7 +614,7 @@ pub struct StartSound {
     pub sound_info: Box<SoundInfo>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sprite<'a> {
     pub id: CharacterId,
     pub num_frames: u16,
@@ -1658,7 +1658,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DoAction<'a> {
     pub action_data: &'a [u8],
 }
@@ -1677,7 +1677,7 @@ pub struct ProductInfo {
 }
 
 /// `DebugId` is a UUID written to debug SWFs and used by the Flash Debugger.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DebugId {
     pub uuid: [u8; 16],
 }
@@ -1691,105 +1691,105 @@ pub struct NameCharacter<'a> {
     pub name: &'a SwfStr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefineBits<'a> {
     pub id: CharacterId,
     pub jpeg_data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefineBitsJpeg2<'a> {
     pub id: CharacterId,
     pub jpeg_data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefineFontAlignZones {
     pub id: CharacterId,
     pub thickness: FontThickness,
     pub zones: Vec<FontAlignZone>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefineFontName<'a> {
     pub id: CharacterId,
     pub name: &'a SwfStr,
     pub copyright_info: &'a SwfStr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefineScalingGrid {
     pub id: CharacterId,
     pub splitter_rect: Rectangle<Twips>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DoAbc<'a> {
     pub data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DoInitAction<'a> {
     pub id: CharacterId,
     pub action_data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EnableDebugger<'a> {
     pub password_hash: &'a SwfStr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EnableTelemetry<'a> {
     pub password_hash: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ImportAssets<'a> {
     pub url: &'a SwfStr,
     pub imports: Vec<ExportedAsset<'a>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct JpegTables<'a>(pub &'a [u8]);
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Metadata<'a> {
     pub metadata: &'a SwfStr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Protect<'a> {
     pub password_hash: Option<&'a SwfStr>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ScriptLimits {
     pub max_recursion_depth: u16,
     pub timeout_in_seconds: u16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SetTabIndex {
     pub depth: Depth,
     pub tab_index: u16,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SoundStreamBlock<'a> {
     pub data: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StartSound2<'a> {
     pub class_name: &'a SwfStr,
     pub sound_info: Box<SoundInfo>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SymbolClass<'a>(pub Vec<SymbolClassLink<'a>>);
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Unknown<'a> {
     pub tag_code: u16,
     pub data: &'a [u8],

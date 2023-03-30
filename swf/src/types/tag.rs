@@ -7,7 +7,7 @@ use crate::types::*;
 /// an instance of these characters on the display list.
 ///
 // [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Tag<'a> {
     CsmTextSettings(CsmTextSettings),
     DebugId(DebugId),
