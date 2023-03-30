@@ -1,5 +1,8 @@
 package flash.xml
 {
+   import __ruffle__.stub_method;
+   import __ruffle__.stub_setter;
+
    // TODO: Re-implement XMLNode shim in Rust.
    public class XMLNode {
       internal var _isDocument: Boolean = false;
@@ -64,6 +67,10 @@ package flash.xml
          return _xml.localName();
       }
 
+      public function set nodeName(name: String): void {
+         stub_setter("flash.xml.XMLNode", "nodeName");
+      }
+
       public function get nodeType(): uint {
          switch (_xml.nodeKind()) {
             case "attribute":
@@ -78,6 +85,10 @@ package flash.xml
             case "text":
                return XMLNodeType.TEXT_NODE;
          }
+      }
+
+      public function appendChild(node: XMLNode): void {
+         stub_method("flash.xml.XMLNode", "appendChild");
       }
 
       public function toString(): String {
