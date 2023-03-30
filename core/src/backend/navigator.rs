@@ -6,6 +6,7 @@ use crate::string::WStr;
 use async_channel::Receiver;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
 use std::future::Future;
@@ -186,18 +187,20 @@ impl Request {
 }
 
 /// A response to a successful fetch request.
-pub struct SuccessResponse {
+pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
-    pub url: String,
+    fn url(&self) -> Cow<str>;
 
-    /// The contents of the response body.
-    pub body: Vec<u8>,
+    /// Retrieve the contents of the response body.
+    ///
+    /// This method consumes the response.
+    fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error>;
 
     /// The status code of the response.
-    pub status: u16,
+    fn status(&self) -> u16;
 
-    /// The field to indicate if the request has been redirected.
-    pub redirected: bool,
+    /// Indicates if the request has been redirected.
+    fn redirected(&self) -> bool;
 }
 
 /// A response to a non-successful fetch request.
@@ -245,7 +248,7 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data and return it some time in the future.
-    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse>;
+    fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>;
 
     /// Take a URL string and resolve it to the actual URL from which a file
     /// can be fetched. This includes handling of relative links and pre-processing.
@@ -402,7 +405,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, request: Request) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+    fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         fetch_path(self, "NullNavigatorBackend", request.url(), None)
     }
 
@@ -449,7 +452,7 @@ pub fn async_return<SuccessType: 'static, ErrorType: 'static>(
 pub fn create_fetch_error<ErrorType: Display>(
     url: &str,
     error: ErrorType,
-) -> Result<SuccessResponse, ErrorResponse> {
+) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
     create_specific_fetch_error("Invalid URL", url, error)
 }
 
@@ -459,7 +462,7 @@ pub fn create_specific_fetch_error<ErrorType: Display>(
     reason: &str,
     url: &str,
     error: ErrorType,
-) -> Result<SuccessResponse, ErrorResponse> {
+) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
     let message = if error.to_string() == "" {
         format!("{reason} {url}")
     } else {
@@ -543,7 +546,34 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     navigator_name: &str,
     url: &str,
     base_path: Option<&Path>,
-) -> OwnedFuture<SuccessResponse, ErrorResponse> {
+) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+    struct LocalResponse {
+        url: String,
+        path: PathBuf,
+        status: u16,
+        redirected: bool,
+    }
+
+    impl SuccessResponse for LocalResponse {
+        fn url(&self) -> Cow<str> {
+            Cow::Borrowed(&self.url)
+        }
+
+        fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
+            Box::pin(async move {
+                std::fs::read(self.path).map_err(|e| Error::FetchError(e.to_string()))
+            })
+        }
+
+        fn status(&self) -> u16 {
+            self.status
+        }
+
+        fn redirected(&self) -> bool {
+            self.redirected
+        }
+    }
+
     let url = match navigator.resolve_url(url) {
         Ok(url) => url,
         Err(e) => return async_return(create_fetch_error(url, e)),
@@ -584,15 +614,13 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     };
 
     Box::pin(async move {
-        let body = match std::fs::read(path) {
-            Ok(body) => body,
-            Err(e) => return create_specific_fetch_error("Can't open file", url.as_str(), e),
-        };
-        Ok(SuccessResponse {
+        let response: Box<dyn SuccessResponse> = Box::new(LocalResponse {
             url: url.to_string(),
-            body,
+            path,
             status: 0,
             redirected: false,
-        })
+        });
+
+        Ok(response)
     })
 }
