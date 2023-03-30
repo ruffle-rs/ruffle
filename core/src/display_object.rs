@@ -583,7 +583,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
     if let Some(m) = mask {
-        mask_transform.matrix = this.global_to_local_matrix();
+        mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
         mask_transform.matrix *= m.local_to_global_matrix();
         context.commands.push_mask();
         context.allow_mask = false;
@@ -787,10 +787,9 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.
-    fn global_to_local_matrix(&self) -> Matrix {
-        let mut matrix = self.local_to_global_matrix();
-        matrix = matrix.inverse().unwrap_or_default(); // TODO: Handle None
-        matrix
+    /// `None` is returned if the object has zero scale.
+    fn global_to_local_matrix(&self) -> Option<Matrix> {
+        self.local_to_global_matrix().inverse()
     }
 
     /// Converts a local position to a global stage position
@@ -800,7 +799,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Converts a local position on the stage to a local position on this display object
     fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
-        self.global_to_local_matrix() * global
+        self.global_to_local_matrix().unwrap_or_default() * global // TODO matrix
     }
 
     /// The `x` position in pixels of this display object in local space.
