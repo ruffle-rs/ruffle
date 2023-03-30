@@ -2582,6 +2582,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if self.world_bounds().contains(point) {
+            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return false;
@@ -2608,7 +2609,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            let local_matrix = self.global_to_local_matrix();
             let point = local_matrix * point;
             if self.0.read().drawing.hit_test(point, &local_matrix) {
                 return true;
@@ -2872,6 +2872,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Option<InteractiveObject<'gc>> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return None; };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -2938,7 +2939,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.mouse_enabled() && check_non_interactive {
-                let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
                 if self.0.read().drawing.hit_test(point, &local_matrix) {
                     return Some(this);
@@ -2957,6 +2957,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Avm2MousePick<'gc> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return Avm2MousePick::Miss; };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -3061,7 +3062,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.world_bounds().contains(point) {
-                let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
 
                 if self.0.read().drawing.hit_test(point, &local_matrix) {

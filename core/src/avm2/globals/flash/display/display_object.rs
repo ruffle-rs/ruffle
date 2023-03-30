@@ -928,7 +928,7 @@ pub fn get_bounds<'gc>(
             // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = dobj.local_to_global_matrix();
-            let to_target_matrix = target.global_to_local_matrix();
+            let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
             to_target_matrix * to_global_matrix * bounds
         };
 

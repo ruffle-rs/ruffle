@@ -180,10 +180,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
 
             // Transform the point into the text's local space.
-            let local_matrix = self.global_to_local_matrix();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
             let tf = self.0.read();
-            let mut text_matrix = tf.static_data.text_transform;
-            text_matrix = text_matrix.inverse().unwrap_or_default(); // TODO: Handle None
+            let Some(text_matrix) = tf.static_data.text_transform.inverse() else { return false; };
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
