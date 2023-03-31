@@ -1,0 +1,73 @@
+function square(name, color, x, y) {
+	var clip = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+	clip.beginFill(color);
+	clip.lineStyle(2, 0x000000);
+	clip.moveTo(x, y);
+	clip.lineTo(x + SQUARE_WIDTH, y);
+	clip.lineTo(x + SQUARE_WIDTH, y + SQUARE_WIDTH);
+	clip.lineTo(x, y + SQUARE_WIDTH);
+	clip.endFill();
+	return clip;
+}
+
+var tests = {
+	red: {
+		color: 0xFF0000, preAction: function() { this.mask = _root.mask_red; }
+	},
+	orange: {
+		color: 0xFF6A00, mask: "mask_orange"
+	},
+	yellow: {
+		color: 0xFFD800, mask: "_root.mask_yellow"
+	},
+	gray: {
+		color: 0x808080, mask: 1234, preAction: function() { _root[1234] = _root.mask_gray; }
+	},
+	brown: {
+		color: 0x7F3300, mask: null
+	},
+	silver: {
+		color: 0xC0C0C0, mask: undefined
+	},
+	paleRed: {
+		color: 0xFF7F7F, mask: "NonExistent"
+	},
+	darkRed: {
+		color: 0x7F0000, mask: -1, postAction: function() { trace(_root.darkRed.setMask()); }
+	},
+	green: {
+		color: 0x00FF21, mask: "_level0:mask_green", postAction: function() { trace(_root.green.setMask()); }
+	},
+	blue: {
+		color: 0x0026FF, mask: "_level0:_root.mask_blue", postAction: function() { trace(_root.blue.setMask("NonExistent")); }
+	},
+	darkBlue: {
+		color: 0x00137F, preAction: function() { this.mask = _root.mask_darkBlue; }, postAction: function() { var o = {}; o.toString = function() { return _root.darkBlue; }; o.valueOf = o.toString; trace(_root.darkBlue.setMask(o)); }
+	}
+};
+
+var SQUARE_WIDTH = 100;
+var INIT_X = 10;
+var x = INIT_X;
+var y = INIT_X;
+
+for(var test in tests) {
+	var data = tests[test];
+	var rect = square(test, data.color, x, y);
+	square("mask_" + test, 0xFFFFFF, x, y);
+	if(typeof data.preAction === "function") {
+		data.preAction();
+	}
+	if(data.mask !== -1) {
+		trace(rect.setMask(data.mask));
+	}
+	if(typeof data.postAction === "function") {
+		data.postAction();
+	}
+	x = x + SQUARE_WIDTH + INIT_X;
+	if(x + SQUARE_WIDTH >= Stage.width) {
+		x = INIT_X;
+		y = y + SQUARE_WIDTH + INIT_X;
+	}
+}
+
