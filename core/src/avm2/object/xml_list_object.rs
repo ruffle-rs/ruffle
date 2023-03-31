@@ -88,6 +88,10 @@ impl<'gc> XmlListObject<'gc> {
     pub fn set_children(&self, mc: MutationContext<'gc, '_>, children: Vec<E4XOrXml<'gc>>) {
         self.0.write(mc).children = children;
     }
+
+    pub fn target(&self) -> Option<Object<'gc>> {
+        self.0.read().target
+    }
 }
 
 #[derive(Clone, Collect)]
