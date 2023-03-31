@@ -31,10 +31,6 @@ pub fn fill_rect<'gc>(
     height: i32,
     color: i32,
 ) {
-    if target.disposed() {
-        return;
-    }
-
     let mut rect = PixelRegion::for_region_i32(x, y, width, height);
     rect.clamp(target.width(), target.height());
 
@@ -67,7 +63,7 @@ pub fn set_pixel32<'gc>(
     y: u32,
     color: i32,
 ) {
-    if target.disposed() || x >= target.width() || y >= target.height() {
+    if x >= target.width() || y >= target.height() {
         return;
     }
     let target = target.sync();
@@ -82,7 +78,7 @@ pub fn set_pixel32<'gc>(
 }
 
 pub fn get_pixel32(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
-    if target.disposed() || x >= target.width() || y >= target.height() {
+    if x >= target.width() || y >= target.height() {
         return 0;
     }
     let read = target.read_area(PixelRegion::for_pixel(x, y));
@@ -113,7 +109,7 @@ pub fn set_pixel<'gc>(
 }
 
 pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
-    if target.disposed() || x >= target.width() || y >= target.height() {
+    if x >= target.width() || y >= target.height() {
         return 0;
     }
     let read = target.read_area(PixelRegion::for_pixel(x, y));
@@ -130,7 +126,7 @@ pub fn flood_fill<'gc>(
     y: u32,
     color: i32,
 ) {
-    if target.disposed() || x >= target.width() || y >= target.height() {
+    if x >= target.width() || y >= target.height() {
         return;
     }
     let target = target.sync();
@@ -174,9 +170,6 @@ pub fn noise<'gc>(
     channel_options: ChannelOptions,
     gray_scale: bool,
 ) {
-    if target.disposed() {
-        return;
-    }
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
     let mut write = target.write(context.gc_context);
 
@@ -247,9 +240,6 @@ pub fn perlin_noise<'gc>(
     grayscale: bool,
     offsets: Vec<(f64, f64)>, // must contain `num_octaves` values
 ) {
-    if target.disposed() {
-        return;
-    }
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
     let mut write = target.write(context.gc_context);
 

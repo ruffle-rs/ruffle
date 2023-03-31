@@ -335,29 +335,31 @@ pub fn fill_rect<'gc>(
         .coerce_to_object(activation);
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        if let Some(color_val) = args.get(1) {
-            let color = color_val.coerce_to_i32(activation)?;
+        if !bitmap_data.disposed() {
+            if let Some(color_val) = args.get(1) {
+                let color = color_val.coerce_to_i32(activation)?;
 
-            let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
-            let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
-            let width = rectangle
-                .get("width", activation)?
-                .coerce_to_i32(activation)?;
-            let height = rectangle
-                .get("height", activation)?
-                .coerce_to_i32(activation)?;
+                let x = rectangle.get("x", activation)?.coerce_to_i32(activation)?;
+                let y = rectangle.get("y", activation)?.coerce_to_i32(activation)?;
+                let width = rectangle
+                    .get("width", activation)?
+                    .coerce_to_i32(activation)?;
+                let height = rectangle
+                    .get("height", activation)?
+                    .coerce_to_i32(activation)?;
 
-            operations::fill_rect(
-                &mut activation.context,
-                bitmap_data.bitmap_data_wrapper(),
-                x,
-                y,
-                width,
-                height,
-                color,
-            );
+                operations::fill_rect(
+                    &mut activation.context,
+                    bitmap_data.bitmap_data_wrapper(),
+                    x,
+                    y,
+                    width,
+                    height,
+                    color,
+                );
+            }
+            return Ok(Value::Undefined);
         }
-        return Ok(Value::Undefined);
     }
 
     Ok((-1).into())
