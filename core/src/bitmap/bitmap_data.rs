@@ -527,8 +527,8 @@ impl<'gc> BitmapData<'gc> {
     }
 
     pub fn set_cpu_dirty(&mut self, region: PixelRegion) {
-        debug_assert!(region.max_x <= self.width);
-        debug_assert!(region.max_y <= self.height);
+        debug_assert!(region.x_max <= self.width);
+        debug_assert!(region.y_max <= self.height);
         match &mut self.dirty_state {
             DirtyState::CpuModified(old_region) => old_region.union(region),
             DirtyState::Clean => self.dirty_state = DirtyState::CpuModified(region),
@@ -643,10 +643,10 @@ fn copy_pixels_to_bitmapdata(
 ) {
     let buffer_width_pixels = buffer_width / 4;
 
-    for y in area.min_y..area.max_y {
-        for x in area.min_x..area.max_x {
+    for y in area.y_min..area.y_max {
+        for x in area.x_min..area.x_max {
             // note: this order of conversions helps llvm realize the index is 4-byte-aligned
-            let ind = (((x - area.min_x) + (y - area.min_y) * buffer_width_pixels) as usize) * 4;
+            let ind = (((x - area.x_min) + (y - area.y_min) * buffer_width_pixels) as usize) * 4;
 
             // TODO(mid): optimize this A LOT
             let r = buffer[ind];

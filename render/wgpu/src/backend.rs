@@ -569,16 +569,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 texture: &texture.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d {
-                    x: region.min_x,
-                    y: region.min_y,
+                    x: region.x_min,
+                    y: region.y_min,
                     z: 0,
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &rgba[(region.min_y * texture.width * 4) as usize
-                ..(region.max_y * texture.width * 4) as usize],
+            &rgba[(region.y_min * texture.width * 4) as usize
+                ..(region.y_max * texture.width * 4) as usize],
             wgpu::ImageDataLayout {
-                offset: (region.min_x * 4) as wgpu::BufferAddress,
+                offset: (region.x_min * 4) as wgpu::BufferAddress,
                 bytes_per_row: NonZeroU32::new(4 * texture.width),
                 rows_per_image: None,
             },

@@ -162,10 +162,10 @@ impl BitmapFormat {
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct PixelRegion {
-    pub min_x: u32,
-    pub min_y: u32,
-    pub max_x: u32,
-    pub max_y: u32,
+    pub x_min: u32,
+    pub y_min: u32,
+    pub x_max: u32,
+    pub y_max: u32,
 }
 
 impl PixelRegion {
@@ -181,10 +181,10 @@ impl PixelRegion {
 
         // Make sure we're never going below 0
         Self {
-            min_x: min.0.to_pixels().floor().max(0.0) as u32,
-            min_y: min.1.to_pixels().floor().max(0.0) as u32,
-            max_x: max.0.to_pixels().ceil().max(0.0) as u32,
-            max_y: max.1.to_pixels().ceil().max(0.0) as u32,
+            x_min: min.0.to_pixels().floor().max(0.0) as u32,
+            y_min: min.1.to_pixels().floor().max(0.0) as u32,
+            x_max: max.0.to_pixels().ceil().max(0.0) as u32,
+            y_max: max.1.to_pixels().ceil().max(0.0) as u32,
         }
     }
 
@@ -194,10 +194,10 @@ impl PixelRegion {
         let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
 
         Self {
-            min_x: min.0.max(0) as u32,
-            min_y: min.1.max(0) as u32,
-            max_x: max.0.max(0) as u32,
-            max_y: max.1.max(0) as u32,
+            x_min: min.0.max(0) as u32,
+            y_min: min.1.max(0) as u32,
+            x_max: max.0.max(0) as u32,
+            y_max: max.1.max(0) as u32,
         }
     }
 
@@ -207,10 +207,10 @@ impl PixelRegion {
         let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
 
         Self {
-            min_x: min.0,
-            min_y: min.1,
-            max_x: max.0,
-            max_y: max.1,
+            x_min: min.0,
+            y_min: min.1,
+            x_max: max.0,
+            y_max: max.1,
         }
     }
 
@@ -229,75 +229,75 @@ impl PixelRegion {
         let max = (max.0.saturating_add(1), max.1.saturating_add(1));
 
         Self {
-            min_x: min.0,
-            min_y: min.1,
-            max_x: max.0,
-            max_y: max.1,
+            x_min: min.0,
+            y_min: min.1,
+            x_max: max.0,
+            y_max: max.1,
         }
     }
 
     pub fn for_whole_size(width: u32, height: u32) -> Self {
         Self {
-            min_x: 0,
-            min_y: 0,
-            max_x: width,
-            max_y: height,
+            x_min: 0,
+            y_min: 0,
+            x_max: width,
+            y_max: height,
         }
     }
 
     pub fn for_pixel(x: u32, y: u32) -> Self {
         Self {
-            min_x: x,
-            min_y: y,
-            max_x: x + 1,
-            max_y: y + 1,
+            x_min: x,
+            y_min: y,
+            x_max: x + 1,
+            y_max: y + 1,
         }
     }
 
     pub fn clamp(&mut self, width: u32, height: u32) {
-        self.min_x = self.min_x.min(width);
-        self.min_y = self.min_y.min(height);
-        self.max_x = self.max_x.min(width);
-        self.max_y = self.max_y.min(height);
+        self.x_min = self.x_min.min(width);
+        self.y_min = self.y_min.min(height);
+        self.x_max = self.x_max.min(width);
+        self.y_max = self.y_max.min(height);
     }
 
     pub fn union(&mut self, other: PixelRegion) {
-        self.min_x = self.min_x.min(other.min_x);
-        self.min_y = self.min_y.min(other.min_y);
-        self.max_x = self.max_x.max(other.max_x);
-        self.max_y = self.max_y.max(other.max_y);
+        self.x_min = self.x_min.min(other.x_min);
+        self.y_min = self.y_min.min(other.y_min);
+        self.x_max = self.x_max.max(other.x_max);
+        self.y_max = self.y_max.max(other.y_max);
     }
 
     pub fn encompass(&mut self, x: u32, y: u32) {
-        self.min_x = self.min_x.min(x);
-        self.min_y = self.min_y.min(y);
-        self.max_x = self.max_x.max(x + 1);
-        self.max_y = self.max_y.max(y + 1);
+        self.x_min = self.x_min.min(x);
+        self.y_min = self.y_min.min(y);
+        self.x_max = self.x_max.max(x + 1);
+        self.y_max = self.y_max.max(y + 1);
     }
 
     pub fn intersects(&self, other: PixelRegion) -> bool {
-        self.min_x <= other.max_x
-            && self.max_x >= other.min_x
-            && self.min_y <= other.max_y
-            && self.max_y >= other.min_y
+        self.x_min <= other.x_max
+            && self.x_max >= other.x_min
+            && self.y_min <= other.y_max
+            && self.y_max >= other.y_min
     }
 
     pub fn width(&self) -> u32 {
-        self.max_x - self.min_x
+        self.x_max - self.x_min
     }
 
     pub fn height(&self) -> u32 {
-        self.max_y - self.min_y
+        self.y_max - self.y_min
     }
 }
 
 impl From<Rectangle<Twips>> for PixelRegion {
     fn from(value: Rectangle<Twips>) -> Self {
         Self {
-            min_x: value.x_min.to_pixels().floor().max(0.0) as u32,
-            min_y: value.y_min.to_pixels().floor().max(0.0) as u32,
-            max_x: value.x_max.to_pixels().ceil().max(0.0) as u32,
-            max_y: value.y_max.to_pixels().ceil().max(0.0) as u32,
+            x_min: value.x_min.to_pixels().floor().max(0.0) as u32,
+            y_min: value.y_min.to_pixels().floor().max(0.0) as u32,
+            x_max: value.x_max.to_pixels().ceil().max(0.0) as u32,
+            y_max: value.y_max.to_pixels().ceil().max(0.0) as u32,
         }
     }
 }
