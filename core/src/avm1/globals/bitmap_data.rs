@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, TObject, Value};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
-use crate::bitmap::{bitmap_data_operations, is_size_valid};
+use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
@@ -162,8 +162,7 @@ pub fn get_pixel<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col =
-                    bitmap_data_operations::get_pixel(bitmap_data.bitmap_data_wrapper(), x, y);
+                let col = operations::get_pixel(bitmap_data.bitmap_data_wrapper(), x, y);
                 return Ok(col.into());
             }
         }
@@ -182,8 +181,7 @@ pub fn get_pixel32<'gc>(
             if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
                 let x = x_val.coerce_to_u32(activation)?;
                 let y = y_val.coerce_to_u32(activation)?;
-                let col =
-                    bitmap_data_operations::get_pixel32(bitmap_data.bitmap_data_wrapper(), x, y);
+                let col = operations::get_pixel32(bitmap_data.bitmap_data_wrapper(), x, y);
                 return Ok(col.into());
             }
         }
@@ -206,7 +204,7 @@ pub fn set_pixel<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data_operations::set_pixel(
+                operations::set_pixel(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     x,
@@ -236,7 +234,7 @@ pub fn set_pixel32<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data_operations::set_pixel32(
+                operations::set_pixel32(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     x,
@@ -308,7 +306,7 @@ pub fn copy_channel<'gc>(
                     .get("height", activation)?
                     .coerce_to_u32(activation)?;
 
-                bitmap_data_operations::copy_channel(
+                operations::copy_channel(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     (min_x, min_y),
@@ -349,7 +347,7 @@ pub fn fill_rect<'gc>(
                 .get("height", activation)?
                 .coerce_to_i32(activation)?;
 
-            bitmap_data_operations::fill_rect(
+            operations::fill_rect(
                 &mut activation.context,
                 bitmap_data.bitmap_data_wrapper(),
                 x,
@@ -425,7 +423,7 @@ pub fn flood_fill<'gc>(
                 let y = y_val.coerce_to_u32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                bitmap_data_operations::flood_fill(
+                operations::flood_fill(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     x,
@@ -467,7 +465,7 @@ pub fn noise<'gc>(
         if !bitmap_data.disposed() {
             if let Some(random_seed_val) = args.get(0) {
                 let random_seed = random_seed_val.coerce_to_i32(activation)?;
-                bitmap_data_operations::noise(
+                operations::noise(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     random_seed,
@@ -547,7 +545,7 @@ pub fn draw<'gc>(
             // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
             // if we're actually going to draw something.
             let quality = activation.context.stage.quality();
-            match bitmap_data_operations::draw(
+            match operations::draw(
                 &mut activation.context,
                 bitmap_data.bitmap_data_wrapper(),
                 source,
@@ -628,7 +626,7 @@ pub fn color_transform<'gc>(
                     None => return Ok((-3).into()),
                 };
 
-                bitmap_data_operations::color_transform(
+                operations::color_transform(
                     &mut activation.context,
                     bitmap_data.bitmap_data_wrapper(),
                     x_min,
@@ -660,7 +658,7 @@ pub fn get_color_bounds_rect<'gc>(
                 let mask = mask_val.coerce_to_i32(activation)?;
                 let color = color_val.coerce_to_i32(activation)?;
 
-                let (x, y, w, h) = bitmap_data_operations::color_bounds_rect(
+                let (x, y, w, h) = operations::color_bounds_rect(
                     bitmap_data.bitmap_data_wrapper(),
                     find_color,
                     mask,
@@ -736,7 +734,7 @@ pub fn perlin_noise<'gc>(
                 .collect();
             let octave_offsets = octave_offsets?;
 
-            bitmap_data_operations::perlin_noise(
+            operations::perlin_noise(
                 &mut activation.context,
                 bitmap_data.bitmap_data_wrapper(),
                 (base_x, base_y),
@@ -809,7 +807,7 @@ pub fn hit_test<'gc>(
                     .unwrap_or(&Value::Undefined)
                     .coerce_to_u32(activation)?;
 
-                let result = bitmap_data_operations::hit_test_bitmapdata(
+                let result = operations::hit_test_bitmapdata(
                     bitmap_data.bitmap_data_wrapper(),
                     top_left,
                     source_threshold,
@@ -834,7 +832,7 @@ pub fn hit_test<'gc>(
                             test_x.coerce_to_i32(activation)? - top_left.0,
                             test_y.coerce_to_i32(activation)? - top_left.1,
                         );
-                        return Ok(Value::Bool(bitmap_data_operations::hit_test_point(
+                        return Ok(Value::Bool(operations::hit_test_point(
                             bitmap_data.bitmap_data_wrapper(),
                             source_threshold,
                             test_point,
@@ -851,7 +849,7 @@ pub fn hit_test<'gc>(
                             test_width.coerce_to_i32(activation)?,
                             test_height.coerce_to_i32(activation)?,
                         );
-                        return Ok(Value::Bool(bitmap_data_operations::hit_test_rectangle(
+                        return Ok(Value::Bool(operations::hit_test_rectangle(
                             bitmap_data.bitmap_data_wrapper(),
                             source_threshold,
                             test_point,
@@ -944,7 +942,7 @@ pub fn copy_pixels<'gc>(
                                 .coerce_to_f64(activation)?
                                 as i32;
 
-                            bitmap_data_operations::copy_pixels_with_alpha_source(
+                            operations::copy_pixels_with_alpha_source(
                                 &mut activation.context,
                                 bitmap_data.bitmap_data_wrapper(),
                                 src_bitmap.bitmap_data_wrapper(),
@@ -956,7 +954,7 @@ pub fn copy_pixels<'gc>(
                             );
                         }
                     } else {
-                        bitmap_data_operations::copy_pixels(
+                        operations::copy_pixels(
                             &mut activation.context,
                             bitmap_data.bitmap_data_wrapper(),
                             src_bitmap.bitmap_data_wrapper(),
@@ -1037,7 +1035,7 @@ pub fn merge<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    bitmap_data_operations::merge(
+                    operations::merge(
                         &mut activation.context,
                         bitmap_data.bitmap_data_wrapper(),
                         src_bitmap.bitmap_data_wrapper(),
@@ -1116,7 +1114,7 @@ pub fn palette_map<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    bitmap_data_operations::palette_map(
+                    operations::palette_map(
                         &mut activation.context,
                         bitmap_data.bitmap_data_wrapper(),
                         src_bitmap.bitmap_data_wrapper(),
@@ -1165,7 +1163,7 @@ pub fn scroll<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            bitmap_data_operations::scroll(
+            operations::scroll(
                 &mut activation.context,
                 bitmap_data.bitmap_data_wrapper(),
                 x,
@@ -1246,7 +1244,7 @@ pub fn threshold<'gc>(
 
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
-                    let modified_count = bitmap_data_operations::threshold(
+                    let modified_count = operations::threshold(
                         &mut activation.context,
                         bitmap_data.bitmap_data_wrapper(),
                         src_bitmap.bitmap_data_wrapper(),
@@ -1319,7 +1317,7 @@ pub fn compare<'gc>(
         return Ok(DIFFERENT_HEIGHTS.into());
     }
 
-    match bitmap_data_operations::compare(this_bitmap_data, other_bitmap_data) {
+    match operations::compare(this_bitmap_data, other_bitmap_data) {
         Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
             activation.context.gc_context,
             activation.context.avm1.prototypes().bitmap_data,
