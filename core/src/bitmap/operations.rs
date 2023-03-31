@@ -123,14 +123,7 @@ pub fn clone(original: BitmapDataWrapper) -> BitmapData {
     // Sync now to bring everything to cpu so we don't force multiple syncs to happen later
     let original = original.sync();
     let read = original.read();
-    let mut new_bitmap_data = BitmapData::default();
-    new_bitmap_data.set_pixels(
-        read.width(),
-        read.height(),
-        read.transparency(),
-        read.pixels().to_vec(),
-    );
-    new_bitmap_data
+    read.clone()
 }
 
 pub fn flood_fill<'gc>(
