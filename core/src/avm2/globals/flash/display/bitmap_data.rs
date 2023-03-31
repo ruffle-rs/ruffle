@@ -1001,15 +1001,19 @@ pub fn get_rect<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        let bd = bitmap_data.read();
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
         return Ok(activation
             .avm2()
             .classes()
             .rectangle
             .construct(
                 activation,
-                &[0.into(), 0.into(), bd.width().into(), bd.height().into()],
+                &[
+                    0.into(),
+                    0.into(),
+                    bitmap_data.width().into(),
+                    bitmap_data.height().into(),
+                ],
             )?
             .into());
     }
