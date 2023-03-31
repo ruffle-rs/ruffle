@@ -372,22 +372,12 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = BitmapDataObject::empty_object(
+            let new_bitmap_data = operations::clone(bitmap_data.bitmap_data_wrapper());
+            let new_bitmap_data = BitmapDataObject::with_bitmap_data(
                 activation.context.gc_context,
                 activation.context.avm1.prototypes().bitmap_data,
+                new_bitmap_data,
             );
-
-            new_bitmap_data
-                .as_bitmap_data_object()
-                .unwrap()
-                .bitmap_data()
-                .write(activation.context.gc_context)
-                .set_pixels(
-                    bitmap_data.width(),
-                    bitmap_data.height(),
-                    bitmap_data.transparency(),
-                    bitmap_data.bitmap_data().read().pixels().to_vec(),
-                );
 
             return Ok(new_bitmap_data.into());
         }

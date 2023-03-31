@@ -119,6 +119,20 @@ pub fn get_pixel(target: BitmapDataWrapper, x: u32, y: u32) -> i32 {
         .into()
 }
 
+pub fn clone(original: BitmapDataWrapper) -> BitmapData {
+    // Sync now to bring everything to cpu so we don't force multiple syncs to happen later
+    let original = original.sync();
+    let read = original.read();
+    let mut new_bitmap_data = BitmapData::default();
+    new_bitmap_data.set_pixels(
+        read.width(),
+        read.height(),
+        read.transparency(),
+        read.pixels().to_vec(),
+    );
+    new_bitmap_data
+}
+
 pub fn flood_fill<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
     target: BitmapDataWrapper<'gc>,
