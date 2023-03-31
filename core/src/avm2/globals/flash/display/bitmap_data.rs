@@ -423,8 +423,8 @@ pub fn set_pixels<'gc>(
             .get_public_property("height", activation)?
             .coerce_to_i32(activation)?;
 
-        let ba_read = bytearray
-            .as_bytearray()
+        let mut ba_write = bytearray
+            .as_bytearray_mut(activation.context.gc_context)
             .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
         operations::set_pixels_from_byte_array(
@@ -434,7 +434,7 @@ pub fn set_pixels<'gc>(
             y,
             width,
             height,
-            &ba_read,
+            &mut ba_write,
         )
         .map_err(|e| e.to_avm(activation))?;
     }
