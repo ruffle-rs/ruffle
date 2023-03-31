@@ -352,6 +352,7 @@ pub fn get_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let pixel = operations::get_pixel32(bitmap_data, x, y);
@@ -384,6 +385,8 @@ pub fn set_pixel32<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
+
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
@@ -541,6 +544,7 @@ pub fn noise<'gc>(
     let gray_scale = args.get_bool(4);
 
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let random_seed = args.get_i32(activation, 0)?;
         operations::noise(
             &mut activation.context,
@@ -950,6 +954,7 @@ pub fn fill_rect<'gc>(
     let color = args.get_i32(activation, 1)?;
 
     if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        bitmap_data.check_valid(activation)?;
         let x = rectangle
             .get_public_property("x", activation)?
             .coerce_to_i32(activation)?;
