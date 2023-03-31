@@ -1059,22 +1059,16 @@ pub fn clone<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
-        if !bitmap_data.read().disposed() {
-            let new_bitmap_data =
-                GcCell::allocate(activation.context.gc_context, BitmapData::default());
-            new_bitmap_data
-                .write(activation.context.gc_context)
-                .set_pixels(
-                    bitmap_data.read().width(),
-                    bitmap_data.read().height(),
-                    bitmap_data.read().transparency(),
-                    bitmap_data.read().pixels().to_vec(),
-                );
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data_wrapper()) {
+        if !bitmap_data.disposed() {
+            let new_bitmap_data = operations::clone(bitmap_data);
 
             let class = activation.avm2().classes().bitmapdata;
-            let new_bitmap_data_object =
-                BitmapDataObject::from_bitmap_data(activation, new_bitmap_data, class)?;
+            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data(
+                activation,
+                GcCell::allocate(activation.context.gc_context, new_bitmap_data),
+                class,
+            )?;
 
             return Ok(new_bitmap_data_object.into());
         }
