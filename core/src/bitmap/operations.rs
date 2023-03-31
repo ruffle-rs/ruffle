@@ -1360,7 +1360,7 @@ pub fn set_pixels_from_byte_array<'gc>(
     y: i32,
     width: i32,
     height: i32,
-    bytearray: &ByteArrayStorage,
+    bytearray: &mut ByteArrayStorage,
 ) -> Result<(), EofError> {
     let mut region = PixelRegion::for_region_i32(x, y, width, height);
     region.clamp(target.width(), target.height());
@@ -1370,11 +1370,10 @@ pub fn set_pixels_from_byte_array<'gc>(
     let mut write = target.write(context.gc_context);
 
     if region.width() > 0 && region.height() > 0 {
-        let height = height as u32; // height can't be negative if we're here
         for y in region.y_min..region.y_max {
             for x in region.x_min..region.x_max {
                 // Copy data from bytearray until EOFError or finished
-                let color = bytearray.read_int_at(((y * height) + x * 4) as usize)?;
+                let color = bytearray.read_int()?;
                 write.set_pixel32_raw(
                     x,
                     y,
