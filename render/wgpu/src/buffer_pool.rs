@@ -165,7 +165,7 @@ impl<Type, Description: BufferDescription> BufferPool<Type, Description> {
         }
 
         let (item, used_description) = if let Some((_, best)) = best {
-            guard.remove(best)
+            guard.swap_remove(best)
         } else {
             let item = (self.constructor)(descriptors, &description);
             (item, description)
