@@ -1179,7 +1179,7 @@ impl Player {
                 let (offset_x, offset_y) = drag_object.offset;
                 let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
                 if let Some(parent) = display_object.parent() {
-                    drag_point = parent.global_to_local(drag_point);
+                    drag_point = parent.mouse_to_local(drag_point);
                 }
                 drag_point = drag_object.constraint.clamp(drag_point);
                 display_object.set_x(context.gc_context, drag_point.0.to_pixels());

@@ -41,6 +41,24 @@ impl Matrix {
         ty: Twips::ZERO,
     };
 
+    pub const TWIPS_TO_PIXELS: Self = Self {
+        a: 1.0 / Twips::TWIPS_PER_PIXEL as f32,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: 1.0 / Twips::TWIPS_PER_PIXEL as f32,
+        ty: Twips::ZERO,
+    };
+
+    pub const PIXELS_TO_TWIPS: Self = Self {
+        a: Twips::TWIPS_PER_PIXEL as f32,
+        c: 0.0,
+        tx: Twips::ZERO,
+        b: 0.0,
+        d: Twips::TWIPS_PER_PIXEL as f32,
+        ty: Twips::ZERO,
+    };
+
     pub fn scale(scale_x: f32, scale_y: f32) -> Self {
         Self {
             a: scale_x,
