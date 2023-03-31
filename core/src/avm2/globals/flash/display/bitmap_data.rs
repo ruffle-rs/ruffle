@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color, ThresholdOperation};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
@@ -409,47 +409,34 @@ pub fn set_pixels<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
-    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data_wrapper()) {
         let x = rectangle
             .get_public_property("x", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let y = rectangle
             .get_public_property("y", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let width = rectangle
             .get_public_property("width", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let height = rectangle
             .get_public_property("height", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
 
         let ba_read = bytearray
             .as_bytearray()
             .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        let transparency = bitmap_data.transparency();
-        let mut ind = 0;
-
-        for y in y..y + height {
-            for x in x..x + width {
-                // Copy data from bytearray until EOFError or finished
-                if let Ok(color) = ba_read.read_int_at(ind) {
-                    bitmap_data.set_pixel32_raw(
-                        x,
-                        y,
-                        Color::from(color).to_premultiplied_alpha(transparency),
-                    );
-                    ind += 4;
-                } else {
-                    return Err(Error::AvmError(crate::avm2::error::eof_error(
-                        activation,
-                        "Error #2030: End of file was encountered.",
-                        2030,
-                    )?));
-                }
-            }
-        }
+        operations::set_pixels_from_byte_array(
+            &mut activation.context,
+            bitmap_data,
+            x,
+            y,
+            width,
+            height,
+            &ba_read,
+        )
+        .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
