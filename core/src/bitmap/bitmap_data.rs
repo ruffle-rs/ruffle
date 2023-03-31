@@ -342,12 +342,7 @@ mod wrapper {
         /// It is an error to access any other pixels outside of that region.
         pub fn read_area(&self, read_area: PixelRegion) -> Ref<'_, BitmapData<'gc>> {
             let needs_update = if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
-                if area.intersects(read_area) {
-                    true
-                } else {
-                    tracing::info!("SKIPPED");
-                    false
-                }
+                area.intersects(read_area)
             } else {
                 false
             };
