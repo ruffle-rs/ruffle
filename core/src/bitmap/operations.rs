@@ -48,8 +48,8 @@ pub fn fill_rect<'gc>(
     let mut write = target.write(context.gc_context);
     let color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
-    for x in rect.min_x..rect.max_x {
-        for y in rect.min_y..rect.max_y {
+    for x in rect.x_min..rect.x_max {
+        for y in rect.y_min..rect.y_max {
             write.set_pixel32_raw(x, y, color);
         }
     }
@@ -374,8 +374,8 @@ pub fn copy_channel<'gc>(
     let target = target.sync();
     let mut write = target.write(context.gc_context);
 
-    for x in source_region.min_x..source_region.max_x {
-        for y in source_region.min_y..source_region.max_y {
+    for x in source_region.x_min..source_region.x_max {
+        for y in source_region.y_min..source_region.y_max {
             let dst_x = x as i32 + min_x as i32;
             let dst_y = y as i32 + min_y as i32;
             if write.is_point_in_bounds(dst_x, dst_y) {
@@ -419,8 +419,8 @@ pub fn copy_channel<'gc>(
             (src_min_y.saturating_add(min_y)),
         ),
         (
-            (source_region.max_x.saturating_add(min_x)),
-            (source_region.max_y.saturating_add(min_y)),
+            (source_region.x_max.saturating_add(min_x)),
+            (source_region.y_max.saturating_add(min_y)),
         ),
     );
     dirty_region.clamp(write.width(), write.height());
@@ -777,8 +777,8 @@ pub fn hit_test_rectangle(
     region.clamp(target.width(), target.height());
     let read = target.read_area(region);
 
-    for x in region.min_x..region.max_x {
-        for y in region.min_y..region.max_y {
+    for x in region.x_min..region.x_max {
+        for y in region.y_min..region.y_max {
             if read.get_pixel32_raw(x, y).alpha() as u32 >= alpha_threshold {
                 return true;
             }
@@ -1320,8 +1320,8 @@ pub fn get_vector(
 
     let read = target.read_area(region);
 
-    for y in region.min_y..region.max_y {
-        for x in region.min_x..region.max_x {
+    for y in region.y_min..region.y_max {
+        for x in region.x_min..region.x_max {
             let color = read.get_pixel32_raw(x, y);
             let color = u32::from(color.to_un_multiplied_alpha());
             result.push(color.into());
@@ -1343,8 +1343,8 @@ pub fn get_pixels_as_byte_array<'gc>(
     region.clamp(target.width(), target.height());
 
     let read = target.read_area(region);
-    for y in region.min_y..region.max_y {
-        for x in region.min_x..region.max_x {
+    for y in region.y_min..region.y_max {
+        for x in region.x_min..region.x_max {
             let color = read.get_pixel32_raw(x, y);
             result.write_int(color.to_un_multiplied_alpha().into())?;
         }

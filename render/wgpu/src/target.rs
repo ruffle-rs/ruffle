@@ -289,8 +289,8 @@ impl RenderTarget for TextureTarget {
                     texture: &self.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d {
-                        x: copy_area.min_x,
-                        y: copy_area.min_y,
+                        x: copy_area.x_min,
+                        y: copy_area.y_min,
                         z: 0,
                     },
                     aspect: wgpu::TextureAspect::All,
