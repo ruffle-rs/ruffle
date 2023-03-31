@@ -1635,7 +1635,7 @@ impl Player {
                                 activation.context.gc_context,
                                 "__proto__",
                                 prototype,
-                                Attribute::empty(),
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
                             );
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
