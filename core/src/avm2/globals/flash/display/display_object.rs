@@ -595,7 +595,7 @@ pub fn get_mouse_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
 
         return Ok(local_mouse.0.to_pixels().into());
     }
@@ -610,7 +610,7 @@ pub fn get_mouse_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
 
         return Ok(local_mouse.1.to_pixels().into());
     }
@@ -893,7 +893,8 @@ pub fn global_to_local<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
-        let (out_x, out_y) = dobj.global_to_local((Twips::from_pixels(x), Twips::from_pixels(y)));
+        let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
+        let (out_x, out_y) = dobj.global_to_local(pt).unwrap_or(pt);
         return Ok(activation
             .avm2()
             .classes()

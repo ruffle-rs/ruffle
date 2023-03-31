@@ -1141,7 +1141,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
         let text = self.0.read();
-        let position = self.global_to_local(position);
+        let Some(position) = self.global_to_local(position) else { return None; };
         let position = (
             position.0 + Twips::from_pixels(Self::INTERNAL_PADDING),
             position.1 + Twips::from_pixels(Self::INTERNAL_PADDING),

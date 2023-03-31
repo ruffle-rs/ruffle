@@ -1303,9 +1303,8 @@ fn global_to_local<'gc>(
                 .get_local_stored("y", activation)
                 .unwrap_or(Value::Undefined),
         ) {
-            let x = Twips::from_pixels(x);
-            let y = Twips::from_pixels(y);
-            let (out_x, out_y) = movie_clip.global_to_local((x, y));
+            let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
+            let (out_x, out_y) = movie_clip.global_to_local(pt).unwrap_or(pt);
             point.set("x", out_x.to_pixels().into(), activation)?;
             point.set("y", out_y.to_pixels().into(), activation)?;
         } else {
