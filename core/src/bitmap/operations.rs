@@ -1364,9 +1364,15 @@ pub fn set_pixels_from_byte_array<'gc>(
 ) -> Result<(), EofError> {
     let mut region = PixelRegion::for_region_i32(x, y, width, height);
     region.clamp(target.width(), target.height());
-
     let transparency = target.transparency();
-    let target = target.sync();
+
+    let target = if region.width() == target.width() && region.height() == target.height() {
+        // If we're filling the whole region, we can discard the gpu data
+        target.overwrite_cpu_pixels_from_gpu(context).0
+    } else {
+        // If we're filling a partial region, finish any gpu->cpu sync
+        target.sync()
+    };
     let mut write = target.write(context.gc_context);
 
     if region.width() > 0 && region.height() > 0 {
