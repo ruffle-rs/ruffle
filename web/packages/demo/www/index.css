@@ -149,7 +149,8 @@ body {
     cursor: pointer;
 }
 
-#open-modal {
+#open-modal,
+#reload-swf {
     vertical-align: middle;
     cursor: pointer;
 }

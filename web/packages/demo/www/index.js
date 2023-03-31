@@ -19,6 +19,7 @@ const sampleFileInput = document.getElementById("sample-swfs");
 const localFileName = document.getElementById("local-file-name");
 const closeModal = document.getElementById("close-modal");
 const openModal = document.getElementById("open-modal");
+const reloadSwf = document.getElementById("reload-swf");
 const metadataModal = document.getElementById("metadata-modal");
 // prettier-ignore
 const optionGroups = {
@@ -211,6 +212,15 @@ closeModal.addEventListener("click", () => {
 
 openModal.addEventListener("click", () => {
     metadataModal.style.display = "block";
+});
+
+reloadSwf.addEventListener("click", () => {
+    if (player) {
+        const confirmReload = confirm("Reload the current SWF?");
+        if (confirmReload) {
+            player.load(player.loadedConfig);
+        }
+    }
 });
 
 window.addEventListener("load", () => {
