@@ -10,3 +10,11 @@ b_copy.parent(): undefined
 b_copy.toXMLString(): <b><c>c1</c><c>c2</c></b>
 b_copy.c[0].parent(): <b><c>c1</c><c>c2</c></b>
 b_copy.c[0].parent() === b_copy: true
+///
+xml.b.c === c_copy: false
+c_copy.toXMLString(): <c>c1</c>
+<c>c2</c>
+c_copy[0].parent(): undefined
+c_copy[1].parent(): undefined
+c_copy[0][0] c1
+c_copy[0][0] === xml.b.c[0][0] false

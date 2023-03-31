@@ -115,6 +115,20 @@ pub fn children<'gc>(
     Ok(XmlListObject::new(activation, sub_children, Some(list.into())).into())
 }
 
+pub fn copy<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let children = list
+        .children()
+        .iter()
+        .map(|child| E4XOrXml::E4X(child.node().deep_copy(activation.context.gc_context)))
+        .collect();
+    Ok(XmlListObject::new(activation, children, list.target()).into())
+}
+
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
