@@ -40,3 +40,11 @@ true
 10
 10
 
+// clip.globalToLocal (no scaleX)
+123
+234
+
+// clip.globalToLocal (no scaleY)
+123
+234
+
