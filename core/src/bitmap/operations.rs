@@ -1231,7 +1231,6 @@ pub fn draw<'gc>(
         transform_stack: &mut transform_stack,
         is_offscreen: true,
         stage: context.stage,
-        allow_mask: true,
     };
 
     // Make the screen opacity match the opacity of this bitmap
