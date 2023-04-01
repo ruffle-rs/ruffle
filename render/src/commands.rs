@@ -27,6 +27,7 @@ pub struct CommandList {
 }
 
 impl CommandList {
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -55,6 +56,7 @@ impl CommandList {
 }
 
 impl CommandHandler for CommandList {
+    #[inline]
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::RenderBitmap {
@@ -65,6 +67,7 @@ impl CommandHandler for CommandList {
         }
     }
 
+    #[inline]
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
         if self.maskers_in_progress <= 1 {
             self.commands
@@ -72,6 +75,7 @@ impl CommandHandler for CommandList {
         }
     }
 
+    #[inline]
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
         if self.maskers_in_progress <= 1 {
             self.commands
@@ -79,12 +83,14 @@ impl CommandHandler for CommandList {
         }
     }
 
+    #[inline]
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::DrawRect { color, matrix });
         }
     }
 
+    #[inline]
     fn push_mask(&mut self) {
         if self.maskers_in_progress == 0 {
             self.commands.push(Command::PushMask);
@@ -92,6 +98,7 @@ impl CommandHandler for CommandList {
         self.maskers_in_progress += 1;
     }
 
+    #[inline]
     fn activate_mask(&mut self) {
         self.maskers_in_progress -= 1;
         if self.maskers_in_progress == 0 {
@@ -99,6 +106,7 @@ impl CommandHandler for CommandList {
         }
     }
 
+    #[inline]
     fn deactivate_mask(&mut self) {
         if self.maskers_in_progress == 0 {
             self.commands.push(Command::DeactivateMask);
@@ -106,6 +114,7 @@ impl CommandHandler for CommandList {
         self.maskers_in_progress += 1;
     }
 
+    #[inline]
     fn pop_mask(&mut self) {
         self.maskers_in_progress -= 1;
         if self.maskers_in_progress == 0 {
@@ -113,6 +122,7 @@ impl CommandHandler for CommandList {
         }
     }
 
+    #[inline]
     fn blend(&mut self, commands: CommandList, blend_mode: BlendMode) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::Blend(commands, blend_mode));
