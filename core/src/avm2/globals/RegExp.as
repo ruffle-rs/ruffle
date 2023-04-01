@@ -29,23 +29,7 @@ package {
         }
 
         prototype.toString = function():String {
-            var res:String = "/" + this.source + "/";
-            if (this.ignoreCase) {
-               res += "i";
-            }
-            if (this.global) {
-               res += "g";
-            }
-            if (this.multiline) {
-               res += "m";
-            }
-            if (this.dotall) {
-               res += "s";
-            }
-            if (this.extended) {
-               res += "x";
-            }
-            return res;
+            return this.valueOf();
         }
         
         prototype.setPropertyIsEnumerable("exec", false);
