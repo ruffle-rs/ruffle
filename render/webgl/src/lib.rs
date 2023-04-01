@@ -1,9 +1,8 @@
 #![deny(clippy::unwrap_used)]
 
 use bytemuck::{Pod, Zeroable};
-use gc_arena::MutationContext;
 use ruffle_render::backend::{
-    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -1063,11 +1062,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
         Err(BitmapError::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present<'gc>(
-        &mut self,
-        _context: &mut dyn Context3D,
-        _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), BitmapError> {
+    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), BitmapError> {
         Err(BitmapError::Unimplemented("Context3D.present".into()))
     }
 

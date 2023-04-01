@@ -64,11 +64,7 @@ pub trait RenderBackend: Downcast {
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present<'gc>(
-        &mut self,
-        context: &mut dyn Context3D,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error>;
+    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
 
