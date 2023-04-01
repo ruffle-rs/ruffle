@@ -27,8 +27,29 @@ package {
         prototype.test = function(str:String = ""):Boolean {
             return this.AS3::test(str);
         }
+
+        prototype.toString = function():String {
+            var res:String = "/" + this.source + "/";
+            if (this.ignoreCase) {
+               res += "i";
+            }
+            if (this.global) {
+               res += "g";
+            }
+            if (this.multiline) {
+               res += "m";
+            }
+            if (this.dotall) {
+               res += "s";
+            }
+            if (this.extended) {
+               res += "x";
+            }
+            return res;
+        }
         
         prototype.setPropertyIsEnumerable("exec", false);
         prototype.setPropertyIsEnumerable("test", false);
+        prototype.setPropertyIsEnumerable("toString", false);
     }
 }
