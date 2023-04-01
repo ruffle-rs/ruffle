@@ -458,7 +458,7 @@ impl Ruffle {
         }
 
         self.with_core_mut(|core| external_to_js_value(core.call_internal_interface(name, args)))
-            .unwrap_or(JsValue::NULL)
+            .unwrap_or(JsValue::UNDEFINED)
     }
 
     pub fn set_trace_observer(&self, observer: JsValue) {
@@ -1213,7 +1213,12 @@ impl ExternalInterfaceProvider for JavascriptInterface {
                 return Some(Box::new(method));
             }
         }
-        None
+
+        // Return a dummy method, as `ExternalInterface.call` must return `undefined`, not `null`.
+        Some(Box::new(JavascriptMethod {
+            this: JsValue::UNDEFINED,
+            function: JsValue::UNDEFINED,
+        }))
     }
 
     fn on_callback_available(&self, name: &str) {
@@ -1261,8 +1266,8 @@ fn js_to_external_value(js: &JsValue) -> ExternalValue {
 
 fn external_to_js_value(external: ExternalValue) -> JsValue {
     match external {
-        Value::Null => JsValue::NULL,
         Value::Undefined => JsValue::UNDEFINED,
+        Value::Null => JsValue::NULL,
         Value::Bool(value) => JsValue::from_bool(value),
         Value::Number(value) => JsValue::from_f64(value),
         Value::String(value) => JsValue::from_str(&value),
