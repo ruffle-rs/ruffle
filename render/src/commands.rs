@@ -20,6 +20,10 @@ pub trait CommandHandler {
 #[derive(Debug, Default, Clone)]
 pub struct CommandList {
     pub commands: Vec<Command>,
+
+    /// The number of mask regions in the process of being drawn.
+    /// This is used to discard drawing commands of nested maskers, which Flash does not support.
+    maskers_in_progress: u32,
 }
 
 impl CommandList {
@@ -52,45 +56,67 @@ impl CommandList {
 
 impl CommandHandler for CommandList {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: Transform, smoothing: bool) {
-        self.commands.push(Command::RenderBitmap {
-            bitmap,
-            transform,
-            smoothing,
-        });
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::RenderBitmap {
+                bitmap,
+                transform,
+                smoothing,
+            });
+        }
     }
 
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
-        self.commands
-            .push(Command::RenderStage3D { bitmap, transform });
+        if self.maskers_in_progress <= 1 {
+            self.commands
+                .push(Command::RenderStage3D { bitmap, transform });
+        }
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
-        self.commands
-            .push(Command::RenderShape { shape, transform });
+        if self.maskers_in_progress <= 1 {
+            self.commands
+                .push(Command::RenderShape { shape, transform });
+        }
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
-        self.commands.push(Command::DrawRect { color, matrix });
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::DrawRect { color, matrix });
+        }
     }
 
     fn push_mask(&mut self) {
-        self.commands.push(Command::PushMask);
+        if self.maskers_in_progress == 0 {
+            self.commands.push(Command::PushMask);
+        }
+        self.maskers_in_progress += 1;
     }
 
     fn activate_mask(&mut self) {
-        self.commands.push(Command::ActivateMask);
+        self.maskers_in_progress -= 1;
+        if self.maskers_in_progress == 0 {
+            self.commands.push(Command::ActivateMask);
+        }
     }
 
     fn deactivate_mask(&mut self) {
-        self.commands.push(Command::DeactivateMask);
+        if self.maskers_in_progress == 0 {
+            self.commands.push(Command::DeactivateMask);
+        }
+        self.maskers_in_progress += 1;
     }
 
     fn pop_mask(&mut self) {
-        self.commands.push(Command::PopMask);
+        self.maskers_in_progress -= 1;
+        if self.maskers_in_progress == 0 {
+            self.commands.push(Command::PopMask);
+        }
     }
 
     fn blend(&mut self, commands: CommandList, blend_mode: BlendMode) {
-        self.commands.push(Command::Blend(commands, blend_mode));
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::Blend(commands, blend_mode));
+        }
     }
 }
 
