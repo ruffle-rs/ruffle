@@ -14,7 +14,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::borrow::Cow;
 use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
@@ -22,6 +22,7 @@ use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
+use wasm_streams::readable::ReadableStream;
 use web_sys::{
     window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
     RequestCredentials, RequestInit, Response as WebResponse,
@@ -327,7 +328,10 @@ impl NavigatorBackend for WebNavigatorBackend {
                 return Err(ErrorResponse { url, error });
             }
 
-            let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper(response));
+            let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper {
+                response,
+                body_stream: None,
+            });
 
             Ok(wrapper)
         })
@@ -441,17 +445,20 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 }
 
-struct WebResponseWrapper(WebResponse);
+struct WebResponseWrapper {
+    response: WebResponse,
+    body_stream: Option<Arc<Mutex<ReadableStream>>>,
+}
 
 impl SuccessResponse for WebResponseWrapper {
     fn url(&self) -> Cow<str> {
-        Cow::Owned(self.0.url())
+        Cow::Owned(self.response.url())
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         Box::pin(async move {
             let body = JsFuture::from(
-                self.0
+                self.response
                     .array_buffer()
                     .map_err(|_| Error::FetchError("Got JS error".to_string()))?,
             )
@@ -470,10 +477,44 @@ impl SuccessResponse for WebResponseWrapper {
     }
 
     fn status(&self) -> u16 {
-        self.0.status()
+        self.response.status()
     }
 
     fn redirected(&self) -> bool {
-        self.0.redirected()
+        self.response.redirected()
+    }
+
+    #[allow(clippy::await_holding_lock)]
+    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+        if self.body_stream.is_none() {
+            let body = self.response.body();
+            if body.is_none() {
+                return Box::pin(async move { Ok(None) });
+            }
+
+            self.body_stream = Some(Arc::new(Mutex::new(ReadableStream::from_raw(
+                body.expect("body").unchecked_into(),
+            ))));
+        }
+
+        let body_stream = self.body_stream.clone().expect("web body stream");
+        Box::pin(async move {
+            let read_lock = body_stream.try_lock();
+            if matches!(read_lock, Err(std::sync::TryLockError::WouldBlock)) {
+                return Err(Error::FetchError(
+                    "Concurrent read operations on the same stream are not supported.".to_string(),
+                ));
+            }
+
+            let mut read_lock = read_lock.expect("web response reader");
+            let mut body_reader = read_lock.get_reader();
+
+            let chunk = body_reader.read();
+            match chunk.await {
+                Ok(Some(chunk)) => Ok(Some(Uint8Array::new(&chunk).to_vec())),
+                Ok(None) => Ok(None),
+                Err(_) => Err(Error::FetchError("Cannot read next chunk".to_string())), //TODO: JsValue to string?!
+            }
+        })
     }
 }

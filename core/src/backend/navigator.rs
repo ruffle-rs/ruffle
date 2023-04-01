@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
+use std::fs::File;
 use std::future::Future;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::mpsc::Sender;
@@ -201,6 +203,18 @@ pub trait SuccessResponse {
 
     /// Indicates if the request has been redirected.
     fn redirected(&self) -> bool;
+
+    /// Read the next chunk of the response.
+    ///
+    /// Repeated calls to `next_chunk` yield further bytes of the response body.
+    /// A response that has no data or no more data to yield will instead
+    /// yield None.
+    ///
+    /// The size of yielded chunks is implementation-defined.
+    ///
+    /// Mixing `next_chunk` and `body` is not supported and may yield errors.
+    /// Use one or the other.
+    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error>;
 }
 
 /// A response to a non-successful fetch request.
@@ -550,6 +564,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     struct LocalResponse {
         url: String,
         path: PathBuf,
+        open_file: Option<File>,
         status: u16,
         redirected: bool,
     }
@@ -571,6 +586,33 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
         fn redirected(&self) -> bool {
             self.redirected
+        }
+
+        fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+            if self.open_file.is_none() {
+                let result = std::fs::File::open(self.path.clone())
+                    .map_err(|e| Error::FetchError(e.to_string()));
+
+                match result {
+                    Ok(file) => self.open_file = Some(file),
+                    Err(e) => return Box::pin(async move { Err(e) }),
+                }
+            }
+
+            let file = self.open_file.as_mut().unwrap();
+            let mut buf = vec![0; 4096];
+            let res = file.read(&mut buf);
+
+            Box::pin(async move {
+                match res {
+                    Ok(count) if count > 0 => {
+                        buf.resize(count, 0);
+                        Ok(Some(buf))
+                    }
+                    Ok(_) => Ok(None),
+                    Err(e) => Err(Error::FetchError(e.to_string())),
+                }
+            })
         }
     }
 
@@ -617,6 +659,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         let response: Box<dyn SuccessResponse> = Box::new(LocalResponse {
             url: url.to_string(),
             path,
+            open_file: None,
             status: 0,
             redirected: false,
         });

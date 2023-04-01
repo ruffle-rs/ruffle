@@ -20,6 +20,7 @@ use vfs::VfsPath;
 struct TestResponse {
     url: String,
     body: Vec<u8>,
+    chunk_gotten: bool,
     status: u16,
     redirected: bool,
 }
@@ -31,6 +32,16 @@ impl SuccessResponse for TestResponse {
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         Box::pin(async move { Ok(self.body) })
+    }
+
+    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+        if !self.chunk_gotten {
+            self.chunk_gotten = true;
+            let body = self.body.clone();
+            Box::pin(async move { Ok(Some(body)) })
+        } else {
+            Box::pin(async move { Ok(None) })
+        }
     }
 
     fn status(&self) -> u16 {
@@ -103,6 +114,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                 let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                     url: request.url().to_string(),
                     body: b"Hello, World!".to_vec(),
+                    chunk_gotten: false,
                     status: 200,
                     redirected: false,
                 });
@@ -216,6 +228,7 @@ impl NavigatorBackend for TestNavigatorBackend {
             let response: Box<dyn SuccessResponse> = Box::new(TestResponse {
                 url: url.to_string(),
                 body,
+                chunk_gotten: false,
                 status: 0,
                 redirected: false,
             });
