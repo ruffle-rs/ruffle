@@ -683,6 +683,7 @@ impl FormatSpans {
                             }
 
                             if let Some(color) = attribute(b"color") {
+                                // FIXME - handle alpha
                                 if color.starts_with(b'#') {
                                     let rval = color
                                         .slice(1..3)
