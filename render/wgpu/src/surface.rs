@@ -440,10 +440,8 @@ impl Surface {
                 aspect: Default::default(),
             },
             wgpu::Extent3d {
-                // FIXME - for some filters, this should be larger than the source size.
-                // Figure out exactly how much larger
-                width: (target.width()).min(source_size.0),
-                height: (target.height()).min(source_size.1),
+                width: (target.width()).min(dest_texture.width - dest_point.0),
+                height: (target.height()).min(dest_texture.height - dest_point.1),
                 depth_or_array_layers: 1,
             },
         )
@@ -569,6 +567,7 @@ impl Surface {
         source_size: (u32, u32),
         filter: &BlurFilter,
     ) -> CommandTarget {
+        // FIXME - this should be larger than the source texture. Figure out exactly how much larger
         let targets = [
             CommandTarget::new(
                 descriptors,
