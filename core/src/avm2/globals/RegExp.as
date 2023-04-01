@@ -27,5 +27,8 @@ package {
         prototype.test = function(str:String = ""):Boolean {
             return this.AS3::test(str);
         }
+        
+        prototype.setPropertyIsEnumerable("exec", false);
+        prototype.setPropertyIsEnumerable("test", false);
     }
 }
