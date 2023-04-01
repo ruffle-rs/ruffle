@@ -1519,7 +1519,6 @@ impl Player {
                 transform_stack: &mut self.transform_stack,
                 is_offscreen: false,
                 stage,
-                allow_mask: true,
             };
 
             stage.render(&mut render_context);

@@ -586,11 +586,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
         mask_transform.matrix *= m.local_to_global_matrix();
         context.commands.push_mask();
-        context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
-        context.allow_mask = true;
         context.commands.activate_mask();
     }
 
@@ -624,11 +622,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 
     if let Some(m) = mask {
         context.commands.deactivate_mask();
-        context.allow_mask = false;
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
         context.transform_stack.pop();
-        context.allow_mask = true;
         context.commands.pop_mask();
     }
 

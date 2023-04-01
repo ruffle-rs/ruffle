@@ -449,19 +449,15 @@ pub trait TDisplayObjectContainer<'gc>:
                 let (prev_clip_depth, clip_child) = clip_depth_stack.pop().unwrap();
                 clip_depth = prev_clip_depth;
                 context.commands.deactivate_mask();
-                context.allow_mask = false;
                 clip_child.render(context);
-                context.allow_mask = true;
                 context.commands.pop_mask();
             }
-            if context.allow_mask && child.clip_depth() > 0 && child.allow_as_mask() {
+            if child.clip_depth() > 0 && child.allow_as_mask() {
                 // Push and render the mask.
                 clip_depth_stack.push((clip_depth, child));
                 clip_depth = child.clip_depth();
                 context.commands.push_mask();
-                context.allow_mask = false;
                 child.render(context);
-                context.allow_mask = true;
                 context.commands.activate_mask();
             } else if child.visible() {
                 // Normal child.
@@ -472,9 +468,7 @@ pub trait TDisplayObjectContainer<'gc>:
         // Pop any remaining masks.
         for (_, clip_child) in clip_depth_stack.into_iter().rev() {
             context.commands.deactivate_mask();
-            context.allow_mask = false;
             clip_child.render(context);
-            context.allow_mask = true;
             context.commands.pop_mask();
         }
     }
