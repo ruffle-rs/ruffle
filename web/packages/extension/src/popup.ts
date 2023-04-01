@@ -1,5 +1,6 @@
 import * as utils from "./utils";
-import { Options, bindOptions } from "./common";
+import type { Options } from "./common";
+import { bindOptions } from "./common";
 import { buildInfo } from "ruffle-core";
 
 let activeTab: chrome.tabs.Tab | browser.tabs.Tab;

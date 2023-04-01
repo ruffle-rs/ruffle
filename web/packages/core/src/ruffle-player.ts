@@ -3,13 +3,8 @@ import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
-import {
-    DataLoadOptions,
-    URLLoadOptions,
-    AutoPlay,
-    UnmuteOverlay,
-    WindowMode,
-} from "./load-options";
+import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import { AutoPlay, UnmuteOverlay, WindowMode } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-file-name";
 import { buildInfo } from "./build-info";

@@ -1,4 +1,5 @@
-import { PublicAPI, BaseLoadOptions } from "ruffle-core";
+import { PublicAPI } from "ruffle-core";
+import type { BaseLoadOptions } from "ruffle-core";
 
 interface LoadMessage {
     type: "load";
