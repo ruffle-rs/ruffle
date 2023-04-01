@@ -12,7 +12,7 @@ use crate::{
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
 use gc_arena::MutationContext;
-use ruffle_render::backend::{Context3D, Context3DCommand};
+use ruffle_render::backend::Context3D;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use ruffle_render::commands::CommandList;
@@ -381,14 +381,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn context3d_present<'gc>(
         &mut self,
         context: &mut dyn Context3D,
-        commands: Vec<Context3DCommand<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), BitmapError> {
         let context = context
             .as_any_mut()
             .downcast_mut::<WgpuContext3D>()
             .unwrap();
-        context.present(commands, mc);
+        context.present(mc);
         Ok(())
     }
 

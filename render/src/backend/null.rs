@@ -12,7 +12,7 @@ use crate::shape_utils::DistilledShape;
 use gc_arena::MutationContext;
 use swf::Color;
 
-use super::{Context3D, Context3DCommand};
+use super::Context3D;
 
 pub struct NullBitmapSource;
 
@@ -89,7 +89,6 @@ impl RenderBackend for NullRenderer {
     fn context3d_present<'gc>(
         &mut self,
         _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         Err(Error::Unimplemented("Context3D.present".into()))

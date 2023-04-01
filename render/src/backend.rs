@@ -67,7 +67,6 @@ pub trait RenderBackend: Downcast {
     fn context3d_present<'gc>(
         &mut self,
         context: &mut dyn Context3D,
-        commands: Vec<Context3DCommand<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error>;
 
@@ -214,6 +213,12 @@ pub trait Context3D: Collect + Downcast {
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
+
+    fn process_command<'gc>(
+        &mut self,
+        command: Context3DCommand<'gc>,
+        mc: MutationContext<'gc, '_>,
+    );
 }
 impl_downcast!(Context3D);
 
