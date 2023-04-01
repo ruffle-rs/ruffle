@@ -9,7 +9,10 @@ use quick_xml::{
     Reader,
 };
 
-use crate::avm2::{error::type_error, TObject};
+use crate::{
+    avm2::{error::type_error, TObject},
+    xml::custom_unescape,
+};
 
 use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
 use crate::string::{WStr, WString};
@@ -300,7 +303,7 @@ impl<'gc> E4XNode<'gc> {
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs)?;
+                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -309,7 +312,7 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs)?;
+                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())?;
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
@@ -321,7 +324,7 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Event::Text(bt) => {
                     handle_text_cdata(
-                        bt.unescape()?.as_bytes(),
+                        custom_unescape(bt, parser.decoder())?.as_bytes(),
                         ignore_white,
                         &mut open_tags,
                         &mut top_level,
@@ -331,7 +334,7 @@ impl<'gc> E4XNode<'gc> {
                     )?;
                 }
                 Event::CData(bt) => {
-                    // This is alreayd unescaped
+                    // This is already unescaped
                     handle_text_cdata(
                         bt,
                         ignore_white,
@@ -348,7 +351,7 @@ impl<'gc> E4XNode<'gc> {
                     {
                         continue;
                     }
-                    let text = bt.unescape()?;
+                    let text = custom_unescape(bt, parser.decoder())?;
                     let text =
                         AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let kind = match event {
@@ -382,6 +385,7 @@ impl<'gc> E4XNode<'gc> {
     pub fn from_start_event(
         activation: &mut Activation<'_, 'gc>,
         bs: &BytesStart<'_>,
+        decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
         // FIXME - handle namespace
         let name =
@@ -395,7 +399,7 @@ impl<'gc> E4XNode<'gc> {
                 activation.context.gc_context,
                 attribute.key.into_inner(),
             );
-            let value_str = attribute.unescape_value()?;
+            let value_str = custom_unescape(&attribute.value, decoder)?;
             let value =
                 AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
