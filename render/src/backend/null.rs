@@ -9,7 +9,6 @@ use crate::commands::CommandList;
 use crate::error::Error;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
-use gc_arena::MutationContext;
 use swf::Color;
 
 use super::Context3D;
@@ -86,11 +85,7 @@ impl RenderBackend for NullRenderer {
         Err(Error::Unimplemented("createContext3D".into()))
     }
 
-    fn context3d_present<'gc>(
-        &mut self,
-        _context: &mut dyn Context3D,
-        _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
         Err(Error::Unimplemented("Context3D.present".into()))
     }
 
