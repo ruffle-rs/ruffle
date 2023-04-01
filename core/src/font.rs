@@ -289,6 +289,12 @@ impl<'gc> Font<'gc> {
                 // Step horizontally.
                 transform.matrix.tx += twips_advance;
                 x += twips_advance;
+            } else {
+                tracing::error!(
+                    "Font {:?} is misssing glyph for character {:?}",
+                    self.0.descriptor,
+                    c
+                );
             }
         }
     }
