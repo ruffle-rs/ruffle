@@ -9,7 +9,8 @@ use futures::{AsyncReadExt, AsyncWriteExt};
 use futures_lite::FutureExt;
 use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
-    config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
+    config::RedirectPolicy, prelude::*, AsyncBody, AsyncReadResponseExt, HttpClient,
+    Request as IsahcRequest, Response as IsahcResponse,
 };
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{
@@ -20,11 +21,13 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
-use std::io;
+use std::fs::File;
 use std::io::ErrorKind;
+use std::io::{self, Read};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
@@ -172,9 +175,21 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+        enum DesktopResponseBody {
+            /// The response's body comes from a file.
+            File(File),
+
+            /// The response's body comes from the network.
+            ///
+            /// This has to be stored in shared ownerhsip so that we can return
+            /// owned futures. A synchronous lock is used here as we do not
+            /// expect contention on this lock.
+            Network(Arc<Mutex<IsahcResponse<AsyncBody>>>),
+        }
+
         struct DesktopResponse {
             url: String,
-            body: Vec<u8>,
+            response_body: DesktopResponseBody,
             status: u16,
             redirected: bool,
         }
@@ -184,8 +199,28 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 std::borrow::Cow::Borrowed(&self.url)
             }
 
+            #[allow(clippy::await_holding_lock)]
             fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
-                Box::pin(async { Ok(self.body) })
+                match self.response_body {
+                    DesktopResponseBody::File(mut file) => Box::pin(async move {
+                        let mut body = vec![];
+                        file.read_to_end(&mut body)
+                            .map_err(|e| Error::FetchError(e.to_string()))?;
+
+                        Ok(body)
+                    }),
+                    DesktopResponseBody::Network(response) => Box::pin(async move {
+                        let mut body = vec![];
+                        response
+                            .lock()
+                            .expect("working lock during fetch body read")
+                            .copy_to(&mut body)
+                            .await
+                            .map_err(|e| Error::FetchError(e.to_string()))?;
+
+                        Ok(body)
+                    }),
+                }
             }
 
             fn status(&self) -> u16 {
@@ -194,6 +229,56 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
             fn redirected(&self) -> bool {
                 self.redirected
+            }
+
+            #[allow(clippy::await_holding_lock)]
+            fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+                match &mut self.response_body {
+                    DesktopResponseBody::File(file) => {
+                        let mut buf = vec![0; 4096];
+                        let res = file.read(&mut buf);
+
+                        Box::pin(async move {
+                            match res {
+                                Ok(count) if count > 0 => {
+                                    buf.resize(count, 0);
+                                    Ok(Some(buf))
+                                }
+                                Ok(_) => Ok(None),
+                                Err(e) => Err(Error::FetchError(e.to_string())),
+                            }
+                        })
+                    }
+                    DesktopResponseBody::Network(response) => {
+                        let response = response.clone();
+
+                        Box::pin(async move {
+                            let mut buf = vec![0; 4096];
+                            let lock = response.try_lock();
+                            if matches!(lock, Err(std::sync::TryLockError::WouldBlock)) {
+                                return Err(Error::FetchError(
+                                    "Concurrent read operations on the same stream are not supported."
+                                        .to_string(),
+                                ));
+                            }
+
+                            let result = lock
+                                .expect("desktop network lock")
+                                .body_mut()
+                                .read(&mut buf)
+                                .await;
+
+                            match result {
+                                Ok(count) if count > 0 => {
+                                    buf.resize(count, 0);
+                                    Ok(Some(buf))
+                                }
+                                Ok(_) => Ok(None),
+                                Err(e) => Err(Error::FetchError(e.to_string())),
+                            }
+                        })
+                    }
+                }
             }
         }
 
@@ -228,7 +313,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     }
                 };
 
-                let contents = std::fs::read(&path).or_else(|e| {
+                let contents = std::fs::File::open(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::FileDialog;
 
@@ -242,7 +327,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             if attempt_sandbox_open {
                                 FileDialog::new().set_directory(&path).pick_folder();
 
-                                return std::fs::read(&path);
+                                return std::fs::File::open(&path);
                             }
                         }
                     }
@@ -250,8 +335,8 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     Err(e)
                 });
 
-                let body = match contents {
-                    Ok(body) => body,
+                let file = match contents {
+                    Ok(file) => file,
                     Err(e) => {
                         return create_specific_fetch_error(
                             "Can't open file",
@@ -263,7 +348,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
                 let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                     url: response_url.to_string(),
-                    body,
+                    response_body: DesktopResponseBody::File(file),
                     status: 0,
                     redirected: false,
                 });
@@ -308,7 +393,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     error: Error::FetchError(e.to_string()),
                 })?;
 
-                let mut response = client.send_async(body).await.map_err(|e| {
+                let response = client.send_async(body).await.map_err(|e| {
                     let inner = match e.kind() {
                         isahc::error::ErrorKind::NameResolution => {
                             Error::InvalidDomain(processed_url.to_string())
@@ -339,18 +424,9 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     return Err(ErrorResponse { url, error });
                 }
 
-                let mut body = vec![];
-                response
-                    .copy_to(&mut body)
-                    .await
-                    .map_err(|e| ErrorResponse {
-                        url: url.clone(),
-                        error: Error::FetchError(e.to_string()),
-                    })?;
-
                 let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                     url,
-                    body,
+                    response_body: DesktopResponseBody::Network(Arc::new(Mutex::new(response))),
                     status,
                     redirected,
                 });

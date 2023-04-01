@@ -57,6 +57,8 @@ async-channel = "2.1.1"
 futures-util = { version = "0.3.30", features = ["sink"] }
 gloo-net =  { version = "0.5.0", default-features = false, features = ["websocket"] }
 rfd = { version = "0.13.0", features = ["file-handle-inner"] }
+wasm-streams = "0.3.0"
+futures = "0.3.0"
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -70,5 +72,5 @@ features = [
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element", "Event",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
     "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent",
-    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "RequestCredentials"
+    "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ReadableStream", "RequestCredentials"
 ]
