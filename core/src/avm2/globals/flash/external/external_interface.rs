@@ -21,7 +21,7 @@ pub fn call<'gc>(
             .call(&mut activation.context, &external_args)
             .into_avm2(activation))
     } else {
-        Ok(ExternalValue::check_avm2_value(Value::Undefined))
+        Ok(Value::Null)
     }
 }
 
