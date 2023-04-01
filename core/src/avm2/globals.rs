@@ -31,7 +31,7 @@ mod math;
 mod namespace;
 mod number;
 mod object;
-mod qname;
+mod q_name;
 mod reg_exp;
 mod string;
 mod toplevel;
@@ -469,7 +469,6 @@ pub fn load_player_globals<'gc>(
         namespace::create_class(activation),
         script
     );
-    avm2_system_class!(qname, activation, qname::create_class(activation), script);
     avm2_system_class!(array, activation, array::create_class(activation), script);
 
     function(activation, "", "trace", toplevel::trace, script)?;
@@ -602,6 +601,7 @@ fn load_playerglobal<'gc>(
         [
             ("", "Error", error),
             ("", "ArgumentError", argumenterror),
+            ("", "QName", qname),
             ("", "RangeError", rangeerror),
             ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
