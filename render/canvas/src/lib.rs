@@ -488,7 +488,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn context3d_present<'gc>(
         &mut self,
         _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         Err(Error::Unimplemented("Context3D.present".into()))

@@ -39,7 +39,6 @@ impl<'gc> Context3DObject<'gc> {
             Context3DData {
                 base,
                 render_context: Some(context),
-                commands: vec![],
             },
         ))
         .into();
@@ -61,16 +60,22 @@ impl<'gc> Context3DObject<'gc> {
         wants_best_resolution: bool,
         wants_best_resolution_on_browser_zoom: bool,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::ConfigureBackBuffer {
-                width,
-                height,
-                anti_alias,
-                depth_and_stencil,
-                wants_best_resolution,
-                wants_best_resolution_on_browser_zoom,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::ConfigureBackBuffer {
+                    width,
+                    height,
+                    anti_alias,
+                    depth_and_stencil,
+                    wants_best_resolution,
+                    wants_best_resolution_on_browser_zoom,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn create_index_buffer(
@@ -154,14 +159,20 @@ impl<'gc> Context3DObject<'gc> {
         data32_per_vertex: u8,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::UploadToVertexBuffer {
-                buffer: buffer.handle(),
-                data,
-                start_vertex,
-                data32_per_vertex,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::UploadToVertexBuffer {
+                    buffer: buffer.handle(),
+                    data,
+                    start_vertex,
+                    data32_per_vertex,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn upload_index_buffer_data(
@@ -171,13 +182,19 @@ impl<'gc> Context3DObject<'gc> {
         start_offset: usize,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::UploadToIndexBuffer {
-                buffer: buffer.handle(),
-                data,
-                start_offset,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::UploadToIndexBuffer {
+                    buffer: buffer.handle(),
+                    data,
+                    start_offset,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_vertex_buffer_at(
@@ -188,14 +205,20 @@ impl<'gc> Context3DObject<'gc> {
         buffer_format: Context3DVertexBufferFormat,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::SetVertexBufferAt {
-                index,
-                buffer: buffer.map(|b| b.handle()),
-                buffer_offset,
-                format: buffer_format,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetVertexBufferAt {
+                    index,
+                    buffer: buffer.map(|b| b.handle()),
+                    buffer_offset,
+                    format: buffer_format,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn create_program(
@@ -214,24 +237,35 @@ impl<'gc> Context3DObject<'gc> {
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::UploadShaders {
-                vertex_shader: program.vertex_shader_handle(),
-                vertex_shader_agal,
-                fragment_shader: program.fragment_shader_handle(),
-                fragment_shader_agal,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::UploadShaders {
+                    vertex_shader: program.vertex_shader_handle(),
+                    vertex_shader_agal,
+                    fragment_shader: program.fragment_shader_handle(),
+                    fragment_shader_agal,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_program(&self, activation: &mut Activation<'_, 'gc>, program: Program3DObject<'gc>) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::SetShaders {
-                vertex_shader: program.vertex_shader_handle(),
-                fragment_shader: program.fragment_shader_handle(),
-            });
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetShaders {
+                    vertex_shader: program.vertex_shader_handle(),
+                    fragment_shader: program.fragment_shader_handle(),
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn draw_triangles(
@@ -246,13 +280,19 @@ impl<'gc> Context3DObject<'gc> {
             num_triangles = (index_buffer.count() / 3) as i32;
         }
 
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::DrawTriangles {
-                index_buffer: index_buffer.handle(),
-                first_index: first_index as usize,
-                num_triangles: num_triangles as isize,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::DrawTriangles {
+                    index_buffer: index_buffer.handle(),
+                    first_index: first_index as usize,
+                    num_triangles: num_triangles as isize,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_program_constants_from_matrix(
@@ -262,20 +302,31 @@ impl<'gc> Context3DObject<'gc> {
         first_register: u32,
         matrix_raw_data_column_major: Vec<f32>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::SetProgramConstantsFromVector {
-                program_type,
-                first_register,
-                matrix_raw_data_column_major,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetProgramConstantsFromVector {
+                    program_type,
+                    first_register,
+                    matrix_raw_data_column_major,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_culling(&self, activation: &mut Activation<'_, 'gc>, face: Context3DTriangleFace) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::SetCulling { face });
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetCulling { face },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_blend_factors(
@@ -284,12 +335,18 @@ impl<'gc> Context3DObject<'gc> {
         source_factor: Context3DBlendFactor,
         destination_factor: Context3DBlendFactor,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::SetBlendFactors {
-                source_factor,
-                destination_factor,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetBlendFactors {
+                    source_factor,
+                    destination_factor,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_render_to_texture(
@@ -300,34 +357,43 @@ impl<'gc> Context3DObject<'gc> {
         anti_alias: u32,
         surface_selector: u32,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::SetRenderToTexture {
-                texture,
-                enable_depth_and_stencil,
-                anti_alias,
-                surface_selector,
-            },
-        );
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetRenderToTexture {
+                    texture,
+                    enable_depth_and_stencil,
+                    anti_alias,
+                    surface_selector,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub fn set_render_to_back_buffer(&self, activation: &mut Activation<'_, 'gc>) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::SetRenderToBackBuffer);
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetRenderToBackBuffer,
+                activation.context.gc_context,
+            );
     }
 
     pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
-        let commands = std::mem::take(&mut write.commands);
 
         let context: &mut dyn Context3D = write.render_context.as_deref_mut().unwrap();
 
-        activation.context.renderer.context3d_present(
-            context,
-            commands,
-            activation.context.gc_context,
-        )?;
+        activation
+            .context
+            .renderer
+            .context3d_present(context, activation.context.gc_context)?;
         Ok(())
     }
 
@@ -361,16 +427,21 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::Clear {
-                red,
-                green,
-                blue,
-                alpha,
-                depth,
-                stencil,
-                mask,
-            });
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::Clear {
+                    red,
+                    green,
+                    blue,
+                    alpha,
+                    depth,
+                    stencil,
+                    mask,
+                },
+                activation.context.gc_context,
+            )
     }
 
     pub(crate) fn copy_bitmap_to_texture(
@@ -380,13 +451,19 @@ impl<'gc> Context3DObject<'gc> {
         layer: u32,
         activation: &mut Activation<'_, 'gc>,
     ) {
-        self.0.write(activation.context.gc_context).commands.push(
-            Context3DCommand::CopyBitmapToTexture {
-                source,
-                dest,
-                layer,
-            },
-        )
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::CopyBitmapToTexture {
+                    source,
+                    dest,
+                    layer,
+                },
+                activation.context.gc_context,
+            )
     }
 
     pub(crate) fn set_texture_at(
@@ -398,12 +475,17 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::SetTextureAt {
-                sampler,
-                texture,
-                cube,
-            })
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetTextureAt {
+                    sampler,
+                    texture,
+                    cube,
+                },
+                activation.context.gc_context,
+            )
     }
 
     pub(crate) fn set_depth_test(
@@ -414,11 +496,16 @@ impl<'gc> Context3DObject<'gc> {
     ) {
         self.0
             .write(activation.context.gc_context)
-            .commands
-            .push(Context3DCommand::SetDepthTest {
-                depth_mask,
-                pass_compare_mode,
-            })
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetDepthTest {
+                    depth_mask,
+                    pass_compare_mode,
+                },
+                activation.context.gc_context,
+            );
     }
 
     pub(crate) fn create_cube_texture(
@@ -459,8 +546,6 @@ pub struct Context3DData<'gc> {
 
     #[collect(require_static)]
     render_context: Option<Box<dyn Context3D>>,
-
-    commands: Vec<Context3DCommand<'gc>>,
 }
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {

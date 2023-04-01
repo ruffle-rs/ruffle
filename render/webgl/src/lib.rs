@@ -1066,7 +1066,6 @@ impl RenderBackend for WebGlRenderBackend {
     fn context3d_present<'gc>(
         &mut self,
         _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), BitmapError> {
         Err(BitmapError::Unimplemented("Context3D.present".into()))
