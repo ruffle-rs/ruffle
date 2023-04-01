@@ -38,7 +38,7 @@
         "postbuild": "node tools/set_version.js",
 
         "docs": "typedoc",
-        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
+        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
     },
     "dependencies": {
         "wasm-feature-detect": "^1.5.1"
