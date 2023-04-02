@@ -198,9 +198,23 @@ pub fn play<'gc>(
 pub fn extract<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
+
+    let bytearray = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation)?;
+    let length = args
+        .get(1)
+        .unwrap_or(&Value::Number(0.0))
+        .coerce_to_number(activation)?;
+
+    if let Some(mut bytearray) = bytearray.as_bytearray_mut(activation.context.gc_context) {
+        bytearray.write_bytes(vec![0u8; length.ceil() as usize].as_slice())?;
+    }
+
     Ok(Value::Undefined)
 }
 
