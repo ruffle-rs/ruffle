@@ -191,6 +191,28 @@ impl<'gc> E4XNode<'gc> {
             Ok(())
         }
 
+        // Inbuilt trim_ascii is behind an unstable feature
+        // So the method was moved out in order to use it for the time being
+        const fn trim_ascii(bytes: &[u8]) -> &[u8] {
+            let mut bytes = bytes;
+            while let [first, rest @ ..] = bytes {
+                if first.is_ascii_whitespace() {
+                    bytes = rest;
+                } else {
+                    break;
+                }
+            }
+            while let [rest @ .., last] = bytes {
+                if last.is_ascii_whitespace() {
+                    bytes = rest;
+                } else {
+                    break;
+                }
+            }
+
+            bytes
+        }
+
         loop {
             let event = parser.read_event(&mut buf).map_err(|error| {
                 Error::RustError(format!("XML parsing error: {error:?}").into())
@@ -222,14 +244,14 @@ impl<'gc> E4XNode<'gc> {
                     let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
                     let is_whitespace_text = text.iter().all(is_whitespace_char);
                     if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let text = if matches!(event, Event::Text { .. }) {
-                            AvmString::new_utf8(
-                                activation.context.gc_context,
-                                std::str::from_utf8(&text).unwrap().trim(),
-                            )
-                        } else {
-                            AvmString::new_utf8_bytes(activation.context.gc_context, &text)
-                        };
+                        let text = AvmString::new_utf8_bytes(
+                            activation.context.gc_context,
+                            if matches!(event, Event::Text { .. }) {
+                                trim_ascii(&text)
+                            } else {
+                                &text
+                            },
+                        );
 
                         let node = E4XNode(GcCell::allocate(
                             activation.context.gc_context,
