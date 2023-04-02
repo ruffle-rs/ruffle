@@ -77,10 +77,15 @@ pub fn constructor<'gc>(
     }
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        bitmap_data
-            .bitmap_data()
-            .write(activation.context.gc_context)
-            .init_pixels(width, height, transparency, fill_color);
+        let (sync, _) = bitmap_data
+            .bitmap_data_wrapper()
+            .overwrite_cpu_pixels_from_gpu(&mut activation.context);
+        sync.write(activation.context.gc_context).init_pixels(
+            width,
+            height,
+            transparency,
+            fill_color,
+        );
     }
 
     Ok(this.into())
