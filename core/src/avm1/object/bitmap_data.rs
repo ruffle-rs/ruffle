@@ -28,10 +28,6 @@ impl fmt::Debug for BitmapDataObject<'_> {
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    pub fn bitmap_data(&self) -> GcCell<'gc, BitmapData<'gc>> {
-        self.0.read().data.sync()
-    }
-
     pub fn bitmap_data_wrapper(&self) -> BitmapDataWrapper<'gc> {
         self.0.read().data
     }
