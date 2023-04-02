@@ -7,11 +7,10 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 use crate::avm2::parameters::ParametersExt;
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::character::Character;
 use crate::display_object::{Bitmap, TDisplayObject};
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use gc_arena::GcCell;
 
 /// Implements `flash.display.Bitmap`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
@@ -85,12 +84,8 @@ pub fn init<'gc>(
             //We are being initialized by AVM2 (and aren't associated with a
             //Bitmap subclass).
 
-            let bitmap_data = bitmap_data.unwrap_or_else(|| {
-                BitmapDataWrapper::new(GcCell::allocate(
-                    activation.context.gc_context,
-                    BitmapData::dummy(),
-                ))
-            });
+            let bitmap_data = bitmap_data
+                .unwrap_or_else(|| BitmapDataWrapper::dummy(activation.context.gc_context));
 
             let bitmap =
                 Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, smoothing);
@@ -136,10 +131,7 @@ pub fn set_bitmap_data<'gc>(
     {
         let bitmap_data = args.get(0).unwrap_or(&Value::Null);
         let bitmap_data = if matches!(bitmap_data, Value::Null) {
-            BitmapDataWrapper::new(GcCell::allocate(
-                activation.context.gc_context,
-                BitmapData::dummy(),
-            ))
+            BitmapDataWrapper::dummy(activation.context.gc_context)
         } else {
             bitmap_data
                 .coerce_to_object(activation)?
