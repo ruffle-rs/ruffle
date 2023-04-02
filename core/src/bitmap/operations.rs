@@ -49,8 +49,8 @@ pub fn fill_rect<'gc>(
     let mut write = target.write(mc);
     let color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
-    for x in rect.x_min..rect.x_max {
-        for y in rect.y_min..rect.y_max {
+    for y in rect.y_min..rect.y_max {
+        for x in rect.x_min..rect.x_max {
             write.set_pixel32_raw(x, y, color);
         }
     }
@@ -382,8 +382,8 @@ pub fn copy_channel<'gc>(
     let target = target.sync();
     let mut write = target.write(mc);
 
-    for x in source_region.x_min..source_region.x_max {
-        for y in source_region.y_min..source_region.y_max {
+    for y in source_region.y_min..source_region.y_max {
+        for x in source_region.x_min..source_region.x_max {
             let dst_x = x as i32 + min_x as i32;
             let dst_y = y as i32 + min_y as i32;
             if write.is_point_in_bounds(dst_x, dst_y) {
@@ -468,8 +468,8 @@ pub fn color_transform<'gc>(
     let mut write = target.write(mc);
     let transparency = write.transparency();
 
-    for x in x_min..x_max {
-        for y in y_min..y_max {
+    for y in y_min..y_max {
+        for x in x_min..x_max {
             let color = write.get_pixel32_raw(x, y).to_un_multiplied_alpha();
 
             let color = color_transform * swf::Color::from(color);
@@ -780,8 +780,8 @@ pub fn hit_test_rectangle(
     region.clamp(target.width(), target.height());
     let read = target.read_area(region);
 
-    for x in region.x_min..region.x_max {
-        for y in region.y_min..region.y_max {
+    for y in region.y_min..region.y_max {
+        for x in region.x_min..region.x_max {
             if read.get_pixel32_raw(x, y).alpha() as u32 >= alpha_threshold {
                 return true;
             }
