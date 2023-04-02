@@ -98,7 +98,7 @@ pub fn height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().read().height().into());
+            return Ok(bitmap_data.bitmap_data_wrapper().height().into());
         }
     }
 
@@ -112,7 +112,7 @@ pub fn width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            return Ok(bitmap_data.bitmap_data().read().width().into());
+            return Ok(bitmap_data.bitmap_data_wrapper().width().into());
         }
     }
 
@@ -292,11 +292,11 @@ pub fn copy_channel<'gc>(
                 let min_x = dest_point
                     .get("x", activation)?
                     .coerce_to_u32(activation)?
-                    .min(bitmap_data.bitmap_data().read().width());
+                    .min(bitmap_data.bitmap_data_wrapper().width());
                 let min_y = dest_point
                     .get("y", activation)?
                     .coerce_to_u32(activation)?
-                    .min(bitmap_data.bitmap_data().read().height());
+                    .min(bitmap_data.bitmap_data_wrapper().height());
 
                 let src_min_x = source_rect
                     .get("x", activation)?
