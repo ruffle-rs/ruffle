@@ -5,7 +5,7 @@ use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use ruffle_render::quality::StageQuality;
-use swf::{ColorTransform, Fixed8};
+use swf::{ColorTransform, Fixed8, Rectangle};
 
 fn get_display_object<'gc>(
     this: Object<'gc>,
@@ -245,4 +245,30 @@ pub fn object_to_matrix<'gc>(
     );
 
     Ok(Matrix { a, b, c, d, tx, ty })
+}
+
+pub fn get_pixel_bounds<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.unwrap();
+    let display_object = get_display_object(this, activation)?;
+    rectangle_to_object(display_object.world_bounds(), activation)
+}
+
+fn rectangle_to_object<'gc>(
+    rectangle: Rectangle<Twips>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let object = activation.avm2().classes().rectangle.construct(
+        activation,
+        &[
+            rectangle.x_min.to_pixels().into(),
+            rectangle.y_min.to_pixels().into(),
+            rectangle.width().to_pixels().into(),
+            rectangle.height().to_pixels().into(),
+        ],
+    )?;
+    Ok(object.into())
 }
