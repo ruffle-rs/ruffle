@@ -279,6 +279,26 @@ mod wrapper {
             BitmapDataWrapper(data)
         }
 
+        // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
+        // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
+        // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
+        // be inaccessible to AS3 code.
+        pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
+            BitmapDataWrapper(GcCell::allocate(
+                mc,
+                BitmapData {
+                    pixels: Vec::new(),
+                    width: 0,
+                    height: 0,
+                    transparency: false,
+                    disposed: true,
+                    bitmap_handle: None,
+                    avm2_object: None,
+                    dirty_state: DirtyState::Clean,
+                },
+            ))
+        }
+
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
         // is in progress, waits for it to complete
         pub fn sync(&self) -> GcCell<'gc, BitmapData<'gc>> {
@@ -444,23 +464,6 @@ impl fmt::Debug for BitmapData<'_> {
 }
 
 impl<'gc> BitmapData<'gc> {
-    // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
-    // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
-    // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
-    // be inaccessible to AS3 code.
-    pub fn dummy() -> Self {
-        BitmapData {
-            pixels: Vec::new(),
-            width: 0,
-            height: 0,
-            transparency: false,
-            disposed: true,
-            bitmap_handle: None,
-            avm2_object: None,
-            dirty_state: DirtyState::Clean,
-        }
-    }
-
     pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
         self.width = width;
         self.height = height;
