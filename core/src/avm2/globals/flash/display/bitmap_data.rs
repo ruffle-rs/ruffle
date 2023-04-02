@@ -31,8 +31,8 @@ use crate::display_object::TDisplayObject;
 pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: Bitmap<'gc>,
-    new_bitmap_data: GcCell<'gc, BitmapData<'gc>>,
-) {
+) -> BitmapDataWrapper<'gc> {
+    let new_bitmap_data = GcCell::allocate(activation.context.gc_context, BitmapData::default());
     new_bitmap_data
         .write(activation.context.gc_context)
         .set_pixels(
@@ -41,6 +41,7 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
             true,
             bd.bitmap_data().read().pixels().to_vec(),
         );
+    BitmapDataWrapper::new(new_bitmap_data)
 }
 
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
@@ -72,13 +73,13 @@ pub fn init<'gc>(
                         .cloned()
                 });
 
-            let new_bitmap_data =
-                GcCell::allocate(activation.context.gc_context, BitmapData::default());
-
-            if let Some(Character::Bitmap(bitmap)) = character {
+            let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
                 // Instantiating BitmapData from an Animate-style bitmap asset
-                fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
+                fill_bitmap_data_from_symbol(activation, bitmap)
             } else {
+                let new_bitmap_data =
+                    GcCell::allocate(activation.context.gc_context, BitmapData::default());
+
                 if character.is_some() {
                     //TODO: Determine if mismatched symbols will still work as a
                     //regular BitmapData subclass, or if this should throw
@@ -100,15 +101,11 @@ pub fn init<'gc>(
                 new_bitmap_data
                     .write(activation.context.gc_context)
                     .init_pixels(width, height, transparency, fill_color as i32);
-            }
+                BitmapDataWrapper::new(new_bitmap_data)
+            };
 
-            new_bitmap_data
-                .write(activation.context.gc_context)
-                .init_object2(this);
-            this.init_bitmap_data(
-                activation.context.gc_context,
-                BitmapDataWrapper::new(new_bitmap_data),
-            );
+            new_bitmap_data.init_object2(activation.context.gc_context, this);
+            this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
         }
     }
 

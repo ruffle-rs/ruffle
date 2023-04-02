@@ -56,13 +56,10 @@ pub fn init<'gc>(
                         .character_by_id(symbol_id)
                         .cloned()
                     {
-                        let new_bitmap_data =
-                            GcCell::allocate(activation.context.gc_context, BitmapData::default());
-
-                        fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
+                        let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap);
                         BitmapDataObject::from_bitmap_data(
                             activation,
-                            BitmapDataWrapper::new(new_bitmap_data),
+                            new_bitmap_data,
                             activation.context.avm2.classes().bitmapdata,
                         )?
                     } else {
