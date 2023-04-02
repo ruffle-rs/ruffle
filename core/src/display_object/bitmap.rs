@@ -191,15 +191,15 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_bitmap_data(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
+        bitmap_data: BitmapDataWrapper<'gc>,
     ) {
         let mut write = self.0.write(context.gc_context);
         // Refresh our cached values, even if we're writing the same BitmapData
         // that we currently have stored. This will update them to '0' if the
         // BitmapData has been disposed since it was originally set.
-        write.width = bitmap_data.read().width();
-        write.height = bitmap_data.read().height();
-        write.bitmap_data = BitmapDataWrapper::new(bitmap_data);
+        write.width = bitmap_data.width();
+        write.height = bitmap_data.height();
+        write.bitmap_data = bitmap_data;
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
