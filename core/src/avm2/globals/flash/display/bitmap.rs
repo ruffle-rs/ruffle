@@ -139,11 +139,14 @@ pub fn set_bitmap_data<'gc>(
     {
         let bitmap_data = args.get(0).unwrap_or(&Value::Null);
         let bitmap_data = if matches!(bitmap_data, Value::Null) {
-            GcCell::allocate(activation.context.gc_context, BitmapData::dummy())
+            BitmapDataWrapper::new(GcCell::allocate(
+                activation.context.gc_context,
+                BitmapData::dummy(),
+            ))
         } else {
             bitmap_data
                 .coerce_to_object(activation)?
-                .as_bitmap_data()
+                .as_bitmap_data_wrapper()
                 .ok_or_else(|| Error::RustError("Argument was not a BitmapData".into()))?
         };
         bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
