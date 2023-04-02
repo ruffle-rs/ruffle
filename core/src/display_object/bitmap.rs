@@ -52,7 +52,7 @@ pub enum BitmapClass<'gc> {
 /// It can also be created in ActionScript using the `Bitmap` class.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
+pub struct Bitmap<'gc>(GcCell<'gc, BitmapGraphicData<'gc>>);
 
 impl fmt::Debug for Bitmap<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -64,7 +64,7 @@ impl fmt::Debug for Bitmap<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct BitmapData<'gc> {
+pub struct BitmapGraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     id: CharacterId,
     movie: Arc<SwfMovie>,
@@ -113,7 +113,7 @@ impl<'gc> Bitmap<'gc> {
 
         Bitmap(GcCell::allocate(
             context.gc_context,
-            BitmapData {
+            BitmapGraphicData {
                 base: Default::default(),
                 id,
                 bitmap_data,
