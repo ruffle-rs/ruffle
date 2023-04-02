@@ -50,7 +50,7 @@ pub fn init<'gc>(
     if let Some(this) = this {
         activation.super_init(this, &[])?;
 
-        if this.as_bitmap_data().is_none() {
+        if this.as_bitmap_data_wrapper().is_none() {
             let name = this.instance_of_class_definition().map(|c| c.read().name());
             let character = this
                 .instance_of()
