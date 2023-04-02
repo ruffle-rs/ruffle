@@ -210,7 +210,7 @@ pub fn set_pixel<'gc>(
                 let color = color_val.coerce_to_i32(activation)?;
 
                 operations::set_pixel(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     x,
                     y,
@@ -240,7 +240,7 @@ pub fn set_pixel32<'gc>(
                 let color = color_val.coerce_to_i32(activation)?;
 
                 operations::set_pixel32(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     x,
                     y,
@@ -312,7 +312,7 @@ pub fn copy_channel<'gc>(
                     .coerce_to_u32(activation)?;
 
                 operations::copy_channel(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     (min_x, min_y),
                     (src_min_x, src_min_y, src_width, src_height),
@@ -354,7 +354,7 @@ pub fn fill_rect<'gc>(
                     .coerce_to_i32(activation)?;
 
                 operations::fill_rect(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     x,
                     y,
@@ -421,7 +421,7 @@ pub fn flood_fill<'gc>(
                 let color = color_val.coerce_to_i32(activation)?;
 
                 operations::flood_fill(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     x,
                     y,
@@ -463,7 +463,7 @@ pub fn noise<'gc>(
             if let Some(random_seed_val) = args.get(0) {
                 let random_seed = random_seed_val.coerce_to_i32(activation)?;
                 operations::noise(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     random_seed,
                     low,
@@ -624,7 +624,7 @@ pub fn color_transform<'gc>(
                 };
 
                 operations::color_transform(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data.bitmap_data(),
                     x_min,
                     y_min,
@@ -732,7 +732,7 @@ pub fn perlin_noise<'gc>(
             let octave_offsets = octave_offsets?;
 
             operations::perlin_noise(
-                &mut activation.context,
+                activation.context.gc_context,
                 bitmap_data.bitmap_data(),
                 (base_x, base_y),
                 num_octaves,
@@ -940,7 +940,7 @@ pub fn copy_pixels<'gc>(
                                 as i32;
 
                             operations::copy_pixels_with_alpha_source(
-                                &mut activation.context,
+                                activation.context.gc_context,
                                 bitmap_data.bitmap_data(),
                                 src_bitmap.bitmap_data(),
                                 (src_min_x, src_min_y, src_width, src_height),
@@ -952,7 +952,7 @@ pub fn copy_pixels<'gc>(
                         }
                     } else {
                         operations::copy_pixels(
-                            &mut activation.context,
+                            activation.context.gc_context,
                             bitmap_data.bitmap_data(),
                             src_bitmap.bitmap_data(),
                             (src_min_x, src_min_y, src_width, src_height),
@@ -1033,7 +1033,7 @@ pub fn merge<'gc>(
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
                     operations::merge(
-                        &mut activation.context,
+                        activation.context.gc_context,
                         bitmap_data.bitmap_data(),
                         src_bitmap.bitmap_data(),
                         (src_min_x, src_min_y, src_width, src_height),
@@ -1112,7 +1112,7 @@ pub fn palette_map<'gc>(
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
                     operations::palette_map(
-                        &mut activation.context,
+                        activation.context.gc_context,
                         bitmap_data.bitmap_data(),
                         src_bitmap.bitmap_data(),
                         (src_min_x, src_min_y, src_width, src_height),
@@ -1160,7 +1160,12 @@ pub fn scroll<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            operations::scroll(&mut activation.context, bitmap_data.bitmap_data(), x, y);
+            operations::scroll(
+                activation.context.gc_context,
+                bitmap_data.bitmap_data(),
+                x,
+                y,
+            );
 
             return Ok(Value::Undefined);
         }
@@ -1237,7 +1242,7 @@ pub fn threshold<'gc>(
             if let Some(src_bitmap) = source_bitmap.as_bitmap_data_object() {
                 if !src_bitmap.disposed() {
                     let modified_count = operations::threshold(
-                        &mut activation.context,
+                        activation.context.gc_context,
                         bitmap_data.bitmap_data(),
                         src_bitmap.bitmap_data(),
                         (src_min_x, src_min_y, src_width, src_height),
