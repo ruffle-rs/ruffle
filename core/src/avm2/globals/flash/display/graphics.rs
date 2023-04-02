@@ -52,7 +52,7 @@ pub fn begin_bitmap_fill<'gc>(
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
-            .as_bitmap_data_wrapper()
+            .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
             Matrix::from(object_to_matrix(matrix, activation)?)
@@ -890,7 +890,7 @@ pub fn line_bitmap_style<'gc>(
     if let Some(this) = this.and_then(|t| t.as_display_object()) {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
-            .as_bitmap_data_wrapper()
+            .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(activation, 1) {
             Matrix::from(object_to_matrix(matrix, activation)?)

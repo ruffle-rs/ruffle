@@ -89,7 +89,7 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
+    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
         self.0.read().bitmap_data
     }
 
