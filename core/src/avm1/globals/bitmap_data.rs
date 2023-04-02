@@ -1364,12 +1364,13 @@ pub fn load_bitmap<'gc>(
         let height = bitmap.height() as u32;
 
         let pixels: Vec<_> = bitmap.bitmap_data().read().pixels().to_vec();
-
-        new_bitmap_data
+        let (sync, _) = new_bitmap_data
             .as_bitmap_data_object()
             .unwrap()
-            .bitmap_data()
-            .write(activation.context.gc_context)
+            .bitmap_data_wrapper()
+            .overwrite_cpu_pixels_from_gpu(&mut activation.context);
+
+        sync.write(activation.context.gc_context)
             .set_pixels(width, height, true, pixels);
 
         return Ok(new_bitmap_data.into());
