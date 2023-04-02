@@ -247,7 +247,7 @@ fn attach_bitmap<'gc>(
         if let Some(bitmap_data) = bitmap
             .coerce_to_object(activation)
             .as_bitmap_data_object()
-            .map(|bd| bd.bitmap_data_wrapper())
+            .map(|bd| bd.bitmap_data())
         {
             if let Some(depth) = args.get(1) {
                 let depth = depth
@@ -400,7 +400,7 @@ fn begin_bitmap_fill<'gc>(
         .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
     {
         // Register the bitmap data with the drawing.
-        let bitmap_data = bitmap_data.bitmap_data_wrapper();
+        let bitmap_data = bitmap_data.bitmap_data();
         let handle =
             bitmap_data.bitmap_handle(activation.context.gc_context, activation.context.renderer);
         let bitmap = ruffle_render::bitmap::BitmapInfo {
