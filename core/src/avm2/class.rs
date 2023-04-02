@@ -19,7 +19,6 @@ use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
 };
 
-use super::method::ParamConfig;
 use super::string::AvmString;
 
 bitflags! {
@@ -338,11 +337,10 @@ impl<'gc> Class<'gc> {
                 let method = Method::from_builtin_and_params(
                     table_native_call_handler,
                     name,
-                    vec![ParamConfig::of_type(
-                        "val",
-                        Multiname::any(activation.context.gc_context),
-                    )],
-                    false,
+                    // A 'callable' class doesn't have a signature - let the
+                    // method do any needed coercions
+                    vec![],
+                    true,
                     activation.context.gc_context,
                 );
                 native_call_handler = Some(method);

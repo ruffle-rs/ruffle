@@ -1,5 +1,6 @@
 import * as utils from "./utils";
-import { PublicAPI, Letterbox } from "ruffle-core";
+import { PublicAPI } from "ruffle-core";
+import type { Letterbox } from "ruffle-core";
 
 const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
 window.RufflePlayer = api;
@@ -26,7 +27,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const options = await utils.getOptions();
     const config = {
-        letterbox: Letterbox.On,
+        letterbox: "on" as Letterbox,
         ...options,
     };
     player.load({

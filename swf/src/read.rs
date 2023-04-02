@@ -846,7 +846,7 @@ impl<'a> Reader<'a> {
         let color_transform = if version >= 2 {
             self.read_color_transform(true)?
         } else {
-            ColorTransform::new()
+            ColorTransform::IDENTITY
         };
         let mut filters = vec![];
         if (flags & 0b1_0000) != 0 {

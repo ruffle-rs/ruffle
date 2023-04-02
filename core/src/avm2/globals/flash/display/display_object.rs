@@ -595,7 +595,7 @@ pub fn get_mouse_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
 
         return Ok(local_mouse.0.to_pixels().into());
     }
@@ -610,7 +610,7 @@ pub fn get_mouse_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
 
         return Ok(local_mouse.1.to_pixels().into());
     }
@@ -893,7 +893,8 @@ pub fn global_to_local<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
-        let (out_x, out_y) = dobj.global_to_local((Twips::from_pixels(x), Twips::from_pixels(y)));
+        let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
+        let (out_x, out_y) = dobj.global_to_local(pt).unwrap_or(pt);
         return Ok(activation
             .avm2()
             .classes()
@@ -928,7 +929,7 @@ pub fn get_bounds<'gc>(
             // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = dobj.local_to_global_matrix();
-            let to_target_matrix = target.global_to_local_matrix();
+            let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
             to_target_matrix * to_global_matrix * bounds
         };
 
@@ -1005,28 +1006,34 @@ pub fn set_cache_as_bitmap<'gc>(
 
 /// `opaqueBackground`'s getter.
 pub fn get_opaque_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.display.DisplayObject",
-        "opaqueBackground"
-    );
+    if let Some(color) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.opaque_background())
+    {
+        return Ok(color.to_rgb().into());
+    }
+
     Ok(Value::Null)
 }
 
 /// `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(
-        activation,
-        "flash.display.DisplayObject",
-        "opaqueBackground"
-    );
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let color = match value {
+            Value::Null | Value::Undefined => None,
+            value => Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
+        };
+        dobj.set_opaque_background(activation.context.gc_context, color);
+    }
+
     Ok(Value::Undefined)
 }

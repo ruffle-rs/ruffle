@@ -117,7 +117,7 @@ pub struct Activation<'a, 'gc: 'a> {
     ///
     /// If this activation was not made for a builtin method, this will be the
     /// current domain instead.
-    caller_domain: Domain<'gc>,
+    caller_domain: Option<Domain<'gc>>,
 
     /// The class that yielded the currently executing method.
     ///
@@ -176,7 +176,38 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             return_value: None,
             outer: ScopeChain::new(context.avm2.globals),
-            caller_domain: context.avm2.globals,
+            caller_domain: None,
+            subclass_object: None,
+            activation_class: None,
+            stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
+            max_stack_size: 0,
+            max_scope_size: 0,
+            context,
+        }
+    }
+
+    /// Like `from_nothing`, but with a specified domain.
+    ///
+    /// This should be used when you actually need to run AVM2 code, but
+    /// don't have a particular scope to run it in. For example, this is
+    /// used to run frame scripts for AVM2 movies.
+    ///
+    /// The 'Domain' should come from the SwfMovie associated with whatever
+    /// action you're performing. When running frame scripts, this is the
+    /// `SwfMovie` associated with the `MovieClip` being processed.
+    pub fn from_domain(context: UpdateContext<'a, 'gc>, domain: Domain<'gc>) -> Self {
+        let local_registers = RegisterSet::new(0);
+
+        Self {
+            this: None,
+            arguments: None,
+            is_executing: false,
+            actions_since_timeout_check: 0,
+            local_registers,
+            return_value: None,
+            outer: ScopeChain::new(context.avm2.globals),
+            caller_domain: Some(domain),
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -220,7 +251,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             return_value: None,
             outer: ScopeChain::new(domain),
-            caller_domain: domain,
+            caller_domain: Some(domain),
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -443,7 +474,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 drop(cached_cls);
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
-                let mut dummy_activation = Activation::from_nothing(context.reborrow());
+                let mut dummy_activation =
+                    Activation::from_domain(context.reborrow(), outer.domain());
                 dummy_activation.set_outer(outer);
                 let activation_class = Class::for_activation(
                     &mut dummy_activation,
@@ -472,7 +504,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             return_value: None,
             outer,
-            caller_domain: outer.domain(),
+            caller_domain: Some(outer.domain()),
             subclass_object,
             activation_class,
             stack_depth: context.avm2.stack.len(),
@@ -555,7 +587,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             return_value: None,
             outer,
-            caller_domain,
+            caller_domain: Some(caller_domain),
             subclass_object,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -641,7 +673,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns the domain of the original AS3 caller.
     pub fn caller_domain(&self) -> Domain<'gc> {
-        self.caller_domain
+        self.caller_domain.expect("No caller domain available - use Activation::from_domain when constructing your domain")
     }
 
     /// Returns the global scope of this activation.

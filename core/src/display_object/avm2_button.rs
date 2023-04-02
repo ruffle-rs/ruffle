@@ -171,7 +171,7 @@ impl<'gc> Avm2Button<'gc> {
         // It applies color transforms to every character in a button, in sequence(?).
         for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
         {
-            record.color_transform = color_transform.clone();
+            record.color_transform = *color_transform;
         }
     }
 
@@ -210,10 +210,7 @@ impl<'gc> Avm2Button<'gc> {
                         child.set_depth(context.gc_context, record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {
-                            child.set_color_transform(
-                                context.gc_context,
-                                record.color_transform.clone().into(),
-                            );
+                            child.set_color_transform(context.gc_context, record.color_transform);
                         }
 
                         children.push((child, record.depth));
@@ -634,7 +631,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 let mut point = point;
                 if child.parent().is_none() {
                     // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = self.global_to_local(point);
+                    point = if let Some(point) = self.global_to_local(point) {
+                        point
+                    } else {
+                        return false;
+                    }
                 }
 
                 if child.hit_test_shape(context, point, options) {
@@ -796,7 +797,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
                 let mut point = point;
                 if hit_area.parent().is_none() {
                     // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = self.global_to_local(point);
+                    point = if let Some(point) = self.global_to_local(point) {
+                        point
+                    } else {
+                        return Avm2MousePick::Miss;
+                    }
                 }
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
                     return Avm2MousePick::Hit((*self).into());

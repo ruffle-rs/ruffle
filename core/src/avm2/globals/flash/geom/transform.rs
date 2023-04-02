@@ -1,13 +1,11 @@
-#![allow(non_snake_case)]
-
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
-use crate::prelude::{ColorTransform, DisplayObject, Matrix, Twips};
+use crate::prelude::{DisplayObject, Matrix, Twips};
 use ruffle_render::quality::StageQuality;
-use swf::Fixed8;
+use swf::{ColorTransform, Fixed8};
 
 fn get_display_object<'gc>(
     this: Object<'gc>,
@@ -43,10 +41,9 @@ pub fn get_color_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.unwrap();
-    let ct_obj = *get_display_object(this, activation)?
-        .base()
-        .color_transform();
-    color_transform_to_object(&ct_obj, activation)
+    let display_object = get_display_object(this, activation)?;
+    let display_object = display_object.base();
+    color_transform_to_object(display_object.color_transform(), activation)
 }
 
 pub fn set_color_transform<'gc>(
@@ -170,10 +167,10 @@ pub fn object_to_color_transform<'gc>(
         .get_public_property("alphaOffset", activation)?
         .coerce_to_number(activation)?;
     Ok(ColorTransform {
-        r_mult: Fixed8::from_f64(red_multiplier),
-        g_mult: Fixed8::from_f64(green_multiplier),
-        b_mult: Fixed8::from_f64(blue_multiplier),
-        a_mult: Fixed8::from_f64(alpha_multiplier),
+        r_multiply: Fixed8::from_f64(red_multiplier),
+        g_multiply: Fixed8::from_f64(green_multiplier),
+        b_multiply: Fixed8::from_f64(blue_multiplier),
+        a_multiply: Fixed8::from_f64(alpha_multiplier),
         r_add: red_offset as i16,
         g_add: green_offset as i16,
         b_add: blue_offset as i16,
@@ -186,10 +183,10 @@ pub fn color_transform_to_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        color_transform.r_mult.to_f64().into(),
-        color_transform.g_mult.to_f64().into(),
-        color_transform.b_mult.to_f64().into(),
-        color_transform.a_mult.to_f64().into(),
+        color_transform.r_multiply.to_f64().into(),
+        color_transform.g_multiply.to_f64().into(),
+        color_transform.b_multiply.to_f64().into(),
+        color_transform.a_multiply.to_f64().into(),
         color_transform.r_add.into(),
         color_transform.g_add.into(),
         color_transform.b_add.into(),

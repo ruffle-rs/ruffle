@@ -18,7 +18,7 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
-use swf::{BlendMode, Fixed8};
+use swf::{BlendMode, ColorTransform, Fixed8};
 
 mod avm1_button;
 mod avm2_button;
@@ -96,7 +96,7 @@ pub struct DisplayObjectBase<'gc> {
     maskee: Option<DisplayObject<'gc>>,
 
     /// The blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[collect(require_static)]
     blend_mode: BlendMode,
 
@@ -354,12 +354,12 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 
     fn alpha(&self) -> f64 {
-        f64::from(self.color_transform().a_mult)
+        f64::from(self.color_transform().a_multiply)
     }
 
     fn set_alpha(&mut self, value: f64) {
         self.set_transformed_by_script(true);
-        self.color_transform_mut().a_mult = Fixed8::from_f64(value)
+        self.color_transform_mut().a_multiply = Fixed8::from_f64(value);
     }
 
     fn clip_depth(&self) -> Depth {
@@ -583,7 +583,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
     if let Some(m) = mask {
-        mask_transform.matrix = this.global_to_local_matrix();
+        mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
         mask_transform.matrix *= m.local_to_global_matrix();
         context.commands.push_mask();
         context.allow_mask = false;
@@ -787,10 +787,9 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Returns the matrix for transforming from global stage to this object's local space.
-    fn global_to_local_matrix(&self) -> Matrix {
-        let mut matrix = self.local_to_global_matrix();
-        matrix.invert();
-        matrix
+    /// `None` is returned if the object has zero scale.
+    fn global_to_local_matrix(&self) -> Option<Matrix> {
+        self.local_to_global_matrix().inverse()
     }
 
     /// Converts a local position to a global stage position
@@ -799,8 +798,20 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Converts a local position on the stage to a local position on this display object
-    fn global_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
-        self.global_to_local_matrix() * global
+    /// Returns `None` if the object has zero scale.
+    fn global_to_local(&self, global: (Twips, Twips)) -> Option<(Twips, Twips)> {
+        self.global_to_local_matrix().map(|matrix| matrix * global)
+    }
+
+    /// Converts a mouse position on the stage to a local position on this display object.
+    /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
+    /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
+    fn mouse_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
+        // MIKE: I suspect the `TWIPS_TO_PIXELS` scale should always be involved in the
+        // calculation somehow, not just in the non-invertible case.
+        self.global_to_local_matrix()
+            .unwrap_or(Matrix::TWIPS_TO_PIXELS)
+            * global
     }
 
     /// The `x` position in pixels of this display object in local space.
@@ -1164,13 +1175,13 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn blend_mode(&self) -> BlendMode {
         self.base().blend_mode()
     }
 
     /// Sets the blend mode used when rendering this display object.
-    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
     }
@@ -1364,7 +1375,13 @@ pub trait TDisplayObject<'gc>:
             if self.has_explicit_name() {
                 if let Some(Avm2Value::Object(mut p)) = self.parent().map(|p| p.object2()) {
                     if let Avm2Value::Object(c) = self.object2() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let domain = context
+                            .library
+                            .library_for_movie(self.movie())
+                            .unwrap()
+                            .avm2_domain();
+                        let mut activation =
+                            Avm2Activation::from_domain(context.reborrow(), domain);
                         let name =
                             Avm2Multiname::new(activation.avm2().public_namespace, self.name());
                         if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
@@ -1553,7 +1570,7 @@ pub trait TDisplayObject<'gc>:
                 self.set_matrix(context.gc_context, matrix.into());
             }
             if let Some(color_transform) = &place_object.color_transform {
-                self.set_color_transform(context.gc_context, color_transform.clone().into());
+                self.set_color_transform(context.gc_context, *color_transform);
             }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {

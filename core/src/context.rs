@@ -3,7 +3,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::SystemProperties;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
+use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -20,6 +20,7 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
+use crate::streams::StreamManager;
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
@@ -183,21 +184,13 @@ pub struct UpdateContext<'a, 'gc> {
     ///
     /// If we are not doing frame processing, then this is `FramePhase::Enter`.
     pub frame_phase: &'a mut FramePhase,
+
+    /// Manager of in-progress media streams.
+    pub stream_manager: &'a mut StreamManager<'gc>,
 }
 
 /// Convenience methods for controlling audio.
 impl<'a, 'gc> UpdateContext<'a, 'gc> {
-    pub fn update_sounds(&mut self) {
-        if let Some(root_clip) = self.stage.root_clip() {
-            self.audio_manager.update_sounds(
-                self.audio,
-                self.gc_context,
-                self.action_queue,
-                root_clip,
-            );
-        }
-    }
-
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }
@@ -347,6 +340,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             frame_rate: self.frame_rate,
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
+            stream_manager: self.stream_manager,
         }
     }
 
@@ -485,20 +479,6 @@ pub enum ActionType<'gc> {
         method: &'static str,
         args: Vec<Avm1Value<'gc>>,
     },
-
-    /// An AVM2 callable, e.g. a frame script or event handler.
-    Callable2 {
-        callable: Avm2Object<'gc>,
-        reciever: Option<Avm2Object<'gc>>,
-        args: Vec<Avm2Value<'gc>>,
-    },
-
-    /// An AVM2 event to be dispatched. This translates to an Event class instance.
-    /// Creating an Event subclass via this dispatch is TODO.
-    Event2 {
-        event_type: &'static str,
-        target: Avm2Object<'gc>,
-    },
 }
 
 impl ActionType<'_> {
@@ -545,21 +525,6 @@ impl fmt::Debug for ActionType<'_> {
                 .field("listener", listener)
                 .field("method", method)
                 .field("args", args)
-                .finish(),
-            ActionType::Callable2 {
-                callable,
-                reciever,
-                args,
-            } => f
-                .debug_struct("ActionType::Callable2")
-                .field("callable", callable)
-                .field("reciever", reciever)
-                .field("args", args)
-                .finish(),
-            ActionType::Event2 { event_type, target } => f
-                .debug_struct("ActionType::Event2")
-                .field("event_type", event_type)
-                .field("target", target)
                 .finish(),
         }
     }

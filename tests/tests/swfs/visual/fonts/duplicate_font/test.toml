@@ -1,0 +1,11 @@
+# NOTE - the SWF was manually edited to make both DefineFont3
+# tags use the same font name ('Impact'), even though one
+# of them is really Times New Roman.
+
+num_frames = 1
+
+[image_comparison]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }

@@ -24,6 +24,7 @@ use crate::avm1::{Activation, Attribute, Error, ScriptObject, SoundObject, Stage
 use crate::display_object::DisplayObject;
 use crate::display_object::TDisplayObject;
 use crate::html::TextFormat;
+use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -59,6 +60,7 @@ pub enum NativeObject<'gc> {
     BevelFilter(GcCell<'gc, BevelFilterObject>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
+    NetStream(NetStream<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM

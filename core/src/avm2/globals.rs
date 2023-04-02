@@ -31,8 +31,8 @@ mod math;
 mod namespace;
 mod number;
 mod object;
-mod qname;
-mod regexp;
+mod q_name;
+mod reg_exp;
 mod string;
 mod toplevel;
 mod r#uint;
@@ -111,6 +111,7 @@ pub struct SystemClasses<'gc> {
     pub verifyerror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
+    pub error: ClassObject<'gc>,
     pub uncaughterrorevents: ClassObject<'gc>,
     pub statictext: ClassObject<'gc>,
     pub textlinemetrics: ClassObject<'gc>,
@@ -218,6 +219,7 @@ impl<'gc> SystemClasses<'gc> {
             verifyerror: object,
             ioerror: object,
             eoferror: object,
+            error: object,
             uncaughterrorevents: object,
             statictext: object,
             textlinemetrics: object,
@@ -467,7 +469,6 @@ pub fn load_player_globals<'gc>(
         namespace::create_class(activation),
         script
     );
-    avm2_system_class!(qname, activation, qname::create_class(activation), script);
     avm2_system_class!(array, activation, array::create_class(activation), script);
 
     function(activation, "", "trace", toplevel::trace, script)?;
@@ -521,47 +522,15 @@ pub fn load_player_globals<'gc>(
     )?;
     function(activation, "", "unescape", toplevel::unescape, script)?;
 
-    avm2_system_class!(regexp, activation, regexp::create_class(activation), script);
     avm2_system_class!(vector, activation, vector::create_class(activation), script);
 
     avm2_system_class!(date, activation, date::create_class(activation), script);
-
-    // package `flash.system`
-    avm2_system_class!(
-        application_domain,
-        activation,
-        flash::system::application_domain::create_class(activation),
-        script
-    );
-
-    // package `flash.text`
-    class(
-        flash::text::font::create_class(activation),
-        script,
-        activation,
-    )?;
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relative late, so that it can access classes defined before
     // this call.
     load_playerglobal(activation, domain)?;
-
-    // Everything after the `load_playerglobal` call needs classes
-    // defined in the playerglobal swf.
-
-    // package `flash.media`
-    avm2_system_class!(
-        soundtransform,
-        activation,
-        flash::media::soundtransform::create_class(activation),
-        script
-    );
-    class(
-        flash::media::soundmixer::create_class(activation),
-        script,
-        activation,
-    )?;
 
     Ok(())
 }
@@ -630,8 +599,11 @@ fn load_playerglobal<'gc>(
         activation,
         script,
         [
+            ("", "Error", error),
             ("", "ArgumentError", argumenterror),
+            ("", "QName", qname),
             ("", "RangeError", rangeerror),
+            ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
             ("", "TypeError", typeerror),
             ("", "VerifyError", verifyerror),
@@ -700,8 +672,10 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
             ("flash.media", "SoundChannel", soundchannel),
+            ("flash.media", "SoundTransform", soundtransform),
             ("flash.net", "URLVariables", urlvariables),
             ("flash.utils", "ByteArray", bytearray),
+            ("flash.system", "ApplicationDomain", application_domain),
             ("flash.text", "StaticText", statictext),
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),

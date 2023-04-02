@@ -12,6 +12,11 @@ rules:
     - error
     - argsIgnorePattern: ^_
   prefer-const: error
+  spaced-comment:
+    - error
+    - always
+    - block:
+        balanced: true
 overrides:
   # TypeScript rules.
   - files:

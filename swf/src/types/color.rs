@@ -37,6 +37,7 @@ impl Color {
     /// let green = Color::from_rgb(0x00FF00, 255);
     /// let blue = Color::from_rgb(0x0000FF, 255);
     /// ```
+    #[inline]
     pub const fn from_rgb(rgb: u32, alpha: u8) -> Self {
         let [b, g, r, _] = rgb.to_le_bytes();
         Self { r, g, b, a: alpha }
@@ -55,6 +56,7 @@ impl Color {
     /// let green = Color::from_rgba(0xFF00FF00);
     /// let blue = Color::from_rgba(0xFF0000FF);
     /// ```
+    #[inline]
     pub const fn from_rgba(rgba: u32) -> Self {
         let [b, g, r, a] = rgba.to_le_bytes();
         Self { r, g, b, a }
@@ -82,6 +84,7 @@ impl Color {
     /// let color2 = Color::from_rgb(0xFF00FF, 0);
     /// assert_eq!(color1.to_rgb(), color2.to_rgb());
     /// ```
+    #[inline]
     pub const fn to_rgb(&self) -> u32 {
         u32::from_le_bytes([self.b, self.g, self.r, 0])
     }
@@ -97,6 +100,7 @@ impl Color {
     /// let color = Color::from_rgb(0xFF00FF, 255);
     /// assert_eq!(color.to_rgba(), 0xFFFF00FF);
     /// ```
+    #[inline]
     pub const fn to_rgba(&self) -> u32 {
         u32::from_le_bytes([self.b, self.g, self.r, self.a])
     }

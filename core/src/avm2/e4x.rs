@@ -9,7 +9,10 @@ use quick_xml::{
     Reader,
 };
 
-use crate::avm2::{error::type_error, TObject};
+use crate::{
+    avm2::{error::type_error, TObject},
+    xml::custom_unescape,
+};
 
 use super::{object::E4XOrXml, string::AvmString, Activation, Error, Multiname, Value};
 use crate::string::{WStr, WString};
@@ -79,6 +82,20 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    pub fn element(mc: MutationContext<'gc, '_>, name: AvmString<'gc>, parent: Self) -> Self {
+        E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: Some(parent),
+                local_name: Some(name),
+                kind: E4XNodeKind::Element {
+                    attributes: vec![],
+                    children: vec![],
+                },
+            },
+        ))
+    }
+
     pub fn attribute(
         mc: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
@@ -92,6 +109,65 @@ impl<'gc> E4XNode<'gc> {
                 kind: E4XNodeKind::Attribute(value),
             },
         ))
+    }
+
+    pub fn deep_copy(&self, mc: MutationContext<'gc, '_>) -> Self {
+        let this = self.0.read();
+
+        let kind = match &this.kind {
+            E4XNodeKind::Text(string) => E4XNodeKind::Text(*string),
+            E4XNodeKind::CData(string) => E4XNodeKind::CData(*string),
+            E4XNodeKind::Comment(string) => E4XNodeKind::Comment(*string),
+            E4XNodeKind::ProcessingInstruction(string) => {
+                E4XNodeKind::ProcessingInstruction(*string)
+            }
+            E4XNodeKind::Attribute(string) => E4XNodeKind::Attribute(*string),
+            E4XNodeKind::Element {
+                attributes,
+                children,
+            } => E4XNodeKind::Element {
+                attributes: attributes.iter().map(|attr| attr.deep_copy(mc)).collect(),
+                children: children.iter().map(|child| child.deep_copy(mc)).collect(),
+            },
+        };
+
+        let node = E4XNode(GcCell::allocate(
+            mc,
+            E4XNodeData {
+                parent: None,
+                local_name: this.local_name,
+                kind,
+            },
+        ));
+
+        if let E4XNodeKind::Element {
+            attributes,
+            children,
+        } = &mut node.0.write(mc).kind
+        {
+            for attr in attributes.iter_mut() {
+                let mut data = attr.0.write(mc);
+                data.parent = Some(node);
+            }
+
+            for child in children.iter_mut() {
+                let mut data = child.0.write(mc);
+                data.parent = Some(node);
+            }
+        }
+
+        node
+    }
+
+    pub fn remove_all_children(&self, gc_context: MutationContext<'gc, '_>) {
+        let mut this = self.0.write(gc_context);
+        if let E4XNodeKind::Element { children, .. } = &mut this.kind {
+            for child in children.iter_mut() {
+                let mut child_data = child.0.write(gc_context);
+                child_data.parent = None;
+            }
+            children.clear()
+        }
     }
 
     pub fn append_child(
@@ -161,7 +237,6 @@ impl<'gc> E4XNode<'gc> {
 
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
-        let mut buf = Vec::new();
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         // FIXME - look these up from static property and settings
@@ -213,14 +288,47 @@ impl<'gc> E4XNode<'gc> {
             bytes
         }
 
+        fn handle_text_cdata<'gc>(
+            text: &[u8],
+            ignore_white: bool,
+            open_tags: &mut [E4XNode<'gc>],
+            top_level: &mut Vec<E4XNode<'gc>>,
+            depth: usize,
+            is_text: bool,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<(), Error<'gc>> {
+            let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
+            let is_whitespace_text = text.iter().all(is_whitespace_char);
+            if !(text.is_empty() || ignore_white && is_whitespace_text) {
+                let text = AvmString::new_utf8_bytes(
+                    activation.context.gc_context,
+                    if is_text { trim_ascii(text) } else { text },
+                );
+                let node = E4XNode(GcCell::allocate(
+                    activation.context.gc_context,
+                    E4XNodeData {
+                        parent: None,
+                        local_name: None,
+                        kind: if is_text {
+                            E4XNodeKind::Text(text)
+                        } else {
+                            E4XNodeKind::CData(text)
+                        },
+                    },
+                ));
+                push_childless_node(node, open_tags, top_level, depth, activation)?;
+            }
+            Ok(())
+        }
+
         loop {
-            let event = parser.read_event(&mut buf).map_err(|error| {
+            let event = parser.read_event().map_err(|error| {
                 Error::RustError(format!("XML parsing error: {error:?}").into())
             })?;
 
             match &event {
                 Event::Start(bs) => {
-                    let child = E4XNode::from_start_event(activation, bs)?;
+                    let child = E4XNode::from_start_event(activation, bs, parser.decoder())?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.context.gc_context, child)?;
@@ -229,7 +337,7 @@ impl<'gc> E4XNode<'gc> {
                     depth += 1;
                 }
                 Event::Empty(bs) => {
-                    let node = E4XNode::from_start_event(activation, bs)?;
+                    let node = E4XNode::from_start_event(activation, bs, parser.decoder())?;
                     push_childless_node(node, &mut open_tags, &mut top_level, depth, activation)?;
                 }
                 Event::End(_) => {
@@ -239,40 +347,28 @@ impl<'gc> E4XNode<'gc> {
                         top_level.push(node);
                     }
                 }
-                Event::Text(bt) | Event::CData(bt) => {
-                    let text = bt.unescaped()?;
-                    let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
-                    let is_whitespace_text = text.iter().all(is_whitespace_char);
-                    if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let text = AvmString::new_utf8_bytes(
-                            activation.context.gc_context,
-                            if matches!(event, Event::Text { .. }) {
-                                trim_ascii(&text)
-                            } else {
-                                &text
-                            },
-                        );
-
-                        let node = E4XNode(GcCell::allocate(
-                            activation.context.gc_context,
-                            E4XNodeData {
-                                parent: None,
-                                local_name: None,
-                                kind: match &event {
-                                    Event::Text(_) => E4XNodeKind::Text(text),
-                                    Event::CData(_) => E4XNodeKind::CData(text),
-                                    _ => unreachable!(),
-                                },
-                            },
-                        ));
-                        push_childless_node(
-                            node,
-                            &mut open_tags,
-                            &mut top_level,
-                            depth,
-                            activation,
-                        )?;
-                    }
+                Event::Text(bt) => {
+                    handle_text_cdata(
+                        custom_unescape(bt, parser.decoder())?.as_bytes(),
+                        ignore_white,
+                        &mut open_tags,
+                        &mut top_level,
+                        depth,
+                        true,
+                        activation,
+                    )?;
+                }
+                Event::CData(bt) => {
+                    // This is already unescaped
+                    handle_text_cdata(
+                        bt,
+                        ignore_white,
+                        &mut open_tags,
+                        &mut top_level,
+                        depth,
+                        false,
+                        activation,
+                    )?;
                 }
                 Event::Comment(bt) | Event::PI(bt) => {
                     if (matches!(event, Event::Comment(_)) && ignore_comments)
@@ -280,8 +376,9 @@ impl<'gc> E4XNode<'gc> {
                     {
                         continue;
                     }
-                    let text = bt.unescaped()?;
-                    let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
+                    let text = custom_unescape(bt, parser.decoder())?;
+                    let text =
+                        AvmString::new_utf8_bytes(activation.context.gc_context, text.as_bytes());
                     let kind = match event {
                         Event::Comment(_) => E4XNodeKind::Comment(text),
                         Event::PI(_) => E4XNodeKind::ProcessingInstruction(text),
@@ -313,17 +410,23 @@ impl<'gc> E4XNode<'gc> {
     pub fn from_start_event(
         activation: &mut Activation<'_, 'gc>,
         bs: &BytesStart<'_>,
+        decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
         // FIXME - handle namespace
-        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.local_name());
+        let name =
+            AvmString::new_utf8_bytes(activation.context.gc_context, bs.local_name().into_inner());
 
         let mut attribute_nodes = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in attributes? {
-            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key);
-            let value_bytes = attribute.unescaped_value()?;
-            let value = AvmString::new_utf8_bytes(activation.context.gc_context, &value_bytes);
+            let key = AvmString::new_utf8_bytes(
+                activation.context.gc_context,
+                attribute.key.into_inner(),
+            );
+            let value_str = custom_unescape(&attribute.value, decoder)?;
+            let value =
+                AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
             let attribute_data = E4XNodeData {
                 parent: None,

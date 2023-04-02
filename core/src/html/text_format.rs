@@ -606,13 +606,11 @@ impl FormatSpans {
         let mut reader = Reader::from_reader(&raw_bytes[..]);
         reader.expand_empty_elements(true);
         reader.check_end_names(false);
-        let mut buf = Vec::new();
         loop {
-            buf.clear();
-            match reader.read_event(&mut buf) {
+            match reader.read_event() {
                 Ok(Event::Start(ref e)) => {
                     opened_starts.push(opened_buffer.len());
-                    opened_buffer.extend(e.name());
+                    opened_buffer.extend(e.name().into_inner());
 
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
@@ -626,12 +624,13 @@ impl FormatSpans {
                         attributes.iter().find_map(|attribute| {
                             attribute
                                 .key
+                                .into_inner()
                                 .eq_ignore_ascii_case(name)
                                 .then(|| decode_to_wstr(&attribute.value))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
-                    match &e.name().to_ascii_lowercase()[..] {
+                    match &e.name().into_inner().to_ascii_lowercase()[..] {
                         b"br" => {
                             if is_multiline {
                                 text.push_byte(b'\n');
@@ -684,6 +683,7 @@ impl FormatSpans {
                             }
 
                             if let Some(color) = attribute(b"color") {
+                                // FIXME - handle alpha
                                 if color.starts_with(b'#') {
                                     let rval = color
                                         .slice(1..3)
@@ -762,7 +762,7 @@ impl FormatSpans {
                     format_stack.push(format);
                 }
                 Ok(Event::Text(e)) if !e.is_empty() => {
-                    let e = decode_to_wstr(e.escaped());
+                    let e = decode_to_wstr(&e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
                     text.push_str(&e);
@@ -772,7 +772,7 @@ impl FormatSpans {
                     // Check for a mismatch.
                     match opened_starts.last() {
                         Some(start) => {
-                            if e.name() != &opened_buffer[*start..] {
+                            if e.name().into_inner() != &opened_buffer[*start..] {
                                 continue;
                             } else {
                                 opened_buffer.truncate(*start);
@@ -782,7 +782,7 @@ impl FormatSpans {
                         None => continue,
                     }
 
-                    match &e.name().to_ascii_lowercase()[..] {
+                    match &e.name().into_inner().to_ascii_lowercase()[..] {
                         b"br" | b"sbr" => {
                             // Skip pop from `format_stack`.
                             continue;
@@ -1422,16 +1422,17 @@ impl<'a> FormatState<'a> {
                 self.close_tags();
             }
             let encoded = text.to_utf8_lossy();
-            let escaped = escape(encoded.as_bytes());
+            let escaped = escape(&encoded);
 
             if let Cow::Borrowed(_) = &encoded {
                 // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
                 // escaping special characters cannot insert new non-ASCII characters, so we can
                 // simply append the bytes directly without converting from UTF8.
-                self.result.push_str(WStr::from_units(&*escaped));
+                self.result.push_str(WStr::from_units(escaped.as_bytes()));
             } else {
                 // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
-                let escaped = std::str::from_utf8(&escaped).expect("escaped text should be utf8");
+                let escaped =
+                    std::str::from_utf8(escaped.as_bytes()).expect("escaped text should be utf8");
                 self.result.push_utf8(escaped);
             }
         }

@@ -1,17 +1,12 @@
 #![deny(clippy::unwrap_used)]
-// This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
-#![allow(clippy::extra_unused_type_parameters)]
 
 use bytemuck::{Pod, Zeroable};
-use std::borrow::Cow;
-
 use gc_arena::MutationContext;
-use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
@@ -22,6 +17,7 @@ use ruffle_render::tessellator::{
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::borrow::Cow;
 use std::sync::Arc;
 use swf::{BlendMode, Color};
 use thiserror::Error;
@@ -923,10 +919,9 @@ impl RenderBackend for WebGlRenderBackend {
     fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
-        _width: u32,
-        _height: u32,
         _commands: CommandList,
         _quality: StageQuality,
+        _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
@@ -977,26 +972,6 @@ impl RenderBackend for WebGlRenderBackend {
             },
             Err(e) => {
                 log::error!("Couldn't register shape: {:?}", e);
-                Mesh {
-                    draws: vec![],
-                    gl2: self.gl2.clone(),
-                    vao_ext: self.vao_ext.clone(),
-                }
-            }
-        };
-        ShapeHandle(Arc::new(mesh))
-    }
-
-    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        let mesh = match self.register_shape_internal((&shape).into(), &NullBitmapSource) {
-            Ok(draws) => Mesh {
-                draws,
-                gl2: self.gl2.clone(),
-                vao_ext: self.vao_ext.clone(),
-            },
-            Err(e) => {
-                log::error!("Couldn't register glyph shape: {:?}", e);
                 Mesh {
                     draws: vec![],
                     gl2: self.gl2.clone(),
@@ -1059,11 +1034,11 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        _region: PixelRegion,
     ) -> Result<(), BitmapError> {
-        let texture = &as_registry_data(handle).texture;
+        let data = as_registry_data(handle);
+        let texture = &data.texture;
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
 
@@ -1072,8 +1047,8 @@ impl RenderBackend for WebGlRenderBackend {
                 Gl::TEXTURE_2D,
                 0,
                 Gl::RGBA as i32,
-                width as i32,
-                height as i32,
+                data.bitmap.width() as i32,
+                data.bitmap.height() as i32,
                 0,
                 Gl::RGBA,
                 Gl::UNSIGNED_BYTE,

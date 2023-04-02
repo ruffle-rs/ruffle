@@ -1,3 +1,15 @@
 env:
   browser: true
   webextensions: true
+overrides:
+  - files:
+      - content.ts
+      - utils.ts
+      - common.ts
+    rules:
+      '@typescript-eslint/no-restricted-imports':
+        - error
+        - paths:
+          - name: ruffle-core
+            message: Content script must not include ruffle-core.
+            allowTypeImports: true

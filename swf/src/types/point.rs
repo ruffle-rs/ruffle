@@ -32,6 +32,7 @@ impl Point {
     /// ```rust
     /// let point = swf::Point::new(40, 40);
     /// ```
+    #[inline]
     pub const fn new(x: i32, y: i32) -> Self {
         Self {
             x: Twips::new(x),
@@ -56,6 +57,7 @@ impl Point {
     /// assert_eq!(point.x.get(), 800);
     /// assert_eq!(point.y.get(), 400);
     /// ```
+    #[inline]
     pub fn from_pixels(x: f64, y: f64) -> Self {
         Self {
             x: Twips::from_pixels(x),
@@ -78,6 +80,7 @@ impl Point {
     /// let point = swf::Point::new(713, 200);
     /// assert_eq!(point.to_pixels(), (35.65, 10.0));
     /// ```
+    #[inline]
     pub fn to_pixels(self) -> (f64, f64) {
         (self.x.to_pixels(), self.y.to_pixels())
     }
@@ -86,6 +89,7 @@ impl Point {
 impl ops::Add for Point {
     type Output = Self;
 
+    #[inline]
     fn add(self, other: Self) -> Self {
         Self {
             x: self.x + other.x,
@@ -95,6 +99,7 @@ impl ops::Add for Point {
 }
 
 impl ops::AddAssign for Point {
+    #[inline]
     fn add_assign(&mut self, other: Self) {
         self.x += other.x;
         self.y += other.y;
@@ -103,7 +108,7 @@ impl ops::AddAssign for Point {
 
 impl ops::Sub for Point {
     type Output = Self;
-
+    #[inline]
     fn sub(self, other: Self) -> Self {
         Self {
             x: self.x - other.x,
@@ -113,6 +118,7 @@ impl ops::Sub for Point {
 }
 
 impl ops::SubAssign for Point {
+    #[inline]
     fn sub_assign(&mut self, other: Self) {
         self.x -= other.x;
         self.y -= other.y;
@@ -121,7 +127,7 @@ impl ops::SubAssign for Point {
 
 impl ops::Mul<i32> for Point {
     type Output = Self;
-
+    #[inline]
     fn mul(self, other: i32) -> Self {
         Self {
             x: self.x * other,
@@ -131,6 +137,7 @@ impl ops::Mul<i32> for Point {
 }
 
 impl ops::MulAssign<i32> for Point {
+    #[inline]
     fn mul_assign(&mut self, other: i32) {
         self.x *= other;
         self.y *= other;
@@ -139,7 +146,7 @@ impl ops::MulAssign<i32> for Point {
 
 impl ops::Div<i32> for Point {
     type Output = Self;
-
+    #[inline]
     fn div(self, other: i32) -> Self {
         Self {
             x: self.x / other,
@@ -149,6 +156,7 @@ impl ops::Div<i32> for Point {
 }
 
 impl ops::DivAssign<i32> for Point {
+    #[inline]
     fn div_assign(&mut self, other: i32) {
         self.x /= other;
         self.y /= other;
@@ -156,6 +164,7 @@ impl ops::DivAssign<i32> for Point {
 }
 
 impl fmt::Display for Point {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
     }

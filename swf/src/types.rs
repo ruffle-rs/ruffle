@@ -14,6 +14,7 @@ mod bevel_filter;
 mod blur_filter;
 mod color;
 mod color_matrix_filter;
+mod color_transform;
 mod convolution_filter;
 mod drop_shadow_filter;
 mod fixed;
@@ -28,6 +29,7 @@ pub use bevel_filter::{BevelFilter, BevelFilterFlags};
 pub use blur_filter::{BlurFilter, BlurFilterFlags};
 pub use color::Color;
 pub use color_matrix_filter::ColorMatrixFilter;
+pub use color_transform::ColorTransform;
 pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
 pub use fixed::{Fixed16, Fixed8};
@@ -223,39 +225,6 @@ pub enum Compression {
     None,
     Zlib,
     Lzma,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ColorTransform {
-    pub r_multiply: Fixed8,
-    pub g_multiply: Fixed8,
-    pub b_multiply: Fixed8,
-    pub a_multiply: Fixed8,
-    pub r_add: i16,
-    pub g_add: i16,
-    pub b_add: i16,
-    pub a_add: i16,
-}
-
-impl ColorTransform {
-    pub const fn new() -> ColorTransform {
-        ColorTransform {
-            r_multiply: Fixed8::ONE,
-            g_multiply: Fixed8::ONE,
-            b_multiply: Fixed8::ONE,
-            a_multiply: Fixed8::ONE,
-            r_add: 0,
-            g_add: 0,
-            b_add: 0,
-            a_add: 0,
-        }
-    }
-}
-
-impl Default for ColorTransform {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]

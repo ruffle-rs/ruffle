@@ -400,13 +400,9 @@ fn begin_bitmap_fill<'gc>(
         .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
     {
         // Register the bitmap data with the drawing.
-        let bitmap_data = bitmap_data.bitmap_data();
-        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
-        let handle = if let Some(handle) = bitmap_data.bitmap_handle(activation.context.renderer) {
-            handle
-        } else {
-            return Ok(Value::Undefined);
-        };
+        let bitmap_data = bitmap_data.bitmap_data_wrapper();
+        let handle =
+            bitmap_data.bitmap_handle(activation.context.gc_context, activation.context.renderer);
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
             width: bitmap_data.width() as u16,
@@ -1045,11 +1041,18 @@ fn set_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mask = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)
-        .as_display_object();
+    let mask = match args.get(0) {
+        None => return Ok(Value::Undefined),
+        Some(Value::Undefined | Value::Null) => None,
+        Some(m) => {
+            let start_clip = activation.target_clip_or_root();
+            let mask = activation.resolve_target_display_object(start_clip, *m, false)?;
+            if mask.is_none() {
+                return Ok(Value::Bool(false));
+            }
+            mask
+        }
+    };
     let mc = DisplayObject::MovieClip(movie_clip);
     let context = &mut activation.context;
     mc.set_clip_depth(context.gc_context, 0);
@@ -1057,7 +1060,7 @@ fn set_mask<'gc>(
     if let Some(m) = mask {
         m.set_maskee(context.gc_context, Some(mc), true);
     }
-    Ok(Value::Undefined)
+    Ok(Value::Bool(true))
 }
 
 fn start_drag<'gc>(
@@ -1205,7 +1208,7 @@ fn get_bounds<'gc>(
             // Note that this doesn't produce as tight of an AABB as if we had used `bounds_with_transform` with
             // the final matrix, but this matches Flash's behavior.
             let to_global_matrix = movie_clip.local_to_global_matrix();
-            let to_target_matrix = target.global_to_local_matrix();
+            let to_target_matrix = target.global_to_local_matrix().unwrap_or_default();
             to_target_matrix * to_global_matrix * bounds
         };
 
@@ -1300,9 +1303,8 @@ fn global_to_local<'gc>(
                 .get_local_stored("y", activation)
                 .unwrap_or(Value::Undefined),
         ) {
-            let x = Twips::from_pixels(x);
-            let y = Twips::from_pixels(y);
-            let (out_x, out_y) = movie_clip.global_to_local((x, y));
+            let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
+            let (out_x, out_y) = movie_clip.global_to_local(pt).unwrap_or(pt);
             point.set("x", out_x.to_pixels().into(), activation)?;
             point.set("y", out_y.to_pixels().into(), activation)?;
         } else {

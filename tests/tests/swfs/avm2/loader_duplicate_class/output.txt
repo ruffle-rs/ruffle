@@ -1,0 +1,49 @@
+
+Starting child domain load
+getDefinitionByName("DuplicateClass") not found initially: ReferenceError: Error #1065: Variable DuplicateClass is not defined.
+loader_domain_child script initializer: SwfPrivateClass = SwfPrivateClass from loader_domain_child
+this.childFromDomainChild = [object MovieClip]
+Child name: [object MovieClip]
+Framescript loader_domain_child with DuplicateClass: DuplicateClass from loader_domain_child
+new loader_domain_child callMe script initializer: SwfPrivateClass = SwfPrivateClass from loader_domain_child
+new loader_domain_child callMe: SwfPrivateClass = SwfPrivateClass from loader_domain_child
+Framescript loader_domain_child: instantiating DuplicateClass
+this.childFromDomainChild = [object MovieClip]
+Child name: [object MovieClip]
+Framescript loader_domain_child: clip = [object DuplicateClass]
+Init event: DuplicateClass=DuplicateClass from loader_domain_child
+getDefinitionByName("DuplicateClass") not found afterwards: ReferenceError: Error #1065: Variable DuplicateClass is not defined.
+
+Starting other child domain load
+getDefinitionByName("DuplicateClass") not found initially: ReferenceError: Error #1065: Variable DuplicateClass is not defined.
+loader_domain_other_child script initializer: SwfPrivateClass = SwfPrivateClass from loader_domain_other_child
+this.childFromOtherDomain = [object MovieClip]
+Framescript loader_domain_other_child with DuplicateClass: DuplicateClass from loader_domain_other_child
+new loader_domain_other_child callMe script initializer: SwfPrivateClass = SwfPrivateClass from loader_domain_other_child
+new loader_domain_other_child callMe: SwfPrivateClass = SwfPrivateClass from loader_domain_other_child
+Init event: DuplicateClass=DuplicateClass from loader_domain_other_child
+getDefinitionByName("DuplicateClass") not found afterwards: ReferenceError: Error #1065: Variable DuplicateClass is not defined.
+
+Starting same domain load
+same domain: DuplicateClass not found initially: ReferenceError: Error #1065: Variable DuplicateClass is not defined.
+loader_same_domain DuplicateClass script initializer: SwfPrivateClass = SwfPrivateClass from loader_same_domain
+loader_same_domain DuplicateClass: this.childFromSameDomain = [object MovieClip] this.childFromOtherDomain = null this.childFromDomainChild = null
+Framescript loader_same_domain with DuplicateClass: DuplicateClass from loader_same_domain
+loader_same_domain callMe script initializer: SwfPrivateClass = SwfPrivateClass from loader_same_domain
+loader_same_domain callMe: SwfPrivateClass = SwfPrivateClass from loader_same_domain
+Init event: DuplicateClass from domain gives: DuplicateClass from loader_same_domain
+getDefinitionByName("DuplicateClass") gives: DuplicateClass from loader_same_domain
+Already loaded class: DuplicateClass from loader_domain_other_child
+this.childFromOtherDomain = [object MovieClip]
+Instantiate clip: [object DuplicateClass]
+
+Starting repeated child domain load
+loader_same_domain DuplicateClass: this.childFromSameDomain = null this.childFromOtherDomain = null this.childFromDomainChild = [object MovieClip]
+Framescript loader_domain_child with DuplicateClass: DuplicateClass from loader_same_domain
+loader_same_domain callMe: SwfPrivateClass = SwfPrivateClass from loader_same_domain
+Framescript loader_domain_child: instantiating DuplicateClass
+loader_same_domain DuplicateClass: this.childFromSameDomain = [object MovieClip] this.childFromOtherDomain = null this.childFromDomainChild = null
+Framescript loader_domain_child: clip = [object DuplicateClass]
+Init event: DuplicateClass=DuplicateClass from loader_same_domain
+loader_same_domain DuplicateClass: this.childFromSameDomain = [object MovieClip] this.childFromOtherDomain = null this.childFromDomainChild = null
+Instantiate clip in doChildDomainLoadAgain: [object DuplicateClass]

@@ -1,11 +1,11 @@
 import type { Options } from "./common";
-import { LogLevel } from "ruffle-core";
+import type { LogLevel } from "ruffle-core";
 
 const DEFAULT_OPTIONS: Options = {
     ruffleEnable: true,
     ignoreOptout: false,
     warnOnUnsupportedContent: true,
-    logLevel: LogLevel.Error,
+    logLevel: "error" as LogLevel,
     showSwfDownload: false,
 };
 

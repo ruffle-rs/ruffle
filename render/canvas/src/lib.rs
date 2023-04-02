@@ -1,14 +1,12 @@
 #![deny(clippy::unwrap_used)]
 
 use gc_arena::MutationContext;
-use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{
     Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, SyncHandle,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
 };
-use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
@@ -18,7 +16,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, Color, ColorTransform};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
@@ -54,11 +52,12 @@ fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
 }
 
 #[derive(Debug)]
-struct CanvasColor(String, u8, u8, u8, u8);
+struct CanvasColor(Color, String);
 
 impl From<&Color> for CanvasColor {
-    fn from(color: &Color) -> CanvasColor {
-        CanvasColor(
+    fn from(color: &Color) -> Self {
+        Self(
+            color.clone(),
             format!(
                 "rgba({},{},{},{})",
                 color.r,
@@ -66,10 +65,6 @@ impl From<&Color> for CanvasColor {
                 color.b,
                 f32::from(color.a) / 255.0
             ),
-            color.r,
-            color.g,
-            color.b,
-            color.a,
         )
     }
 }
@@ -77,13 +72,7 @@ impl From<&Color> for CanvasColor {
 impl CanvasColor {
     /// Apply a color transformation to this color.
     fn color_transform(&self, cxform: &ColorTransform) -> Self {
-        let Self(_, r, g, b, a) = self;
-        let r = (*r as f32 * cxform.r_mult.to_f32() + (cxform.r_add as f32)) as u8;
-        let g = (*g as f32 * cxform.g_mult.to_f32() + (cxform.g_add as f32)) as u8;
-        let b = (*b as f32 * cxform.b_mult.to_f32() + (cxform.b_add as f32)) as u8;
-        let a = (*a as f32 * cxform.a_mult.to_f32() + (cxform.a_add as f32)) as u8;
-        let colstring = format!("rgba({r},{g},{b},{})", f32::from(a) / 255.0);
-        Self(colstring, r, g, b, a)
+        (&(cxform * self.0.clone())).into()
     }
 }
 
@@ -333,9 +322,9 @@ impl WebCanvasRenderBackend {
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
-        if color_transform.r_mult.is_one()
-            && color_transform.g_mult.is_one()
-            && color_transform.b_mult.is_one()
+        if color_transform.r_multiply.is_one()
+            && color_transform.g_multiply.is_one()
+            && color_transform.b_multiply.is_one()
             && color_transform.r_add == 0
             && color_transform.g_add == 0
             && color_transform.b_add == 0
@@ -343,7 +332,7 @@ impl WebCanvasRenderBackend {
         {
             // Values outside the range of 0 and 1 are ignored in canvas, unlike Flash that clamps them.
             self.context
-                .set_global_alpha(f64::from(color_transform.a_mult).clamp(0.0, 1.0));
+                .set_global_alpha(f64::from(color_transform.a_multiply).clamp(0.0, 1.0));
         } else {
             let mult = color_transform.mult_rgba_normalized();
             let add = color_transform.add_rgba_normalized();
@@ -456,18 +445,12 @@ impl RenderBackend for WebCanvasRenderBackend {
         ShapeHandle(Arc::new(ShapeData(data)))
     }
 
-    fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into(), &NullBitmapSource)
-    }
-
     fn render_offscreen(
         &mut self,
         _handle: BitmapHandle,
-        _width: u32,
-        _height: u32,
         _commands: CommandList,
         _quality: StageQuality,
+        _bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
@@ -485,13 +468,17 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
-        data.update_pixels(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
-            .map_err(Error::JavascriptError)?;
+        data.update_pixels(Bitmap::new(
+            data.bitmap.width(),
+            data.bitmap.height(),
+            BitmapFormat::Rgba,
+            rgba,
+        ))
+        .map_err(Error::JavascriptError)?;
         Ok(())
     }
 
@@ -559,7 +546,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                             match fill_style {
                                 CanvasFillStyle::Color(color) => {
                                     let color = color.color_transform(&transform.color_transform);
-                                    self.context.set_fill_style(&color.0.into());
+                                    self.context.set_fill_style(&color.1.into());
                                     self.context.fill_with_path_2d_and_winding(
                                         path,
                                         CanvasWindingRule::Evenodd,
@@ -639,7 +626,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                             match stroke_style {
                                 CanvasStrokeStyle::Color(color) => {
                                     let color = color.color_transform(&transform.color_transform);
-                                    self.context.set_stroke_style(&color.0.into());
+                                    self.context.set_stroke_style(&color.1.into());
                                     self.context.stroke_with_path(&transformed_path);
                                 }
                                 CanvasStrokeStyle::Gradient(gradient, focal_point) => {

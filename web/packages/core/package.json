@@ -19,12 +19,12 @@
         "//6": "# Enabling `build-std` would also be great, but it's not stable yet.",
         "prebuild": "npm run build:wasm-vanilla && npm run build:wasm-extensions",
 
-        "build:wasm-vanilla": "cross-env OUT_NAME=ruffle_web CARGO_PROFILE=web-vanilla-wasm RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints\" npm run build:wasm",
+        "build:wasm-vanilla": "cross-env OUT_NAME=ruffle_web CARGO_PROFILE=web-vanilla-wasm RUSTFLAGS=\"$RUSTFLAGS --cfg=web_sys_unstable_apis -Aunknown_lints\" npm run build:wasm",
 
         "//7": "# Dispatches to either building the real, or copying the fake (stand-in),",
         "//8": "# 'with-extensions' module.",
         "build:wasm-extensions": "node -e \"process.exit(process.env.ENABLE_WASM_EXTENSIONS == 'true' ? 0 : 1)\" && npm run build:wasm-extensions-real || npm run build:wasm-extensions-fake",
-        "build:wasm-extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types\" WASM_BINDGEN_FLAGS=\"--reference-types\" WASM_OPT_FLAGS=\"--enable-reference-types\" npm run build:wasm",
+        "build:wasm-extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"$RUSTFLAGS --cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext,+reference-types\" WASM_BINDGEN_FLAGS=\"--reference-types\" WASM_OPT_FLAGS=\"--enable-reference-types\" npm run build:wasm",
         "build:wasm-extensions-fake": "echo \"Copying the vanilla module as stand-in\" && shx cp dist/ruffle_web_bg.wasm dist/ruffle_web-wasm_extensions_bg.wasm && shx cp dist/ruffle_web_bg.wasm.d.ts dist/ruffle_web-wasm_extensions_bg.wasm.d.ts && shx cp dist/ruffle_web.js dist/ruffle_web-wasm_extensions.js && shx cp dist/ruffle_web.d.ts dist/ruffle_web-wasm_extensions.d.ts",
 
         "//9": "# This just chains together the three commands after it.",
@@ -34,17 +34,17 @@
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"dist/${OUT_NAME}_bg.wasm\" -O -g \"dist/${OUT_NAME}_bg.wasm\" $WASM_OPT_FLAGS || npm run build:wasm-opt-failed",
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
 
-        "build": "tsc --build",
+        "build": "tsc --build --force",
         "postbuild": "node tools/set_version.js",
 
         "docs": "typedoc",
-        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
+        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
     },
     "dependencies": {
         "wasm-feature-detect": "^1.5.1"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^1.0.2",
+        "@tsconfig/strictest": "^2.0.0",
         "@types/mocha": "^10.0.1",
         "eslint": "^8.36.0",
         "eslint-plugin-jsdoc": "^40.0.1",
@@ -53,6 +53,6 @@
         "shx": "^0.3.4",
         "ts-node": "^10.9.1",
         "typedoc": "^0.23.26",
-        "typescript": "^4.9.5"
+        "typescript": "^5.0.0"
     }
 }

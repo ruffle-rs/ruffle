@@ -104,7 +104,7 @@ impl<'gc> FunctionObject<'gc> {
 
     /// Construct a method from an ABC method and the current closure scope.
     ///
-    /// The given `reciever`, if supplied, will override any user-specified
+    /// The given `receiver`, if supplied, will override any user-specified
     /// `this` parameter.
     pub fn from_method(
         activation: &mut Activation<'_, 'gc>,
@@ -181,10 +181,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0
-            .read()
-            .exec
-            .exec(receiver, arguments, activation, self.into())
+        // NOTE: Cloning an executable does not allocate new memory
+        let exec = self.0.read().exec.clone();
+
+        exec.exec(receiver, arguments, activation, self.into())
     }
 
     fn construct(

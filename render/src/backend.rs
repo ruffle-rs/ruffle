@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
@@ -26,24 +26,13 @@ pub trait RenderBackend: Downcast {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
-    fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
-    /// Creates a new `RenderBackend` which renders directly
-    /// to the texture specified by `BitmapHandle` with the given
-    /// `width` and `height`. This backend is passed to the callback
-    /// `f`, which performs the desired draw operations.
-    ///
-    /// After the callback `f` exectures, the texture data is copied
-    /// from the GPU texture to an `RgbaImage`. There is no need to call
-    /// `update_texture` with the pixels from this image, as they
-    /// reflect data that is already stored on the GPU texture.
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
-        width: u32,
-        height: u32,
         commands: CommandList,
         quality: StageQuality,
+        bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>>;
 
     /// Applies the given filter with a `BitmapHandle` source onto a destination `BitmapHandle`.
@@ -70,9 +59,8 @@ pub trait RenderBackend: Downcast {
     fn update_texture(
         &mut self,
         bitmap: &BitmapHandle,
-        width: u32,
-        height: u32,
         rgba: Vec<u8>,
+        region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;

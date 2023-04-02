@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use downcast_rs::{impl_downcast, Downcast};
+use swf::{Rectangle, Twips};
 
 use crate::backend::RenderBackend;
 
@@ -155,6 +156,148 @@ impl BitmapFormat {
         match self {
             BitmapFormat::Rgb => 3,
             BitmapFormat::Rgba => 4,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct PixelRegion {
+    pub x_min: u32,
+    pub y_min: u32,
+    pub x_max: u32,
+    pub y_max: u32,
+}
+
+impl PixelRegion {
+    pub fn encompassing_twips(a: (Twips, Twips), b: (Twips, Twips)) -> Self {
+        // Figure out what our two ranges are
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        // Increase max by one pixel as we've calculated the *encompassed* max
+        let max = (
+            max.0 + Twips::from_pixels_i32(1),
+            max.1 + Twips::from_pixels_i32(1),
+        );
+
+        // Make sure we're never going below 0
+        Self {
+            x_min: min.0.to_pixels().floor().max(0.0) as u32,
+            y_min: min.1.to_pixels().floor().max(0.0) as u32,
+            x_max: max.0.to_pixels().ceil().max(0.0) as u32,
+            y_max: max.1.to_pixels().ceil().max(0.0) as u32,
+        }
+    }
+
+    pub fn for_region_i32(x: i32, y: i32, width: i32, height: i32) -> Self {
+        let a = (x, y);
+        let b = (x.saturating_add(width), y.saturating_add(height));
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        Self {
+            x_min: min.0.max(0) as u32,
+            y_min: min.1.max(0) as u32,
+            x_max: max.0.max(0) as u32,
+            y_max: max.1.max(0) as u32,
+        }
+    }
+
+    pub fn for_region(x: u32, y: u32, width: u32, height: u32) -> Self {
+        let a = (x, y);
+        let b = (x.saturating_add(width), y.saturating_add(height));
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        Self {
+            x_min: min.0,
+            y_min: min.1,
+            x_max: max.0,
+            y_max: max.1,
+        }
+    }
+
+    pub fn encompassing_pixels_i32(a: (i32, i32), b: (i32, i32)) -> Self {
+        Self::encompassing_pixels(
+            (a.0.max(0) as u32, a.1.max(0) as u32),
+            (b.0.max(0) as u32, b.1.max(0) as u32),
+        )
+    }
+
+    pub fn encompassing_pixels(a: (u32, u32), b: (u32, u32)) -> Self {
+        // Figure out what our two ranges are
+        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+
+        // Increase max by one pixel as we've calculated the *encompassed* max
+        let max = (max.0.saturating_add(1), max.1.saturating_add(1));
+
+        Self {
+            x_min: min.0,
+            y_min: min.1,
+            x_max: max.0,
+            y_max: max.1,
+        }
+    }
+
+    pub fn for_whole_size(width: u32, height: u32) -> Self {
+        Self {
+            x_min: 0,
+            y_min: 0,
+            x_max: width,
+            y_max: height,
+        }
+    }
+
+    pub fn for_pixel(x: u32, y: u32) -> Self {
+        Self {
+            x_min: x,
+            y_min: y,
+            x_max: x + 1,
+            y_max: y + 1,
+        }
+    }
+
+    pub fn clamp(&mut self, width: u32, height: u32) {
+        self.x_min = self.x_min.min(width);
+        self.y_min = self.y_min.min(height);
+        self.x_max = self.x_max.min(width);
+        self.y_max = self.y_max.min(height);
+    }
+
+    pub fn union(&mut self, other: PixelRegion) {
+        self.x_min = self.x_min.min(other.x_min);
+        self.y_min = self.y_min.min(other.y_min);
+        self.x_max = self.x_max.max(other.x_max);
+        self.y_max = self.y_max.max(other.y_max);
+    }
+
+    pub fn encompass(&mut self, x: u32, y: u32) {
+        self.x_min = self.x_min.min(x);
+        self.y_min = self.y_min.min(y);
+        self.x_max = self.x_max.max(x + 1);
+        self.y_max = self.y_max.max(y + 1);
+    }
+
+    pub fn intersects(&self, other: PixelRegion) -> bool {
+        self.x_min <= other.x_max
+            && self.x_max >= other.x_min
+            && self.y_min <= other.y_max
+            && self.y_max >= other.y_min
+    }
+
+    pub fn width(&self) -> u32 {
+        self.x_max - self.x_min
+    }
+
+    pub fn height(&self) -> u32 {
+        self.y_max - self.y_min
+    }
+}
+
+impl From<Rectangle<Twips>> for PixelRegion {
+    fn from(value: Rectangle<Twips>) -> Self {
+        Self {
+            x_min: value.x_min.to_pixels().floor().max(0.0) as u32,
+            y_min: value.y_min.to_pixels().floor().max(0.0) as u32,
+            x_max: value.x_max.to_pixels().ceil().max(0.0) as u32,
+            y_max: value.y_max.to_pixels().ceil().max(0.0) as u32,
         }
     }
 }

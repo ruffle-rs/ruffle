@@ -12,12 +12,11 @@ use crate::{
 };
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::commands::Command;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use swf::{BlendMode, Color, Fixed8};
+use swf::{BlendMode, Color, ColorTransform, Fixed8};
 use wgpu::CommandEncoder;
 
 use super::target::PoolOrArcTexture;
@@ -196,7 +195,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 0,
                 bytemuck::cast_slice(&[PushConstants {
                     transforms: Transforms { world_matrix },
-                    colors: ColorAdjustments::from(*color_adjustments),
+                    colors: color_adjustments.into(),
                 }]),
             );
         } else {
@@ -222,7 +221,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                     self.uniform_encoder,
                     &mut self.render_pass,
                     2,
-                    &ColorAdjustments::from(*color_adjustments),
+                    &color_adjustments.into(),
                 );
             }
         }
@@ -253,12 +252,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         );
         self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
         self.apply_transform(
-            &(transform.matrix
-                * Matrix {
-                    a: texture.width as f32,
-                    d: texture.height as f32,
-                    ..Default::default()
-                }),
+            &(transform.matrix * Matrix::scale(texture.width as f32, texture.height as f32)),
             &transform.color_transform,
         );
 
@@ -349,10 +343,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             self.apply_transform(
                 matrix,
                 &ColorTransform {
-                    r_mult: Fixed8::from_f32(f32::from(color.r) / 255.0),
-                    g_mult: Fixed8::from_f32(f32::from(color.g) / 255.0),
-                    b_mult: Fixed8::from_f32(f32::from(color.b) / 255.0),
-                    a_mult: Fixed8::from_f32(f32::from(color.a) / 255.0),
+                    r_multiply: Fixed8::from_f32(f32::from(color.r) / 255.0),
+                    g_multiply: Fixed8::from_f32(f32::from(color.g) / 255.0),
+                    b_multiply: Fixed8::from_f32(f32::from(color.b) / 255.0),
+                    a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
                     ..Default::default()
                 },
             );

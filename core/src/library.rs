@@ -90,6 +90,27 @@ impl<'gc> Avm2ClassRegistry<'gc> {
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
+        if let Some(old) = self.class_map.get(&class_object) {
+            if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
+                // Flash player actually allows using the same class in multiple SymbolClass
+                // entires in the same swf, with *different* symbol ids. Whichever one
+                // is processed first will *win*, and the second one will be ignored.
+                // We still log a warning, since we wouldn't expect this to happen outside
+                // of deliberately crafted SWFs.
+                tracing::warn!(
+                    "Tried to overwrite class {:?} id={:?} with symbol id={:?} from same movie",
+                    class_object,
+                    old.1,
+                    symbol,
+                );
+            }
+            // If we're trying to overwrite the class with a symbol from a *different* SwfMovie,
+            // then just ignore it. This handles the case where a Loader has a class that shadows
+            // a class in the main swf (possibly with a different ApplicationDomain). This will
+            // result in the original class from the parent being used, even when the child swf
+            // instantiates the clip on the timeline.
+            return;
+        }
         self.class_map
             .insert(class_object, MovieSymbol(movie, symbol));
     }
@@ -121,7 +142,10 @@ impl<'gc> MovieLibrary<'gc> {
         // TODO(Herschel): What is the behavior if id already exists?
         if !self.contains_character(id) {
             if let Character::Font(font) = character {
-                self.fonts.insert(font.descriptor().clone(), font);
+                // The first font with a given descriptor wins
+                if !self.fonts.contains_key(font.descriptor()) {
+                    self.fonts.insert(font.descriptor().clone(), font);
+                }
             }
 
             self.characters.insert(id, character);
@@ -343,11 +367,10 @@ impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.library.get_bitmap(id).and_then(|bitmap| {
+        self.library.get_bitmap(id).map(|bitmap| {
             bitmap
-                .bitmap_data()
-                .write(self.gc_context)
-                .bitmap_handle(backend)
+                .bitmap_data_wrapper()
+                .bitmap_handle(self.gc_context, backend)
         })
     }
 }

@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
-    Domain as Avm2Domain, EventObject as Avm2EventObject, Object as Avm2Object,
+    Domain as Avm2Domain, Object as Avm2Object,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -39,6 +39,7 @@ use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
+use crate::streams::StreamManager;
 use crate::string::AvmString;
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
@@ -153,6 +154,9 @@ struct GcRootData<'gc> {
 
     /// Manager of active sound instances.
     audio_manager: AudioManager<'gc>,
+
+    /// List of actively playing streams to decode.
+    stream_manager: StreamManager<'gc>,
 }
 
 impl<'gc> GcRootData<'gc> {
@@ -176,6 +180,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<ContextMenuState<'gc>>,
         &mut ExternalInterface<'gc>,
         &mut AudioManager<'gc>,
+        &mut StreamManager<'gc>,
     ) {
         (
             self.stage,
@@ -192,6 +197,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.current_context_menu,
             &mut self.external_interface,
             &mut self.audio_manager,
+            &mut self.stream_manager,
         )
     }
 }
@@ -352,9 +358,13 @@ impl Player {
                 .stage
                 .set_movie(context.gc_context, context.swf.clone());
 
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let global_domain = activation.avm2().global_domain();
-            let domain = Avm2Domain::movie_domain(&mut activation, global_domain);
+            let global_domain = context.avm2.global_domain();
+            let mut global_activation =
+                Avm2Activation::from_domain(context.reborrow(), global_domain);
+            let domain = Avm2Domain::movie_domain(&mut global_activation, global_domain);
+
+            let mut activation =
+                Avm2Activation::from_domain(global_activation.context.reborrow(), domain);
 
             activation
                 .context
@@ -526,10 +536,12 @@ impl Player {
             });
 
             self.update_timers(dt);
+            self.update(|context| {
+                StreamManager::tick(context, dt);
+            });
             self.audio.tick();
         }
     }
-
     pub fn time_til_next_timer(&self) -> Option<f64> {
         self.time_til_next_timer
     }
@@ -1167,7 +1179,7 @@ impl Player {
                 let (offset_x, offset_y) = drag_object.offset;
                 let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
                 if let Some(parent) = display_object.parent() {
-                    drag_point = parent.global_to_local(drag_point);
+                    drag_point = parent.mouse_to_local(drag_point);
                 }
                 drag_point = drag_object.constraint.clamp(drag_point);
                 display_object.set_x(context.gc_context, drag_point.0.to_pixels());
@@ -1487,7 +1499,7 @@ impl Player {
             } else {
                 Avm1::run_frame(context);
             }
-            context.update_sounds();
+            AudioManager::update_sounds(context);
         });
 
         self.needs_render = true;
@@ -1623,7 +1635,7 @@ impl Player {
                                 activation.context.gc_context,
                                 "__proto__",
                                 prototype,
-                                Attribute::empty(),
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
                             );
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
@@ -1678,25 +1690,6 @@ impl Player {
                         &args,
                     );
                 }
-
-                ActionType::Callable2 {
-                    callable,
-                    reciever,
-                    args,
-                } => {
-                    if let Err(e) =
-                        Avm2::run_stack_frame_for_callable(callable, reciever, &args[..], context)
-                    {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
-                }
-
-                ActionType::Event2 { event_type, target } => {
-                    let event = Avm2EventObject::bare_default_event(context, event_type);
-                    if let Err(e) = Avm2::dispatch_event(context, event, target) {
-                        tracing::error!("Unhandled AVM2 exception in event handler: {}", e);
-                    }
-                }
             }
 
             // AVM1 bytecode may leave the stack unbalanced, so do not let garbage values accumulate
@@ -1731,6 +1724,7 @@ impl Player {
                 current_context_menu,
                 external_interface,
                 audio_manager,
+                stream_manager,
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
@@ -1777,6 +1771,7 @@ impl Player {
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
+                stream_manager,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -2273,6 +2268,7 @@ impl PlayerBuilder {
                                 ),
                                 timers: Timers::new(),
                                 unbound_text_fields: Vec::new(),
+                                stream_manager: StreamManager::new(),
                             },
                         ),
                     },

@@ -6,10 +6,7 @@
 
 body {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     padding: 0;
     margin: 0;
     font-family: Lato, sans-serif;
@@ -25,10 +22,7 @@ body {
 
 #overlay {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     z-index: 1;
     pointer-events: none;
     border: 8px dashed var(--ruffle-orange);
@@ -45,10 +39,7 @@ body {
 
 #player {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     width: auto;
     height: auto;
     margin: 10px 0;
@@ -158,7 +149,8 @@ body {
     cursor: pointer;
 }
 
-#open-modal {
+#open-modal,
+#reload-swf {
     vertical-align: middle;
     cursor: pointer;
 }
@@ -178,7 +170,7 @@ body {
     padding: 0 10px;
 }
 
-@media only screen and (max-width: 800px) {
+@media only screen and (width <= 800px) {
     #local-file-container,
     #sample-swfs-container {
         display: block;
@@ -189,7 +181,7 @@ body {
     }
 }
 
-@media only screen and (max-width: 600px) {
+@media only screen and (width <= 600px) {
     #local-file-static-label,
     #sample-swfs-label {
         display: block;

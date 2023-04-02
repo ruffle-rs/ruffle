@@ -21,6 +21,7 @@ use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
+use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -43,6 +44,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod namespace_object;
+mod netstream_object;
 mod primitive_object;
 mod program_3d_object;
 mod proxy_object;
@@ -68,7 +70,7 @@ pub use crate::avm2::object::context3d_object::Context3DObject;
 pub use crate::avm2::object::date_object::{date_allocator, DateObject};
 pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::domain_object::{application_domain_allocator, DomainObject};
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
@@ -77,11 +79,12 @@ pub use crate::avm2::object::loaderinfo_object::{
     loader_info_allocator, LoaderInfoObject, LoaderStream,
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
+pub use crate::avm2::object::netstream_object::{netstream_allocator, NetStreamObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
 pub use crate::avm2::object::program_3d_object::Program3DObject;
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
-pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
-pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
+pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject};
+pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, QueuedPlay, SoundData, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{sound_channel_allocator, SoundChannelObject};
@@ -132,6 +135,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         VertexBuffer3DObject(VertexBuffer3DObject<'gc>),
         TextureObject(TextureObject<'gc>),
         Program3DObject(Program3DObject<'gc>),
+        NetStreamObject(NetStreamObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -779,7 +783,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call the object.
     fn call(
         self,
-        _reciever: Option<Object<'gc>>,
+        _receiver: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -798,7 +802,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// 2. Associate the instance object with the class's explicit `prototype`.
     /// 3. If the class has instance traits, install them at this time.
     /// 4. Call the constructor method with the newly-allocated object as
-    /// reciever. For ES3 classes, this is just the function's associated
+    /// receiver. For ES3 classes, this is just the function's associated
     /// method.
     /// 5. Yield the allocated object. (The return values of constructors are
     /// ignored.)
@@ -1151,6 +1155,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_display_object(&self, _context: &mut UpdateContext<'_, 'gc>, _obj: DisplayObject<'gc>) {
     }
 
+    fn init_application_domain(&self, _mc: MutationContext<'gc, '_>, _domain: Domain<'gc>) {
+        panic!("Tried to init an application domain on a non-ApplicationDomain object!")
+    }
+
     /// Unwrap this object as an ApplicationDomain.
     fn as_application_domain(&self) -> Option<Domain<'gc>> {
         None
@@ -1291,6 +1299,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn as_texture(&self) -> Option<TextureObject<'gc>> {
+        None
+    }
+
+    fn as_netstream(self) -> Option<NetStream<'gc>> {
         None
     }
 }

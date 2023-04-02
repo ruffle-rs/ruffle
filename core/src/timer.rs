@@ -150,7 +150,9 @@ impl<'gc> Timers<'gc> {
                     }
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
-                    let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
+                    let domain = context.avm2.global_domain();
+                    let mut avm2_activation =
+                        Avm2Activation::from_domain(context.reborrow(), domain);
                     match closure.call(None, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {

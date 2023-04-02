@@ -3,6 +3,7 @@ use crate::avm2::Activation;
 use crate::avm2::AvmString;
 use crate::avm2::Multiname;
 use crate::avm2::Value;
+use std::mem::size_of;
 
 use super::ClassObject;
 
@@ -34,17 +35,11 @@ impl<'gc> Error<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// For now, we only test on Nightly, since a new niche optimization was recently
-// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
-// relative to stable.
+#[cfg(target_family = "wasm")]
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
 
-#[rustversion::nightly]
-#[cfg(target_arch = "wasm32")]
-static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 24]);
-
-#[rustversion::nightly]
 #[cfg(target_pointer_width = "64")]
-static_assertions::assert_eq_size!(Result<Value<'_>, Error<'_>>, [u8; 32]);
+const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
 
 #[inline(never)]
 #[cold]
@@ -212,6 +207,17 @@ pub fn eof_error<'gc>(
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let class = activation.avm2().classes().eoferror;
+    error_constructor(activation, class, message, code)
+}
+
+#[inline(never)]
+#[cold]
+pub fn error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().error;
     error_constructor(activation, class, message, code)
 }
 

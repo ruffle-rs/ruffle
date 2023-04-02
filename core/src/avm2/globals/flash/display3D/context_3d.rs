@@ -65,14 +65,6 @@ pub fn configure_back_buffer<'gc>(
         let wants_best_resolution_on_browser_zoom =
             args.get(5).unwrap_or(&Value::Undefined).coerce_to_boolean();
 
-        if anti_alias != 0 {
-            avm2_stub_method!(
-                activation,
-                "flash.display3D.Context3D",
-                "configureBackBuffer",
-                "antiAlias != 0"
-            );
-        }
         if wants_best_resolution {
             avm2_stub_method!(
                 activation,

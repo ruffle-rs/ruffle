@@ -134,6 +134,35 @@ pub fn child<'gc>(
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
 }
 
+pub fn child_index<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let node = xml.node();
+
+    let parent = if let Some(parent) = node.parent() {
+        parent
+    } else {
+        return Ok(Value::Number(-1.0));
+    };
+
+    if let E4XNodeKind::Attribute(_) = &*node.kind() {
+        return Ok(Value::Number(-1.0));
+    }
+
+    if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
+        let index = children
+            .iter()
+            .position(|child| E4XNode::ptr_eq(*child, *node))
+            .unwrap();
+        return Ok(Value::Number(index as f64));
+    }
+
+    unreachable!("parent must be an element")
+}
+
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -147,6 +176,16 @@ pub fn children<'gc>(
     };
 
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+}
+
+pub fn copy<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let node = xml.node();
+    Ok(XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into())
 }
 
 pub fn parent<'gc>(
@@ -164,13 +203,21 @@ pub fn parent<'gc>(
 pub fn elements<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.unwrap().as_xml_object().unwrap();
+    let multiname = if args[0] == Value::Undefined {
+        Multiname::any(activation.context.gc_context)
+    } else {
+        name_to_multiname(activation, &args[0])?
+    };
     let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
         children
             .iter()
-            .filter(|node| matches!(&*node.kind(), E4XNodeKind::Element { .. }))
+            .filter(|node| {
+                matches!(&*node.kind(), E4XNodeKind::Element { .. })
+                    && node.matches_name(&multiname)
+            })
             .map(|node| E4XOrXml::E4X(*node))
             .collect()
     } else {

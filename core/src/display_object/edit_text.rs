@@ -31,7 +31,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::{Color, Twips};
+use swf::{Color, ColorTransform, Twips};
 
 use super::interactive::Avm2MousePick;
 
@@ -898,7 +898,7 @@ impl<'gc> EditText<'gc> {
                             // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
-                                color_transform: ColorTransform::default(),
+                                color_transform: ColorTransform::IDENTITY,
                             });
                         }
                         _ => {
@@ -1141,7 +1141,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
         let text = self.0.read();
-        let position = self.global_to_local(position);
+        let Some(position) = self.global_to_local(position) else { return None; };
         let position = (
             position.0 + Twips::from_pixels(Self::INTERNAL_PADDING),
             position.1 + Twips::from_pixels(Self::INTERNAL_PADDING),
@@ -1150,7 +1150,7 @@ impl<'gc> EditText<'gc> {
         for layout_box in text.layout.iter() {
             let origin = layout_box.bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
-            matrix.invert();
+            matrix = matrix.inverse().expect("Invertible layout matrix");
             let local_position = matrix * position;
 
             if let Some((text, _tf, font, params, color)) =

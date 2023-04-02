@@ -5,8 +5,9 @@ use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use crate::string::{AvmString, WStr, WString};
-use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
+use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::{Collect, GcCell, MutationContext};
+use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
 use std::fmt;
 
@@ -123,21 +124,23 @@ impl<'gc> XmlObject<'gc> {
     ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
-        let mut buf = Vec::new();
         let mut open_tags = vec![self.as_node()];
 
         self.0.write(activation.context.gc_context).status = XmlStatus::NoError;
 
         loop {
-            let event = parser.read_event(&mut buf).map_err(|error| {
+            let event = parser.read_event().map_err(|error| {
                 self.0.write(activation.context.gc_context).status = match error {
                     quick_xml::Error::UnexpectedEof(_)
-                    | quick_xml::Error::NameWithQuote(_)
-                    | quick_xml::Error::NoEqAfterName(_)
-                    | quick_xml::Error::DuplicatedAttribute(_, _) => XmlStatus::ElementMalformed,
+                    | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
+                    | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
+                        XmlStatus::ElementMalformed
+                    }
                     quick_xml::Error::EndEventMismatch { .. } => XmlStatus::MismatchedEnd,
                     quick_xml::Error::XmlDeclWithoutVersion(_) => XmlStatus::DeclNotTerminated,
-                    quick_xml::Error::UnquotedValue(_) => XmlStatus::AttributeNotTerminated,
+                    quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
+                        XmlStatus::AttributeNotTerminated
+                    }
                     _ => XmlStatus::OutOfMemory,
                     // Not accounted for:
                     // quick_xml::Error::UnexpectedToken(_)
@@ -150,7 +153,8 @@ impl<'gc> XmlObject<'gc> {
 
             match event {
                 Event::Start(bs) => {
-                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
+                    let child =
+                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
                     open_tags
                         .last_mut()
                         .unwrap()
@@ -158,7 +162,8 @@ impl<'gc> XmlObject<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
+                    let child =
+                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
                     open_tags
                         .last_mut()
                         .unwrap()
@@ -167,19 +172,17 @@ impl<'gc> XmlObject<'gc> {
                 Event::End(_) => {
                     open_tags.pop();
                 }
-                Event::Text(bt) | Event::CData(bt) => {
-                    let text = bt.unescaped()?;
-                    let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
-                    let is_whitespace_text = text.iter().all(is_whitespace_char);
-                    if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let text = AvmString::new_utf8_bytes(activation.context.gc_context, &text);
-                        let child =
-                            XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
-                        open_tags
-                            .last_mut()
-                            .unwrap()
-                            .append_child(activation.context.gc_context, child);
-                    }
+                Event::Text(bt) => {
+                    handle_text_cdata(
+                        custom_unescape(&bt.into_inner(), parser.decoder())?.as_bytes(),
+                        ignore_white,
+                        &mut open_tags,
+                        activation,
+                    );
+                }
+                Event::CData(bt) => {
+                    // This is already unescaped
+                    handle_text_cdata(&bt.into_inner(), ignore_white, &mut open_tags, activation);
                 }
                 Event::Decl(bd) => {
                     let mut xml_decl = WString::from_buf(b"<?".to_vec());
@@ -193,8 +196,8 @@ impl<'gc> XmlObject<'gc> {
                     // but it doesn't expose the whole tag, only the inner portion of it.
                     // Flash is also case-insensitive for DOCTYPE declarations. However,
                     // the `.docTypeDecl` property preserves the original case.
-                    let mut doctype = WString::from_buf(b"<!DOCTYPE".to_vec());
-                    doctype.push_str(WStr::from_units(bt.escaped()));
+                    let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
+                    doctype.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
                     doctype.push_byte(b'>');
                     self.0.write(activation.context.gc_context).doctype =
                         Some(AvmString::new(activation.context.gc_context, doctype));
@@ -244,5 +247,23 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
         Some(self.as_node())
+    }
+}
+
+fn handle_text_cdata<'gc>(
+    text: &[u8],
+    ignore_white: bool,
+    open_tags: &mut [XmlNode<'gc>],
+    activation: &mut Activation<'_, 'gc>,
+) {
+    let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
+    let is_whitespace_text = text.iter().all(is_whitespace_char);
+    if !(text.is_empty() || ignore_white && is_whitespace_text) {
+        let text = AvmString::new_utf8_bytes(activation.context.gc_context, text);
+        let child = XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
+        open_tags
+            .last_mut()
+            .unwrap()
+            .append_child(activation.context.gc_context, child);
     }
 }

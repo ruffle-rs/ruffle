@@ -126,7 +126,7 @@ impl<'gc> Avm1Button<'gc> {
         // It applies color transforms to every character in a button, in sequence(?).
         for (record, color_transform) in static_data.records.iter_mut().zip(color_transforms.iter())
         {
-            record.color_transform = color_transform.clone();
+            record.color_transform = *color_transform;
         }
     }
 
@@ -181,8 +181,7 @@ impl<'gc> Avm1Button<'gc> {
 
                 // Set transform of child (and modify previous child if it already existed)
                 child.set_matrix(context.gc_context, record.matrix.into());
-                child
-                    .set_color_transform(context.gc_context, record.color_transform.clone().into());
+                child.set_color_transform(context.gc_context, record.color_transform);
             }
         }
 

@@ -45,7 +45,7 @@ pub struct NativeExecutable<'gc> {
     /// The scope this method was defined in.
     scope: ScopeChain<'gc>,
 
-    /// The bound reciever for this method.
+    /// The bound receiver for this method.
     bound_receiver: Option<Object<'gc>>,
 
     /// The bound superclass for this method.

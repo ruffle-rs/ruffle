@@ -180,10 +180,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             }
 
             // Transform the point into the text's local space.
-            let local_matrix = self.global_to_local_matrix();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
             let tf = self.0.read();
-            let mut text_matrix = tf.static_data.text_transform;
-            text_matrix.invert();
+            let Some(text_matrix) = tf.static_data.text_transform.inverse() else { return false; };
             point = text_matrix * local_matrix * point;
 
             let mut font_id = 0;
@@ -211,8 +210,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                     for c in &block.glyphs {
                         if let Some(glyph) = font.get_glyph(c.index as usize) {
                             // Transform the point into glyph space and test.
-                            let mut matrix = glyph_matrix;
-                            matrix.invert();
+                            let Some(matrix) = glyph_matrix.inverse() else { return false; };
                             let point = matrix * point;
                             let glyph_shape = glyph.as_shape();
                             if glyph_shape.shape_bounds.contains(point)
@@ -243,7 +241,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         _run_frame: bool,
     ) {
         if context.is_action_script_3() {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let domain = context
+                .library
+                .library_for_movie(self.movie())
+                .unwrap()
+                .avm2_domain();
+            let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
             let statictext = activation.avm2().classes().statictext;
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,

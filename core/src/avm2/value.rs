@@ -13,6 +13,7 @@ use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
+use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
 use super::e4x::E4XNode;
@@ -49,16 +50,11 @@ pub enum Value<'gc> {
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-// For now, we only test on Nightly, since a new niche optimization was recently
-// added (https://github.com/rust-lang/rust/pull/94075) that shrinks the size
-// relative to stable.
+#[cfg(target_family = "wasm")]
+const _: () = assert!(size_of::<Value<'_>>() == 16);
 
-#[cfg(target_arch = "wasm32")]
-static_assertions::assert_eq_size!(Value<'_>, [u8; 16]);
-
-#[rustversion::nightly]
 #[cfg(target_pointer_width = "64")]
-static_assertions::assert_eq_size!(Value<'_>, [u8; 24]);
+const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
@@ -909,34 +905,27 @@ impl<'gc> Value<'gc> {
         name: Option<&Multiname<'gc>>,
         receiver: Option<Object<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        self.as_object()
-            .filter(|o| o.as_class_object().is_some() || o.as_executable().is_some())
-            .ok_or_else(|| {
-                if let Some(receiver) = receiver {
-                    if let Some(name) = name {
-                        format!(
-                            "Cannot call null or undefined method {} of class {}",
-                            name.to_qualified_name(activation.context.gc_context),
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    } else {
-                        format!(
-                            "Cannot call null or undefined method of class {}",
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        )
-                        .into()
-                    }
-                } else if let Some(name) = name {
-                    format!(
-                        "Cannot call null or undefined function {}",
-                        name.to_qualified_name(activation.context.gc_context)
-                    )
-                    .into()
+        match self.as_object() {
+            Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
+            _ => {
+                // Undefined function
+                let name = if let Some(name) = name {
+                    name.to_qualified_name(activation.context.gc_context)
                 } else {
-                    "Cannot call null or undefined function".into()
-                }
-            })
+                    "value".into()
+                };
+                let msg = if let Some(receiver) = receiver {
+                    format!(
+                        "Error #1006: {} is not a function of class {}.",
+                        name,
+                        receiver.instance_of_class_name(activation.context.gc_context)
+                    )
+                } else {
+                    format!("Error #1006: {} is not a function.", name)
+                };
+                Err(Error::AvmError(type_error(activation, &msg, 1006)?))
+            }
+        }
     }
 
     /// Like `coerce_to_type`, but also performs resolution of the type name.
@@ -1057,7 +1046,7 @@ impl<'gc> Value<'gc> {
 
         Err(Error::AvmError(type_error(
             activation,
-            &format!("Type Coercion failed: cannot convert {self:?} to {name}."),
+            &format!("Error #1034: Type Coercion failed: cannot convert {self:?} to {name}."),
             1034,
         )?))
     }

@@ -1,0 +1,4 @@
+child: stageChild1
+child: stageChild2
+root adding new Child():
+child: instance3

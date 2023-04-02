@@ -1,4 +1,5 @@
-import { PublicAPI, BaseLoadOptions } from "ruffle-core";
+import { PublicAPI } from "ruffle-core";
+import type { BaseLoadOptions } from "ruffle-core";
 
 interface LoadMessage {
     type: "load";
@@ -16,8 +17,8 @@ function handleMessage(message: Message) {
         case "load": {
             const api = window.RufflePlayer ?? {};
             api.config = {
-                ...api.config,
                 ...message.config,
+                ...api.config,
             };
             window.RufflePlayer = PublicAPI.negotiate(api, "extension");
             return {};

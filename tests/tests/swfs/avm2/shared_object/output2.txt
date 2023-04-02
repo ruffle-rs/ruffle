@@ -24,3 +24,10 @@ otherObj dump:
 6 = elem0,,,,elem4 type object
 7 = 1,2,3 type object
 8 = (UTC)  Sun Jan 25 20:31:23 1970 UTC
+
+obj.clear()
+obj == previousData: false
+
+obj dump:
+
+obj dump again:

@@ -2127,9 +2127,11 @@ impl<'gc> MovieClip<'gc> {
             let result: Result<(), Avm2Error> = constr_thing();
 
             if let Err(e) = result {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
                 tracing::error!(
-                    "Got {} when constructing AVM2 side of movie clip of type {}",
-                    e,
+                    "Got \"{}\" when constructing AVM2 side of movie clip of type {}",
+                    e.detailed_message(&mut activation),
                     class_object
                         .try_inner_class_definition()
                         .map(|c| c.read().name().to_qualified_name(context.gc_context))
@@ -2488,10 +2490,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
 
                             drop(write);
+
+                            let movie = self.movie();
+                            let domain = context
+                                .library
+                                .library_for_movie(movie)
+                                .unwrap()
+                                .avm2_domain();
+
                             if let Err(e) = Avm2::run_stack_frame_for_callable(
                                 callable,
                                 Some(avm2_object),
                                 &[],
+                                domain,
                                 context,
                             ) {
                                 tracing::error!(
@@ -2571,6 +2582,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if self.world_bounds().contains(point) {
+            let Some(local_matrix) = self.global_to_local_matrix() else { return false; };
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return false;
@@ -2597,7 +2609,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            let local_matrix = self.global_to_local_matrix();
             let point = local_matrix * point;
             if self.0.read().drawing.hit_test(point, &local_matrix) {
                 return true;
@@ -2861,6 +2872,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Option<InteractiveObject<'gc>> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return None; };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -2893,7 +2905,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             let mut result = None;
             let mut options = HitTestOptions::SKIP_INVISIBLE;
             options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-            // AVM2 allows movie clips to recieve mouse events without explicitly enabling button mode.
+            // AVM2 allows movie clips to receive mouse events without explicitly enabling button mode.
             let check_non_interactive = !require_button_mode;
 
             for child in self.iter_render_list().rev() {
@@ -2927,7 +2939,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.mouse_enabled() && check_non_interactive {
-                let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
                 if self.0.read().drawing.hit_test(point, &local_matrix) {
                     return Some(this);
@@ -2946,6 +2957,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> Avm2MousePick<'gc> {
         if self.visible() {
             let this: InteractiveObject<'gc> = (*self).into();
+            let Some(local_matrix) = self.global_to_local_matrix() else { return Avm2MousePick::Miss; };
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -3050,7 +3062,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.world_bounds().contains(point) {
-                let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
 
                 if self.0.read().drawing.hit_test(point, &local_matrix) {

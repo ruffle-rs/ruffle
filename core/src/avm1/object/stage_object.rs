@@ -765,12 +765,12 @@ fn set_quality<'gc>(
 }
 
 fn x_mouse<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let (local_x, _) = this.global_to_local(*activation.context.mouse_position);
+    let (local_x, _) = this.mouse_to_local(*activation.context.mouse_position);
     local_x.to_pixels().into()
 }
 
 fn y_mouse<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let (_, local_y) = this.global_to_local(*activation.context.mouse_position);
+    let (_, local_y) = this.mouse_to_local(*activation.context.mouse_position);
     local_y.to_pixels().into()
 }
 

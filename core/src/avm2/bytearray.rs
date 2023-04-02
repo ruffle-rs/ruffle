@@ -30,7 +30,11 @@ pub struct EofError;
 impl EofError {
     #[inline(never)]
     pub fn to_avm<'gc>(&self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-        match eof_error(activation, "End of file was encountered.", 2030) {
+        match eof_error(
+            activation,
+            "Error #2030: End of file was encountered.",
+            2030,
+        ) {
             Ok(e) => Error::AvmError(e),
             Err(e) => e,
         }
