@@ -24,7 +24,7 @@ pub fn init<'gc>(
 
         let bitmap_data = args
             .try_get_object(activation, 0)
-            .and_then(|o| o.as_bitmap_data_wrapper());
+            .and_then(|o| o.as_bitmap_data());
         //TODO: Pixel snapping is not supported
         let _pixel_snapping = args.get_string(activation, 1);
         let smoothing = args.get_bool(2);
@@ -146,7 +146,7 @@ pub fn set_bitmap_data<'gc>(
         } else {
             bitmap_data
                 .coerce_to_object(activation)?
-                .as_bitmap_data_wrapper()
+                .as_bitmap_data()
                 .ok_or_else(|| Error::RustError("Argument was not a BitmapData".into()))?
         };
         bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
