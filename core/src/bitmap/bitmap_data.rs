@@ -232,7 +232,7 @@ enum DirtyState {
 
 mod wrapper {
     use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-    use crate::context::{RenderContext, UpdateContext};
+    use crate::context::RenderContext;
     use gc_arena::{Collect, GcCell, MutationContext};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
@@ -344,9 +344,9 @@ mod wrapper {
         #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
-            context: &mut UpdateContext<'_, 'gc>,
+            mc: MutationContext<'gc, '_>,
         ) -> (GcCell<'gc, BitmapData<'gc>>, Option<PixelRegion>) {
-            let mut write = self.0.write(context.gc_context);
+            let mut write = self.0.write(mc);
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
                     write.dirty_state = DirtyState::Clean;

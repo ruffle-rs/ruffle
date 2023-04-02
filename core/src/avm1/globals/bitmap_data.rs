@@ -79,7 +79,7 @@ pub fn constructor<'gc>(
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         let (sync, _) = bitmap_data
             .bitmap_data()
-            .overwrite_cpu_pixels_from_gpu(&mut activation.context);
+            .overwrite_cpu_pixels_from_gpu(activation.context.gc_context);
         sync.write(activation.context.gc_context).init_pixels(
             width,
             height,
@@ -1363,7 +1363,7 @@ pub fn load_bitmap<'gc>(
             .as_bitmap_data_object()
             .unwrap()
             .bitmap_data()
-            .overwrite_cpu_pixels_from_gpu(&mut activation.context);
+            .overwrite_cpu_pixels_from_gpu(activation.context.gc_context);
 
         sync.write(activation.context.gc_context)
             .set_pixels(width, height, true, pixels);

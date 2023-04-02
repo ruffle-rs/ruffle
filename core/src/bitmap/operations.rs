@@ -40,7 +40,7 @@ pub fn fill_rect<'gc>(
 
     let target = if rect.width() == target.width() && rect.height() == target.height() {
         // If we're filling the whole region, we can discard the gpu data
-        target.overwrite_cpu_pixels_from_gpu(context).0
+        target.overwrite_cpu_pixels_from_gpu(context.gc_context).0
     } else {
         // If we're filling a partial region, finish any gpu->cpu sync
         target.sync()
@@ -177,7 +177,7 @@ pub fn noise<'gc>(
     channel_options: ChannelOptions,
     gray_scale: bool,
 ) {
-    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc_context);
     let mut write = target.write(context.gc_context);
 
     let true_seed = if seed <= 0 {
@@ -247,7 +247,7 @@ pub fn perlin_noise<'gc>(
     grayscale: bool,
     offsets: Vec<(f64, f64)>, // must contain `num_octaves` values
 ) {
-    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc_context);
     let mut write = target.write(context.gc_context);
 
     let turb = Turbulence::from_seed(random_seed);
@@ -1184,7 +1184,7 @@ pub fn apply_filter<'gc>(
     filter: Filter,
 ) {
     let source_handle = source.bitmap_handle(context.gc_context, context.renderer);
-    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context);
+    let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc_context);
     let mut write = target.write(context.gc_context);
     let dest = write.bitmap_handle(context.renderer).unwrap();
 
@@ -1293,7 +1293,7 @@ pub fn draw<'gc>(
         commands
     };
 
-    let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context);
+    let (target, include_dirty_area) = target.overwrite_cpu_pixels_from_gpu(context.gc_context);
     let mut write = target.write(context.gc_context);
     // If we have another dirty area to preserve, expand this to include it
     if let Some(old) = include_dirty_area {
@@ -1375,7 +1375,7 @@ pub fn set_pixels_from_byte_array<'gc>(
 
     let target = if region.width() == target.width() && region.height() == target.height() {
         // If we're filling the whole region, we can discard the gpu data
-        target.overwrite_cpu_pixels_from_gpu(context).0
+        target.overwrite_cpu_pixels_from_gpu(context.gc_context).0
     } else {
         // If we're filling a partial region, finish any gpu->cpu sync
         target.sync()
