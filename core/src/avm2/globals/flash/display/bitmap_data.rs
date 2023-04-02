@@ -165,7 +165,7 @@ pub fn scroll<'gc>(
         let x = args.get_i32(activation, 0)?;
         let y = args.get_i32(activation, 1)?;
 
-        operations::scroll(&mut activation.context, bitmap_data, x, y);
+        operations::scroll(activation.context.gc_context, bitmap_data, x, y);
     }
 
     Ok(Value::Undefined)
@@ -241,7 +241,7 @@ pub fn copy_pixels<'gc>(
 
             if let Some((alpha_bitmap, alpha_point)) = alpha_source {
                 operations::copy_pixels_with_alpha_source(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data,
                     src_bitmap,
                     (src_min_x, src_min_y, src_width, src_height),
@@ -252,7 +252,7 @@ pub fn copy_pixels<'gc>(
                 );
             } else {
                 operations::copy_pixels(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data,
                     src_bitmap,
                     (src_min_x, src_min_y, src_width, src_height),
@@ -373,7 +373,13 @@ pub fn set_pixel<'gc>(
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
-        operations::set_pixel(&mut activation.context, bitmap_data, x, y, color.into());
+        operations::set_pixel(
+            activation.context.gc_context,
+            bitmap_data,
+            x,
+            y,
+            color.into(),
+        );
     }
 
     Ok(Value::Undefined)
@@ -392,7 +398,7 @@ pub fn set_pixel32<'gc>(
         let y = args.get_u32(activation, 1)?;
         let color = args.get_i32(activation, 2)?;
 
-        operations::set_pixel32(&mut activation.context, bitmap_data, x, y, color);
+        operations::set_pixel32(activation.context.gc_context, bitmap_data, x, y, color);
     }
 
     Ok(Value::Undefined)
@@ -429,7 +435,7 @@ pub fn set_pixels<'gc>(
             .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
         operations::set_pixels_from_byte_array(
-            &mut activation.context,
+            activation.context.gc_context,
             bitmap_data,
             x,
             y,
@@ -487,7 +493,7 @@ pub fn copy_channel<'gc>(
                 .coerce_to_u32(activation)?;
 
             operations::copy_channel(
-                &mut activation.context,
+                activation.context.gc_context,
                 bitmap_data,
                 (dest_x, dest_y),
                 (src_min_x, src_min_y, src_width, src_height),
@@ -511,7 +517,7 @@ pub fn flood_fill<'gc>(
             let y = args.get_u32(activation, 1)?;
             let color = args.get_i32(activation, 2)?;
 
-            operations::flood_fill(&mut activation.context, bitmap_data, x, y, color);
+            operations::flood_fill(activation.context.gc_context, bitmap_data, x, y, color);
         }
     }
 
@@ -535,7 +541,7 @@ pub fn noise<'gc>(
         bitmap_data.check_valid(activation)?;
         let random_seed = args.get_i32(activation, 0)?;
         operations::noise(
-            &mut activation.context,
+            activation.context.gc_context,
             bitmap_data,
             random_seed,
             low,
@@ -582,7 +588,7 @@ pub fn color_transform<'gc>(
                 )?;
 
             operations::color_transform(
-                &mut activation.context,
+                activation.context.gc_context,
                 bitmap_data,
                 x_min,
                 y_min,
@@ -967,7 +973,7 @@ pub fn fill_rect<'gc>(
             .coerce_to_i32(activation)?;
 
         operations::fill_rect(
-            &mut activation.context,
+            activation.context.gc_context,
             bitmap_data,
             x,
             y,
@@ -1145,7 +1151,7 @@ pub fn palette_map<'gc>(
         let alpha_array = get_channel(6, 24)?;
 
         operations::palette_map(
-            &mut activation.context,
+            activation.context.gc_context,
             bitmap_data,
             source_bitmap,
             (source_point.0, source_point.1, source_size.0, source_size.1),
@@ -1202,7 +1208,7 @@ pub fn perlin_noise<'gc>(
             let octave_offsets = octave_offsets?;
 
             operations::perlin_noise(
-                &mut activation.context,
+                activation.context.gc_context,
                 bitmap_data,
                 (base_x, base_y),
                 num_octaves,
@@ -1276,7 +1282,7 @@ pub fn threshold<'gc>(
                 src_bitmap.check_valid(activation)?;
 
                 return Ok(operations::threshold(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     bitmap_data,
                     src_bitmap,
                     (src_min_x, src_min_y, src_width, src_height),
