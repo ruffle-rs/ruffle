@@ -62,7 +62,7 @@ pub fn init<'gc>(
                         fill_bitmap_data_from_symbol(activation, bitmap, new_bitmap_data);
                         BitmapDataObject::from_bitmap_data(
                             activation,
-                            new_bitmap_data,
+                            BitmapDataWrapper::new(new_bitmap_data),
                             activation.context.avm2.classes().bitmapdata,
                         )?
                     } else {

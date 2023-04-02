@@ -1080,7 +1080,10 @@ pub fn clone<'gc>(
             let class = activation.avm2().classes().bitmapdata;
             let new_bitmap_data_object = BitmapDataObject::from_bitmap_data(
                 activation,
-                GcCell::allocate(activation.context.gc_context, new_bitmap_data),
+                BitmapDataWrapper::new(GcCell::allocate(
+                    activation.context.gc_context,
+                    new_bitmap_data,
+                )),
                 class,
             )?;
 

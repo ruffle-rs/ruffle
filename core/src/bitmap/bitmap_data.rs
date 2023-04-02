@@ -231,8 +231,8 @@ enum DirtyState {
 }
 
 mod wrapper {
-    use crate::context::RenderContext;
-    use crate::{avm2::Value as Avm2Value, context::UpdateContext};
+    use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+    use crate::context::{RenderContext, UpdateContext};
     use gc_arena::{Collect, GcCell, MutationContext};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
@@ -394,6 +394,10 @@ mod wrapper {
 
         pub fn dispose(&self, mc: MutationContext<'gc, '_>) {
             self.0.write(mc).dispose();
+        }
+
+        pub fn init_object2(&self, mc: MutationContext<'gc, '_>, object: Avm2Object<'gc>) {
+            self.0.write(mc).avm2_object = Some(object)
         }
 
         pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
