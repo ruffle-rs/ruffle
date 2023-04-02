@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -51,20 +51,18 @@ pub struct BitmapDataObjectData<'gc> {
 impl<'gc> BitmapDataObject<'gc> {
     pub fn from_bitmap_data(
         activation: &mut Activation<'_, 'gc>,
-        bitmap_data: GcCell<'gc, BitmapData<'gc>>,
+        bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let mut instance = Self(GcCell::allocate(
             activation.context.gc_context,
             BitmapDataObjectData {
                 base: ScriptObjectData::new(class),
-                bitmap_data: Some(BitmapDataWrapper::new(bitmap_data)),
+                bitmap_data: Some(bitmap_data),
             },
         ));
 
-        bitmap_data
-            .write(activation.context.gc_context)
-            .init_object2(instance.into());
+        bitmap_data.init_object2(activation.context.gc_context, instance.into());
         instance.install_instance_slots(activation);
         class.call_native_init(Some(instance.into()), &[], activation)?;
 
