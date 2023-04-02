@@ -1223,11 +1223,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
-        None
-    }
-
     fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
         None
     }
