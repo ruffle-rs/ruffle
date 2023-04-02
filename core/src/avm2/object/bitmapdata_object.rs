@@ -89,11 +89,6 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
-        self.0.read().bitmap_data.map(|wrapper| wrapper.sync())
-    }
-
     fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
         self.0.read().bitmap_data
     }
