@@ -7,7 +7,9 @@ use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, Ve
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
+use crate::bitmap::bitmap_data::{
+    BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
+};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
@@ -103,7 +105,10 @@ pub fn init<'gc>(
             new_bitmap_data
                 .write(activation.context.gc_context)
                 .init_object2(this);
-            this.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
+            this.init_bitmap_data(
+                activation.context.gc_context,
+                BitmapDataWrapper::new(new_bitmap_data),
+            );
         }
     }
 

@@ -95,11 +95,7 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
 
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
-    fn init_bitmap_data(
-        &self,
-        mc: MutationContext<'gc, '_>,
-        new_bitmap: GcCell<'gc, BitmapData<'gc>>,
-    ) {
-        self.0.write(mc).bitmap_data = Some(BitmapDataWrapper::new(new_bitmap))
+    fn init_bitmap_data(&self, mc: MutationContext<'gc, '_>, new_bitmap: BitmapDataWrapper<'gc>) {
+        self.0.write(mc).bitmap_data = Some(new_bitmap)
     }
 }
