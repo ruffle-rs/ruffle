@@ -35,7 +35,7 @@ tracing-tracy = { version = "=0.10.0", optional = true }
 winapi = "0.3.9"
 
 [build-dependencies]
-embed-resource = "1"
+embed-resource = "2"
 
 [features]
 default = ["software_video"]
