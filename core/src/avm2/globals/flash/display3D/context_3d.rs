@@ -1,17 +1,13 @@
-use ruffle_render::backend::BufferUsage;
-use ruffle_render::backend::Context3DBlendFactor;
-use ruffle_render::backend::Context3DCompareMode;
-use ruffle_render::backend::Context3DTextureFormat;
-use ruffle_render::backend::Context3DTriangleFace;
-use ruffle_render::backend::Context3DVertexBufferFormat;
-use ruffle_render::backend::ProgramType;
-
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
+use ruffle_render::backend::{
+    BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
+    Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
+};
 
 pub fn create_index_buffer<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -475,6 +471,22 @@ pub fn set_texture_at<'gc>(
             Some(obj.as_texture().unwrap().handle())
         };
         context.set_texture_at(activation, sampler, texture, cube);
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_color_mask<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.and_then(|this| this.as_context_3d()) {
+        // This is a native method, so all of the arguments have been checked and coerced for us
+        let red = args[0].coerce_to_boolean();
+        let green = args[1].coerce_to_boolean();
+        let blue = args[2].coerce_to_boolean();
+        let alpha = args[3].coerce_to_boolean();
+        context.set_color_mask(activation, red, green, blue, alpha);
     }
     Ok(Value::Undefined)
 }
