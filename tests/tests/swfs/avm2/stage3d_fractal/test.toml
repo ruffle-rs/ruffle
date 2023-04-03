@@ -1,0 +1,9 @@
+num_frames = 2
+
+[image_comparison]
+tolerance = 1
+max_outliers = 25
+
+[player_options]
+max_execution_duration = { secs = 1000, nanos = 0 }
+with_renderer = { optional = false, sample_count = 1 }
