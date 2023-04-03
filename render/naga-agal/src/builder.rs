@@ -31,11 +31,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 const SWIZZLE_XYZW: u8 = 0b11100100;
 
-const SWIZZLE_XXXX: u8 = 0b00000000;
-const SWIZZLE_YYYY: u8 = 0b01010101;
-const SWIZZLE_ZZZZ: u8 = 0b10101010;
-const SWIZZLE_WWWW: u8 = 0b11111111;
-
 struct TextureSamplers {
     repeat_linear: Handle<Expression>,
     repeat_nearest: Handle<Expression>,
@@ -333,45 +328,18 @@ impl<'a> NagaBuilder<'a> {
 
     // Evaluates a binary operation. The AGAL assembly should always emit a swizzle that only uses
     // a single component, so we can use any component of the source expressions.
-    fn first_components_binary_op(
+    fn boolean_binary_op(
         &mut self,
         left: &SourceField,
         right: &SourceField,
         op: BinaryOperator,
     ) -> Result<Handle<Expression>> {
-        if ![SWIZZLE_XXXX, SWIZZLE_YYYY, SWIZZLE_ZZZZ, SWIZZLE_WWWW].contains(&left.swizzle) {
-            panic!(
-                "LHS swizzle involved multiple distinct components for binary op {:?}: {:?}",
-                op, left
-            );
-        }
+        let left = self.emit_source_field_load(left, true)?;
+        let right = self.emit_source_field_load(right, true)?;
 
-        if ![SWIZZLE_XXXX, SWIZZLE_YYYY, SWIZZLE_ZZZZ, SWIZZLE_WWWW].contains(&right.swizzle) {
-            panic!(
-                "RHS swizzle involved multiple distinct components for binary op {:?}: {:?}",
-                op, left
-            );
-        }
+        let res = self.evaluate_expr(Expression::Binary { op, left, right });
 
-        let left = self.emit_source_field_load(left, false)?;
-        let right = self.emit_source_field_load(right, false)?;
-
-        let left_first_component = self.evaluate_expr(Expression::AccessIndex {
-            base: left,
-            index: 0,
-        });
-
-        let right_first_component = self.evaluate_expr(Expression::AccessIndex {
-            base: right,
-            index: 0,
-        });
-
-        let res = self.evaluate_expr(Expression::Binary {
-            op,
-            left: left_first_component,
-            right: right_first_component,
-        });
-
+        // Cast the boolean result to float 0.0 and 1.0.
         let as_float = self.evaluate_expr(Expression::As {
             expr: res,
             kind: ScalarKind::Float,
@@ -934,7 +902,7 @@ impl<'a> NagaBuilder<'a> {
                             Expression::Math {
                                 fun: MathFunction::Dot,
                                 ..
-                            } | Expression::As { .. }
+                            }
                         );
 
                         if source_is_scalar {
@@ -1372,7 +1340,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, neg)?;
             }
             Opcode::Slt => {
-                let result = self.first_components_binary_op(
+                let result = self.boolean_binary_op(
                     source1,
                     source2.assert_source_field(),
                     BinaryOperator::Less,
@@ -1380,7 +1348,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, result)?;
             }
             Opcode::Seq => {
-                let result = self.first_components_binary_op(
+                let result = self.boolean_binary_op(
                     source1,
                     source2.assert_source_field(),
                     BinaryOperator::Equal,
@@ -1388,7 +1356,7 @@ impl<'a> NagaBuilder<'a> {
                 self.emit_dest_store(dest, result)?;
             }
             Opcode::Sne => {
-                let result = self.first_components_binary_op(
+                let result = self.boolean_binary_op(
                     source1,
                     source2.assert_source_field(),
                     BinaryOperator::NotEqual,
