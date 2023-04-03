@@ -6,7 +6,7 @@ use wgpu::{
     TextureView,
 };
 use wgpu::{Buffer, DepthStencilState, StencilFaceState};
-use wgpu::{ColorTargetState, ColorWrites, RenderPipelineDescriptor, TextureFormat, VertexState};
+use wgpu::{ColorTargetState, RenderPipelineDescriptor, TextureFormat, VertexState};
 
 use std::borrow::Cow;
 use std::cell::Cell;
@@ -63,6 +63,8 @@ pub struct CurrentPipeline {
 
     has_depth_texture: bool,
 
+    color_mask: wgpu::ColorWrites,
+
     depth_mask: bool,
     pass_compare_mode: wgpu::CompareFunction,
 
@@ -109,6 +111,8 @@ impl CurrentPipeline {
             culling: Context3DTriangleFace::None,
 
             has_depth_texture: false,
+
+            color_mask: wgpu::ColorWrites::ALL,
 
             depth_mask: true,
             pass_compare_mode: wgpu::CompareFunction::LessEqual,
@@ -160,6 +164,13 @@ impl CurrentPipeline {
     pub fn update_vertex_buffer_at(&mut self, _index: usize) {
         // FIXME - check if it's the same, so we can skip rebuilding the pipeline
         self.dirty.set(true);
+    }
+
+    pub fn update_color_mask(&mut self, color_mask: wgpu::ColorWrites) {
+        if self.color_mask != color_mask {
+            self.dirty.set(true);
+        }
+        self.color_mask = color_mask;
     }
 
     pub fn update_depth(&mut self, depth_mask: bool, pass_compare_mode: wgpu::CompareFunction) {
@@ -519,7 +530,7 @@ impl CurrentPipeline {
                             color: self.color_component,
                             alpha: self.alpha_component,
                         }),
-                        write_mask: ColorWrites::all(),
+                        write_mask: self.color_mask,
                     })],
                 }),
                 primitive: wgpu::PrimitiveState {

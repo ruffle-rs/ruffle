@@ -485,6 +485,30 @@ impl<'gc> Context3DObject<'gc> {
             )
     }
 
+    pub(crate) fn set_color_mask(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        red: bool,
+        green: bool,
+        blue: bool,
+        alpha: bool,
+    ) {
+        self.0
+            .write(activation.context.gc_context)
+            .render_context
+            .as_mut()
+            .unwrap()
+            .process_command(
+                Context3DCommand::SetColorMask {
+                    red,
+                    green,
+                    blue,
+                    alpha,
+                },
+                activation.context.gc_context,
+            );
+    }
+
     pub(crate) fn set_depth_test(
         &self,
         activation: &mut Activation<'_, 'gc>,

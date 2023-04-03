@@ -357,6 +357,12 @@ pub enum Context3DCommand<'gc> {
         texture: Option<Rc<dyn Texture>>,
         cube: bool,
     },
+    SetColorMask {
+        red: bool,
+        green: bool,
+        blue: bool,
+        alpha: bool,
+    },
     SetDepthTest {
         depth_mask: bool,
         pass_compare_mode: Context3DCompareMode,

@@ -985,6 +985,19 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline
                     .update_texture_at(*sampler as usize, bound_texture);
             }
+            Context3DCommand::SetColorMask {
+                red,
+                green,
+                blue,
+                alpha,
+            } => {
+                let mut color_mask = wgpu::ColorWrites::empty();
+                color_mask.set(wgpu::ColorWrites::RED, *red);
+                color_mask.set(wgpu::ColorWrites::GREEN, *green);
+                color_mask.set(wgpu::ColorWrites::BLUE, *blue);
+                color_mask.set(wgpu::ColorWrites::ALPHA, *alpha);
+                self.current_pipeline.update_color_mask(color_mask);
+            }
             Context3DCommand::SetDepthTest {
                 depth_mask,
                 pass_compare_mode,
