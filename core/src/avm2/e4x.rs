@@ -240,13 +240,18 @@ impl<'gc> E4XNode<'gc> {
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         let namespace = activation.avm2().public_namespace;
-        let xml_class = activation.resolve_class(&Multiname::new(namespace, "XML")).unwrap();
+        let xml_class = activation
+            .resolve_class(&Multiname::new(namespace, "XML"))
+            .unwrap();
 
         // FIXME - look these up from static property and settings
         let ignore_comments = true;
         let ignore_processing_instructions = true;
 
-        let ignore_white = xml_class.get_public_property("ignoreWhitespace", activation).unwrap_or(Value::Bool(true)).coerce_to_boolean();
+        let ignore_white = xml_class
+            .get_public_property("ignoreWhitespace", activation)
+            .unwrap_or(Value::Bool(true))
+            .coerce_to_boolean();
 
         let mut top_level = vec![];
         let mut depth = 0;
@@ -306,7 +311,11 @@ impl<'gc> E4XNode<'gc> {
             if !(text.is_empty() || ignore_white && is_whitespace_text) {
                 let text = AvmString::new_utf8_bytes(
                     activation.context.gc_context,
-                    if is_text && ignore_white { trim_ascii(text) } else { text },
+                    if is_text && ignore_white {
+                        trim_ascii(text)
+                    } else {
+                        text
+                    },
                 );
                 let node = E4XNode(GcCell::allocate(
                     activation.context.gc_context,
