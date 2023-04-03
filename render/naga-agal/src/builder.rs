@@ -1417,6 +1417,17 @@ impl<'a> NagaBuilder<'a> {
                 });
                 self.emit_dest_store(dest, frc)?;
             }
+            Opcode::Abs => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let abs = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Abs,
+                    arg: source,
+                    arg1: None,
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, abs)?;
+            }
             _ => {
                 return Err(Error::Unimplemented(format!(
                     "Unimplemented opcode: {opcode:?}",
