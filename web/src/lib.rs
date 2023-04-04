@@ -132,19 +132,16 @@ where
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Config {
-    #[serde(rename = "allowScriptAccess")]
     allow_script_access: bool,
 
-    #[serde(rename = "backgroundColor")]
     background_color: Option<String>,
 
     letterbox: Letterbox,
 
-    #[serde(rename = "upgradeToHttps")]
     upgrade_to_https: bool,
 
-    #[serde(rename = "compatibilityRules")]
     compatibility_rules: bool,
 
     #[serde(rename = "base")]
@@ -159,38 +156,30 @@ struct Config {
 
     scale: Option<String>,
 
-    #[serde(rename = "forceScale")]
     force_scale: bool,
 
     wmode: Option<String>,
 
-    #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
-    #[serde(rename = "logLevel", deserialize_with = "deserialize_log_level")]
+    #[serde(deserialize_with = "deserialize_log_level")]
     log_level: tracing::Level,
 
-    #[serde(rename = "maxExecutionDuration")]
     max_execution_duration: Duration,
 
-    #[serde(rename = "playerVersion")]
     player_version: Option<u8>,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct MovieMetadata {
     width: f64,
     height: f64,
-    #[serde(rename = "frameRate")]
     frame_rate: f32,
-    #[serde(rename = "numFrames")]
     num_frames: u16,
-    #[serde(rename = "swfVersion")]
     swf_version: u8,
-    #[serde(rename = "backgroundColor")]
     background_color: Option<String>,
-    #[serde(rename = "isActionScript3")]
     is_action_script_3: bool,
     #[serde(rename = "uncompressedLength")]
     uncompressed_len: u32,
