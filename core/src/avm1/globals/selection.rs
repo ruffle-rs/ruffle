@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::{EditText, TDisplayObject, TextSelection};
 use gc_arena::MutationContext;
 
@@ -108,10 +108,14 @@ pub fn get_focus<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker.get();
-    match focus {
-        Some(focus) => Ok(focus.object()),
-        None => Ok(Value::Null),
-    }
+    Ok(match focus {
+        Some(focus) => focus
+            .object()
+            .coerce_to_string(activation)
+            .unwrap_or_default()
+            .into(),
+        None => Value::Null,
+    })
 }
 
 pub fn set_focus<'gc>(
@@ -121,37 +125,22 @@ pub fn set_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tracker = activation.context.focus_tracker;
     match args.get(0) {
+        None => Ok(false.into()),
         Some(Value::Undefined | Value::Null) => {
             tracker.set(None, &mut activation.context);
             Ok(true.into())
         }
-        Some(Value::Object(obj)) => {
-            if let Some(display_object) = obj.as_display_object() {
+        Some(focus) => {
+            let start_clip = activation.target_clip_or_root();
+            let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
+            if let Some(display_object) = object {
                 if display_object.is_focusable() {
-                    tracker.set(Some(display_object), &mut activation.context);
+                    tracker.set(object, &mut activation.context);
+                    return Ok(true.into());
                 }
-                // [NA] Note: The documentation says true is success and false is failure,
-                // but from testing this seems to be opposite.
-                Ok(false.into())
-            } else {
-                Ok(true.into())
             }
+            Ok(false.into())
         }
-        Some(Value::MovieClip(_)) => {
-            let obj = args.get(0).unwrap().coerce_to_object(activation);
-
-            if let Some(display_object) = obj.as_display_object() {
-                if display_object.is_focusable() {
-                    tracker.set(Some(display_object), &mut activation.context);
-                }
-                // [NA] Note: The documentation says true is success and false is failure,
-                // but from testing this seems to be opposite.
-                Ok(false.into())
-            } else {
-                Ok(true.into())
-            }
-        }
-        _ => Ok(false.into()),
     }
 }
 
