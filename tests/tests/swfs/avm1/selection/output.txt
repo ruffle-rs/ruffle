@@ -26,7 +26,7 @@ _level0.a
 
 
 
-false
+true
 
 // Selection.setFocus(b)
 ! - onSetFocus
@@ -50,7 +50,7 @@ _level0.b
 
 
 
-false
+true
 
 // Selection.setSelection(0)
 undefined
@@ -133,7 +133,7 @@ _level0.b
 
 
 // Selection.setFocus(b)
-false
+true
 
 // b.focusEnabled = false;
 // Selection.getBeginIndex()
@@ -195,7 +195,7 @@ _level0.c
 
 
 
-false
+true
 
 // Selection.setFocus(d)
 false
@@ -246,7 +246,7 @@ _level0.button
 
 
 
-false
+true
 
 // Selection.setFocus(text_input
 ! - onSetFocus
@@ -270,7 +270,7 @@ _level0.text_input
 
 
 
-false
+true
 
 // Selection.setFocus(text_selectable)
 ! - onSetFocus
@@ -294,7 +294,7 @@ _level0.text_selectable
 
 
 
-false
+true
 
 // Selection.setSelection(0)
 undefined
@@ -414,7 +414,7 @@ _level0.text_non_selectable
 
 
 
-false
+true
 
 // Selection.setFocus(text_input)
 ! - onSetFocus
@@ -438,7 +438,7 @@ _level0.text_input
 
 
 
-false
+true
 
 // Selection.setSelection(1, 3)
 // text_input.text
