@@ -56,8 +56,9 @@ impl<'gc> ColorTransformObject {
 
     pub fn cast(value: Value<'gc>) -> Option<GcCell<'gc, Self>> {
         if let Value::Object(object) = value {
-            if let NativeObject::ColorTransform(color_transform) = object.native() {
-                return Some(color_transform);
+            if let Some(NativeObject::ColorTransform(color_transform)) = object.native().as_deref()
+            {
+                return Some(*color_transform);
             }
         }
         None

@@ -154,7 +154,7 @@ fn set_new_text_format<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
-        if let NativeObject::TextFormat(text_format) = text_format.native() {
+        if let Some(NativeObject::TextFormat(text_format)) = text_format.native().as_deref() {
             text_field.set_new_text_format(text_format.read().clone(), &mut activation.context);
         }
     }
@@ -214,7 +214,7 @@ fn set_text_format<'gc>(
     };
 
     if let Value::Object(text_format) = text_format {
-        if let NativeObject::TextFormat(text_format) = text_format.native() {
+        if let Some(NativeObject::TextFormat(text_format)) = text_format.native().as_deref() {
             text_field.set_text_format(
                 begin_index,
                 end_index,

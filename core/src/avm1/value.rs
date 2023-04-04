@@ -210,7 +210,7 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let result = match self {
             Value::Object(object) => {
-                let is_date = matches!(object.native(), NativeObject::Date(_));
+                let is_date = matches!(object.native().as_deref(), Some(NativeObject::Date(_)));
                 let val = if activation.swf_version() > 5 && is_date {
                     // In SWFv6 and higher, Date objects call `toString`.
                     object.call_method(

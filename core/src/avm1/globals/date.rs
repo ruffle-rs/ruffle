@@ -450,8 +450,8 @@ fn method<'gc>(
         _ => {}
     }
 
-    let date = match this.native() {
-        NativeObject::Date(date) => date,
+    let date = match this.native().as_deref() {
+        Some(NativeObject::Date(date)) => *date,
         _ => return Ok(Value::Undefined),
     };
     let mut date_ref = date.write(activation.context.gc_context);

@@ -31,7 +31,7 @@ fn get_bytes_loaded<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::NetStream(ns) = this.native() {
+    if let Some(NativeObject::NetStream(ns)) = this.native().as_deref() {
         return Ok(ns.bytes_loaded().into());
     }
 
@@ -43,7 +43,7 @@ fn get_bytes_total<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::NetStream(ns) = this.native() {
+    if let Some(NativeObject::NetStream(ns)) = this.native().as_deref() {
         return Ok(ns.bytes_loaded().into());
     }
 
@@ -55,7 +55,7 @@ fn play<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::NetStream(ns) = this.native() {
+    if let Some(NativeObject::NetStream(ns)) = this.native().as_deref() {
         let name = args
             .get(0)
             .cloned()
@@ -73,7 +73,7 @@ fn pause<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::NetStream(ns) = this.native() {
+    if let Some(NativeObject::NetStream(ns)) = this.native().as_deref() {
         let action = args.get(0).cloned().unwrap_or(Value::Undefined);
         let is_pause = action.as_bool(activation.swf_version());
 

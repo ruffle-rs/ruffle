@@ -24,18 +24,16 @@ pub fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let native = match this.native() {
-        NativeObject::BlurFilter(blur_filter) => NativeObject::BlurFilter(GcCell::allocate(
-            activation.context.gc_context,
-            blur_filter.read().clone(),
+    let native = match this.native().as_deref() {
+        Some(NativeObject::BlurFilter(blur_filter)) => Some(NativeObject::BlurFilter(
+            GcCell::allocate(activation.context.gc_context, blur_filter.read().clone()),
         )),
-        NativeObject::BevelFilter(bevel_filter) => NativeObject::BevelFilter(GcCell::allocate(
-            activation.context.gc_context,
-            bevel_filter.read().clone(),
+        Some(NativeObject::BevelFilter(bevel_filter)) => Some(NativeObject::BevelFilter(
+            GcCell::allocate(activation.context.gc_context, bevel_filter.read().clone()),
         )),
-        _ => NativeObject::None,
+        _ => None,
     };
-    if !matches!(native, NativeObject::None) {
+    if let Some(native) = native {
         let proto = this.get_local_stored("__proto__", activation);
         let cloned = ScriptObject::new(activation.context.gc_context, None);
         // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.

@@ -59,8 +59,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let blur_filter = match this.native() {
-        NativeObject::BlurFilter(blur_filter) => blur_filter,
+    let blur_filter = match this.native().as_deref() {
+        Some(NativeObject::BlurFilter(blur_filter)) => *blur_filter,
         _ => return Ok(Value::Undefined),
     };
 

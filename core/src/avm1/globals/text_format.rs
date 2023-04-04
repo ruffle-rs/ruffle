@@ -13,7 +13,7 @@ use gc_arena::{GcCell, MutationContext};
 macro_rules! getter {
     ($name:ident) => {
         |activation, this, _args| {
-            if let NativeObject::TextFormat(text_format) = this.native() {
+            if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
                 return Ok($name(activation, &text_format.read()));
             }
             Ok(Value::Undefined)
@@ -24,7 +24,7 @@ macro_rules! getter {
 macro_rules! setter {
     ($name:ident) => {
         |activation, this, args| {
-            if let NativeObject::TextFormat(text_format) = this.native() {
+            if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
                 let value = args.get(0).unwrap_or(&Value::Undefined);
                 $name(
                     activation,
@@ -40,7 +40,7 @@ macro_rules! setter {
 macro_rules! method {
     ($name:ident) => {
         |activation, this, args| {
-            if let NativeObject::TextFormat(text_format) = this.native() {
+            if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
                 return $name(activation, &text_format.read(), args);
             }
             Ok(Value::Undefined)

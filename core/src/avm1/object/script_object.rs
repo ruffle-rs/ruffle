@@ -8,6 +8,7 @@ use crate::avm1::{Object, ObjectPtr, TObject, Value};
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::Ref;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -53,7 +54,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
-    native: NativeObject<'gc>,
+    native: Option<NativeObject<'gc>>,
     properties: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
@@ -72,7 +73,7 @@ impl<'gc> ScriptObject<'gc> {
         let object = Self(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                native: NativeObject::None,
+                native: None,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
@@ -479,18 +480,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(gc_context).interfaces = iface_list;
     }
 
-    fn native(&self) -> NativeObject<'gc> {
-        self.0.read().native.clone()
+    fn native(&self) -> Option<Ref<NativeObject<'gc>>> {
+        Ref::filter_map(self.0.read(), |o| o.native.as_ref()).ok()
     }
 
     fn set_native(&self, gc_context: MutationContext<'gc, '_>, native: NativeObject<'gc>) {
         // Native object should be introduced at most once.
-        debug_assert!(matches!(self.0.read().native, NativeObject::None));
-
-        // Native object must not be `None`.
-        debug_assert!(!matches!(native, NativeObject::None));
-
-        self.0.write(gc_context).native = native;
+        debug_assert!(self.0.read().native.is_none());
+        self.0.write(gc_context).native = Some(native);
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
