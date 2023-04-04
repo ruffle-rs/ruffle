@@ -8,6 +8,15 @@
     "settings_ignore_optout": {
         "message": "忽略网站兼容性警告"
     },
+    "settings_show_swf_download": {
+        "message": "在上下文菜单显示SWF下载选项"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "对不受支持的内容发出警告"
+    },
+    "settings_log_level": {
+        "message": "日志级别"
+    },
     "status_init": {
         "message": "正在读取当前标签页……"
     },
