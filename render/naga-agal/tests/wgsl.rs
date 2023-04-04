@@ -108,3 +108,30 @@ fn test_complex_raytrace() {
         ShaderType::Fragment
     );
 }
+
+#[test]
+fn test_complex_fractal() {
+    const FRACTAL_VERTEX: &[u8] = include!("fractal_vertex.agal");
+    const FRACTAL_FRAGMENT: &[u8] = include!("fractal_fragment.agal");
+
+    test_shader!(
+        FRACTAL_VERTEX,
+        &[
+            Some(VertexAttributeFormat::Float2),
+            Some(VertexAttributeFormat::Float2),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        ],
+        ShaderType::Vertex
+    );
+
+    test_shader!(
+        FRACTAL_FRAGMENT,
+        &[None, None, None, None, None, None, None, None],
+        ShaderType::Fragment
+    );
+}
