@@ -326,17 +326,18 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
-        if let Some(target) = write.target {
-            return Err(format!(
-                "Modifying an XMLList object is not yet implemented: target {:?}",
-                target
-            )
-            .into());
-        }
 
         if !name.is_any_name() && !name.is_attribute() {
             if let Some(local_name) = name.local_name() {
                 if let Ok(index) = local_name.parse::<usize>() {
+                    if let Some(target) = write.target {
+                        return Err(format!(
+                            "Modifying an XMLList object is not yet implemented: target {:?}",
+                            target
+                        )
+                        .into());
+                    }
+
                     if index >= write.children.len() {
                         if let Some(value_xml) =
                             value.as_object().and_then(|obj| obj.as_xml_object())
@@ -347,6 +348,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                     }
                 }
             }
+        }
+
+        if write.children.len() == 1 {
+            let xml = write.children[0].get_or_create_xml(activation);
+            return xml.set_property_local(name, value, activation);
         }
 
         Err(format!(
