@@ -521,8 +521,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let texture = as_texture(handle);
 
         let extent = wgpu::Extent3d {
-            width: bitmap.width(),
-            height: bitmap.height(),
+            width: region.width(),
+            height: region.height(),
             depth_or_array_layers: 1,
         };
         let bitmap = bitmap.to_rgba();
@@ -538,7 +538,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            bitmap.data(),
+            &bitmap.data()[(region.y_min * texture.width * 4) as usize
+                ..(region.y_max * texture.width * 4) as usize],
             wgpu::ImageDataLayout {
                 offset: (region.x_min * 4) as wgpu::BufferAddress,
                 bytes_per_row: NonZeroU32::new(4 * texture.width),
