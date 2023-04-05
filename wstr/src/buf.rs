@@ -179,6 +179,7 @@ impl WString {
     }
 
     /// Converts this `WString` into a string slice.
+    #[inline]
     pub fn as_wstr(&self) -> &WStr {
         let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
         // SAFETY:`self` is immutably borrowed.
@@ -186,6 +187,7 @@ impl WString {
     }
 
     /// Converts this `WString` into a mutable string slice.
+    #[inline]
     pub fn as_wstr_mut(&mut self) -> &mut WStr {
         let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
         // SAFETY:`self` is mutably borrowed.
@@ -290,6 +292,7 @@ impl WString {
     }
 
     /// Truncates this `WString`, removing all contents.
+    #[inline]
     pub fn clear(&mut self) {
         // SAFETY: 0 is always a valid length.
         unsafe {
@@ -372,6 +375,7 @@ impl WString {
 }
 
 impl Drop for WString {
+    #[inline]
     fn drop(&mut self) {
         // SAFETY: `self` is gone after this line.
         unsafe {
