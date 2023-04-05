@@ -22,6 +22,7 @@ pub struct TestOptions {
     pub ignore: bool,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
+    pub log_fetch: bool,
 }
 
 impl Default for TestOptions {
@@ -34,6 +35,7 @@ impl Default for TestOptions {
             ignore: false,
             approximations: None,
             player_options: PlayerOptions::default(),
+            log_fetch: false,
         }
     }
 }
