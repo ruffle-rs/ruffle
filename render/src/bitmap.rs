@@ -376,6 +376,60 @@ impl PixelRegion {
     pub fn height(&self) -> u32 {
         self.y_max - self.y_min
     }
+
+    /// Clamps this PixelRegion to a theoretical overlap of another PixelRegion,
+    /// referring to "overlapping pixels" (such as a copy destination vs copy source),
+    /// in such a way that only pixels that are valid for both PixelRegions are valid.
+    ///
+    /// The other PixelRegion is also clamped to reflect the same overlap.
+    ///
+    /// The overlap of two regions starts at `self_point` on `self`, and `other_point` on `other`,
+    /// and is at most `size` big.
+    ///
+    /// The overlap does not actually need to happen on the same coordinate plane,
+    /// for example -1,-1 on this may be 100,100 on other, with an overlap region of 5x5.
+    /// As long as both textures can fit that, that's considered an overlap.
+    /// However, since -1,-1 is outside of the valid area on the first region,
+    /// the overlap actually happens at 0,0 and 101,101 for a size of 4x4.
+    pub fn clamp_with_intersection(
+        &mut self,
+        self_point: (i32, i32),
+        other_point: (i32, i32),
+        size: (i32, i32),
+        other: &mut PixelRegion,
+    ) {
+        let self_x_delta = self.x_min as i32 - self_point.0;
+        let self_y_delta = self.y_min as i32 - self_point.1;
+        let other_x_delta = other.x_min as i32 - other_point.0;
+        let other_y_delta = other.y_min as i32 - other_point.1;
+
+        let x_delta = self_x_delta.max(other_x_delta);
+        let y_delta = self_y_delta.max(other_y_delta);
+
+        let self_x_min = self_point.0 + x_delta;
+        let self_y_min = self_point.1 + y_delta;
+        let other_x_min = other_point.0 + x_delta;
+        let other_y_min = other_point.1 + y_delta;
+
+        let width = (size.0 - x_delta)
+            .min(self.x_max as i32 - self_x_min)
+            .min(other.x_max as i32 - other_x_min)
+            .max(0);
+        let height = (size.1 - y_delta)
+            .min(self.y_max as i32 - self_y_min)
+            .min(other.y_max as i32 - other_y_min)
+            .max(0);
+
+        self.x_min = self_x_min.max(0) as u32;
+        self.y_min = self_y_min.max(0) as u32;
+        self.x_max = (self_x_min + width).max(self_x_min.max(0)) as u32;
+        self.y_max = (self_y_min + height).max(self_y_min.max(0)) as u32;
+
+        other.x_min = other_x_min.max(0) as u32;
+        other.y_min = other_y_min.max(0) as u32;
+        other.x_max = (other_x_min + width).max(other_x_min.max(0)) as u32;
+        other.y_max = (other_y_min + height).max(other_y_min.max(0)) as u32;
+    }
 }
 
 impl From<Rectangle<Twips>> for PixelRegion {
@@ -386,5 +440,68 @@ impl From<Rectangle<Twips>> for PixelRegion {
             x_max: value.x_max.to_pixels().ceil().max(0.0) as u32,
             y_max: value.y_max.to_pixels().ceil().max(0.0) as u32,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::PixelRegion;
+
+    #[test]
+    fn clamp_with_intersection() {
+        fn test(
+            mut a: PixelRegion,
+            mut b: PixelRegion,
+            a_point: (i32, i32),
+            b_point: (i32, i32),
+            size: (i32, i32),
+            expected_a: PixelRegion,
+            expected_b: PixelRegion,
+        ) {
+            a.clamp_with_intersection(a_point, b_point, size, &mut b);
+
+            assert_eq!(expected_a, a);
+            assert_eq!(expected_b, b);
+        }
+
+        test(
+            PixelRegion::for_whole_size(10, 10),
+            PixelRegion::for_whole_size(10, 10),
+            (0, 0),
+            (0, 0),
+            (5, 5),
+            PixelRegion::for_region_i32(0, 0, 5, 5),
+            PixelRegion::for_region_i32(0, 0, 5, 5),
+        );
+
+        test(
+            PixelRegion::for_whole_size(10, 10),
+            PixelRegion::for_whole_size(150, 150),
+            (-1, -1),
+            (100, 100),
+            (5, 5),
+            PixelRegion::for_region_i32(0, 0, 4, 4),
+            PixelRegion::for_region_i32(101, 101, 4, 4),
+        );
+
+        test(
+            PixelRegion::for_whole_size(10, 10),
+            PixelRegion::for_whole_size(150, 150),
+            (-1, -1),
+            (100, 100),
+            (15, 15),
+            PixelRegion::for_region_i32(0, 0, 10, 10),
+            PixelRegion::for_region_i32(101, 101, 10, 10),
+        );
+
+        test(
+            PixelRegion::for_region(10, 10, 20, 20),
+            PixelRegion::for_whole_size(150, 150),
+            (15, 5),
+            (0, 0),
+            (15, 15),
+            PixelRegion::for_region_i32(15, 10, 15, 10),
+            PixelRegion::for_region_i32(0, 5, 15, 10),
+        );
     }
 }

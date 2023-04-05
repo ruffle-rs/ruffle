@@ -472,10 +472,10 @@ pub fn copy_channel<'gc>(
 
         let dest_x = dest_point
             .get_public_property("x", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
         let dest_y = dest_point
             .get_public_property("y", activation)?
-            .coerce_to_u32(activation)?;
+            .coerce_to_i32(activation)?;
 
         let source_channel = args.get_i32(activation, 3)?;
 
@@ -485,16 +485,16 @@ pub fn copy_channel<'gc>(
             //TODO: what if source is disposed
             let src_min_x = source_rect
                 .get_public_property("x", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
             let src_min_y = source_rect
                 .get_public_property("y", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
             let src_width = source_rect
                 .get_public_property("width", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
             let src_height = source_rect
                 .get_public_property("height", activation)?
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?;
 
             operations::copy_channel(
                 activation.context.gc_context,
