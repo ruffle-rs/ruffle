@@ -245,7 +245,7 @@ pub fn copy_pixels<'gc>(
 
             if let Some((alpha_bitmap, alpha_point)) = alpha_source {
                 operations::copy_pixels_with_alpha_source(
-                    activation.context.gc_context,
+                    &mut activation.context,
                     bitmap_data,
                     src_bitmap,
                     (src_min_x, src_min_y, src_width, src_height),
