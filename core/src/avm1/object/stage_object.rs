@@ -328,7 +328,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let mut keys = obj.base.get_keys(activation);
 
         if let Some(ctr) = obj.display_object.as_container() {
-            keys.extend(ctr.iter_render_list().rev().map(|child| child.name()));
+            // Button/MovieClip children are included in key list.
+            for child in ctr.iter_render_list().rev() {
+                if child.as_interactive().is_some() {
+                    keys.push(child.name());
+                }
+            }
         }
 
         keys
