@@ -7,16 +7,17 @@ use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 
 use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
-use super::{ptr, Units, WStr, MAX_STRING_LEN};
+use super::{ptr, Units, WStr, WStrMetadata};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
 pub struct WString {
     data: NonNull<()>,
-    meta: ptr::WStrMetadata,
+    meta: WStrMetadata,
+    // Always less than `WStr::MAX_LEN`
     capacity: u32,
 }
 
-#[cfg(target_family = "wasm")]
+#[cfg(target_pointer_width = "32")]
 const _: () = assert!(size_of::<WString>() == 12);
 
 #[cfg(target_pointer_width = "64")]
@@ -32,7 +33,7 @@ impl WString {
     /// Creates a new empty `WString` with the given capacity and wideness.
     #[inline]
     pub fn with_capacity(capacity: usize, wide: bool) -> Self {
-        if capacity > MAX_STRING_LEN {
+        if capacity > WStr::MAX_LEN {
             super::panic_on_invalid_length(capacity);
         }
 
@@ -51,7 +52,7 @@ impl WString {
     ///
     /// # Safety
     ///
-    /// The length and the capacity cannot be greater than `MAX_STRING_LEN`.
+    /// The length and the capacity cannot be greater than `WStr::MAX_LEN`.
     #[inline]
     pub unsafe fn from_buf_unchecked(buf: Units<Vec<u8>, Vec<u16>>) -> Self {
         // SAFETY: we take ownership of the buffer; avoid double frees
@@ -74,26 +75,26 @@ impl WString {
         // Tries to shrink the capacity below the maximum allowed WStr length.
         #[cold]
         fn shrink<T>(buf: &mut Vec<T>) {
-            assert!(buf.capacity() > MAX_STRING_LEN);
+            assert!(buf.capacity() > WStr::MAX_LEN);
 
             let len = buf.len();
-            if len > MAX_STRING_LEN {
+            if len > WStr::MAX_LEN {
                 super::panic_on_invalid_length(len);
             }
 
-            buf.shrink_to(MAX_STRING_LEN);
+            buf.shrink_to(WStr::MAX_LEN);
             let ptr = ManuallyDrop::new(mem::take(buf)).as_mut_ptr();
             // SAFETY:
             // Per its contract, `Vec::shrink_to` reallocated the buffer to have
-            // a capacity between `MAX_STRING_LEN` and `buf.capacity()`.
+            // a capacity between `WStr::MAX_LEN` and `buf.capacity()`.
             unsafe {
-                *buf = Vec::from_raw_parts(ptr, len, MAX_STRING_LEN);
+                *buf = Vec::from_raw_parts(ptr, len, WStr::MAX_LEN);
             }
         }
 
         #[inline(always)]
         fn ensure_valid_cap<T>(buf: &mut Vec<T>) {
-            if buf.capacity() > MAX_STRING_LEN {
+            if buf.capacity() > WStr::MAX_LEN {
                 shrink(buf)
             }
         }
@@ -201,7 +202,7 @@ impl WString {
     /// Converts this `WString` into a string slice.
     #[inline]
     pub fn as_wstr(&self) -> &WStr {
-        let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
+        let wstr = ptr::from_raw_parts_mut(self.data.as_ptr(), self.meta);
         // SAFETY:`self` is immutably borrowed.
         unsafe { &*wstr }
     }
@@ -209,7 +210,7 @@ impl WString {
     /// Converts this `WString` into a mutable string slice.
     #[inline]
     pub fn as_wstr_mut(&mut self) -> &mut WStr {
-        let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
+        let wstr = ptr::from_raw_parts_mut(self.data.as_ptr(), self.meta);
         // SAFETY:`self` is mutably borrowed.
         unsafe { &mut *wstr }
     }
@@ -249,9 +250,37 @@ impl WString {
         unsafe { ManuallyDrop::into_inner(this.steal_buf()) }
     }
 
+    /// Decomposes the `WString` into its raw components, leaking the contents.
+    ///
+    /// This returns, in order:
+    /// - the pointer to the actual buffer;
+    /// - the length (number of codepoints) and wideness;
+    /// - the total capacity, in term of codepoints (guaranteed to be less than `WStr::MAX_LEN`).
+    ///
+    /// `Self::from_raw_parts` can then be called later to rebuild the `WString` back.
+    #[inline]
+    pub fn into_raw_parts(self) -> (*mut (), WStrMetadata, u32) {
+        // Don't drop the contnts; they are managed by the caller now.
+        let this = ManuallyDrop::new(self);
+        (this.data.as_ptr(), this.meta, this.capacity)
+    }
+
+    /// Rebuilds a `WString` from its raw components.
+    ///
+    /// # Safety
+    /// The arguments must come from a previous call to `Self::into_raw_parts`.
+    #[inline]
+    pub unsafe fn from_raw_parts(ptr: *mut (), meta: WStrMetadata, capacity: u32) -> Self {
+        Self {
+            data: unsafe { NonNull::new_unchecked(ptr) },
+            meta,
+            capacity,
+        }
+    }
+
     // Modify the raw internal buffer.
     //
-    // Panics if the resulting buffer has a length greater than `MAX_STRING_LEN`.
+    // Panics if the resulting buffer has a length greater than `WStr::MAX_LEN`.
     fn with_buf<F, R>(&mut self, f: F) -> R
     where
         F: FnOnce(&mut Units<Vec<u8>, Vec<u16>>) -> R,
@@ -314,10 +343,7 @@ impl WString {
     /// Truncates this `WString`, removing all contents.
     #[inline]
     pub fn clear(&mut self) {
-        // SAFETY: 0 is always a valid length.
-        unsafe {
-            self.meta = ptr::WStrMetadata::new(0, self.meta.is_wide());
-        }
+        self.meta = ptr::WStrMetadata::new32(0, self.meta.is_wide());
     }
 
     /// Appends a UTF-16 code unit to `self`.

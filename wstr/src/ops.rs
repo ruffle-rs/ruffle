@@ -270,7 +270,7 @@ pub fn str_repeat(s: &WStr, count: usize) -> WString {
     }
 
     let len = s.len().saturating_mul(count);
-    if len > super::MAX_STRING_LEN {
+    if len > WStr::MAX_LEN {
         super::panic_on_invalid_length(len);
     }
 
