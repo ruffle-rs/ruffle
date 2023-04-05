@@ -16,6 +16,7 @@ ruffle_input_format = { path = "input-format" }
 ruffle_video_software = { path = "../video/software", optional = true }
 image = { version = "0.24.5", default-features = false, features = ["png"] }
 regex = "1.7.1"
+url = "2.3.1"
 
 [features]
 # Enable running image comparison tests. This is off by default,

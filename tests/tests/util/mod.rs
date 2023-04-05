@@ -2,6 +2,7 @@
 // https://doc.rust-lang.org/book/ch11-03-test-organization.html
 
 pub mod environment;
+pub mod navigator;
 pub mod options;
 pub mod runner;
 pub mod test;

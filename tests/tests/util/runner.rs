@@ -1,3 +1,4 @@
+use crate::util::navigator::NavigatorTestBackend;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
@@ -5,7 +6,7 @@ use ruffle_core::backend::audio::{
     SoundTransform,
 };
 use ruffle_core::backend::log::LogBackend;
-use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
+use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::KeyCode;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::impl_audio_mixer_backend;
@@ -84,7 +85,7 @@ pub fn run_swf(
 
     let builder = PlayerBuilder::new()
         .with_log(TestLogBackend::new(trace_output.clone()))
-        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor)?)
+        .with_navigator(NavigatorTestBackend::with_base_path(base_path, &executor)?)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
