@@ -21,7 +21,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
-use crate::string::{utils as string_utils, AvmString, WStr, WString};
+use crate::string::{decode_swf_str, utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::Utc;
@@ -201,12 +201,12 @@ impl<'gc> EditText<'gc> {
         let text = swf_tag.initial_text().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
+        let text = decode_swf_str(text, encoding);
 
-        let text = WString::from_utf8(&text.to_str_lossy(encoding));
         let mut text_spans = if swf_tag.is_html() {
             FormatSpans::from_html(&text, default_format, swf_tag.is_multiline())
         } else {
-            FormatSpans::from_text(text, default_format)
+            FormatSpans::from_text(text.into_owned(), default_format)
         };
 
         if swf_tag.is_password() {
@@ -263,7 +263,7 @@ impl<'gc> EditText<'gc> {
                         layout: swf_tag.layout().cloned(),
                         initial_text: swf_tag
                             .initial_text()
-                            .map(|s| WString::from_utf8_owned(s.to_string_lossy(encoding))),
+                            .map(|s| decode_swf_str(s, encoding).into_owned()),
                     },
                 ),
                 flags,

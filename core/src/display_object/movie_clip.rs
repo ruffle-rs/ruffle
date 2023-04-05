@@ -31,7 +31,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::limits::ExecutionLimit;
 use crate::prelude::*;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{decode_swf_str, AvmString, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
@@ -772,8 +772,8 @@ impl<'gc> MovieClip<'gc> {
             let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            let name = do_abc.name.to_str_lossy(reader.encoding());
-            let name = AvmString::new_utf8(context.gc_context, name);
+            let name = decode_swf_str(do_abc.name, reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
 
             if let Err(e) = Avm2::do_abc(context, do_abc.data, Some(name), do_abc.flags, domain) {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -800,8 +800,8 @@ impl<'gc> MovieClip<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_str()?.to_str_lossy(reader.encoding());
-            let class_name = AvmString::new_utf8(activation.context.gc_context, class_name);
+            let class_name = decode_swf_str(reader.read_str()?, reader.encoding());
+            let class_name = AvmString::new(activation.context.gc_context, class_name);
 
             let name = Avm2QName::from_qualified_name(class_name, &mut activation);
             let library = activation
@@ -897,15 +897,15 @@ impl<'gc> MovieClip<'gc> {
                 .map(|fld| fld.frame_num as u16 + 1)
                 .unwrap_or_else(|| static_data.total_frames + 1);
 
-            let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
+            let label = decode_swf_str(label, reader.encoding());
             let scene = Scene {
-                name: label.clone(),
+                name: label.into_owned(),
                 start,
                 length: end - start,
             };
             static_data.scene_labels.push(scene.clone());
             if let std::collections::hash_map::Entry::Vacant(v) =
-                static_data.scene_labels_map.entry(label.clone())
+                static_data.scene_labels_map.entry(scene.name.clone())
             {
                 v.insert(scene);
             } else {
@@ -914,7 +914,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
-            let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
+            let label = decode_swf_str(label, reader.encoding()).into_owned();
             static_data
                 .frame_labels
                 .push((frame_num as u16 + 1, label.clone()));
@@ -1558,11 +1558,9 @@ impl<'gc> MovieClip<'gc> {
                     child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
                         let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
-                        let name = name.to_str_lossy(encoding);
-                        child.set_name(
-                            context.gc_context,
-                            AvmString::new_utf8(context.gc_context, name),
-                        );
+                        let name = decode_swf_str(name, encoding);
+                        child
+                            .set_name(context.gc_context, AvmString::new(context.gc_context, name));
                         child.set_has_explicit_name(context.gc_context, true);
                     }
                     if let Some(clip_depth) = place_object.clip_depth {
@@ -3791,8 +3789,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let exports = reader.read_export_assets()?;
         for export in exports {
-            let name = export.name.to_str_lossy(reader.encoding());
-            let name = AvmString::new_utf8(context.gc_context, name);
+            let name = decode_swf_str(export.name, reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -3825,16 +3823,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }
 
         let frame_label = reader.read_frame_label()?;
-        let mut label = frame_label
-            .label
-            .to_str_lossy(reader.encoding())
-            .into_owned();
+        let mut label = decode_swf_str(frame_label.label, reader.encoding()).into_owned();
 
         // In AVM1, frame labels are case insensitive (ASCII), but in AVM2 they are case sensitive.
         if !context.is_action_script_3() {
             label.make_ascii_lowercase();
         }
-        let label = WString::from_utf8_owned(label);
+
         static_data.frame_labels.push((cur_frame, label.clone()));
         if let std::collections::hash_map::Entry::Vacant(v) =
             static_data.frame_labels_map.entry(label)

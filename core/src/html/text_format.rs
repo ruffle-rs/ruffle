@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{Integer, Units, WStr, WString};
+use crate::string::{decode_swf_str, Integer, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
@@ -145,7 +145,7 @@ impl TextFormat {
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class()
-            .map(|s| WString::from_utf8(&s.to_string_lossy(encoding)))
+            .map(|s| decode_swf_str(s, encoding).into_owned())
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().class())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
         let align = et.layout().map(|l| l.align);
