@@ -95,6 +95,11 @@ struct Opt {
     #[clap(long, short, default_value = "15.0")]
     max_execution_duration: f64,
 
+    /// Base directory or URL used to resolve all relative path statements in the SWF file.
+    /// The default is the current directory.
+    #[clap(long)]
+    base: Option<Url>,
+
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
     quality: StageQuality,
@@ -311,7 +316,7 @@ impl App {
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
-            movie_url.to_owned(),
+            opt.base.to_owned().unwrap_or(movie_url.to_owned()),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
