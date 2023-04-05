@@ -1,4 +1,4 @@
-use crate::util::navigator::NavigatorTestBackend;
+use crate::util::navigator::TestNavigatorBackend;
 use crate::util::test::Test;
 use anyhow::{anyhow, Result};
 use ruffle_core::backend::audio::{
@@ -51,13 +51,20 @@ impl AudioBackend for TestAudioBackend {
     fn pause(&mut self) {}
 }
 
-struct TestLogBackend {
+#[derive(Clone)]
+pub struct TestLogBackend {
     trace_output: Rc<RefCell<String>>,
 }
 
 impl TestLogBackend {
-    pub fn new(trace_output: Rc<RefCell<String>>) -> Self {
-        Self { trace_output }
+    pub fn new() -> Self {
+        Self {
+            trace_output: Rc::new(RefCell::new(String::new())),
+        }
+    }
+
+    pub fn trace_output(self) -> String {
+        self.trace_output.take()
     }
 }
 
@@ -81,11 +88,17 @@ pub fn run_swf(
     let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let frame_time_duration = Duration::from_millis(frame_time as u64);
-    let trace_output = Rc::new(RefCell::new(String::new()));
+
+    let log = TestLogBackend::new();
+    let navigator = TestNavigatorBackend::new(
+        base_path,
+        &executor,
+        test.options.log_fetch.then(|| log.clone()),
+    )?;
 
     let builder = PlayerBuilder::new()
-        .with_log(TestLogBackend::new(trace_output.clone()))
-        .with_navigator(NavigatorTestBackend::with_base_path(base_path, &executor)?)
+        .with_log(log.clone())
+        .with_navigator(navigator)
         .with_max_execution_duration(Duration::from_secs(300))
         .with_viewport_dimensions(
             movie.width().to_pixels() as u32,
@@ -203,6 +216,6 @@ pub fn run_swf(
 
     executor.run();
 
-    let trace = trace_output.borrow().clone();
+    let trace = log.trace_output();
     Ok(trace)
 }
