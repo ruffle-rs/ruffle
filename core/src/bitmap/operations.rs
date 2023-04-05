@@ -981,7 +981,7 @@ pub fn merge<'gc>(
 }
 
 pub fn copy_pixels<'gc>(
-    mc: MutationContext<'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -1007,45 +1007,14 @@ pub fn copy_pixels<'gc>(
         return;
     }
 
-    let source = if source_bitmap.ptr_eq(target) {
-        None
-    } else {
-        Some(source_bitmap.read_area(source_region))
-    };
-
-    let target = target.sync();
-    let mut write = target.write(mc);
-
-    for y in 0..dest_region.height() {
-        for x in 0..dest_region.width() {
-            let dest_x = dest_region.x_min + x;
-            let dest_y = dest_region.y_min + y;
-            let src_x = source_region.x_min + x;
-            let src_y = source_region.y_min + y;
-
-            let source_color = if let Some(source) = &source {
-                source.get_pixel32_raw(src_x, src_y)
-            } else {
-                write.get_pixel32_raw(src_x, src_y)
-            };
-
-            let mut dest_color = write.get_pixel32_raw(dest_x, dest_y);
-
-            dest_color = if (source_transparency && !transparency) || merge_alpha {
-                dest_color.blend_over(&source_color)
-            } else {
-                source_color
-            };
-
-            if !transparency {
-                dest_color = dest_color.with_alpha(0xFF)
-            }
-
-            write.set_pixel32_raw(dest_x, dest_y, dest_color);
-        }
-    }
-
-    write.set_cpu_dirty(dest_region);
+    copy_efficiently(
+        context,
+        source_bitmap,
+        target,
+        source_region,
+        dest_region,
+        (source_transparency && !transparency) || merge_alpha,
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1204,6 +1173,113 @@ pub fn apply_filter<'gc>(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn copy_efficiently<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    source: BitmapDataWrapper<'gc>,
+    dest: BitmapDataWrapper<'gc>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    mut blend: bool,
+) {
+    if !source.transparency() {
+        // We don't need to blend if we're copying an opaque texture, the alpha would be 255 anyway
+        blend = false;
+    }
+
+    if !blend && source.ptr_eq(dest) && source_region == dest_region {
+        // Copying the same area of self to self, noop
+        return;
+    }
+
+    // TODO: Add copy_on_gpu here for when the BMDs are on gpu
+    copy_on_cpu(context, source, dest, source_region, dest_region, blend);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn copy_on_cpu<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    source: BitmapDataWrapper<'gc>,
+    dest: BitmapDataWrapper<'gc>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    blend: bool,
+) {
+    if source.ptr_eq(dest) {
+        let dest = dest.sync();
+        let mut write = dest.write(context.gc_context);
+
+        for y in 0..dest_region.height() {
+            for x in 0..dest_region.width() {
+                let mut color =
+                    write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                if blend {
+                    color = write
+                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
+                        .blend_over(&color);
+                }
+                write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+            }
+        }
+
+        write.set_cpu_dirty(dest_region);
+    } else {
+        let dest = dest.sync();
+        let mut dest_write = dest.write(context.gc_context);
+        let source_read = source.read_area(source_region);
+
+        if !blend && (dest_write.transparency() || !source_read.transparency()) {
+            // Copying anything to a transparent texture,
+            // or copying an opaque texture to an opaque texture,
+            // means we can skip alpha premultiplication
+
+            if dest_region == source_region
+                && dest_region.width() == dest_write.width()
+                && dest_region.height() == dest_write.height()
+                && dest_region.width() == source_read.width()
+                && dest_region.height() == source_read.height()
+            {
+                // Copying an entire texture that's the same size and type? Just replace the whole thing
+                *dest_write.raw_pixels_mut() = source_read.raw_pixels().to_owned();
+            } else {
+                for y in 0..dest_region.height() {
+                    for x in 0..dest_region.width() {
+                        let color = source_read
+                            .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                        dest_write.set_pixel32_raw(
+                            dest_region.x_min + x,
+                            dest_region.y_min + y,
+                            color,
+                        );
+                    }
+                }
+            }
+        } else {
+            // Copying a transparent texture to an opaque texture, or blending
+
+            let opaque = !dest_write.transparency();
+
+            for y in 0..dest_region.height() {
+                for x in 0..dest_region.width() {
+                    let mut color = source_read
+                        .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    if blend {
+                        color = dest_write
+                            .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
+                            .blend_over(&color);
+                    }
+                    if opaque {
+                        color = color.with_alpha(255);
+                    }
+                    dest_write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                }
+            }
+        }
+
+        dest_write.set_cpu_dirty(dest_region);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn draw<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1220,6 +1296,54 @@ pub fn draw<'gc>(
     dirty_region.clamp(target.width(), target.height());
     if dirty_region.width() == 0 || dirty_region.height() == 0 {
         return Ok(());
+    }
+
+    // This can be a simple and efficient blit as long as:
+    // - We are using a bitmapdata as a source
+    // - We aren't using impactful blend modes
+    // - We don't have a color transform
+    // - We don't have a scale component of the transform matrix
+    if let IBitmapDrawable::BitmapData(source) = &source {
+        if (blend_mode == BlendMode::Normal || blend_mode == BlendMode::Layer)
+            && transform.color_transform == ColorTransform::default()
+            && transform.matrix.a == 1.0
+            && transform.matrix.b == 0.0
+            && transform.matrix.c == 0.0
+            && transform.matrix.d == 1.0
+        {
+            let mut source_region = PixelRegion::for_whole_size(source.width(), source.height());
+            let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+            let tx = transform.matrix.tx.to_pixels().floor() as i32;
+            let ty = transform.matrix.ty.to_pixels().floor() as i32;
+
+            let (cx, cy, cw, ch) = if let Some(clip_rect) = clip_rect {
+                (
+                    clip_rect.x_min.to_pixels().floor() as i32,
+                    clip_rect.y_min.to_pixels().floor() as i32,
+                    clip_rect.width().to_pixels().ceil() as i32,
+                    clip_rect.height().to_pixels().ceil() as i32,
+                )
+            } else {
+                (0, 0, target.width() as i32, target.height() as i32)
+            };
+
+            dest_region.clamp_with_intersection(
+                (cx, cy),
+                (cx - tx, cy - ty),
+                (cw, ch),
+                &mut source_region,
+            );
+
+            copy_efficiently(
+                context,
+                *source,
+                target,
+                source_region,
+                dest_region,
+                source.transparency(), // If transparent source, blend the pixels. Otherwise they'll be 0xFF alpha and nothing to blend.
+            );
+            return Ok(());
+        }
     }
 
     let mut transform_stack = ruffle_render::transform::TransformStack::new();

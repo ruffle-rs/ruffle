@@ -438,6 +438,14 @@ mod wrapper {
                 .render_bitmap(handle, context.transform_stack.transform(), smoothing);
         }
 
+        pub fn can_read(&self, read_area: PixelRegion) -> bool {
+            if let DirtyState::GpuModified(_, area) = self.0.read().dirty_state {
+                !area.intersects(read_area)
+            } else {
+                true
+            }
+        }
+
         pub fn is_point_in_bounds(&self, x: i32, y: i32) -> bool {
             x >= 0 && x < self.width() as i32 && y >= 0 && y < self.height() as i32
         }
@@ -594,6 +602,14 @@ impl<'gc> BitmapData<'gc> {
     #[inline]
     pub fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
         self.pixels[(x + y * self.width()) as usize]
+    }
+
+    pub fn raw_pixels_mut(&mut self) -> &mut Vec<Color> {
+        &mut self.pixels
+    }
+
+    pub fn raw_pixels(&self) -> &Vec<Color> {
+        &self.pixels
     }
 
     // Updates the data stored with our `BitmapHandle` if this `BitmapData`
