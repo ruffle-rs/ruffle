@@ -13,48 +13,48 @@ jobs:
     name: Submit to addons.mozilla.org
     runs-on: ubuntu-22.04
   
-  if: github.repository == 'ruffle-rs/ruffle'
+    if: github.repository == 'ruffle-rs/ruffle'
 
-  steps:
-    - name: Get latest release name
-      uses: mathiasvr/command-output@v2.0.0
-      id: release_tag
-      with:
-        run: gh release list -L1 | awk '{print $4}'
-    
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{steps.release_tag.outputs.stdout}}
+    steps:
+      - name: Get latest release name
+        uses: mathiasvr/command-output@v2.0.0
+        id: release_tag
+        with:
+          run: gh release list -L1 | awk '{print $4}'
+      
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{steps.release_tag.outputs.stdout}}
 
-    - name: Compute release date
-      uses: mathiasvr/command-output@v2.0.0
-      id: release_date
-      with:
-        run: gh release list -L1 | awk '{print $2}' | sed 's/-/_/g'
-    
-    - name: Download latest release assets
-      run: |
-        mkdir release_assets
-        gh release download ${{ steps.release_tag.outputs.stdout }} --pattern "*.xpi" --pattern "*.zip" --dir release_assets
+      - name: Compute release date
+        uses: mathiasvr/command-output@v2.0.0
+        id: release_date
+        with:
+          run: gh release list -L1 | awk '{print $2}' | sed 's/-/_/g'
+      
+      - name: Download latest release assets
+        run: |
+          mkdir release_assets
+          gh release download ${{ steps.release_tag.outputs.stdout }} --pattern "*.xpi" --pattern "*.zip" --dir release_assets
 
-        mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-reproducible-source.zip reproducible-source.zip
+          mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-reproducible-source.zip reproducible-source.zip
 
-        cd release_assets
-        unzip ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi
-        mv manifest.json ../web/packages/extension/assets/manifest.json
-        cd ..
+          cd release_assets
+          unzip ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi
+          mv manifest.json ../web/packages/extension/assets/manifest.json
+          cd ..
 
-        mkdir web/packages/extension/dist
-        mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi web/packages/extension/dist/reproducible-source.xpi
-    
-    - name: Publish Firefox extension
-      id: sign-firefox
-      continue-on-error: true
-      env:
-        FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-        MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
-        MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
-        SOURCE_TAG: ${{ steps.release_tag.outputs.stdout }}
-      working-directory: web/packages/extension
-      shell: bash -l {0}
-      run: npm run sign-firefox
+          mkdir web/packages/extension/dist
+          mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi web/packages/extension/dist/reproducible-source.xpi
+      
+      - name: Publish Firefox extension
+        id: sign-firefox
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          SOURCE_TAG: ${{ steps.release_tag.outputs.stdout }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: npm run sign-firefox
