@@ -1019,7 +1019,7 @@ pub fn copy_pixels<'gc>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn copy_pixels_with_alpha_source<'gc>(
-    mc: MutationContext<'gc, '_>,
+    context: &mut UpdateContext<'_, 'gc>,
     target: BitmapDataWrapper<'gc>,
     source_bitmap: BitmapDataWrapper<'gc>,
     src_rect: (i32, i32, i32, i32),
@@ -1028,6 +1028,21 @@ pub fn copy_pixels_with_alpha_source<'gc>(
     alpha_point: (i32, i32),
     merge_alpha: bool,
 ) {
+    if source_bitmap.ptr_eq(alpha_bitmap)
+        && alpha_point.0 == src_rect.0
+        && alpha_point.1 == src_rect.1
+    {
+        copy_pixels(
+            context,
+            target,
+            source_bitmap,
+            src_rect,
+            dest_point,
+            merge_alpha,
+        );
+        return;
+    }
+
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
     let (dest_min_x, dest_min_y) = dest_point;
     let transparency = target.transparency();
@@ -1053,7 +1068,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
     };
 
     let target = target.sync();
-    let mut write = target.write(mc);
+    let mut write = target.write(context.gc_context);
 
     for src_y in src_min_y..(src_min_y + src_height) {
         for src_x in src_min_x..(src_min_x + src_width) {
