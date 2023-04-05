@@ -352,18 +352,6 @@ jobs:
           npm run build:repro
           npm run docs
 
-      - name: Publish Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != '' && !matrix.demo
-        id: sign-firefox
-        continue-on-error: true
-        env:
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
-          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
-        working-directory: web/packages/extension
-        shell: bash -l {0}
-        run: npm run sign-firefox
-
       - name: Publish npm package
         if: ${{ !matrix.demo }}
         # npm scoped packages are private by default, explicitly make public
@@ -407,7 +395,7 @@ jobs:
           path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Upload Firefox extension (unsigned)
-        if: steps.sign-firefox.outcome != 'success' && !matrix.demo
+        if: !matrix.demo
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

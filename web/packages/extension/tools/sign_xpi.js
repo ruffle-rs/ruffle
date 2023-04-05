@@ -12,7 +12,8 @@ async function sign(
     unsignedPath,
     version,
     destination,
-    sourcePath
+    sourcePath,
+    sourceTag
 ) {
     const result = await signAddon({
         xpiPath: unsignedPath,
@@ -43,17 +44,12 @@ async function sign(
         },
     });
 
-    const build_date = new Date().toISOString();
-
     var notesUpload = client.patch({
         url: `/addons/addon/${encodeURIComponent(
             extensionId
         )}/versions/${encodeURIComponent(version)}/`,
         json: {
-            approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/nightly-${build_date.substr(
-                0,
-                10
-            )} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
+            approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/${sourceTag} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
 \n\
 We highly recommend using the Docker build workflow. You can invoke it using the following three commands:\n\
 \n\
@@ -102,7 +98,8 @@ try {
     if (
         process.env.MOZILLA_API_KEY &&
         process.env.MOZILLA_API_SECRET &&
-        process.env.FIREFOX_EXTENSION_ID
+        process.env.FIREFOX_EXTENSION_ID &&
+        process.env.SOURCE_TAG
     ) {
         // TODO: Import as a JSON module once it becomes stable.
         const require = createRequire(import.meta.url);
@@ -114,11 +111,12 @@ try {
             process.argv[2],
             version,
             process.argv[3],
-            process.argv[4]
+            process.argv[4],
+            process.env.SOURCE_TAG
         );
     } else {
         console.log(
-            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET and FIREFOX_EXTENSION_ID environment variables"
+            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables"
         );
     }
 } catch (error) {
