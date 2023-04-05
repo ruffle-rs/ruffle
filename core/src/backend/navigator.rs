@@ -3,6 +3,7 @@
 use crate::loader::Error;
 use crate::string::WStr;
 use indexmap::IndexMap;
+use std::fmt;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -37,6 +38,16 @@ impl NavigationMethod {
         } else {
             None
         }
+    }
+}
+
+impl fmt::Display for NavigationMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let method = match self {
+            Self::Get => "GET",
+            Self::Post => "POST",
+        };
+        f.write_str(method)
     }
 }
 
