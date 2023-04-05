@@ -120,6 +120,10 @@ pub struct DisplayObjectBase<'gc> {
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
     next_scroll_rect: Rectangle<Twips>,
+
+    /// Rectangle used for 9-slice scaling (`DislayObject.scale9grid`).
+    #[collect(require_static)]
+    scaling_grid: Rectangle<Twips>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -145,6 +149,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
+            scaling_grid: Default::default(),
         }
     }
 }

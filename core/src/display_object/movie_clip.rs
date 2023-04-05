@@ -546,6 +546,10 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_morph_shape(context, reader, 2),
+                TagCode::DefineScalingGrid => self
+                    .0
+                    .write(context.gc_context)
+                    .define_scaling_grid(context, reader),
                 TagCode::DefineShape => self
                     .0
                     .write(context.gc_context)
@@ -3254,6 +3258,24 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .register_character(define_bits_lossless.id, Character::Bitmap(bitmap));
+        Ok(())
+    }
+
+    #[inline]
+    fn define_scaling_grid(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        version: u8,
+    ) -> Result<(), Error> {
+        let movie = self.movie();
+        // let tag = reader.read_define_morph_shape(version)?;
+        // let id = tag.id;
+        // let morph_shape = MorphShape::from_swf_tag(context.gc_context, tag, movie.clone());
+        // context
+        //     .library
+        //     .library_for_movie_mut(movie)
+        //     .register_character(id, Character::MorphShape(morph_shape));
         Ok(())
     }
 
