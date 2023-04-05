@@ -8,13 +8,13 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
-use gc_arena::{GcCell, MutationContext};
+use gc_arena::MutationContext;
 
 macro_rules! getter {
     ($name:ident) => {
         |activation, this, _args| {
             if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
-                return Ok($name(activation, &text_format.read()));
+                return Ok($name(activation, &text_format.borrow()));
             }
             Ok(Value::Undefined)
         }
@@ -26,11 +26,7 @@ macro_rules! setter {
         |activation, this, args| {
             if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
                 let value = args.get(0).unwrap_or(&Value::Undefined);
-                $name(
-                    activation,
-                    &mut text_format.write(activation.context.gc_context),
-                    value,
-                )?;
+                $name(activation, &mut text_format.borrow_mut(), value)?;
             }
             Ok(Value::Undefined)
         }
@@ -41,7 +37,7 @@ macro_rules! method {
     ($name:ident) => {
         |activation, this, args| {
             if let Some(NativeObject::TextFormat(text_format)) = this.native().as_deref() {
-                return $name(activation, &text_format.read(), args);
+                return $name(activation, &text_format.borrow(), args);
             }
             Ok(Value::Undefined)
         }
@@ -608,7 +604,7 @@ pub fn constructor<'gc>(
     )?;
     this.set_native(
         activation.context.gc_context,
-        NativeObject::TextFormat(GcCell::allocate(activation.context.gc_context, text_format)),
+        NativeObject::TextFormat(Box::new(text_format.into())),
     );
     Ok(this.into())
 }
