@@ -252,6 +252,10 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     next_scroll_rect: Rectangle<Twips>,
 
+    /// Rectangle used for 9-slice scaling (`DislayObject.scale9grid`).
+    #[collect(require_static)]
+    scaling_grid: Rectangle<Twips>,
+
     /// If this Display Object should cacheAsBitmap - and if so, the cache itself.
     /// None means not cached, Some means cached.
     #[collect(require_static)]
@@ -282,6 +286,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
             next_scroll_rect: Default::default(),
+            scaling_grid: Default::default(),
             cache: None,
         }
     }
@@ -1614,6 +1619,14 @@ pub trait TDisplayObject<'gc>:
         if let Some(parent) = self.parent() {
             parent.invalidate_cached_bitmap(gc_context);
         }
+    }
+
+    fn scaling_grid(&self) -> Rectangle<Twips> {
+        self.base().scaling_grid.clone()
+    }
+
+    fn set_scaling_grid(&self, gc_context: &Mutation<'gc>, rect: Rectangle<Twips>) {
+        self.base_mut(gc_context).scaling_grid = rect;
     }
 
     /// Whether this object has been removed. Only applies to AVM1.
