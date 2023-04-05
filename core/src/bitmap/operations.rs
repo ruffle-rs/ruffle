@@ -355,8 +355,8 @@ pub fn perlin_noise<'gc>(
 pub fn copy_channel<'gc>(
     mc: MutationContext<'gc, '_>,
     target: BitmapDataWrapper<'gc>,
-    dest_point: (u32, u32),
-    src_rect: (u32, u32, u32, u32),
+    dest_point: (i32, i32),
+    src_rect: (i32, i32, i32, i32),
     source_bitmap: BitmapDataWrapper<'gc>,
     source_channel: i32,
     dest_channel: i32,
@@ -377,7 +377,20 @@ pub fn copy_channel<'gc>(
     };
     let transparency = target.transparency();
 
-    let source_region = PixelRegion::for_region(src_min_x, src_min_y, src_width, src_height);
+    let mut source_region =
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (min_x, min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return;
+    }
+
     let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
@@ -387,57 +400,45 @@ pub fn copy_channel<'gc>(
     let target = target.sync();
     let mut write = target.write(mc);
 
-    for y in source_region.y_min..source_region.y_max {
-        for x in source_region.x_min..source_region.x_max {
-            let dst_x = x as i32 + min_x as i32;
-            let dst_y = y as i32 + min_y as i32;
-            if write.is_point_in_bounds(dst_x, dst_y) {
-                let original_color: u32 = write
-                    .get_pixel32_raw(dst_x as u32, dst_y as u32)
-                    .to_un_multiplied_alpha()
-                    .into();
+    for y in 0..dest_region.height() {
+        for x in 0..dest_region.width() {
+            let dst_x = dest_region.x_min + x;
+            let dst_y = dest_region.y_min + y;
 
-                let source_color: u32 = if let Some(source) = &source {
-                    source.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
-                } else {
-                    write.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
-                };
+            let original_color: u32 = write
+                .get_pixel32_raw(dst_x, dst_y)
+                .to_un_multiplied_alpha()
+                .into();
 
-                let source_part = (source_color >> channel_shift) & 0xFF;
+            let source_color: u32 = if let Some(source) = &source {
+                source.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+            } else {
+                write.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+            };
 
-                let result_color: u32 = match dest_channel {
-                    // red
-                    1 => (original_color & 0xFF00FFFF) | source_part << 16,
-                    // green
-                    2 => (original_color & 0xFFFF00FF) | source_part << 8,
-                    // blue
-                    4 => (original_color & 0xFFFFFF00) | source_part,
-                    // alpha
-                    8 => (original_color & 0x00FFFFFF) | source_part << 24,
-                    _ => original_color,
-                };
+            let source_part = (source_color >> channel_shift) & 0xFF;
 
-                write.set_pixel32_raw(
-                    dst_x as u32,
-                    dst_y as u32,
-                    Color::from(result_color as i32).to_premultiplied_alpha(transparency),
-                );
-            }
+            let result_color: u32 = match dest_channel {
+                // red
+                1 => (original_color & 0xFF00FFFF) | source_part << 16,
+                // green
+                2 => (original_color & 0xFFFF00FF) | source_part << 8,
+                // blue
+                4 => (original_color & 0xFFFFFF00) | source_part,
+                // alpha
+                8 => (original_color & 0x00FFFFFF) | source_part << 24,
+                _ => original_color,
+            };
+
+            write.set_pixel32_raw(
+                dst_x,
+                dst_y,
+                Color::from(result_color as i32).to_premultiplied_alpha(transparency),
+            );
         }
     }
 
-    let mut dirty_region = PixelRegion::encompassing_pixels(
-        (
-            (src_min_x.saturating_add(min_x)),
-            (src_min_y.saturating_add(min_y)),
-        ),
-        (
-            (source_region.x_max.saturating_add(min_x)),
-            (source_region.y_max.saturating_add(min_y)),
-        ),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(dirty_region);
+    write.set_cpu_dirty(dest_region);
 }
 
 pub fn color_transform<'gc>(
@@ -518,8 +519,19 @@ pub fn threshold<'gc>(
     let mut dirty_area: Option<PixelRegion> = None;
 
     let mut source_region =
-        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
-    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (dest_min_x, dest_min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return 0;
+    }
+
     let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
@@ -530,56 +542,46 @@ pub fn threshold<'gc>(
     let mut write = target.write(mc);
 
     // Check each pixel
-    for src_y in src_min_y..(src_min_y + src_height) {
-        for src_x in src_min_x..(src_min_x + src_width) {
-            let dest_x = src_x - src_min_x + dest_min_x;
-            let dest_y = src_y - src_min_y + dest_min_y;
-
-            if !write.is_point_in_bounds(dest_x, dest_y) {
-                continue;
-            }
+    for y in 0..dest_region.height() {
+        for x in 0..dest_region.width() {
+            let dest_x = dest_region.x_min + x;
+            let dest_y = dest_region.y_min + y;
+            let src_x = source_region.x_min + x;
+            let src_y = source_region.y_min + y;
 
             // Extract source colour
             let source_color = if let Some(source) = &source {
-                if !source.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
                 source
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .get_pixel32_raw(src_x, src_y)
                     .to_un_multiplied_alpha()
             } else {
-                if !write.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
-                write
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
-                    .to_un_multiplied_alpha()
+                write.get_pixel32_raw(src_x, src_y).to_un_multiplied_alpha()
             };
 
             // If the test, as defined by the operation pass then set to input colour
             if operation.matches(i32::from(source_color) as u32 & mask, masked_threshold) {
                 modified_count += 1;
-                write.set_pixel32_raw(dest_x as u32, dest_y as u32, Color::from(colour));
+                write.set_pixel32_raw(dest_x, dest_y, Color::from(colour));
             } else {
                 // If the test fails, but copy_source is true then take the colour from the source
                 if copy_source {
                     let new_color = if let Some(source) = &source {
                         source
-                            .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                            .get_pixel32_raw(dest_x, dest_y)
                             .to_un_multiplied_alpha()
                     } else {
                         write
-                            .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                            .get_pixel32_raw(dest_x, dest_y)
                             .to_un_multiplied_alpha()
                     };
 
-                    write.set_pixel32_raw(dest_x as u32, dest_y as u32, new_color);
+                    write.set_pixel32_raw(dest_x, dest_y, new_color);
                 }
             }
             if let Some(dirty_area) = &mut dirty_area {
-                dirty_area.encompass(dest_x as u32, dest_y as u32);
+                dirty_area.encompass(dest_x, dest_y);
             } else {
-                dirty_area = Some(PixelRegion::for_pixel(dest_x as u32, dest_y as u32));
+                dirty_area = Some(PixelRegion::for_pixel(dest_x, dest_y));
             }
         }
     }
@@ -651,8 +653,19 @@ pub fn palette_map<'gc>(
     let (dest_min_x, dest_min_y) = dest_point;
 
     let mut source_region =
-        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
-    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (dest_min_x, dest_min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return;
+    }
+
     let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
@@ -662,26 +675,19 @@ pub fn palette_map<'gc>(
     let target = target.sync();
     let mut write = target.write(mc);
 
-    for src_y in src_min_y..(src_min_y + src_height) {
-        for src_x in src_min_x..(src_min_x + src_width) {
-            let dest_x = src_x - src_min_x + dest_min_x;
-            let dest_y = src_y - src_min_y + dest_min_y;
-
-            if !write.is_point_in_bounds(dest_x, dest_y) {
-                continue;
-            }
+    for y in 0..dest_region.height() {
+        for x in 0..dest_region.width() {
+            let dest_x = dest_region.x_min + x;
+            let dest_y = dest_region.y_min + y;
+            let src_x = source_region.x_min + x;
+            let src_y = source_region.y_min + y;
 
             let source_color = if let Some(source) = &source {
-                if !source.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
                 source
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .get_pixel32_raw(src_x, src_y)
                     .to_un_multiplied_alpha()
             } else {
-                write
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
-                    .to_un_multiplied_alpha()
+                write.get_pixel32_raw(src_x, src_y).to_un_multiplied_alpha()
             };
 
             let r = channel_arrays.0[source_color.red() as usize];
@@ -692,15 +698,11 @@ pub fn palette_map<'gc>(
             let sum = u32::wrapping_add(u32::wrapping_add(r, g), u32::wrapping_add(b, a));
             let mix_color = Color::from(sum as i32).to_premultiplied_alpha(true);
 
-            write.set_pixel32_raw(dest_x as u32, dest_y as u32, mix_color);
+            write.set_pixel32_raw(dest_x, dest_y, mix_color);
         }
     }
-    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
-        ((dest_min_x), (dest_min_y)),
-        ((dest_min_x + src_width), (dest_min_y + src_height)),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(dirty_region);
+
+    write.set_cpu_dirty(dest_region);
 }
 
 /// Compare two BitmapData objects.
@@ -906,8 +908,19 @@ pub fn merge<'gc>(
     let transparency = target.transparency();
 
     let mut source_region =
-        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
-    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (dest_min_x, dest_min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return;
+    }
+
     let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
@@ -917,33 +930,23 @@ pub fn merge<'gc>(
     let target = target.sync();
     let mut write = target.write(mc);
 
-    for src_y in src_min_y..(src_min_y + src_height) {
-        for src_x in src_min_x..(src_min_x + src_width) {
-            let dest_x = src_x - src_min_x + dest_min_x;
-            let dest_y = src_y - src_min_y + dest_min_y;
-
-            if !write.is_point_in_bounds(dest_x, dest_y) {
-                continue;
-            }
+    for y in 0..dest_region.height() {
+        for x in 0..dest_region.width() {
+            let dest_x = dest_region.x_min + x;
+            let dest_y = dest_region.y_min + y;
+            let src_x = source_region.x_min + x;
+            let src_y = source_region.y_min + y;
 
             let source_color = if let Some(source) = &source {
-                if !source.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
                 source
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
+                    .get_pixel32_raw(src_x, src_y)
                     .to_un_multiplied_alpha()
             } else {
-                if !write.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
-                write
-                    .get_pixel32_raw(src_x as u32, src_y as u32)
-                    .to_un_multiplied_alpha()
+                write.get_pixel32_raw(src_x, src_y).to_un_multiplied_alpha()
             };
 
             let dest_color = write
-                .get_pixel32_raw(dest_x as u32, dest_y as u32)
+                .get_pixel32_raw(dest_x, dest_y)
                 .to_un_multiplied_alpha();
 
             let red_mult = rgba_mult.0.clamp(0, 256) as u16;
@@ -967,19 +970,14 @@ pub fn merge<'gc>(
             let mix_color = Color::argb(alpha as u8, red as u8, green as u8, blue as u8);
 
             write.set_pixel32_raw(
-                dest_x as u32,
-                dest_y as u32,
+                dest_x,
+                dest_y,
                 mix_color.to_premultiplied_alpha(transparency),
             );
         }
     }
 
-    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
-        ((dest_min_x), (dest_min_y)),
-        ((dest_min_x + src_width), (dest_min_y + src_height)),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(dirty_region);
+    write.set_cpu_dirty(dest_region);
 }
 
 pub fn copy_pixels<'gc>(
@@ -996,8 +994,19 @@ pub fn copy_pixels<'gc>(
     let source_transparency = source_bitmap.transparency();
 
     let mut source_region =
-        PixelRegion::for_region_i32(src_min_x, src_min_y, src_width, src_height);
-    source_region.clamp(source_bitmap.width(), source_bitmap.height());
+        PixelRegion::for_whole_size(source_bitmap.width(), source_bitmap.height());
+    let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+    dest_region.clamp_with_intersection(
+        (dest_min_x, dest_min_y),
+        (src_min_x, src_min_y),
+        (src_width, src_height),
+        &mut source_region,
+    );
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        return;
+    }
+
     let source = if source_bitmap.ptr_eq(target) {
         None
     } else {
@@ -1007,28 +1016,20 @@ pub fn copy_pixels<'gc>(
     let target = target.sync();
     let mut write = target.write(mc);
 
-    for src_y in src_min_y..(src_min_y + src_height) {
-        for src_x in src_min_x..(src_min_x + src_width) {
-            let dest_x = src_x - src_min_x + dest_min_x;
-            let dest_y = src_y - src_min_y + dest_min_y;
-
-            if !write.is_point_in_bounds(dest_x, dest_y) {
-                continue;
-            }
+    for y in 0..dest_region.height() {
+        for x in 0..dest_region.width() {
+            let dest_x = dest_region.x_min + x;
+            let dest_y = dest_region.y_min + y;
+            let src_x = source_region.x_min + x;
+            let src_y = source_region.y_min + y;
 
             let source_color = if let Some(source) = &source {
-                if !source.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
-                source.get_pixel32_raw(src_x as u32, src_y as u32)
+                source.get_pixel32_raw(src_x, src_y)
             } else {
-                if !write.is_point_in_bounds(src_x, src_y) {
-                    continue;
-                }
-                write.get_pixel32_raw(src_x as u32, src_y as u32)
+                write.get_pixel32_raw(src_x, src_y)
             };
 
-            let mut dest_color = write.get_pixel32_raw(dest_x as u32, dest_y as u32);
+            let mut dest_color = write.get_pixel32_raw(dest_x, dest_y);
 
             dest_color = if (source_transparency && !transparency) || merge_alpha {
                 dest_color.blend_over(&source_color)
@@ -1040,15 +1041,11 @@ pub fn copy_pixels<'gc>(
                 dest_color = dest_color.with_alpha(0xFF)
             }
 
-            write.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
+            write.set_pixel32_raw(dest_x, dest_y, dest_color);
         }
     }
-    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
-        ((dest_min_x), (dest_min_y)),
-        ((dest_min_x + src_width), (dest_min_y + src_height)),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(dirty_region);
+
+    write.set_cpu_dirty(dest_region);
 }
 
 #[allow(clippy::too_many_arguments)]

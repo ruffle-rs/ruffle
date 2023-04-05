@@ -289,27 +289,21 @@ pub fn copy_channel<'gc>(
         if !bitmap_data.disposed() {
             if let Some(source_bitmap) = source_bitmap.as_bitmap_data_object() {
                 //TODO: what if source is disposed
-                let min_x = dest_point
-                    .get("x", activation)?
-                    .coerce_to_u32(activation)?
-                    .min(bitmap_data.bitmap_data().width());
-                let min_y = dest_point
-                    .get("y", activation)?
-                    .coerce_to_u32(activation)?
-                    .min(bitmap_data.bitmap_data().height());
+                let min_x = dest_point.get("x", activation)?.coerce_to_i32(activation)?;
+                let min_y = dest_point.get("y", activation)?.coerce_to_i32(activation)?;
 
                 let src_min_x = source_rect
                     .get("x", activation)?
-                    .coerce_to_u32(activation)?;
+                    .coerce_to_i32(activation)?;
                 let src_min_y = source_rect
                     .get("y", activation)?
-                    .coerce_to_u32(activation)?;
+                    .coerce_to_i32(activation)?;
                 let src_width = source_rect
                     .get("width", activation)?
-                    .coerce_to_u32(activation)?;
+                    .coerce_to_i32(activation)?;
                 let src_height = source_rect
                     .get("height", activation)?
-                    .coerce_to_u32(activation)?;
+                    .coerce_to_i32(activation)?;
 
                 operations::copy_channel(
                     activation.context.gc_context,
