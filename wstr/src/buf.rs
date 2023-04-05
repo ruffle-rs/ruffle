@@ -1,4 +1,4 @@
-use alloc::borrow::ToOwned;
+use alloc::borrow::{Cow, ToOwned};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt;
@@ -108,7 +108,24 @@ impl WString {
         unsafe { Self::from_buf_unchecked(buf) }
     }
 
+    /// Creates a `WString` from an pre-existing `WStr`.
+    #[inline]
+    pub fn from_wstr(s: &WStr) -> Self {
+        Self::from_buf(match s.units() {
+            Units::Bytes(us) => Units::Bytes(us.to_owned()),
+            Units::Wide(us) => Units::Wide(us.to_owned()),
+        })
+    }
+
+    /// Creates a `WString` from an UTF-8 `str`.
+    #[inline]
+    pub fn from_utf8(s: &str) -> Self {
+        let (ascii, tail) = split_ascii_prefix(s);
+        Self::from_utf8_inner(ascii, tail)
+    }
+
     /// Creates a `WString` from an UTF-8 `String`, reusing the allocation if possible.
+    #[inline]
     pub fn from_utf8_owned(s: String) -> Self {
         let (ascii, tail) = split_ascii_prefix(&s);
         if tail.is_empty() {
@@ -116,6 +133,23 @@ impl WString {
             return Self::from_buf(s.into_bytes());
         }
 
+        Self::from_utf8_inner(ascii, tail)
+    }
+
+    /// Creates a `WString` from UTF-8 bytes, treating invalid sequences
+    /// as described in `DecodeAvmUtf8`, and reusing the allocation if possible.
+    #[inline]
+    pub fn from_utf8_bytes(b: Vec<u8>) -> Self {
+        let (ascii, tail) = split_ascii_prefix_bytes(&b);
+        if tail.is_empty() {
+            // We can directly reinterpret ASCII bytes as LATIN1.
+            return Self::from_buf(b);
+        }
+
+        Self::from_utf8_bytes_inner(ascii, tail)
+    }
+
+    pub(crate) fn from_utf8_inner(ascii: &[u8], tail: &str) -> Self {
         let is_wide = tail.find(|ch| ch > u8::MAX.into()).is_some();
         if is_wide {
             let mut buf = Vec::new();
@@ -130,22 +164,8 @@ impl WString {
         }
     }
 
-    /// Creates a `WString` from an UTF-8 `str`.
-    #[inline]
-    pub fn from_utf8(s: &str) -> Self {
-        let mut buf = Self::new();
-        buf.push_utf8(s);
-        buf
-    }
-
-    pub fn from_utf8_bytes(b: Vec<u8>) -> Self {
-        let (ascii, tail) = split_ascii_prefix_bytes(&b);
+    pub(crate) fn from_utf8_bytes_inner(ascii: &str, tail: &[u8]) -> Self {
         let ascii = ascii.as_bytes();
-        if tail.is_empty() {
-            // We can directly reinterpret ASCII bytes as LATIN1.
-            return Self::from_buf(b);
-        }
-
         let is_wide = DecodeAvmUtf8::new(tail).any(|ch| ch > u8::MAX.into());
         if is_wide {
             let mut buf = Vec::new();
@@ -170,7 +190,7 @@ impl WString {
         buf
     }
 
-    /// Creates a `StrBuf` from a single unicode character.
+    /// Creates a `WString` from a single unicode character.
     #[inline]
     pub fn from_char(c: char) -> Self {
         let mut buf = Self::new();
@@ -342,7 +362,6 @@ impl WString {
     /// This will convert this `WString` into its wide form if necessary.
     pub fn push_utf8(&mut self, s: &str) {
         let (ascii, tail) = split_ascii_prefix(s);
-
         let is_wide = || tail.find(|ch| ch > u8::MAX.into()).is_some();
 
         self.with_wide_buf_if(is_wide, |units| match units {
@@ -353,6 +372,29 @@ impl WString {
             Units::Wide(buf) => {
                 buf.extend(ascii.iter().map(|c| u16::from(*c)));
                 buf.extend(tail.encode_utf16());
+            }
+        });
+    }
+
+    /// Appends UTF-8 bytes to `self`, treating invalid sequences
+    /// as described in `DecodeAvmUtf8`.
+    ///
+    /// This will convert this `WString` into its wide form if necessary.
+    pub fn push_utf8_bytes(&mut self, utf8: &[u8]) {
+        let (ascii, tail) = split_ascii_prefix_bytes(utf8);
+        let ascii = ascii.as_bytes();
+        let is_wide = || DecodeAvmUtf8::new(tail).any(|ch| ch > u8::MAX.into());
+
+        self.with_wide_buf_if(is_wide, |units| match units {
+            Units::Bytes(buf) => {
+                buf.extend_from_slice(ascii);
+                buf.extend(DecodeAvmUtf8::new(tail).map(|ch| ch as u8));
+            }
+            Units::Wide(buf) => {
+                buf.extend(ascii.iter().map(|c| u16::from(*c)));
+                for ch in DecodeAvmUtf8::new(tail) {
+                    encode_raw_utf16(ch, buf);
+                }
             }
         });
     }
@@ -425,15 +467,38 @@ impl Clone for WString {
 impl ToOwned for WStr {
     type Owned = WString;
 
+    #[inline]
     fn to_owned(&self) -> Self::Owned {
-        let mut buf = WString::new();
-        buf.push_str(self);
-        buf
+        WString::from_wstr(self)
     }
 
     fn clone_into(&self, target: &mut Self::Owned) {
         target.clear();
         target.push_str(self);
+    }
+}
+
+impl<'a> From<&'a WStr> for Cow<'a, WStr> {
+    #[inline]
+    fn from(s: &'a WStr) -> Self {
+        Cow::Borrowed(s)
+    }
+}
+
+impl From<WString> for Cow<'_, WStr> {
+    #[inline]
+    fn from(s: WString) -> Self {
+        Cow::Owned(s)
+    }
+}
+
+impl From<Cow<'_, WStr>> for WString {
+    #[inline]
+    fn from(s: Cow<'_, WStr>) -> Self {
+        match s {
+            Cow::Owned(s) => s,
+            Cow::Borrowed(s) => Self::from_wstr(s),
+        }
     }
 }
 
