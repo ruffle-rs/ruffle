@@ -948,7 +948,7 @@ pub fn copy_pixels<'gc>(
                         }
                     } else {
                         operations::copy_pixels(
-                            activation.context.gc_context,
+                            &mut activation.context,
                             bitmap_data.bitmap_data(),
                             src_bitmap.bitmap_data(),
                             (src_min_x, src_min_y, src_width, src_height),
