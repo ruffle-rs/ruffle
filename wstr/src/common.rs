@@ -329,6 +329,12 @@ impl WStr {
         super::ops::str_to_ascii_lowercase(self)
     }
 
+    /// Converts this string to its ASCII lower case equivalent in-place.
+    #[inline]
+    pub fn make_ascii_lowercase(&mut self) {
+        super::ops::str_make_ascii_lowercase(self)
+    }
+
     /// Analogue of [`str::replace`].
     #[inline]
     pub fn replace<'a, P: Pattern<'a>>(&'a self, pattern: P, with: &WStr) -> WString {

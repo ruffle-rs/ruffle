@@ -202,6 +202,19 @@ pub fn str_to_ascii_lowercase(s: &WStr) -> WString {
     map_latin1_chars(s, |c| c.to_ascii_lowercase())
 }
 
+pub fn str_make_ascii_lowercase(s: &mut WStr) {
+    match s.units_mut() {
+        Units::Bytes(us) => us.make_ascii_lowercase(),
+        Units::Wide(us) => {
+            for c in us {
+                if let Ok(b) = u8::try_from(*c) {
+                    *c = b.to_ascii_lowercase().into();
+                }
+            }
+        }
+    }
+}
+
 pub fn str_is_latin1(s: &WStr) -> bool {
     match s.units() {
         Units::Bytes(_) => true,
