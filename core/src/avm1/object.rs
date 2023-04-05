@@ -29,7 +29,7 @@ use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
-use std::cell::Ref;
+use std::cell::{Ref, RefCell};
 use std::fmt::Debug;
 
 pub mod array_object;
@@ -55,7 +55,7 @@ pub mod xml_object;
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
-    Date(GcCell<'gc, Date>),
+    Date(Box<RefCell<Date>>),
     BlurFilter(GcCell<'gc, BlurFilterObject>),
     BevelFilter(GcCell<'gc, BevelFilterObject>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),

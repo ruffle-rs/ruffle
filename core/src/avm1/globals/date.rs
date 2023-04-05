@@ -5,7 +5,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::MutationContext;
 use std::fmt;
 
 #[inline]
@@ -19,8 +19,7 @@ fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
 }
 
 /// Date and time, represented by milliseconds since epoch.
-#[derive(Clone, PartialEq, PartialOrd, Debug, Collect)]
-#[collect(require_static)]
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 #[repr(transparent)]
 pub struct Date(f64);
 
@@ -371,7 +370,7 @@ fn constructor<'gc>(
     };
     this.set_native(
         activation.context.gc_context,
-        NativeObject::Date(GcCell::allocate(activation.context.gc_context, date)),
+        NativeObject::Date(Box::new(date.into())),
     );
     Ok(this.into())
 }
@@ -450,20 +449,20 @@ fn method<'gc>(
         _ => {}
     }
 
-    let date = match this.native().as_deref() {
-        Some(NativeObject::Date(date)) => *date,
+    let native = this.native();
+    let date_cell = match native.as_deref() {
+        Some(NativeObject::Date(date)) => date,
         _ => return Ok(Value::Undefined),
     };
-    let mut date_ref = date.write(activation.context.gc_context);
 
     match index {
-        GET_TIME => return Ok(date_ref.time().into()),
+        GET_TIME => return Ok(date_cell.borrow().time().into()),
         SET_TIME => {
             let timestamp = args.first().copied().unwrap_or(f64::NAN);
-            *date_ref = Date(timestamp).clip();
-            return Ok(date_ref.time().into());
+            *date_cell.borrow_mut() = Date(timestamp).clip();
+            return Ok(date_cell.borrow().time().into());
         }
-        GET_TIMEZONE_OFFSET => return Ok(date_ref.timezone_offset().into()),
+        GET_TIMEZONE_OFFSET => return Ok(date_cell.borrow().timezone_offset().into()),
         _ => {}
     }
 
@@ -478,7 +477,7 @@ fn method<'gc>(
         index,
         GET_FULL_YEAR..=GET_MILLISECONDS | GET_TIME | GET_TIMEZONE_OFFSET
     );
-    if is_get && date_ref.time().is_nan() {
+    if is_get && date_cell.borrow().time().is_nan() {
         return Ok(f64::NAN.into());
     }
 
@@ -496,18 +495,18 @@ fn method<'gc>(
     };
 
     let date = if is_utc {
-        date_ref.clone()
+        date_cell.borrow().clone()
     } else {
-        date_ref.clone().local()
+        date_cell.borrow().clone().local()
     };
 
-    let mut set_date = |day: f64, time: f64| {
+    let set_date = |day: f64, time: f64| {
         let mut date = Date::make_date(day, time);
         if !is_utc {
             date = date.utc();
         }
-        *date_ref = date.clip();
-        date_ref.time()
+        *date_cell.borrow_mut() = date.clip();
+        date_cell.borrow().time()
     };
 
     Ok(match index {

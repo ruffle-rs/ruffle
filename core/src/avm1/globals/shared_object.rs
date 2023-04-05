@@ -84,7 +84,7 @@ fn serialize_value<'gc>(
                 let string = xml_node.into_string(activation).unwrap();
                 Some(AmfValue::XML(string.to_utf8_lossy().into_owned(), true))
             } else if let Some(NativeObject::Date(date)) = o.native().as_deref() {
-                Some(AmfValue::Date(date.read().time(), None))
+                Some(AmfValue::Date(date.borrow().time(), None))
             } else {
                 let mut object_body = Vec::new();
                 recursive_serialize(activation, o, &mut object_body);
