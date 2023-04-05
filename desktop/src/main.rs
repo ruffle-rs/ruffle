@@ -34,7 +34,7 @@ use std::panic::PanicInfo;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
@@ -90,6 +90,10 @@ struct Opt {
     /// Height of window in pixels.
     #[clap(long, display_order = 2)]
     height: Option<f64>,
+
+    /// Maximum number of seconds a script can run before scripting is disabled.
+    #[clap(long, short, default_value = "15.0")]
+    max_execution_duration: f64,
 
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
@@ -340,6 +344,7 @@ impl App {
             .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
+            .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
             .with_quality(opt.quality)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_scale_mode(opt.scale, opt.force_scale)
