@@ -162,21 +162,21 @@ pub fn unescape_multi_byte<'gc>(
     let chars = bs.chars().map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER));
 
     let mut chars = chars.peekable();
+    let mut utf8_bytes = Vec::new();
     while let Some(c) = chars.next() {
         if c == '\0' {
             break;
         }
         if c == '%' {
-            let mut bytes = Vec::new();
             while let Some(b) = handle_percent(&mut chars) {
-                bytes.push(b);
+                utf8_bytes.push(b);
                 if !matches!(chars.peek(), Some('%')) {
                     break;
                 }
                 chars.next();
             }
-            buf.push_str(&WString::from_utf8_bytes(bytes));
-
+            buf.push_utf8_bytes(&utf8_bytes);
+            utf8_bytes.clear();
             continue;
         }
 

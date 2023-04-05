@@ -10,7 +10,7 @@ use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{decode_swf_str, AvmString, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -867,8 +867,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .strings
                 .iter()
                 .map(|s| {
-                    AvmString::new_utf8(self.context.gc_context, s.to_str_lossy(self.encoding()))
-                        .into()
+                    let wstr = decode_swf_str(s, self.encoding());
+                    AvmString::new(self.context.gc_context, wstr).into()
                 })
                 .collect(),
         ));
@@ -1184,10 +1184,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_get_url(&mut self, action: GetUrl) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = action.target.to_str_lossy(self.encoding());
-        let url = action.url.to_string_lossy(self.encoding());
+        let target = decode_swf_str(action.target, self.encoding());
+        let url = decode_swf_str(action.url, self.encoding());
         // TODO: Use `StageObject::get_level_by_path`.
-        if target.starts_with("_level") && target.len() > 6 {
+        if target.starts_with(WStr::from_units(b"_level")) && target.len() > 6 {
             match target[6..].parse::<i32>() {
                 Ok(level_id) => {
                     let level = self.resolve_level(level_id);
@@ -1201,7 +1201,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         let future = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone(),
                             level,
-                            Request::get(url),
+                            Request::get(url.to_string()),
                             None,
                             None,
                             None,
@@ -1219,11 +1219,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(&WString::from_utf8(&url)) {
-            let fsargs = WString::from_utf8(&target);
-            fscommand::handle(fscommand, &fsargs, self)?;
+        if let Some(fscommand) = fscommand::parse(&url) {
+            fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(&url, &target, None);
+            self.context.navigator.navigate_to_url(
+                &url.to_utf8_lossy(),
+                &target.to_utf8_lossy(),
+                None,
+            );
         }
 
         Ok(FrameControl::Continue)
@@ -1408,7 +1411,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_goto_label(&mut self, action: GotoLabel) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                let label = WString::from_utf8(&action.label.to_str_lossy(self.encoding()));
+                let label = decode_swf_str(action.label, self.encoding());
                 if let Some(frame) = clip.frame_label_to_number(&label, &self.context) {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
@@ -1802,8 +1805,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 SwfValue::Float(v) => v.into(),
                 SwfValue::Double(v) => v.into(),
                 SwfValue::Str(v) => {
-                    AvmString::new_utf8(self.context.gc_context, v.to_str_lossy(self.encoding()))
-                        .into()
+                    let v = decode_swf_str(v, self.encoding());
+                    AvmString::new(self.context.gc_context, v).into()
                 }
                 SwfValue::Register(v) => self.current_register(v),
                 SwfValue::ConstantPool(i) => {
@@ -1914,7 +1917,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_set_target(&mut self, action: SetTarget) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let target = WString::from_utf8_owned(action.target.to_string_lossy(self.encoding()));
+        let target = decode_swf_str(action.target, self.encoding());
         self.set_target(&target)
     }
 
@@ -2216,8 +2219,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 match catch_vars {
                     CatchVar::Var(name) => {
-                        let name = name.to_str_lossy(activation.encoding());
-                        let name = AvmString::new_utf8(activation.context.gc_context, name);
+                        let name = decode_swf_str(name, activation.encoding());
+                        let name = AvmString::new(activation.context.gc_context, name);
                         activation.set_variable(name, value.to_owned())?
                     }
                     CatchVar::Register(id) => {

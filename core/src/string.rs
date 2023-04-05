@@ -5,6 +5,14 @@ use std::ops::Deref;
 use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 
+/// Converts a SWF-encoded string into a `WStr`.
+pub fn decode_swf_str<'a>(s: &'a swf::SwfStr, encoding: &'static swf::Encoding) -> Cow<'a, WStr> {
+    match s.to_str_lossy(encoding) {
+        Cow::Borrowed(utf8) => from_utf8(utf8),
+        Cow::Owned(utf8) => WString::from_utf8_owned(utf8).into(),
+    }
+}
+
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
@@ -37,8 +45,8 @@ impl<'gc> AvmString<'gc> {
     }
 
     pub fn new_utf8_bytes(gc_context: MutationContext<'gc, '_>, bytes: &[u8]) -> Self {
-        let buf = WString::from_utf8_bytes(bytes.to_vec());
-        Self::new(gc_context, buf)
+        let buf = ruffle_wstr::from_utf8_bytes(bytes);
+        Self::new(gc_context, buf.into_owned())
     }
 
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
