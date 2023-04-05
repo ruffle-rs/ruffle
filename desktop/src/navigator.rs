@@ -51,7 +51,7 @@ impl ExternalNavigatorBackend {
         // Force replace the last segment with empty. //
 
         if let Ok(mut base_url) = base_url.path_segments_mut() {
-            base_url.pop_if_empty().pop().push("");
+            base_url.pop().pop_if_empty().push("");
         }
 
         Self {
