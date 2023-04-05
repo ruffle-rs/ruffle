@@ -282,7 +282,7 @@ impl<'gc> EditText<'gc> {
                 hscroll: 0.0,
                 line_data,
                 scroll: 1,
-                max_chars: 0,
+                max_chars: swf_tag.max_length().unwrap_or_default() as i32,
             },
         ));
 
