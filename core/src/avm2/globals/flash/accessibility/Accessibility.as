@@ -5,12 +5,19 @@
 
 package flash.accessibility
 {
-    import __ruffle__.stub_method
+    import __ruffle__.stub_method;
+    import flash.display.DisplayObject;
 
     public final class Accessibility
     {
         // Indicates whether a screen reader is active and the application is communicating with it.
         private static var _active: Boolean;
+
+        // Sends an event to the Microsoft Active Accessibility API.
+        public static function sendEvent(source:DisplayObject, childID:uint, eventType:uint, nonHTML:Boolean = false):void 
+        {
+            stub_method("flash.accessibility.Accessibility", "sendEvent");
+        }
 
         // Tells Flash Player to apply any accessibility changes made by using the DisplayObject.accessibilityProperties property.
         public static function updateProperties():void

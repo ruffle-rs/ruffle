@@ -20,8 +20,11 @@ include "VerifyError.as"
 
 include "avmplus.as"
 
-include "flash/accessibility/AccessibilityProperties.as"
 include "flash/accessibility/Accessibility.as"
+include "flash/accessibility/AccessibilityImplementation.as"
+include "flash/accessibility/AccessibilityProperties.as"
+include "flash/accessibility/ISearchableText.as"
+include "flash/accessibility/ISimpleTextSelection.as"
 include "flash/crypto.as"
 include "flash/utils/IDataInput.as"
 include "flash/utils/IDataOutput.as"
