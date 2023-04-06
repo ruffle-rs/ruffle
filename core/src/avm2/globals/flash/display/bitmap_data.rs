@@ -95,7 +95,11 @@ pub fn init<'gc>(
                 let fill_color = args.get_u32(activation, 3)?;
 
                 if !is_size_valid(activation.context.swf.version(), width, height) {
-                    return Err("Bitmap size is not valid".into());
+                    return Err(Error::AvmError(argument_error(
+                        activation,
+                        "Error #2015: Invalid BitmapData.",
+                        2015,
+                    )?));
                 }
 
                 new_bitmap_data
