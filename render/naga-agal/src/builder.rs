@@ -7,8 +7,8 @@ use naga::{
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
-    Binding, Expression, Function, Handle, LocalVariable, Module, ScalarKind, Span, Statement,
-    Type, TypeInner, VectorSize,
+    Binding, DerivativeAxis, Expression, Function, Handle, LocalVariable, Module, ScalarKind, Span,
+    Statement, Type, TypeInner, VectorSize,
 };
 use num_traits::FromPrimitive;
 
@@ -1268,6 +1268,18 @@ impl<'a> NagaBuilder<'a> {
                 });
                 self.emit_dest_store(dest, div)?;
             }
+            Opcode::Min => {
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
+                let max = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Min,
+                    arg: source1,
+                    arg1: Some(source2),
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, max)?;
+            }
             Opcode::Max => {
                 let source1 = self.emit_source_field_load(source1, true)?;
                 let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
@@ -1308,6 +1320,17 @@ impl<'a> NagaBuilder<'a> {
                 let source = self.emit_source_field_load(source1, true)?;
                 let sqt = self.evaluate_expr(Expression::Math {
                     fun: MathFunction::Sqrt,
+                    arg: source,
+                    arg1: None,
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, sqt)?;
+            }
+            Opcode::Rsq => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let sqt = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::InverseSqrt,
                     arg: source,
                     arg1: None,
                     arg2: None,
@@ -1441,6 +1464,14 @@ impl<'a> NagaBuilder<'a> {
                 });
                 self.emit_dest_store(dest, neg)?;
             }
+            Opcode::Sge => {
+                let result = self.boolean_binary_op(
+                    source1,
+                    source2.assert_source_field(),
+                    BinaryOperator::GreaterEqual,
+                )?;
+                self.emit_dest_store(dest, result)?;
+            }
             Opcode::Slt => {
                 let result = self.boolean_binary_op(
                     source1,
@@ -1497,6 +1528,56 @@ impl<'a> NagaBuilder<'a> {
                     arg3: None,
                 });
                 self.emit_dest_store(dest, abs)?;
+            }
+            Opcode::Pow => {
+                let source1 = self.emit_source_field_load(source1, true)?;
+                let source2 = self.emit_source_field_load(source2.assert_source_field(), true)?;
+                let pow = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Pow,
+                    arg: source1,
+                    arg1: Some(source2),
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, pow)?;
+            }
+            Opcode::Log => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let log = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Log2,
+                    arg: source,
+                    arg1: None,
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, log)?;
+            }
+            Opcode::Exp => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let exp = self.evaluate_expr(Expression::Math {
+                    fun: MathFunction::Exp2,
+                    arg: source,
+                    arg1: None,
+                    arg2: None,
+                    arg3: None,
+                });
+                self.emit_dest_store(dest, exp)?;
+            }
+            Opcode::Ddx => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let derivative = self.evaluate_expr(Expression::Derivative {
+                    axis: DerivativeAxis::X,
+                    expr: source,
+                });
+                self.emit_dest_store(dest, derivative)?;
+            }
+            Opcode::Ddy => {
+                let source = self.emit_source_field_load(source1, true)?;
+                let derivative = self.evaluate_expr(Expression::Derivative {
+                    axis: DerivativeAxis::Y,
+                    expr: source,
+                });
+                self.emit_dest_store(dest, derivative)?;
             }
             _ => {
                 return Err(Error::Unimplemented(format!(
