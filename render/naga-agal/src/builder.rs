@@ -95,6 +95,10 @@ pub(crate) struct NagaBuilder<'a> {
 
     // The Naga representation of 'vec4f'
     vec4f: Handle<Type>,
+    // The Naga representation of 'mat3x3f'
+    matrix3x3f: Handle<Type>,
+    // The Naga representation of 'mat4x3f'
+    matrix4x3f: Handle<Type>,
     // The Naga representation of 'mat4x4f'
     matrix4x4f: Handle<Type>,
     // The Naga representation of `texture_2d<f32>`
@@ -351,6 +355,30 @@ impl<'a> NagaBuilder<'a> {
 
         let vec4f = VertexAttributeFormat::Float4.to_naga_type(&mut module);
 
+        let matrix3x3f = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Matrix {
+                    columns: VectorSize::Tri,
+                    rows: VectorSize::Tri,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
+        let matrix4x3f = module.types.insert(
+            Type {
+                name: None,
+                inner: TypeInner::Matrix {
+                    columns: VectorSize::Tri,
+                    rows: VectorSize::Quad,
+                    width: 4,
+                },
+            },
+            Span::UNDEFINED,
+        );
+
         let matrix4x4f = module.types.insert(
             Type {
                 name: None,
@@ -563,6 +591,8 @@ impl<'a> NagaBuilder<'a> {
             vertex_input_expressions: vec![],
             varying_pointers: vec![],
             return_type,
+            matrix3x3f,
+            matrix4x3f,
             matrix4x4f,
             vec4f,
             constant_registers,
@@ -910,7 +940,7 @@ impl<'a> NagaBuilder<'a> {
         }
 
         // This is a no-op swizzle - we can just return the base expression
-        if source.swizzle == SWIZZLE_XYZW {
+        if source.swizzle == SWIZZLE_XYZW && output == VectorSize::Quad {
             return Ok(base_expr);
         }
 
@@ -1066,45 +1096,39 @@ impl<'a> NagaBuilder<'a> {
                 });
                 self.emit_dest_store(dest, expr)?;
             }
-            // Perform 'M * v', where M is a 4x4 matrix, and 'v' is a column vector.
-            Opcode::M44 => {
+            // Perform 'M * v', where M is a matrix, and 'v' is a column vector.
+            Opcode::M33 | Opcode::M34 | Opcode::M44 => {
                 let source2 = match source2 {
                     Source2::SourceField(source2) => source2,
                     _ => unreachable!(),
                 };
 
+                let (num_rows, ty, vec_size) = match opcode {
+                    Opcode::M33 => (3, self.matrix3x3f, VectorSize::Tri),
+                    Opcode::M34 => (3, self.matrix4x3f, VectorSize::Quad),
+                    Opcode::M44 => (4, self.matrix4x4f, VectorSize::Quad),
+                    _ => unreachable!(),
+                };
+
                 // Read each row of the matrix
-                let source2_row0 = self.emit_source_field_load(source2, false)?;
-                let source2_row1 = self.emit_source_field_load(
-                    &SourceField {
-                        reg_num: source2.reg_num + 1,
-                        ..source2.clone()
-                    },
-                    false,
-                )?;
-                let source2_row2 = self.emit_source_field_load(
-                    &SourceField {
-                        reg_num: source2.reg_num + 2,
-                        ..source2.clone()
-                    },
-                    false,
-                )?;
-                let source2_row3 = self.emit_source_field_load(
-                    &SourceField {
-                        reg_num: source2.reg_num + 3,
-                        ..source2.clone()
-                    },
-                    false,
-                )?;
+                let mut components = Vec::with_capacity(num_rows.into());
+                for i in 0..num_rows {
+                    let source2_row = self.emit_source_field_load_with_swizzle_out(
+                        &SourceField {
+                            reg_num: source2.reg_num + i,
+                            ..source2.clone()
+                        },
+                        false,
+                        vec_size,
+                    )?;
+                    components.push(source2_row);
+                }
 
                 // FIXME - The naga spv backend hits an 'unreachable!'
                 // if we don't create a Statement::Emit for each of these,
                 // even though validation passes. We should investigate this
                 // and report it upstream.
-                let matrix = self.evaluate_expr(Expression::Compose {
-                    ty: self.matrix4x4f,
-                    components: vec![source2_row0, source2_row1, source2_row2, source2_row3],
-                });
+                let matrix = self.evaluate_expr(Expression::Compose { ty, components });
 
                 // Naga interprets each component of the matrix as a *column*.
                 // However, the matrix is stored in memory as a *row*, so we need
@@ -1117,7 +1141,8 @@ impl<'a> NagaBuilder<'a> {
                     arg3: None,
                 });
 
-                let vector = self.emit_source_field_load(source1, true)?;
+                let vector =
+                    self.emit_source_field_load_with_swizzle_out(source1, true, vec_size)?;
 
                 let multiply = self.evaluate_expr(Expression::Binary {
                     op: BinaryOperator::Multiply,
@@ -1626,11 +1651,6 @@ impl<'a> NagaBuilder<'a> {
                     accept: Block::from_vec(vec![Statement::Kill]),
                     reject: Block::new(),
                 });
-            }
-            _ => {
-                return Err(Error::Unimplemented(format!(
-                    "Unimplemented opcode: {opcode:?}",
-                )))
             }
         }
         Ok(())
