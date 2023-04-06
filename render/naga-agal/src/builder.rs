@@ -35,6 +35,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 const SWIZZLE_XYZW: u8 = 0b11100100;
 
+const SWIZZLE_XXXX: u8 = 0b00000000;
+const SWIZZLE_YYYY: u8 = 0b01010101;
+const SWIZZLE_ZZZZ: u8 = 0b10101010;
+const SWIZZLE_WWWW: u8 = 0b11111111;
 struct TextureSamplers {
     repeat_linear: Handle<Expression>,
     repeat_nearest: Handle<Expression>,
@@ -1578,6 +1582,50 @@ impl<'a> NagaBuilder<'a> {
                     expr: source,
                 });
                 self.emit_dest_store(dest, derivative)?;
+            }
+            Opcode::Kil => {
+                if ![SWIZZLE_XXXX, SWIZZLE_YYYY, SWIZZLE_ZZZZ, SWIZZLE_WWWW]
+                    .contains(&source1.swizzle)
+                {
+                    panic!("Kil op with source swizzle involving multiple distinct components");
+                }
+
+                let source = self.emit_source_field_load(source1, false)?;
+
+                // Grab single scalar component of source.
+                let source = self.evaluate_expr(Expression::AccessIndex {
+                    base: source,
+                    index: 0,
+                });
+
+                // Check `source < 0.0`.
+                let constant_zero = self.module.constants.append(
+                    Constant {
+                        name: None,
+                        specialization: None,
+                        inner: ConstantInner::Scalar {
+                            width: 4,
+                            value: ScalarValue::Float(0.0),
+                        },
+                    },
+                    Span::UNDEFINED,
+                );
+                let zero = self
+                    .func
+                    .expressions
+                    .append(Expression::Constant(constant_zero), Span::UNDEFINED);
+                let less_than_zero = self.evaluate_expr(Expression::Binary {
+                    op: BinaryOperator::Less,
+                    left: source,
+                    right: zero,
+                });
+
+                // If `source < 0.0`, kill fragment.
+                self.push_statement(Statement::If {
+                    condition: less_than_zero,
+                    accept: Block::from_vec(vec![Statement::Kill]),
+                    reject: Block::new(),
+                });
             }
             _ => {
                 return Err(Error::Unimplemented(format!(
