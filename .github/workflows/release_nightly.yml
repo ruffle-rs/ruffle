@@ -395,7 +395,7 @@ jobs:
           path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Upload Firefox extension (unsigned)
-        if: !matrix.demo
+        if: ${{ !matrix.demo }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
