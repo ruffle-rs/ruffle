@@ -58,7 +58,7 @@ pub enum NativeObject<'gc> {
     Date(Box<RefCell<Date>>),
     BlurFilter(GcCell<'gc, BlurFilterObject>),
     BevelFilter(GcCell<'gc, BevelFilterObject>),
-    ColorTransform(GcCell<'gc, ColorTransformObject>),
+    ColorTransform(Box<RefCell<ColorTransformObject>>),
     TextFormat(Box<RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),
 }

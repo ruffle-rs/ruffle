@@ -126,10 +126,7 @@ fn set_color_transform<'gc>(
 ) -> Result<(), Error<'gc>> {
     // Set only occurs for an object with actual ColorTransform data.
     if let Some(color_transform) = ColorTransformObject::cast(value) {
-        clip.set_color_transform(
-            activation.context.gc_context,
-            color_transform.read().clone().into(),
-        );
+        clip.set_color_transform(activation.context.gc_context, color_transform.into());
         clip.set_transformed_by_script(activation.context.gc_context, true);
     }
 

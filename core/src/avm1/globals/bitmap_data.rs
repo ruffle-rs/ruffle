@@ -496,7 +496,7 @@ pub fn draw<'gc>(
             let color_transform = args
                 .get(2)
                 .and_then(|v| ColorTransformObject::cast(*v))
-                .map(|color_transform| color_transform.read().clone().into())
+                .map(|color_transform| color_transform.into())
                 .unwrap_or_default();
 
             let mut blend_mode = BlendMode::Normal;
@@ -619,7 +619,7 @@ pub fn color_transform<'gc>(
                 let y_max = (y + height) as u32;
 
                 let color_transform = match ColorTransformObject::cast(*color_transform) {
-                    Some(color_transform) => color_transform.read().clone(),
+                    Some(color_transform) => color_transform,
                     None => return Ok((-3).into()),
                 };
 
