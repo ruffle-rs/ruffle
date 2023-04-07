@@ -26,7 +26,7 @@ pub(crate) mod context_menu;
 pub(crate) mod context_menu_item;
 pub mod convolution_filter;
 pub(crate) mod date;
-pub mod displacement_map_filter;
+pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
@@ -499,8 +499,6 @@ pub struct SystemPrototypes<'gc> {
     pub context_menu_item_constructor: Object<'gc>,
     pub bitmap_filter: Object<'gc>,
     pub bitmap_filter_constructor: Object<'gc>,
-    pub displacement_map_filter: Object<'gc>,
-    pub displacement_map_filter_constructor: Object<'gc>,
     pub convolution_filter: Object<'gc>,
     pub convolution_filter_constructor: Object<'gc>,
     pub gradient_bevel_filter: Object<'gc>,
@@ -508,7 +506,7 @@ pub struct SystemPrototypes<'gc> {
     pub gradient_glow_filter: Object<'gc>,
     pub gradient_glow_filter_constructor: Object<'gc>,
     pub date_constructor: Object<'gc>,
-    pub bitmap_data_constructor: Object<'gc>,
+    pub bitmap_data: Object<'gc>,
     pub video: Object<'gc>,
     pub video_constructor: Object<'gc>,
 }
@@ -760,15 +758,8 @@ pub fn create_globals<'gc>(
     let color_matrix_filter =
         color_matrix_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
-    let displacement_map_filter_proto =
-        displacement_map_filter::create_proto(context, bitmap_filter_proto, function_proto);
-    let displacement_map_filter = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(displacement_map_filter::constructor),
-        constructor_to_fn!(displacement_map_filter::constructor),
-        function_proto,
-        displacement_map_filter_proto,
-    );
+    let displacement_map_filter =
+        displacement_map_filter::create_constructor(context, bitmap_filter_proto, function_proto);
 
     let convolution_filter_proto =
         convolution_filter::create_proto(context, bitmap_filter_proto, function_proto);
@@ -862,7 +853,8 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
-    let bitmap_data = bitmap_data::create_constructor(context, object_proto, function_proto);
+    let bitmap_data_proto = ScriptObject::new(context.gc_context, Some(object_proto));
+    let bitmap_data = bitmap_data::create_constructor(context, bitmap_data_proto, function_proto);
 
     display.define_value(
         gc_context,
@@ -1118,8 +1110,6 @@ pub fn create_globals<'gc>(
             context_menu_item_constructor: context_menu_item,
             bitmap_filter: bitmap_filter_proto,
             bitmap_filter_constructor: bitmap_filter,
-            displacement_map_filter: displacement_map_filter_proto,
-            displacement_map_filter_constructor: displacement_map_filter,
             convolution_filter: convolution_filter_proto,
             convolution_filter_constructor: convolution_filter,
             gradient_bevel_filter: gradient_bevel_filter_proto,
@@ -1127,7 +1117,7 @@ pub fn create_globals<'gc>(
             gradient_glow_filter: gradient_glow_filter_proto,
             gradient_glow_filter_constructor: gradient_glow_filter,
             date_constructor: date,
-            bitmap_data_constructor: bitmap_data,
+            bitmap_data: bitmap_data_proto.into(),
             video: video_proto,
             video_constructor: video,
         },
