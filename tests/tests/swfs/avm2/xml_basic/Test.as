@@ -71,9 +71,17 @@ trace(declaration_doctype.toString());
 			var emptyList1 = new XMLList();
 			var emptyList2 = new XMLList("");
 			trace("Empty lists: " + emptyList1.length() + " " + emptyList2.length());
-			
+
+			var trimmedXML = <a>  
+			foo <b>  
+			bar</b>
+			</a>;
+			XML.prettyPrinting = false;
+			trace("trimmedXML: " + trimmedXML);			
 			// FIXME - enable this when Ruffle throws coercion errors
 			//XML.prototype.name.apply(5);
 		}
 	}
 }
+
+Test.run();
