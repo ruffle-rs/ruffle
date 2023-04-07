@@ -110,7 +110,6 @@ pub struct MovieClipData<'gc> {
     flags: MovieClipFlags,
     avm2_class: Option<Avm2ClassObject<'gc>>,
     drawing: Drawing,
-    is_focusable: bool,
     has_focus: bool,
     enabled: bool,
 
@@ -154,7 +153,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: None,
                 drawing: Drawing::new(),
-                is_focusable: false,
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
@@ -194,7 +192,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: Some(class),
                 drawing: Drawing::new(),
-                is_focusable: false,
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
@@ -238,7 +235,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                is_focusable: false,
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
@@ -304,7 +300,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                is_focusable: false,
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
@@ -2160,10 +2155,6 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn set_focusable(self, focusable: bool, context: &mut UpdateContext<'_, 'gc>) {
-        self.0.write(context.gc_context).is_focusable = focusable;
-    }
-
     /// Handle a RemoveObject tag when running a goto action.
     #[inline]
     #[allow(clippy::too_many_arguments)]
@@ -2733,8 +2724,25 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         !self.is_empty()
     }
 
-    fn is_focusable(&self) -> bool {
-        self.0.read().is_focusable
+    fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        let object = self.object();
+        if let Avm1Value::Object(object) = object {
+            if self.is_button_mode(context) {
+                true
+            } else {
+                let mut activation = Avm1Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Focus Tracker]"),
+                );
+                if let Ok(focus_enabled) = object.get("focusEnabled", &mut activation) {
+                    focus_enabled.as_bool(activation.swf_version())
+                } else {
+                    false
+                }
+            }
+        } else {
+            false
+        }
     }
 
     fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {

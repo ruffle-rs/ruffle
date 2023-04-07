@@ -379,7 +379,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         !self.is_empty()
     }
 
-    fn is_focusable(&self) -> bool {
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
 
