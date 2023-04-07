@@ -1,0 +1,59 @@
+function movieclipFocus(mc) {
+	trace("// " + mc + ".hasOwnProperty('focusEnabled');");
+	trace(mc.hasOwnProperty("focusEnabled"));
+	trace("");
+
+	selectionFocus(mc, true);
+
+	mc.focusEnabled = "truthy";
+	trace("// " + mc + ".focusEnabled = 'truthy';");
+	trace(mc.focusEnabled);
+	trace("");
+
+	selectionFocus(mc, true);
+
+	mc.focusEnabled = false;
+	trace("// " + mc + ".focusEnabled = false;");
+	trace(mc.focusEnabled);
+	trace("");
+
+	selectionFocus(mc, true);
+
+	delete mc.focusEnabled;
+	trace("// delete " + mc + ".focusEnabled;");
+	trace(mc.focusEnabled);
+	trace("");
+
+	selectionFocus(mc, true);
+}
+
+function selectionFocus(mc, reset) {
+	trace("// Selection.getFocus();");
+	trace(Selection.getFocus() + " (" + typeof Selection.getFocus() + ")");
+	trace("");
+
+	trace("// Selection.setFocus(" + mc + ");");
+	trace(Selection.setFocus(String(mc)));
+	trace("");
+
+	trace("// Selection.getFocus();");
+	trace(Selection.getFocus() + " (" + typeof Selection.getFocus() + ")");
+	trace("");
+
+	if(reset) {
+		Selection.setFocus(null);
+	}
+}
+
+
+trace("// MovieClip.prototype.hasOwnProperty('focusEnabled'));");
+trace(MovieClip.prototype.hasOwnProperty("focusEnabled"));
+trace("");
+trace("");
+
+_root.createEmptyMovieClip("emptyMC", _root.getNextHighestDepth());
+
+movieclipFocus(emptyMC);
+
+emptyMC.onRelease = function() {};
+movieclipFocus(emptyMC);
