@@ -1146,6 +1146,14 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).next_scroll_rect = rectangle;
     }
 
+    fn scaling_grid(&self) -> Rectangle<Twips> {
+        self.base().scaling_grid.clone()
+    }
+
+    fn set_scaling_grid(&self, gc_context: MutationContext<'gc, '_>, rect: Rectangle<Twips>) {
+        self.base_mut(gc_context).scaling_grid = rect;
+    }
+
     /// Whether this object has been removed. Only applies to AVM1.
     fn avm1_removed(&self) -> bool {
         self.base().avm1_removed()

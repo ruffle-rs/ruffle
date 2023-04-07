@@ -3266,16 +3266,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'a>,
-        version: u8,
     ) -> Result<(), Error> {
-        let movie = self.movie();
-        // let tag = reader.read_define_morph_shape(version)?;
-        // let id = tag.id;
-        // let morph_shape = MorphShape::from_swf_tag(context.gc_context, tag, movie.clone());
-        // context
-        //     .library
-        //     .library_for_movie_mut(movie)
-        //     .register_character(id, Character::MorphShape(morph_shape));
+        let id = reader.read_u16()?;
+        let rect = reader.read_rectangle()?;
+        let library = context.library.library_for_movie_mut(self.movie());
+        if let Some(character) = library.character_by_id(id) {
+            if let Character::MovieClip(clip) = character {
+                clip.set_scaling_grid(context.gc_context, rect);
+            } else {
+                tracing::warn!("DefineScalingGrid for invalid ID {}", id);
+            }
+        }
         Ok(())
     }
 
