@@ -7,8 +7,6 @@ use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
-use crate::avm_error;
-use crate::avm_warn;
 use crate::backend::navigator::NavigationMethod;
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{
@@ -18,6 +16,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
+use crate::{avm1_stub, avm_error, avm_warn};
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
@@ -115,6 +114,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => bool(true; DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "useHandCursor" => bool(true; DONT_ENUM);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
@@ -129,7 +129,7 @@ pub fn constructor<'gc>(
     Ok(this.into())
 }
 
-fn new_rectangle<'gc>(
+pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -142,7 +142,7 @@ fn new_rectangle<'gc>(
     proto.construct(activation, args)
 }
 
-fn object_to_rectangle<'gc>(
+pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {
@@ -186,6 +186,35 @@ fn set_scroll_rect<'gc>(
         }
     } else {
         this.set_has_scroll_rect(activation.context.gc_context, false);
+    };
+    Ok(())
+}
+
+fn scale_9_grid<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "MovieClip", "scale9Grid");
+    let rect = this.scaling_grid();
+    if rect.is_valid() {
+        new_rectangle(activation, rect)
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_scale_9_grid<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    avm1_stub!(activation, "MovieClip", "scale9Grid");
+    if let Value::Object(object) = value {
+        if let Some(rectangle) = object_to_rectangle(activation, object)? {
+            this.set_scaling_grid(activation.context.gc_context, rectangle);
+        }
+    } else {
+        this.set_scaling_grid(activation.context.gc_context, Rectangle::default());
     };
     Ok(())
 }

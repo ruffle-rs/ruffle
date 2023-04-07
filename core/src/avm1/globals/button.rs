@@ -3,9 +3,11 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
+use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::ArrayObject;
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
+use crate::avm1_stub;
 use crate::context::GcContext;
 use crate::display_object::{Avm1Button, TDisplayObject};
 use crate::string::AvmString;
@@ -42,6 +44,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "useHandCursor" => bool(true);
     "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
     "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | VERSION_8);
+    "scale9Grid" => property(button_getter!(scale_9_grid), button_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
     "filters" => property(button_getter!(filters), button_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "cacheAsBitmap" => property(button_getter!(cache_as_bitmap), button_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
 };
@@ -139,5 +142,34 @@ fn set_cache_as_bitmap<'gc>(
         activation.context.gc_context,
         value.as_bool(activation.swf_version()),
     );
+    Ok(())
+}
+
+fn scale_9_grid<'gc>(
+    this: Avm1Button<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "Button", "scale9Grid");
+    let rect = this.scaling_grid();
+    if rect.is_valid() {
+        new_rectangle(activation, rect)
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_scale_9_grid<'gc>(
+    this: Avm1Button<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    avm1_stub!(activation, "Button", "scale9Grid");
+    if let Value::Object(object) = value {
+        if let Some(rectangle) = object_to_rectangle(activation, object)? {
+            this.set_scaling_grid(activation.context.gc_context, rectangle);
+        }
+    } else {
+        this.set_scaling_grid(activation.context.gc_context, Default::default());
+    };
     Ok(())
 }
