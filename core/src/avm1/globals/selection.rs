@@ -134,7 +134,7 @@ pub fn set_focus<'gc>(
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
             if let Some(display_object) = object {
-                if display_object.is_focusable() {
+                if display_object.is_focusable(&mut activation.context) {
                     tracker.set(object, &mut activation.context);
                     return Ok(true.into());
                 }

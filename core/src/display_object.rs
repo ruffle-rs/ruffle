@@ -1269,7 +1269,7 @@ pub trait TDisplayObject<'gc>:
     fn on_focus_changed(&self, _gc_context: MutationContext<'gc, '_>, _focused: bool) {}
 
     /// Whether or not this clip may be focusable for keyboard input.
-    fn is_focusable(&self) -> bool {
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
     }
 

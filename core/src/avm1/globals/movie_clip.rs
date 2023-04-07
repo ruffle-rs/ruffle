@@ -107,11 +107,11 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "enabled" => property(mc_getter!(enabled), mc_setter!(set_enabled); DONT_DELETE | DONT_ENUM);
-    "focusEnabled" => property(mc_getter!(focus_enabled), mc_setter!(set_focus_enabled); DONT_DELETE | DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    // NOTE: `focusEnabled` is not a built-in property of MovieClip.
 };
 
 /// Implements `MovieClip`
@@ -1424,25 +1424,6 @@ fn set_enabled<'gc>(
 ) -> Result<(), Error<'gc>> {
     let enabled = value.as_bool(activation.swf_version());
     this.set_enabled(&mut activation.context, enabled);
-    Ok(())
-}
-
-fn focus_enabled<'gc>(
-    this: MovieClip<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.is_focusable().into())
-}
-
-fn set_focus_enabled<'gc>(
-    this: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    this.set_focusable(
-        value.as_bool(activation.swf_version()),
-        &mut activation.context,
-    );
     Ok(())
 }
 
