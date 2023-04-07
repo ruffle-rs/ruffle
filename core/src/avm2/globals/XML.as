@@ -4,8 +4,6 @@ package {
     public final dynamic class XML {
         import __ruffle__.stub_method;
 
-        public static var ignoreWhitespace = true;
-
         AS3 static function setSettings(settings:Object): void {
             stub_method("XML", "setSettings");
         }
@@ -16,7 +14,7 @@ package {
             return {
                 ignoreComments: true,
                 ignoreProcessingInstructions: true,
-                ignoreWhitespace: XML.ignoreWhitespace,
+                ignoreWhitespace: true,
                 prettyIndent: 2,
                 prettyPrinting: true
             };
