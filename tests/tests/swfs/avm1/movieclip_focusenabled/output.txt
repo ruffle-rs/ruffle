@@ -1,0 +1,100 @@
+// MovieClip.prototype.hasOwnProperty('focusEnabled'));
+false
+
+
+// _level0.emptyMC.hasOwnProperty('focusEnabled');
+false
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+false
+
+// Selection.getFocus();
+null (null)
+
+// _level0.emptyMC.focusEnabled = 'truthy';
+truthy
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+true
+
+// Selection.getFocus();
+_level0.emptyMC (string)
+
+// _level0.emptyMC.focusEnabled = false;
+false
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+false
+
+// Selection.getFocus();
+null (null)
+
+// delete _level0.emptyMC.focusEnabled;
+undefined
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+false
+
+// Selection.getFocus();
+null (null)
+
+// _level0.emptyMC.hasOwnProperty('focusEnabled');
+false
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+true
+
+// Selection.getFocus();
+_level0.emptyMC (string)
+
+// _level0.emptyMC.focusEnabled = 'truthy';
+truthy
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+true
+
+// Selection.getFocus();
+_level0.emptyMC (string)
+
+// _level0.emptyMC.focusEnabled = false;
+false
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+true
+
+// Selection.getFocus();
+_level0.emptyMC (string)
+
+// delete _level0.emptyMC.focusEnabled;
+undefined
+
+// Selection.getFocus();
+null (null)
+
+// Selection.setFocus(_level0.emptyMC);
+true
+
+// Selection.getFocus();
+_level0.emptyMC (string)
+
