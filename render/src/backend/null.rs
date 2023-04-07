@@ -9,10 +9,9 @@ use crate::commands::CommandList;
 use crate::error::Error;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
-use gc_arena::MutationContext;
 use swf::Color;
 
-use super::{Context3D, Context3DCommand};
+use super::Context3D;
 
 pub struct NullBitmapSource;
 
@@ -75,8 +74,8 @@ impl RenderBackend for NullRenderer {
 
     fn update_texture(
         &mut self,
-        _bitmap: &BitmapHandle,
-        _rgba: Vec<u8>,
+        _handle: &BitmapHandle,
+        _bitmap: Bitmap,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         Ok(())
@@ -86,12 +85,7 @@ impl RenderBackend for NullRenderer {
         Err(Error::Unimplemented("createContext3D".into()))
     }
 
-    fn context3d_present<'gc>(
-        &mut self,
-        _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
-        _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
         Err(Error::Unimplemented("Context3D.present".into()))
     }
 

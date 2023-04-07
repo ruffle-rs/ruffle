@@ -231,8 +231,8 @@ enum DirtyState {
 }
 
 mod wrapper {
+    use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
     use crate::context::RenderContext;
-    use crate::{avm2::Value as Avm2Value, context::UpdateContext};
     use gc_arena::{Collect, GcCell, MutationContext};
     use ruffle_render::backend::RenderBackend;
     use ruffle_render::bitmap::{BitmapHandle, PixelRegion};
@@ -277,6 +277,26 @@ mod wrapper {
     impl<'gc> BitmapDataWrapper<'gc> {
         pub fn new(data: GcCell<'gc, BitmapData<'gc>>) -> Self {
             BitmapDataWrapper(data)
+        }
+
+        // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
+        // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
+        // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
+        // be inaccessible to AS3 code.
+        pub fn dummy(mc: MutationContext<'gc, '_>) -> Self {
+            BitmapDataWrapper(GcCell::allocate(
+                mc,
+                BitmapData {
+                    pixels: Vec::new(),
+                    width: 0,
+                    height: 0,
+                    transparency: false,
+                    disposed: true,
+                    bitmap_handle: None,
+                    avm2_object: None,
+                    dirty_state: DirtyState::Clean,
+                },
+            ))
         }
 
         // Provides access to the underlying `BitmapData`. If a GPU -> CPU sync
@@ -324,9 +344,9 @@ mod wrapper {
         #[allow(clippy::type_complexity)]
         pub fn overwrite_cpu_pixels_from_gpu(
             &self,
-            context: &mut UpdateContext<'_, 'gc>,
+            mc: MutationContext<'gc, '_>,
         ) -> (GcCell<'gc, BitmapData<'gc>>, Option<PixelRegion>) {
-            let mut write = self.0.write(context.gc_context);
+            let mut write = self.0.write(mc);
             let dirty_rect = match write.dirty_state {
                 DirtyState::GpuModified(_, rect) => {
                     write.dirty_state = DirtyState::Clean;
@@ -396,6 +416,10 @@ mod wrapper {
             self.0.write(mc).dispose();
         }
 
+        pub fn init_object2(&self, mc: MutationContext<'gc, '_>, object: Avm2Object<'gc>) {
+            self.0.write(mc).avm2_object = Some(object)
+        }
+
         pub fn render(&self, smoothing: bool, context: &mut RenderContext<'_, 'gc>) {
             let mut inner_bitmap_data = self.0.write(context.gc_context);
             if inner_bitmap_data.disposed() {
@@ -440,23 +464,6 @@ impl fmt::Debug for BitmapData<'_> {
 }
 
 impl<'gc> BitmapData<'gc> {
-    // Creates a dummy BitmapData with no pixels or handle, marked as disposed.
-    // This is used for AS3 `Bitmap` instances without a corresponding AS3 `BitmapData` instance.
-    // Marking it as disposed skips rendering, and the unset `avm2_object` will cause this to
-    // be inaccessible to AS3 code.
-    pub fn dummy() -> Self {
-        BitmapData {
-            pixels: Vec::new(),
-            width: 0,
-            height: 0,
-            transparency: false,
-            disposed: true,
-            bitmap_handle: None,
-            avm2_object: None,
-            dirty_state: DirtyState::Clean,
-        }
-    }
-
     pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
         self.width = width;
         self.height = height;
@@ -595,7 +602,16 @@ impl<'gc> BitmapData<'gc> {
         let handle = self.bitmap_handle(renderer).unwrap();
         match &self.dirty_state {
             DirtyState::CpuModified(region) => {
-                if let Err(e) = renderer.update_texture(&handle, self.pixels_rgba(), *region) {
+                if let Err(e) = renderer.update_texture(
+                    &handle,
+                    Bitmap::new(
+                        self.width(),
+                        self.height(),
+                        BitmapFormat::Rgba,
+                        self.pixels_rgba(),
+                    ),
+                    *region,
+                ) {
                     tracing::error!("Failed to update dirty bitmap {:?}: {:?}", handle, e);
                 }
                 self.dirty_state = DirtyState::Clean;

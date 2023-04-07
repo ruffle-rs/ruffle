@@ -17,7 +17,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -1223,12 +1223,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
-        None
-    }
-
-    fn as_bitmap_data_wrapper(&self) -> Option<BitmapDataWrapper<'gc>> {
+    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
         None
     }
 
@@ -1238,11 +1233,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    fn init_bitmap_data(
-        &self,
-        _mc: MutationContext<'gc, '_>,
-        _new_bitmap: GcCell<'gc, BitmapData<'gc>>,
-    ) {
+    fn init_bitmap_data(&self, _mc: MutationContext<'gc, '_>, _new_bitmap: BitmapDataWrapper<'gc>) {
     }
 
     /// Get this objects `DateObject`, if it has one.

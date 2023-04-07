@@ -22,7 +22,7 @@ pub fn to_wgsl(module: &Module) -> String {
 // Making this a macro gives us a better span in 'inta'
 macro_rules! test_shader {
     ($shader:expr, $attrs:expr, $shader_type:expr $(,)?) => {
-        let module = agal_to_naga(&$shader, $attrs).unwrap();
+        let module = agal_to_naga(&$shader, $attrs, &[None; 8]).unwrap();
         let output = to_wgsl(&module);
         insta::assert_display_snapshot!(output);
     };
@@ -104,6 +104,33 @@ fn test_complex_raytrace() {
 
     test_shader!(
         RAYTRACE_FRAGMENT,
+        &[None, None, None, None, None, None, None, None],
+        ShaderType::Fragment
+    );
+}
+
+#[test]
+fn test_complex_fractal() {
+    const FRACTAL_VERTEX: &[u8] = include!("fractal_vertex.agal");
+    const FRACTAL_FRAGMENT: &[u8] = include!("fractal_fragment.agal");
+
+    test_shader!(
+        FRACTAL_VERTEX,
+        &[
+            Some(VertexAttributeFormat::Float2),
+            Some(VertexAttributeFormat::Float2),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        ],
+        ShaderType::Vertex
+    );
+
+    test_shader!(
+        FRACTAL_FRAGMENT,
         &[None, None, None, None, None, None, None, None],
         ShaderType::Fragment
     );

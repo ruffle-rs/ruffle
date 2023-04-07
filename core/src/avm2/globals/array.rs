@@ -15,9 +15,8 @@ use gc_arena::GcCell;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
-// All of these methods will be defined as both
-// AS3 instance methods and methods on the `Array` class prototype.
-const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
+// All of these methods will be defined as AS3-namespaced methods.
+const PUBLIC_AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("concat", concat),
     ("join", join),
     ("forEach", for_each),
@@ -32,6 +31,31 @@ const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
     ("removeAt", remove_at),
     ("reverse", reverse),
     ("shift", shift),
+    ("unshift", unshift),
+    ("slice", slice),
+    ("splice", splice),
+    ("sort", sort),
+    ("sortOn", sort_on),
+];
+
+// All of these methods will be defined on the `Array` class prototype.
+const PUBLIC_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
+    ("concat", concat),
+    ("join", join),
+    ("forEach", for_each),
+    ("map", map),
+    ("filter", filter),
+    ("every", every),
+    ("some", some),
+    ("indexOf", index_of),
+    ("lastIndexOf", last_index_of),
+    ("pop", pop),
+    ("push", push),
+    ("removeAt", remove_at),
+    ("reverse", reverse),
+    ("shift", shift),
+    ("toLocaleString", to_locale_string),
+    ("toString", to_string),
     ("unshift", unshift),
     ("slice", slice),
     ("splice", splice),
@@ -85,7 +109,7 @@ pub fn class_init<'gc>(
         let this_class = this.as_class_object().unwrap();
         let array_proto = this_class.prototype();
 
-        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+        for (name, method) in PUBLIC_PROTO_METHODS {
             array_proto.set_string_property_local(
                 *name,
                 FunctionObject::from_method(
@@ -260,15 +284,6 @@ pub fn to_locale_string<'gc>(
             Ok(v)
         }
     })
-}
-
-/// Implements `Array.valueOf`
-pub fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
 /// An iterator that allows iterating over the contents of an array whilst also
@@ -1253,18 +1268,6 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     write.set_instance_allocator(array_allocator);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("concat", concat),
-        ("toString", to_string),
-        ("toLocaleString", to_locale_string),
-        ("valueOf", value_of),
-    ];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().public_namespace,
-        PUBLIC_INSTANCE_METHODS,
-    );
-
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
@@ -1279,7 +1282,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     write.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
-        PUBLIC_INSTANCE_AND_PROTO_METHODS,
+        PUBLIC_AS3_INSTANCE_METHODS,
     );
 
     const CONSTANTS: &[(&str, u32)] = &[

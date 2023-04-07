@@ -1,11 +1,10 @@
 #![deny(clippy::unwrap_used)]
 
-use gc_arena::MutationContext;
 use ruffle_render::backend::{
-    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
+    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
 };
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error;
@@ -468,29 +467,18 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        rgba: Vec<u8>,
+        bitmap: Bitmap,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
-        data.update_pixels(Bitmap::new(
-            data.bitmap.width(),
-            data.bitmap.height(),
-            BitmapFormat::Rgba,
-            rgba,
-        ))
-        .map_err(Error::JavascriptError)?;
+        data.update_pixels(bitmap).map_err(Error::JavascriptError)?;
         Ok(())
     }
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present<'gc>(
-        &mut self,
-        _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
-        _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
+    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
         Err(Error::Unimplemented("Context3D.present".into()))
     }
 

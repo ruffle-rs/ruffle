@@ -3,9 +3,9 @@
 use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{uri_error, Error};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::string::{AvmString, WStr, WString};
 use crate::stub::Stub;
 use ruffle_wstr::Integer;
@@ -378,4 +378,135 @@ fn encode_utf8_with_exclusions<'gc>(
     }
 
     Ok(AvmString::new_utf8(activation.context.gc_context, output).into())
+}
+
+pub fn decode_uri<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    decode(
+        activation,
+        args,
+        // Characters that are reserved, sourced from as3 docs
+        "#$&+,/:;=?@",
+        "decodeURI",
+    )
+}
+
+pub fn decode_uri_component<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    decode(activation, args, "", "decodeURIComponent")
+}
+
+fn handle_percent<I>(chars: &mut I) -> Option<u8>
+where
+    I: Iterator<Item = Result<char, std::char::DecodeUtf16Error>>,
+{
+    let high = chars.next()?.ok()?.to_digit(16)?;
+    let low = chars.next()?.ok()?.to_digit(16)?;
+    Some(low as u8 | ((high as u8) << 4))
+}
+
+// code derived from flash.utils.unescapeMultiByte
+// FIXME: support bugzilla #538107
+fn decode<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    args: &[Value<'gc>],
+    reserved_set: &str,
+    func_name: &str,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let value = match args.first() {
+        None => return Ok("undefined".into()),
+        Some(Value::Undefined) => return Ok("null".into()),
+        Some(value) => value.coerce_to_string(activation)?,
+    };
+
+    let mut output = WString::new();
+    let mut chars = value.chars();
+    let mut bytes = Vec::with_capacity(4);
+
+    while let Some(c) = chars.next() {
+        let Ok(c) = c else {
+            return Err(Error::AvmError(uri_error(
+                activation,
+                &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                1052,
+            )?));
+        };
+
+        if c != '%' {
+            output.push_char(c);
+            continue;
+        }
+
+        bytes.clear();
+        let Some(byte) = handle_percent(&mut chars) else {
+            return Err(Error::AvmError(uri_error(
+                activation,
+                &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                1052,
+            )?));
+        };
+        bytes.push(byte);
+        if (byte & 0x80) != 0 {
+            let n = byte.leading_ones();
+
+            if n == 1 || n > 4 {
+                return Err(Error::AvmError(uri_error(
+                    activation,
+                    &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                    1052,
+                )?));
+            }
+
+            for _ in 1..n {
+                if chars.next() != Some(Ok('%')) {
+                    return Err(Error::AvmError(uri_error(
+                        activation,
+                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                        1052,
+                    )?));
+                }; // consume %
+
+                let Some(byte) = handle_percent(&mut chars) else {
+                    return Err(Error::AvmError(uri_error(
+                        activation,
+                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                        1052,
+                    )?));
+                };
+
+                if (byte & 0xC0) != 0x80 {
+                    return Err(Error::AvmError(uri_error(
+                        activation,
+                        &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                        1052,
+                    )?));
+                }
+
+                bytes.push(byte);
+            }
+        }
+
+        let Ok(decoded) = std::str::from_utf8(&bytes) else {
+            return Err(Error::AvmError(uri_error(
+                activation,
+                &format!("Error #1052: Invalid URI passed to {func_name} function."),
+                1052,
+            )?));
+        };
+        if reserved_set.contains(decoded) {
+            for byte in &bytes {
+                write!(output, "%{x:02X}", x = byte).unwrap();
+            }
+        } else {
+            output.push_utf8(decoded);
+        }
+    }
+
+    Ok(AvmString::new(activation.context.gc_context, output).into())
 }

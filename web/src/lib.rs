@@ -132,19 +132,16 @@ where
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Config {
-    #[serde(rename = "allowScriptAccess")]
     allow_script_access: bool,
 
-    #[serde(rename = "backgroundColor")]
     background_color: Option<String>,
 
     letterbox: Letterbox,
 
-    #[serde(rename = "upgradeToHttps")]
     upgrade_to_https: bool,
 
-    #[serde(rename = "compatibilityRules")]
     compatibility_rules: bool,
 
     #[serde(rename = "base")]
@@ -159,38 +156,30 @@ struct Config {
 
     scale: Option<String>,
 
-    #[serde(rename = "forceScale")]
     force_scale: bool,
 
     wmode: Option<String>,
 
-    #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
-    #[serde(rename = "logLevel", deserialize_with = "deserialize_log_level")]
+    #[serde(deserialize_with = "deserialize_log_level")]
     log_level: tracing::Level,
 
-    #[serde(rename = "maxExecutionDuration")]
     max_execution_duration: Duration,
 
-    #[serde(rename = "playerVersion")]
     player_version: Option<u8>,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct MovieMetadata {
     width: f64,
     height: f64,
-    #[serde(rename = "frameRate")]
     frame_rate: f32,
-    #[serde(rename = "numFrames")]
     num_frames: u16,
-    #[serde(rename = "swfVersion")]
     swf_version: u8,
-    #[serde(rename = "backgroundColor")]
     background_color: Option<String>,
-    #[serde(rename = "isActionScript3")]
     is_action_script_3: bool,
     #[serde(rename = "uncompressedLength")]
     uncompressed_len: u32,
@@ -458,7 +447,7 @@ impl Ruffle {
         }
 
         self.with_core_mut(|core| external_to_js_value(core.call_internal_interface(name, args)))
-            .unwrap_or(JsValue::NULL)
+            .unwrap_or(JsValue::UNDEFINED)
     }
 
     pub fn set_trace_observer(&self, observer: JsValue) {
@@ -1164,10 +1153,10 @@ impl ExternalInterfaceMethod for JavascriptMethod {
             if let Ok(result) = function.apply(&self.this, &args_array) {
                 js_to_external_value(&result)
             } else {
-                ExternalValue::Null
+                ExternalValue::Undefined
             }
         } else {
-            ExternalValue::Null
+            ExternalValue::Undefined
         };
         CURRENT_CONTEXT.with(|v| v.replace(old_context));
         result
@@ -1213,7 +1202,12 @@ impl ExternalInterfaceProvider for JavascriptInterface {
                 return Some(Box::new(method));
             }
         }
-        None
+
+        // Return a dummy method, as `ExternalInterface.call` must return `undefined`, not `null`.
+        Some(Box::new(JavascriptMethod {
+            this: JsValue::UNDEFINED,
+            function: JsValue::UNDEFINED,
+        }))
     }
 
     fn on_callback_available(&self, name: &str) {
@@ -1252,13 +1246,16 @@ fn js_to_external_value(js: &JsValue) -> ExternalValue {
             }
         }
         ExternalValue::Object(values)
-    } else {
+    } else if js.is_null() {
         ExternalValue::Null
+    } else {
+        ExternalValue::Undefined
     }
 }
 
 fn external_to_js_value(external: ExternalValue) -> JsValue {
     match external {
+        Value::Undefined => JsValue::UNDEFINED,
         Value::Null => JsValue::NULL,
         Value::Bool(value) => JsValue::from_bool(value),
         Value::Number(value) => JsValue::from_f64(value),

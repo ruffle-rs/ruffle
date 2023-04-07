@@ -35,7 +35,7 @@ pub struct ExternalNavigatorBackend {
 impl ExternalNavigatorBackend {
     /// Construct a navigator backend with fetch and async capability.
     pub fn new(
-        movie_url: Url,
+        mut base_url: Url,
         channel: Sender<OwnedFuture<(), Error>>,
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
@@ -47,12 +47,11 @@ impl ExternalNavigatorBackend {
             .redirect_policy(RedirectPolicy::Follow);
 
         let client = builder.build().ok().map(Rc::new);
-        let mut base_url = movie_url;
 
         // Force replace the last segment with empty. //
 
         if let Ok(mut base_url) = base_url.path_segments_mut() {
-            base_url.pop_if_empty().pop().push("");
+            base_url.pop().pop_if_empty().push("");
         }
 
         Self {

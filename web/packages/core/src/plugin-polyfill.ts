@@ -46,7 +46,9 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     }
 
     item(index: number): MimeType {
-        return this.__mimeTypes[index]!;
+        // This behavior is done to emulate a 32-bit uint,
+        // which browsers use.
+        return this.__mimeTypes[index >>> 0]!;
     }
 
     namedItem(name: string): MimeType {
@@ -117,7 +119,10 @@ class RufflePluginArray implements PluginArray {
     }
 
     item(index: number): Plugin {
-        return this.__plugins[index]!;
+        // This behavior is done to emulate a 32-bit uint,
+        // which browsers use. Cloudflare's anti-bot
+        // checks rely on this.
+        return this.__plugins[index >>> 0]!;
     }
 
     namedItem(name: string): Plugin {

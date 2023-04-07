@@ -1,9 +1,8 @@
 #![deny(clippy::unwrap_used)]
 
 use bytemuck::{Pod, Zeroable};
-use gc_arena::MutationContext;
 use ruffle_render::backend::{
-    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
+    Context3D, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapHandleImpl, BitmapSource, PixelRegion, SyncHandle,
@@ -989,9 +988,9 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
-        let format = match bitmap.format() {
-            BitmapFormat::Rgb => Gl::RGB,
-            BitmapFormat::Rgba => Gl::RGBA,
+        let (format, bitmap) = match bitmap.format() {
+            BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
+            BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
         };
 
         let texture = self
@@ -1034,25 +1033,29 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        rgba: Vec<u8>,
+        bitmap: Bitmap,
         _region: PixelRegion,
     ) -> Result<(), BitmapError> {
-        let data = as_registry_data(handle);
-        let texture = &data.texture;
+        let texture = &as_registry_data(handle).texture;
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
+
+        let (format, bitmap) = match bitmap.format() {
+            BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
+            BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
+        };
 
         self.gl
             .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
                 Gl::TEXTURE_2D,
                 0,
-                Gl::RGBA as i32,
-                data.bitmap.width() as i32,
-                data.bitmap.height() as i32,
+                format as i32,
+                bitmap.width() as i32,
+                bitmap.height() as i32,
                 0,
-                Gl::RGBA,
+                format,
                 Gl::UNSIGNED_BYTE,
-                Some(&rgba),
+                Some(bitmap.data()),
             )
             .into_js_result()
             .map_err(|e| BitmapError::JavascriptError(e.into()))?;
@@ -1063,12 +1066,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
         Err(BitmapError::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present<'gc>(
-        &mut self,
-        _context: &mut dyn Context3D,
-        _commands: Vec<Context3DCommand<'gc>>,
-        _mc: MutationContext<'gc, '_>,
-    ) -> Result<(), BitmapError> {
+    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), BitmapError> {
         Err(BitmapError::Unimplemented("Context3D.present".into()))
     }
 

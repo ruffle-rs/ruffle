@@ -444,10 +444,6 @@ pub struct RenderContext<'a, 'gc> {
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
-
-    /// Whether to allow pushing a new mask. A masker-inside-a-masker does not work in Flash, instead
-    /// causing the inner mask to be included as part of the outer mask. Maskee-inside-a-maskee works as one expects.
-    pub allow_mask: bool,
 }
 
 /// The type of action being run.

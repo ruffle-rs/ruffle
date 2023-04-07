@@ -58,18 +58,13 @@ pub trait RenderBackend: Downcast {
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
-        bitmap: &BitmapHandle,
-        rgba: Vec<u8>,
+        handle: &BitmapHandle,
+        bitmap: Bitmap,
         region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present<'gc>(
-        &mut self,
-        context: &mut dyn Context3D,
-        commands: Vec<Context3DCommand<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error>;
+    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
 
@@ -214,6 +209,12 @@ pub trait Context3D: Collect + Downcast {
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
+
+    fn process_command<'gc>(
+        &mut self,
+        command: Context3DCommand<'gc>,
+        mc: MutationContext<'gc, '_>,
+    );
 }
 impl_downcast!(Context3D);
 
@@ -267,6 +268,62 @@ impl Context3DCompareMode {
             Some(Context3DCompareMode::GreaterEqual)
         } else if s == b"always" {
             Some(Context3DCompareMode::Always)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Collect, Copy, Clone, Debug)]
+#[collect(require_static)]
+pub enum Context3DWrapMode {
+    Clamp,
+    ClampURepeatV,
+    Repeat,
+    RepeatUClampV,
+}
+
+impl Context3DWrapMode {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"clamp" {
+            Some(Context3DWrapMode::Clamp)
+        } else if s == b"clamp_u_repeat_v" {
+            Some(Context3DWrapMode::ClampURepeatV)
+        } else if s == b"repeat" {
+            Some(Context3DWrapMode::Repeat)
+        } else if s == b"repeat_u_clamp_v" {
+            Some(Context3DWrapMode::RepeatUClampV)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Collect, Copy, Clone, Debug)]
+#[collect(require_static)]
+pub enum Context3DTextureFilter {
+    Anisotropic16X,
+    Anisotropic2X,
+    Anisotropic4X,
+    Anisotropic8X,
+    Linear,
+    Nearest,
+}
+
+impl Context3DTextureFilter {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"anisotropic16x" {
+            Some(Context3DTextureFilter::Anisotropic16X)
+        } else if s == b"anisotropic2x" {
+            Some(Context3DTextureFilter::Anisotropic2X)
+        } else if s == b"anisotropic4x" {
+            Some(Context3DTextureFilter::Anisotropic4X)
+        } else if s == b"anisotropic8x" {
+            Some(Context3DTextureFilter::Anisotropic8X)
+        } else if s == b"linear" {
+            Some(Context3DTextureFilter::Linear)
+        } else if s == b"nearest" {
+            Some(Context3DTextureFilter::Nearest)
         } else {
             None
         }
@@ -356,6 +413,12 @@ pub enum Context3DCommand<'gc> {
         texture: Option<Rc<dyn Texture>>,
         cube: bool,
     },
+    SetColorMask {
+        red: bool,
+        green: bool,
+        blue: bool,
+        alpha: bool,
+    },
     SetDepthTest {
         depth_mask: bool,
         pass_compare_mode: Context3DCompareMode,
@@ -363,6 +426,11 @@ pub enum Context3DCommand<'gc> {
     SetBlendFactors {
         source_factor: Context3DBlendFactor,
         destination_factor: Context3DBlendFactor,
+    },
+    SetSamplerStateAt {
+        sampler: u32,
+        wrap: Context3DWrapMode,
+        filter: Context3DTextureFilter,
     },
 }
 

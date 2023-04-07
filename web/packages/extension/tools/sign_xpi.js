@@ -1,10 +1,20 @@
+import fsSync from "fs";
 import fs from "fs/promises";
-import fs_callback from "fs";
-import { createRequire } from "module";
+import url from "url";
 import tempDir from "temp-dir";
 import { signAddon } from "sign-addon";
 import { Client as AMOClient } from "sign-addon/lib/amo-client.js";
 
+/**
+ * @param {string} apiKey
+ * @param {string} apiSecret
+ * @param {string} extensionId
+ * @param {string} unsignedPath
+ * @param {string} version
+ * @param {string} destination
+ * @param {string} sourcePath
+ * @param {string} sourceTag
+ */
 async function sign(
     apiKey,
     apiSecret,
@@ -12,7 +22,8 @@ async function sign(
     unsignedPath,
     version,
     destination,
-    sourcePath
+    sourcePath,
+    sourceTag
 ) {
     const result = await signAddon({
         xpiPath: unsignedPath,
@@ -39,21 +50,16 @@ async function sign(
             extensionId
         )}/versions/${encodeURIComponent(version)}/`,
         formData: {
-            source: fs_callback.createReadStream(sourcePath),
+            source: fsSync.createReadStream(sourcePath),
         },
     });
-
-    const build_date = new Date().toISOString();
 
     var notesUpload = client.patch({
         url: `/addons/addon/${encodeURIComponent(
             extensionId
         )}/versions/${encodeURIComponent(version)}/`,
         json: {
-            approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/nightly-${build_date.substr(
-                0,
-                10
-            )} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
+            approval_notes: `This version was derived from the source code available at https://github.com/ruffle-rs/ruffle/releases/tag/${sourceTag} - a ZIP file from this Git tag has been attached. If you download it yourself instead of using the ZIP file provided, make sure to grab the reproducible version of the ZIP, as it contains versioning information that will not be present on the main source download.\n\
 \n\
 We highly recommend using the Docker build workflow. You can invoke it using the following three commands:\n\
 \n\
@@ -85,11 +91,14 @@ As this is indeed a complicated build process, please let me know if there is an
         throw result;
     }
 
-    if (result.downloadedFiles.length === 1) {
+    if (result.downloadedFiles?.length === 1) {
         // Copy the downloaded file to the destination.
         // (Avoid `rename` because it fails if the destination is on a different drive.)
-        await fs.copyFile(result.downloadedFiles[0], destination);
-        await fs.unlink(result.downloadedFiles[0]);
+        const downloadedFile = /** @type {string} */ (
+            result.downloadedFiles[0]
+        );
+        await fs.copyFile(downloadedFile, destination);
+        await fs.unlink(downloadedFile);
     } else {
         console.warn(
             "Unexpected downloads for signed Firefox extension, expected 1."
@@ -100,25 +109,29 @@ As this is indeed a complicated build process, please let me know if there is an
 
 try {
     if (
-        process.env.MOZILLA_API_KEY &&
-        process.env.MOZILLA_API_SECRET &&
-        process.env.FIREFOX_EXTENSION_ID
+        process.env["MOZILLA_API_KEY"] &&
+        process.env["MOZILLA_API_SECRET"] &&
+        process.env["FIREFOX_EXTENSION_ID"] &&
+        process.env["SOURCE_TAG"]
     ) {
         // TODO: Import as a JSON module once it becomes stable.
-        const require = createRequire(import.meta.url);
-        const { version } = require("../assets/manifest.json");
+        const manifestPath = url.fileURLToPath(
+            new URL("../assets/manifest.json", import.meta.url)
+        );
+        const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
         await sign(
-            process.env.MOZILLA_API_KEY,
-            process.env.MOZILLA_API_SECRET,
-            process.env.FIREFOX_EXTENSION_ID,
-            process.argv[2],
-            version,
-            process.argv[3],
-            process.argv[4]
+            process.env["MOZILLA_API_KEY"],
+            process.env["MOZILLA_API_SECRET"],
+            process.env["FIREFOX_EXTENSION_ID"],
+            /** @type {string} */ (process.argv[2]),
+            manifest.version,
+            /** @type {string} */ (process.argv[3]),
+            /** @type {string} */ (process.argv[4]),
+            process.env["SOURCE_TAG"]
         );
     } else {
         console.log(
-            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET and FIREFOX_EXTENSION_ID environment variables"
+            "Skipping signing of Firefox extension. To enable this, please provide MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables"
         );
     }
 } catch (error) {

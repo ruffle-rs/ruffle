@@ -11,8 +11,7 @@ use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
-use gc_arena::MutationContext;
-use ruffle_render::backend::{Context3D, Context3DCommand};
+use ruffle_render::backend::Context3D;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
 use ruffle_render::commands::CommandList;
@@ -29,7 +28,6 @@ use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
-use wgpu::Extent3d;
 
 /// How many times a texture must be written to & read back from,
 /// before it's automatically allocated a buffer on each write.
@@ -343,52 +341,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn create_context3d(
         &mut self,
     ) -> Result<Box<dyn ruffle_render::backend::Context3D>, BitmapError> {
-        let texture_label = create_debug_label!("Render target texture");
-        let format = wgpu::TextureFormat::Rgba8Unorm;
-        let dummy_texture = self
-            .descriptors
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                label: texture_label.as_deref(),
-                size: Extent3d {
-                    width: 1,
-                    height: 1,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format,
-                view_formats: &[format],
-                usage: wgpu::TextureUsages::COPY_SRC,
-            });
-
-        let handle = BitmapHandle(Arc::new(Texture {
-            bind_linear: Default::default(),
-            bind_nearest: Default::default(),
-            texture: Arc::new(dummy_texture),
-            width: 0,
-            height: 0,
-            copy_count: Cell::new(0),
-        }));
-        Ok(Box::new(WgpuContext3D::new(
-            self.descriptors.clone(),
-            handle,
-        )))
+        Ok(Box::new(WgpuContext3D::new(self.descriptors.clone())))
     }
 
     #[instrument(level = "debug", skip_all)]
-    fn context3d_present<'gc>(
-        &mut self,
-        context: &mut dyn Context3D,
-        commands: Vec<Context3DCommand<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), BitmapError> {
+    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), BitmapError> {
         let context = context
             .as_any_mut()
             .downcast_mut::<WgpuContext3D>()
             .unwrap();
-        context.present(commands, mc);
+        context.present();
         Ok(())
     }
 
@@ -553,7 +515,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        rgba: Vec<u8>,
+        bitmap: Bitmap,
         region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = as_texture(handle);
@@ -563,6 +525,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             height: region.height(),
             depth_or_array_layers: 1,
         };
+        let bitmap = bitmap.to_rgba();
 
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -575,7 +538,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 },
                 aspect: wgpu::TextureAspect::All,
             },
-            &rgba[(region.y_min * texture.width * 4) as usize
+            &bitmap.data()[(region.y_min * texture.width * 4) as usize
                 ..(region.y_max * texture.width * 4) as usize],
             wgpu::ImageDataLayout {
                 offset: (region.x_min * 4) as wgpu::BufferAddress,

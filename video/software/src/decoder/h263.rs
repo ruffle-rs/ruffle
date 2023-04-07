@@ -1,7 +1,7 @@
 use crate::decoder::VideoDecoder;
 use h263_rs::parser::H263Reader;
 use h263_rs::{DecoderOption, H263State, PictureTypeCode};
-use h263_rs_yuv::bt601::yuv420_to_rgba;
+use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
@@ -68,15 +68,18 @@ impl VideoDecoder for H263Decoder {
             .format()
             .into_width_and_height()
             .ok_or(H263Error::MissingWidthHeight)?;
-        let chroma_width = picture.chroma_samples_per_row();
-        debug_assert_eq!(chroma_width, (width as usize + 1) / 2);
         let (y, b, r) = picture.as_yuv();
-        let rgba = yuv420_to_rgba(y, b, r, width.into());
-        Ok(DecodedFrame {
-            width,
-            height,
-            rgba,
-        })
+
+        let mut data = y.to_vec();
+        data.extend(b);
+        data.extend(r);
+
+        Ok(DecodedFrame::new(
+            width as u32,
+            height as u32,
+            BitmapFormat::Yuv420p,
+            data,
+        ))
     }
 }
 

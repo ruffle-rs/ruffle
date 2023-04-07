@@ -102,6 +102,22 @@ package flash.geom {
 			}
 		}
 
+		public function deltaTransformVector(v:Vector3D):Vector3D {
+			var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z;
+			var y:Number = this._rawData[1] * v.x + this._rawData[5] * v.y + this._rawData[9] * v.z;
+			var z:Number = this._rawData[2] * v.x + this._rawData[6] * v.y + this._rawData[10] * v.z;
+			var w:Number = this._rawData[3] * v.x + this._rawData[7] * v.y + this._rawData[11] * v.z;
+			return new Vector3D(x, y, z, w);
+		}
+
+		public function transformVector(v:Vector3D):Vector3D {
+			var x:Number = this._rawData[0] * v.x + this._rawData[4] * v.y + this._rawData[8] * v.z + this._rawData[12];
+			var y:Number = this._rawData[1] * v.x + this._rawData[5] * v.y + this._rawData[9] * v.z + this._rawData[13];
+			var z:Number = this._rawData[2] * v.x + this._rawData[6] * v.y + this._rawData[10] * v.z + this._rawData[14];
+			var w:Number = this._rawData[3] * v.x + this._rawData[7] * v.y + this._rawData[11] * v.z + this._rawData[15];
+			return new Vector3D(x, y, z, w);
+		}
+
 		public function transpose():void {
 			// Make a copy
 			var oRawData = this._rawData.concat();

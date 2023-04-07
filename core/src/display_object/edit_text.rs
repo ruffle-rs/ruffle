@@ -282,7 +282,7 @@ impl<'gc> EditText<'gc> {
                 hscroll: 0.0,
                 line_data,
                 scroll: 1,
-                max_chars: 0,
+                max_chars: swf_tag.max_length().unwrap_or_default() as i32,
             },
         ));
 
@@ -1815,8 +1815,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        let tracker = context.focus_tracker;
-        tracker.set(Some(self.into()), context);
+        if self.is_editable() {
+            let tracker = context.focus_tracker;
+            tracker.set(Some(self.into()), context);
+        }
         if let Some(position) = self
             .screen_position_to_index(*context.mouse_position)
             .map(TextSelection::for_position)

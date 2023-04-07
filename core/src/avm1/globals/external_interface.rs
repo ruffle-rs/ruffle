@@ -26,7 +26,7 @@ pub fn add_callback<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 3 {
+    if !activation.context.external_interface.available() || args.len() < 3 {
         return Ok(false.into());
     }
 
@@ -53,19 +53,27 @@ pub fn call<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.is_empty() {
+    if !activation.context.external_interface.available() {
         return Ok(Value::Null);
     }
 
-    let name = args.get(0).unwrap().coerce_to_string(activation)?;
+    let (name, external_args_len) = if let Some(method_name) = args.get(0) {
+        (*method_name, args.len() - 1)
+    } else {
+        (Value::Undefined, 0)
+    };
+    let name = name.coerce_to_string(activation)?;
+
     if let Some(method) = activation
         .context
         .external_interface
         .get_method_for(&name.to_utf8_lossy())
     {
-        let mut external_args = Vec::with_capacity(args.len() - 1);
-        for arg in &args[1..] {
-            external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+        let mut external_args = Vec::with_capacity(external_args_len);
+        if external_args_len > 0 {
+            for arg in &args[1..] {
+                external_args.push(ExternalValue::from_avm1(activation, arg.to_owned())?);
+            }
         }
         Ok(method
             .call(&mut activation.context, &external_args)

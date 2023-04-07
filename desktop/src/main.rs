@@ -34,7 +34,7 @@ use std::panic::PanicInfo;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
@@ -90,6 +90,15 @@ struct Opt {
     /// Height of window in pixels.
     #[clap(long, display_order = 2)]
     height: Option<f64>,
+
+    /// Maximum number of seconds a script can run before scripting is disabled.
+    #[clap(long, short, default_value = "15.0")]
+    max_execution_duration: f64,
+
+    /// Base directory or URL used to resolve all relative path statements in the SWF file.
+    /// The default is the current directory.
+    #[clap(long)]
+    base: Option<Url>,
 
     /// Default quality of the movie.
     #[clap(long, short, default_value = "high")]
@@ -307,7 +316,7 @@ impl App {
 
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
-            movie_url.to_owned(),
+            opt.base.to_owned().unwrap_or(movie_url.to_owned()),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
@@ -340,6 +349,7 @@ impl App {
             .with_ui(ui::DesktopUiBackend::new(window.clone())?)
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
+            .with_max_execution_duration(Duration::from_secs_f64(opt.max_execution_duration))
             .with_quality(opt.quality)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
             .with_scale_mode(opt.scale, opt.force_scale)

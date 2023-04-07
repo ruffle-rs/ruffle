@@ -49,6 +49,16 @@
 			mat.copyRawDataTo(out, 2, true);
 			
 			trace("Out: " + out);
+
+			var v:Vector3D = new Vector3D(1, 2, 3, 4);
+			var vOut:Vector3D;
+			trace("mat.transformVector(v):");
+			vOut = mat.transformVector(v);
+			trace(vOut.x, vOut.y, vOut.z, vOut.w);
+
+			trace("mat.deltaTransformVector(v):");
+			vOut = mat.deltaTransformVector(v);
+			trace(vOut.x, vOut.y, vOut.z, vOut.w);
 		}
 	}
 }

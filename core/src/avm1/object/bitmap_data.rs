@@ -28,11 +28,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 }
 
 impl<'gc> BitmapDataObject<'gc> {
-    pub fn bitmap_data(&self) -> GcCell<'gc, BitmapData<'gc>> {
-        self.0.read().data.sync()
-    }
-
-    pub fn bitmap_data_wrapper(&self) -> BitmapDataWrapper<'gc> {
+    pub fn bitmap_data(&self) -> BitmapDataWrapper<'gc> {
         self.0.read().data
     }
 
@@ -71,7 +67,7 @@ impl<'gc> BitmapDataObject<'gc> {
     }
 
     pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc>) {
-        self.bitmap_data().write(context.gc_context).dispose();
+        self.bitmap_data().dispose(context.gc_context);
     }
 }
 

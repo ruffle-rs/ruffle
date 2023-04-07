@@ -52,7 +52,7 @@ pub enum BitmapClass<'gc> {
 /// It can also be created in ActionScript using the `Bitmap` class.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
+pub struct Bitmap<'gc>(GcCell<'gc, BitmapGraphicData<'gc>>);
 
 impl fmt::Debug for Bitmap<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -64,7 +64,7 @@ impl fmt::Debug for Bitmap<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct BitmapData<'gc> {
+pub struct BitmapGraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     id: CharacterId,
     movie: Arc<SwfMovie>,
@@ -113,7 +113,7 @@ impl<'gc> Bitmap<'gc> {
 
         Bitmap(GcCell::allocate(
             context.gc_context,
-            BitmapData {
+            BitmapGraphicData {
                 base: Default::default(),
                 id,
                 bitmap_data,
@@ -146,6 +146,9 @@ impl<'gc> Bitmap<'gc> {
             match bitmap.format() {
                 BitmapFormat::Rgba => true,
                 BitmapFormat::Rgb => false,
+                _ => unreachable!(
+                    "Bitmap objects can only be constructed from RGB or RGBA source bitmaps"
+                ),
             },
             pixels,
         );
@@ -191,15 +194,15 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_bitmap_data(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
+        bitmap_data: BitmapDataWrapper<'gc>,
     ) {
         let mut write = self.0.write(context.gc_context);
         // Refresh our cached values, even if we're writing the same BitmapData
         // that we currently have stored. This will update them to '0' if the
         // BitmapData has been disposed since it was originally set.
-        write.width = bitmap_data.read().width();
-        write.height = bitmap_data.read().height();
-        write.bitmap_data = BitmapDataWrapper::new(bitmap_data);
+        write.width = bitmap_data.width();
+        write.height = bitmap_data.height();
+        write.bitmap_data = bitmap_data;
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {

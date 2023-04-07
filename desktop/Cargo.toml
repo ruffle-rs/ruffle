@@ -8,8 +8,8 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.1.13", features = ["derive"] }
-cpal = "0.15.1"
+clap = { version = "4.2.1", features = ["derive"] }
+cpal = "0.15.2"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -35,7 +35,7 @@ tracing-tracy = { version = "=0.10.0", optional = true }
 winapi = "0.3.9"
 
 [build-dependencies]
-embed-resource = "1"
+embed-resource = "2"
 
 [features]
 default = ["software_video"]

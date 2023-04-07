@@ -19,6 +19,7 @@ use std::collections::BTreeMap;
 /// lossy format. Any recursion or additional metadata in ActionScript will not be translated.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    Undefined,
     Null,
     Bool(bool),
     Number(f64),
@@ -123,7 +124,8 @@ impl Value {
         value: Avm1Value<'gc>,
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
-            Avm1Value::Undefined | Avm1Value::Null => Value::Null,
+            Avm1Value::Undefined => Value::Undefined,
+            Avm1Value::Null => Value::Null,
             Avm1Value::Bool(value) => value.into(),
             Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
@@ -153,6 +155,7 @@ impl Value {
 
     pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc>) -> Avm1Value<'gc> {
         match self {
+            Value::Undefined => Avm1Value::Undefined,
             Value::Null => Avm1Value::Null,
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
@@ -188,7 +191,8 @@ impl Value {
 
     pub fn from_avm2(value: Avm2Value) -> Value {
         match value {
-            Avm2Value::Undefined | Avm2Value::Null => Value::Null,
+            Avm2Value::Undefined => Value::Undefined,
+            Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
@@ -214,6 +218,7 @@ impl Value {
 
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
         match self {
+            Value::Undefined => Avm2Value::Undefined,
             Value::Null => Avm2Value::Null,
             Value::Bool(value) => Avm2Value::Bool(value),
             Value::Number(value) => Avm2Value::Number(value),
