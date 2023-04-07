@@ -1,11 +1,11 @@
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use bitflags::bitflags;
-use core::fmt;
 use gc_arena::Collect;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, PixelRegion, SyncHandle};
 use ruffle_wstr::WStr;
+use std::fmt::Debug;
 use std::ops::Range;
 use swf::{Rectangle, Twips};
 use tracing::instrument;
@@ -253,8 +253,6 @@ mod wrapper {
 
     use super::{copy_pixels_to_bitmapdata, BitmapData, DirtyState};
 
-    #[derive(Collect, Copy, Clone)]
-    #[collect(no_drop)]
     /// A wrapper type that ensures that we always wait for a pending
     /// GPU -> CPU sync to complete (using `sync_handle`) before accessing
     /// the CPU-side pixels.
@@ -283,7 +281,8 @@ mod wrapper {
     ///
     /// Note that we also perform CPU-GPU syncs from `BitmapData.update_dirty_texture` when `dirty` is set.
     /// `sync_handle` and `dirty` can never be set at the same time - we can only have one of them set, or none of them set.
-    ///
+    #[derive(Copy, Clone, Collect, Debug)]
+    #[collect(no_drop)]
     pub struct BitmapDataWrapper<'gc>(GcCell<'gc, BitmapData<'gc>>);
 
     impl<'gc> BitmapDataWrapper<'gc> {
@@ -470,8 +469,8 @@ mod wrapper {
 
 pub use wrapper::BitmapDataWrapper;
 
-impl fmt::Debug for BitmapData<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Debug for BitmapData<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BitmapData")
             .field("dirty_state", &self.dirty_state)
             .field("width", &self.width)

@@ -40,6 +40,11 @@ pub fn clone<'gc>(
         NativeObject::ColorMatrixFilter(color_matrix_filter) => NativeObject::ColorMatrixFilter(
             color_matrix_filter.duplicate(activation.context.gc_context),
         ),
+        NativeObject::DisplacementMapFilter(displacement_map_filter) => {
+            NativeObject::DisplacementMapFilter(
+                displacement_map_filter.duplicate(activation.context.gc_context),
+            )
+        }
         _ => NativeObject::None,
     };
     if !matches!(native, NativeObject::None) {
@@ -57,41 +62,6 @@ pub fn clone<'gc>(
         }
         cloned.set_native(activation.context.gc_context, native);
         return Ok(cloned.into());
-    }
-
-    if let Some(this) = this.as_displacement_map_filter_object() {
-        let proto = activation
-            .context
-            .avm1
-            .prototypes()
-            .displacement_map_filter_constructor;
-
-        let map_bitmap = this.get("mapBitmap", activation)?;
-        let map_point = this.get("mapPoint", activation)?;
-        let component_x = this.get("componentX", activation)?;
-        let component_y = this.get("componentY", activation)?;
-        let scale_x = this.get("scaleX", activation)?;
-        let scale_y = this.get("scaleY", activation)?;
-        let mode = this.get("mode", activation)?;
-        let color = this.get("color", activation)?;
-        let alpha = this.get("alpha", activation)?;
-
-        let cloned = proto.construct(
-            activation,
-            &[
-                map_bitmap,
-                map_point,
-                component_x,
-                component_y,
-                scale_x,
-                scale_y,
-                mode,
-                color,
-                alpha,
-            ],
-        )?;
-
-        return Ok(cloned);
     }
 
     if let Some(this) = this.as_convolution_filter_object() {

@@ -6,11 +6,11 @@ use crate::avm1::globals::blur_filter::BlurFilter;
 use crate::avm1::globals::color_matrix_filter::ColorMatrixFilter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::date::Date;
+use crate::avm1::globals::displacement_map_filter::DisplacementMapFilter;
 use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
-use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::object::shared_object::SharedObject;
@@ -34,7 +34,6 @@ use std::fmt::Debug;
 pub mod array_object;
 pub mod convolution_filter;
 mod custom_object;
-pub mod displacement_map_filter;
 pub mod gradient_bevel_filter;
 pub mod gradient_glow_filter;
 pub mod script_object;
@@ -57,6 +56,7 @@ pub enum NativeObject<'gc> {
     GlowFilter(GlowFilter<'gc>),
     DropShadowFilter(DropShadowFilter<'gc>),
     ColorMatrixFilter(ColorMatrixFilter<'gc>),
+    DisplacementMapFilter(DisplacementMapFilter<'gc>),
     ColorTransform(GcCell<'gc, ColorTransformObject>),
     TextFormat(GcCell<'gc, TextFormat>),
     NetStream(NetStream<'gc>),
@@ -81,7 +81,6 @@ pub enum NativeObject<'gc> {
         FunctionObject(FunctionObject<'gc>),
         SharedObject(SharedObject<'gc>),
         TransformObject(TransformObject<'gc>),
-        DisplacementMapFilterObject(DisplacementMapFilterObject<'gc>),
         ConvolutionFilterObject(ConvolutionFilterObject<'gc>),
         GradientBevelFilterObject(GradientBevelFilterObject<'gc>),
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
@@ -603,11 +602,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
 
     /// Get the underlying `TransformObject`, if it exists
     fn as_transform_object(&self) -> Option<TransformObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `DisplacementMapFilterObject`, if it exists
-    fn as_displacement_map_filter_object(&self) -> Option<DisplacementMapFilterObject<'gc>> {
         None
     }
 
