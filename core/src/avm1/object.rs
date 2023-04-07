@@ -1,7 +1,7 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
-use crate::avm1::globals::bevel_filter::BevelFilterObject;
+use crate::avm1::globals::bevel_filter::BevelFilter;
 use crate::avm1::globals::blur_filter::BlurFilter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::date::Date;
@@ -27,7 +27,7 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use crate::xml::XmlNode;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefCell};
 use std::fmt::Debug;
@@ -57,7 +57,7 @@ pub mod xml_object;
 pub enum NativeObject<'gc> {
     Date(Box<RefCell<Date>>),
     BlurFilter(BlurFilter),
-    BevelFilter(GcCell<'gc, BevelFilterObject>),
+    BevelFilter(BevelFilter),
     ColorTransform(Box<RefCell<ColorTransformObject>>),
     TextFormat(Box<RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),
