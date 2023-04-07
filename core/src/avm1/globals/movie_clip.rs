@@ -112,6 +112,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
     "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
 };
 
 /// Implements `MovieClip`
@@ -123,7 +124,7 @@ pub fn constructor<'gc>(
     Ok(this.into())
 }
 
-fn new_rectangle<'gc>(
+pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,7 +137,7 @@ fn new_rectangle<'gc>(
     proto.construct(activation, args)
 }
 
-fn object_to_rectangle<'gc>(
+pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Option<Rectangle<Twips>>, Error<'gc>> {
@@ -180,6 +181,33 @@ fn set_scroll_rect<'gc>(
         }
     } else {
         this.set_has_scroll_rect(activation.context.gc_context, false);
+    };
+    Ok(())
+}
+
+fn scale_9_grid<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let rect = this.scaling_grid();
+    if rect.is_valid() {
+        new_rectangle(activation, rect)
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_scale_9_grid<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Value::Object(object) = value {
+        if let Some(rectangle) = object_to_rectangle(activation, object)? {
+            this.set_scaling_grid(activation.context.gc_context, rectangle);
+        }
+    } else {
+        this.set_scaling_grid(activation.context.gc_context, Rectangle::default());
     };
     Ok(())
 }
