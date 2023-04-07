@@ -2,7 +2,7 @@
 
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
 use crate::avm1::globals::bevel_filter::BevelFilterObject;
-use crate::avm1::globals::blur_filter::BlurFilterObject;
+use crate::avm1::globals::blur_filter::BlurFilter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::date::Date;
 use crate::avm1::object::array_object::ArrayObject;
@@ -56,7 +56,7 @@ pub mod xml_object;
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     Date(Box<RefCell<Date>>),
-    BlurFilter(GcCell<'gc, BlurFilterObject>),
+    BlurFilter(BlurFilter),
     BevelFilter(GcCell<'gc, BevelFilterObject>),
     ColorTransform(Box<RefCell<ColorTransformObject>>),
     TextFormat(Box<RefCell<TextFormat>>),

@@ -4,14 +4,87 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
+use std::cell::RefCell;
 
-#[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct BlurFilterObject {
+#[derive(Clone, Debug)]
+struct BlurFilterData {
     blur_x: f64,
     blur_y: f64,
     quality: i32,
+}
+
+impl Default for BlurFilterData {
+    fn default() -> Self {
+        Self {
+            blur_x: 4.0,
+            blur_y: 4.0,
+            quality: 1,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Collect)]
+#[collect(require_static)]
+#[repr(transparent)]
+pub struct BlurFilter(Box<RefCell<BlurFilterData>>);
+
+impl<'gc> BlurFilter {
+    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+        let blur_filter = Self::default();
+        blur_filter.set_blur_x(activation, args.get(0))?;
+        blur_filter.set_blur_y(activation, args.get(1))?;
+        blur_filter.set_quality(activation, args.get(2))?;
+        Ok(blur_filter)
+    }
+
+    fn blur_x(&self) -> f64 {
+        self.0.borrow().blur_x
+    }
+
+    fn set_blur_x(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
+            self.0.borrow_mut().blur_x = blur_x;
+        }
+        Ok(())
+    }
+
+    fn blur_y(&self) -> f64 {
+        self.0.borrow().blur_y
+    }
+
+    fn set_blur_y(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
+            self.0.borrow_mut().blur_y = blur_y;
+        }
+        Ok(())
+    }
+
+    fn quality(&self) -> i32 {
+        self.0.borrow().quality
+    }
+
+    fn set_quality(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        value: Option<&Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        if let Some(value) = value {
+            let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
+            self.0.borrow_mut().quality = quality;
+        }
+        Ok(())
+    }
 }
 
 macro_rules! blur_filter_method {
@@ -41,17 +114,7 @@ fn method<'gc>(
     const SET_QUALITY: u8 = 6;
 
     if index == CONSTRUCTOR {
-        let blur_filter = GcCell::allocate(
-            activation.context.gc_context,
-            BlurFilterObject {
-                blur_x: 4.0,
-                blur_y: 4.0,
-                quality: 1,
-            },
-        );
-        set_blur_x(activation, blur_filter, args.get(0))?;
-        set_blur_y(activation, blur_filter, args.get(1))?;
-        set_quality(activation, blur_filter, args.get(2))?;
+        let blur_filter = BlurFilter::new(activation, args)?;
         this.set_native(
             activation.context.gc_context,
             NativeObject::BlurFilter(blur_filter),
@@ -59,65 +122,30 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let blur_filter = match this.native().as_deref() {
-        Some(NativeObject::BlurFilter(blur_filter)) => *blur_filter,
+    let native = this.native();
+    let this = match native.as_deref() {
+        Some(NativeObject::BlurFilter(blur_filter)) => blur_filter,
         _ => return Ok(Value::Undefined),
     };
 
     Ok(match index {
-        GET_BLUR_X => blur_filter.read().blur_x.into(),
+        GET_BLUR_X => this.blur_x().into(),
         SET_BLUR_X => {
-            set_blur_x(activation, blur_filter, args.get(0))?;
+            this.set_blur_x(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_BLUR_Y => blur_filter.read().blur_y.into(),
+        GET_BLUR_Y => this.blur_y().into(),
         SET_BLUR_Y => {
-            set_blur_y(activation, blur_filter, args.get(0))?;
+            this.set_blur_y(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_QUALITY => blur_filter.read().quality.into(),
+        GET_QUALITY => this.quality().into(),
         SET_QUALITY => {
-            set_quality(activation, blur_filter, args.get(0))?;
+            this.set_quality(activation, args.get(0))?;
             Value::Undefined
         }
         _ => Value::Undefined,
     })
-}
-
-fn set_blur_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    blur_filter: GcCell<'gc, BlurFilterObject>,
-    value: Option<&Value<'gc>>,
-) -> Result<(), Error<'gc>> {
-    if let Some(value) = value {
-        let blur_x = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-        blur_filter.write(activation.context.gc_context).blur_x = blur_x;
-    }
-    Ok(())
-}
-
-fn set_blur_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    blur_filter: GcCell<'gc, BlurFilterObject>,
-    value: Option<&Value<'gc>>,
-) -> Result<(), Error<'gc>> {
-    if let Some(value) = value {
-        let blur_y = value.coerce_to_f64(activation)?.clamp(0.0, 255.0);
-        blur_filter.write(activation.context.gc_context).blur_y = blur_y;
-    }
-    Ok(())
-}
-
-fn set_quality<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    blur_filter: GcCell<'gc, BlurFilterObject>,
-    value: Option<&Value<'gc>>,
-) -> Result<(), Error<'gc>> {
-    if let Some(value) = value {
-        let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-        blur_filter.write(activation.context.gc_context).quality = quality;
-    }
-    Ok(())
 }
 
 pub fn create_constructor<'gc>(

@@ -25,9 +25,7 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let native = match this.native().as_deref() {
-        Some(NativeObject::BlurFilter(blur_filter)) => Some(NativeObject::BlurFilter(
-            GcCell::allocate(activation.context.gc_context, blur_filter.read().clone()),
-        )),
+        Some(native @ NativeObject::BlurFilter(_)) => Some(native.clone()),
         Some(NativeObject::BevelFilter(bevel_filter)) => Some(NativeObject::BevelFilter(
             GcCell::allocate(activation.context.gc_context, bevel_filter.read().clone()),
         )),
