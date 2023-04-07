@@ -3767,6 +3767,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "weak-table",
  "web-sys",
+ "winapi",
 ]
 
 [[package]]

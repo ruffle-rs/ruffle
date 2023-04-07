@@ -64,6 +64,9 @@ version = "0.3.28"
 wasm-bindgen-futures = "0.4.37"
 web-sys = "0.3.61"
 
+[target.'cfg(windows)'.dependencies.winapi]
+version = "0.3.9"
+
 [features]
 default = []
 lzma = ["lzma-rs", "swf/lzma"]

@@ -13,6 +13,9 @@ use core::fmt;
 #[cfg(not(target_family = "wasm"))]
 use {regress::Regex, std::process::Command};
 
+#[cfg(windows)]
+use std::ptr;
+
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "exactSettings" => property(get_exact_settings, set_exact_settings);
     "useCodepage" => property(get_use_code_page, set_use_code_page);
@@ -415,9 +418,63 @@ impl SystemProperties {
             RuffleType::WebPlayer => PlayerType::PlugIn,
         };
 
-        let locale_language_tag = sys_locale::get_locale().unwrap_or_else(|| "XX-XX".to_string());
-        // TODO: If OS == Windows and player_version >= 7 get UI language and use it instead
-        let language_tag = locale_language_tag;
+        #[cfg(windows)]
+        fn get_windows_ui_language_tag() -> String {
+            // This Windows API constant is not in the winapi crate
+            // The value has been retrieved out of the windows-sys crate
+            const MUI_LANGUAGE_NAME: u32 = 8u32;
+
+            let mut number_of_languages: u32 = 0;
+            let mut buffer_length: u32 = 0;
+
+            // GetUserPreferredUILanguages needs to be called twice
+            // The first call returns the required buffer size
+            // SAFETY: The pointers are of the correct type and mutable
+            let success_first_call = unsafe {
+                winapi::um::winnls::GetUserPreferredUILanguages(
+                    MUI_LANGUAGE_NAME,
+                    &mut number_of_languages as *mut u32,
+                    ptr::null_mut(),
+                    &mut buffer_length as *mut u32,
+                )
+            };
+            if success_first_call == 0 {
+                return sys_locale::get_locale().unwrap_or_else(|| "XX-XX".to_string());
+            }
+
+            let mut language_buffer: Vec<u16> = vec![0; buffer_length as usize];
+
+            // The second call returns the UI languages
+            // SAFETY: The buffer has enough capacity for the language codes
+            // and is valid to write to
+            let success_second_call = unsafe {
+                winapi::um::winnls::GetUserPreferredUILanguages(
+                    MUI_LANGUAGE_NAME,
+                    &mut number_of_languages as *mut u32,
+                    language_buffer.as_mut_ptr(),
+                    &mut buffer_length as *mut u32,
+                )
+            };
+            if success_second_call == 0 {
+                return sys_locale::get_locale().unwrap_or_else(|| "XX-XX".to_string());
+            }
+
+            let all_languages = String::from_utf16(&language_buffer).unwrap();
+            let primary_language = all_languages.split('\0').collect::<Vec<&str>>()[0];
+            primary_language.to_string()
+        }
+
+        #[cfg(not(windows))]
+        fn get_windows_ui_language_tag() -> String {
+            "XX-XX".to_string()
+        }
+
+        let language_tag = if std::env::consts::OS == "windows" && player_version >= 7 {
+            get_windows_ui_language_tag()
+        } else {
+            sys_locale::get_locale().unwrap_or_else(|| "XX-XX".to_string())
+        }
+        .to_lowercase();
 
         let language_vector: Vec<&str> = language_tag.split('-').collect();
         let language_code = language_vector[0];
