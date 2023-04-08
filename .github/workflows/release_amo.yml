@@ -37,18 +37,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          mkdir release_assets
-          gh release download ${{ steps.release_tag.outputs.stdout }} --pattern "*.xpi" --pattern "*.zip" --dir release_assets
+          export RELEASE_TAG="${{steps.release_tag.outputs.stdout}}"
+          export RELEASE_DATE="${{steps.release_date.outputs.stdout}}"
 
-          mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-reproducible-source.zip reproducible-source.zip
+          export RELEASE_TAG=${RELEASE_TAG//$'\n'/}
+          export RELEASE_DATE=${RELEASE_DATE//$'\n'/}
+
+          mkdir release_assets
+          gh release download --pattern "*.xpi" --pattern "*.zip" --dir release_assets $RELEASE_TAG
+
+          mv release_assets/ruffle-nightly-$RELEASE_DATE-reproducible-source.zip reproducible-source.zip
 
           cd release_assets
-          unzip ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi
+          unzip ruffle-nightly-$RELEASE_DATE-firefox_unsigned.xpi
           mv manifest.json ../web/packages/extension/assets/manifest.json
           cd ..
 
           mkdir web/packages/extension/dist
-          mv release_assets/ruffle-nightly-${{steps.release_date.outputs.stdout}}-firefox_unsigned.xpi web/packages/extension/dist/reproducible-source.xpi
+          mv release_assets/ruffle-nightly-$RELEASE_DATE-firefox_unsigned.xpi web/packages/extension/dist/reproducible-source.xpi
       
       - name: Publish Firefox extension
         id: sign-firefox
