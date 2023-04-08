@@ -1007,7 +1007,7 @@ pub fn copy_pixels<'gc>(
         return;
     }
 
-    copy_efficiently(
+    copy_on_cpu(
         context,
         source_bitmap,
         target,
@@ -1188,7 +1188,7 @@ pub fn apply_filter<'gc>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn copy_efficiently<'gc>(
+fn copy_on_cpu<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
     source: BitmapDataWrapper<'gc>,
     dest: BitmapDataWrapper<'gc>,
@@ -1200,25 +1200,11 @@ fn copy_efficiently<'gc>(
         // We don't need to blend if we're copying an opaque texture, the alpha would be 255 anyway
         blend = false;
     }
-
     if !blend && source.ptr_eq(dest) && source_region == dest_region {
         // Copying the same area of self to self, noop
         return;
     }
 
-    // TODO: Add copy_on_gpu here for when the BMDs are on gpu
-    copy_on_cpu(context, source, dest, source_region, dest_region, blend);
-}
-
-#[allow(clippy::too_many_arguments)]
-fn copy_on_cpu<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
-    source: BitmapDataWrapper<'gc>,
-    dest: BitmapDataWrapper<'gc>,
-    source_region: PixelRegion,
-    dest_region: PixelRegion,
-    blend: bool,
-) {
     if source.ptr_eq(dest) {
         let dest = dest.sync();
         let mut write = dest.write(context.gc_context);
@@ -1295,6 +1281,75 @@ fn copy_on_cpu<'gc>(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn blend_and_transform<'gc>(
+    context: &mut UpdateContext<'_, 'gc>,
+    source: BitmapDataWrapper<'gc>,
+    dest: BitmapDataWrapper<'gc>,
+    source_region: PixelRegion,
+    dest_region: PixelRegion,
+    transform: &ColorTransform,
+) {
+    if !source.transparency() && source.ptr_eq(dest) && source_region == dest_region {
+        // Copying the same area of opaque self to self, noop
+        return;
+    }
+    if source.ptr_eq(dest) {
+        let dest = dest.sync();
+        let mut write = dest.write(context.gc_context);
+
+        if write.transparency() {
+            for y in 0..dest_region.height() {
+                for x in 0..dest_region.width() {
+                    let mut color =
+                        write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    color = write
+                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
+                        .blend_over(&color);
+                    color =
+                        Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
+                            .to_premultiplied_alpha(true);
+                    write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                }
+            }
+        } else {
+            // Can't blend if copying from opaque
+            for y in 0..dest_region.height() {
+                for x in 0..dest_region.width() {
+                    let mut color =
+                        write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    color = Color::from(transform * swf::Color::from(color)).with_alpha(255);
+                    write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                }
+            }
+        }
+
+        write.set_cpu_dirty(dest_region);
+    } else {
+        let dest = dest.sync();
+        let mut dest_write = dest.write(context.gc_context);
+        let source_read = source.read_area(source_region);
+        let opaque = !dest_write.transparency();
+
+        for y in 0..dest_region.height() {
+            for x in 0..dest_region.width() {
+                let mut color =
+                    source_read.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                color = dest_write
+                    .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
+                    .blend_over(&color);
+                color = Color::from(transform * swf::Color::from(color));
+                if opaque {
+                    color = color.with_alpha(255);
+                }
+                dest_write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+            }
+        }
+
+        dest_write.set_cpu_dirty(dest_region);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn draw<'gc>(
     context: &mut UpdateContext<'_, 'gc>,
     target: BitmapDataWrapper<'gc>,
@@ -1316,11 +1371,9 @@ pub fn draw<'gc>(
     // This can be a simple and efficient blit as long as:
     // - We are using a bitmapdata as a source
     // - We aren't using impactful blend modes
-    // - We don't have a color transform
     // - We don't have a scale component of the transform matrix
     if let IBitmapDrawable::BitmapData(source) = &source {
         if (blend_mode == BlendMode::Normal || blend_mode == BlendMode::Layer)
-            && transform.color_transform == ColorTransform::default()
             && transform.matrix.a == 1.0
             && transform.matrix.b == 0.0
             && transform.matrix.c == 0.0
@@ -1349,14 +1402,25 @@ pub fn draw<'gc>(
                 &mut source_region,
             );
 
-            copy_efficiently(
-                context,
-                *source,
-                target,
-                source_region,
-                dest_region,
-                source.transparency(), // If transparent source, blend the pixels. Otherwise they'll be 0xFF alpha and nothing to blend.
-            );
+            if transform.color_transform == ColorTransform::default() {
+                blend_and_transform(
+                    context,
+                    *source,
+                    target,
+                    source_region,
+                    dest_region,
+                    &transform.color_transform,
+                );
+            } else {
+                copy_on_cpu(
+                    context,
+                    *source,
+                    target,
+                    source_region,
+                    dest_region,
+                    source.transparency(), // If transparent source, blend the pixels. Otherwise they'll be 0xFF alpha and nothing to blend.
+                );
+            }
             return Ok(());
         }
     }
