@@ -53,6 +53,10 @@ pub trait RenderBackend: Downcast {
         None
     }
 
+    fn is_filter_supported(&self, _filter: &Filter) -> bool {
+        false
+    }
+
     fn submit_frame(&mut self, clear: swf::Color, commands: CommandList);
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;

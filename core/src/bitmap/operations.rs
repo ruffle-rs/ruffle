@@ -1165,6 +1165,25 @@ pub fn apply_filter<'gc>(
     dest_point: (u32, u32),
     filter: Filter,
 ) {
+    if !context.renderer.is_filter_supported(&filter) {
+        let mut source_region = PixelRegion::for_whole_size(source.width(), source.height());
+        let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
+        dest_region.clamp_with_intersection(
+            (dest_point.0 as i32, dest_point.1 as i32),
+            (source_point.0 as i32, source_point.1 as i32),
+            (source_size.0 as i32, source_size.1 as i32),
+            &mut source_region,
+        );
+
+        if dest_region.width() == 0 || dest_region.height() == 0 {
+            return;
+        }
+
+        // Until we support these filters, treat this like a copy
+        copy_on_cpu(context, source, target, source_region, dest_region, false);
+        return;
+    }
+
     let source_handle = source.bitmap_handle(context.gc_context, context.renderer);
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc_context);
     let mut write = target.write(context.gc_context);
