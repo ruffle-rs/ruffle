@@ -47,4 +47,8 @@ impl<'a> FlvReader<'a> {
             self.read(4)?.try_into().expect("four bytes"),
         ))
     }
+
+    pub fn position(&self) -> usize {
+        self.position
+    }
 }
