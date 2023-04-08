@@ -26,6 +26,12 @@ jobs:
         with:
           ref: ${{steps.release_tag.outputs.stdout}}
 
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+
       - name: Compute release date
         uses: mathiasvr/command-output@v2.0.0
         id: release_date
