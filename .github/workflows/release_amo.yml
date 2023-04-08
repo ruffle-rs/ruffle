@@ -69,7 +69,10 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
           MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
-          SOURCE_TAG: ${{ steps.release_tag.outputs.stdout }}
         working-directory: web/packages/extension
         shell: bash -l {0}
-        run: npm run sign-firefox
+        run: |
+          export SOURCE_TAG="${{steps.release_tag.outputs.stdout}}"
+          export SOURCE_TAG=${SOURCE_TAG//$'\n'/}
+
+          npm run sign-firefox
