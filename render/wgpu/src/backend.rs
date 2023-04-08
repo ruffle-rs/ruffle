@@ -653,6 +653,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
     }
 
+    fn is_filter_supported(&self, filter: &Filter) -> bool {
+        matches!(filter, Filter::BlurFilter(_) | Filter::ColorMatrixFilter(_))
+    }
+
     fn apply_filter(
         &mut self,
         source: BitmapHandle,
