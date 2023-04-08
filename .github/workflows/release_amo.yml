@@ -49,12 +49,12 @@ jobs:
           mv release_assets/ruffle-nightly-$RELEASE_DATE-reproducible-source.zip reproducible-source.zip
 
           cd release_assets
-          unzip ruffle-nightly-$RELEASE_DATE-firefox_unsigned.xpi
+          unzip ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi
           mv manifest.json ../web/packages/extension/assets/manifest.json
           cd ..
 
           mkdir web/packages/extension/dist
-          mv release_assets/ruffle-nightly-$RELEASE_DATE-firefox_unsigned.xpi web/packages/extension/dist/reproducible-source.xpi
+          mv release_assets/ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi web/packages/extension/dist/firefox_unsigned.xpi
       
       - name: Publish Firefox extension
         id: sign-firefox
