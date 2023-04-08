@@ -1138,6 +1138,31 @@ impl<'gc> Value<'gc> {
         other: &Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
+        // ECMA-357 extends the abstract equality algorithm with steps
+        // for XML and XMLList types. Because they are objects in Ruffle we
+        // have to be a bit more complicated and factor out the code into
+        // a separate method.
+        // TODO: QName and Namespace handling
+        if let Value::Object(obj) = self {
+            if let Some(xml_list_obj) = obj.as_xml_list_object() {
+                return xml_list_obj.equals(other, activation);
+            }
+
+            if let Some(xml_obj) = obj.as_xml_object() {
+                return xml_obj.abstract_eq(other, activation);
+            }
+        }
+
+        if let Value::Object(obj) = other {
+            if let Some(xml_list_obj) = obj.as_xml_list_object() {
+                return xml_list_obj.equals(self, activation);
+            }
+
+            if let Some(xml_obj) = obj.as_xml_object() {
+                return xml_obj.abstract_eq(self, activation);
+            }
+        }
+
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
             (Value::Null, Value::Null) => Ok(true),

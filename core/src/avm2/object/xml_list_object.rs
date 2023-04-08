@@ -92,6 +92,46 @@ impl<'gc> XmlListObject<'gc> {
     pub fn target(&self) -> Option<Object<'gc>> {
         self.0.read().target
     }
+
+    pub fn equals(
+        &self,
+        other: &Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        if *other == Value::Undefined && self.length() == 0 {
+            return Ok(true);
+        }
+
+        if let Value::Object(obj) = other {
+            if let Some(xml_list_obj) = obj.as_xml_list_object() {
+                if self.length() != xml_list_obj.length() {
+                    return Ok(false);
+                }
+
+                for n in 0..self.length() {
+                    let value = xml_list_obj.xml_object_child(n, activation).unwrap().into();
+                    if !self
+                        .xml_object_child(n, activation)
+                        .unwrap()
+                        .abstract_eq(&value, activation)?
+                    {
+                        return Ok(false);
+                    }
+                }
+
+                return Ok(true);
+            }
+        }
+
+        if self.length() == 1 {
+            return self
+                .xml_object_child(0, activation)
+                .unwrap()
+                .abstract_eq(other, activation);
+        }
+
+        Ok(false)
+    }
 }
 
 #[derive(Clone, Collect)]
