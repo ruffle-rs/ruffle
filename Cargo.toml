@@ -23,6 +23,7 @@ members = [
     "tests",
     "tests/input-format",
 ]
+default-members = ["desktop"]
 resolver = "2"
 
 [workspace.package]
