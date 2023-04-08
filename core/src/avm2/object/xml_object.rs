@@ -77,6 +77,64 @@ impl<'gc> XmlObject<'gc> {
     pub fn node(&self) -> Ref<'_, E4XNode<'gc>> {
         Ref::map(self.0.read(), |data| &data.node)
     }
+
+    pub fn equals(
+        &self,
+        other: &Value<'gc>,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        // 1. If Type(V) is not XML, return false.
+        let other = if let Some(xml_obj) = other.as_object().and_then(|obj| obj.as_xml_object()) {
+            xml_obj
+        } else {
+            return Ok(false);
+        };
+
+        // It seems like an XML object should always be equal to itself
+        if Object::ptr_eq(*self, other) {
+            return Ok(true);
+        }
+
+        Err("Full XML abstract equality not yet implemented".into())
+    }
+
+    // Implements "The Abstract Equality Comparison Algorithm" as defined
+    // in ECMA-357 when one side is an XML type (object).
+    pub fn abstract_eq(
+        &self,
+        other: &Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        // 3.a. If both x and y are the same type (XML)
+        if let Value::Object(obj) = other {
+            if let Some(xml_obj) = obj.as_xml_object() {
+                if (matches!(
+                    &*self.node().kind(),
+                    E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
+                ) && xml_obj.node().has_simple_content())
+                    || (matches!(
+                        &*xml_obj.node().kind(),
+                        E4XNodeKind::Text(_) | E4XNodeKind::CData(_) | E4XNodeKind::Attribute(_)
+                    ) && self.node().has_simple_content())
+                {
+                    return Ok(self.node().xml_to_string(activation)?
+                        == xml_obj.node().xml_to_string(activation)?);
+                }
+
+                return self.equals(other, activation);
+            }
+        }
+
+        // 4. If (Type(x) is XML) and x.hasSimpleContent() == true)
+        if self.node().has_simple_content() {
+            return Ok(
+                self.node().xml_to_string(activation)? == other.coerce_to_string(activation)?
+            );
+        }
+
+        // It seems like everything else will just ultimately fall-through to the last step.
+        Ok(false)
+    }
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
