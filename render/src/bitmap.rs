@@ -398,37 +398,46 @@ impl PixelRegion {
         size: (i32, i32),
         other: &mut PixelRegion,
     ) {
-        let self_x_delta = self.x_min as i32 - self_point.0;
-        let self_y_delta = self.y_min as i32 - self_point.1;
-        let other_x_delta = other.x_min as i32 - other_point.0;
-        let other_y_delta = other.y_min as i32 - other_point.1;
+        // First place the ideal overlap box within each region, clamping as needed
+        let self_x_min = self_point.0.max(self.x_min as i32) as u32;
+        let self_y_min = self_point.1.max(self.y_min as i32) as u32;
+        let self_x_max = (self_point.0 + size.0).min(self.x_max as i32).max(0) as u32;
+        let self_y_max = (self_point.1 + size.1).min(self.y_max as i32).max(0) as u32;
 
-        let x_delta = self_x_delta.max(other_x_delta);
-        let y_delta = self_y_delta.max(other_y_delta);
+        let other_x_min = other_point.0.max(other.x_min as i32) as u32;
+        let other_y_min = other_point.1.max(other.y_min as i32) as u32;
+        let other_x_max = (other_point.0 + size.0).min(other.x_max as i32).max(0) as u32;
+        let other_y_max = (other_point.1 + size.1).min(other.y_max as i32).max(0) as u32;
 
-        let self_x_min = self_point.0 + x_delta;
-        let self_y_min = self_point.1 + y_delta;
-        let other_x_min = other_point.0 + x_delta;
-        let other_y_min = other_point.1 + y_delta;
+        // `self` and `other` now have `_point` and `size` clamped within their respective regions
+        // But the clamping might have changed the rect size, so now we have to find out the new size
 
-        let width = (size.0 - x_delta)
-            .min(self.x_max as i32 - self_x_min)
-            .min(other.x_max as i32 - other_x_min)
+        let x = (self_x_min as i32 - self_point.0)
+            .max(other_x_min as i32 - other_point.0)
             .max(0);
-        let height = (size.1 - y_delta)
-            .min(self.y_max as i32 - self_y_min)
-            .min(other.y_max as i32 - other_y_min)
+        let y = (self_y_min as i32 - self_point.1)
+            .max(other_y_min as i32 - other_point.1)
             .max(0);
+        let width = ((self_x_max - self_x_min) as i32)
+            .min((other_x_max - other_x_min) as i32)
+            .max(0) as u32;
+        let height = ((self_y_max - self_y_min) as i32)
+            .min((other_y_max - other_y_min) as i32)
+            .max(0) as u32;
 
-        self.x_min = self_x_min.max(0) as u32;
-        self.y_min = self_y_min.max(0) as u32;
-        self.x_max = (self_x_min + width).max(self_x_min.max(0)) as u32;
-        self.y_max = (self_y_min + height).max(self_y_min.max(0)) as u32;
+        // Now resize the boxes a final time with the new dimensions
+        // It's safe to assume the dimensions fall within the safe area of each box
+        // due to them being calculated using those safe areas
 
-        other.x_min = other_x_min.max(0) as u32;
-        other.y_min = other_y_min.max(0) as u32;
-        other.x_max = (other_x_min + width).max(other_x_min.max(0)) as u32;
-        other.y_max = (other_y_min + height).max(other_y_min.max(0)) as u32;
+        self.x_min = (self_point.0 + x) as u32;
+        self.y_min = (self_point.1 + y) as u32;
+        self.x_max = self.x_min + width;
+        self.y_max = self.y_min + height;
+
+        other.x_min = (other_point.0 + x) as u32;
+        other.y_min = (other_point.1 + y) as u32;
+        other.x_max = other.x_min + width;
+        other.y_max = other.y_min + height;
     }
 }
 
@@ -460,8 +469,8 @@ mod test {
         ) {
             a.clamp_with_intersection(a_point, b_point, size, &mut b);
 
-            assert_eq!(expected_a, a);
-            assert_eq!(expected_b, b);
+            assert_eq!(expected_a, a, "a (self) region should match");
+            assert_eq!(expected_b, b, "b (other) region should match");
         }
 
         test(
@@ -502,6 +511,16 @@ mod test {
             (15, 15),
             PixelRegion::for_region_i32(15, 10, 15, 10),
             PixelRegion::for_region_i32(0, 5, 15, 10),
+        );
+
+        test(
+            PixelRegion::for_whole_size(800, 600),
+            PixelRegion::for_whole_size(200, 40),
+            (400, 440),
+            (40, 0),
+            (40, 40),
+            PixelRegion::for_region_i32(400, 440, 40, 40),
+            PixelRegion::for_region_i32(40, 0, 40, 40),
         );
     }
 }
