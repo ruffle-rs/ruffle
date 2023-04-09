@@ -68,6 +68,7 @@ struct RuffleInstance {
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
     #[allow(dead_code)]
     mouse_move_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
+    mouse_leave_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     player_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
     window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
@@ -340,6 +341,16 @@ impl Ruffle {
                     .warn_on_error();
                 instance.mouse_move_callback = None;
             }
+            if let Some(mouse_leave_callback) = &instance.mouse_leave_callback {
+                instance
+                    .canvas
+                    .remove_event_listener_with_callback(
+                        "pointerleave",
+                        mouse_leave_callback.as_ref().unchecked_ref(),
+                    )
+                    .warn_on_error();
+                instance.mouse_leave_callback = None;
+            }
             if let Some(mouse_down_callback) = &instance.mouse_down_callback {
                 instance
                     .canvas
@@ -604,6 +615,7 @@ impl Ruffle {
             animation_handler: None,
             animation_handler_id: None,
             mouse_move_callback: None,
+            mouse_leave_callback: None,
             mouse_down_callback: None,
             player_mouse_down_callback: None,
             window_mouse_down_callback: None,
@@ -656,6 +668,23 @@ impl Ruffle {
                 )
                 .warn_on_error();
             instance.mouse_move_callback = Some(mouse_move_callback);
+
+            // Create mouse leave handler.
+            let mouse_leave_callback = Closure::new(move |_js_event: PointerEvent| {
+                let _ = ruffle.with_instance(move |instance| {
+                    let _ = instance.with_core_mut(|core| {
+                        core.handle_event(PlayerEvent::MouseLeave);
+                    });
+                });
+            });
+
+            canvas
+                .add_event_listener_with_callback(
+                    "pointerleave",
+                    mouse_leave_callback.as_ref().unchecked_ref(),
+                )
+                .warn_on_error();
+            instance.mouse_leave_callback = Some(mouse_leave_callback);
 
             // Create mouse down handler.
             let mouse_down_callback = Closure::new(move |js_event: PointerEvent| {

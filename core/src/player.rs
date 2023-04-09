@@ -266,6 +266,7 @@ pub struct Player {
 
     input: InputManager,
 
+    mouse_in_stage: bool,
     mouse_pos: (Twips, Twips),
 
     /// The current mouse cursor icon.
@@ -1127,6 +1128,8 @@ impl Player {
             button: MouseButton::Left,
         } = event
         {
+            self.mouse_in_stage = true;
+
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
             let old_pos = self.mouse_pos;
@@ -1146,6 +1149,8 @@ impl Player {
         }
 
         if let PlayerEvent::MouseWheel { delta } = event {
+            self.mouse_in_stage = true;
+
             self.mutate_with_update_context(|context| {
                 if let Some(over_object) = context.mouse_over_object {
                     if context.is_action_script_3()
@@ -1159,6 +1164,14 @@ impl Player {
                         .handle_clip_event(context, ClipEvent::MouseWheel { delta });
                 }
             });
+        }
+
+        if let PlayerEvent::MouseLeave = event {
+            self.mouse_in_stage = false;
+
+            if self.update_mouse_state(is_mouse_button_changed, true) {
+                self.needs_render = true;
+            }
         }
     }
 
@@ -1203,11 +1216,16 @@ impl Player {
     fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
         let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
+        let mouse_in_stage = self.mouse_in_stage;
 
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
-            let new_over_object = run_mouse_pick(context, true);
+            let new_over_object = if mouse_in_stage {
+                run_mouse_pick(context, true)
+            } else {
+                None
+            };
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
 
@@ -2221,6 +2239,7 @@ impl PlayerBuilder {
 
                 // Input
                 input: Default::default(),
+                mouse_in_stage: true,
                 mouse_pos: (Twips::ZERO, Twips::ZERO),
                 mouse_cursor: MouseCursor::Arrow,
                 mouse_cursor_needs_check: false,
