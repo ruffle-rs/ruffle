@@ -138,7 +138,7 @@ impl<'a> VideoData<'a> {
                     _ => return None,
                 }
             }
-            (_, _) => VideoPacket::Data(&data),
+            (_, _) => VideoPacket::Data(data),
         };
 
         Some(VideoData {
