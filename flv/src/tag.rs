@@ -1,4 +1,5 @@
 use crate::reader::FlvReader;
+use crate::script::ScriptData;
 use crate::sound::AudioData;
 use crate::video::VideoData;
 
@@ -6,7 +7,7 @@ use crate::video::VideoData;
 pub enum TagData<'a> {
     Audio(AudioData<'a>) = 8,
     Video(VideoData<'a>) = 9,
-    Script = 18,
+    Script(ScriptData<'a>) = 18,
 }
 
 pub struct Tag<'a> {
@@ -39,6 +40,11 @@ impl<'a> Tag<'a> {
                 timestamp,
                 stream_id,
                 data: TagData::Video(VideoData::parse(reader, data_size)?),
+            }),
+            18 => Some(Tag {
+                timestamp,
+                stream_id,
+                data: TagData::Script(ScriptData::parse(reader)?),
             }),
             _ => None,
         }
