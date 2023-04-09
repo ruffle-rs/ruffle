@@ -1,5 +1,6 @@
-package flash.display {
-    
+package flash.display
+{
+
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
@@ -9,23 +10,27 @@ package flash.display {
     import flash.display.Stage;
     import flash.geom.Point;
     import flash.events.EventDispatcher;
-    
+
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
     [Ruffle(NativeInstanceInit)]
-    public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
+    public class DisplayObject extends EventDispatcher implements IBitmapDrawable
+    {
         private var _accessibilityProperties:AccessibilityProperties;
 
-        public function DisplayObject() {
+        public function DisplayObject()
+        {
             throw new Error("Cannot instantiate abstract DisplayObject class");
         }
-        
-        public function get accessibilityProperties():AccessibilityProperties {
+
+        public function get accessibilityProperties():AccessibilityProperties
+        {
             return this._accessibilityProperties;
         }
-        public function set accessibilityProperties(value:AccessibilityProperties):void {
+        public function set accessibilityProperties(value:AccessibilityProperties):void
+        {
             this._accessibilityProperties = value;
         }
 
@@ -70,14 +75,9 @@ package flash.display {
 
         public native function get scaleZ():Number;
         public native function set scaleZ(value:Number):void;
-        
-        public function get scale9Grid():Rectangle {
-            stub_getter("flash.display.DisplayObject", "scale9Grid");
-            return null;
-        }
-        public function set scale9Grid(value:Rectangle):void {
-            stub_setter("flash.display.DisplayObject", "scale9Grid");
-        }
+
+        public native function get scale9Grid():Rectangle;
+        public native function set scale9Grid(value:Rectangle):void;
 
         public native function get name():String;
         public native function set name(value:String):void;
