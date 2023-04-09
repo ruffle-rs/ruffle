@@ -1,4 +1,5 @@
 mod header;
+mod script;
 mod sound;
 mod tag;
 mod video;

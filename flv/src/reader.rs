@@ -32,8 +32,31 @@ impl<'a> FlvReader<'a> {
         Some(&self.source[start..end])
     }
 
+    /// Read a certain number of bytes from the buffer without advancing the
+    /// buffer position.
+    pub fn peek(&mut self, count: usize) -> Option<&'a [u8]> {
+        let pos = self.position;
+        let ret = self.read(count);
+
+        self.position = pos;
+
+        ret
+    }
+
     pub fn read_u8(&mut self) -> Option<u8> {
         Some(self.read(1)?[0])
+    }
+
+    pub fn read_u16(&mut self) -> Option<u16> {
+        Some(u16::from_be_bytes(
+            self.read(2)?.try_into().expect("two bytes"),
+        ))
+    }
+
+    pub fn read_i16(&mut self) -> Option<i16> {
+        Some(i16::from_be_bytes(
+            self.read(2)?.try_into().expect("two bytes"),
+        ))
     }
 
     pub fn read_u24(&mut self) -> Option<u32> {
@@ -42,9 +65,21 @@ impl<'a> FlvReader<'a> {
         Some(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
     }
 
+    pub fn peek_u24(&mut self) -> Option<u32> {
+        let bytes = self.peek(3)?;
+
+        Some(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
+    }
+
     pub fn read_u32(&mut self) -> Option<u32> {
         Some(u32::from_be_bytes(
             self.read(4)?.try_into().expect("four bytes"),
+        ))
+    }
+
+    pub fn read_f64(&mut self) -> Option<f64> {
+        Some(f64::from_be_bytes(
+            self.read(8)?.try_into().expect("eight bytes"),
         ))
     }
 
