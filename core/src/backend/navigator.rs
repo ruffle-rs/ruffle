@@ -3,6 +3,7 @@
 use crate::loader::Error;
 use crate::string::WStr;
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -18,6 +19,23 @@ pub enum NavigationMethod {
 
     /// Indicates that navigation should generate a POST request.
     Post,
+}
+
+/// The handling mode of navigate_to_url website calls.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum NavigateWebsiteHandlingMode {
+    /// Allow all navigate_to_url website calls.
+    #[serde(rename = "allow")]
+    Allow,
+
+    /// A confirmation dialogue opens with every navigate_to_url website call.
+    #[serde(rename = "confirm")]
+    Confirm,
+
+    /// Deny all navigate_to_url website calls.
+    #[serde(rename = "deny")]
+    Deny,
 }
 
 impl NavigationMethod {

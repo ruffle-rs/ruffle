@@ -1,7 +1,7 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
+    NavigateWebsiteHandlingMode, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -23,6 +23,7 @@ pub struct WebNavigatorBackend {
     allow_script_access: bool,
     upgrade_to_https: bool,
     base_url: Option<Url>,
+    navigate_website_handling_mode: NavigateWebsiteHandlingMode,
 }
 
 impl WebNavigatorBackend {
@@ -31,6 +32,7 @@ impl WebNavigatorBackend {
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+        navigate_website_handling_mode: NavigateWebsiteHandlingMode,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -70,6 +72,7 @@ impl WebNavigatorBackend {
             upgrade_to_https,
             base_url,
             log_subscriber,
+            navigate_website_handling_mode,
         }
     }
 
@@ -99,15 +102,38 @@ impl NavigatorBackend for WebNavigatorBackend {
         let url = self.resolve_url(url);
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
-        if let Ok(url) = Url::parse(&url) {
+        let js_call = if let Ok(url) = Url::parse(&url) {
             if !self.allow_script_access && url.scheme() == "javascript" {
                 tracing::warn!("SWF tried to run a script, but script access is not allowed");
                 return;
             }
+            url.scheme() == "javascript"
+        } else {
+            false
+        };
+
+        let window = window().expect("window()");
+
+        if !js_call {
+            if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Confirm {
+                let message = "The SWF file wants to open the website ".to_owned() + &url;
+                let confirm = window
+                    .confirm_with_message(&message)
+                    .expect("confirm_with_message()");
+                if !confirm {
+                    tracing::info!(
+                        "SWF tried to open a website, but the user declined the request"
+                    );
+                    return;
+                }
+            } else if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Deny {
+                tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+                return;
+            }
+            // If the user confirmed or if in Allow mode, open the website
         }
 
         // TODO: Should we return a result for failed opens? Does Flash care?
-        let window = window().expect("window()");
         match vars_method {
             Some((navmethod, formvars)) => {
                 let document = window.document().expect("document()");

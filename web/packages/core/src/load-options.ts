@@ -173,6 +173,20 @@ export interface ObsoleteDuration {
 export type Duration = SecsDuration | ObsoleteDuration;
 
 /**
+ * The handling mode of navigate_to_url website calls.
+ */
+export const enum NavigateWebsiteHandlingMode {
+    // / Allow all navigate_to_url website calls.
+    Allow = "allow",
+
+    // / A confirmation dialogue opens with every navigate_to_url website call.
+    Confirm = "confirm",
+
+    // / Deny all navigate_to_url website calls.
+    Deny = "deny",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -409,6 +423,13 @@ export interface BaseLoadOptions {
      * @default true
      */
     polyfills?: boolean;
+
+    /**
+     * The handling mode of navigate_to_url website calls.
+     *
+     * @default NavigateWebsiteHandlingMode.Confirm
+     */
+    navigateWebsiteHandlingMode?: NavigateWebsiteHandlingMode;
 }
 
 /**

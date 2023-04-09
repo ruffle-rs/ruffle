@@ -9,6 +9,7 @@ mod ui;
 
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
+use ruffle_core::backend::navigator::NavigateWebsiteHandlingMode;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
@@ -248,6 +249,8 @@ struct Config {
     player_version: Option<u8>,
 
     preferred_renderer: Option<String>,
+
+    navigate_website_handling_mode: NavigateWebsiteHandlingMode,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -609,6 +612,7 @@ impl Ruffle {
             config.upgrade_to_https,
             config.base_url,
             log_subscriber.clone(),
+            config.navigate_website_handling_mode,
         ));
 
         match window.local_storage() {
