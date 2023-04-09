@@ -150,15 +150,15 @@ Specific warnings and clippy lints can be allowed when appropriate using attribu
 
 ## Test Guidelines
 
-Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
-
 Most tests are SWF-based, with the SWFs stored in `tests/tests/swfs/`. They are configured in `tests/tests/regression_tests.rs`. To add a new test, create an `.swf` that runs `trace()` statements. You can do this in several ways, listed below.
 
 Once you have an `.swf`, run it in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
 
 Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on how the test.toml should look like.
 
-Running `cargo test [your test]` will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`.
+Running `cargo test --all [your test]` will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`.
+
+Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
 ### Flash authoring tool
 
