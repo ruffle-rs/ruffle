@@ -5,6 +5,7 @@ import {
     WindowMode,
     Letterbox,
     LogLevel,
+    NavigateWebsiteHandlingMode,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -36,4 +37,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     polyfills: true,
     playerVersion: null,
     preferredRenderer: null,
+    navigateWebsiteHandlingMode: NavigateWebsiteHandlingMode.Confirm,
 };

@@ -4,8 +4,9 @@ use crate::custom_event::RuffleEvent;
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
 };
+use rfd::{MessageButtons, MessageDialog, MessageLevel};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
+    NavigateWebsiteHandlingMode, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -30,6 +31,10 @@ pub struct ExternalNavigatorBackend {
     client: Option<Rc<HttpClient>>,
 
     upgrade_to_https: bool,
+
+    allow_javascript_calls: bool,
+
+    navigate_website_handling_mode: NavigateWebsiteHandlingMode,
 }
 
 impl ExternalNavigatorBackend {
@@ -40,6 +45,8 @@ impl ExternalNavigatorBackend {
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
         upgrade_to_https: bool,
+        allow_javascript_calls: bool,
+        navigate_website_handling_mode: NavigateWebsiteHandlingMode,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -60,6 +67,8 @@ impl ExternalNavigatorBackend {
             client,
             base_url,
             upgrade_to_https,
+            allow_javascript_calls,
+            navigate_website_handling_mode,
         }
     }
 }
@@ -105,6 +114,36 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         let processed_url = self.pre_process_url(modified_url);
 
+        if !self.allow_javascript_calls && processed_url.scheme() == "javascript" {
+            tracing::warn!(
+                "SWF tried to run a script on desktop, but javascript calls are not allowed"
+            );
+            return;
+        }
+
+        if processed_url.scheme() != "javascript" {
+            if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Confirm {
+                let message =
+                    "The SWF file wants to open the website ".to_string() + processed_url.as_str();
+                let confirm = MessageDialog::new()
+                    .set_title("Open website?")
+                    .set_level(MessageLevel::Info)
+                    .set_description(&message)
+                    .set_buttons(MessageButtons::OkCancel)
+                    .show();
+                if !confirm {
+                    tracing::info!(
+                        "SWF tried to open a website, but the user declined the request"
+                    );
+                    return;
+                }
+            } else if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Deny {
+                tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+                return;
+            }
+            // If the user confirmed or if in Allow mode, open the website
+        }
+
         match webbrowser::open(processed_url.as_ref()) {
             Ok(_output) => {}
             Err(e) => tracing::error!("Could not open URL {}: {}", processed_url.as_str(), e),
@@ -133,7 +172,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
                 let body = std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
-                        use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
+                        use rfd::FileDialog;
                         use std::io::ErrorKind;
 
                         if e.kind() == ErrorKind::PermissionDenied {
