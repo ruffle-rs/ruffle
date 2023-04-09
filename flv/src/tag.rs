@@ -1,10 +1,11 @@
 use crate::reader::FlvReader;
 use crate::sound::AudioData;
+use crate::video::VideoData;
 
 #[repr(u8)]
 pub enum TagData<'a> {
     Audio(AudioData<'a>) = 8,
-    Video = 9,
+    Video(VideoData<'a>) = 9,
     Script = 18,
 }
 
@@ -26,11 +27,18 @@ impl<'a> Tag<'a> {
         let timestamp_extended = reader.read_u8()?;
         let stream_id = reader.read_u24()?;
 
+        let timestamp = ((timestamp_extended as u32) << 24 | timestamp) as i32;
+
         match tag_type {
             8 => Some(Tag {
-                timestamp: ((timestamp_extended as u32) << 24 | timestamp) as i32,
+                timestamp,
                 stream_id,
                 data: TagData::Audio(AudioData::parse(reader, data_size)?),
+            }),
+            9 => Some(Tag {
+                timestamp,
+                stream_id,
+                data: TagData::Video(VideoData::parse(reader, data_size)?),
             }),
             _ => None,
         }
