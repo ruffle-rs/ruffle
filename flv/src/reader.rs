@@ -13,6 +13,19 @@ impl<'a> FlvReader<'a> {
         }
     }
 
+    /// Reconstitute an FLV reader from its source parts.
+    ///
+    /// The seek position must point to identical data between breaking down an
+    /// FLV reader and building it back up.
+    pub fn from_parts(source: &'a [u8], position: usize) -> Self {
+        FlvReader { source, position }
+    }
+
+    /// Break down an FLV reader into its source buffer and seek position.
+    pub fn into_parts(self) -> (&'a [u8], usize) {
+        (self.source, self.position)
+    }
+
     /// Read a certain number of bytes from the buffer.
     ///
     /// This works like `Read`, but returns borrowed slices of the source
