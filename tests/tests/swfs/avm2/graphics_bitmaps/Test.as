@@ -13,6 +13,7 @@ public class Test extends MovieClip {
 		public function Test() {
 			simple_shapes_fill();
 			simple_shapes_stroke();
+			logo_fill();
 		}
 
 		public function simple_shapes_fill() {
@@ -55,6 +56,30 @@ public class Test extends MovieClip {
 
 			child.y = 100;
 			addChild(child);
+		}
+		
+		public function logo_fill() {
+			var child:Shape = new Shape();
+			
+			var bmd: BitmapData = new Logo(0, 0);
+			
+			var matrix: Matrix = new Matrix();
+			matrix.scale(2.0, 2.0);
+
+			child.graphics.beginBitmapFill(bmd, matrix, false, false);
+			child.graphics.drawRect(0, 0, 200, 200);
+			child.graphics.endFill();
+			
+			matrix = new Matrix();
+			matrix.scale(0.5, 0.5);
+			
+			child.graphics.beginBitmapFill(bmd, matrix, true, true);
+			child.graphics.drawRect(200, 0, 200, 200);
+			child.graphics.endFill();
+			
+			
+			addChild(child);
+			child.y = 150;
 		}
 	}
 	
