@@ -1549,7 +1549,6 @@ impl<'gc> MovieClip<'gc> {
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
                     child.set_parent(context, Some(self.into()));
-                    child.set_place_frame(context.gc_context, self.current_frame());
 
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
@@ -1704,7 +1703,7 @@ impl<'gc> MovieClip<'gc> {
         // 3) Objects that would persist over the goto conceptually should not be
         //    destroyed and recreated; they should keep their properties.
         //    Particularly for rewinds, the object should persist if it was created
-        //      *before* the frame we are going to. (DisplayObject::place_frame).
+        //      *before* the frame we are going to. (DisplayObject::ratio).
         // 4) We want to avoid creating objects just to destroy them if they aren't on
         //    the goto frame, so we should instead aggregate the deltas into a final list
         //    of commands, and THEN modify the children as necessary.
@@ -1811,6 +1810,7 @@ impl<'gc> MovieClip<'gc> {
         }
         let hit_target_frame = self.0.read().current_frame == frame;
 
+        let mut children_pending_removal = fnv::FnvHashMap::default();
         if is_rewind {
             // Remove all display objects that were created after the
             // destination frame.
@@ -1821,80 +1821,141 @@ impl<'gc> MovieClip<'gc> {
             // TODO: We want to do something like self.children.retain here,
             // but BTreeMap::retain does not exist.
             // TODO: Should AS3 children ignore GOTOs?
-            let children: SmallVec<[_; 16]> = self
-                .iter_render_list()
-                .filter(|clip| clip.place_frame() > frame)
-                .collect();
+            let children: SmallVec<[_; 16]> = self.iter_render_list().collect();
             for child in children {
-                if !child.placed_by_script() {
-                    self.remove_child(context, child);
-                } else {
-                    self.remove_child_from_depth_list(context, child);
+                if context.is_action_script_3() {
+                    if !child.placed_by_script() {
+                        children_pending_removal.insert(child.depth(), child);
+                    } else {
+                        self.remove_child_from_depth_list(context, child);
+                    }
+                } else if child.depth() < crate::avm1::globals::AVM_DEPTH_BIAS {
+                    children_pending_removal.insert(child.depth(), child);
                 }
             }
         }
 
-        // Run the list of goto commands to actually create and update the display objects.
-        let run_goto_command = |clip: MovieClip<'gc>,
-                                context: &mut UpdateContext<'_, 'gc>,
-                                params: &GotoPlaceObject<'_>| {
-            use swf::PlaceObjectAction;
-            let child_entry = clip.child_by_depth(params.depth());
-            if context.is_action_script_3() && is_implicit && child_entry.is_none() {
-                // Looping gotos do not run their PlaceObject commands at goto
-                // time. They are instead held to frameConstructed like normal
-                // playback.
-                //
-                // TODO: We can only queue *new* object placement, existing
-                // objects still get updated too early.
-                let mut write = self.0.write(context.gc_context);
-                let new_tag = QueuedTag {
-                    tag_type: QueuedTagAction::Place(params.version),
-                    tag_start: params.tag_start,
-                };
-                let bucket = write
-                    .queued_tags
-                    .entry(params.place_object.depth as Depth)
-                    .or_insert_with(|| QueuedTagList::None);
-
-                bucket.queue_add(new_tag);
-
-                return;
-            }
-
-            match (params.place_object.action, child_entry, is_rewind) {
-                // Apply final delta to display parameters.
-                // For rewinds, if an object was created before the final frame,
-                // it will exist on the final frame as well. Re-use this object
-                // instead of recreating.
-                // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
-                // If it's a rewind, we removed any dead children above, so we always
-                // modify the previous child.
-                (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
-                    prev_child.apply_place_object(context, &params.place_object);
+        // Called during a rewinding goto to determine if this object should persist after the goto
+        // (`self` is logically the same as `new_object`), or if this object should be replaced
+        // by `new_object`.
+        let survives_rewind = |old_object: DisplayObject<'gc>, new_params: &swf::PlaceObject| {
+            let id = match &new_params.action {
+                swf::PlaceObjectAction::Place(id) => *id,
+                swf::PlaceObjectAction::Replace(id) => *id,
+                _ => 0,
+            };
+            match old_object {
+                DisplayObject::MorphShape(_)
+                | DisplayObject::Graphic(_)
+                | DisplayObject::Text(_) => {
+                    old_object.ratio() == new_params.ratio.unwrap_or_default()
+                        && old_object.id() == id
+                        && old_object.clip_depth()
+                            == new_params.clip_depth.unwrap_or_default() as Depth
+                        && *old_object.base().matrix()
+                            == new_params.matrix.unwrap_or_default().into()
+                        && *old_object.base().color_transform()
+                            == new_params.color_transform.unwrap_or_default()
                 }
-                (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
-                    prev_child.replace_with(context, id);
-                    prev_child.apply_place_object(context, &params.place_object);
-                    prev_child.set_place_frame(context.gc_context, params.frame);
+                DisplayObject::Avm1Button(_)
+                | DisplayObject::Avm2Button(_)
+                | DisplayObject::EditText(_)
+                | DisplayObject::Bitmap(_)
+                | DisplayObject::Video(_) => {
+                    old_object.ratio() == new_params.ratio.unwrap_or_default()
+                        && old_object.id() == id
+                        && old_object.clip_depth()
+                            == new_params.clip_depth.unwrap_or_default() as Depth
                 }
-                (PlaceObjectAction::Place(id), _, _)
-                | (swf::PlaceObjectAction::Replace(id), _, _) => {
-                    if let Some(child) =
-                        clip.instantiate_child(context, id, params.depth(), &params.place_object)
-                    {
-                        // Set the place frame to the frame where the object *would* have been placed.
-                        child.set_place_frame(context.gc_context, params.frame);
-                    }
-                }
-                _ => {
-                    tracing::error!(
-                        "Unexpected PlaceObject during goto: {:?}",
-                        params.place_object
-                    )
-                }
+                _ => old_object.ratio() == new_params.ratio.unwrap_or_default(),
             }
         };
+
+        // Run the list of goto commands to actually create and update the display objects.
+        let mut run_goto_command =
+            |clip: MovieClip<'gc>,
+             context: &mut UpdateContext<'_, 'gc>,
+             params: &GotoPlaceObject<'_>| {
+                use swf::PlaceObjectAction;
+                let child_entry = clip.child_by_depth(params.depth());
+                if context.is_action_script_3() && is_implicit {
+                    let mut reuse_child = false;
+                    if let Some(prev_child) = child_entry {
+                        children_pending_removal.remove(&params.depth());
+                        if survives_rewind(prev_child, &params.place_object) {
+                            reuse_child = true;
+                        }
+                    };
+
+                    if !reuse_child {
+                        // Looping gotos do not run their PlaceObject commands at goto
+                        // time. They are instead held to frameConstructed like normal
+                        // playback.
+                        //
+                        // TODO: We can only queue *new* object placement, existing
+                        // objects still get updated too early.
+                        let mut write = self.0.write(context.gc_context);
+                        let new_tag = QueuedTag {
+                            tag_type: QueuedTagAction::Place(params.version),
+                            tag_start: params.tag_start,
+                        };
+                        let bucket = write
+                            .queued_tags
+                            .entry(params.place_object.depth as Depth)
+                            .or_insert_with(|| QueuedTagList::None);
+
+                        bucket.queue_add(new_tag);
+                        return;
+                    }
+                }
+
+                match (params.place_object.action, child_entry) {
+                    // Apply final delta to display parameters.
+                    // For rewinds, if an object was created before the final frame,
+                    // it will exist on the final frame as well. Re-use this object
+                    // instead of recreating.
+                    // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
+                    // If it's a rewind, we removed any dead children above, so we always
+                    // modify the previous child.
+                    (PlaceObjectAction::Modify, Some(prev_child)) => {
+                        prev_child.apply_place_object(context, &params.place_object);
+                    }
+                    (swf::PlaceObjectAction::Replace(id), Some(prev_child)) => {
+                        prev_child.replace_with(context, id);
+                        prev_child.apply_place_object(context, &params.place_object);
+                    }
+                    (PlaceObjectAction::Place(id), _)
+                    | (swf::PlaceObjectAction::Replace(id), _) => {
+                        let mut remove = false;
+                        if is_rewind {
+                            if let Some(prev_child) = child_entry {
+                                if survives_rewind(prev_child, &params.place_object) {
+                                    // Re-use previous child.
+                                    remove = true;
+                                    prev_child.apply_place_object(context, &params.place_object);
+                                }
+                            }
+                        }
+
+                        if !remove {
+                            clip.instantiate_child(
+                                context,
+                                id,
+                                params.depth(),
+                                &params.place_object,
+                            );
+                        }
+
+                        children_pending_removal.remove(&params.depth());
+                    }
+                    _ => {
+                        tracing::error!(
+                            "Unexpected PlaceObject during goto: {:?}",
+                            params.place_object
+                        )
+                    }
+                }
+            };
 
         // We have to be sure that queued actions are generated in the same order
         // as if the playhead had reached this frame normally.
@@ -1931,6 +1992,12 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
+
+        for child in children_pending_removal.into_values() {
+            // Flash stores the creation frame of the object in the `ratio` field of PlaceObject tags.
+            // If the ratio field matches, this logically should be the same object before and after the goto.
+            self.remove_child(context, child);
+        }
 
         // On AVM2, all explicit gotos act the same way as a normal new frame,
         // save for the lack of an enterFrame event. Since this must happen
@@ -2191,7 +2258,7 @@ impl<'gc> MovieClip<'gc> {
             // that existed before the goto, then we can remove that child right away.
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
-            // the old children to decide if they persist (place_frame <= goto_frame).
+            // the old children to decide if they persist (ratio <= goto_frame).
             //
             // We also have to reset the frame number as this emits AS3 events.
             let to_frame = self.current_frame();
@@ -3962,7 +4029,6 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
                     child.apply_place_object(context, &place_object);
-                    child.set_place_frame(context.gc_context, self.current_frame());
                 }
             }
             PlaceObjectAction::Modify => {

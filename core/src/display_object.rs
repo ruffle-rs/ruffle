@@ -60,8 +60,8 @@ use self::loader_display::LoaderDisplayWeak;
 #[collect(no_drop)]
 pub struct DisplayObjectBase<'gc> {
     parent: Option<DisplayObject<'gc>>,
-    place_frame: u16,
     depth: Depth,
+    ratio: u16,
     #[collect(require_static)]
     transform: Transform,
     name: AvmString<'gc>,
@@ -126,8 +126,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
     fn default() -> Self {
         Self {
             parent: Default::default(),
-            place_frame: Default::default(),
             depth: Default::default(),
+            ratio: 0,
             transform: Default::default(),
             name: Default::default(),
             filters: Default::default(),
@@ -162,14 +162,6 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_depth(&mut self, depth: Depth) {
         self.depth = depth;
-    }
-
-    fn place_frame(&self) -> u16 {
-        self.place_frame
-    }
-
-    fn set_place_frame(&mut self, frame: u16) {
-        self.place_frame = frame;
     }
 
     fn transform(&self) -> &Transform {
@@ -681,6 +673,14 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_depth(depth)
     }
 
+    fn ratio(self) -> u16 {
+        self.base().ratio
+    }
+
+    fn set_ratio(self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
+        self.base_mut(gc_context).ratio = ratio;
+    }
+
     /// The untransformed inherent bounding box of this object.
     /// These bounds do **not** include child DisplayObjects.
     /// To get the bounds including children, use `bounds`, `local_bounds`, or `world_bounds`.
@@ -732,13 +732,6 @@ pub trait TDisplayObject<'gc>:
         }
 
         bounds
-    }
-
-    fn place_frame(&self) -> u16 {
-        self.base().place_frame()
-    }
-    fn set_place_frame(&self, gc_context: MutationContext<'gc, '_>, frame: u16) {
-        self.base_mut(gc_context).set_place_frame(frame)
     }
 
     fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: Matrix) {
@@ -1555,9 +1548,8 @@ pub trait TDisplayObject<'gc>:
                 self.set_color_transform(context.gc_context, *color_transform);
             }
             if let Some(ratio) = place_object.ratio {
-                if let Some(mut morph_shape) = self.as_morph_shape() {
-                    morph_shape.set_ratio(context.gc_context, ratio);
-                } else if let Some(video) = self.as_video() {
+                self.set_ratio(context.gc_context, ratio);
+                if let Some(video) = self.as_video() {
                     video.seek(context, ratio.into());
                 }
             }

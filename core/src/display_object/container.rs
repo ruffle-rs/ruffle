@@ -195,7 +195,6 @@ pub trait TDisplayObjectContainer<'gc>:
             .replace_at_depth(child, depth);
 
         child.set_parent(context, Some(self.into()));
-        child.set_place_frame(context.gc_context, 0);
         child.set_depth(context.gc_context, depth);
 
         if let Some(removed_child) = removed_child {
@@ -260,7 +259,6 @@ pub trait TDisplayObjectContainer<'gc>:
 
         let child_was_on_stage = child.is_on_stage(context);
 
-        child.set_place_frame(context.gc_context, 0);
         child.set_parent(context, Some(this));
         if !context.is_action_script_3() {
             child.set_avm1_removed(context.gc_context, false);
@@ -370,6 +368,21 @@ pub trait TDisplayObjectContainer<'gc>:
 
         self.raw_container_mut(context.gc_context)
             .remove_child_from_depth_list(child);
+    }
+
+    /// Removes (without unloading) a child display object from this container's depth list.
+    fn remove_child_from_render_list(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        child: DisplayObject<'gc>,
+    ) {
+        debug_assert!(DisplayObject::ptr_eq(
+            child.parent().unwrap(),
+            (*self).into()
+        ));
+
+        self.raw_container_mut(context.gc_context)
+            .remove_child_from_render_list(child);
     }
 
     /// Remove a set of children identified by their render list indicies from
