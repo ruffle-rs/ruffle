@@ -72,8 +72,8 @@ pub fn begin_bitmap_fill<'gc>(
             height: bitmap.height() as u16,
         };
         let scale_matrix = Matrix::scale(
-            Fixed16::from_f64(bitmap.width as f64),
-            Fixed16::from_f64(bitmap.height as f64),
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
         );
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
