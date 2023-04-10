@@ -5,11 +5,17 @@ use std::ops::Deref;
 use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 
-/// Converts a SWF-encoded string into a `WStr`.
-pub fn decode_swf_str<'a>(s: &'a swf::SwfStr, encoding: &'static swf::Encoding) -> Cow<'a, WStr> {
-    match s.to_str_lossy(encoding) {
-        Cow::Borrowed(utf8) => from_utf8(utf8),
-        Cow::Owned(utf8) => WString::from_utf8_owned(utf8).into(),
+pub trait SwfStrExt {
+    /// Converts a SWF-encoded string into a `WStr`.
+    fn decode(&self, encoding: &'static swf::Encoding) -> Cow<'_, WStr>;
+}
+
+impl SwfStrExt for swf::SwfStr {
+    fn decode(&self, encoding: &'static swf::Encoding) -> Cow<'_, WStr> {
+        match self.to_str_lossy(encoding) {
+            Cow::Borrowed(utf8) => from_utf8(utf8),
+            Cow::Owned(utf8) => WString::from_utf8_owned(utf8).into(),
+        }
     }
 }
 
@@ -31,6 +37,12 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
+    pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+        Self {
+            source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(string.into()))),
+        }
+    }
+
     pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
         gc_context: MutationContext<'gc, '_>,
         string: S,
@@ -47,12 +59,6 @@ impl<'gc> AvmString<'gc> {
     pub fn new_utf8_bytes(gc_context: MutationContext<'gc, '_>, bytes: &[u8]) -> Self {
         let buf = ruffle_wstr::from_utf8_bytes(bytes);
         Self::new(gc_context, buf.into_owned())
-    }
-
-    pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
-        Self {
-            source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(string.into()))),
-        }
     }
 
     pub fn as_wstr(&self) -> &WStr {

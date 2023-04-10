@@ -21,7 +21,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, TextFormat};
 use crate::prelude::*;
-use crate::string::{decode_swf_str, utils as string_utils, AvmString, WStr, WString};
+use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::Utc;
@@ -198,10 +198,9 @@ impl<'gc> EditText<'gc> {
         swf_movie: Arc<SwfMovie>,
         swf_tag: swf::EditText,
     ) -> Self {
-        let text = swf_tag.initial_text().unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
-        let text = decode_swf_str(text, encoding);
+        let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
 
         let mut text_spans = if swf_tag.is_html() {
             FormatSpans::from_html(&text, default_format, swf_tag.is_multiline())
@@ -263,7 +262,7 @@ impl<'gc> EditText<'gc> {
                         layout: swf_tag.layout().cloned(),
                         initial_text: swf_tag
                             .initial_text()
-                            .map(|s| decode_swf_str(s, encoding).into_owned()),
+                            .map(|s| s.decode(encoding).into_owned()),
                     },
                 ),
                 flags,
