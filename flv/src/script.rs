@@ -105,8 +105,8 @@ impl<'a> Value<'a> {
 /// otherwise identical.
 #[derive(PartialEq, Debug)]
 pub struct Variable<'a> {
-    name: &'a [u8],
-    data: Value<'a>,
+    pub name: &'a [u8],
+    pub data: Value<'a>,
 }
 
 impl<'a> Variable<'a> {
@@ -119,7 +119,7 @@ impl<'a> Variable<'a> {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct ScriptData<'a>(Vec<Variable<'a>>);
+pub struct ScriptData<'a>(pub Vec<Variable<'a>>);
 
 impl<'a> ScriptData<'a> {
     /// Parse a script data structure.

@@ -86,9 +86,9 @@ pub enum VideoPacket<'a> {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct VideoData<'a> {
-    frame_type: FrameType,
-    codec_id: CodecId,
-    data: VideoPacket<'a>,
+    pub frame_type: FrameType,
+    pub codec_id: CodecId,
+    pub data: VideoPacket<'a>,
 }
 
 impl<'a> VideoData<'a> {

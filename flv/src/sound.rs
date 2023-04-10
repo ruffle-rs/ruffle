@@ -111,11 +111,11 @@ pub enum AudioDataType<'a> {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct AudioData<'a> {
-    format: SoundFormat,
-    rate: SoundRate,
-    size: SoundSize,
-    sound_type: SoundType,
-    data: AudioDataType<'a>,
+    pub format: SoundFormat,
+    pub rate: SoundRate,
+    pub size: SoundSize,
+    pub sound_type: SoundType,
+    pub data: AudioDataType<'a>,
 }
 
 impl<'a> AudioData<'a> {
