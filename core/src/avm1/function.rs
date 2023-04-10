@@ -8,7 +8,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{decode_swf_str, AvmString};
+use crate::string::{AvmString, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{borrow::Cow, fmt, num::NonZeroU8};
@@ -96,19 +96,18 @@ impl<'gc> Avm1Function<'gc> {
         let name = if swf_function.name.is_empty() {
             None
         } else {
-            let name = decode_swf_str(swf_function.name, encoding);
-            Some(AvmString::new(gc_context, name))
+            Some(AvmString::new(
+                gc_context,
+                swf_function.name.decode(encoding),
+            ))
         };
 
         let params = swf_function
             .params
             .iter()
-            .map(|p| {
-                let name = decode_swf_str(p.name, encoding);
-                Param {
-                    register: p.register_index,
-                    name: AvmString::new(gc_context, name),
-                }
+            .map(|p| Param {
+                register: p.register_index,
+                name: AvmString::new(gc_context, p.name.decode(encoding)),
             })
             .collect();
 
