@@ -590,10 +590,10 @@ macro_rules! __wstr_impl_internal {
             }
         }
 
-        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
-        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
+        $crate::__wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
     };
 
     (@base [$($generics:tt)*] for $ty:ty) => {
@@ -667,12 +667,12 @@ macro_rules! __wstr_impl_internal {
     };
 
     (@full [$($generics:tt)*] for $ty:ty) => {
-        __wstr_impl_internal!(@base [$($generics)*] for $ty);
-        __wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
-        __wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
-        __wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
-        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
-        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for &'a $crate::WStr, $ty);
+        $crate::__wstr_impl_internal!(@base [$($generics)*] for $ty);
+        $crate::__wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
+        $crate::__wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for &'a $crate::WStr, $ty);
     };
 }
 
@@ -691,10 +691,10 @@ macro_rules! __wstr_impl_internal {
 #[macro_export]
 macro_rules! wstr_impl_traits {
     (impl for $ty_name:ty) => {
-        __wstr_impl_internal!(@full [] for $ty_name);
+        $crate::__wstr_impl_internal!(@full [] for $ty_name);
     };
     (impl [$($generics:tt)+] for $ty_name:ty) => {
-        __wstr_impl_internal!(@full [$($generics)*,] for $ty_name);
+        $crate::__wstr_impl_internal!(@full [$($generics)*,] for $ty_name);
     };
 }
 
