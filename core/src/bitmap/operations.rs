@@ -1259,7 +1259,9 @@ fn copy_on_cpu<'gc>(
                 && dest_region.height() == source_read.height()
             {
                 // Copying an entire texture that's the same size and type? Just replace the whole thing
-                *dest_write.raw_pixels_mut() = source_read.raw_pixels().to_owned();
+                dest_write
+                    .raw_pixels_mut()
+                    .copy_from_slice(source_read.raw_pixels());
             } else {
                 for y in 0..dest_region.height() {
                     for x in 0..dest_region.width() {

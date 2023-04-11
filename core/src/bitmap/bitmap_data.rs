@@ -608,7 +608,7 @@ impl<'gc> BitmapData<'gc> {
         &mut self.pixels
     }
 
-    pub fn raw_pixels(&self) -> &Vec<Color> {
+    pub fn raw_pixels(&self) -> &[Color] {
         &self.pixels
     }
 
