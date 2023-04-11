@@ -498,7 +498,7 @@
 		private function renderWithPostFilter(program:Program3D, fragConsts:Vector.<Number>): void
 		{
 			// Render the scene to the scene texture
-			context3D.setRenderToTexture(sceneTexture, true);
+			context3D.setRenderToTexture(sceneTexture, true, 4);
 			renderShapes();
 			context3D.setRenderToBackBuffer();
 			
