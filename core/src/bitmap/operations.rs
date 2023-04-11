@@ -1248,7 +1248,7 @@ fn copy_on_cpu<'gc>(
         let source_read = source.read_area(source_region);
 
         if !blend && (dest_write.transparency() || !source_read.transparency()) {
-            // Copying anything to a transparent texture,
+            // Copying (not blending) anything to a transparent texture,
             // or copying an opaque texture to an opaque texture,
             // means we can skip alpha premultiplication
 
@@ -1274,7 +1274,8 @@ fn copy_on_cpu<'gc>(
                 }
             }
         } else {
-            // Copying a transparent texture to an opaque texture, or blending
+            // Copying (not blending) a transparent texture to an opaque texture,
+            // or blending anything to anything
 
             let opaque = !dest_write.transparency();
 
