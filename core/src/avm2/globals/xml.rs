@@ -106,6 +106,12 @@ pub fn name_to_multiname<'gc>(
     }
 
     let name = name.coerce_to_string(activation)?;
+
+    if name.starts_with(b'@') {
+        let name = AvmString::new(activation.context.gc_context, &name[1..]);
+        return Ok(Multiname::attribute(activation.avm2().public_namespace, name));
+    }
+
     Ok(if &*name == b"*" {
         Multiname::any(activation.context.gc_context)
     } else {
@@ -225,6 +231,16 @@ pub fn elements<'gc>(
     };
 
     Ok(XmlListObject::new(activation, children, Some(xml.into())).into())
+}
+
+pub fn has_own_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.unwrap().as_xml_object().unwrap();
+    let multiname = name_to_multiname(activation, &args[0])?;
+    Ok(xml.has_own_property(&multiname).into())
 }
 
 pub fn attributes<'gc>(

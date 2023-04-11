@@ -36,6 +36,7 @@ package {
         AS3 native function copy():XML;
         AS3 native function parent():*;
         AS3 native function elements(name:*):XMLList;
+        override AS3 native function hasOwnProperty(name:String):Boolean;
         AS3 native function attributes():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function nodeKind():String;
@@ -96,6 +97,11 @@ package {
         prototype.elements = function(name:*):XMLList {
             var self:XML = this;
             return self.AS3::elements(name);
+        }
+
+        prototype.hasOwnProperty = function(name:String):Boolean {
+            var self:XML = this;
+            return self.AS3::hasOwnProperty(name);
         }
 
         prototype.toString = function():String {
