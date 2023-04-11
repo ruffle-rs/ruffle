@@ -540,6 +540,18 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
+    pub fn has_complex_content(&self) -> bool {
+        match &self.0.read().kind {
+            E4XNodeKind::Element { children, .. } => children
+                .iter()
+                .any(|child| matches!(&*child.kind(), E4XNodeKind::Element { .. })),
+            E4XNodeKind::Text(_) | E4XNodeKind::CData(_) => false,
+            E4XNodeKind::Attribute(_) => false,
+            E4XNodeKind::Comment(_) => false,
+            E4XNodeKind::ProcessingInstruction(_) => false,
+        }
+    }
+
     pub fn has_simple_content(&self) -> bool {
         match &self.0.read().kind {
             E4XNodeKind::Element { children, .. } => children

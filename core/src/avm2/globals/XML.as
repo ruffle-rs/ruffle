@@ -31,6 +31,8 @@ package {
 
         private native function init(value:*):void;
 
+        AS3 native function hasComplexContent():Boolean;
+        AS3 native function hasSimpleContent():Boolean;
         AS3 native function name():Object;
         AS3 native function namespace(prefix:String = null):*;
         AS3 native function localName():Object;
@@ -49,6 +51,16 @@ package {
         AS3 native function text():XMLList;
         AS3 native function toString():String;
         AS3 native function length():int;
+
+        prototype.hasComplexContent = function():Boolean {
+            var self:XML = this;
+            return self.AS3::hasComplexContent();
+        }
+
+        prototype.hasSimpleContent = function():Boolean {
+            var self:XML = this;
+            return self.AS3::hasSimpleContent();
+        }
 
         prototype.name = function():Object {
             var self:XML = this;

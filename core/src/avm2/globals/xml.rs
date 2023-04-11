@@ -336,3 +336,23 @@ pub fn length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Integer(1))
 }
+
+pub fn has_complex_content<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_obj = this.unwrap().as_xml_object().unwrap();
+    let result = xml_obj.node().has_complex_content();
+    Ok(result.into())
+}
+
+pub fn has_simple_content<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml_obj = this.unwrap().as_xml_object().unwrap();
+    let result = xml_obj.node().has_simple_content();
+    Ok(result.into())
+}
