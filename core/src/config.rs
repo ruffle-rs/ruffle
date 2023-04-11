@@ -23,3 +23,21 @@ pub enum Letterbox {
     #[serde(rename = "on")]
     On,
 }
+
+/// The networking api restriction mode of the Ruffle player.
+/// This setting is only used on web.
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum NetworkingRestrictionMode {
+    /// All networking APIs are permitted in the SWF file.
+    #[serde(rename = "all")]
+    All,
+
+    /// The SWF file may not call browser navigation or browser interaction APIs.
+    #[serde(rename = "internal")]
+    Internal,
+
+    /// The SWF file may not call browser navigation or browser interaction APIs
+    /// and it cannot use any SWF-to-SWF communication APIs.
+    #[serde(rename = "none")]
+    None,
+}

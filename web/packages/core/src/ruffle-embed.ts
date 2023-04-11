@@ -3,10 +3,10 @@ import {
     isFallbackElement,
     isScriptAccessAllowed,
     isYoutubeFlashSource,
-    workaroundYoutubeMixedContent,
     RufflePlayer,
+    workaroundYoutubeMixedContent,
 } from "./ruffle-player";
-import { WindowMode } from "./load-options";
+import { NetworkingRestrictionMode, WindowMode } from "./load-options";
 import { registerElement } from "./register-element";
 import { isSwfFilename, isSwfMimeType } from "./swf-utils";
 
@@ -63,6 +63,10 @@ export class RuffleEmbed extends RufflePlayer {
                 wmode:
                     (this.attributes.getNamedItem("wmode")
                         ?.value as WindowMode) ?? WindowMode.Window,
+                allowNetworking:
+                    (this.attributes.getNamedItem("allowNetworking")
+                        ?.value as NetworkingRestrictionMode) ??
+                    NetworkingRestrictionMode.All,
             });
         }
     }

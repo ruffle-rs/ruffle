@@ -3,6 +3,7 @@ use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     NavigateWebsiteHandlingMode, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
+use ruffle_core::config::NetworkingRestrictionMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
@@ -21,6 +22,7 @@ use web_sys::{
 pub struct WebNavigatorBackend {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
+    allow_networking: NetworkingRestrictionMode,
     upgrade_to_https: bool,
     base_url: Option<Url>,
     navigate_website_handling_mode: NavigateWebsiteHandlingMode,
@@ -29,6 +31,7 @@ pub struct WebNavigatorBackend {
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
+        allow_networking: NetworkingRestrictionMode,
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
@@ -69,6 +72,7 @@ impl WebNavigatorBackend {
 
         Self {
             allow_script_access,
+            allow_networking,
             upgrade_to_https,
             base_url,
             log_subscriber,
@@ -100,6 +104,12 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         let url = self.resolve_url(url);
+
+        // If allowNetworking is set to internal or none, block all navigate_to_url calls.
+        if self.allow_networking != NetworkingRestrictionMode::All {
+            tracing::warn!("SWF tried to open a URL, but opening URLs is not allowed");
+            return;
+        }
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
         let js_call = if let Ok(url) = Url::parse(&url) {
