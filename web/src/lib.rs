@@ -11,7 +11,7 @@ use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
 use ruffle_core::backend::navigator::NavigateWebsiteHandlingMode;
 use ruffle_core::compatibility_rules::CompatibilityRules;
-use ruffle_core::config::Letterbox;
+use ruffle_core::config::{Letterbox, NetworkingRestrictionMode};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
@@ -251,6 +251,8 @@ struct Config {
     preferred_renderer: Option<String>,
 
     navigate_website_handling_mode: NavigateWebsiteHandlingMode,
+
+    allow_networking: NetworkingRestrictionMode,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -591,6 +593,7 @@ impl Ruffle {
         );
         let _subscriber = tracing::subscriber::set_default(log_subscriber.clone());
         let allow_script_access = config.allow_script_access;
+        let allow_networking = config.allow_networking;
 
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
@@ -609,6 +612,7 @@ impl Ruffle {
         }
         builder = builder.with_navigator(navigator::WebNavigatorBackend::new(
             allow_script_access,
+            allow_networking,
             config.upgrade_to_https,
             config.base_url,
             log_subscriber.clone(),
@@ -674,7 +678,7 @@ impl Ruffle {
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
             // Create the external interface.
-            if allow_script_access {
+            if allow_script_access && allow_networking == NetworkingRestrictionMode::All {
                 core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
             }
             callstack = Some(core.callstack());

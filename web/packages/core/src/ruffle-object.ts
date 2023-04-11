@@ -11,6 +11,7 @@ import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
 import { isSwfFilename, isSwfMimeType } from "./swf-utils";
+import { NetworkingRestrictionMode } from "./load-options";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -112,6 +113,12 @@ export class RuffleObject extends RufflePlayer {
             this.getAttribute("bgcolor")
         );
 
+        const allowNetworking = findCaseInsensitive(
+            this.params,
+            "allowNetworking",
+            this.getAttribute("allowNetworking")
+        );
+
         const base = findCaseInsensitive(
             this.params,
             "base",
@@ -151,6 +158,10 @@ export class RuffleObject extends RufflePlayer {
             }
             if (wmode) {
                 options.wmode = wmode as WindowMode;
+            }
+            if (allowNetworking) {
+                options.allowNetworking =
+                    allowNetworking as NetworkingRestrictionMode;
             }
 
             // Kick off the SWF download.

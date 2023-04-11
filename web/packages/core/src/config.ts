@@ -1,11 +1,12 @@
 import type { BaseLoadOptions } from "./load-options";
 import {
     AutoPlay,
-    UnmuteOverlay,
-    WindowMode,
     Letterbox,
     LogLevel,
     NavigateWebsiteHandlingMode,
+    NetworkingRestrictionMode,
+    UnmuteOverlay,
+    WindowMode,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -38,4 +39,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     playerVersion: null,
     preferredRenderer: null,
     navigateWebsiteHandlingMode: NavigateWebsiteHandlingMode.Confirm,
+    allowNetworking: NetworkingRestrictionMode.All,
 };

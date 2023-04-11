@@ -187,6 +187,27 @@ export const enum NavigateWebsiteHandlingMode {
 }
 
 /**
+ * The networking api restriction mode of the Ruffle player.
+ */
+export const enum NetworkingRestrictionMode {
+    /*
+     * All networking APIs are permitted in the SWF file.
+     */
+    All = "all",
+
+    /*
+     * The SWF file may not call browser navigation or browser interaction APIs.
+     */
+    Internal = "internal",
+
+    /*
+     * The SWF file may not call browser navigation or browser interaction APIs
+     * and it cannot use any SWF-to-SWF communication APIs.
+     */
+    None = "none",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -430,6 +451,13 @@ export interface BaseLoadOptions {
      * @default NavigateWebsiteHandlingMode.Confirm
      */
     navigateWebsiteHandlingMode?: NavigateWebsiteHandlingMode;
+
+    /**
+     * Whether and in what way the flash networking APIs are restricted.
+     *
+     * @default NetworkingRestrictionMode.All
+     */
+    allowNetworking?: NetworkingRestrictionMode;
 }
 
 /**
