@@ -142,6 +142,11 @@ pub fn flood_fill<'gc>(
     let expected_color = write.get_pixel32_raw(x, y);
     let replace_color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
+    if expected_color == replace_color {
+        // If we try to replace X with X, we'll infinite loop
+        return;
+    }
+
     let mut pending = vec![(x, y)];
     let mut dirty_region = PixelRegion::for_pixel(x, y);
 

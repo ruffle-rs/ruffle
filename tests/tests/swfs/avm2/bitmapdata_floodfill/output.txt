@@ -1,0 +1,36 @@
+// bmd.floodFill(1, 1, 0xffffff)
+
+// bmd.getPixel(0, 0) == 0xffffff
+// bmd.getPixel(0, 1) == 0xffffff
+// bmd.getPixel(0, 2) == 0xffffff
+// bmd.getPixel(1, 0) == 0xffffff
+// bmd.getPixel(1, 1) == 0xffffff
+// bmd.getPixel(1, 2) == 0xffffff
+// bmd.getPixel(2, 0) == 0xffffff
+// bmd.getPixel(2, 1) == 0xffffff
+// bmd.getPixel(2, 2) == 0xffffff
+
+// bmd.floodFill(0, 0, 0x0)
+
+// bmd.getPixel(0, 0) == 0x0
+// bmd.getPixel(0, 1) == 0x0
+// bmd.getPixel(0, 2) == 0x0
+// bmd.getPixel(1, 0) == 0x0
+// bmd.getPixel(1, 1) == 0x0
+// bmd.getPixel(1, 2) == 0x0
+// bmd.getPixel(2, 0) == 0x0
+// bmd.getPixel(2, 1) == 0x0
+// bmd.getPixel(2, 2) == 0x0
+
+// bmd.floodFill(2, 2, 0x0)
+
+// bmd.getPixel(0, 0) == 0x0
+// bmd.getPixel(0, 1) == 0x0
+// bmd.getPixel(0, 2) == 0x0
+// bmd.getPixel(1, 0) == 0x0
+// bmd.getPixel(1, 1) == 0x0
+// bmd.getPixel(1, 2) == 0x0
+// bmd.getPixel(2, 0) == 0x0
+// bmd.getPixel(2, 1) == 0x0
+// bmd.getPixel(2, 2) == 0x0
+
