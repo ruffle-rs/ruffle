@@ -4,6 +4,7 @@ package flash.text {
     
     public class TextField extends InteractiveObject {
         internal var _styleSheet:StyleSheet;
+        internal var _useRichTextClipboard:Boolean;
     
         public function TextField() {
             this.init();
@@ -93,6 +94,15 @@ package flash.text {
         
         public native function get type():String;
         public native function set type(value:String):void;
+        
+        public function get useRichTextClipboard():Boolean {
+            return this._useRichTextClipboard;
+        }
+        
+        public function set useRichTextClipboard(value:Boolean):void {
+            this._useRichTextClipboard = value;
+            stub_setter("flash.text.TextField", "useRichTextClipboard");
+        }
         
         public native function get wordWrap():Boolean;
         public native function set wordWrap(value:Boolean):void;
