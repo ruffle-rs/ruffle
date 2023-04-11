@@ -58,6 +58,7 @@ pub struct WgpuContext3D {
     current_depth_texture_view: Option<Rc<wgpu::TextureView>>,
     current_texture_resolve_view: Option<Rc<wgpu::TextureView>>,
 
+    back_buffer_sample_count: u32,
     back_buffer_texture_view: Option<Rc<wgpu::TextureView>>,
     back_buffer_depth_texture_view: Option<Rc<wgpu::TextureView>>,
     back_buffer_resolve_texture_view: Option<Rc<wgpu::TextureView>>,
@@ -149,6 +150,7 @@ impl WgpuContext3D {
             current_depth_texture_view: None,
             current_texture_resolve_view: None,
 
+            back_buffer_sample_count: 1,
             back_buffer_texture_view: None,
             back_buffer_depth_texture_view: None,
             back_buffer_resolve_texture_view: None,
@@ -197,6 +199,10 @@ impl WgpuContext3D {
         self.current_texture_view = self.back_buffer_texture_view.clone();
         self.current_texture_resolve_view = self.back_buffer_resolve_texture_view.clone();
         self.current_depth_texture_view = self.back_buffer_depth_texture_view.clone();
+        self.current_pipeline
+            .update_has_depth_texture(self.current_depth_texture_view.is_some());
+        self.current_pipeline
+            .update_sample_count(self.back_buffer_sample_count);
     }
 
     pub(crate) fn present(&mut self) {
@@ -583,6 +589,7 @@ impl Context3D for WgpuContext3D {
 
                 // Keep track of the texture/depth views, so that we can later
                 // restore them in `set_render_to_back_buffer`
+                self.back_buffer_sample_count = sample_count;
                 self.back_buffer_texture_view = self.current_texture_view.clone();
                 self.back_buffer_resolve_texture_view = back_buffer_resolve_texture
                     .as_ref()
@@ -746,7 +753,7 @@ impl Context3D for WgpuContext3D {
                                     depth_or_array_layers: 1,
                                 },
                                 mip_level_count: 1,
-                                sample_count: 1,
+                                sample_count,
                                 dimension: wgpu::TextureDimension::D2,
                                 format: texture_wrapper.texture.format(),
                                 view_formats: &[texture_wrapper.texture.format()],
@@ -767,10 +774,6 @@ impl Context3D for WgpuContext3D {
                     ));
                 }
 
-                self.current_texture_view = Some(Rc::new(
-                    texture_wrapper.texture.create_view(&Default::default()),
-                ));
-
                 if enable_depth_and_stencil {
                     self.current_depth_texture_view = Some(self.create_depth_texture(
                         texture_wrapper.texture.width(),
@@ -781,6 +784,8 @@ impl Context3D for WgpuContext3D {
                     self.current_depth_texture_view = None;
                 }
 
+                self.current_pipeline
+                    .update_has_depth_texture(enable_depth_and_stencil);
                 self.current_pipeline.remove_texture(&texture);
                 self.current_pipeline.update_sample_count(sample_count);
             }
