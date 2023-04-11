@@ -576,6 +576,14 @@ impl Player {
         self.is_playing
     }
 
+    pub fn mouse_in_stage(&self) -> bool {
+        self.mouse_in_stage
+    }
+
+    pub fn set_mouse_in_stage(&mut self, is_in: bool) {
+        self.mouse_in_stage = is_in;
+    }
+
     /// Returns the master volume of the player. 1.0 is 100% volume.
     pub fn volume(&self) -> f32 {
         self.audio.volume()
@@ -1128,8 +1136,6 @@ impl Player {
             button: MouseButton::Left,
         } = event
         {
-            self.mouse_in_stage = true;
-
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
             let old_pos = self.mouse_pos;
@@ -1149,8 +1155,6 @@ impl Player {
         }
 
         if let PlayerEvent::MouseWheel { delta } = event {
-            self.mouse_in_stage = true;
-
             self.mutate_with_update_context(|context| {
                 if let Some(over_object) = context.mouse_over_object {
                     if context.is_action_script_3()
@@ -1167,8 +1171,6 @@ impl Player {
         }
 
         if let PlayerEvent::MouseLeave = event {
-            self.mouse_in_stage = false;
-
             if self.update_mouse_state(is_mouse_button_changed, true) {
                 self.needs_render = true;
             }
@@ -1216,7 +1218,7 @@ impl Player {
     fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
         let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
-        let mouse_in_stage = self.mouse_in_stage;
+        let mouse_in_stage = self.mouse_in_stage();
 
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
