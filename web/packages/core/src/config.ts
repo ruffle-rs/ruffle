@@ -30,6 +30,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     quality: "high",
     scale: "showAll",
     forceScale: false,
+    frameRate: null,
     wmode: WindowMode.Opaque,
     publicPath: null,
     polyfills: true,

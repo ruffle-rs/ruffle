@@ -177,6 +177,9 @@ pub struct UpdateContext<'a, 'gc> {
     /// The current stage frame rate.
     pub frame_rate: &'a mut f64,
 
+    /// Whether movies are prevented from changing the stage frame rate.
+    pub forced_frame_rate: bool,
+
     /// Amount of actions performed since the last timeout check
     pub actions_since_timeout_check: &'a mut u16,
 
@@ -338,6 +341,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             times_get_time_called: self.times_get_time_called,
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,
+            forced_frame_rate: self.forced_frame_rate,
             actions_since_timeout_check: self.actions_since_timeout_check,
             frame_phase: self.frame_phase,
             stream_manager: self.stream_manager,

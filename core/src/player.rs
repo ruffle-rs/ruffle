@@ -247,6 +247,7 @@ pub struct Player {
     gc_arena: Rc<RefCell<GcArena>>,
 
     frame_rate: f64,
+    forced_frame_rate: bool,
     actions_since_timeout_check: u16,
 
     frame_phase: FramePhase,
@@ -336,15 +337,18 @@ impl Player {
     /// previous stage contents. If you need to load a new root movie, you
     /// should destroy and recreate the player instance.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
+        if !self.forced_frame_rate {
+            self.frame_rate = movie.frame_rate().into();
+        }
+
         info!(
             "Loaded SWF version {}, resolution {}x{} @ {} FPS",
             movie.version(),
             movie.width(),
             movie.height(),
-            movie.frame_rate()
+            self.frame_rate(),
         );
 
-        self.frame_rate = movie.frame_rate().into();
         self.swf = Arc::new(movie);
         self.instance_counter = 0;
 
@@ -1754,6 +1758,7 @@ impl Player {
                 time_offset: &mut self.time_offset,
                 audio_manager,
                 frame_rate: &mut self.frame_rate,
+                forced_frame_rate: self.forced_frame_rate,
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
                 frame_phase: &mut self.frame_phase,
                 stub_tracker: &mut self.stub_tracker,
@@ -1951,6 +1956,7 @@ pub struct PlayerBuilder {
     player_version: Option<u8>,
     quality: StageQuality,
     sandbox_type: SandboxType,
+    frame_rate: Option<f64>,
 }
 
 impl PlayerBuilder {
@@ -1992,6 +1998,7 @@ impl PlayerBuilder {
             player_version: None,
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
+            frame_rate: None,
         }
     }
 
@@ -2131,15 +2138,21 @@ impl PlayerBuilder {
         self
     }
 
-    // Configures the target player version.
+    /// Configures the target player version.
     pub fn with_player_version(mut self, version: Option<u8>) -> Self {
         self.player_version = version;
         self
     }
 
-    // Configured the security sandbox type (default is `SandboxType::LocalTrusted`)
+    /// Configures the security sandbox type (default is `SandboxType::LocalTrusted`)
     pub fn with_sandbox_type(mut self, sandbox_type: SandboxType) -> Self {
         self.sandbox_type = sandbox_type;
+        self
+    }
+
+    /// Sets and locks the player's frame rate. If None is provided, this has no effect.
+    pub fn with_frame_rate(mut self, frame_rate: Option<f64>) -> Self {
+        self.frame_rate = frame_rate;
         self
     }
 
@@ -2177,7 +2190,8 @@ impl PlayerBuilder {
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(player_version));
-        let frame_rate = 12.0;
+        let frame_rate = self.frame_rate.unwrap_or(12.0);
+        let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
             Mutex::new(Player {
                 // Backends
@@ -2195,6 +2209,7 @@ impl PlayerBuilder {
 
                 // Timing
                 frame_rate,
+                forced_frame_rate,
                 frame_phase: Default::default(),
                 frame_accumulator: 0.0,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
