@@ -11,6 +11,16 @@ use crate::avm2::{
     Activation, Error, Multiname, Object, TObject, Value,
 };
 
+fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
+    match children {
+        [] => false,
+        [child] => child.node().has_complex_content(),
+        _ => children
+            .iter()
+            .any(|child| matches!(&*child.node().kind(), E4XNodeKind::Element { .. })),
+    }
+}
+
 fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
         [] => true,
@@ -44,6 +54,16 @@ pub fn init<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn has_complex_content<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.unwrap().as_xml_list_object().unwrap();
+    let children = list.children();
+    Ok(has_complex_content_inner(&children).into())
 }
 
 pub fn has_simple_content<'gc>(
