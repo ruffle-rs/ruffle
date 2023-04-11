@@ -1,4 +1,5 @@
 use crate::reader::FlvReader;
+use std::io::Seek;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
@@ -102,13 +103,13 @@ impl<'a> VideoData<'a> {
     ///
     /// If `None` is yielded, the data stream is not a valid video header.
     pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
-        let start = reader.position();
+        let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
         let frame_type = FrameType::try_from(format_spec & 0x0F).ok()?;
         let codec_id = CodecId::try_from(format_spec >> 4).ok()?;
 
-        let header_size = reader.position() - start;
+        let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
             return None;
         }

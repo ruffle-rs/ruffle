@@ -1,3 +1,5 @@
+use std::io::{Error, ErrorKind, Result, Seek, SeekFrom};
+
 /// A reader that allows demuxing an FLV container.
 pub struct FlvReader<'a> {
     source: &'a [u8],
@@ -95,8 +97,57 @@ impl<'a> FlvReader<'a> {
             self.read(8)?.try_into().expect("eight bytes"),
         ))
     }
+}
 
-    pub fn position(&self) -> usize {
-        self.position
+impl<'a> Seek for FlvReader<'a> {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+        let newpos = match pos {
+            SeekFrom::Start(pos) => pos,
+            SeekFrom::Current(pos) => (self.position as i64 + pos)
+                .try_into()
+                .map_err(|e| Error::new(ErrorKind::InvalidInput, e))?,
+            SeekFrom::End(pos) => (self.source.len() as i64 - pos)
+                .try_into()
+                .map_err(|e| Error::new(ErrorKind::InvalidInput, e))?,
+        };
+
+        self.position = newpos as usize;
+
+        Ok(self.position as u64)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::seek_from_current, clippy::seek_to_start_instead_of_rewind)]
+mod tests {
+    use crate::reader::FlvReader;
+    use std::io::{Seek, SeekFrom};
+
+    #[test]
+    fn valid_position_seek() {
+        let data = vec![0; 4000];
+        let mut reader = FlvReader::from_source(&data);
+
+        assert_eq!(reader.seek(SeekFrom::Current(0)).unwrap(), 0);
+        assert_eq!(reader.seek(SeekFrom::Current(4000)).unwrap(), 4000);
+        assert_eq!(reader.seek(SeekFrom::Current(-2000)).unwrap(), 2000);
+        assert_eq!(reader.seek(SeekFrom::Start(0)).unwrap(), 0);
+        assert_eq!(reader.seek(SeekFrom::Start(4000)).unwrap(), 4000);
+        assert_eq!(reader.seek(SeekFrom::End(0)).unwrap(), 4000);
+        assert_eq!(reader.seek(SeekFrom::End(4000)).unwrap(), 0);
+    }
+
+    #[test]
+    fn invalid_position_seek() {
+        let data = vec![];
+        let mut reader = FlvReader::from_parts(&data, 12000);
+
+        assert_eq!(reader.seek(SeekFrom::Current(0)).unwrap(), 12000);
+        assert_eq!(reader.seek(SeekFrom::Current(4000)).unwrap(), 16000);
+        assert_eq!(reader.seek(SeekFrom::Current(-2000)).unwrap(), 14000);
+        assert_eq!(reader.seek(SeekFrom::Start(0)).unwrap(), 0);
+        assert_eq!(reader.seek(SeekFrom::Start(4000)).unwrap(), 4000);
+        assert_eq!(reader.seek(SeekFrom::End(0)).unwrap(), 0);
+        assert!(reader.seek(SeekFrom::End(4000)).is_err());
     }
 }
