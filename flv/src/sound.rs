@@ -1,4 +1,5 @@
 use crate::FlvReader;
+use std::io::Seek;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug)]
@@ -129,7 +130,7 @@ impl<'a> AudioData<'a> {
     ///
     /// If `None` is yielded, the data stream is not a valid audio header.
     pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
-        let start = reader.position();
+        let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
         let format = SoundFormat::try_from(format_spec & 0x0F).ok()?;
@@ -137,7 +138,7 @@ impl<'a> AudioData<'a> {
         let size = SoundSize::try_from((format_spec >> 6) & 0x01).ok()?;
         let sound_type = SoundType::try_from((format_spec >> 7) & 0x01).ok()?;
 
-        let header_size = reader.position() - start;
+        let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
             return None;
         }
