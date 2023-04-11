@@ -150,6 +150,10 @@ struct Opt {
     /// The version of the player to emulate
     #[clap(long)]
     player_version: Option<u8>,
+
+    /// Set and lock the player's frame rate, overriding the movie's frame rate.
+    #[clap(long)]
+    frame_rate: Option<f64>,
 }
 
 #[cfg(feature = "render_trace")]
@@ -356,7 +360,8 @@ impl App {
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(opt.player_version);
+            .with_player_version(opt.player_version)
+            .with_frame_rate(opt.frame_rate);
 
         let player = builder.build();
 

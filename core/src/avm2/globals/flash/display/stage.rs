@@ -236,8 +236,10 @@ pub fn set_frame_rate<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let new_frame_rate = args.get_f64(activation, 0)?;
-    *activation.context.frame_rate = new_frame_rate;
+    if !activation.context.forced_frame_rate {
+        let new_frame_rate = args.get_f64(activation, 0)?;
+        *activation.context.frame_rate = new_frame_rate;
+    }
 
     Ok(Value::Undefined)
 }

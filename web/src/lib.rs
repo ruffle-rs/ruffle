@@ -158,6 +158,8 @@ struct Config {
 
     force_scale: bool,
 
+    frame_rate: Option<f64>,
+
     wmode: Option<String>,
 
     warn_on_unsupported_content: bool,
@@ -565,6 +567,7 @@ impl Ruffle {
                     .unwrap_or(StageScaleMode::ShowAll),
                 config.force_scale,
             )
+            .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)
             .build();

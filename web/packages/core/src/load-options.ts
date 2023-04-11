@@ -301,6 +301,13 @@ export interface BaseLoadOptions {
     forceScale?: boolean;
 
     /**
+     * Sets and locks the player's frame rate, overriding the movie's frame rate.
+     *
+     * @default null
+     */
+    frameRate?: number | null;
+
+    /**
      * The window mode of the Ruffle player.
      *
      * This setting controls how the Ruffle container is layered and rendered with other content on the page.
