@@ -1,5 +1,6 @@
 use crate::reader::FlvReader;
 use bitflags::bitflags;
+use std::io::{Seek, SeekFrom};
 
 bitflags! {
     #[derive(PartialEq, Eq, Debug)]
@@ -22,20 +23,32 @@ impl Header {
     /// If this yields `None`, then the given data stream is either not an FLV
     /// container or too short to parse.
     pub fn parse(reader: &mut FlvReader<'_>) -> Option<Self> {
-        let signature = reader.read_u24()?;
-        if signature != 0x464C56 {
-            return None;
+        let old_position = reader.stream_position().ok()?;
+
+        let ret = (|| {
+            let signature = reader.read_u24()?;
+            if signature != 0x464C56 {
+                return None;
+            }
+
+            let version = reader.read_u8()?;
+            let type_flags = TypeFlags::from_bits_retain(reader.read_u8()?);
+            let data_offset = reader.read_u32()?;
+
+            Some(Header {
+                version,
+                type_flags,
+                data_offset,
+            })
+        })();
+
+        if let Some(ret) = ret {
+            reader.seek(SeekFrom::Start(ret.data_offset as u64)).ok()?;
+            Some(ret)
+        } else {
+            reader.seek(SeekFrom::Start(old_position)).ok()?;
+            None
         }
-
-        let version = reader.read_u8()?;
-        let type_flags = TypeFlags::from_bits_retain(reader.read_u8()?);
-        let data_offset = reader.read_u32()?;
-
-        Some(Header {
-            version,
-            type_flags,
-            data_offset,
-        })
     }
 }
 
