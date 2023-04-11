@@ -517,8 +517,16 @@ impl App {
                                 self.window.request_redraw();
                             }
                         }
+                        WindowEvent::CursorEntered { .. } => {
+                            let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            player_lock.set_mouse_in_stage(true);
+                            if player_lock.needs_render() {
+                                self.window.request_redraw();
+                            }
+                        }
                         WindowEvent::CursorLeft { .. } => {
                             let mut player_lock = self.player.lock().expect("Cannot reenter");
+                            player_lock.set_mouse_in_stage(false);
                             player_lock.handle_event(PlayerEvent::MouseLeave);
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
