@@ -83,6 +83,20 @@ impl<'a> Tag<'a> {
             None
         }
     }
+
+    /// Skip back to the prior tag in the FLV.
+    ///
+    /// FLV files are constructed as a list of tags. Back pointers to prior
+    /// tags are provided to allow reverse seeking. This function ignores the
+    /// tag at the current location and skips back to prior data in the file.
+    pub fn skip_back(reader: &mut FlvReader<'a>) -> Option<()> {
+        let previous_tag_size = reader.read_u32()?;
+        reader
+            .seek(SeekFrom::Current(-(previous_tag_size as i64)))
+            .ok()?;
+
+        Some(())
+    }
 }
 
 #[cfg(test)]
