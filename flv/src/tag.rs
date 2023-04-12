@@ -15,9 +15,9 @@ pub enum TagData<'a> {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Tag<'a> {
-    timestamp: i32,
-    stream_id: u32, //24 bits max
-    data: TagData<'a>,
+    pub timestamp: i32,
+    pub stream_id: u32, //24 bits max
+    pub data: TagData<'a>,
 }
 
 impl<'a> Tag<'a> {
