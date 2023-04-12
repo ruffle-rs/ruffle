@@ -745,7 +745,11 @@ impl<'gc> MovieClip<'gc> {
                 swf::DoAbc2Flag::LAZY_INITIALIZE,
                 domain,
             ) {
-                tracing::warn!("Error loading ABC file: {}", e);
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                tracing::warn!(
+                    "Error loading ABC file: {}",
+                    e.detailed_message(&mut activation)
+                );
             }
         }
 
@@ -772,7 +776,11 @@ impl<'gc> MovieClip<'gc> {
             let name = AvmString::new_utf8(context.gc_context, name);
 
             if let Err(e) = Avm2::do_abc(context, do_abc.data, Some(name), do_abc.flags, domain) {
-                tracing::warn!("Error loading ABC file: {}", e);
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                tracing::warn!(
+                    "Error loading ABC file: {}",
+                    e.detailed_message(&mut activation)
+                );
             }
         }
 
