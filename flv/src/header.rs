@@ -3,14 +3,14 @@ use bitflags::bitflags;
 use std::io::{Seek, SeekFrom};
 
 bitflags! {
-    #[derive(PartialEq, Eq, Debug)]
+    #[derive(PartialEq, Eq, Debug, Clone, Copy)]
     pub struct TypeFlags: u8 {
         const HAS_AUDIO = 0b1000_0000;
         const HAS_VIDEO = 0b0010_0000;
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Header {
     pub version: u8,
     pub type_flags: TypeFlags,

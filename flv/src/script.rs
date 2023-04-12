@@ -11,7 +11,7 @@ fn parse_string<'a>(reader: &mut FlvReader<'a>, is_long_string: bool) -> Option<
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Value<'a> {
     Number(f64) = 0,
     Boolean(bool) = 1,
@@ -103,7 +103,7 @@ impl<'a> Value<'a> {
 /// This corresponds to both the `SCRIPTDATAOBJECT` and `SCRIPTDATAVARIABLE`
 /// structures as defined in the FLV specification. These structures are
 /// otherwise identical.
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Variable<'a> {
     pub name: &'a [u8],
     pub data: Value<'a>,
@@ -118,7 +118,7 @@ impl<'a> Variable<'a> {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct ScriptData<'a>(pub Vec<Variable<'a>>);
 
 impl<'a> ScriptData<'a> {

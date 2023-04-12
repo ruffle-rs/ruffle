@@ -55,7 +55,8 @@ impl TryFrom<u8> for CodecId {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+#[repr(u8)]
 pub enum CommandFrame {
     StartOfClientSideSeek = 0,
     EndOfClientSideSeek = 1,
@@ -73,7 +74,7 @@ impl TryFrom<u8> for CommandFrame {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum VideoPacket<'a> {
     Data(&'a [u8]),
     AvcSequenceHeader(&'a [u8]),
@@ -85,7 +86,7 @@ pub enum VideoPacket<'a> {
     CommandFrame(CommandFrame),
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct VideoData<'a> {
     pub frame_type: FrameType,
     pub codec_id: CodecId,
