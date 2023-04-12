@@ -31,6 +31,7 @@ const optionGroups = {
 const defaultConfig = {
     letterbox: "on",
     logLevel: "warn",
+    forceScale: true,
 };
 
 const swfToFlashVersion = {
