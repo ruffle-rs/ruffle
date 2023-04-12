@@ -6,14 +6,14 @@ use crate::video::VideoData;
 use std::io::{Seek, SeekFrom};
 
 #[repr(u8)]
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TagData<'a> {
     Audio(AudioData<'a>) = 8,
     Video(VideoData<'a>) = 9,
     Script(ScriptData<'a>) = 18,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Tag<'a> {
     timestamp: i32,
     stream_id: u32, //24 bits max

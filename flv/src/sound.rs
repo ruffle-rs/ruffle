@@ -2,7 +2,7 @@ use crate::FlvReader;
 use std::io::Seek;
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum SoundFormat {
     LinearPCMPlatformEndian = 0,
     Adpcm = 1,
@@ -43,7 +43,7 @@ impl TryFrom<u8> for SoundFormat {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum SoundRate {
     R5_500 = 0,
     R11_000 = 1,
@@ -66,7 +66,7 @@ impl TryFrom<u8> for SoundRate {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum SoundSize {
     Bits8 = 0,
     Bits16 = 1,
@@ -85,7 +85,7 @@ impl TryFrom<u8> for SoundSize {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum SoundType {
     Mono = 0,
     Stereo = 1,
@@ -103,14 +103,14 @@ impl TryFrom<u8> for SoundType {
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum AudioDataType<'a> {
     Raw(&'a [u8]),
     AacSequenceHeader(&'a [u8]),
     AacRaw(&'a [u8]),
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct AudioData<'a> {
     pub format: SoundFormat,
     pub rate: SoundRate,
