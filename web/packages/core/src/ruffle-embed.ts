@@ -6,7 +6,7 @@ import {
     RufflePlayer,
     workaroundYoutubeMixedContent,
 } from "./ruffle-player";
-import { NetworkingRestrictionMode, WindowMode } from "./load-options";
+import { NetworkingAccessMode, WindowMode } from "./load-options";
 import { registerElement } from "./register-element";
 import { isSwfFilename, isSwfMimeType } from "./swf-utils";
 
@@ -65,8 +65,8 @@ export class RuffleEmbed extends RufflePlayer {
                         ?.value as WindowMode) ?? WindowMode.Window,
                 allowNetworking:
                     (this.attributes.getNamedItem("allowNetworking")
-                        ?.value as NetworkingRestrictionMode) ??
-                    NetworkingRestrictionMode.All,
+                        ?.value as NetworkingAccessMode) ??
+                    NetworkingAccessMode.All,
             });
         }
     }

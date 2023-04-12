@@ -1,9 +1,9 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    NavigateWebsiteHandlingMode, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
+    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, Response,
 };
-use ruffle_core::config::NetworkingRestrictionMode;
+use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
@@ -22,20 +22,20 @@ use web_sys::{
 pub struct WebNavigatorBackend {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
-    allow_networking: NetworkingRestrictionMode,
+    allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
     base_url: Option<Url>,
-    navigate_website_handling_mode: NavigateWebsiteHandlingMode,
+    open_url_mode: OpenURLMode,
 }
 
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
-        allow_networking: NetworkingRestrictionMode,
+        allow_networking: NetworkingAccessMode,
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
-        navigate_website_handling_mode: NavigateWebsiteHandlingMode,
+        open_url_mode: OpenURLMode,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
@@ -76,7 +76,7 @@ impl WebNavigatorBackend {
             upgrade_to_https,
             base_url,
             log_subscriber,
-            navigate_website_handling_mode,
+            open_url_mode,
         }
     }
 
@@ -106,7 +106,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let url = self.resolve_url(url);
 
         // If allowNetworking is set to internal or none, block all navigate_to_url calls.
-        if self.allow_networking != NetworkingRestrictionMode::All {
+        if self.allow_networking != NetworkingAccessMode::All {
             tracing::warn!("SWF tried to open a URL, but opening URLs is not allowed");
             return;
         }
@@ -125,8 +125,9 @@ impl NavigatorBackend for WebNavigatorBackend {
         let window = window().expect("window()");
 
         if !js_call {
-            if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Confirm {
+            if self.open_url_mode == OpenURLMode::Confirm {
                 let message = "The SWF file wants to open the website ".to_owned() + &url;
+                // TODO: Add a checkbox with a GUI toolkit
                 let confirm = window
                     .confirm_with_message(&message)
                     .expect("confirm_with_message()");
@@ -136,7 +137,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     );
                     return;
                 }
-            } else if self.navigate_website_handling_mode == NavigateWebsiteHandlingMode::Deny {
+            } else if self.open_url_mode == OpenURLMode::Deny {
                 tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }

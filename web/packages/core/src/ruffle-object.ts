@@ -11,7 +11,7 @@ import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
 import { isSwfFilename, isSwfMimeType } from "./swf-utils";
-import { NetworkingRestrictionMode } from "./load-options";
+import { NetworkingAccessMode } from "./load-options";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -161,7 +161,7 @@ export class RuffleObject extends RufflePlayer {
             }
             if (allowNetworking) {
                 options.allowNetworking =
-                    allowNetworking as NetworkingRestrictionMode;
+                    allowNetworking as NetworkingAccessMode;
             }
 
             // Kick off the SWF download.

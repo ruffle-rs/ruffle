@@ -24,12 +24,12 @@ pub enum NavigationMethod {
 /// The handling mode of navigate_to_url website calls.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum NavigateWebsiteHandlingMode {
+pub enum OpenURLMode {
     /// Allow all navigate_to_url website calls.
     #[serde(rename = "allow")]
     Allow,
 
-    /// A confirmation dialogue opens with every navigate_to_url website call.
+    /// A confirmation dialog opens with every navigate_to_url website call.
     #[serde(rename = "confirm")]
     Confirm,
 

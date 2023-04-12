@@ -3,8 +3,8 @@ import {
     AutoPlay,
     Letterbox,
     LogLevel,
-    NavigateWebsiteHandlingMode,
-    NetworkingRestrictionMode,
+    OpenURLMode,
+    NetworkingAccessMode,
     UnmuteOverlay,
     WindowMode,
 } from "./load-options";
@@ -38,6 +38,6 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     polyfills: true,
     playerVersion: null,
     preferredRenderer: null,
-    navigateWebsiteHandlingMode: NavigateWebsiteHandlingMode.Confirm,
-    allowNetworking: NetworkingRestrictionMode.All,
+    openUrlMode: OpenURLMode.Allow,
+    allowNetworking: NetworkingAccessMode.All,
 };

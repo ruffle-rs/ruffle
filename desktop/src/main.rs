@@ -20,7 +20,7 @@ use anyhow::{anyhow, Context, Error};
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
-use ruffle_core::backend::navigator::NavigateWebsiteHandlingMode;
+use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, LoadBehavior, Player, PlayerBuilder,
     PlayerEvent, StageDisplayState, StageScaleMode, StaticCallstack, ViewportDimensions,
@@ -156,13 +156,9 @@ struct Opt {
     #[clap(long)]
     frame_rate: Option<f64>,
 
-    /// Whether javascript calls are allowed.
-    #[clap(long, action)]
-    allow_javascript_calls: bool,
-
     /// The handling mode of navigate_to_url website calls.
-    #[clap(long, default_value = "confirm")]
-    navigate_website_handling_mode: NavigateWebsiteHandlingMode,
+    #[clap(long, default_value = "allow")]
+    open_url_mode: OpenURLMode,
 }
 
 #[cfg(feature = "render_trace")]
@@ -334,8 +330,7 @@ impl App {
             event_loop.create_proxy(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
-            opt.allow_javascript_calls,
-            opt.navigate_website_handling_mode,
+            opt.open_url_mode,
         );
 
         let viewport_size = window.inner_size();

@@ -175,32 +175,38 @@ export type Duration = SecsDuration | ObsoleteDuration;
 /**
  * The handling mode of navigate_to_url website calls.
  */
-export const enum NavigateWebsiteHandlingMode {
-    // / Allow all navigate_to_url website calls.
+export const enum OpenURLMode {
+    /**
+     * Allow all navigate_to_url website calls.
+     */
     Allow = "allow",
 
-    // / A confirmation dialogue opens with every navigate_to_url website call.
+    /**
+     * A confirmation dialog opens with every navigate_to_url website call.
+     */
     Confirm = "confirm",
 
-    // / Deny all navigate_to_url website calls.
+    /**
+     * Deny all navigate_to_url website calls.
+     */
     Deny = "deny",
 }
 
 /**
- * The networking api restriction mode of the Ruffle player.
+ * The networking API access mode of the Ruffle player.
  */
-export const enum NetworkingRestrictionMode {
-    /*
+export const enum NetworkingAccessMode {
+    /**
      * All networking APIs are permitted in the SWF file.
      */
     All = "all",
 
-    /*
+    /**
      * The SWF file may not call browser navigation or browser interaction APIs.
      */
     Internal = "internal",
 
-    /*
+    /**
      * The SWF file may not call browser navigation or browser interaction APIs
      * and it cannot use any SWF-to-SWF communication APIs.
      */
@@ -448,16 +454,16 @@ export interface BaseLoadOptions {
     /**
      * The handling mode of navigate_to_url website calls.
      *
-     * @default NavigateWebsiteHandlingMode.Confirm
+     * @default OpenURLMode.Allow
      */
-    navigateWebsiteHandlingMode?: NavigateWebsiteHandlingMode;
+    openUrlMode?: OpenURLMode;
 
     /**
-     * Whether and in what way the flash networking APIs are restricted.
+     * Whether and in what way the flash networking APIs can be accessed.
      *
-     * @default NetworkingRestrictionMode.All
+     * @default NetworkingAccessMode.All
      */
-    allowNetworking?: NetworkingRestrictionMode;
+    allowNetworking?: NetworkingAccessMode;
 }
 
 /**
