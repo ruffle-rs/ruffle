@@ -596,29 +596,48 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
-        if property.is_none() {
-            return Err(format!(
+
+        match property {
+            Some(
+                Property::Virtual {
+                    get: Some(disp_id), ..
+                }
+                | Property::Method { disp_id },
+            ) => {
+                // todo: handle errors
+                let ClassBoundMethod {
+                    class,
+                    scope,
+                    method,
+                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let callee = FunctionObject::from_method(
+                    activation,
+                    method,
+                    scope,
+                    Some(receiver),
+                    Some(class),
+                );
+
+                // We call getters, but return the actual function object for normal methods
+                if matches!(property, Some(Property::Virtual { .. })) {
+                    callee.call(Some(receiver), &[], activation)
+                } else {
+                    Ok(callee.into())
+                }
+            }
+            Some(Property::Virtual { .. }) => Err(format!(
+                "Attempting to use get_super on non-getter property {:?}",
+                multiname
+            )
+            .into()),
+            Some(Property::Slot { .. } | Property::ConstSlot { .. }) => {
+                receiver.get_property(multiname, activation)
+            }
+            None => Err(format!(
                 "Attempted to supercall method {:?}, which does not exist",
                 multiname.local_name()
             )
-            .into());
-        }
-        if let Some(Property::Virtual {
-            get: Some(disp_id), ..
-        }) = property
-        {
-            // todo: handle errors
-            let ClassBoundMethod {
-                class,
-                scope,
-                method,
-            } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee =
-                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
-
-            callee.call(Some(receiver), &[], activation)
-        } else {
-            receiver.get_property(multiname, activation)
+            .into()),
         }
     }
 
@@ -662,24 +681,30 @@ impl<'gc> ClassObject<'gc> {
             )
             .into());
         }
-        if let Some(Property::Virtual {
-            set: Some(disp_id), ..
-        }) = property
-        {
-            // todo: handle errors
-            let ClassBoundMethod {
-                class,
-                scope,
-                method,
-            } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee =
-                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            callee.call(Some(receiver), &[value], activation)?;
+        match property {
+            Some(Property::Virtual {
+                set: Some(disp_id), ..
+            }) => {
+                // todo: handle errors
+                let ClassBoundMethod {
+                    class,
+                    scope,
+                    method,
+                } = self.instance_vtable().get_full_method(disp_id).unwrap();
+                let callee =
+                    FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
 
-            Ok(())
-        } else {
-            receiver.set_property(multiname, value, activation)
+                callee.call(Some(receiver), &[value], activation)?;
+                Ok(())
+            }
+            Some(Property::Slot { .. }) => {
+                receiver.set_property(multiname, value, activation)?;
+                Ok(())
+            }
+            _ => {
+                Err(format!("set_super on {receiver:?} {multiname:?} with {value:?} resolved to unexpected property {property:?}").into())
+            }
         }
     }
 

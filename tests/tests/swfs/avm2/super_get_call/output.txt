@@ -1,0 +1,12 @@
+In subclass myMethod: First arg true
+In superclass myMethod: direct_arg true
+In superclass myMethod: apply_arg true
+Calling subclass getter
+this.myGetter: Value from subclass
+Calling superclass getter
+super.myGetter: Value from superclass
+super.superField: 20
+Calling subclass getter
+obj.myGetter: Value from subclass
+Calling subclass getter with setting_on_this
+Calling superclass getter with setting_on_super
