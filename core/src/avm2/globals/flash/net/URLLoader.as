@@ -1,6 +1,8 @@
 package flash.net {
 	import flash.events.EventDispatcher;
 	import flash.net.URLRequest;
+	import __ruffle__.stub_method;
+
 	public class URLLoader extends EventDispatcher {
 		public var data: *;
 		public var dataFormat: String = "text";
@@ -25,5 +27,9 @@ package flash.net {
 			return this.bytesTotal
 		}
 		public native function load(request:URLRequest):void;
+
+		public function close():void {
+			stub_method("flash.net.URLLoader", "close");
+		}
 	}
 }
