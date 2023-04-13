@@ -1815,7 +1815,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
-        if self.is_editable() {
+        if self.is_editable() || self.is_selectable() {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);
         }
