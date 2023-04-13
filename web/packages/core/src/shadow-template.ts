@@ -284,9 +284,21 @@ ruffleShadowTemplate.innerHTML = `
             height: 1px;
         }
 
-        #modal-area {
+        #save-manager {
             width: 100%;
             height: 100%;
+            position: absolute;
+            user-select: text;
+        }
+        #modal-area {
+            position: fixed;
+            background: white;
+            width: fit-content;
+            padding: 16px;
+            border: 3px solid black;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
 
         #restore-save {
@@ -354,7 +366,7 @@ ruffleShadowTemplate.innerHTML = `
         <div class="loadbar"><div class="loadbar-inner"></div></div>
     </div>
 
-    <dialog id="save-manager">
+    <div id="save-manager" class="hidden">
         <div id="modal-area">
             <span id="close-modal">&times;</span>
             <div class="general-save-options">
@@ -362,6 +374,6 @@ ruffleShadowTemplate.innerHTML = `
             </div>
             <table id="local-saves"></table>
         </div>
-    </dialog>
+    </div>
     <ul id="context-menu"></ul>
 `;

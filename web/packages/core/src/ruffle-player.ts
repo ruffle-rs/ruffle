@@ -117,7 +117,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly unmuteOverlay: HTMLElement;
     private readonly splashScreen: HTMLElement;
     private readonly virtualKeyboard: HTMLInputElement;
-    private readonly saveManager: HTMLDialogElement;
+    private readonly saveManager: HTMLDivElement;
 
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
@@ -224,11 +224,11 @@ export class RufflePlayer extends HTMLElement {
             "input",
             this.virtualKeyboardInput.bind(this)
         );
-        this.saveManager = <HTMLDialogElement>(
+        this.saveManager = <HTMLDivElement>(
             this.shadow.getElementById("save-manager")!
         );
         this.saveManager.addEventListener("click", () =>
-            this.saveManager.close()
+            this.saveManager.classList.add("hidden")
         );
         const modalArea = this.saveManager.querySelector("#modal-area");
         if (modalArea) {
@@ -239,7 +239,7 @@ export class RufflePlayer extends HTMLElement {
         const closeSaveManager = this.saveManager.querySelector("#close-modal");
         if (closeSaveManager) {
             closeSaveManager.addEventListener("click", () =>
-                this.saveManager.close()
+                this.saveManager.classList.add("hidden")
             );
         }
         const backupSaves = this.saveManager.querySelector("#backup-saves");
@@ -942,7 +942,7 @@ export class RufflePlayer extends HTMLElement {
                             : localStorage.removeItem(solKey);
                         this.load(this.loadedConfig);
                         this.populateSaves();
-                        this.saveManager.close();
+                        this.saveManager.classList.add("hidden");
                     }
                     return;
                 }
@@ -950,7 +950,7 @@ export class RufflePlayer extends HTMLElement {
                     ? localStorage.setItem(solKey, b64SolData)
                     : localStorage.removeItem(solKey);
                 this.populateSaves();
-                this.saveManager.close();
+                this.saveManager.classList.add("hidden");
             }
         }
     }
@@ -1084,7 +1084,7 @@ export class RufflePlayer extends HTMLElement {
      * Opens the save manager.
      */
     private openSaveManager(): void {
-        this.saveManager.showModal();
+        this.saveManager.classList.remove("hidden");
     }
 
     /**
