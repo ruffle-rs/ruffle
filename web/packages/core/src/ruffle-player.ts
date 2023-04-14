@@ -148,6 +148,7 @@ export class RufflePlayer extends HTMLElement {
 
     private isExtension = false;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    private pointerDownPosition = { x: -1, y: -1 };
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -253,6 +254,10 @@ export class RufflePlayer extends HTMLElement {
         this.container.addEventListener(
             "pointerdown",
             this.startLongPressTimer.bind(this)
+        );
+        this.container.addEventListener(
+            "pointermove",
+            this.checkLongPressMovement.bind(this)
         );
         this.container.addEventListener(
             "pointerup",
@@ -817,6 +822,21 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Helper function to get the distance between two points
+     *
+     * @param x1 The x coordinate of point 1.
+     * @param y1 The y coordinate of point 1.
+     * @param x2 The x coordinate of point 2.
+     * @param y2 The y coordinate of point 2.
+     * @returns The distance between the two points.
+     */
+    getDistance(x1: number, y1: number, x2: number, y2: number): number {
+        const x = x2 - x1;
+        const y = y2 - y1;
+        return Math.sqrt(x * x + y * y);
+    }
+
+    /**
      * Requests the browser to make this player fullscreen.
      *
      * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
@@ -1240,19 +1260,37 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private clearLongPressTimer(): void {
+        this.pointerDownPosition.x = -1;
+        this.pointerDownPosition.y = -1;
         if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
         }
     }
 
-    private startLongPressTimer(): void {
+    private startLongPressTimer(event: PointerEvent): void {
+        this.pointerDownPosition.x = event.pageX;
+        this.pointerDownPosition.y = event.pageX;
         const longPressTimeout = 800;
         this.clearLongPressTimer();
         this.longPressTimer = setTimeout(
             () => this.clearLongPressTimer(),
             longPressTimeout
         );
+    }
+
+    private checkLongPressMovement(event: PointerEvent): void {
+        if (this.longPressTimer) {
+            const distance = this.getDistance(
+                this.pointerDownPosition.x,
+                this.pointerDownPosition.y,
+                event.pageX,
+                event.pageY
+            );
+            if (distance > 15) {
+                this.clearLongPressTimer();
+            }
+        }
     }
 
     private checkLongPress(event: PointerEvent): void {
