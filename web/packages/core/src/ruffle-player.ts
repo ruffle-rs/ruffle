@@ -104,6 +104,16 @@ function sanitizeParameters(
     return output;
 }
 
+class Point {
+    constructor(public x: number, public y: number) {}
+
+    distanceTo(other: Point) {
+        const dx = other.x - this.x;
+        const dy = other.y - this.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+}
+
 /**
  * The ruffle player element that should be inserted onto the page.
  *
@@ -148,6 +158,8 @@ export class RufflePlayer extends HTMLElement {
 
     private isExtension = false;
     private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+    private pointerDownPosition: Point | null = null;
+    private pointerMoveMaxDistance = 0;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -248,11 +260,15 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
-        window.addEventListener("pointerdown", this.pointerDown.bind(this));
+        window.addEventListener("pointerdown", this.checkIfTouch.bind(this));
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.container.addEventListener(
             "pointerdown",
-            this.startLongPressTimer.bind(this)
+            this.pointerDown.bind(this)
+        );
+        this.container.addEventListener(
+            "pointermove",
+            this.checkLongPressMovement.bind(this)
         );
         this.container.addEventListener(
             "pointerup",
@@ -854,7 +870,7 @@ export class RufflePlayer extends HTMLElement {
         this.instance?.set_fullscreen(this.isFullscreen);
     }
 
-    private pointerDown(event: PointerEvent): void {
+    private checkIfTouch(event: PointerEvent): void {
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
         }
@@ -1241,6 +1257,12 @@ export class RufflePlayer extends HTMLElement {
         return items;
     }
 
+    private pointerDown(event: PointerEvent) {
+        this.pointerDownPosition = new Point(event.pageX, event.pageY);
+        this.pointerMoveMaxDistance = 0;
+        this.startLongPressTimer();
+    }
+
     private clearLongPressTimer(): void {
         if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
@@ -1257,7 +1279,19 @@ export class RufflePlayer extends HTMLElement {
         );
     }
 
+    private checkLongPressMovement(event: PointerEvent): void {
+        if (this.pointerDownPosition !== null) {
+            const currentPosition = new Point(event.pageX, event.pageY);
+            const distance =
+                this.pointerDownPosition.distanceTo(currentPosition);
+            if (distance > this.pointerMoveMaxDistance) {
+                this.pointerMoveMaxDistance = distance;
+            }
+        }
+    }
+
     private checkLongPress(event: PointerEvent): void {
+        const maxAllowedDistance = 15;
         if (this.longPressTimer) {
             this.clearLongPressTimer();
             // The pointerType condition is to ensure right-click does not trigger
@@ -1265,7 +1299,8 @@ export class RufflePlayer extends HTMLElement {
             // before contextMenuSupported is set.
         } else if (
             !this.contextMenuSupported &&
-            event.pointerType !== "mouse"
+            event.pointerType !== "mouse" &&
+            this.pointerMoveMaxDistance < maxAllowedDistance
         ) {
             this.showContextMenu(event);
         }
