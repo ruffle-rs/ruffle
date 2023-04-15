@@ -1727,12 +1727,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(body) = method.body() {
             let ex = &body.exceptions[index.0 as usize];
             let vname = ex.variable_name;
-            let qname = QName::from_abc_multiname(
-                method.translation_unit(),
-                vname,
-                self.context.gc_context,
-            )?;
-            let so = ScriptObject::catch_scope(self.context.gc_context, &qname);
+            let so = if vname.0 == 0 {
+                // for `finally` scopes, FP just creates a bare object.
+                self.avm2().classes().object.construct(self, &[])?
+            } else {
+                let qname = QName::from_abc_multiname(
+                    method.translation_unit(),
+                    vname,
+                    self.context.gc_context,
+                )?;
+                ScriptObject::catch_scope(self.context.gc_context, &qname)
+            };
             self.push_stack(so);
         }
 
