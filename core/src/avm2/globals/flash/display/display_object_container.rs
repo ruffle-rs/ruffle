@@ -1,6 +1,7 @@
 //! `flash.display.DisplayObjectContainer` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::argument_error;
 use crate::avm2::error::range_error;
 use crate::avm2::globals::flash::display::sprite::init_empty_sprite;
 use crate::avm2::object::{Object, TObject};
@@ -72,6 +73,7 @@ fn validate_add_operation<'gc>(
 ///
 ///  * The child is not a child of the parent
 fn validate_remove_operation<'gc>(
+    activation: &mut Activation<'_, 'gc>,
     old_parent: DisplayObject<'gc>,
     proposed_child: DisplayObject<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -85,7 +87,11 @@ fn validate_remove_operation<'gc>(
         }
     }
 
-    Err("ArgumentError: Cannot remove object from display list it is not a child of.".into())
+    Err(Error::AvmError(argument_error(
+        activation,
+        "The supplied DisplayObject must be a child of the caller.",
+        2025,
+    )?))
 }
 
 /// Remove an element from it's parent display list.
@@ -228,7 +234,7 @@ pub fn remove_child<'gc>(
             .as_display_object()
             .ok_or("ArgumentError: Child not a valid display object")?;
 
-        validate_remove_operation(parent, child)?;
+        validate_remove_operation(activation, parent, child)?;
         remove_child_from_displaylist(&mut activation.context, child);
 
         return Ok(child.object2());
