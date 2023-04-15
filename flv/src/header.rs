@@ -5,8 +5,8 @@ use std::io::{Seek, SeekFrom};
 bitflags! {
     #[derive(PartialEq, Eq, Debug, Clone, Copy)]
     pub struct TypeFlags: u8 {
-        const HAS_AUDIO = 0b1000_0000;
-        const HAS_VIDEO = 0b0010_0000;
+        const HAS_AUDIO = 0b0000_0001;
+        const HAS_VIDEO = 0b0000_0100;
     }
 }
 
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn read_header() {
-        let data = [0x46, 0x4C, 0x56, 0x01, 0xA0, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x46, 0x4C, 0x56, 0x01, 0x05, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
