@@ -1,0 +1,12 @@
+[package]
+name = "ruffle_gc_extra"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+description = "Extra utilities for working with gc_arena types."
+
+[dependencies]
+gc-arena = { workspace = true }

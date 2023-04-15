@@ -3711,6 +3711,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_gc_extra"
+version = "0.1.0"
+dependencies = [
+ "gc-arena",
+]
+
+[[package]]
 name = "ruffle_input_format"
 version = "0.1.0"
 dependencies = [

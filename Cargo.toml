@@ -4,10 +4,12 @@ members = [
     "core/macros",
     "core/build_playerglobal",
     "desktop",
+    "gc_extra",
     "swf",
     "web",
     "web/packages/extension/safari",
     "wstr",
+
     "scanner",
     "exporter",
 
