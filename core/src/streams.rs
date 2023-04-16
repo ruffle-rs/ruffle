@@ -126,6 +126,14 @@ pub struct NetStreamData {
     /// The buffer position that we are currently seeking to.
     offset: usize,
 
+    /// The buffer position for processing incoming data.
+    ///
+    /// Certain data, such as the header or metadata of an FLV, should only
+    /// ever be processed one time, even if we seek backwards to it later on.
+    /// We call this data "preloaded", whether or not there is actually a
+    /// separate preload step for that given format.
+    preload_offset: usize,
+
     /// The current stream type, if known.
     stream_type: Option<NetStreamType>,
 
@@ -140,6 +148,7 @@ impl<'gc> NetStream<'gc> {
             NetStreamData {
                 buffer: Vec::new(),
                 offset: 0,
+                preload_offset: 0,
                 stream_type: None,
                 stream_time: 0.0,
             },
@@ -196,23 +205,37 @@ impl<'gc> NetStream<'gc> {
     pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
         let mut write = self.0.write(context.gc_context);
 
+        // First, try to sniff the stream's container format from headers.
         if write.stream_type.is_none() {
+            // A nonzero preload offset indicates that we tried and failed to
+            // sniff the container format, so in that case do not process the
+            // stream anymore.
+            if write.preload_offset > 0 {
+                return;
+            }
+
             match write.buffer.get(0..3) {
                 Some([0x46, 0x4C, 0x56]) => {
                     let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
                     match FlvHeader::parse(&mut reader) {
                         Ok(header) => {
                             write.offset = reader.into_parts().1;
+                            write.preload_offset = write.offset;
                             write.stream_type = Some(NetStreamType::Flv(header));
                         }
                         Err(FlvError::EndOfData) => return,
                         Err(e) => {
+                            //TODO: Fire an error event to AS & stop playing too
                             tracing::error!("FLV header parsing failed: {}", e);
+                            write.preload_offset = 3;
                             return;
                         }
                     }
                 }
-                _ => return,
+                _ => {
+                    write.preload_offset = 3;
+                    return;
+                }
             }
         }
 
