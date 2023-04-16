@@ -143,11 +143,11 @@ package flash.display {
         public native function get showDefaultContextMenu():Boolean;
         public native function set showDefaultContextMenu(value:Boolean):void;
 
-        public native function get stageWidth():Number;
-        public native function set stageWidth(value:Number):void;
+        public native function get stageWidth():int;
+        public native function set stageWidth(value:int):void;
 
-        public native function get stageHeight():Number;
-        public native function set stageHeight(value:Number):void;
+        public native function get stageHeight():int;
+        public native function set stageHeight(value:int):void;
 
         public native function get stageFocusRect():Boolean;
         public native function set stageFocusRect(value:Boolean):void;
