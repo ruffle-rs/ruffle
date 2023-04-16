@@ -7,9 +7,11 @@ use crate::string::AvmString;
 use flv_rs::{
     AudioData as FlvAudioData, Error as FlvError, FlvReader, Header as FlvHeader,
     ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
-    VideoData as FlvVideoData,
+    VideoData as FlvVideoData, VideoPacket as FlvVideoPacket,
 };
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::bitmap::BitmapInfo;
+use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use ruffle_wstr::WStr;
 use std::cmp::max;
@@ -123,6 +125,13 @@ pub enum NetStreamType {
     Flv {
         header: FlvHeader,
         stream: Option<VideoStreamHandle>,
+
+        /// The index of the last processed frame.
+        ///
+        /// FLV does not store this information directly and we are not holding
+        /// onto a table of data buffers like `Video` does, so we must maintain
+        /// frame IDs ourselves for various API related purposes.
+        frame_id: u32,
     },
 }
 
@@ -137,6 +146,10 @@ pub struct NetStreamData {
 
     /// The buffer position for processing incoming data.
     ///
+    /// This points to the first byte that the stream has *never* processed
+    /// before in the buffer. It should always be greater than or equal to the
+    /// offset position.
+    ///
     /// Certain data, such as the header or metadata of an FLV, should only
     /// ever be processed one time, even if we seek backwards to it later on.
     /// We call this data "preloaded", whether or not there is actually a
@@ -148,6 +161,12 @@ pub struct NetStreamData {
 
     /// The current seek offset in the stream.
     stream_time: f64,
+
+    /// The last decoded bitmap.
+    ///
+    /// Any `Video`s on the stage will display the bitmap here when attached to
+    /// this `NetStream`.
+    last_decoded_bitmap: Option<BitmapInfo>,
 }
 
 impl<'gc> NetStream<'gc> {
@@ -160,6 +179,7 @@ impl<'gc> NetStream<'gc> {
                 preload_offset: 0,
                 stream_type: None,
                 stream_time: 0.0,
+                last_decoded_bitmap: None,
             },
         ))
     }
@@ -233,6 +253,7 @@ impl<'gc> NetStream<'gc> {
                             write.stream_type = Some(NetStreamType::Flv {
                                 header,
                                 stream: None,
+                                frame_id: 0,
                             });
                         }
                         Err(FlvError::EndOfData) => return,
@@ -299,7 +320,92 @@ impl<'gc> NetStream<'gc> {
                         codec_id,
                         data,
                     }) => {
-                        tracing::warn!("Stub: Stream video processing");
+                        let (video_handle, frame_id) = match write.stream_type {
+                            Some(NetStreamType::Flv {
+                                stream, frame_id, ..
+                            }) => (stream, frame_id),
+                            _ => unreachable!(),
+                        };
+                        let codec = VideoCodec::from_u8(codec_id as u8);
+
+                        match (video_handle, codec, data) {
+                            (Some(video_handle), Some(codec), FlvVideoPacket::Data(data)) => {
+                                // NOTE: Currently, no implementation of the decoder backend actually requires
+                                if tag_needs_preloading {
+                                    let encoded_frame = EncodedFrame {
+                                        codec,
+                                        data, //TODO: ScreenVideo's decoder wants the FLV header bytes
+                                        frame_id,
+                                    };
+
+                                    if let Err(e) = context
+                                        .video
+                                        .preload_video_stream_frame(video_handle, encoded_frame)
+                                    {
+                                        tracing::error!(
+                                            "Preloading video frame {} failed: {}",
+                                            frame_id,
+                                            e
+                                        );
+                                    }
+                                }
+
+                                let encoded_frame = EncodedFrame {
+                                    codec,
+                                    data, //TODO: ScreenVideo's decoder wants the FLV header bytes
+                                    frame_id,
+                                };
+
+                                match context.video.decode_video_stream_frame(
+                                    video_handle,
+                                    encoded_frame,
+                                    context.renderer,
+                                ) {
+                                    Ok(bitmap_info) => {
+                                        let (_, position) = reader.into_parts();
+                                        write.last_decoded_bitmap = Some(bitmap_info);
+                                        reader = FlvReader::from_parts(&write.buffer, position);
+                                    }
+                                    Err(e) => {
+                                        tracing::error!(
+                                            "Decoding video frame {} failed: {}",
+                                            frame_id,
+                                            e
+                                        );
+                                    }
+                                }
+                            }
+                            (_, _, FlvVideoPacket::CommandFrame(_command)) => {
+                                tracing::warn!("Stub: FLV command frame processing")
+                            }
+                            (_, _, FlvVideoPacket::AvcSequenceHeader(_data)) => {
+                                tracing::warn!("Stub: FLV AVC/H.264 Sequence Header processing")
+                            }
+                            (_, _, FlvVideoPacket::AvcNalu { .. }) => {
+                                tracing::warn!("Stub: FLV AVC/H.264 NALU processing")
+                            }
+                            (_, _, FlvVideoPacket::AvcEndOfSequence) => {
+                                tracing::warn!("Stub: FLV AVC/H.264 End of Sequence processing")
+                            }
+                            (_, None, _) => {
+                                tracing::error!(
+                                    "FLV video tag has invalid codec id {}",
+                                    codec_id as u8
+                                )
+                            }
+                            (None, _, _) => tracing::error!(
+                                "Cannot decode FLV video tag before metadata is loaded"
+                            ),
+                        }
+
+                        let (_, position) = reader.into_parts();
+                        match &mut write.stream_type {
+                            Some(NetStreamType::Flv {
+                                ref mut frame_id, ..
+                            }) => *frame_id += 1,
+                            _ => unreachable!(),
+                        };
+                        reader = FlvReader::from_parts(&write.buffer, position);
                     }
                     FlvTagData::Script(FlvScriptData(vars)) => {
                         let has_stream_already = match write.stream_type {
