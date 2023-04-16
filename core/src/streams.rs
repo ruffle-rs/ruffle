@@ -4,6 +4,10 @@ use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
+use flv_rs::{
+    AudioData as FlvAudioData, Error as FlvError, FlvReader, Header as FlvHeader,
+    ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, VideoData as FlvVideoData,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Manager for all media streams.
@@ -71,7 +75,12 @@ impl<'gc> StreamManager<'gc> {
     /// support video framerates separate from the Stage frame rate.
     ///
     /// This does not borrow `&mut self` as we need the `UpdateContext`, too.
-    pub fn tick(_context: &mut UpdateContext<'_, 'gc>, _dt: f64) {}
+    pub fn tick(context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+        let streams = context.stream_manager.playing_streams.clone();
+        for stream in streams {
+            stream.tick(context, dt)
+        }
+    }
 }
 
 /// A stream representing download of some (audiovisual) data.
@@ -100,18 +109,40 @@ impl<'gc> PartialEq for NetStream<'gc> {
 
 impl<'gc> Eq for NetStream<'gc> {}
 
+/// The current type of the data in the stream buffer.
+#[derive(Clone, Debug, Collect)]
+#[collect(require_static)]
+pub enum NetStreamType {
+    /// The stream is an FLV.
+    Flv(FlvHeader),
+}
+
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct NetStreamData {
     /// All data currently loaded in the stream.
     buffer: Vec<u8>,
+
+    /// The buffer position that we are currently seeking to.
+    offset: usize,
+
+    /// The current stream type, if known.
+    stream_type: Option<NetStreamType>,
+
+    /// The current seek offset in the stream.
+    stream_time: f64,
 }
 
 impl<'gc> NetStream<'gc> {
     pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
         Self(GcCell::allocate(
             gc_context,
-            NetStreamData { buffer: Vec::new() },
+            NetStreamData {
+                buffer: Vec::new(),
+                offset: 0,
+                stream_type: None,
+                stream_time: 0.0,
+            },
         ))
     }
 
@@ -160,5 +191,87 @@ impl<'gc> NetStream<'gc> {
     /// Resume stream playback if paused, pause otherwise.
     pub fn toggle_paused(self, context: &mut UpdateContext<'_, 'gc>) {
         StreamManager::toggle_paused(context, self);
+    }
+
+    pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+        let mut write = self.0.write(context.gc_context);
+
+        if write.stream_type.is_none() {
+            match write.buffer.get(0..3) {
+                Some([0x46, 0x4C, 0x56]) => {
+                    let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
+                    match FlvHeader::parse(&mut reader) {
+                        Ok(header) => {
+                            write.offset = reader.into_parts().1;
+                            write.stream_type = Some(NetStreamType::Flv(header));
+                        }
+                        Err(FlvError::EndOfData) => return,
+                        Err(e) => {
+                            tracing::error!("FLV header parsing failed: {}", e);
+                            return;
+                        }
+                    }
+                }
+                _ => return,
+            }
+        }
+
+        let end_time = write.stream_time + dt;
+
+        //At this point we should know our stream type.
+        match write.stream_type.as_ref().expect("known stream type") {
+            NetStreamType::Flv(header) => {
+                let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
+
+                loop {
+                    let tag = FlvTag::parse(&mut reader);
+                    if let Err(e) = tag {
+                        //Corrupt tag or out of data
+                        if !matches!(e, FlvError::EndOfData) {
+                            //TODO: Stop the stream so we don't repeatedly yield the same error
+                            //and fire an error event to AS
+                            tracing::error!("FLV tag parsing failed: {}", e);
+                        }
+
+                        break;
+                    }
+
+                    let tag = tag.expect("valid tag");
+                    if tag.timestamp as f64 >= end_time {
+                        //All tags processed
+                        if let Err(e) = FlvTag::skip_back(&mut reader) {
+                            tracing::error!("FLV skip back failed: {}", e);
+                        }
+
+                        break;
+                    }
+
+                    match tag.data {
+                        FlvTagData::Audio(FlvAudioData {
+                            format,
+                            rate,
+                            size,
+                            sound_type,
+                            data,
+                        }) => {
+                            tracing::warn!("Stub: Stream audio processing");
+                        }
+                        FlvTagData::Video(FlvVideoData {
+                            frame_type,
+                            codec_id,
+                            data,
+                        }) => {
+                            tracing::warn!("Stub: Stream video processing");
+                        }
+                        FlvTagData::Script(FlvScriptData(vars)) => {
+                            tracing::warn!("Stub: Stream data processing");
+                        }
+                        FlvTagData::Invalid(e) => {
+                            tracing::error!("FLV data parsing failed: {}", e)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

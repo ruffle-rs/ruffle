@@ -3738,6 +3738,7 @@ dependencies = [
  "flash-lso",
  "flate2",
  "fluent-templates",
+ "flv-rs",
  "fnv",
  "futures",
  "gc-arena",
