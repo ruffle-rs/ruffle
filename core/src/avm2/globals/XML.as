@@ -141,7 +141,7 @@ package {
             return self.AS3::text();
         };
         
-        prototype.normalize = function():XMLList {
+        prototype.normalize = function():XML {
             var self:XML = this;
             return self.AS3::normalize();
         };
