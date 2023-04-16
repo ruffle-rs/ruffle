@@ -12,6 +12,7 @@ use flv_rs::{
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_video::VideoStreamHandle;
 use ruffle_wstr::WStr;
+use std::cmp::max;
 use std::io::Seek;
 use swf::{VideoCodec, VideoDeblocking};
 
@@ -393,6 +394,13 @@ impl<'gc> NetStream<'gc> {
                         tracing::error!("FLV data parsing failed: {}", e)
                     }
                 }
+
+                // We cannot mutate stream state while also holding an active
+                // reader or any tags.
+                let (_, position) = reader.into_parts();
+                write.offset = position;
+                write.preload_offset = max(write.offset, write.preload_offset);
+                reader = FlvReader::from_parts(&write.buffer, position);
             }
         }
     }
