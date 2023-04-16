@@ -6,9 +6,14 @@ use crate::loader::Error;
 use crate::string::AvmString;
 use flv_rs::{
     AudioData as FlvAudioData, Error as FlvError, FlvReader, Header as FlvHeader,
-    ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, VideoData as FlvVideoData,
+    ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
+    VideoData as FlvVideoData,
 };
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_video::VideoStreamHandle;
+use ruffle_wstr::WStr;
+use std::io::Seek;
+use swf::{VideoCodec, VideoDeblocking};
 
 /// Manager for all media streams.
 ///
@@ -114,7 +119,10 @@ impl<'gc> Eq for NetStream<'gc> {}
 #[collect(require_static)]
 pub enum NetStreamType {
     /// The stream is an FLV.
-    Flv(FlvHeader),
+    Flv {
+        header: FlvHeader,
+        stream: Option<VideoStreamHandle>,
+    },
 }
 
 #[derive(Clone, Debug, Collect)]
@@ -221,7 +229,10 @@ impl<'gc> NetStream<'gc> {
                         Ok(header) => {
                             write.offset = reader.into_parts().1;
                             write.preload_offset = write.offset;
-                            write.stream_type = Some(NetStreamType::Flv(header));
+                            write.stream_type = Some(NetStreamType::Flv {
+                                header,
+                                stream: None,
+                            });
                         }
                         Err(FlvError::EndOfData) => return,
                         Err(e) => {
@@ -242,56 +253,144 @@ impl<'gc> NetStream<'gc> {
         let end_time = write.stream_time + dt;
 
         //At this point we should know our stream type.
-        match write.stream_type.as_ref().expect("known stream type") {
-            NetStreamType::Flv(header) => {
-                let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
+        if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
+            let mut reader = FlvReader::from_parts(&write.buffer, write.offset);
 
-                loop {
-                    let tag = FlvTag::parse(&mut reader);
-                    if let Err(e) = tag {
-                        //Corrupt tag or out of data
-                        if !matches!(e, FlvError::EndOfData) {
-                            //TODO: Stop the stream so we don't repeatedly yield the same error
-                            //and fire an error event to AS
-                            tracing::error!("FLV tag parsing failed: {}", e);
-                        }
-
-                        break;
+            loop {
+                let tag = FlvTag::parse(&mut reader);
+                if let Err(e) = tag {
+                    //Corrupt tag or out of data
+                    if !matches!(e, FlvError::EndOfData) {
+                        //TODO: Stop the stream so we don't repeatedly yield the same error
+                        //and fire an error event to AS
+                        tracing::error!("FLV tag parsing failed: {}", e);
                     }
 
-                    let tag = tag.expect("valid tag");
-                    if tag.timestamp as f64 >= end_time {
-                        //All tags processed
-                        if let Err(e) = FlvTag::skip_back(&mut reader) {
-                            tracing::error!("FLV skip back failed: {}", e);
-                        }
+                    break;
+                }
 
-                        break;
+                let tag = tag.expect("valid tag");
+                if tag.timestamp as f64 >= end_time {
+                    //All tags processed
+                    if let Err(e) = FlvTag::skip_back(&mut reader) {
+                        tracing::error!("FLV skip back failed: {}", e);
                     }
 
-                    match tag.data {
-                        FlvTagData::Audio(FlvAudioData {
-                            format,
-                            rate,
-                            size,
-                            sound_type,
-                            data,
-                        }) => {
-                            tracing::warn!("Stub: Stream audio processing");
+                    break;
+                }
+
+                let tag_needs_preloading = reader.stream_position().expect("valid position")
+                    as usize
+                    >= write.preload_offset;
+
+                match tag.data {
+                    FlvTagData::Audio(FlvAudioData {
+                        format,
+                        rate,
+                        size,
+                        sound_type,
+                        data,
+                    }) => {
+                        tracing::warn!("Stub: Stream audio processing");
+                    }
+                    FlvTagData::Video(FlvVideoData {
+                        frame_type,
+                        codec_id,
+                        data,
+                    }) => {
+                        tracing::warn!("Stub: Stream video processing");
+                    }
+                    FlvTagData::Script(FlvScriptData(vars)) => {
+                        let has_stream_already = match write.stream_type {
+                            Some(NetStreamType::Flv { stream, .. }) => stream.is_some(),
+                            _ => unreachable!(),
+                        };
+
+                        let mut width = None;
+                        let mut height = None;
+                        let mut video_codec_id = None;
+                        let mut frame_rate = None;
+                        let mut duration = None;
+
+                        for var in vars {
+                            if var.name == b"onMetaData" && !has_stream_already {
+                                match var.data {
+                                    FlvValue::Object(subvars) => {
+                                        for subvar in subvars {
+                                            match (subvar.name, subvar.data) {
+                                                (b"width", FlvValue::Number(val)) => {
+                                                    width = Some(val)
+                                                }
+                                                (b"height", FlvValue::Number(val)) => {
+                                                    height = Some(val)
+                                                }
+                                                (b"videocodecid", FlvValue::Number(val)) => {
+                                                    video_codec_id = Some(val)
+                                                }
+                                                (b"framerate", FlvValue::Number(val)) => {
+                                                    frame_rate = Some(val)
+                                                }
+                                                (b"duration", FlvValue::Number(val)) => {
+                                                    duration = Some(val)
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                    }
+                                    _ => tracing::error!("Invalid FLV metadata tag!"),
+                                }
+                            } else {
+                                tracing::warn!(
+                                    "Stub: Stream data processing (name: {})",
+                                    WStr::from_units(var.name)
+                                );
+                            }
                         }
-                        FlvTagData::Video(FlvVideoData {
-                            frame_type,
-                            codec_id,
-                            data,
-                        }) => {
-                            tracing::warn!("Stub: Stream video processing");
+
+                        let (_, position) = reader.into_parts();
+
+                        if tag_needs_preloading {
+                            if let (
+                                Some(width),
+                                Some(height),
+                                Some(video_codec_id),
+                                Some(frame_rate),
+                                Some(duration),
+                            ) = (width, height, video_codec_id, frame_rate, duration)
+                            {
+                                let num_frames = frame_rate * duration;
+                                if let Some(video_codec) = VideoCodec::from_u8(video_codec_id as u8)
+                                {
+                                    match context.video.register_video_stream(
+                                        num_frames as u32,
+                                        (width as u16, height as u16),
+                                        video_codec,
+                                        VideoDeblocking::UseVideoPacketValue,
+                                    ) {
+                                        Ok(stream_handle) => match &mut write.stream_type {
+                                            Some(NetStreamType::Flv { stream, .. }) => {
+                                                *stream = Some(stream_handle)
+                                            }
+                                            _ => unreachable!(),
+                                        },
+                                        Err(e) => tracing::error!(
+                                            "Got error when registring FLV video stream: {}",
+                                            e
+                                        ),
+                                    }
+                                } else {
+                                    tracing::error!(
+                                        "FLV video stream has invalid codec ID {}",
+                                        video_codec_id
+                                    );
+                                }
+                            }
                         }
-                        FlvTagData::Script(FlvScriptData(vars)) => {
-                            tracing::warn!("Stub: Stream data processing");
-                        }
-                        FlvTagData::Invalid(e) => {
-                            tracing::error!("FLV data parsing failed: {}", e)
-                        }
+
+                        reader = FlvReader::from_parts(&write.buffer, position);
+                    }
+                    FlvTagData::Invalid(e) => {
+                        tracing::error!("FLV data parsing failed: {}", e)
                     }
                 }
             }
