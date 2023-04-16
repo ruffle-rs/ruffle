@@ -11,6 +11,9 @@
     "save_settings": {
         "message": "儲存設定"
     },
+    "settings_autostart": {
+        "message": "自動播放(無啟動畫面)"
+    },
     "settings_ruffle_enable": {
         "message": "使用 Ruffle 播放 Flash 内容"
     },
@@ -30,7 +33,7 @@
         "message": "設定完成"
     },
     "settings_show_swf_download": {
-        "message": "顯示下載SWF檔案 (右鍵選單)"
+        "message": "顯示下載SWF檔案(右鍵選單)"
     },
     "settings_warn_on_unsupported_content": {
         "message": "警告未支援項目"
