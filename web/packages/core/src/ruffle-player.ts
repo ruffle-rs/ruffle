@@ -1145,7 +1145,13 @@ export class RufflePlayer extends HTMLElement {
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);
-        const items = [];
+        const items: Array<ContextMenuItem | null> = [];
+        const addSeparator = () => {
+            // Don't start with or duplicate separators.
+            if (items.length > 0 && items.at(-1) !== null) {
+                items.push(null);
+            }
+        };
 
         if (this.instance) {
             const customItems: {
@@ -1155,9 +1161,8 @@ export class RufflePlayer extends HTMLElement {
                 readonly separatorBefore: boolean;
             }[] = this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
-                // Don't start with separators.
-                if (item.separatorBefore && items.length > 0) {
-                    items.push(null);
+                if (item.separatorBefore) {
+                    addSeparator();
                 }
                 items.push({
                     // TODO: better checkboxes
@@ -1169,10 +1174,7 @@ export class RufflePlayer extends HTMLElement {
                 });
             });
 
-            // Don't start with separators.
-            if (items.length > 0) {
-                items.push(null);
-            }
+            addSeparator();
         }
 
         if (this.fullscreenEnabled) {
@@ -1195,7 +1197,7 @@ export class RufflePlayer extends HTMLElement {
             this.loadedConfig &&
             this.loadedConfig.showSwfDownload === true
         ) {
-            items.push(null);
+            addSeparator();
             items.push({
                 text: "Download .swf",
                 onClick: this.downloadSwf.bind(this),
@@ -1218,7 +1220,7 @@ export class RufflePlayer extends HTMLElement {
             });
         }
 
-        items.push(null);
+        addSeparator();
 
         const extensionString = this.isExtension ? "extension" : "";
         items.push({
@@ -1230,7 +1232,7 @@ export class RufflePlayer extends HTMLElement {
         // Give option to disable context menu when touch support is being used
         // to avoid a long press triggering the context menu. (#1972)
         if (this.isTouch) {
-            items.push(null);
+            addSeparator();
             items.push({
                 text: "Hide this menu",
                 onClick: () => (this.contextMenuForceDisabled = true),
