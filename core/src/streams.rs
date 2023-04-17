@@ -510,4 +510,8 @@ impl<'gc> NetStream<'gc> {
             }
         }
     }
+
+    pub fn last_decoded_bitmap(self) -> Option<BitmapInfo> {
+        self.0.read().last_decoded_bitmap.clone()
+    }
 }
