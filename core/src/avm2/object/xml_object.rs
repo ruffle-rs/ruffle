@@ -95,7 +95,8 @@ impl<'gc> XmlObject<'gc> {
             return Ok(true);
         }
 
-        Err("Full XML abstract equality not yet implemented".into())
+        let node = other.node();
+        Ok(self.node().equals(&node))
     }
 
     // Implements "The Abstract Equality Comparison Algorithm" as defined
