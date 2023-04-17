@@ -252,6 +252,14 @@ impl CommandTarget {
         };
 
         if let RenderTargetMode::ExistingTexture(texture) = &render_target_mode {
+            if let Some(resolve_buffer) = &resolve_buffer {
+                encoder.copy_texture_to_texture(
+                    texture.as_image_copy(),
+                    resolve_buffer.texture().as_image_copy(),
+                    size,
+                );
+            }
+
             if sample_count > 1 {
                 // Both our frame buffer and resolve buffer need to start out
                 // in the same state, so copy our existing texture to the freshly
