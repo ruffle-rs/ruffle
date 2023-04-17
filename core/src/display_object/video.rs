@@ -53,10 +53,6 @@ pub struct VideoData<'gc> {
     /// The decoder stream that this video source is associated to.
     stream: VideoStream,
 
-    /// The last decoded frame in the video stream.
-    #[collect(require_static)]
-    decoded_frame: Option<(u32, BitmapInfo)>,
-
     /// AVM representation of this video player.
     object: Option<AvmObject<'gc>>,
 
@@ -100,6 +96,10 @@ pub enum VideoSource<'gc> {
         /// Each frame consists of a start and end parameter which can be used
         /// to reconstruct a reference to the embedded bitstream.
         frames: BTreeMap<u32, (usize, usize)>,
+
+        /// The last decoded frame in the video stream.
+        #[collect(require_static)]
+        decoded_frame: Option<(u32, BitmapInfo)>,
     },
     /// An attached NetStream.
     NetStream {
@@ -108,13 +108,6 @@ pub enum VideoSource<'gc> {
 
         /// The stream the video is downloaded from.
         stream: NetStream<'gc>,
-
-        /// The number of frames in the source media, if known.
-        num_frames: Option<usize>,
-
-        /// The size of the video, if known.
-        #[collect(require_static)]
-        size: Option<Rectangle<Twips>>,
     },
 }
 
@@ -131,6 +124,7 @@ impl<'gc> Video<'gc> {
                 movie,
                 streamdef,
                 frames: BTreeMap::new(),
+                decoded_frame: None,
             },
         );
 
@@ -140,7 +134,6 @@ impl<'gc> Video<'gc> {
                 base: Default::default(),
                 source,
                 stream: VideoStream::Uninstantiated(0),
-                decoded_frame: None,
                 object: None,
                 keyframes: BTreeSet::new(),
             },
@@ -154,12 +147,7 @@ impl<'gc> Video<'gc> {
         let movie = self.movie();
         let mut video = self.0.write(context.gc_context);
 
-        *video.source.write(context.gc_context) = VideoSource::NetStream {
-            movie,
-            stream,
-            num_frames: None,
-            size: None,
-        };
+        *video.source.write(context.gc_context) = VideoSource::NetStream { movie, stream };
 
         video.stream = VideoStream::Uninstantiated(0);
         video.keyframes = BTreeSet::new();
@@ -177,11 +165,7 @@ impl<'gc> Video<'gc> {
             .write(context.gc_context))
         .borrow_mut()
         {
-            VideoSource::Swf {
-                movie,
-                streamdef: _streamdef,
-                frames,
-            } => {
+            VideoSource::Swf { movie, frames, .. } => {
                 let subslice = SwfSlice::from(movie.clone()).to_unbounded_subslice(tag.data);
 
                 if frames.contains_key(&tag.frame_num.into()) {
@@ -201,6 +185,9 @@ impl<'gc> Video<'gc> {
     /// snapping it to the last independently seekable frame. Then, all frames
     /// from that keyframe up to the (wrapped) requested frame are decoded in
     /// order. This matches Flash Player behavior.
+    ///
+    /// `seek` is only called when processing `PlaceObject` tags involving this
+    /// Video. It is a no-op for Videos that are connected to a `NetStream`.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, mut frame_id: u32) {
         // Technically we might not need to invalidate...
         // but if you're caching a video, this is the least of the efficiency concerns
@@ -216,20 +203,22 @@ impl<'gc> Video<'gc> {
             return;
         };
 
-        let num_frames = match &*read.source.read() {
-            VideoSource::Swf { streamdef, .. } => Some(streamdef.num_frames as usize),
-            VideoSource::NetStream { num_frames, .. } => *num_frames,
+        let (num_frames, decoded_frame) = match &*read.source.read() {
+            VideoSource::Swf {
+                streamdef,
+                decoded_frame,
+                ..
+            } => (streamdef.num_frames as usize, decoded_frame.clone()),
+            VideoSource::NetStream { .. } => return,
         };
 
-        if let Some(num_frames) = num_frames {
-            frame_id = if num_frames > 0 {
-                frame_id % num_frames as u32
-            } else {
-                0
-            }
-        }
+        frame_id = if num_frames > 0 {
+            frame_id % num_frames as u32
+        } else {
+            0
+        };
 
-        let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
+        let last_frame = decoded_frame.as_ref().map(|(lf, _)| *lf);
 
         if last_frame == Some(frame_id) {
             return; // we are already there, no-op
@@ -292,6 +281,7 @@ impl<'gc> Video<'gc> {
                 movie,
                 streamdef,
                 frames,
+                decoded_frame,
             } => match frames.get(&frame_id) {
                 Some((slice_start, slice_end)) => {
                     let encframe = EncodedFrame {
@@ -304,7 +294,7 @@ impl<'gc> Video<'gc> {
                         .decode_video_stream_frame(*stream, encframe, context.renderer)
                 }
                 None => {
-                    if let Some((_old_id, old_frame)) = &read.decoded_frame {
+                    if let Some((_old_id, old_frame)) = decoded_frame {
                         Ok(old_frame.clone())
                     } else {
                         Err(Error::SeekingBeforeDecoding(frame_id))
@@ -317,9 +307,10 @@ impl<'gc> Video<'gc> {
         drop(read);
 
         match res {
-            Ok(bitmap) => {
-                self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap));
-            }
+            Ok(bitmap) => match &mut *source.write(context.gc_context) {
+                VideoSource::Swf { decoded_frame, .. } => *decoded_frame = Some((frame_id, bitmap)),
+                VideoSource::NetStream { .. } => unreachable!(),
+            },
             Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }
@@ -366,6 +357,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 streamdef,
                 movie,
                 frames,
+                ..
             } => {
                 let stream = context.video.register_video_stream(
                     streamdef.num_frames.into(),
@@ -475,7 +467,15 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 x_max: Twips::from_pixels_i32(streamdef.width.into()),
                 y_max: Twips::from_pixels_i32(streamdef.height.into()),
             },
-            VideoSource::NetStream { size, .. } => size.clone().unwrap_or_default(),
+            VideoSource::NetStream { stream, .. } => stream
+                .last_decoded_bitmap()
+                .map(|bm| Rectangle {
+                    x_min: Twips::ZERO,
+                    x_max: Twips::from_pixels_i32(bm.width as u32 as i32),
+                    y_min: Twips::ZERO,
+                    y_max: Twips::from_pixels_i32(bm.height as u32 as i32),
+                })
+                .unwrap_or_default(),
         }
     }
 
@@ -489,10 +489,39 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         let read = self.0.read();
 
-        if let Some((_frame_id, ref bitmap)) = read.decoded_frame {
-            let mut transform = context.transform_stack.transform();
-            let bounds = self.self_bounds();
+        let mut transform = context.transform_stack.transform();
+        let bounds = self.self_bounds();
 
+        // TODO: smoothing flag should be a video property
+        let (smoothed_flag, num_frames, version, decoded_frame) = match &*read.source.read() {
+            VideoSource::Swf {
+                streamdef,
+                frames,
+                movie,
+                decoded_frame,
+            } => (
+                streamdef.is_smoothed,
+                Some(frames.len()),
+                movie.version(),
+                decoded_frame.clone().map(|df| df.1),
+            ),
+            VideoSource::NetStream { stream, .. } => (
+                false,
+                None,
+                self.movie().version(),
+                stream.last_decoded_bitmap(),
+            ),
+        };
+
+        let smoothing = match (context.stage.quality(), version) {
+            (StageQuality::Low, _) => false,
+            (_, 8..) => smoothed_flag,
+            (StageQuality::Medium, _) => false,
+            (StageQuality::High, _) => num_frames == Some(1),
+            (_, _) => true,
+        };
+
+        if let Some(bitmap) = decoded_frame {
             // The actual decoded frames might be different in size than the declared
             // bounds of the VideoStream tag, so a final scale adjustment has to be done.
             transform.matrix *= Matrix::scale(
@@ -500,29 +529,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
-            // TODO: smoothing flag should be a video property
-            let (smoothed_flag, num_frames, version) = match &*read.source.read() {
-                VideoSource::Swf {
-                    streamdef,
-                    frames,
-                    movie,
-                } => (streamdef.is_smoothed, frames.len(), movie.version()),
-                VideoSource::NetStream { num_frames, .. } => {
-                    (false, num_frames.unwrap_or(0), self.movie().version())
-                }
-            };
-
-            let smoothing = match (context.stage.quality(), version) {
-                (StageQuality::Low, _) => false,
-                (_, 8..) => smoothed_flag,
-                (StageQuality::Medium, _) => false,
-                (StageQuality::High, _) => num_frames == 1,
-                (_, _) => true,
-            };
-
             context
                 .commands
-                .render_bitmap(bitmap.handle.clone(), transform, smoothing);
+                .render_bitmap(bitmap.handle, transform, smoothing);
         } else {
             tracing::warn!("Video has no decoded frame to render.");
         }
