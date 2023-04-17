@@ -111,6 +111,55 @@ impl<'gc> E4XNode<'gc> {
         ))
     }
 
+    pub fn equals(&self, other: &Self) -> bool {
+        if self.local_name() != other.local_name() {
+            return false;
+        }
+
+        let this = self.0.read();
+        let other = other.0.read();
+
+        match (&this.kind, &other.kind) {
+            (
+                E4XNodeKind::Text(a) | E4XNodeKind::CData(a),
+                E4XNodeKind::Text(b) | E4XNodeKind::CData(b),
+            ) => a == b,
+            (E4XNodeKind::Comment(a), E4XNodeKind::Comment(b)) => a == b,
+            (E4XNodeKind::ProcessingInstruction(a), E4XNodeKind::ProcessingInstruction(b)) => {
+                a == b
+            }
+            (E4XNodeKind::Attribute(a), E4XNodeKind::Attribute(b)) => a == b,
+            (
+                E4XNodeKind::Element {
+                    children: children_a,
+                    attributes: attributes_a,
+                },
+                E4XNodeKind::Element {
+                    children: children_b,
+                    attributes: attributes_b,
+                },
+            ) => {
+                if children_a.len() != children_b.len() || attributes_a.len() != attributes_b.len()
+                {
+                    return false;
+                }
+
+                // The attributes can be in a different order.
+                for attr_a in attributes_a {
+                    if !attributes_b.iter().any(|attr_b| attr_a.equals(attr_b)) {
+                        return false;
+                    }
+                }
+
+                children_a
+                    .iter()
+                    .zip(children_b.iter())
+                    .all(|(a, b)| a.equals(b))
+            }
+            _ => false,
+        }
+    }
+
     pub fn deep_copy(&self, mc: MutationContext<'gc, '_>) -> Self {
         let this = self.0.read();
 
