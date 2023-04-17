@@ -1,65 +1,65 @@
 {
     "settings_ruffle_enable": {
-        "message": "RuffleでFlashコンテンツを再生する"
+      "message": "RuffleでFlashコンテンツを再生する"
     },
     "settings_page_ignore_optout": {
-        "message": "Ruffleを無効にしたサイトでもFlashコンテンツを再生する"
+      "message": "Ruffleを無効にしたサイトでもFlashコンテンツを再生する"
     },
     "settings_ignore_optout": {
-        "message": "Webサイトの互換性に関する警告を無視する"
+      "message": "Webサイトの互換性に関する警告を無視する"
     },
     "settings_show_swf_download": {
-        "message": "SWFのダウンロードをコンテキストメニューに表示する"
+      "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
     "settings_warn_on_unsupported_content": {
-        "message": "サポートされていないコンテンツで警告を表示する"
+      "message": "サポートされていないコンテンツで警告を表示する"
     },
     "settings_log_level": {
-        "message": "ログレベル"
+      "message": "ログレベル"
     },
     "status_init": {
-        "message": "現在のタブを読み込む..."
+      "message": "現在のタブを読み込む..."
     },
     "status_no_tabs": {
-        "message": "アクティブなタブはありません。"
+      "message": "アクティブなタブはありません。"
     },
     "status_tabs_error": {
-        "message": "現在のタブを検索中にエラーが発生しました。"
+      "message": "現在のタブを検索中にエラーが発生しました。"
     },
     "status_message_init": {
-        "message": "現在のタブでのRuffleの状態を確認..."
+      "message": "現在のタブでのRuffleの状態を確認..."
     },
     "status_result_running": {
-        "message": "Ruffleは、現在のタブでFlashコンテンツをロードし、実行しています。"
+      "message": "Ruffleは、現在のタブでFlashコンテンツをロードし、実行しています。"
     },
     "status_result_optout": {
-        "message": "Ruffleは、現在のページと互換性がないとマークされているため、ロードされません。"
+      "message": "Ruffleは、現在のページと互換性がないとマークされているため、ロードされません。"
     },
     "status_result_disabled": {
-        "message": "Ruffleは、ユーザーにより無効化されているため、ロードされません。"
+      "message": "Ruffleは、ユーザーにより無効化されているため、ロードされません。"
     },
     "status_result_error": {
-        "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
+      "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
     },
     "status_result_protected": {
-        "message": "Ruffleは、保護されたブラウザのページをロードできません。"
+      "message": "Ruffleは、保護されたブラウザのページをロードできません。"
     },
     "action_reload": {
-        "message": "タブをリロードして変更を適用する"
+      "message": "タブをリロードして変更を適用する"
     },
     "open_settings_page": {
-        "message": "設定を開く"
+      "message": "設定を開く"
     },
     "settings_page": {
-        "message": "設定"
+      "message": "設定"
     },
     "description": {
-        "message": "Flashを今までの場所に戻します。"
+      "message": "Flashを今までの場所に戻します。"
     },
     "save_settings": {
-        "message": "設定を保存"
+      "message": "設定を保存"
     },
     "settings_saved": {
-        "message": "保存完了"
+      "message": "保存完了"
     }
-}
+  }
