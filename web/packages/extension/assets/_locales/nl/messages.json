@@ -9,7 +9,7 @@
     "message": "Waarschuwingen voor de compatibiliteit van websites negeren"
   },
   "status_init": {
-    "message": "Huidig tabblad lezenâ€¦"
+    "message": "Huidig tabblad lezen…"
   },
   "status_no_tabs": {
     "message": "Er is geen actief tabblad."
@@ -18,7 +18,7 @@
     "message": "Er is een fout opgetreden bij het opzoeken van het huidige tabblad."
   },
   "status_message_init": {
-    "message": "Status van Ruffle op huidig tabblad controlerenâ€¦"
+    "message": "Status van Ruffle op huidig tabblad controleren…"
   },
   "status_result_running": {
     "message": "Ruffle is geladen en Flash-inhoud aan het uitvoeren op het huidige tabblad."
