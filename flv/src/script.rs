@@ -127,6 +127,7 @@ impl<'a> ScriptData<'a> {
     /// No data size parameter is accepted; we parse until we reach an object
     /// terminator, reach invalid data, or we run out of bytes in the reader.
     pub fn parse(reader: &mut FlvReader<'a>) -> Option<Self> {
+        let _trash = reader.read_u8()?;
         let mut vars = vec![];
 
         loop {
@@ -369,7 +370,7 @@ mod tests {
     #[test]
     fn read_scriptdata() {
         let data = [
-            0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01, 0x02, 0x03, 0x05, 0x00, 0x00,
+            0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01, 0x02, 0x03, 0x05, 0x00, 0x00,
             0x09,
         ];
         let mut reader = FlvReader::from_source(&data);
