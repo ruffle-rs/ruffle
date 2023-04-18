@@ -16,7 +16,7 @@ pub fn constructor<'gc>(
         NativeObject::NetStream(netstream),
     );
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
