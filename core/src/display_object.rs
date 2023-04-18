@@ -1391,6 +1391,18 @@ pub trait TDisplayObject<'gc>:
                 }
             }
         }
+
+        if let Some(movie) = self.as_movie_clip() {
+            if let Some(obj) = movie.object2().as_object() {
+                let movieclip_class = context.avm2.classes().movieclip;
+                // It's possible to have a DefineSprite tag with multiple frames, but have
+                // the corresponding `SymbolClass` *not* extend `MovieClip` (e.g. extending `Sprite` directly.)
+                // When this occurs, Flash Player will run the first frame, and immediately stop.
+                if !obj.is_of_type(movieclip_class, context) {
+                    movie.stop(context);
+                }
+            }
+        }
     }
 
     /// Execute all other timeline actions on this object.
