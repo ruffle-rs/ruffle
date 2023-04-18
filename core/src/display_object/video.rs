@@ -1,8 +1,9 @@
 //! Video player display object
 
-use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
+use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject, Value as Avm1Value};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
@@ -592,5 +593,23 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
     fn movie(&self) -> Arc<SwfMovie> {
         self.0.read().movie.clone()
+    }
+
+    fn object(&self) -> Avm1Value<'gc> {
+        self.0
+            .read()
+            .object
+            .and_then(|o| o.as_avm1_object())
+            .map(Avm1Value::from)
+            .unwrap_or(Avm1Value::Undefined)
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .object
+            .and_then(|o| o.as_avm2_object())
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Null)
     }
 }
