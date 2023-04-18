@@ -10,9 +10,6 @@ use crate::context::{GcContext, UpdateContext};
 use bitflags::bitflags;
 use core::fmt;
 
-#[cfg(not(target_family = "wasm"))]
-use {regress::Regex, std::process::Command};
-
 #[cfg(windows)]
 use std::ptr;
 
@@ -67,8 +64,8 @@ impl fmt::Display for SandboxType {
 
 /// Type of the Ruffle player
 pub enum RuffleType {
-    DesktopPlayer,
-    WebPlayer,
+    Desktop,
+    Web,
 }
 
 /// The available host operating systems
@@ -414,8 +411,8 @@ impl SystemProperties {
         }
 
         let player_type = match ruffle_type {
-            RuffleType::DesktopPlayer => PlayerType::StandAlone,
-            RuffleType::WebPlayer => PlayerType::PlugIn,
+            RuffleType::Desktop => PlayerType::StandAlone,
+            RuffleType::Web => PlayerType::PlugIn,
         };
 
         #[cfg(windows)]
@@ -537,52 +534,25 @@ impl SystemProperties {
                     fn match_windows_version(
                         major_version: u64,
                         minor_version: u64,
-                        build_version: u64,
                         server_version: bool,
                     ) -> OperatingSystem {
-                        let version = (major_version, minor_version);
+                        let version = (major_version, minor_version, server_version);
+                        // Not including all Windows versions since Windows versions
+                        // Ruffle can't run on don't need to be detected
                         match version {
-                            (10, 0) | (6, 4) | (6, 3) | (6, 2) => OperatingSystem::Windows8,
-                            (6, 1) => {
-                                if server_version {
-                                    OperatingSystem::WindowsServer2008R2
-                                } else {
-                                    OperatingSystem::Windows7
-                                }
+                            (10, 0, _) | (6, 4, _) | (6, 3, _) | (6, 2, _) => {
+                                OperatingSystem::Windows8
                             }
-                            (6, 0) => {
-                                if server_version {
-                                    OperatingSystem::WindowsServer2008
-                                } else {
-                                    OperatingSystem::WindowsVista
-                                }
-                            }
-                            (5, 2) => {
-                                if server_version {
-                                    OperatingSystem::WindowsServer2003R2
-                                } else {
-                                    OperatingSystem::WindowsXp
-                                }
-                            }
-                            (5, 1) => OperatingSystem::WindowsXp,
-                            (5, 0) => OperatingSystem::Windows2k,
-                            (4, 1) | (4, 10) => OperatingSystem::Windows98,
-                            (4, 0) | (4, 03) => {
-                                // 950 - 1216 are Windows 95, 1381 is Windows NT 4.0
-                                if build_version <= 1300 {
-                                    OperatingSystem::Windows95
-                                } else {
-                                    OperatingSystem::WindowsNt
-                                }
-                            }
-                            (3, 51) | (3, 50) | (3, 5) | (3, 10) | (3, 1) => {
-                                OperatingSystem::WindowsNt
-                            }
+                            (6, 1, true) => OperatingSystem::WindowsServer2008R2,
+                            (6, 1, false) => OperatingSystem::Windows7,
+                            (6, 0, true) => OperatingSystem::WindowsServer2008,
+                            (6, 0, false) => OperatingSystem::WindowsVista,
+                            (5, 2, true) => OperatingSystem::WindowsServer2003R2,
                             _ => OperatingSystem::WindowsUnknown,
                         }
                     }
 
-                    if let os_info::Version::Semantic(major_version, minor_version, build_version) =
+                    if let os_info::Version::Semantic(major_version, minor_version, _) =
                         *os_info::get().version()
                     {
                         let server_version = os_info::get()
@@ -590,58 +560,9 @@ impl SystemProperties {
                             .unwrap_or("")
                             .to_lowercase()
                             .contains("server");
-                        match_windows_version(
-                            major_version,
-                            minor_version,
-                            build_version,
-                            server_version,
-                        )
+                        match_windows_version(major_version, minor_version, server_version)
                     } else {
-                        // Failsafe via shell
-                        let output = Command::new("cmd").arg("ver").output();
-                        let output_string_option = if let Ok(output_value) = output {
-                            Some(String::from_utf8(output_value.stdout).unwrap())
-                        } else {
-                            let output = Command::new("command.com").arg("ver").output();
-                            if let Ok(output_value) = output {
-                                Some(String::from_utf8(output_value.stdout).unwrap())
-                            } else {
-                                None
-                            }
-                        };
-
-                        if let Some(output_string) = output_string_option {
-                            let regex = Regex::new("\\d+(?:\\.\\d+)+").unwrap();
-                            let regex_result = regex.find(&output_string);
-                            if let Some(regex_match) = regex_result {
-                                let range = regex_match.group(0).unwrap();
-                                let version_string = &output_string[range];
-                                let versions_vec: Vec<&str> = version_string.split('.').collect();
-                                let major_version = versions_vec[0].parse::<u64>().unwrap();
-                                let minor_version = versions_vec[1].parse::<u64>().unwrap();
-                                let build_version = if versions_vec.len() > 2 {
-                                    versions_vec[2].parse::<u64>().unwrap()
-                                } else if output_string.contains("NT") {
-                                    1381
-                                } else {
-                                    0
-                                };
-                                let server_version =
-                                    output_string.to_lowercase().contains("server");
-                                match_windows_version(
-                                    major_version,
-                                    minor_version,
-                                    build_version,
-                                    server_version,
-                                )
-                            } else {
-                                // ver is not a valid command
-                                OperatingSystem::WindowsCe
-                            }
-                        } else {
-                            // System has neither Cmd.exe nor Command.com
-                            OperatingSystem::WindowsCe
-                        }
+                        OperatingSystem::WindowsUnknown
                     }
                 }
 

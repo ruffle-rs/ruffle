@@ -2041,9 +2041,9 @@ impl PlayerBuilder {
     #[inline]
     pub fn new() -> Self {
         let ruffle_type = if cfg!(not(target_family = "wasm")) {
-            RuffleType::DesktopPlayer
+            RuffleType::Desktop
         } else {
-            RuffleType::WebPlayer
+            RuffleType::Web
         };
 
         Self {
