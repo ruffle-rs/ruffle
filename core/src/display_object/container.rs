@@ -346,12 +346,11 @@ pub trait TDisplayObjectContainer<'gc>:
         if removed_from_render_list {
             if !context.is_action_script_3() {
                 child.avm1_unload(context);
-            }
+            } else if !matches!(child.object2(), Avm2Value::Null) {
+                //TODO: This is an awful, *awful* hack to deal with the fact
+                //that unloaded AVM1 clips see their parents, while AVM2 clips
+                //don't.
 
-            //TODO: This is an awful, *awful* hack to deal with the fact
-            //that unloaded AVM1 clips see their parents, while AVM2 clips
-            //don't.
-            if !matches!(child.object2(), Avm2Value::Null) {
                 child.set_parent(context, None);
             }
         }
@@ -400,9 +399,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
             if !context.is_action_script_3() {
                 removed.avm1_unload(context);
-            }
-
-            if !matches!(removed.object2(), Avm2Value::Null) {
+            } else if !matches!(removed.object2(), Avm2Value::Null) {
                 removed.set_parent(context, None);
             }
 
