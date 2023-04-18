@@ -68,6 +68,7 @@ pub fn native_instance_init<'gc>(
                     child
                         .base_mut(activation.context.gc_context)
                         .set_skip_next_enter_frame(true);
+                    child.on_construction_complete(&mut activation.context);
                     break;
                 }
                 class_object = class.superclass_object();
