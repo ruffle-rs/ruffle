@@ -1,5 +1,42 @@
 use crate::avm2::{Activation, Error, Object, TObject, Value};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{TDisplayObject, Video};
+
+/// Implements `flash.media.Video`'s `init` method, which is called from the constructor
+pub fn init<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this {
+        activation.super_init(this, &[])?;
+
+        if this.as_display_object().is_none() {
+            let width = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let height = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+
+            let movie = activation.context.swf.clone();
+            let new_do = Video::new(
+                activation.context.gc_context,
+                movie,
+                width,
+                height,
+                Some(this.into()),
+            );
+
+            this.init_display_object(&mut activation.context, new_do.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
 
 pub fn attach_net_stream<'gc>(
     activation: &mut Activation<'_, 'gc>,
