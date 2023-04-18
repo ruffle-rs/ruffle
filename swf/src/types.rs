@@ -1698,6 +1698,7 @@ impl VideoDeblocking {
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum VideoCodec {
+    None = 0,
     H263 = 2,
     ScreenVideo = 3,
     Vp6 = 4,
