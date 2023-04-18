@@ -219,10 +219,13 @@ impl VideoDecoder for Vp6Decoder {
 
         // Adding in the alpha component, if present.
         if self.with_alpha {
+            // Apparently it's possible for the alpha channel to be coded in a different size than the Y channel.
+            let (alpha_width, alpha_height) = frame.get_dimensions(3);
             debug_assert!(frame.get_stride(3) == frame.get_dimensions(3).0);
+
             let alpha_offset = frame.get_offset(3);
-            let alpha = &yuv[alpha_offset..alpha_offset + width * height];
-            let a = crop(alpha, width, bounds);
+            let alpha = &yuv[alpha_offset..alpha_offset + alpha_width * alpha_height];
+            let a = crop(alpha, alpha_width, bounds);
 
             let mut data = y.to_vec();
             data.extend(u);
