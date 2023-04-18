@@ -3,7 +3,7 @@ name: Release to addons.mozilla.org
 on:
   #Run weekly every Friday
   schedule:
-   - cron: "0 0 * * 5"
+   - cron: "0 2 * * 6"
   
   #Allow for manual releases if needed
   workflow_dispatch:
