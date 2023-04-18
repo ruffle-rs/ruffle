@@ -22,7 +22,7 @@ use std::borrow::BorrowMut;
 use std::cell::{Ref, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
-use swf::{CharacterId, DefineVideoStream, VideoFrame};
+use swf::{CharacterId, DefineVideoStream, VideoCodec, VideoFrame};
 
 /// A Video display object is a high-level interface to a video player.
 ///
@@ -388,45 +388,50 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             VideoSource::Swf {
                 streamdef, frames, ..
             } => {
-                let stream = context.video.register_video_stream(
-                    streamdef.num_frames.into(),
-                    (streamdef.width, streamdef.height),
-                    streamdef.codec,
-                    streamdef.deblocking,
-                );
-                if stream.is_err() {
-                    tracing::error!(
-                        "Got error when post-instantiating video: {}",
-                        stream.unwrap_err()
+                if streamdef.codec == VideoCodec::None {
+                    // No codec means no frames.
+                    (None, BTreeSet::new())
+                } else {
+                    let stream = context.video.register_video_stream(
+                        streamdef.num_frames.into(),
+                        (streamdef.width, streamdef.height),
+                        streamdef.codec,
+                        streamdef.deblocking,
                     );
-                    return;
-                }
+                    if stream.is_err() {
+                        tracing::error!(
+                            "Got error when post-instantiating video: {}",
+                            stream.unwrap_err()
+                        );
+                        return;
+                    }
 
-                let stream = stream.unwrap();
-                let mut keyframes = BTreeSet::new();
+                    let stream = stream.unwrap();
+                    let mut keyframes = BTreeSet::new();
 
-                for (frame_id, (frame_start, frame_end)) in frames {
-                    let dep = context.video.preload_video_stream_frame(
-                        stream,
-                        EncodedFrame {
-                            codec: streamdef.codec,
-                            data: &movie.data()[*frame_start..*frame_end],
-                            frame_id: *frame_id,
-                        },
-                    );
+                    for (frame_id, (frame_start, frame_end)) in frames {
+                        let dep = context.video.preload_video_stream_frame(
+                            stream,
+                            EncodedFrame {
+                                codec: streamdef.codec,
+                                data: &movie.data()[*frame_start..*frame_end],
+                                frame_id: *frame_id,
+                            },
+                        );
 
-                    match dep {
-                        Ok(d) if d.is_keyframe() => {
-                            keyframes.insert(*frame_id);
-                        }
-                        Ok(_) => {}
-                        Err(e) => {
-                            tracing::error!("Got error when pre-loading video frame: {}", e);
+                        match dep {
+                            Ok(d) if d.is_keyframe() => {
+                                keyframes.insert(*frame_id);
+                            }
+                            Ok(_) => {}
+                            Err(e) => {
+                                tracing::error!("Got error when pre-loading video frame: {}", e);
+                            }
                         }
                     }
-                }
 
-                (stream, keyframes)
+                    (Some(stream), keyframes)
+                }
             }
             VideoSource::NetStream { .. } => return,
             VideoSource::Unconnected { .. } => return,
@@ -440,7 +445,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             0
         };
 
-        write.stream = VideoStream::Instantiated(stream);
+        if let Some(stream) = stream {
+            write.stream = VideoStream::Instantiated(stream);
+        }
         write.keyframes = keyframes;
 
         if write.object.is_none() && !movie.is_action_script_3() {
@@ -530,7 +537,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         let bounds = self.self_bounds();
 
         // TODO: smoothing flag should be a video property
-        let (smoothed_flag, num_frames, version, decoded_frame) = match &*read.source.read() {
+        let (smoothed_flag, num_frames, version, decoded_frame, codec) = match &*read.source.read()
+        {
             VideoSource::Swf {
                 streamdef,
                 frames,
@@ -540,12 +548,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 Some(frames.len()),
                 read.movie.version(),
                 decoded_frame.clone().map(|df| df.1),
+                Some(streamdef.codec),
             ),
             VideoSource::NetStream { stream, .. } => (
                 false,
                 None,
                 read.movie.version(),
                 stream.last_decoded_bitmap(),
+                None,
             ),
             VideoSource::Unconnected { .. } => return context.transform_stack.pop(),
         };
@@ -569,7 +579,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             context
                 .commands
                 .render_bitmap(bitmap.handle, transform, smoothing);
-        } else {
+        } else if codec != Some(VideoCodec::None) {
             tracing::warn!("Video has no decoded frame to render.");
         }
 
