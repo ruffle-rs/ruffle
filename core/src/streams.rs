@@ -208,9 +208,11 @@ impl<'gc> NetStream<'gc> {
     pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
             let request = Request::get(name.to_string());
-            context
+            let future = context
                 .load_manager
                 .load_netstream(context.player.clone(), self, request);
+
+            context.navigator.spawn_future(future);
         }
 
         StreamManager::ensure_playing(context, self);
