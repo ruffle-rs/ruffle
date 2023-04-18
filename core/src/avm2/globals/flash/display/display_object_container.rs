@@ -173,7 +173,7 @@ pub fn add_child<'gc>(
             let child = args.get_object(activation, 0, "child")?;
             if child.as_display_object().is_none() {
                 let sprite = activation.avm2().classes().sprite;
-                if child.is_of_type(sprite, activation) {
+                if child.is_of_type(sprite, &mut activation.context) {
                     // [NA] Hack to make Haxe work - they call addChild before super()
                     // This will create an empty sprite the same way sprite's constructor will.
                     init_empty_sprite(activation, child)?;

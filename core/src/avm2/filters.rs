@@ -26,49 +26,49 @@ impl FilterAvm2Ext for Filter {
         object: Object<'gc>,
     ) -> Result<Filter, Error<'gc>> {
         let bevel_filter = activation.avm2().classes().bevelfilter;
-        if object.is_of_type(bevel_filter, activation) {
+        if object.is_of_type(bevel_filter, &mut activation.context) {
             return avm2_to_bevel_filter(activation, object);
         }
 
         let blur_filter = activation.avm2().classes().blurfilter;
-        if object.is_of_type(blur_filter, activation) {
+        if object.is_of_type(blur_filter, &mut activation.context) {
             return avm2_to_blur_filter(activation, object);
         }
 
         let color_matrix_filter = activation.avm2().classes().colormatrixfilter;
-        if object.is_of_type(color_matrix_filter, activation) {
+        if object.is_of_type(color_matrix_filter, &mut activation.context) {
             return avm2_to_color_matrix_filter(activation, object);
         }
 
         let convolution_filter = activation.avm2().classes().convolutionfilter;
-        if object.is_of_type(convolution_filter, activation) {
+        if object.is_of_type(convolution_filter, &mut activation.context) {
             return avm2_to_convolution_filter(activation, object);
         }
 
         let displacement_map_filter = activation.avm2().classes().displacementmapfilter;
-        if object.is_of_type(displacement_map_filter, activation) {
+        if object.is_of_type(displacement_map_filter, &mut activation.context) {
             return avm2_to_displacement_map_filter(activation, object);
         }
 
         let drop_shadow_filter = activation.avm2().classes().dropshadowfilter;
-        if object.is_of_type(drop_shadow_filter, activation) {
+        if object.is_of_type(drop_shadow_filter, &mut activation.context) {
             return avm2_to_drop_shadow_filter(activation, object);
         }
 
         let glow_filter = activation.avm2().classes().glowfilter;
-        if object.is_of_type(glow_filter, activation) {
+        if object.is_of_type(glow_filter, &mut activation.context) {
             return avm2_to_glow_filter(activation, object);
         }
 
         let gradient_bevel_filter = activation.avm2().classes().gradientbevelfilter;
-        if object.is_of_type(gradient_bevel_filter, activation) {
+        if object.is_of_type(gradient_bevel_filter, &mut activation.context) {
             return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
         }
 
         let gradient_glow_filter = activation.avm2().classes().gradientglowfilter;
-        if object.is_of_type(gradient_glow_filter, activation) {
+        if object.is_of_type(gradient_glow_filter, &mut activation.context) {
             return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));

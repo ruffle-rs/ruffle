@@ -682,7 +682,7 @@ pub fn hit_test<'gc>(
             let point_class = activation.avm2().classes().point;
             let rectangle_class = activation.avm2().classes().rectangle;
 
-            if compare_object.is_of_type(point_class, activation) {
+            if compare_object.is_of_type(point_class, &mut activation.context) {
                 let test_point = (
                     compare_object
                         .get_public_property("x", activation)?
@@ -698,7 +698,7 @@ pub fn hit_test<'gc>(
                     source_threshold,
                     test_point,
                 )));
-            } else if compare_object.is_of_type(rectangle_class, activation) {
+            } else if compare_object.is_of_type(rectangle_class, &mut activation.context) {
                 let test_point = (
                     compare_object
                         .get_public_property("x", activation)?
