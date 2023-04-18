@@ -267,10 +267,12 @@ impl<'gc> NetStream<'gc> {
                         }
                     }
                 }
-                _ => {
+                Some(_) => {
+                    //Unrecognized signature
                     write.preload_offset = 3;
                     return;
                 }
+                None => return, //Data not yet loaded
             }
         }
 
