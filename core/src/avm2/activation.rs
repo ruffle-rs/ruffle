@@ -963,7 +963,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         let type_name = self.pool_multiname_static(method, e.type_name)?;
                         let ty_class = self.resolve_class(&type_name)?;
 
-                        matches = err_object.is_of_type(ty_class, self);
+                        matches = err_object.is_of_type(ty_class, &mut self.context);
                     }
 
                     if matches {
@@ -2159,7 +2159,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let xml_list = self.avm2().classes().xml_list;
         let value = self.pop_stack().coerce_to_object(self)?;
 
-        if value.is_of_type(xml, self) || value.is_of_type(xml_list, self) {
+        if value.is_of_type(xml, &mut self.context) || value.is_of_type(xml_list, &mut self.context)
+        {
             self.push_stack(value);
         } else {
             return Err(Error::AvmError(type_error(

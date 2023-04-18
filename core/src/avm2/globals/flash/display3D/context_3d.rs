@@ -470,7 +470,10 @@ pub fn set_texture_at<'gc>(
             None
         } else {
             let obj = args[1].coerce_to_object(activation)?;
-            cube = obj.is_of_type(activation.avm2().classes().cubetexture, activation);
+            cube = obj.is_of_type(
+                activation.avm2().classes().cubetexture,
+                &mut activation.context,
+            );
             Some(obj.as_texture().unwrap().handle())
         };
         context.set_texture_at(activation, sampler, texture, cube);

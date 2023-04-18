@@ -402,7 +402,7 @@ impl<'gc> Avm2<'gc> {
             if let Some(object) = object {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
-                if object.is_of_type(on_type, &mut activation) {
+                if object.is_of_type(on_type, &mut activation.context) {
                     if let Err(err) = events::dispatch_event(&mut activation, object, event) {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {}",

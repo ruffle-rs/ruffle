@@ -76,7 +76,10 @@ fn spawn_fetch<'gc>(
     let mut request = Request::request(method, url.to_string(), None);
 
     if let Some(data) = data {
-        if data.is_of_type(activation.avm2().classes().urlvariables, activation) {
+        if data.is_of_type(
+            activation.avm2().classes().urlvariables,
+            &mut activation.context,
+        ) {
             if &*content_type == b"application/x-www-form-urlencoded" {
                 let data = data
                     .call_public_property("toString", &[], activation)?
