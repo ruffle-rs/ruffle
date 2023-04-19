@@ -107,8 +107,8 @@ impl<'a> VideoData<'a> {
         let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
-        let frame_type = FrameType::try_from(format_spec & 0x0F).ok()?;
-        let codec_id = CodecId::try_from(format_spec >> 4).ok()?;
+        let frame_type = FrameType::try_from(format_spec >> 4).ok()?;
+        let codec_id = CodecId::try_from(format_spec & 0x0F).ok()?;
 
         let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn read_videodata() {
-        let data = [0x21, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x12, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn read_videodata_invalid_len() {
-        let data = [0x21, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x12, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(VideoData::parse(&mut reader, 0), None);
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn read_videodata_short_len() {
-        let data = [0x21, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x12, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn read_videodata_avcsequence() {
-        let data = [0x71, 0x00, 0x00, 0x50, 0x00, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x17, 0x00, 0x00, 0x50, 0x00, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn read_videodata_avcnalu() {
-        let data = [0x71, 0x01, 0x00, 0x50, 0x00, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x17, 0x01, 0x00, 0x50, 0x00, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn read_videodata_avcnalu_negative() {
-        let data = [0x71, 0x01, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x17, 0x01, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -247,7 +247,7 @@ mod tests {
 
     #[test]
     fn read_videodata_avceos() {
-        let data = [0x71, 0x02, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x17, 0x02, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn read_videodata_avcinvalid() {
-        let data = [0x71, 0xFF, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
+        let data = [0x17, 0xFF, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(VideoData::parse(&mut reader, data.len() as u32), None);
