@@ -426,7 +426,9 @@ impl<'gc> NetStream<'gc> {
                         for var in vars {
                             if var.name == b"onMetaData" && !has_stream_already {
                                 match var.data {
-                                    FlvValue::Object(subvars) => {
+                                    FlvValue::Object(subvars)
+                                    | FlvValue::EcmaArray(subvars)
+                                    | FlvValue::StrictArray(subvars) => {
                                         for subvar in subvars {
                                             match (subvar.name, subvar.data) {
                                                 (b"width", FlvValue::Number(val)) => {
