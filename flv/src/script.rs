@@ -1,4 +1,5 @@
 use crate::reader::FlvReader;
+use std::io::Seek;
 
 fn parse_string<'a>(reader: &mut FlvReader<'a>, is_long_string: bool) -> Option<&'a [u8]> {
     let length = if is_long_string {
@@ -126,11 +127,18 @@ impl<'a> ScriptData<'a> {
     ///
     /// No data size parameter is accepted; we parse until we reach an object
     /// terminator, reach invalid data, or we run out of bytes in the reader.
-    pub fn parse(reader: &mut FlvReader<'a>) -> Option<Self> {
+    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
+        let start = reader.stream_position().expect("valid position");
         let _trash = reader.read_u8()?;
         let mut vars = vec![];
 
         loop {
+            let cur_length = reader.stream_position().expect("valid position") - start;
+            if cur_length >= data_size as u64 {
+                // Terminators are commonly elided from script data blocks.
+                return Some(Self(vars));
+            }
+
             let is_return = reader.peek_u24()?;
             if is_return == 9 {
                 reader.read_u24()?;
@@ -370,13 +378,13 @@ mod tests {
     #[test]
     fn read_scriptdata() {
         let data = [
-            0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01, 0x02, 0x03, 0x05, 0x00, 0x00,
-            0x09,
+            0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01, 0x02, 0x03, 0x05, 0x00,
+            0x00, 0x09,
         ];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
-            ScriptData::parse(&mut reader),
+            ScriptData::parse(&mut reader, 16),
             Some(ScriptData(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
