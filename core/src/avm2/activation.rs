@@ -553,6 +553,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
                 args_object.set_string_property_local("callee", callee.into(), &mut activation)?;
+                args_object.set_local_property_is_enumerable(
+                    activation.context.gc_context,
+                    "callee".into(),
+                    false,
+                );
             }
 
             *activation
