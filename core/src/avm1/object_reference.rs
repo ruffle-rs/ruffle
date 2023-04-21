@@ -3,7 +3,8 @@ use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
 };
-use gc_arena::{Collect, Gc, GcCell, GcWeakCell};
+use gc_arena::{Collect, Gc, GcWeakCell};
+use ruffle_gc_extra::lock::Lock;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -67,7 +68,7 @@ struct MovieClipReferenceData<'gc> {
     /// A weak reference to the target stage object that `path` points to
     /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the the target object is renamed)
     /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fallback to the slow path resolution
-    cached_stage_object: GcCell<'gc, Option<GcWeakCell<'gc, StageObjectData<'gc>>>>,
+    cached_stage_object: Lock<Option<GcWeakCell<'gc, StageObjectData<'gc>>>>,
 }
 
 impl<'gc> MovieClipReference<'gc> {
@@ -94,10 +95,7 @@ impl<'gc> MovieClipReference<'gc> {
             activation.context.gc_context,
             MovieClipReferenceData {
                 path: MovieClipPath::new_from_path(activation, path),
-                cached_stage_object: GcCell::allocate(
-                    activation.context.gc_context,
-                    Some(cached.as_weak()),
-                ),
+                cached_stage_object: Lock::new(Some(cached.as_weak())),
             },
         )))
     }
@@ -128,9 +126,8 @@ impl<'gc> MovieClipReference<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Option<(bool, Object<'gc>, DisplayObject<'gc>)> {
-        let cache = self.0.cached_stage_object.read();
         // Check if we have a cache we can use
-        if let Some(cache) = cache.as_ref() {
+        if let Some(cache) = self.0.cached_stage_object.get() {
             // Check if we can re-use the cached `DisplayObject`, if we can then take this fast path
             if let Some(mc) = cache.upgrade(activation.context.gc_context) {
                 // We have to fallback to manual path-walking if the object is removed
@@ -151,13 +148,9 @@ impl<'gc> MovieClipReference<'gc> {
                 }
             }
         }
-        drop(cache);
 
         // We missed the cache, switch to always use the slow-path
-        *self
-            .0
-            .cached_stage_object
-            .write(activation.context.gc_context) = None;
+        self.0.cached_stage_object.take();
 
         // Either the GcWeak ref is gone, or the clip can't be used (not on stage etc)
         // Here we manually parse the path, in order to find the target display object

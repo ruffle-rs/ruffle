@@ -17,6 +17,7 @@ gc-arena = { workspace = true }
 generational-arena = "0.2.8"
 indexmap = "1.9.3"
 tracing = "0.1.37"
+ruffle_gc_extra = { path = "../gc_extra" }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
