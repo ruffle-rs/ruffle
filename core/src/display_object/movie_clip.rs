@@ -1017,7 +1017,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn current_frame(self) -> FrameNumber {
-        self.0.read().current_frame
+        self.0.read().current_frame()
     }
 
     /// Return the current scene.
@@ -1174,7 +1174,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn total_frames(self) -> FrameNumber {
-        self.0.read().static_data.total_frames
+        self.0.read().total_frames()
     }
 
     #[allow(dead_code)]
@@ -1197,14 +1197,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn frames_loaded(self) -> i32 {
-        (self
-            .0
-            .read()
-            .static_data
-            .preload_progress
-            .read()
-            .cur_preload_frame) as i32
-            - 1
+        self.0.read().frames_loaded()
     }
 
     pub fn total_bytes(self) -> u32 {
