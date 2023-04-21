@@ -67,6 +67,9 @@ pub struct VideoData<'gc> {
 
     /// The movie whose tagstream or code created the Video object.
     movie: Arc<SwfMovie>,
+
+    /// The self bounds for this movie.
+    size: (i32, i32),
 }
 
 /// An optionally-instantiated video stream.
@@ -107,9 +110,7 @@ pub enum VideoSource<'gc> {
         /// The stream the video is downloaded from.
         stream: NetStream<'gc>,
     },
-    Unconnected {
-        size: (i32, i32),
-    },
+    Unconnected,
 }
 
 impl<'gc> Video<'gc> {
@@ -119,6 +120,7 @@ impl<'gc> Video<'gc> {
         streamdef: DefineVideoStream,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
+        let size = (streamdef.width.into(), streamdef.height.into());
         let source = GcCell::allocate(
             mc,
             VideoSource::Swf {
@@ -137,6 +139,7 @@ impl<'gc> Video<'gc> {
                 object: None,
                 keyframes: BTreeSet::new(),
                 movie,
+                size,
             },
         ))
     }
@@ -148,12 +151,7 @@ impl<'gc> Video<'gc> {
         height: i32,
         object: Option<AvmObject<'gc>>,
     ) -> Self {
-        let source = GcCell::allocate(
-            mc,
-            VideoSource::Unconnected {
-                size: (width, height),
-            },
-        );
+        let source = GcCell::allocate(mc, VideoSource::Unconnected);
 
         Video(GcCell::allocate(
             mc,
@@ -164,6 +162,7 @@ impl<'gc> Video<'gc> {
                 object,
                 keyframes: BTreeSet::new(),
                 movie,
+                size: (width, height),
             },
         ))
     }
@@ -499,28 +498,13 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        match &*self.0.read().source.read() {
-            VideoSource::Swf { streamdef, .. } => Rectangle {
-                x_min: Twips::ZERO,
-                y_min: Twips::ZERO,
-                x_max: Twips::from_pixels_i32(streamdef.width.into()),
-                y_max: Twips::from_pixels_i32(streamdef.height.into()),
-            },
-            VideoSource::NetStream { stream, .. } => stream
-                .last_decoded_bitmap()
-                .map(|bm| Rectangle {
-                    x_min: Twips::ZERO,
-                    x_max: Twips::from_pixels_i32(bm.width as u32 as i32),
-                    y_min: Twips::ZERO,
-                    y_max: Twips::from_pixels_i32(bm.height as u32 as i32),
-                })
-                .unwrap_or_default(),
-            VideoSource::Unconnected { size } => Rectangle {
-                x_min: Twips::ZERO,
-                x_max: Twips::from_pixels_i32(size.0),
-                y_min: Twips::ZERO,
-                y_max: Twips::from_pixels_i32(size.1),
-            },
+        let read = self.0.read();
+
+        Rectangle {
+            x_min: Twips::ZERO,
+            x_max: Twips::from_pixels_i32(read.size.0),
+            y_min: Twips::ZERO,
+            y_max: Twips::from_pixels_i32(read.size.1),
         }
     }
 
