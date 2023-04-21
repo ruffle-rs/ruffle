@@ -1,3 +1,6 @@
+use crate::avm2::{
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::library::{Library, MovieLibrarySource};
@@ -29,6 +32,8 @@ pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
     ratio: u16,
+    /// The AVM2 representation of this MorphShape.
+    object: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -44,6 +49,7 @@ impl<'gc> MorphShape<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(gc_context, static_data),
                 ratio: 0,
+                object: None,
             },
         ))
     }
@@ -96,6 +102,31 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn run_frame_avm1(&self, _context: &mut UpdateContext) {
         // Noop
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .object
+            .map(Avm2Value::from)
+            .unwrap_or(Avm2Value::Null)
+    }
+
+    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+        self.0.write(context.gc_context).object = Some(to);
+    }
+
+    /// Construct objects placed on this frame.
+    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+            let class = context.avm2.classes().morphshape;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
+                Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
+                Err(e) => tracing::error!("Got {} when constructing AVM2 side of MorphShape", e),
+            };
+            self.on_construction_complete(context);
+        }
     }
 
     fn render_self(&self, context: &mut RenderContext) {

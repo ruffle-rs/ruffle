@@ -135,6 +135,7 @@ pub struct SystemClasses<'gc> {
     pub texture: ClassObject<'gc>,
     pub cubetexture: ClassObject<'gc>,
     pub rectangletexture: ClassObject<'gc>,
+    pub morphshape: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -244,6 +245,7 @@ impl<'gc> SystemClasses<'gc> {
             texture: object,
             cubetexture: object,
             rectangletexture: object,
+            morphshape: object,
         }
     }
 }
@@ -642,6 +644,7 @@ fn load_playerglobal<'gc>(
             ("flash.display", "GraphicsStroke", graphicsstroke),
             ("flash.display", "Graphics", graphics),
             ("flash.display", "LoaderInfo", loaderinfo),
+            ("flash.display", "MorphShape", morphshape),
             ("flash.display", "MovieClip", movieclip),
             ("flash.display", "Shape", shape),
             ("flash.display", "SimpleButton", simplebutton),
