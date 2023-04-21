@@ -677,7 +677,7 @@ pub fn hit_test<'gc>(
                     .get_public_property("y", activation)?
                     .coerce_to_i32(activation)?,
             );
-            let source_threshold = args.get_u32(activation, 1)?;
+            let source_threshold = args.get_u32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
             let compare_object = args.get_object(activation, 2, "secondObject")?;
             let point_class = activation.avm2().classes().point;
             let rectangle_class = activation.avm2().classes().rectangle;
@@ -734,7 +734,7 @@ pub fn hit_test<'gc>(
                         .get_public_property("y", activation)?
                         .coerce_to_i32(activation)?,
                 );
-                let second_threshold = args.get_u32(activation, 4)?;
+                let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
 
                 let result = operations::hit_test_bitmapdata(
                     bitmap_data,
@@ -760,7 +760,7 @@ pub fn hit_test<'gc>(
                         .get_public_property("y", activation)?
                         .coerce_to_i32(activation)?,
                 );
-                let second_threshold = args.get_u32(activation, 4)?;
+                let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
 
                 return Ok(Value::Bool(operations::hit_test_bitmapdata(
                     bitmap_data,

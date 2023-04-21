@@ -759,7 +759,7 @@ pub fn compare<'gc>(
 
 pub fn hit_test_point(
     target: BitmapDataWrapper,
-    alpha_threshold: u32,
+    alpha_threshold: u8,
     test_point: (i32, i32),
 ) -> bool {
     if target.is_point_in_bounds(test_point.0, test_point.1) {
@@ -768,7 +768,7 @@ pub fn hit_test_point(
         target
             .read_area(PixelRegion::for_pixel(x, y))
             .get_pixel32_raw(x, y)
-            .alpha() as u32
+            .alpha()
             >= alpha_threshold
     } else {
         false
@@ -777,7 +777,7 @@ pub fn hit_test_point(
 
 pub fn hit_test_rectangle(
     target: BitmapDataWrapper,
-    alpha_threshold: u32,
+    alpha_threshold: u8,
     top_left: (i32, i32),
     size: (i32, i32),
 ) -> bool {
@@ -787,7 +787,7 @@ pub fn hit_test_rectangle(
 
     for y in region.y_min..region.y_max {
         for x in region.x_min..region.x_max {
-            if read.get_pixel32_raw(x, y).alpha() as u32 >= alpha_threshold {
+            if read.get_pixel32_raw(x, y).alpha() >= alpha_threshold {
                 return true;
             }
         }
@@ -798,10 +798,10 @@ pub fn hit_test_rectangle(
 pub fn hit_test_bitmapdata<'gc>(
     target: BitmapDataWrapper<'gc>,
     self_point: (i32, i32),
-    self_threshold: u32,
+    self_threshold: u8,
     test: BitmapDataWrapper<'gc>,
     test_point: (i32, i32),
-    test_threshold: u32,
+    test_threshold: u8,
 ) -> bool {
     let xd = test_point.0 - self_point.0;
     let yd = test_point.1 - self_point.1;
@@ -838,9 +838,9 @@ pub fn hit_test_bitmapdata<'gc>(
     for x in 0..width {
         for y in 0..height {
             let self_is_opaque =
-                target.get_pixel32_raw(self_x0 + x, self_y0 + y).alpha() as u32 >= self_threshold;
+                target.get_pixel32_raw(self_x0 + x, self_y0 + y).alpha() >= self_threshold;
             let test_is_opaque =
-                test.get_pixel32_raw(test_x0 + x, test_y0 + y).alpha() as u32 >= test_threshold;
+                test.get_pixel32_raw(test_x0 + x, test_y0 + y).alpha() >= test_threshold;
             if self_is_opaque && test_is_opaque {
                 return true;
             }
