@@ -15,6 +15,9 @@
   <a href="https://discord.gg/ruffle">
     <img alt="Ruffle Discord" src="https://img.shields.io/discord/610531541889581066?label=&color=7389d8&labelColor=6a7ec2&logoColor=ffffff&logo=discord" />
   </a>
+  <a href="https://crowdin.com/project/ruffle">
+    <img alt="Ruffle translations" src="https://badges.crowdin.net/ruffle/localized.svg" />
+  </a>
   <br />
   <strong><a href="https://ruffle.rs">website</a> | <a href="https://ruffle.rs/demo">demo</a> | <a href="https://github.com/ruffle-rs/ruffle/releases">nightly builds</a> | <a href="https://github.com/ruffle-rs/ruffle/wiki">wiki</a></strong>
 </p>
