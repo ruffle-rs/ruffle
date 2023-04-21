@@ -11,7 +11,7 @@ use crate::ecma_conversions::{
 };
 use crate::string::{AvmString, Integer, WStr};
 use gc_arena::Collect;
-use std::{borrow::Cow, io::Write, num::Wrapping};
+use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
 
@@ -27,6 +27,13 @@ pub enum Value<'gc> {
     Object(Object<'gc>),
     MovieClip(MovieClipReference<'gc>),
 }
+
+// This type is used very frequently, so make sure it doesn't unexpectedly grow.
+#[cfg(target_pointer_width = "32")]
+const _: () = assert!(size_of::<Value<'_>>() == 16);
+
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(size_of::<Value<'_>>() == 24);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
     fn from(string: AvmString<'gc>) -> Self {
