@@ -43,6 +43,12 @@ Try out your favorite SWF content in Ruffle and see how it works! Follow the ins
 
 If you encounter specific issues with content, please follow the guidelines on filing an issue.
 
+### Translate Ruffle to your language
+
+We use Crowdin to manage the translations of Ruffle into various languages. You can [view the project](https://crowdin.com/project/ruffle/) and help make sure your language is nicely translated.
+
+If your native language isn't listed on there, ask us in Discord and we may be able to add it as a new supported language!
+
 ### Improve documentation
 
 Improving documentation is a great way to learn the codebase. Adding documentation to both the wiki and the code eases the learning curve for both end users and new contributors.
