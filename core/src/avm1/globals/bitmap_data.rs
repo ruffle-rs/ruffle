@@ -773,7 +773,8 @@ pub fn hit_test<'gc>(
             let source_threshold = args
                 .get(1)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_u32(activation)?;
+                .coerce_to_i32(activation)?
+                .clamp(0, u8::MAX.into()) as u8;
             let compare_object = args
                 .get(2)
                 .unwrap_or(&Value::Undefined)
@@ -802,7 +803,8 @@ pub fn hit_test<'gc>(
                 let second_threshold = args
                     .get(4)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_u32(activation)?;
+                    .coerce_to_i32(activation)?
+                    .clamp(0, u8::MAX.into()) as u8;
 
                 let result = operations::hit_test_bitmapdata(
                     bitmap_data.bitmap_data(),
