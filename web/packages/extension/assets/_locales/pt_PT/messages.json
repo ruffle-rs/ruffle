@@ -1,0 +1,17 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Reproduzir conteúdo Flash no Ruffle"
+    },
+    "settings_page_ignore_optout": {
+        "message": "Reproduzir conteúdo Flash mesmo em sites que desabilitam o Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Ignorar avisos de compatibilidade do site"
+    },
+    "settings_autostart": {
+        "message": "Reproduzir automaticamente sem o ecrã inicial (depois clique para dessilenciar)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Aviar em conteúdo não suportado"
+    }
+}
