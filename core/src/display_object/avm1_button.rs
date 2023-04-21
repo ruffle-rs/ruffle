@@ -56,18 +56,11 @@ impl<'gc> Avm1Button<'gc> {
         let mut actions = vec![];
         for action in &button.actions {
             let action_data = source_movie.to_unbounded_subslice(action.action_data);
-            let bits = action.conditions.bits();
-            let mut bit = 1u16;
-            while bits & !(bit - 1) != 0 {
-                if bits & bit != 0 {
-                    actions.push(ButtonAction {
-                        action_data: action_data.clone(),
-                        condition: ButtonActionCondition::from_bits_truncate(bit),
-                        key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
-                    });
-                }
-                bit <<= 1;
-            }
+            actions.extend(action.conditions.into_iter().map(|condition| ButtonAction {
+                action_data: action_data.clone(),
+                condition,
+                key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
+            }));
         }
 
         let static_data = ButtonStatic {
