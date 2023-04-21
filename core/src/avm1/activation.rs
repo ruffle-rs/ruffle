@@ -2320,7 +2320,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.total_frames()))
+                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.total_frames()) as i32)
                 .unwrap_or(true)
         };
 
@@ -2363,7 +2363,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // `ifFrameLoaded(_framesloaded + 1)` always evaluates to true (off-by-one).
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() + 1 >= min(frame_num as u16, mc.total_frames()))
+                .map(|mc| mc.frames_loaded() + 1 >= min(frame_num as u16, mc.total_frames()) as i32)
                 .unwrap_or(true)
         };
 

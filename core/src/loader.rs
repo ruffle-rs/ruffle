@@ -1857,6 +1857,10 @@ impl<'gc> Loader<'gc> {
             _ => unreachable!(),
         };
 
+        if let Some(mc) = clip.as_movie_clip() {
+            mc.movie_not_available(uc.gc_context);
+        }
+
         match vm_data {
             MovieLoaderVMData::Avm1 { broadcaster } => {
                 if let Some(broadcaster) = broadcaster {

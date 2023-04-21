@@ -39,6 +39,7 @@ use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
@@ -1186,14 +1187,24 @@ impl<'gc> MovieClip<'gc> {
             .unwrap_or_default()
     }
 
-    pub fn frames_loaded(self) -> FrameNumber {
+    pub fn movie_not_available(self, gc_context: MutationContext<'gc, '_>) {
         self.0
             .read()
             .static_data
             .preload_progress
+            .write(gc_context)
+            .cur_preload_frame = 0;
+    }
+
+    pub fn frames_loaded(self) -> i32 {
+        (self
+            .0
             .read()
-            .cur_preload_frame
-            .saturating_sub(1)
+            .static_data
+            .preload_progress
+            .read()
+            .cur_preload_frame) as i32
+            - 1
     }
 
     pub fn total_bytes(self) -> u32 {
@@ -1738,7 +1749,7 @@ impl<'gc> MovieClip<'gc> {
         let mut index = 0;
 
         // Sanity; let's make sure we don't seek way too far.
-        let clamped_frame = frame.min(mc.frames_loaded());
+        let clamped_frame = frame.min(max(mc.frames_loaded(), 0) as FrameNumber);
         drop(mc);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
@@ -3145,12 +3156,8 @@ impl<'gc> MovieClipData<'gc> {
         self.static_data.total_frames
     }
 
-    fn frames_loaded(&self) -> FrameNumber {
-        self.static_data
-            .preload_progress
-            .read()
-            .cur_preload_frame
-            .saturating_sub(1)
+    fn frames_loaded(&self) -> i32 {
+        (self.static_data.preload_progress.read().cur_preload_frame) as i32 - 1
     }
 
     fn playing(&self) -> bool {
