@@ -1,8 +1,11 @@
 use crate::events::{KeyCode, PlayerEvent};
+use fluent_templates::loader::langid;
+pub use fluent_templates::LanguageIdentifier;
 use std::borrow::Cow;
 use std::collections::HashSet;
 
 pub type FullscreenError = Cow<'static, str>;
+pub static US_ENGLISH: LanguageIdentifier = langid!("en-US");
 
 pub trait UiBackend {
     fn mouse_visible(&self) -> bool;
@@ -31,6 +34,8 @@ pub trait UiBackend {
 
     // Only used on web.
     fn open_virtual_keyboard(&self);
+
+    fn language(&self) -> &LanguageIdentifier;
 }
 
 /// A mouse cursor icon displayed by the Flash Player.
@@ -153,6 +158,10 @@ impl UiBackend for NullUiBackend {
     fn message(&self, _message: &str) {}
 
     fn open_virtual_keyboard(&self) {}
+
+    fn language(&self) -> &LanguageIdentifier {
+        &US_ENGLISH
+    }
 }
 
 impl Default for NullUiBackend {
