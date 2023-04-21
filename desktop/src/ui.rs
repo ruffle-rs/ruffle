@@ -1,7 +1,9 @@
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
-use ruffle_core::backend::ui::{FullscreenError, MouseCursor, UiBackend};
+use ruffle_core::backend::ui::{
+    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+};
 use std::rc::Rc;
 use tracing::error;
 use winit::window::{Fullscreen, Window};
@@ -97,4 +99,8 @@ impl UiBackend for DesktopUiBackend {
 
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
+
+    fn language(&self) -> &LanguageIdentifier {
+        &US_ENGLISH
+    }
 }

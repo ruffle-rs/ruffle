@@ -186,7 +186,7 @@ impl<'gc> XmlObject<'gc> {
                 }
                 Event::Decl(bd) => {
                     let mut xml_decl = WString::from_buf(b"<?".to_vec());
-                    xml_decl.push_str(WStr::from_units(bd.as_ref()));
+                    xml_decl.push_str(WStr::from_units(&*bd));
                     xml_decl.push_str(WStr::from_units(b"?>"));
                     self.0.write(activation.context.gc_context).xml_decl =
                         Some(AvmString::new(activation.context.gc_context, xml_decl));
