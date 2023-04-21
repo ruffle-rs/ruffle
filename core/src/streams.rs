@@ -310,20 +310,10 @@ impl<'gc> NetStream<'gc> {
                     >= write.preload_offset;
 
                 match tag.data {
-                    FlvTagData::Audio(FlvAudioData {
-                        format,
-                        rate,
-                        size,
-                        sound_type,
-                        data,
-                    }) => {
+                    FlvTagData::Audio(FlvAudioData { .. }) => {
                         tracing::warn!("Stub: Stream audio processing");
                     }
-                    FlvTagData::Video(FlvVideoData {
-                        frame_type,
-                        codec_id,
-                        data,
-                    }) => {
+                    FlvTagData::Video(FlvVideoData { codec_id, data, .. }) => {
                         let (video_handle, frame_id) = match write.stream_type {
                             Some(NetStreamType::Flv {
                                 stream, frame_id, ..
