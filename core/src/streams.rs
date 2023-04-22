@@ -193,8 +193,12 @@ impl<'gc> NetStream<'gc> {
         self.0.write(gc_context).avm_object = Some(avm_object);
     }
 
-    pub fn load_buffer(self, gc_context: MutationContext<'gc, '_>, data: &mut Vec<u8>) {
-        self.0.write(gc_context).buffer.append(data);
+    pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
+        self.0.write(context.gc_context).buffer.append(data);
+        self.trigger_status_event(
+            context,
+            &[("level", "status"), ("code", "NetStream.Buffer.Full")],
+        );
     }
 
     pub fn report_error(self, _error: Error) {
@@ -225,6 +229,11 @@ impl<'gc> NetStream<'gc> {
         }
 
         StreamManager::ensure_playing(context, self);
+
+        self.trigger_status_event(
+            context,
+            &[("level", "status"), ("code", "NetStream.Play.Start")],
+        );
     }
 
     /// Pause stream playback.
@@ -286,6 +295,7 @@ impl<'gc> NetStream<'gc> {
         }
 
         let end_time = write.stream_time + dt;
+        let mut end_of_video = false;
 
         //At this point we should know our stream type.
         if matches!(write.stream_type, Some(NetStreamType::Flv { .. })) {
@@ -294,8 +304,11 @@ impl<'gc> NetStream<'gc> {
             loop {
                 let tag = FlvTag::parse(&mut reader);
                 if let Err(e) = tag {
-                    //Corrupt tag or out of data
-                    if !matches!(e, FlvError::EndOfData) {
+                    if matches!(e, FlvError::EndOfData) {
+                        //TODO: Check expected total length for streaming / progressive download
+                        end_of_video = true;
+                    } else {
+                        //Corrupt tag or out of data
                         //TODO: Stop the stream so we don't repeatedly yield the same error
                         //and fire an error event to AS
                         tracing::error!("FLV tag parsing failed: {}", e);
@@ -514,9 +527,43 @@ impl<'gc> NetStream<'gc> {
                 reader = FlvReader::from_parts(&write.buffer, position);
             }
         }
+
+        if end_of_video {
+            self.trigger_status_event(
+                context,
+                &[("level", "status"), ("code", "NetStream.Buffer.Flush")],
+            );
+            self.trigger_status_event(
+                context,
+                &[("level", "status"), ("code", "NetStream.Buffer.Stop")],
+            );
+            self.trigger_status_event(
+                context,
+                &[("level", "status"), ("code", "NetStream.Buffer.Empty")],
+            );
+            self.pause(context);
+        }
     }
 
     pub fn last_decoded_bitmap(self) -> Option<BitmapInfo> {
         self.0.read().last_decoded_bitmap.clone()
+    }
+
+    /// Trigger a status event on the stream.
+    pub fn trigger_status_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _values: &[(&str, &str)],
+    ) {
+        let object = self.0.read().avm_object;
+        match object {
+            Some(AvmObject::Avm1(_object)) => {
+                tracing::warn!("Status event (AVM1) is a stub!");
+            }
+            Some(AvmObject::Avm2(_object)) => {
+                tracing::warn!("Status event (AVM2) is a stub!");
+            }
+            None => {}
+        }
     }
 }
