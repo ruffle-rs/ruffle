@@ -534,6 +534,9 @@ impl<'gc> NetStream<'gc> {
             }
         }
 
+        write.stream_time = end_time;
+        drop(write);
+
         if end_of_video {
             self.trigger_status_event(
                 context,
