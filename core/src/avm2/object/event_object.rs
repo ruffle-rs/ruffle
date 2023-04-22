@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
+use crate::avm2::multiname::Multiname;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -140,6 +141,48 @@ impl<'gc> EventObject<'gc> {
                     activation.context.input.is_mouse_down().into(),
                     // delta
                     delta.into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
+
+    pub fn net_status_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        info: &[(&'static str, &'static str)],
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let mut info_object = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])
+            .unwrap();
+        for (key, value) in info {
+            info_object
+                .set_property(
+                    &Multiname::new(activation.avm2().public_namespace, AvmString::from(*key)),
+                    Value::String(AvmString::from(*value)),
+                    activation,
+                )
+                .unwrap();
+        }
+
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let net_status_cls = activation.avm2().classes().netstatusevent;
+        net_status_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    //bubbles
+                    false.into(),
+                    //cancelable
+                    false.into(),
+                    info_object.into(),
                 ],
             )
             .unwrap() // we don't expect to break here
