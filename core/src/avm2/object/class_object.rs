@@ -269,16 +269,15 @@ impl<'gc> ClassObject<'gc> {
         )?;
 
         self.link_interfaces(activation)?;
-        self.install_class_vtable_and_slots(activation);
+        self.install_class_vtable_and_slots(activation.context.gc_context);
         self.run_class_initializer(activation)?;
 
         Ok(self)
     }
 
-    fn install_class_vtable_and_slots(&mut self, activation: &mut Activation<'_, 'gc>) {
-        self.set_vtable(activation.context.gc_context, self.class_vtable());
-        self.base_mut(activation.context.gc_context)
-            .install_instance_slots();
+    fn install_class_vtable_and_slots(&mut self, mc: MutationContext<'gc, '_>) {
+        self.set_vtable(mc, self.class_vtable());
+        self.base_mut(mc).install_instance_slots();
     }
 
     /// Link this class to a prototype.
@@ -967,7 +966,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         class_object.link_prototype(activation, class_proto)?;
         class_object.link_interfaces(activation)?;
-        class_object.install_class_vtable_and_slots(activation);
+        class_object.install_class_vtable_and_slots(activation.context.gc_context);
         class_object.run_class_initializer(activation)?;
 
         self.0
