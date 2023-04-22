@@ -1,4 +1,5 @@
-use std::io::{Error, ErrorKind, Result, Seek, SeekFrom};
+use crate::error::Error as FlvError;
+use std::io::{Error as IoError, ErrorKind, Result as IoResult, Seek, SeekFrom};
 
 /// A reader that allows demuxing an FLV container.
 pub struct FlvReader<'a> {
@@ -34,22 +35,35 @@ impl<'a> FlvReader<'a> {
     /// buffer. The buffer position will be advanced so that repeated reads
     /// yield new data.
     ///
-    /// If the requested number of bytes are not available, `None` is returned.
-    pub fn read(&mut self, count: usize) -> Option<&'a [u8]> {
+    /// If the requested number of bytes are not available, `EndOfData` is
+    /// returned. This error should halt all parsing; callers should take care
+    /// to return the reader to it's prior position and NOT return partial data
+    /// (e.g. headers without body data) so that callers can retry later when
+    /// more data has been downloaded.
+    pub fn read(&mut self, count: usize) -> Result<&'a [u8], FlvError> {
         let start = self.position;
-        let end = self.position.checked_add(count)?;
+        let end = self
+            .position
+            .checked_add(count)
+            .ok_or(FlvError::PointerTooBig)?;
         if end > self.source.len() {
-            return None;
+            return Err(FlvError::EndOfData);
         }
 
         self.position = end;
 
-        Some(&self.source[start..end])
+        Ok(&self.source[start..end])
     }
 
     /// Read a certain number of bytes from the buffer without advancing the
     /// buffer position.
-    pub fn peek(&mut self, count: usize) -> Option<&'a [u8]> {
+    ///
+    /// If the requested number of bytes are not available, `EndOfData` is
+    /// returned. This error should halt all parsing; callers should take care
+    /// to return the reader to it's prior position and NOT return partial data
+    /// (e.g. headers without body data) so that callers can retry later when
+    /// more data has been downloaded.
+    pub fn peek(&mut self, count: usize) -> Result<&'a [u8], FlvError> {
         let pos = self.position;
         let ret = self.read(count);
 
@@ -58,57 +72,57 @@ impl<'a> FlvReader<'a> {
         ret
     }
 
-    pub fn read_u8(&mut self) -> Option<u8> {
-        Some(self.read(1)?[0])
+    pub fn read_u8(&mut self) -> Result<u8, FlvError> {
+        Ok(self.read(1)?[0])
     }
 
-    pub fn read_u16(&mut self) -> Option<u16> {
-        Some(u16::from_be_bytes(
+    pub fn read_u16(&mut self) -> Result<u16, FlvError> {
+        Ok(u16::from_be_bytes(
             self.read(2)?.try_into().expect("two bytes"),
         ))
     }
 
-    pub fn read_i16(&mut self) -> Option<i16> {
-        Some(i16::from_be_bytes(
+    pub fn read_i16(&mut self) -> Result<i16, FlvError> {
+        Ok(i16::from_be_bytes(
             self.read(2)?.try_into().expect("two bytes"),
         ))
     }
 
-    pub fn read_u24(&mut self) -> Option<u32> {
+    pub fn read_u24(&mut self) -> Result<u32, FlvError> {
         let bytes = self.read(3)?;
 
-        Some(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
+        Ok(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
     }
 
-    pub fn peek_u24(&mut self) -> Option<u32> {
+    pub fn peek_u24(&mut self) -> Result<u32, FlvError> {
         let bytes = self.peek(3)?;
 
-        Some(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
+        Ok(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
     }
 
-    pub fn read_u32(&mut self) -> Option<u32> {
-        Some(u32::from_be_bytes(
+    pub fn read_u32(&mut self) -> Result<u32, FlvError> {
+        Ok(u32::from_be_bytes(
             self.read(4)?.try_into().expect("four bytes"),
         ))
     }
 
-    pub fn read_f64(&mut self) -> Option<f64> {
-        Some(f64::from_be_bytes(
+    pub fn read_f64(&mut self) -> Result<f64, FlvError> {
+        Ok(f64::from_be_bytes(
             self.read(8)?.try_into().expect("eight bytes"),
         ))
     }
 }
 
 impl<'a> Seek for FlvReader<'a> {
-    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+    fn seek(&mut self, pos: SeekFrom) -> IoResult<u64> {
         let newpos = match pos {
             SeekFrom::Start(pos) => pos,
             SeekFrom::Current(pos) => (self.position as i64 + pos)
                 .try_into()
-                .map_err(|e| Error::new(ErrorKind::InvalidInput, e))?,
+                .map_err(|e| IoError::new(ErrorKind::InvalidInput, e))?,
             SeekFrom::End(pos) => (self.source.len() as i64 - pos)
                 .try_into()
-                .map_err(|e| Error::new(ErrorKind::InvalidInput, e))?,
+                .map_err(|e| IoError::new(ErrorKind::InvalidInput, e))?,
         };
 
         self.position = newpos as usize;

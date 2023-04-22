@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::reader::FlvReader;
 use crate::script::ScriptData;
 use crate::sound::AudioData;
@@ -11,6 +12,12 @@ pub enum TagData<'a> {
     Audio(AudioData<'a>) = 8,
     Video(VideoData<'a>) = 9,
     Script(ScriptData<'a>) = 18,
+
+    /// The tag data was recognized but could not be parsed due to an error.
+    ///
+    /// The error contained will never be EndOfData; this should only be used
+    /// to flag unparseable data within an otherwise complete tag.
+    Invalid(Error),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -30,14 +37,18 @@ impl<'a> Tag<'a> {
     /// repeated calls to `parse` will yield further tags until the end of the
     /// file.
     ///
-    /// `None` indicates that either:
+    /// Errors can be reported in one of two ways. If the header cannot be read
+    /// then this function returns the error normally. However, if the header
+    /// can be read, but the data inside the tag is corrupt, then a
+    /// TagData::Invalid will be returned with the inner error. EndOfData will
+    /// always be reported as a normal error and not as an invalid tag.
     ///
-    ///  * There is not enough data in the reader to read the next tag
-    ///  * The data in the reader is corrupt and not a valid FLV
-    ///
-    /// If encountered, the position of the reader will be unchanged.
-    pub fn parse(reader: &mut FlvReader<'a>) -> Option<Self> {
-        let old_position = reader.stream_position().ok()?;
+    /// In the event of an invalid header or end-of-data error, the reader
+    /// position will be unchanged. Valid headers, with or without valid tag
+    /// data, will seek the reader to the start of the next tag. This allows
+    /// skipping past invalid tags.
+    pub fn parse(reader: &mut FlvReader<'a>) -> Result<Self, Error> {
+        let old_position = reader.stream_position()?;
 
         let ret = (|| {
             let _previous_tag_size = reader.read_u32()?;
@@ -49,38 +60,57 @@ impl<'a> Tag<'a> {
             let stream_id = reader.read_u24()?;
 
             let timestamp = ((timestamp_extended as u32) << 24 | timestamp) as i32;
+            let data_position = reader.stream_position()?;
+            let new_position = data_position + data_size as u64;
 
-            let new_position = reader.stream_position().ok()? + data_size as u64;
-
-            Some((
+            Ok((
                 match tag_type {
                     8 => Tag {
                         timestamp,
                         stream_id,
-                        data: TagData::Audio(AudioData::parse(reader, data_size)?),
+                        data: match AudioData::parse(reader, data_size) {
+                            Ok(data) => TagData::Audio(data),
+                            Err(Error::EndOfData) => return Err(Error::EndOfData),
+                            Err(e) => TagData::Invalid(e),
+                        },
                     },
                     9 => Tag {
                         timestamp,
                         stream_id,
-                        data: TagData::Video(VideoData::parse(reader, data_size)?),
+                        data: match VideoData::parse(reader, data_size) {
+                            Ok(data) => TagData::Video(data),
+                            Err(Error::EndOfData) => return Err(Error::EndOfData),
+                            Err(e) => TagData::Invalid(e),
+                        },
                     },
                     18 => Tag {
                         timestamp,
                         stream_id,
-                        data: TagData::Script(ScriptData::parse(reader, data_size)?),
+                        data: match ScriptData::parse(reader, data_size) {
+                            Ok(data) => TagData::Script(data),
+                            Err(Error::EndOfData) => return Err(Error::EndOfData),
+                            Err(e) => TagData::Invalid(e),
+                        },
                     },
-                    _ => return None,
+                    unk => Tag {
+                        timestamp,
+                        stream_id,
+                        data: TagData::Invalid(Error::UnknownTagType(unk)),
+                    },
                 },
                 new_position,
             ))
         })();
 
-        if let Some((tag, new_position)) = ret {
-            reader.seek(SeekFrom::Start(new_position)).ok()?;
-            Some(tag)
-        } else {
-            reader.seek(SeekFrom::Start(old_position)).ok()?;
-            None
+        match ret {
+            Ok((tag, new_position)) => {
+                reader.seek(SeekFrom::Start(new_position))?;
+                Ok(tag)
+            }
+            Err(e) => {
+                reader.seek(SeekFrom::Start(old_position))?;
+                Err(e)
+            }
         }
     }
 
@@ -89,18 +119,17 @@ impl<'a> Tag<'a> {
     /// FLV files are constructed as a list of tags. Back pointers to prior
     /// tags are provided to allow reverse seeking. This function ignores the
     /// tag at the current location and skips back to prior data in the file.
-    pub fn skip_back(reader: &mut FlvReader<'a>) -> Option<()> {
+    pub fn skip_back(reader: &mut FlvReader<'a>) -> Result<(), Error> {
         let previous_tag_size = reader.read_u32()?;
-        reader
-            .seek(SeekFrom::Current(-(previous_tag_size as i64)))
-            .ok()?;
+        reader.seek(SeekFrom::Current(-(previous_tag_size as i64)))?;
 
-        Some(())
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Error;
     use crate::reader::FlvReader;
     use crate::script::{ScriptData, Value, Variable};
     use crate::sound::{AudioData, AudioDataType, SoundFormat, SoundRate, SoundSize, SoundType};
@@ -117,7 +146,7 @@ mod tests {
 
         assert_eq!(
             Tag::parse(&mut reader),
-            Some(Tag {
+            Ok(Tag {
                 timestamp: 0,
                 stream_id: 0x5000,
                 data: TagData::Audio(AudioData {
@@ -132,6 +161,24 @@ mod tests {
     }
 
     #[test]
+    fn read_tag_sounddata_invalid() {
+        let data = [
+            0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50,
+            0x00, 0xCA, 0x12, 0x34, 0x56, 0x78,
+        ];
+        let mut reader = FlvReader::from_source(&data);
+
+        assert_eq!(
+            Tag::parse(&mut reader),
+            Ok(Tag {
+                timestamp: 0,
+                stream_id: 0x5000,
+                data: TagData::Invalid(Error::UnknownAudioFormatType(0x0C))
+            })
+        )
+    }
+
+    #[test]
     fn read_tag_videodata() {
         let data = [
             0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50,
@@ -141,7 +188,7 @@ mod tests {
 
         assert_eq!(
             Tag::parse(&mut reader),
-            Some(Tag {
+            Ok(Tag {
                 timestamp: 0,
                 stream_id: 0x5000,
                 data: TagData::Video(VideoData {
@@ -164,7 +211,7 @@ mod tests {
 
         assert_eq!(
             Tag::parse(&mut reader),
-            Some(Tag {
+            Ok(Tag {
                 timestamp: 0,
                 stream_id: 0x5000,
                 data: TagData::Script(ScriptData(vec![
@@ -211,7 +258,7 @@ mod tests {
 
         assert_eq!(
             Tag::parse(&mut reader),
-            Some(Tag {
+            Ok(Tag {
                 timestamp: 0,
                 stream_id: 0,
                 data: TagData::Script(ScriptData(vec![Variable {

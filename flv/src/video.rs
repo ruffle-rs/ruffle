@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::reader::FlvReader;
 use std::io::Seek;
 
@@ -12,7 +13,7 @@ pub enum FrameType {
 }
 
 impl TryFrom<u8> for FrameType {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -21,7 +22,7 @@ impl TryFrom<u8> for FrameType {
             3 => Ok(Self::InterframeDisposable),
             4 => Ok(Self::Generated),
             5 => Ok(Self::CommandFrame),
-            _ => Err(()),
+            unk => Err(Error::UnknownVideoFrameType(unk)),
         }
     }
 }
@@ -39,7 +40,7 @@ pub enum CodecId {
 }
 
 impl TryFrom<u8> for CodecId {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -50,7 +51,7 @@ impl TryFrom<u8> for CodecId {
             5 => Ok(Self::On2Vp6Alpha),
             6 => Ok(Self::ScreenVideo2),
             7 => Ok(Self::Avc),
-            _ => Err(()),
+            unk => Err(Error::UnknownVideoCodec(unk)),
         }
     }
 }
@@ -63,13 +64,13 @@ pub enum CommandFrame {
 }
 
 impl TryFrom<u8> for CommandFrame {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::StartOfClientSideSeek),
             1 => Ok(Self::EndOfClientSideSeek),
-            _ => Err(()),
+            unk => Err(Error::UnknownVideoCommandType(unk)),
         }
     }
 }
@@ -100,28 +101,29 @@ impl<'a> VideoData<'a> {
     /// returned as an array that must be provided to your video decoder.
     ///
     /// `data_size` is the size of the entire video data structure, *including*
-    /// the header.
-    ///
-    /// If `None` is yielded, the data stream is not a valid video header.
-    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
+    /// the header. Errors are yielded if the `data_size` is too small for the
+    /// video data present in the tag. This should not be confused for
+    /// `EndOfData` which indicates that we've read past the end of the whole
+    /// data stream.
+    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Result<Self, Error> {
         let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
-        let frame_type = FrameType::try_from(format_spec >> 4).ok()?;
-        let codec_id = CodecId::try_from(format_spec & 0x0F).ok()?;
+        let frame_type = FrameType::try_from(format_spec >> 4)?;
+        let codec_id = CodecId::try_from(format_spec & 0x0F)?;
 
         let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
-            return None;
+            return Err(Error::ShortVideoBlock);
         }
         let data = reader.read(data_size as usize - header_size)?;
 
         let packet = match (frame_type, codec_id) {
-            (FrameType::CommandFrame, _) => {
-                VideoPacket::CommandFrame(CommandFrame::try_from(*data.first()?).ok()?)
-            }
+            (FrameType::CommandFrame, _) => VideoPacket::CommandFrame(CommandFrame::try_from(
+                *data.first().ok_or(Error::ShortVideoBlock)?,
+            )?),
             (_, CodecId::Avc) => {
-                let bytes = data.get(1..4)?;
+                let bytes = data.get(1..4).ok_or(Error::ShortVideoBlock)?;
                 let is_negative = bytes[0] & 0x80 != 0;
                 let composition_time_offset = i32::from_be_bytes([
                     if is_negative { 0xFF } else { 0x00 },
@@ -130,20 +132,20 @@ impl<'a> VideoData<'a> {
                     bytes[2],
                 ]);
 
-                match *data.first()? {
+                match *data.first().ok_or(Error::ShortVideoBlock)? {
                     0 => VideoPacket::AvcSequenceHeader(&data[4..]),
                     1 => VideoPacket::AvcNalu {
                         composition_time_offset,
                         data: &data[4..],
                     },
                     2 => VideoPacket::AvcEndOfSequence,
-                    _ => return None,
+                    unk => return Err(Error::UnknownAvcPacketType(unk)),
                 }
             }
             (_, _) => VideoPacket::Data(data),
         };
 
-        Some(VideoData {
+        Ok(VideoData {
             frame_type,
             codec_id,
             data: packet,
@@ -153,6 +155,7 @@ impl<'a> VideoData<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Error;
     use crate::reader::FlvReader;
     use crate::video::{CodecId, FrameType, VideoData, VideoPacket};
 
@@ -163,7 +166,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, data.len() as u32),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::SorensonH263,
                 data: VideoPacket::Data(&[0x12, 0x34, 0x56, 0x78])
@@ -176,7 +179,10 @@ mod tests {
         let data = [0x12, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(VideoData::parse(&mut reader, 0), None);
+        assert_eq!(
+            VideoData::parse(&mut reader, 0),
+            Err(Error::ShortVideoBlock)
+        );
     }
 
     #[test]
@@ -186,7 +192,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, 2),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::SorensonH263,
                 data: VideoPacket::Data(&[0x12])
@@ -201,7 +207,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, data.len() as u32),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::Avc,
                 data: VideoPacket::AvcSequenceHeader(&[0x12, 0x34, 0x56, 0x78])
@@ -216,7 +222,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, data.len() as u32),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::Avc,
                 data: VideoPacket::AvcNalu {
@@ -234,7 +240,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, data.len() as u32),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::Avc,
                 data: VideoPacket::AvcNalu {
@@ -252,7 +258,7 @@ mod tests {
 
         assert_eq!(
             VideoData::parse(&mut reader, data.len() as u32),
-            Some(VideoData {
+            Ok(VideoData {
                 frame_type: FrameType::Keyframe,
                 codec_id: CodecId::Avc,
                 data: VideoPacket::AvcEndOfSequence
@@ -265,6 +271,9 @@ mod tests {
         let data = [0x17, 0xFF, 0xFF, 0xFF, 0xFE, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(VideoData::parse(&mut reader, data.len() as u32), None);
+        assert_eq!(
+            VideoData::parse(&mut reader, data.len() as u32),
+            Err(Error::UnknownAvcPacketType(0xFF))
+        );
     }
 }

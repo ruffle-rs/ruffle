@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::reader::FlvReader;
 use bitflags::bitflags;
 use std::io::{Seek, SeekFrom};
@@ -20,34 +21,39 @@ pub struct Header {
 impl Header {
     /// Parse an FLV header.
     ///
-    /// If this yields `None`, then the given data stream is either not an FLV
-    /// container or too short to parse.
-    pub fn parse(reader: &mut FlvReader<'_>) -> Option<Self> {
-        let old_position = reader.stream_position().ok()?;
+    /// The header must, at a minimum, contain the FLV magic, version number,
+    /// valid type flags, and a valid offset into the data. The reader will
+    /// seek to the start of the data tags if successful or retain it's prior
+    /// position otherwise.
+    pub fn parse(reader: &mut FlvReader<'_>) -> Result<Self, Error> {
+        let old_position = reader.stream_position()?;
 
         let ret = (|| {
             let signature = reader.read_u24()?;
             if signature != 0x464C56 {
-                return None;
+                return Err(Error::WrongMagic);
             }
 
             let version = reader.read_u8()?;
             let type_flags = TypeFlags::from_bits_retain(reader.read_u8()?);
             let data_offset = reader.read_u32()?;
 
-            Some(Header {
+            Ok(Header {
                 version,
                 type_flags,
                 data_offset,
             })
         })();
 
-        if let Some(ret) = ret {
-            reader.seek(SeekFrom::Start(ret.data_offset as u64)).ok()?;
-            Some(ret)
-        } else {
-            reader.seek(SeekFrom::Start(old_position)).ok()?;
-            None
+        match ret {
+            Ok(ret) => {
+                reader.seek(SeekFrom::Start(ret.data_offset as u64))?;
+                Ok(ret)
+            }
+            Err(e) => {
+                reader.seek(SeekFrom::Start(old_position))?;
+                Err(e)
+            }
         }
     }
 }
@@ -64,7 +70,7 @@ mod tests {
 
         assert_eq!(
             Header::parse(&mut reader),
-            Some(Header {
+            Ok(Header {
                 version: 1,
                 type_flags: TypeFlags::HAS_AUDIO | TypeFlags::HAS_VIDEO,
                 data_offset: 0x12345678
