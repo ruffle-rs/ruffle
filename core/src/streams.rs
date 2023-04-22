@@ -544,7 +544,7 @@ impl<'gc> NetStream<'gc> {
             );
             self.trigger_status_event(
                 context,
-                &[("code", "NetStream.Buffer.Stop"), ("level", "status")],
+                &[("code", "NetStream.Play.Stop"), ("level", "status")],
             );
             self.trigger_status_event(
                 context,
