@@ -15,7 +15,9 @@ use std::time::Duration;
 #[derive(Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
-    pub num_frames: u32,
+    pub num_frames: Option<u32>,
+    pub num_ticks: Option<u32>,
+    pub tick_rate: Option<f64>,
     pub output_path: PathBuf,
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparison: Option<ImageComparison>,
@@ -28,7 +30,9 @@ pub struct TestOptions {
 impl Default for TestOptions {
     fn default() -> Self {
         Self {
-            num_frames: 1,
+            num_frames: None,
+            num_ticks: None,
+            tick_rate: None,
             output_path: PathBuf::from("output.txt"),
             sleep_to_meet_frame_rate: false,
             image_comparison: None,

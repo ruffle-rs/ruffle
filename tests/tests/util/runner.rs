@@ -88,7 +88,11 @@ pub fn run_swf(
     let base_path = Path::new(&test.output_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(&test.swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
-    let frame_time = 1000.0 / movie.frame_rate().to_f64();
+    let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
+    if let Some(tr) = test.options.tick_rate {
+        frame_time = tr;
+    }
+
     let frame_time_duration = Duration::from_millis(frame_time as u64);
 
     let log = TestLogBackend::new();
@@ -114,11 +118,25 @@ pub fn run_swf(
         .player_options
         .setup(builder, &movie)?
         .with_movie(movie)
+        .with_autoplay(true) //.tick() requires playback
         .build();
 
     before_start(player.clone())?;
 
-    for _ in 0..test.options.num_frames {
+    if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
+        return Err(anyhow!(
+            "Test {} must specify at least one of num_frames or num_ticks",
+            test.swf_path.to_string_lossy()
+        ));
+    }
+
+    let num_iterations = test
+        .options
+        .num_frames
+        .or(test.options.num_ticks)
+        .expect("valid iteration count");
+
+    for _ in 0..num_iterations {
         // If requested, ensure that the 'expected' amount of
         // time actually elapses between frames. This is useful for
         // tests that call 'flash.utils.getTimer()' and use
@@ -142,9 +160,13 @@ pub fn run_swf(
             .preload(&mut ExecutionLimit::exhausted())
         {}
 
-        player.lock().unwrap().run_frame();
-        player.lock().unwrap().update_timers(frame_time);
-        player.lock().unwrap().audio_mut().tick();
+        if test.options.num_ticks.is_some() {
+            player.lock().unwrap().tick(frame_time);
+        } else {
+            player.lock().unwrap().run_frame();
+            player.lock().unwrap().update_timers(frame_time);
+            player.lock().unwrap().audio_mut().tick();
+        }
         executor.run();
 
         injector.next(|evt, _btns_down| {

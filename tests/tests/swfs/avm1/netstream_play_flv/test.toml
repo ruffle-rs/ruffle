@@ -1,1 +1,4 @@
-num_frames=60
+num_ticks=60
+
+[player_options]
+with_video = true
