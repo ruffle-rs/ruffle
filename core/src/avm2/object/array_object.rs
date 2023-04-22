@@ -73,7 +73,7 @@ impl<'gc> ArrayObject<'gc> {
             ArrayObjectData { base, array },
         ))
         .into();
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(Some(instance), &[], activation)?;
 

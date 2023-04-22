@@ -42,7 +42,7 @@ impl<'gc> Context3DObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(Some(this), &[], activation)?;
 

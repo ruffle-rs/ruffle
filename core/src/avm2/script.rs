@@ -538,7 +538,7 @@ impl<'gc> Script<'gc> {
                 None,
                 &mut null_activation,
             )?;
-            globals.install_instance_slots(&mut null_activation);
+            globals.install_instance_slots(context.gc_context);
 
             Avm2::run_script_initializer(*self, context)?;
 

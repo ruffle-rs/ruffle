@@ -66,7 +66,7 @@ impl<'gc> QNameObject<'gc> {
             QNameObjectData { base, name },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         Ok(this)
     }
