@@ -158,7 +158,7 @@ fn send<'gc>(
     };
 
     let window = match args.get(1) {
-        Some(v) => v.coerce_to_string(activation)?.to_string(),
+        Some(window) => window.coerce_to_string(activation)?,
         None => "".into(),
     };
 
@@ -187,8 +187,8 @@ fn send<'gc>(
     }
 
     activation.context.navigator.navigate_to_url(
-        url.to_string(),
-        window,
+        &url.to_utf8_lossy(),
+        &window.to_utf8_lossy(),
         Some((method, form_values)),
     );
 

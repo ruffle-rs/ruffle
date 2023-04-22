@@ -38,8 +38,8 @@ impl TestNavigatorBackend {
 impl NavigatorBackend for TestNavigatorBackend {
     fn navigate_to_url(
         &self,
-        url: String,
-        target: String,
+        url: &str,
+        target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         // Log request.

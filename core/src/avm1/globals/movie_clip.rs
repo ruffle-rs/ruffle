@@ -1266,10 +1266,9 @@ pub fn get_url<'gc>(
             return Ok(Value::Undefined);
         }
 
-        let window = if let Some(window) = args.get(1) {
-            window.coerce_to_string(activation)?.to_string()
-        } else {
-            "".into()
+        let window = match args.get(1) {
+            Some(window) => window.coerce_to_string(activation)?,
+            None => "".into(),
         };
 
         let method = match args.get(2) {
@@ -1278,10 +1277,11 @@ pub fn get_url<'gc>(
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
 
-        activation
-            .context
-            .navigator
-            .navigate_to_url(url.to_string(), window, vars_method);
+        activation.context.navigator.navigate_to_url(
+            &url.to_utf8_lossy(),
+            &window.to_utf8_lossy(),
+            vars_method,
+        );
     }
 
     Ok(Value::Undefined)

@@ -150,8 +150,8 @@ pub trait NavigatorBackend {
     /// sandbox.
     fn navigate_to_url(
         &self,
-        url: String,
-        target: String,
+        url: &str,
+        target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
@@ -291,8 +291,8 @@ impl Default for NullNavigatorBackend {
 impl NavigatorBackend for NullNavigatorBackend {
     fn navigate_to_url(
         &self,
-        _url: String,
-        _target: String,
+        _url: &str,
+        _target: &str,
         _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
     }
