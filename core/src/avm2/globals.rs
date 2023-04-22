@@ -141,6 +141,7 @@ pub struct SystemClasses<'gc> {
     pub morphshape: ClassObject<'gc>,
     pub shaderinput: ClassObject<'gc>,
     pub shaderparameter: ClassObject<'gc>,
+    pub netstatusevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -256,6 +257,7 @@ impl<'gc> SystemClasses<'gc> {
             morphshape: object,
             shaderinput: object,
             shaderparameter: object,
+            netstatusevent: object,
         }
     }
 }
@@ -711,6 +713,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
             ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
+            ("flash.events", "NetStatusEvent", netstatusevent),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),

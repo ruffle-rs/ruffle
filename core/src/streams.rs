@@ -1,5 +1,6 @@
 //! NetStream implementation
 
+use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
 use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
 use crate::loader::Error;
@@ -552,16 +553,20 @@ impl<'gc> NetStream<'gc> {
     /// Trigger a status event on the stream.
     pub fn trigger_status_event(
         self,
-        _context: &mut UpdateContext<'_, 'gc>,
-        _values: &[(&str, &str)],
+        context: &mut UpdateContext<'_, 'gc>,
+        values: &[(&'static str, &'static str)],
     ) {
         let object = self.0.read().avm_object;
         match object {
             Some(AvmObject::Avm1(_object)) => {
                 tracing::warn!("Status event (AVM1) is a stub!");
             }
-            Some(AvmObject::Avm2(_object)) => {
-                tracing::warn!("Status event (AVM2) is a stub!");
+            Some(AvmObject::Avm2(object)) => {
+                let domain = context.avm2.stage_domain();
+                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let net_status_event =
+                    Avm2EventObject::net_status_event(&mut activation, "netStatus", values);
+                Avm2::dispatch_event(&mut activation.context, net_status_event, object);
             }
             None => {}
         }
