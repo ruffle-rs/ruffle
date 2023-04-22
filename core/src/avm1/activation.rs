@@ -1223,9 +1223,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let fsargs = WString::from_utf8(&target);
             fscommand::handle(fscommand, &fsargs, self)?;
         } else {
-            self.context
-                .navigator
-                .navigate_to_url(url.to_owned(), target.into_owned(), None);
+            self.context.navigator.navigate_to_url(&url, &target, None);
         }
 
         Ok(FrameControl::Continue)
@@ -1370,7 +1368,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.context
             .navigator
-            .navigate_to_url(url.to_string(), target.to_string(), vars);
+            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
 
         Ok(FrameControl::Continue)
     }

@@ -29,10 +29,11 @@ pub fn navigate_to_url<'gc>(
         .get_public_property("url", activation)?
         .coerce_to_string(activation)?;
 
-    activation
-        .context
-        .navigator
-        .navigate_to_url(url.to_string(), target.to_string(), None);
+    activation.context.navigator.navigate_to_url(
+        &url.to_utf8_lossy(),
+        &target.to_utf8_lossy(),
+        None,
+    );
 
     Ok(Value::Undefined)
 }

@@ -86,8 +86,8 @@ impl WebNavigatorBackend {
 impl NavigatorBackend for WebNavigatorBackend {
     fn navigate_to_url(
         &self,
-        url: String,
-        target: String,
+        url: &str,
+        target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         // If the URL is empty, ignore the request.
@@ -95,7 +95,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             return;
         }
 
-        let url = self.resolve_url(&url);
+        let url = self.resolve_url(url);
 
         // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
         if let Ok(url) = Url::parse(&url) {
@@ -132,7 +132,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 let _ = form.set_attribute("action", &url);
 
                 if !target.is_empty() {
-                    let _ = form.set_attribute("target", &target);
+                    let _ = form.set_attribute("target", target);
                 }
 
                 for (k, v) in formvars.iter() {
@@ -154,7 +154,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 if target.is_empty() {
                     let _ = window.location().assign(&url);
                 } else {
-                    let _ = window.open_with_url_and_target(&url, &target);
+                    let _ = window.open_with_url_and_target(&url, target);
                 }
             }
         };

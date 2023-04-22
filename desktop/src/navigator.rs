@@ -67,15 +67,15 @@ impl ExternalNavigatorBackend {
 impl NavigatorBackend for ExternalNavigatorBackend {
     fn navigate_to_url(
         &self,
-        url: String,
-        _target: String,
+        url: &str,
+        _target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         //TODO: Should we return a result for failed opens? Does Flash care?
 
         //NOTE: Flash desktop players / projectors ignore the window parameter,
         //      unless it's a `_layer`, and we shouldn't handle that anyway.
-        let mut parsed_url = match self.base_url.join(&url) {
+        let mut parsed_url = match self.base_url.join(url) {
             Ok(parsed_url) => parsed_url,
             Err(e) => {
                 tracing::error!(
