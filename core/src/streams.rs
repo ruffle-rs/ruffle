@@ -4,6 +4,7 @@ use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
+use crate::vminterface::AvmObject;
 use flv_rs::{
     AudioData as FlvAudioData, Error as FlvError, FlvReader, Header as FlvHeader,
     ScriptData as FlvScriptData, Tag as FlvTag, TagData as FlvTagData, Value as FlvValue,
@@ -107,7 +108,7 @@ impl<'gc> StreamManager<'gc> {
 /// is intended to be a VM-agnostic version of those.
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
-pub struct NetStream<'gc>(GcCell<'gc, NetStreamData>);
+pub struct NetStream<'gc>(GcCell<'gc, NetStreamData<'gc>>);
 
 impl<'gc> PartialEq for NetStream<'gc> {
     fn eq(&self, other: &Self) -> bool {
@@ -136,8 +137,8 @@ pub enum NetStreamType {
 }
 
 #[derive(Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct NetStreamData {
+#[collect(no_drop)]
+pub struct NetStreamData<'gc> {
     /// All data currently loaded in the stream.
     buffer: Vec<u8>,
 
@@ -167,10 +168,13 @@ pub struct NetStreamData {
     /// Any `Video`s on the stage will display the bitmap here when attached to
     /// this `NetStream`.
     last_decoded_bitmap: Option<BitmapInfo>,
+
+    /// The AVM side of this stream.
+    avm_object: Option<AvmObject<'gc>>,
 }
 
 impl<'gc> NetStream<'gc> {
-    pub fn new(gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(gc_context: MutationContext<'gc, '_>, avm_object: Option<AvmObject<'gc>>) -> Self {
         Self(GcCell::allocate(
             gc_context,
             NetStreamData {
@@ -180,8 +184,13 @@ impl<'gc> NetStream<'gc> {
                 stream_type: None,
                 stream_time: 0.0,
                 last_decoded_bitmap: None,
+                avm_object,
             },
         ))
+    }
+
+    pub fn set_avm_object(self, gc_context: MutationContext<'gc, '_>, avm_object: AvmObject<'gc>) {
+        self.0.write(gc_context).avm_object = Some(avm_object);
     }
 
     pub fn load_buffer(self, gc_context: MutationContext<'gc, '_>, data: &mut Vec<u8>) {
