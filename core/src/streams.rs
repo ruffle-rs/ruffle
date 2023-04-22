@@ -201,6 +201,12 @@ impl<'gc> NetStream<'gc> {
 
     pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
         self.0.write(context.gc_context).buffer.append(data);
+
+        if context.is_action_script_3() {
+            // Don't ask why but the AS3 test has a spurious status event in it
+            self.trigger_status_event(context, &[]);
+        }
+
         self.trigger_status_event(
             context,
             &[("code", "NetStream.Buffer.Full"), ("level", "status")],
