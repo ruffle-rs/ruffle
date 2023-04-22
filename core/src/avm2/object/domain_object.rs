@@ -63,7 +63,7 @@ impl<'gc> DomainObject<'gc> {
             DomainObjectData { base, domain },
         ))
         .into();
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         // Note - we do *not* call the normal constructor, since that
         // creates a new domain using the system domain as a parent.

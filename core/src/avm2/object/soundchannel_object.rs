@@ -88,7 +88,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 position: 0.0,
             },
         ));
-        sound_object.install_instance_slots(activation);
+        sound_object.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(Some(sound_object.into()), &[], activation)?;
 

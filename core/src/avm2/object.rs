@@ -775,9 +775,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
-    fn install_instance_slots(&mut self, activation: &mut Activation<'_, 'gc>) {
-        self.base_mut(activation.context.gc_context)
-            .install_instance_slots();
+    fn install_instance_slots(&mut self, mc: MutationContext<'gc, '_>) {
+        self.base_mut(mc).install_instance_slots();
     }
 
     /// Call the object.

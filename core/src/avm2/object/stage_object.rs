@@ -66,7 +66,7 @@ impl<'gc> StageObject<'gc> {
                 display_object: Some(display_object),
             },
         ));
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
 
         Ok(instance)
     }
@@ -101,7 +101,7 @@ impl<'gc> StageObject<'gc> {
                 display_object: Some(display_object),
             },
         ));
-        this.install_instance_slots(activation);
+        this.install_instance_slots(activation.context.gc_context);
 
         // note: for Graphics, there's no need to call init.
 

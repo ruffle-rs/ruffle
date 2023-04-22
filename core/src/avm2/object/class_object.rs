@@ -825,7 +825,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         let mut instance = instance_allocator(self, activation)?;
 
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
 
         self.call_init(Some(instance), arguments, activation)?;
 

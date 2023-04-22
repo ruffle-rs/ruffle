@@ -63,7 +63,7 @@ impl<'gc> BitmapDataObject<'gc> {
         ));
 
         bitmap_data.init_object2(activation.context.gc_context, instance.into());
-        instance.install_instance_slots(activation);
+        instance.install_instance_slots(activation.context.gc_context);
         class.call_native_init(Some(instance.into()), &[], activation)?;
 
         Ok(instance.into())
