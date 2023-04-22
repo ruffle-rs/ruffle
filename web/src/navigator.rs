@@ -14,7 +14,8 @@ use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, Request as WebRequest, RequestInit, Response as WebResponse,
+    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
+    RequestInit, Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
@@ -115,27 +116,29 @@ impl NavigatorBackend for WebNavigatorBackend {
                     None => return,
                 };
 
-                let form = document
+                let form: HtmlFormElement = document
                     .create_element("form")
                     .expect("create_element() must succeed")
-                    .dyn_into::<web_sys::HtmlFormElement>()
-                    .expect("create_element('form') didn't give us a form");
+                    .dyn_into()
+                    .expect("create_element(\"form\") didn't give us a form");
 
-                let _ = form.set_attribute("method", &navmethod.to_string());
-                let _ = form.set_attribute("action", &url);
+                form.set_method(&navmethod.to_string());
+                form.set_action(&url);
 
                 if !target.is_empty() {
-                    let _ = form.set_attribute("target", target);
+                    form.set_target(target);
                 }
 
-                for (k, v) in formvars.iter() {
-                    let hidden = document
+                for (key, value) in formvars {
+                    let hidden: HtmlInputElement = document
                         .create_element("input")
-                        .expect("create_element() must succeed");
+                        .expect("create_element() must succeed")
+                        .dyn_into()
+                        .expect("create_element(\"input\") didn't give us an input");
 
-                    let _ = hidden.set_attribute("type", "hidden");
-                    let _ = hidden.set_attribute("name", k);
-                    let _ = hidden.set_attribute("value", v);
+                    hidden.set_type("hidden");
+                    hidden.set_name(&key);
+                    hidden.set_value(&value);
 
                     let _ = form.append_child(&hidden);
                 }

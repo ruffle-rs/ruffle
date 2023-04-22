@@ -58,9 +58,10 @@ features = ["audio", "mp3", "nellymoser", "wasm-bindgen", "default", "default_co
 [dependencies.web-sys]
 version = "0.3.61"
 features = [
-    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
-    "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
-    "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
-    "HtmlElement", "HtmlFormElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit", "Response",
-    "Storage", "WheelEvent", "Window",
+    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
+    "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
+    "ChannelMergerNode", "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode",
+    "HtmlCanvasElement", "HtmlElement", "HtmlFormElement", "HtmlInputElement", "KeyboardEvent",
+    "Location", "PointerEvent", "Request", "RequestInit", "Response", "Storage", "WheelEvent",
+    "Window",
 ]
