@@ -1357,7 +1357,7 @@ impl<'gc> Loader<'gc> {
 
                 match response {
                     Ok(mut response) => {
-                        stream.load_buffer(uc.gc_context, &mut response.body);
+                        stream.load_buffer(uc, &mut response.body);
                     }
                     Err(err) => {
                         stream.report_error(err);
