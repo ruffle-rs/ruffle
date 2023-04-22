@@ -133,10 +133,10 @@ impl<'a> AudioData<'a> {
         let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
-        let format = SoundFormat::try_from(format_spec & 0x0F).ok()?;
-        let rate = SoundRate::try_from((format_spec >> 4) & 0x03).ok()?;
-        let size = SoundSize::try_from((format_spec >> 6) & 0x01).ok()?;
-        let sound_type = SoundType::try_from((format_spec >> 7) & 0x01).ok()?;
+        let format = SoundFormat::try_from(format_spec >> 4).ok()?;
+        let rate = SoundRate::try_from((format_spec >> 2) & 0x03).ok()?;
+        let size = SoundSize::try_from((format_spec >> 1) & 0x01).ok()?;
+        let sound_type = SoundType::try_from(format_spec & 0x01).ok()?;
 
         let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn read_audiodata() {
-        let data = [0xFB, 0x12, 0x34, 0x56, 0x78];
+        let data = [0xBF, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn read_audiodata_invalid_len() {
-        let data = [0xFB, 0x12, 0x34, 0x56, 0x78];
+        let data = [0xBF, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(AudioData::parse(&mut reader, 0), None);
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn read_audiodata_short_len() {
-        let data = [0xFB, 0x12, 0x34, 0x56, 0x78];
+        let data = [0xBF, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -216,7 +216,7 @@ mod tests {
 
     #[test]
     fn read_audiodata_aac() {
-        let data = [0xFA, 0x01, 0x12, 0x34, 0x56, 0x78];
+        let data = [0xAD, 0x01, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(
@@ -224,7 +224,7 @@ mod tests {
             Some(AudioData {
                 format: SoundFormat::Aac,
                 rate: SoundRate::R44_000,
-                size: SoundSize::Bits16,
+                size: SoundSize::Bits8,
                 sound_type: SoundType::Stereo,
                 data: AudioDataType::AacRaw(&[0x12, 0x34, 0x56, 0x78])
             })
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn read_audiodata_aac_invalid() {
-        let data = [0xFA, 0x02, 0x12, 0x34, 0x56, 0x78];
+        let data = [0xAD, 0x02, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
         assert_eq!(AudioData::parse(&mut reader, data.len() as u32), None);
