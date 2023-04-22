@@ -1,5 +1,10 @@
 //! NetStream implementation
 
+use crate::avm1::{
+    Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
+    ExecutionReason as Avm1ExecutionReason, ScriptObject as Avm1ScriptObject,
+    TObject as Avm1TObject, Value as Avm1Value,
+};
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
 use crate::backend::navigator::Request;
 use crate::context::UpdateContext;
@@ -198,7 +203,7 @@ impl<'gc> NetStream<'gc> {
         self.0.write(context.gc_context).buffer.append(data);
         self.trigger_status_event(
             context,
-            &[("level", "status"), ("code", "NetStream.Buffer.Full")],
+            &[("code", "NetStream.Buffer.Full"), ("level", "status")],
         );
     }
 
@@ -233,7 +238,7 @@ impl<'gc> NetStream<'gc> {
 
         self.trigger_status_event(
             context,
-            &[("level", "status"), ("code", "NetStream.Play.Start")],
+            &[("code", "NetStream.Play.Start"), ("level", "status")],
         );
     }
 
@@ -532,15 +537,15 @@ impl<'gc> NetStream<'gc> {
         if end_of_video {
             self.trigger_status_event(
                 context,
-                &[("level", "status"), ("code", "NetStream.Buffer.Flush")],
+                &[("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
             self.trigger_status_event(
                 context,
-                &[("level", "status"), ("code", "NetStream.Buffer.Stop")],
+                &[("code", "NetStream.Buffer.Stop"), ("level", "status")],
             );
             self.trigger_status_event(
                 context,
-                &[("level", "status"), ("code", "NetStream.Buffer.Empty")],
+                &[("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
             self.pause(context);
         }
@@ -558,8 +563,38 @@ impl<'gc> NetStream<'gc> {
     ) {
         let object = self.0.read().avm_object;
         match object {
-            Some(AvmObject::Avm1(_object)) => {
-                tracing::warn!("Status event (AVM1) is a stub!");
+            Some(AvmObject::Avm1(object)) => {
+                let root = context.stage.root_clip().expect("root");
+                let object_proto = context.avm1.prototypes().object;
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    Avm1ActivationIdentifier::root("[NetStream Status Event]"),
+                    root,
+                );
+                let info_object =
+                    Avm1ScriptObject::new(activation.context.gc_context, Some(object_proto));
+
+                for (key, value) in values {
+                    info_object
+                        .set(
+                            AvmString::from(*key),
+                            Avm1Value::String(AvmString::from(*value)),
+                            &mut activation,
+                        )
+                        .expect("valid set");
+                }
+
+                if let Err(e) = object.call_method(
+                    "onStatus".into(),
+                    &[info_object.into()],
+                    &mut activation,
+                    Avm1ExecutionReason::Special,
+                ) {
+                    tracing::error!(
+                        "Got error when dispatching AVM1 event from NetStream: {}",
+                        e
+                    );
+                }
             }
             Some(AvmObject::Avm2(object)) => {
                 let domain = context.avm2.stage_domain();
