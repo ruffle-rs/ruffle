@@ -399,7 +399,11 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(activation, type_name.clone(), *unit),
+                            PropertyClass::name(
+                                activation.context.gc_context,
+                                type_name.clone(),
+                                *unit,
+                            ),
                         ),
                         TraitKind::Function { .. } => (
                             Property::new_slot(new_slot_id),
@@ -409,7 +413,11 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(activation, type_name.clone(), *unit),
+                            PropertyClass::name(
+                                activation.context.gc_context,
+                                type_name.clone(),
+                                *unit,
+                            ),
                         ),
                         TraitKind::Class { .. } => (
                             Property::new_const_slot(new_slot_id),

@@ -45,11 +45,11 @@ pub enum PropertyClass<'gc> {
 
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
-        activation: &mut Activation<'_, 'gc>,
+        mc: MutationContext<'gc, '_>,
         name: Multiname<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
-        PropertyClass::Name(Gc::allocate(activation.context.gc_context, (name, unit)))
+        PropertyClass::Name(Gc::allocate(mc, (name, unit)))
     }
 
     /// Returns `value` coerced to the type of this `PropertyClass`.
