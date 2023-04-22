@@ -1,7 +1,8 @@
+use crate::error::Error;
 use crate::reader::FlvReader;
 use std::io::Seek;
 
-fn parse_string<'a>(reader: &mut FlvReader<'a>, is_long_string: bool) -> Option<&'a [u8]> {
+fn parse_string<'a>(reader: &mut FlvReader<'a>, is_long_string: bool) -> Result<&'a [u8], Error> {
     let length = if is_long_string {
         reader.read_u32()?
     } else {
@@ -42,29 +43,29 @@ impl<'a> Value<'a> {
     /// specification as to how they are to be decoded.
     ///
     /// data_size is the size of the entire script data structure.
-    pub fn parse(reader: &mut FlvReader<'a>) -> Option<Self> {
+    pub fn parse(reader: &mut FlvReader<'a>) -> Result<Self, Error> {
         let value_type = reader.read_u8()?;
 
         match value_type {
-            0 => Some(Self::Number(reader.read_f64()?)),
-            1 => Some(Self::Boolean(reader.read_u8()? != 0)),
-            2 => Some(Self::String(parse_string(reader, false)?)),
+            0 => Ok(Self::Number(reader.read_f64()?)),
+            1 => Ok(Self::Boolean(reader.read_u8()? != 0)),
+            2 => Ok(Self::String(parse_string(reader, false)?)),
             3 => {
                 let mut variables = vec![];
                 loop {
                     let terminator = reader.peek_u24()?;
                     if terminator == 9 {
                         reader.read_u24()?;
-                        return Some(Self::Object(variables));
+                        return Ok(Self::Object(variables));
                     }
 
                     variables.push(Variable::parse(reader)?);
                 }
             }
-            4 => Some(Self::MovieClip(parse_string(reader, false)?)),
-            5 => Some(Self::Null),
-            6 => Some(Self::Undefined),
-            7 => Some(Self::Reference(reader.read_u16()?)),
+            4 => Ok(Self::MovieClip(parse_string(reader, false)?)),
+            5 => Ok(Self::Null),
+            6 => Ok(Self::Undefined),
+            7 => Ok(Self::Reference(reader.read_u16()?)),
             8 => {
                 let length_hint = reader.read_u32()?;
                 let mut variables = Vec::with_capacity(length_hint as usize);
@@ -73,7 +74,7 @@ impl<'a> Value<'a> {
                     let terminator = reader.peek_u24()?;
                     if terminator == 9 {
                         reader.read_u24()?;
-                        return Some(Self::EcmaArray(variables));
+                        return Ok(Self::EcmaArray(variables));
                     }
 
                     variables.push(Variable::parse(reader)?);
@@ -87,14 +88,14 @@ impl<'a> Value<'a> {
                     variables.push(Variable::parse(reader)?);
                 }
 
-                Some(Self::StrictArray(variables))
+                Ok(Self::StrictArray(variables))
             }
-            11 => Some(Self::Date {
+            11 => Ok(Self::Date {
                 unix_time: reader.read_f64()?,
                 local_offset: reader.read_i16()?,
             }),
-            12 => Some(Self::LongString(parse_string(reader, true)?)),
-            _ => None,
+            12 => Ok(Self::LongString(parse_string(reader, true)?)),
+            _ => Err(Error::UnknownValueType),
         }
     }
 }
@@ -111,8 +112,8 @@ pub struct Variable<'a> {
 }
 
 impl<'a> Variable<'a> {
-    pub fn parse(reader: &mut FlvReader<'a>) -> Option<Self> {
-        Some(Self {
+    pub fn parse(reader: &mut FlvReader<'a>) -> Result<Self, Error> {
+        Ok(Self {
             name: parse_string(reader, false)?,
             data: Value::parse(reader)?,
         })
@@ -127,7 +128,7 @@ impl<'a> ScriptData<'a> {
     ///
     /// No data size parameter is accepted; we parse until we reach an object
     /// terminator, reach invalid data, or we run out of bytes in the reader.
-    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
+    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Result<Self, Error> {
         let start = reader.stream_position().expect("valid position");
         let _trash = reader.read_u8()?;
         let mut vars = vec![];
@@ -136,13 +137,13 @@ impl<'a> ScriptData<'a> {
             let cur_length = reader.stream_position().expect("valid position") - start;
             if cur_length >= data_size as u64 {
                 // Terminators are commonly elided from script data blocks.
-                return Some(Self(vars));
+                return Ok(Self(vars));
             }
 
             let is_return = reader.peek_u24()?;
             if is_return == 9 {
                 reader.read_u24()?;
-                return Some(Self(vars));
+                return Ok(Self(vars));
             }
 
             vars.push(Variable::parse(reader)?);
@@ -160,7 +161,7 @@ mod tests {
         let data = [0x00, 0x03, 0x01, 0x02, 0x03];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(parse_string(&mut reader, false), Some(&data[2..]));
+        assert_eq!(parse_string(&mut reader, false), Ok(&data[2..]));
     }
 
     #[test]
@@ -168,7 +169,7 @@ mod tests {
         let data = [0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(parse_string(&mut reader, true), Some(&data[4..]));
+        assert_eq!(parse_string(&mut reader, true), Ok(&data[4..]));
     }
 
     #[test]
@@ -176,7 +177,7 @@ mod tests {
         let data = [0x00, 0x40, 0x28, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9a];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(Value::parse(&mut reader), Some(Value::Number(12.3)));
+        assert_eq!(Value::parse(&mut reader), Ok(Value::Number(12.3)));
     }
 
     #[test]
@@ -184,7 +185,7 @@ mod tests {
         let data = [0x01, 0x01];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(Value::parse(&mut reader), Some(Value::Boolean(true)));
+        assert_eq!(Value::parse(&mut reader), Ok(Value::Boolean(true)));
     }
 
     #[test]
@@ -194,7 +195,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::String(&[0x01, 0x02, 0x03]))
+            Ok(Value::String(&[0x01, 0x02, 0x03]))
         );
     }
 
@@ -205,7 +206,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::MovieClip(&[0x01, 0x02, 0x03]))
+            Ok(Value::MovieClip(&[0x01, 0x02, 0x03]))
         );
     }
 
@@ -216,7 +217,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::LongString(&[0x01, 0x02, 0x03]))
+            Ok(Value::LongString(&[0x01, 0x02, 0x03]))
         );
     }
 
@@ -225,7 +226,7 @@ mod tests {
         let data = [0x05];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(Value::parse(&mut reader), Some(Value::Null));
+        assert_eq!(Value::parse(&mut reader), Ok(Value::Null));
     }
 
     #[test]
@@ -233,7 +234,7 @@ mod tests {
         let data = [0x06];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(Value::parse(&mut reader), Some(Value::Undefined));
+        assert_eq!(Value::parse(&mut reader), Ok(Value::Undefined));
     }
 
     #[test]
@@ -241,7 +242,7 @@ mod tests {
         let data = [0x07, 0x24, 0x38];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(Value::parse(&mut reader), Some(Value::Reference(0x2438)));
+        assert_eq!(Value::parse(&mut reader), Ok(Value::Reference(0x2438)));
     }
 
     #[test]
@@ -253,7 +254,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::Date {
+            Ok(Value::Date {
                 unix_time: 12.3,
                 local_offset: -2
             })
@@ -270,7 +271,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::Object(vec![
+            Ok(Value::Object(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined
@@ -293,7 +294,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::EcmaArray(vec![
+            Ok(Value::EcmaArray(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined
@@ -316,7 +317,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::EcmaArray(vec![
+            Ok(Value::EcmaArray(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined
@@ -339,7 +340,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::EcmaArray(vec![
+            Ok(Value::EcmaArray(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined
@@ -362,7 +363,7 @@ mod tests {
 
         assert_eq!(
             Value::parse(&mut reader),
-            Some(Value::StrictArray(vec![
+            Ok(Value::StrictArray(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined
@@ -385,7 +386,7 @@ mod tests {
 
         assert_eq!(
             ScriptData::parse(&mut reader, 16),
-            Some(ScriptData(vec![
+            Ok(ScriptData(vec![
                 Variable {
                     name: &[0x01, 0x02, 0x03],
                     data: Value::Undefined

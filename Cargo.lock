@@ -1650,6 +1650,7 @@ name = "flv-rs"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.3.2",
+ "thiserror",
 ]
 
 [[package]]

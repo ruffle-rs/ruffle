@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::FlvReader;
 use std::io::Seek;
 
@@ -20,7 +21,7 @@ pub enum SoundFormat {
 }
 
 impl TryFrom<u8> for SoundFormat {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -37,7 +38,7 @@ impl TryFrom<u8> for SoundFormat {
             11 => Ok(Self::Speex),
             14 => Ok(Self::MP38kHz),
             15 => Ok(Self::DeviceSpecific),
-            _ => Err(()),
+            unk => Err(Error::UnknownAudioFormatType(unk)),
         }
     }
 }
@@ -52,7 +53,7 @@ pub enum SoundRate {
 }
 
 impl TryFrom<u8> for SoundRate {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -60,7 +61,7 @@ impl TryFrom<u8> for SoundRate {
             1 => Ok(Self::R11_000),
             2 => Ok(Self::R22_000),
             3 => Ok(Self::R44_000),
-            _ => Err(()),
+            unk => Err(Error::UnknownAudioRate(unk)), //probably unreachable
         }
     }
 }
@@ -73,13 +74,13 @@ pub enum SoundSize {
 }
 
 impl TryFrom<u8> for SoundSize {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Bits8),
             1 => Ok(Self::Bits16),
-            _ => Err(()),
+            unk => Err(Error::UnknownAudioSampleSize(unk)), //probably unreachable
         }
     }
 }
@@ -92,13 +93,13 @@ pub enum SoundType {
 }
 
 impl TryFrom<u8> for SoundType {
-    type Error = ();
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::Mono),
             1 => Ok(Self::Stereo),
-            _ => Err(()),
+            unk => Err(Error::UnknownAudioChannelCount(unk)), //probably unreachable
         }
     }
 }
@@ -126,38 +127,39 @@ impl<'a> AudioData<'a> {
     /// returned as an array that must be provided to your audio decoder.
     ///
     /// `data_size` is the size of the entire audio data structure, *including*
-    /// the header.
-    ///
-    /// If `None` is yielded, the data stream is not a valid audio header.
-    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Option<Self> {
+    /// the header. Errors are yielded if the `data_size` is too small for the
+    /// audio data present in the tag. This should not be confused for
+    /// `EndOfData` which indicates that we've read past the end of the whole
+    /// data stream.
+    pub fn parse(reader: &mut FlvReader<'a>, data_size: u32) -> Result<Self, Error> {
         let start = reader.stream_position().expect("current position") as usize;
         let format_spec = reader.read_u8()?;
 
-        let format = SoundFormat::try_from(format_spec >> 4).ok()?;
-        let rate = SoundRate::try_from((format_spec >> 2) & 0x03).ok()?;
-        let size = SoundSize::try_from((format_spec >> 1) & 0x01).ok()?;
-        let sound_type = SoundType::try_from(format_spec & 0x01).ok()?;
+        let format = SoundFormat::try_from(format_spec >> 4)?;
+        let rate = SoundRate::try_from((format_spec >> 2) & 0x03)?;
+        let size = SoundSize::try_from((format_spec >> 1) & 0x01)?;
+        let sound_type = SoundType::try_from(format_spec & 0x01)?;
 
         let header_size = reader.stream_position().expect("current position") as usize - start;
         if (data_size as usize) < header_size {
-            return None;
+            return Err(Error::ShortAudioBlock);
         }
         let data = reader.read(data_size as usize - header_size)?;
 
         let data = match format {
             SoundFormat::Aac => {
-                let aac_packet_type = data.first()?;
+                let aac_packet_type = data.first().ok_or(Error::ShortAudioBlock)?;
                 match aac_packet_type {
                     //TODO: The FLV spec says this is explained in ISO 14496-3.
                     0 => AudioDataType::AacSequenceHeader(&data[1..]),
                     1 => AudioDataType::AacRaw(&data[1..]),
-                    _ => return None,
+                    unk => return Err(Error::UnknownAacPacketType(*unk)),
                 }
             }
             _ => AudioDataType::Raw(data),
         };
 
-        Some(AudioData {
+        Ok(AudioData {
             format,
             rate,
             size,
@@ -169,6 +171,7 @@ impl<'a> AudioData<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Error;
     use crate::reader::FlvReader;
     use crate::sound::{AudioData, AudioDataType, SoundFormat, SoundRate, SoundSize, SoundType};
 
@@ -179,7 +182,7 @@ mod tests {
 
         assert_eq!(
             AudioData::parse(&mut reader, data.len() as u32),
-            Some(AudioData {
+            Ok(AudioData {
                 format: SoundFormat::Speex,
                 rate: SoundRate::R44_000,
                 size: SoundSize::Bits16,
@@ -194,7 +197,10 @@ mod tests {
         let data = [0xBF, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(AudioData::parse(&mut reader, 0), None);
+        assert_eq!(
+            AudioData::parse(&mut reader, 0),
+            Err(Error::ShortAudioBlock)
+        );
     }
 
     #[test]
@@ -204,7 +210,7 @@ mod tests {
 
         assert_eq!(
             AudioData::parse(&mut reader, 2),
-            Some(AudioData {
+            Ok(AudioData {
                 format: SoundFormat::Speex,
                 rate: SoundRate::R44_000,
                 size: SoundSize::Bits16,
@@ -221,7 +227,7 @@ mod tests {
 
         assert_eq!(
             AudioData::parse(&mut reader, data.len() as u32),
-            Some(AudioData {
+            Ok(AudioData {
                 format: SoundFormat::Aac,
                 rate: SoundRate::R44_000,
                 size: SoundSize::Bits8,
@@ -236,6 +242,9 @@ mod tests {
         let data = [0xAD, 0x02, 0x12, 0x34, 0x56, 0x78];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(AudioData::parse(&mut reader, data.len() as u32), None);
+        assert_eq!(
+            AudioData::parse(&mut reader, data.len() as u32),
+            Err(Error::UnknownAacPacketType(2))
+        );
     }
 }

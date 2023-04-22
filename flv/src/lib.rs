@@ -6,6 +6,9 @@ mod video;
 
 mod reader;
 
+mod error;
+
+pub use error::Error;
 pub use header::Header;
 pub use reader::FlvReader;
 pub use script::{ScriptData, Value, Variable};
