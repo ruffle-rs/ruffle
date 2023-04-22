@@ -75,7 +75,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         //NOTE: Flash desktop players / projectors ignore the window parameter,
         //      unless it's a `_layer`, and we shouldn't handle that anyway.
-        let mut parsed_url = match Url::parse(&url) {
+        let mut parsed_url = match self.base_url.join(&url) {
             Ok(parsed_url) => parsed_url,
             Err(e) => {
                 tracing::error!(
