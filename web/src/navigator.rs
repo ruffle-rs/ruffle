@@ -162,26 +162,15 @@ impl NavigatorBackend for WebNavigatorBackend {
             init.method(&request.method().to_string());
 
             if let Some((data, mime)) = request.body() {
-                let arraydata = ArrayBuffer::new(data.len() as u32);
-                let u8data = Uint8Array::new(&arraydata);
+                let blob = Blob::new_with_buffer_source_sequence_and_options(
+                    &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
+                    BlobPropertyBag::new().type_(mime),
+                )
+                .map_err(|_| Error::FetchError("Got JS error".to_string()))?
+                .dyn_into()
+                .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 
-                for (i, byte) in data.iter().enumerate() {
-                    u8data.fill(*byte, i as u32, i as u32 + 1);
-                }
-
-                let blobparts = Array::new();
-                blobparts.push(&arraydata);
-
-                let mut blobprops = BlobPropertyBag::new();
-                blobprops.type_(mime);
-
-                let datablob =
-                    Blob::new_with_buffer_source_sequence_and_options(&blobparts, &blobprops)
-                        .map_err(|_| Error::FetchError("Got JS error".to_string()))?
-                        .dyn_into()
-                        .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
-
-                init.body(Some(&datablob));
+                init.body(Some(&blob));
             }
 
             let request = WebRequest::new_with_str_and_init(&url, &init)
