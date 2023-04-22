@@ -390,7 +390,7 @@ pub fn goto_frame<'gc>(
                             activation,
                             &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene}."),
                             2109,
-                        )?))
+                        )?));
                     }
                 }
 
@@ -402,7 +402,7 @@ pub fn goto_frame<'gc>(
                             activation,
                             &format!("Error #2109: {frame_or_label} is not a valid frame label."),
                             2109,
-                        )?)
+                        )?),
                     )? as i32
                 } else {
                     frame.unwrap_or(0) as i32 // Old swf versions silently jump to frame 1 for invalid labels.
