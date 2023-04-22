@@ -121,14 +121,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     .dyn_into::<web_sys::HtmlFormElement>()
                     .expect("create_element('form') didn't give us a form");
 
-                let _ = form.set_attribute(
-                    "method",
-                    match navmethod {
-                        NavigationMethod::Get => "get",
-                        NavigationMethod::Post => "post",
-                    },
-                );
-
+                let _ = form.set_attribute("method", &navmethod.to_string());
                 let _ = form.set_attribute("action", &url);
 
                 if !target.is_empty() {
@@ -166,10 +159,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         Box::pin(async move {
             let mut init = RequestInit::new();
 
-            init.method(match request.method() {
-                NavigationMethod::Get => "GET",
-                NavigationMethod::Post => "POST",
-            });
+            init.method(&request.method().to_string());
 
             if let Some((data, mime)) = request.body() {
                 let arraydata = ArrayBuffer::new(data.len() as u32);
