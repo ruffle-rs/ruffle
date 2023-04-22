@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
+use crate::avm2::error::argument_error;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -386,18 +387,24 @@ pub fn goto_frame<'gc>(
                     //the requested frame exists within that scene.
                     let scene = args[1].coerce_to_string(activation)?;
                     if !mc.frame_exists_within_scene(&frame_or_label, &scene, &activation.context) {
-                        return Err(format!(
-                            "ArgumentError: Frame label {frame_or_label} not found in scene {scene}",
-                        )
-                        .into());
+                        return Err(Error::AvmError(argument_error(
+                            activation,
+                            &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene}."),
+                            2109,
+                        )?));
                     }
                 }
 
                 let frame = mc.frame_label_to_number(&frame_or_label, &activation.context);
                 if activation.context.swf.version() >= 11 {
-                    frame.ok_or_else(|| {
-                        format!("ArgumentError: {frame_or_label} is not a valid frame label.")
-                    })? as i32
+                    frame.ok_or(
+                        // TODO: Also include the scene in the error message, as done above
+                        Error::AvmError(argument_error(
+                            activation,
+                            &format!("Error #2109: {frame_or_label} is not a valid frame label."),
+                            2109,
+                        )?),
+                    )? as i32
                 } else {
                     frame.unwrap_or(0) as i32 // Old swf versions silently jump to frame 1 for invalid labels.
                 }
