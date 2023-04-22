@@ -13,15 +13,22 @@ pub struct WebUiBackend {
     canvas: HtmlCanvasElement,
     cursor_visible: bool,
     cursor: MouseCursor,
+    language: LanguageIdentifier,
 }
 
 impl WebUiBackend {
     pub fn new(js_player: JavascriptPlayer, canvas: &HtmlCanvasElement) -> Self {
+        let window = web_sys::window().expect("window()");
+        let preferred_language = window.navigator().language();
+        let language = preferred_language
+            .and_then(|l| l.parse().ok())
+            .unwrap_or_else(|| US_ENGLISH.clone());
         Self {
             js_player,
             canvas: canvas.clone(),
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
+            language,
         }
     }
 
@@ -120,6 +127,6 @@ impl UiBackend for WebUiBackend {
     }
 
     fn language(&self) -> &LanguageIdentifier {
-        &US_ENGLISH
+        &self.language
     }
 }
