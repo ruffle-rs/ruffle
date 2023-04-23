@@ -8,6 +8,18 @@
     "settings_ignore_optout": {
         "message": "Ignorer les avertissements de compatibilité des sites Internet"
     },
+    "settings_show_swf_download": {
+        "message": "Permet le téléchargement des SWFs depuis le menu contextuel"
+    },
+    "settings_autostart": {
+        "message": "Lire automatiquement sans écran de démarrage (requiert un clic pour activer le son)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "Avertir des contenus non supportés"
+    },
+    "settings_log_level": {
+        "message": "Niveau des logs"
+    },
     "status_init": {
         "message": "Lecture de l'onglet actuel"
     },
@@ -15,22 +27,22 @@
         "message": "Il n'y a pas d'onglet actif."
     },
     "status_tabs_error": {
-        "message": "Une erreur s'est produite lors de la recherche de l'onglet actuel."
+        "message": "Une erreur s'est produite lors de l'accès à l'onglet actuel."
     },
     "status_message_init": {
-        "message": "Vérification de l'état de Ruffle dans l'onglet actuel"
+        "message": "Vérification de l'état de Ruffle dans l'onglet actuel…"
     },
     "status_result_running": {
         "message": "Ruffle est chargé et exécute Flash dans l'onglet actuel."
     },
     "status_result_optout": {
-        "message": "Ruffle n'est pas chargé car la page en cours est incompatible."
+        "message": "Ruffle n'est pas chargé car la page actuelle s'est signalé comme incompatible."
     },
     "status_result_disabled": {
         "message": "Ruffle n'est pas chargé car il a été désactivé par l'utilisateur."
     },
     "status_result_error": {
-        "message": "Une erreur s'est produite lors de l'interrogation de l'instance de Ruffle dans l'onglet actuel."
+        "message": "Une erreur s'est produite lors d'une requête vers l'instance Ruffle de l'onglet actuel."
     },
     "status_result_protected": {
         "message": "Ruffle ne peut pas se charger sur les pages protégées du navigateur."

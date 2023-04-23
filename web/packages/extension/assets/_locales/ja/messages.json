@@ -11,6 +11,9 @@
     "settings_show_swf_download": {
         "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
+    "settings_autostart": {
+        "message": "スプラッシュ画面なしで自動再生(クリックでミュートを解除)"
+    },
     "settings_warn_on_unsupported_content": {
         "message": "サポートされていないコンテンツで警告を表示する"
     },
@@ -18,7 +21,7 @@
         "message": "ログレベル"
     },
     "status_init": {
-        "message": "現在のタブを読み込む..."
+        "message": "現在のタブを読み込み中..."
     },
     "status_no_tabs": {
         "message": "アクティブなタブはありません。"
@@ -27,7 +30,7 @@
         "message": "現在のタブを検索中にエラーが発生しました。"
     },
     "status_message_init": {
-        "message": "現在のタブでのRuffleの状態を確認..."
+        "message": "現在のタブでのRuffleの状態を確認しています..."
     },
     "status_result_running": {
         "message": "Ruffleは、現在のタブでFlashコンテンツをロードし、実行しています。"
@@ -60,6 +63,6 @@
         "message": "設定を保存"
     },
     "settings_saved": {
-        "message": "保存完了"
+        "message": "設定を保存しました"
     }
 }

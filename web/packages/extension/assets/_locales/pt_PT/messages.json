@@ -8,10 +8,19 @@
     "settings_ignore_optout": {
         "message": "Ignorar avisos de compatibilidade do site"
     },
+    "settings_show_swf_download": {
+        "message": "Permitir o download de SWFs pelo menu de contexto"
+    },
     "settings_autostart": {
         "message": "Reproduzir automaticamente sem o ecrã inicial (depois clique para dessilenciar)"
     },
     "settings_warn_on_unsupported_content": {
         "message": "Aviar em conteúdo não suportado"
+    },
+    "settings_log_level": {
+        "message": "Nível do log"
+    },
+    "status_init": {
+        "message": "Lendo o separador atual…"
     }
 }
