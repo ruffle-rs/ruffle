@@ -22,11 +22,11 @@ ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
-bitflags = "2.0.2"
+bitflags = "2.1.0"
 smallvec = { version = "1.10.0", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.3"
-quick-xml = "0.28.1"
+quick-xml = "0.28.2"
 downcast-rs = "1.2.0"
 url = "2.3.1"
 weak-table = "0.3.2"
@@ -36,7 +36,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 instant = "0.1"
 encoding_rs = "0.8.32"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.159", features = ["derive"] }
+serde = { version = "1.0.160", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
 regress = "0.5"
@@ -46,7 +46,7 @@ dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = 
 symphonia = { version = "0.5.2", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.0.12"
 bytemuck = "1.13.1"
-clap = { version = "4.2.1", features = ["derive"], optional=true }
+clap = { version = "4.2.4", features = ["derive"], optional=true }
 realfft = "3.2.0"
 once_cell = "1.17.1"
 
