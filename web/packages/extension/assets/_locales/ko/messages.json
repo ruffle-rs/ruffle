@@ -8,6 +8,18 @@
     "settings_ignore_optout": {
         "message": "웹 사이트 호환성 경고를 무시하기"
     },
+    "settings_show_swf_download": {
+        "message": "컨텍스트 메뉴에 SWF 다운로드 버튼 표시"
+    },
+    "settings_autostart": {
+        "message": "시작 화면 없이 자동으로 실행 (이후 클릭하여 음소거 해제)"
+    },
+    "settings_warn_on_unsupported_content": {
+        "message": "지원되지 않는 콘텐츠에 대해 경고 표시"
+    },
+    "settings_log_level": {
+        "message": "로그 수준"
+    },
     "status_init": {
         "message": "현재 탭을 읽는 중…"
     },
