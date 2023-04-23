@@ -52,7 +52,7 @@
         "replace-in-file": "^6.3.5",
         "shx": "^0.3.4",
         "ts-node": "^10.9.1",
-        "typedoc": "^0.23.26",
+        "typedoc": "^0.24.0",
         "typescript": "^5.0.0"
     }
 }
