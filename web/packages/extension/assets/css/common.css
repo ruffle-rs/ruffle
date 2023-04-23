@@ -109,10 +109,8 @@ body {
 
 /* Number input. */
 
-.number_input input {
-
+.option.number-input input {
     width: 60px;
     height: 20px;
     margin: auto;
 }
-

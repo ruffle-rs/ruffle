@@ -38,7 +38,9 @@ class CheckboxOption implements OptionElement<boolean> {
     }
 }
 
-class MaxExecutionDuration_NumberInputOption implements OptionElement<Duration> {
+class MaxExecutionDuration_NumberInputOption
+    implements OptionElement<Duration>
+{
     constructor(
         private readonly numberInput: HTMLInputElement,
         readonly label: HTMLLabelElement
@@ -88,16 +90,12 @@ function getElement(option: Element): OptionElement<unknown> {
 
     const [input] = option.getElementsByTagName("input");
     if (input) {
-
         if (input.type === "checkbox") {
-
             return new CheckboxOption(input, label);
         }
 
         if (input.type === "number") {
-
             if (input.id === "max_execution_duration") {
-
                 return new MaxExecutionDuration_NumberInputOption(input, label);
             }
         }

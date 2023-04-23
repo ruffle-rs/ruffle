@@ -122,10 +122,9 @@ export const enum WindowMode {
  * Each member is an integer and non-negative.
  */
 export interface Duration {
-
-    secs: number,
-    nanos: number,
-};
+    secs: number;
+    nanos: number;
+}
 
 /**
  * Any options used for loading a movie.
