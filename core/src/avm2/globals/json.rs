@@ -5,6 +5,7 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{syntax_error, type_error};
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -266,11 +267,8 @@ pub fn parse<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
-    let reviver = args.get(1).unwrap_or(&Value::Undefined).as_object();
+    let input = args.get_string(activation, 0)?;
+    let reviver = args.get_value(1).as_object();
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
@@ -291,9 +289,9 @@ pub fn stringify<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let val = args.get(0).expect("Guaranteed by AS");
-    let replacer = args.get(1).expect("Guaranteed by AS").as_object();
-    let spaces = args.get(2).expect("Guaranteed by AS");
+    let val = args.get_value(0);
+    let replacer = args.get_value(1).as_object();
+    let spaces = args.get_value(2);
 
     // If the replacer is None, that means it was a primitive (as_object returns None for primitives), and therefore not a valid replacer
     if replacer.is_none() && !matches!(args.get(1).unwrap(), Value::Null) {
@@ -319,7 +317,7 @@ pub fn stringify<'gc>(
     }).transpose()?;
 
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
-    let indent = if let Value::String(s) = spaces {
+    let indent = if let Value::String(s) = &spaces {
         if s.is_empty() {
             None
         } else {
@@ -344,7 +342,7 @@ pub fn stringify<'gc>(
     };
 
     let mut serializer = AvmSerializer::new(replacer);
-    let json = serializer.serialize(activation, *val)?;
+    let json = serializer.serialize(activation, val)?;
     let result = match indent {
         Some(indent) => {
             let mut result = Vec::with_capacity(128);
