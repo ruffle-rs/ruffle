@@ -8,17 +8,17 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-clap = { version = "4.2.1", features = ["derive"] }
+clap = { version = "4.2.4", features = ["derive"] }
 cpal = "0.15.2"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 generational-arena = "0.2.8"
 tracing = "0.1.37"
 winit = "0.28.3"
-webbrowser = "0.8.8"
+webbrowser = "0.8.9"
 url = "2.3.1"
 arboard = "3.2.0"
 dirs = "5.0"
