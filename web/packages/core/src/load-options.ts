@@ -118,6 +118,16 @@ export const enum WindowMode {
 }
 
 /**
+ * Based on https://doc.rust-lang.org/stable/std/time/struct.Duration.html .
+ * Each member is an integer and non-negative.
+ */
+export interface Duration {
+
+    secs: number,
+    nanos: number,
+};
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -250,10 +260,7 @@ export interface BaseLoadOptions {
      *
      * @default { secs: 15, nanos: 0 }
      */
-    maxExecutionDuration?: {
-        secs: number;
-        nanos: number;
-    };
+    maxExecutionDuration?: Duration;
 
     /**
      * Specifies the base directory or URL used to resolve all relative path statements in the SWF file.

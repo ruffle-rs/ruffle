@@ -1,6 +1,8 @@
 import * as utils from "./utils";
 import type { LogLevel } from "ruffle-core";
 
+import type { Duration } from "ruffle-core";
+
 export interface Options {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
@@ -8,6 +10,7 @@ export interface Options {
     logLevel: LogLevel;
     showSwfDownload: boolean;
     autostart: boolean;
+    maxExecutionDuration: Duration;
 }
 
 interface OptionElement<T> {
@@ -32,6 +35,28 @@ class CheckboxOption implements OptionElement<boolean> {
 
     set value(value: boolean) {
         this.checkbox.checked = value;
+    }
+}
+
+class MaxExecutionDuration_NumberInputOption implements OptionElement<Duration> {
+    constructor(
+        private readonly numberInput: HTMLInputElement,
+        readonly label: HTMLLabelElement
+    ) {}
+
+    get input() {
+        return this.numberInput;
+    }
+
+    get value() {
+        return {
+            secs: Math.max(1, Math.round(parseInt(this.numberInput.value))),
+            nanos: 0,
+        };
+    }
+
+    set value(value: Duration) {
+        this.numberInput.value = "" + value.secs;
     }
 }
 
@@ -61,9 +86,21 @@ class SelectOption implements OptionElement<string> {
 function getElement(option: Element): OptionElement<unknown> {
     const label = option.getElementsByTagName("label")[0]!;
 
-    const [checkbox] = option.getElementsByTagName("input");
-    if (checkbox && checkbox.type === "checkbox") {
-        return new CheckboxOption(checkbox, label);
+    const [input] = option.getElementsByTagName("input");
+    if (input) {
+
+        if (input.type === "checkbox") {
+
+            return new CheckboxOption(input, label);
+        }
+
+        if (input.type === "number") {
+
+            if (input.id === "max_execution_duration") {
+
+                return new MaxExecutionDuration_NumberInputOption(input, label);
+            }
+        }
     }
 
     const [select] = option.getElementsByTagName("select");

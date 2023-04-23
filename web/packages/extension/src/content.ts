@@ -176,6 +176,7 @@ function isXMLDocument(): boolean {
             autoplay: options.autostart ? "on" : "auto",
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,
+            maxExecutionDuration: options.maxExecutionDuration,
         },
     });
 })();

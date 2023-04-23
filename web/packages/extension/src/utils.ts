@@ -8,6 +8,7 @@ const DEFAULT_OPTIONS: Options = {
     logLevel: "error" as LogLevel,
     showSwfDownload: false,
     autostart: false,
+    maxExecutionDuration: {secs: 15, nanos: 0},
 };
 
 export let i18n: {

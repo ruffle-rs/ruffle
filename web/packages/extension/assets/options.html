@@ -47,6 +47,12 @@
                 <input type="checkbox" id="autostart" />
                 <label for="autostart">Play automatically without splash screen (then click to unmute)</label>
             </div>
+            <div class="option number_input">
+                <input type="number" id="max_execution_duration"
+                    min="1"
+                />
+                <label for="max_execution_duration">How long can actionscript execute for before being forcefully stopped (in seconds)</label>
+            </div>
         </div>
         <script src="dist/options.js"></script>
     </body>
