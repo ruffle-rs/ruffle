@@ -203,9 +203,6 @@ impl<'gc> Avm1Button<'gc> {
 
     pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
         self.0.write(context.gc_context).enabled = enabled;
-        if !enabled {
-            self.set_state(context, ButtonState::Up);
-        }
     }
 
     pub fn use_hand_cursor(self) -> bool {
@@ -424,16 +421,15 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
-        if !self.visible() && !matches!(event, ClipEvent::ReleaseOutside) {
-            return ClipEventResult::NotHandled;
+    fn filter_clip_event(self, _event: ClipEvent) -> ClipEventResult {
+        // An invisible button can still run its `rollOut` or `releaseOutside` event.
+        // A disabled button doesn't run its events (`KeyPress` being the exception) but
+        // its state can still change. This is tested at "avm1/mouse_events_visible_enabled".
+        if !self.visible() && self.0.read().state == ButtonState::Up {
+            ClipEventResult::NotHandled
+        } else {
+            ClipEventResult::Handled
         }
-
-        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
-            return ClipEventResult::NotHandled;
-        }
-
-        ClipEventResult::Handled
     }
 
     fn event_dispatch(
@@ -493,26 +489,41 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             _ => return ClipEventResult::NotHandled,
         };
 
-        write.run_actions(context, condition, None);
-        write.play_sound(context, sound);
+        let (update_state, new_state) = if write.enabled {
+            write.run_actions(context, condition, None);
+            write.play_sound(context, sound);
 
-        // Queue ActionScript-defined event handlers after the SWF defined ones.
-        // (e.g., clip.onRelease = foo).
-        if context.swf.version() >= 6 {
-            if let Some(name) = event.method_name() {
-                context.action_queue.queue_action(
-                    self_display_object,
-                    ActionType::Method {
-                        object: write.object.unwrap(),
-                        name,
-                        args: vec![],
-                    },
-                    false,
-                );
+            // Queue ActionScript-defined event handlers after the SWF defined ones.
+            // (e.g., clip.onRelease = foo).
+            if context.swf.version() >= 6 {
+                if let Some(name) = event.method_name() {
+                    context.action_queue.queue_action(
+                        self_display_object,
+                        ActionType::Method {
+                            object: write.object.unwrap(),
+                            name,
+                            args: vec![],
+                        },
+                        false,
+                    );
+                }
             }
-        }
 
-        if write.state != new_state {
+            (write.state != new_state, new_state)
+        } else {
+            // Remove the current mouse hovered and mouse down objects.
+            // This is required to make sure the button will fire its events if it gets enabled.
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_over_object) {
+                context.mouse_over_object = None;
+            }
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_down_object) {
+                context.mouse_down_object = None;
+            }
+
+            (new_state != ButtonState::Over, ButtonState::Up)
+        };
+
+        if update_state {
             drop(write);
             self.set_state(context, new_state);
         }
