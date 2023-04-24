@@ -370,8 +370,6 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Updates the internal shadow DOM to reflect any set attributes from
      * this element.
-     *
-     * @protected
      */
     protected updateStyles(): void {
         if (this.dynamicStyles.sheet) {
@@ -1485,7 +1483,6 @@ export class RufflePlayer extends HTMLElement {
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      *
      * @param element The element to copy all attributes from.
-     * @protected
      */
     protected copyElement(element: Element): void {
         if (element) {
