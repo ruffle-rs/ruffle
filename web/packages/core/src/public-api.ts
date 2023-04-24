@@ -56,7 +56,6 @@ export class PublicAPI {
      *
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
-     * @protected
      */
     protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
         this.sources = {};
@@ -245,8 +244,6 @@ export class PublicAPI {
      *
      * Unfortunately, we can't disable polyfills after-the-fact, so this
      * only lets you disable the init event...
-     *
-     * @protected
      */
     protected superseded(): void {
         this.invoked = true;

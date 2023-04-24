@@ -19,6 +19,7 @@ const jsScriptUrl = publicPath(globalConfig) + "ruffle.js";
  */
 let objects: HTMLCollectionOf<HTMLObjectElement>;
 let embeds: HTMLCollectionOf<HTMLEmbedElement>;
+
 /**
  *
  */
@@ -61,6 +62,7 @@ function polyfillFlashInstances(): void {
  */
 let iframes: HTMLCollectionOf<HTMLIFrameElement>;
 let frames: HTMLCollectionOf<HTMLFrameElement>;
+
 /**
  *
  */
@@ -169,7 +171,6 @@ async function injectRuffle(
 
 /**
  * Listen for changes to the DOM.
- *
  */
 function initMutationObserver(): void {
     const observer = new MutationObserver(function (mutationsList) {
