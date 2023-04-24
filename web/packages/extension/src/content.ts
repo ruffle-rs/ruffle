@@ -170,9 +170,7 @@ function isXMLDocument(): boolean {
     await sendMessageToPage({
         type: "load",
         config: {
-            warnOnUnsupportedContent: options.warnOnUnsupportedContent,
-            logLevel: options.logLevel,
-            showSwfDownload: options.showSwfDownload,
+            ...options,
             autoplay: options.autostart ? "on" : "auto",
             unmuteOverlay: options.autostart ? "hidden" : "visible",
             splashScreen: !options.autostart,
