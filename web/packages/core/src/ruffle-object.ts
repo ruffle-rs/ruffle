@@ -2,8 +2,6 @@ import {
     isBuiltInContextMenuVisible,
     isFallbackElement,
     isScriptAccessAllowed,
-    isSwfFilename,
-    isSwfMimeType,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
     RufflePlayer,
@@ -12,6 +10,7 @@ import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./register-element";
 import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
+import { isSwfFilename, isSwfMimeType } from "./swf-utils";
 
 /**
  * Find and return the first value in obj with the given key.

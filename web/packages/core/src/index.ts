@@ -15,3 +15,4 @@ export * from "./version-range";
 export * from "./config";
 export * from "./load-options";
 export * from "./build-info";
+export * from "./swf-utils";
