@@ -1,5 +1,6 @@
 {
    "entryPoints": ["./src/index.ts"],
    "excludePrivate": true,
-   "excludeProtected": true
+   "excludeProtected": true,
+   "sort": "enum-member-source-order"
 }
