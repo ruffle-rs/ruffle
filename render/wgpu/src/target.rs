@@ -219,8 +219,7 @@ impl TextureTarget {
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
-            size: (buffer_dimensions.padded_bytes_per_row.get() as u64
-                * buffer_dimensions.height as u64),
+            size: (buffer_dimensions.padded_bytes_per_row as u64 * buffer_dimensions.height as u64),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });

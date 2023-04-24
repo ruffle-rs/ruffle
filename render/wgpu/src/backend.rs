@@ -23,7 +23,6 @@ use ruffle_render::tessellator::ShapeTessellator;
 use std::borrow::Cow;
 use std::cell::Cell;
 use std::mem;
-use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
@@ -51,7 +50,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
 
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
-    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+    pub async fn for_canvas(canvas: web_sys::HtmlCanvasElement) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             dx12_shader_compiler: wgpu::Dx12Compiler::default(),
@@ -493,7 +492,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             bitmap.data(),
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(4 * extent.width),
+                bytes_per_row: Some(4 * extent.width),
                 rows_per_image: None,
             },
             extent,
@@ -542,7 +541,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 ..(region.y_max * texture.width * 4) as usize],
             wgpu::ImageDataLayout {
                 offset: (region.x_min * 4) as wgpu::BufferAddress,
-                bytes_per_row: NonZeroU32::new(4 * texture.width),
+                bytes_per_row: Some(4 * texture.width),
                 rows_per_image: None,
             },
             extent,

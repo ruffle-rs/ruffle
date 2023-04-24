@@ -2,7 +2,6 @@ use crate::buffer_pool::BufferDescription;
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::mem::size_of;
-use std::num::NonZeroU32;
 use wgpu::util::DeviceExt;
 
 macro_rules! create_debug_label {
@@ -95,7 +94,7 @@ pub struct BufferDimensions {
     pub width: usize,
     pub height: usize,
     pub unpadded_bytes_per_row: usize,
-    pub padded_bytes_per_row: NonZeroU32,
+    pub padded_bytes_per_row: u32,
 }
 
 impl BufferDimensions {
@@ -105,9 +104,7 @@ impl BufferDimensions {
         let unpadded_bytes_per_row = width * bytes_per_pixel;
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
         let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
-        let padded_bytes_per_row =
-            NonZeroU32::new((unpadded_bytes_per_row + padded_bytes_per_row_padding) as u32)
-                .unwrap();
+        let padded_bytes_per_row = (unpadded_bytes_per_row + padded_bytes_per_row_padding) as u32;
 
         Self {
             width,
@@ -118,7 +115,7 @@ impl BufferDimensions {
     }
 
     pub fn size(&self) -> u64 {
-        self.padded_bytes_per_row.get() as u64 * self.height as u64
+        self.padded_bytes_per_row as u64 * self.height as u64
     }
 }
 
@@ -153,7 +150,7 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     );
     let _ = receiver.recv().expect("MPSC channel must not fail");
     let map = buffer_slice.get_mapped_range();
-    let result = with_rgba(&map, dimensions.padded_bytes_per_row.get());
+    let result = with_rgba(&map, dimensions.padded_bytes_per_row);
     drop(map);
     buffer.unmap();
     result
@@ -170,7 +167,7 @@ pub fn buffer_to_image(
     capture_image(device, buffer, dimensions, index, |rgba, _buffer_width| {
         let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
 
-        for chunk in rgba.chunks(dimensions.padded_bytes_per_row.get() as usize) {
+        for chunk in rgba.chunks(dimensions.padded_bytes_per_row as usize) {
             bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
         }
 

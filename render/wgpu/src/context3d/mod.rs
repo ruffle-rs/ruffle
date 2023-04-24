@@ -19,7 +19,7 @@ use crate::descriptors::Descriptors;
 use crate::{as_texture, Texture};
 use gc_arena::{Collect, MutationContext};
 
-use std::num::{NonZeroU32, NonZeroU64};
+use std::num::NonZeroU64;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -970,7 +970,7 @@ impl Context3D for WgpuContext3D {
                     let mut view: wgpu::TextureViewDescriptor = Default::default();
                     if *cube {
                         view.dimension = Some(wgpu::TextureViewDimension::Cube);
-                        view.array_layer_count = Some(NonZeroU32::new(6).unwrap());
+                        view.array_layer_count = Some(6);
                     }
 
                     Some(BoundTextureData {
