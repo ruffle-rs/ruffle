@@ -38,7 +38,9 @@ pub fn get_current_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let appdomain = activation.caller_domain();
+    let appdomain = activation
+        .caller_domain()
+        .expect("Missing caller domain in ApplicationDomain.currentDomain");
 
     Ok(DomainObject::from_domain(activation, appdomain)?.into())
 }
