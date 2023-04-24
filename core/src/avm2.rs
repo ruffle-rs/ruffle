@@ -313,8 +313,14 @@ impl<'gc> Avm2<'gc> {
             .as_event()
             .map(|e| e.event_type())
             .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
-
-        let mut activation = Activation::from_nothing(context.reborrow());
+		
+		let domain = context
+			.library
+			.library_for_movie(context.swf.clone())
+			.unwrap()
+			.avm2_domain();
+		let mut activation = Activation::from_domain(context.reborrow(), domain);
+		
         if let Err(err) = events::dispatch_event(&mut activation, target, event) {
             tracing::error!(
                 "Encountered AVM2 error when dispatching `{}` event: {}",
