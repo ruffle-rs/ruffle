@@ -1,0 +1,78 @@
+// Source code for the `rollOver` event.
+// Other events just do `buttonAction("event_name");`.
+
+if(_root.step === undefined) {
+	_root.step = 1;
+	_root.nextStep = -1;
+	_root.onEnterFrame = function() {
+		if(step === 11 && Key.isDown(4)) {
+			_root.doin.enabled = true;
+			nextStep = 0;
+		}
+		if(nextStep < 0) {
+			return;
+		}
+		nextStep--;
+		if(nextStep < 0) {
+			buttonAction("from onEnterFrame");
+		}
+	};
+	_root.buttonAction = function(event) {
+		var button = _root.doin;
+		switch(step) {
+			case 1:
+				// The mouse moved inside of the button area, this triggers the rollOver event.
+				button._visible = false;
+				break;
+			case 2:
+				// The visibility was set to off, this triggers the rollOut event.
+				button._visible = true;
+				break;
+			case 3:
+				// The visibility was restored, this triggers the rollOver event again.
+				button.enabled = false;
+				nextStep = 1;
+				break;
+			case 4:
+				// The button was disabled, this didn't trigger the rollOut event.
+				button.enabled = true;
+				nextStep = 1;
+				break;
+			case 5:
+				// The button was enabled again, this didn't trigger the rollOver event.
+				break;
+			case 6:
+				// The mouse left button was pressed, this triggers the press event.
+				button._visible = false;
+				break;
+			case 7:
+				// The visibility of the AS button was set to off, then the mouse left button was released. This triggers the releaseOutside event.
+				button._visible = true;
+				break;
+			case 8:
+				// The visibility was restored, this triggers the rollOver event again.
+				break;
+			case 9:
+				// The mouse left button was pressed, this triggers the press event.
+				button.enabled = false;
+				nextStep = 1;
+				break;
+			case 10:
+				// The AS button was disabled, then the mouse left button was released. This didn't trigger the release or releaseOutside event.
+				break;
+			case 11:
+				// The mouse moved outside of the button area, got back inside and the mouse middle button was pressed. No event did trigger.
+				button.enabled = true;
+				break;
+			case 12:
+				// The button was enabled again, this triggers the rollOver event.
+				// The button is then disabled one more time, for image comparison.
+				button.enabled = false;
+				break;
+		}
+		trace("Step " + step + ": " + event);
+		step++;
+	};
+}
+
+buttonAction("rollOver");

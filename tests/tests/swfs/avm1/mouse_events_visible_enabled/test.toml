@@ -1,0 +1,8 @@
+num_frames = 40
+
+
+[image_comparison]
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }
