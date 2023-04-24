@@ -28,7 +28,6 @@ impl fmt::Debug for MorphShape<'_> {
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, MorphShapeStatic>,
-    ratio: u16,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -43,17 +42,8 @@ impl<'gc> MorphShape<'gc> {
             MorphShapeData {
                 base: Default::default(),
                 static_data: Gc::allocate(gc_context, static_data),
-                ratio: 0,
             },
         ))
-    }
-
-    pub fn ratio(self) -> u16 {
-        self.0.read().ratio
-    }
-
-    pub fn set_ratio(&mut self, gc_context: MutationContext<'gc, '_>, ratio: u16) {
-        self.0.write(gc_context).ratio = ratio;
     }
 }
 
@@ -100,7 +90,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn render_self(&self, context: &mut RenderContext) {
         let this = self.0.read();
-        let ratio = this.ratio;
+        let ratio = this.base.ratio;
         let static_data = this.static_data;
         let shape_handle = static_data.get_shape(context, context.library, ratio);
         context
@@ -110,7 +100,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn self_bounds(&self) -> Rectangle<Twips> {
         let this = self.0.read();
-        let ratio = this.ratio;
+        let ratio = this.base.ratio;
         let static_data = this.static_data;
         let frame = static_data.get_frame(ratio);
         frame.bounds.clone()
