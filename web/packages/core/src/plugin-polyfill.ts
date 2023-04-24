@@ -188,6 +188,12 @@ FLASH_PLUGIN.install({
     suffixes: "swf",
     enabledPlugin: FLASH_PLUGIN,
 });
+RUFFLE_EXTENSION.install({
+    type: "",
+    description: "Ruffle Detection",
+    suffixes: "",
+    enabledPlugin: RUFFLE_EXTENSION,
+});
 
 declare global {
     interface PluginArray {
