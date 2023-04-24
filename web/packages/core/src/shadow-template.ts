@@ -6,6 +6,8 @@ export const ruffleShadowTemplate = document.createElement("template");
 ruffleShadowTemplate.innerHTML = `
     <style>
         :host {
+            all: initial;
+
             --ruffle-blue: #37528c;
             --ruffle-orange: #ffad33;
 
@@ -20,7 +22,6 @@ ruffleShadowTemplate.innerHTML = `
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-            line-height: normal;
         }
 
         /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
