@@ -286,20 +286,18 @@ ruffleShadowTemplate.innerHTML = `
         }
 
         #save-manager {
-            width: 100%;
-            height: 100%;
-            position: absolute;
+            height: inherit;
             user-select: text;
         }
         #modal-area {
-            position: fixed;
+            position: sticky;
             background: white;
             width: fit-content;
             padding: 16px;
             border: 3px solid black;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+            margin: auto;
+            height: calc(100% - 38px);
+            max-height: 500px;
         }
 
         #restore-save {
@@ -336,6 +334,11 @@ ruffleShadowTemplate.innerHTML = `
 
         #local-saves {
             border-collapse: collapse;
+            overflow-y: scroll;
+            height: inherit;
+            display: block;
+            padding-right: 16px;
+            max-height: 380px;
         }
 
         #local-saves td {
