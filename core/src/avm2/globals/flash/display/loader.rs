@@ -90,7 +90,9 @@ pub fn load<'gc>(
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
             Some(Avm2LoaderData {
                 context,
-                default_domain: activation.caller_domain(),
+                default_domain: activation
+                    .caller_domain()
+                    .expect("Missing caller domain in Loader.load"),
             }),
         );
         activation.context.navigator.spawn_future(future);
@@ -219,7 +221,9 @@ pub fn load_bytes<'gc>(
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
             Some(Avm2LoaderData {
                 context,
-                default_domain: activation.caller_domain(),
+                default_domain: activation
+                    .caller_domain()
+                    .expect("Missing caller domain in Loader.loadBytes"),
             }),
         );
         activation.context.navigator.spawn_future(future);

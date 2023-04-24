@@ -580,7 +580,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         this: Option<Object<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
-        caller_domain: Domain<'gc>,
+        caller_domain: Option<Domain<'gc>>,
     ) -> Result<Self, Error<'gc>> {
         let local_registers = RegisterSet::new(0);
 
@@ -592,7 +592,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             local_registers,
             return_value: None,
             outer,
-            caller_domain: Some(caller_domain),
+            caller_domain,
             subclass_object,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
@@ -676,9 +676,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .chain(self.context.gc_context, self.scope_frame())
     }
 
-    /// Returns the domain of the original AS3 caller.
-    pub fn caller_domain(&self) -> Domain<'gc> {
-        self.caller_domain.expect("No caller domain available - use Activation::from_domain when constructing your domain")
+    /// Returns the domain of the original AS3 caller. This will be `None`
+    /// if this activation was constructed with `from_nothing`
+    pub fn caller_domain(&self) -> Option<Domain<'gc>> {
+        self.caller_domain
     }
 
     /// Returns the global scope of this activation.

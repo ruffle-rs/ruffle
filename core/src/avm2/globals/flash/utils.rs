@@ -254,7 +254,9 @@ pub fn get_definition_by_name<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let appdomain = activation.caller_domain();
+    let appdomain = activation
+        .caller_domain()
+        .expect("Missing caller domain in getDefinitionByName");
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
