@@ -144,6 +144,7 @@ impl<'gc> ClassObject<'gc> {
         let class_class_proto = class_class.prototype();
 
         class_object.link_type(activation, class_class_proto, class_class);
+        class_object.init_instance_vtable(activation)?;
         class_object.into_finished_class(activation)
     }
 
@@ -224,26 +225,10 @@ impl<'gc> ClassObject<'gc> {
         Ok(class_object)
     }
 
-    /// Finish initialization of the class.
-    ///
-    /// This is intended for classes that were pre-allocated with
-    /// `from_class_partial`. It skips several critical initialization steps
-    /// that are necessary to obtain a functioning class object:
-    ///
-    ///  - The `link_type` step, which makes the class an instance of another
-    ///    type
-    ///  - The `link_prototype` step, which installs a prototype for instances
-    ///    of this type to inherit
-    ///
-    /// Make sure to call them before calling this function, or it may yield an
-    /// error.
-    ///
-    /// This function is also when class trait validation happens. Verify
-    /// errors will be raised at this time.
-    pub fn into_finished_class(
-        mut self,
+    pub fn init_instance_vtable(
+        self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
         self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
@@ -258,6 +243,32 @@ impl<'gc> ClassObject<'gc> {
             self.superclass_object().map(|cls| cls.instance_vtable()),
             activation,
         )?;
+        Ok(())
+    }
+
+    /// Finish initialization of the class.
+    ///
+    /// This is intended for classes that were pre-allocated with
+    /// `from_class_partial`. It skips several critical initialization steps
+    /// that are necessary to obtain a functioning class object:
+    ///
+    ///  - The `link_type` step, which makes the class an instance of another
+    ///    type
+    ///  - The `link_prototype` step, which installs a prototype for instances
+    ///    of this type to inherit
+    ///  - The `init_instance_vtable` steps, which initializes the instance vtable
+    ///    using the superclass vtable.
+    ///
+    /// Make sure to call them before calling this function, or it may yield an
+    /// error.
+    ///
+    /// This function is also when class trait validation happens. Verify
+    /// errors will be raised at this time.
+    pub fn into_finished_class(
+        mut self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Self, Error<'gc>> {
+        let class = self.inner_class_definition();
 
         // class vtable == class traits + Class instance traits
         self.class_vtable().init_vtable(

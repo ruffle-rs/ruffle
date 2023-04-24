@@ -438,12 +438,25 @@ pub fn load_player_globals<'gc>(
     ));
 
     // Our activation environment is now functional enough to finish
-    // initializing the core class weave. The order of initialization shouldn't
-    // matter here, as long as all the initialization machinery can see and
-    // link the various system types together correctly.
+    // initializing the core class weave. We need to initialize superclasses
+    // (e.g. `Object`) before subclasses, so that `into_finished_class` can
+    // copy traits from the initialized superclass vtable.
+
+    // First, initialize the instance vtable, starting with `Object`. This
+    // ensures that properties defined in `Object` (e.g. `hasOwnProperty`)
+    // get copied into the vtable of `Class`, `Function`, and `Global`.
+    // (which are all subclasses of `Object`)
+    object_class.init_instance_vtable(activation)?;
+    class_class.init_instance_vtable(activation)?;
+    fn_class.init_instance_vtable(activation)?;
+    global_class.init_instance_vtable(activation)?;
+
+    // Now, construct the `ClassObject`s, starting with `Class`. This ensures
+    // that the `prototype` property of `Class` gets copied into the *class*
+    // vtables for `Object`, `Function`, and `Global`.
     let class_class = class_class.into_finished_class(activation)?;
-    let fn_class = fn_class.into_finished_class(activation)?;
     let object_class = object_class.into_finished_class(activation)?;
+    let fn_class = fn_class.into_finished_class(activation)?;
     let _global_class = global_class.into_finished_class(activation)?;
 
     globals.set_proto(mc, global_proto);
