@@ -8,7 +8,7 @@ use crate::avm1;
 use crate::avm2;
 use crate::display_object::Stage;
 use crate::display_object::TDisplayObject;
-use crate::i18n::text;
+use crate::i18n::core_text;
 use fluent_templates::LanguageIdentifier;
 use gc_arena::Collect;
 use ruffle_render::quality::StageQuality;
@@ -50,7 +50,7 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuItem {
                     enabled: true,
                     separator_before: true,
-                    caption: text(language, "context-menu-play"),
+                    caption: core_text(language, "context-menu-play"),
                     checked: is_playing_root_movie,
                 },
                 ContextMenuCallback::Play,
@@ -62,7 +62,7 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuItem {
                     enabled: !is_first_frame,
                     separator_before: true,
-                    caption: text(language, "context-menu-rewind"),
+                    caption: core_text(language, "context-menu-rewind"),
                     checked: false,
                 },
                 ContextMenuCallback::Rewind,
@@ -74,7 +74,7 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuItem {
                     enabled: true,
                     separator_before: false,
-                    caption: text(language, "context-menu-forward"),
+                    caption: core_text(language, "context-menu-forward"),
                     checked: false,
                 },
                 ContextMenuCallback::Forward,
@@ -83,7 +83,7 @@ impl<'gc> ContextMenuState<'gc> {
                 ContextMenuItem {
                     enabled: !is_first_frame,
                     separator_before: false,
-                    caption: text(language, "context-menu-back"),
+                    caption: core_text(language, "context-menu-back"),
                     checked: false,
                 },
                 ContextMenuCallback::Back,
@@ -96,7 +96,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::Low,
                     separator_before: true,
                     checked: stage.quality() == StageQuality::Low,
-                    caption: text(language, "context-menu-quality-low"),
+                    caption: core_text(language, "context-menu-quality-low"),
                 },
                 ContextMenuCallback::QualityLow,
             );
@@ -105,7 +105,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::Medium,
                     separator_before: false,
                     checked: stage.quality() == StageQuality::Medium,
-                    caption: text(language, "context-menu-quality-medium"),
+                    caption: core_text(language, "context-menu-quality-medium"),
                 },
                 ContextMenuCallback::QualityMedium,
             );
@@ -114,7 +114,7 @@ impl<'gc> ContextMenuState<'gc> {
                     enabled: stage.quality() != StageQuality::High,
                     separator_before: false,
                     checked: stage.quality() == StageQuality::High,
-                    caption: text(language, "context-menu-quality-high"),
+                    caption: core_text(language, "context-menu-quality-high"),
                 },
                 ContextMenuCallback::QualityHigh,
             );
