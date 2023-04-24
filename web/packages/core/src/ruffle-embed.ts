@@ -2,14 +2,13 @@ import {
     isBuiltInContextMenuVisible,
     isFallbackElement,
     isScriptAccessAllowed,
-    isSwfFilename,
-    isSwfMimeType,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
 import { WindowMode } from "./load-options";
 import { registerElement } from "./register-element";
+import { isSwfFilename, isSwfMimeType } from "./swf-utils";
 
 /**
  * A polyfill html element.

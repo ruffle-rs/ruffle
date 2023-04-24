@@ -6,14 +6,8 @@ import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 import { AutoPlay, UnmuteOverlay, WindowMode } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
-import { swfFileName } from "./swf-file-name";
+import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
-import {
-    FLASH_MIMETYPE,
-    FUTURESPLASH_MIMETYPE,
-    FLASH7_AND_8_MIMETYPE,
-    FLASH_MOVIE_MIMETYPE,
-} from "./flash-identifiers";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -2139,49 +2133,6 @@ export function workaroundYoutubeMixedContent(
         } catch (err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
-    }
-}
-
-/**
- * Returns whether the given filename ends in a known flash extension.
- *
- * @param filename The filename to test.
- * @returns True if the filename is a flash movie (swf or spl).
- */
-export function isSwfFilename(filename: string | null): boolean {
-    if (filename) {
-        let pathname = "";
-        try {
-            // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
-            pathname = new URL(filename, RUFFLE_ORIGIN).pathname;
-        } catch (err) {
-            // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
-        }
-        if (pathname && pathname.length >= 4) {
-            const extension = pathname.slice(-4).toLowerCase();
-            if (extension === ".swf" || extension === ".spl") {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-/**
- * Returns whether the given MIME type is a known flash type.
- *
- * @param mimeType The MIME type to test.
- * @returns True if the MIME type is a flash MIME type.
- */
-export function isSwfMimeType(mimeType: string): boolean {
-    switch (mimeType.toLowerCase()) {
-        case FLASH_MIMETYPE.toLowerCase():
-        case FUTURESPLASH_MIMETYPE.toLowerCase():
-        case FLASH7_AND_8_MIMETYPE.toLowerCase():
-        case FLASH_MOVIE_MIMETYPE.toLowerCase():
-            return true;
-        default:
-            return false;
     }
 }
 
