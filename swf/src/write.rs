@@ -1460,11 +1460,25 @@ impl<W: Write> Writer<W> {
                 bits.write_bit(false)?; // Style change
                 let num_fill_bits = context.num_fill_bits.into();
                 let num_line_bits = context.num_line_bits.into();
-                bits.write_bit(style_change.new_styles.is_some())?;
-                bits.write_bit(style_change.line_style.is_some())?;
-                bits.write_bit(style_change.fill_style_1.is_some())?;
-                bits.write_bit(style_change.fill_style_0.is_some())?;
-                bits.write_bit(style_change.move_to.is_some())?;
+                let mut flags = ShapeRecordFlag::empty();
+                flags.set(ShapeRecordFlag::MOVE_TO, style_change.move_to.is_some());
+                flags.set(
+                    ShapeRecordFlag::FILL_STYLE_0,
+                    style_change.fill_style_0.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::FILL_STYLE_1,
+                    style_change.fill_style_1.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::LINE_STYLE,
+                    style_change.line_style.is_some(),
+                );
+                flags.set(
+                    ShapeRecordFlag::NEW_STYLES,
+                    style_change.new_styles.is_some(),
+                );
+                bits.write_ubits(5, flags.bits().into())?;
                 if let Some((move_x, move_y)) = style_change.move_to {
                     let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
                     bits.write_ubits(5, num_bits)?;
