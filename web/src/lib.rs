@@ -128,7 +128,80 @@ where
 {
     use serde::de::Error;
     let value: String = serde::Deserialize::deserialize(deserializer)?;
-    tracing::Level::from_str(&value).map_err(D::Error::custom)
+    tracing::Level::from_str(&value).map_err(Error::custom)
+}
+
+fn deserialize_max_execution_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+
+    struct DurationVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for DurationVisitor {
+        type Value = Duration;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str(
+                "Either a non-negative number (indicating seconds) or a {secs: number, nanos: number}."
+            )
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            Ok(Duration::from_secs_f64(if value < 1 {
+                1.0
+            } else {
+                value as f64
+            }))
+        }
+
+        fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            Ok(Duration::from_secs_f64(if value.is_nan() || value < 1.0 {
+                1.0
+            } else {
+                value
+            }))
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::MapAccess<'de>,
+        {
+            let mut secs = None;
+            let mut nanos = None;
+            while let Some(key) = map.next_key::<String>()? {
+                let key_s = key.as_str();
+
+                match key_s {
+                    "secs" => {
+                        if secs.is_some() {
+                            return Err(Error::duplicate_field("secs"));
+                        }
+                        secs = Some(map.next_value()?);
+                    }
+                    "nanos" => {
+                        if nanos.is_some() {
+                            return Err(Error::duplicate_field("nanos"));
+                        }
+                        nanos = Some(map.next_value()?);
+                    }
+                    _ => return Err(Error::unknown_field(key_s, &["secs", "nanos"])),
+                }
+            }
+            let secs = secs.ok_or_else(|| Error::missing_field("secs"))?;
+            let nanos = nanos.ok_or_else(|| Error::missing_field("nanos"))?;
+            Ok(Duration::new(secs, nanos))
+        }
+    }
+
+    deserializer.deserialize_any(DurationVisitor)
 }
 
 #[derive(Deserialize)]
@@ -167,6 +240,7 @@ struct Config {
     #[serde(deserialize_with = "deserialize_log_level")]
     log_level: tracing::Level,
 
+    #[serde(deserialize_with = "deserialize_max_execution_duration")]
     max_execution_duration: Duration,
 
     player_version: Option<u8>,
