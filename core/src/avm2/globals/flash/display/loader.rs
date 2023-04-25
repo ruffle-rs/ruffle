@@ -7,7 +7,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
-use crate::backend::navigator::Request;
+use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::{Avm2LoaderData, MovieLoaderEventHandler};
@@ -58,9 +58,10 @@ pub fn load<'gc>(
         let url_request = args.get_object(activation, 0, "request")?;
         let context = args.try_get_object(activation, 1);
 
-        let url = url_request
+        let mut url = url_request
             .get_public_property("url", activation)?
-            .coerce_to_string(activation)?;
+            .coerce_to_string(activation)?
+            .to_string();
 
         // This is a dummy MovieClip, which will get overwritten in `Loader`
         let content = MovieClip::new(
@@ -79,11 +80,53 @@ pub fn load<'gc>(
             .as_object()
             .unwrap();
 
+        let method = url_request
+            .get_public_property("method", activation)?
+            .coerce_to_string(activation)?;
+        // TODO: URLRequest.method should not be able to have invalid types.
+        // We should throw an error there on set.
+        let method = NavigationMethod::from_method_str(&method).unwrap_or(NavigationMethod::Get);
+        let data = url_request.get_public_property("data", activation)?;
+        let body = match (method, data) {
+            (_, Value::Null | Value::Undefined) => None,
+            (NavigationMethod::Get, data) => {
+                // This looks "wrong" but it's Flash-correct.
+                // It simply appends the data to the URL if there's already a query,
+                // otherwise it adds ?data.
+                // This does mean that if there's a #fragment in the URL after the query,
+                // the new data gets appended to *that* - which is totally wrong but whatcha gonna do?
+                if !url.contains('?') {
+                    url.push('?');
+                }
+                url.push_str(&data.coerce_to_string(activation)?.to_string());
+                None
+            }
+            (NavigationMethod::Post, data) => {
+                let content_type = url_request
+                    .get_public_property("contentType", activation)?
+                    .coerce_to_string(activation)?
+                    .to_string();
+                if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
+                    // Note that this does *not* respect or modify the position.
+                    Some((ba.storage().bytes().to_vec(), content_type))
+                } else {
+                    Some((
+                        data.coerce_to_string(activation)?
+                            .to_utf8_lossy()
+                            .as_bytes()
+                            .to_vec(),
+                        content_type,
+                    ))
+                }
+            }
+        };
+
+        let request = Request::request(method, url.to_string(), body);
+
         let future = activation.context.load_manager.load_movie_into_clip(
             activation.context.player.clone(),
             content.into(),
-            // FIXME - set options from the `URLRequest`
-            Request::get(url.to_string()),
+            request,
             Some(url.to_string()),
             Some(MovieLoaderEventHandler::Avm2LoaderInfo(loader_info)),
             Some(Avm2LoaderData {

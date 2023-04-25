@@ -69,6 +69,10 @@ impl<'gc> ByteArrayObject<'gc> {
 
         Ok(instance)
     }
+
+    pub fn storage(&self) -> Ref<ByteArrayStorage> {
+        Ref::map(self.0.read(), |d| &d.storage)
+    }
 }
 
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
