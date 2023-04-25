@@ -715,6 +715,17 @@ pub enum ShapeRecord {
     },
 }
 
+bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    pub struct ShapeRecordFlag: u8 {
+        const MOVE_TO      = 1 << 0;
+        const FILL_STYLE_0 = 1 << 1;
+        const FILL_STYLE_1 = 1 << 2;
+        const LINE_STYLE   = 1 << 3;
+        const NEW_STYLES   = 1 << 4;
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StyleChangeData {
     pub move_to: Option<(Twips, Twips)>,
