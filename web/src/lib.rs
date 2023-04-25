@@ -332,7 +332,7 @@ impl Ruffle {
             });
 
             // Clean up all event listeners.
-            if let Some(mouse_move_callback) = &instance.mouse_move_callback {
+            if let Some(mouse_move_callback) = instance.mouse_move_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -340,9 +340,8 @@ impl Ruffle {
                         mouse_move_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_move_callback = None;
             }
-            if let Some(mouse_enter_callback) = &instance.mouse_enter_callback {
+            if let Some(mouse_enter_callback) = instance.mouse_enter_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -350,9 +349,8 @@ impl Ruffle {
                         mouse_enter_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_enter_callback = None;
             }
-            if let Some(mouse_leave_callback) = &instance.mouse_leave_callback {
+            if let Some(mouse_leave_callback) = instance.mouse_leave_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -360,9 +358,8 @@ impl Ruffle {
                         mouse_leave_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_leave_callback = None;
             }
-            if let Some(mouse_down_callback) = &instance.mouse_down_callback {
+            if let Some(mouse_down_callback) = instance.mouse_down_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -370,9 +367,8 @@ impl Ruffle {
                         mouse_down_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_down_callback = None;
             }
-            if let Some(player_mouse_down_callback) = &instance.player_mouse_down_callback {
+            if let Some(player_mouse_down_callback) = instance.player_mouse_down_callback.take() {
                 instance
                     .js_player
                     .remove_event_listener_with_callback(
@@ -380,9 +376,8 @@ impl Ruffle {
                         player_mouse_down_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.player_mouse_down_callback = None;
             }
-            if let Some(window_mouse_down_callback) = &instance.window_mouse_down_callback {
+            if let Some(window_mouse_down_callback) = instance.window_mouse_down_callback.take() {
                 instance
                     .window
                     .remove_event_listener_with_callback_and_bool(
@@ -391,9 +386,8 @@ impl Ruffle {
                         true,
                     )
                     .warn_on_error();
-                instance.window_mouse_down_callback = None;
             }
-            if let Some(mouse_up_callback) = &instance.mouse_up_callback {
+            if let Some(mouse_up_callback) = instance.mouse_up_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -401,9 +395,8 @@ impl Ruffle {
                         mouse_up_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_up_callback = None;
             }
-            if let Some(mouse_wheel_callback) = &instance.mouse_wheel_callback {
+            if let Some(mouse_wheel_callback) = instance.mouse_wheel_callback.take() {
                 instance
                     .canvas
                     .remove_event_listener_with_callback(
@@ -411,9 +404,8 @@ impl Ruffle {
                         mouse_wheel_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.mouse_wheel_callback = None;
             }
-            if let Some(key_down_callback) = &instance.key_down_callback {
+            if let Some(key_down_callback) = instance.key_down_callback.take() {
                 instance
                     .window
                     .remove_event_listener_with_callback(
@@ -421,9 +413,8 @@ impl Ruffle {
                         key_down_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.key_down_callback = None;
             }
-            if let Some(key_up_callback) = &instance.key_up_callback {
+            if let Some(key_up_callback) = instance.key_up_callback.take() {
                 instance
                     .window
                     .remove_event_listener_with_callback(
@@ -431,9 +422,8 @@ impl Ruffle {
                         key_up_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.key_up_callback = None;
             }
-            if let Some(unload_callback) = &instance.unload_callback {
+            if let Some(unload_callback) = instance.unload_callback.take() {
                 instance
                     .window
                     .remove_event_listener_with_callback(
@@ -441,7 +431,6 @@ impl Ruffle {
                         unload_callback.as_ref().unchecked_ref(),
                     )
                     .warn_on_error();
-                instance.unload_callback = None;
             }
 
             // Cancel the animation handler, if it's still active.
