@@ -335,8 +335,7 @@ ruffleShadowTemplate.innerHTML = `
 
         #local-saves {
             border-collapse: collapse;
-            overflow-y: scroll;
-            height: inherit;
+            overflow-y: auto;
             display: block;
             padding-right: 16px;
             height: calc(100% - 45px);
