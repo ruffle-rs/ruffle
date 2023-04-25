@@ -31,9 +31,11 @@ impl NavigationMethod {
     }
 
     pub fn from_method_str(method: &WStr) -> Option<Self> {
-        if method == b"GET" {
+        // Methods seem to be case insensitive
+        let method = method.to_ascii_lowercase();
+        if &method == b"get" {
             Some(Self::Get)
-        } else if method == b"POST" {
+        } else if &method == b"post" {
             Some(Self::Post)
         } else {
             None
