@@ -6,3 +6,4 @@ Recursive JSON, invalid object replacer:TypeError|1131
 {}
 Recursive, with null replacer:TypeError|1129
 {"a":8}
+Valid, with undefined replacer:TypeError|1131

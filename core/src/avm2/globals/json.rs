@@ -268,7 +268,7 @@ pub fn parse<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0)?;
-    let reviver = args.get_value(1).as_object();
+    let reviver = args.try_get_object(activation, 1);
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
@@ -290,10 +290,10 @@ pub fn stringify<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);
-    let replacer = args.get_value(1).as_object();
+    let replacer = args.try_get_object(activation, 1);
     let spaces = args.get_value(2);
 
-    // If the replacer is None, that means it was a primitive (as_object returns None for primitives), and therefore not a valid replacer
+    // If the replacer is None, that means it was either undefined or null.
     if replacer.is_none() && !matches!(args.get(1).unwrap(), Value::Null) {
         return Err(Error::AvmError(type_error(
             activation,
