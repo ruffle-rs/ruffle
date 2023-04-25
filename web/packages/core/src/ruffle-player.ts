@@ -1898,7 +1898,10 @@ export class RufflePlayer extends HTMLElement {
                     this.container.querySelector("#panic-body")
                 );
                 panicBody.classList.add("details");
-                panicBody.innerHTML = `<textarea>${errorText}</textarea>`;
+                
+                let panicText = document.createElement("textarea");
+                panicText.value = errorText;
+                panicBody.appendChild(panicText);
                 return false;
             };
         }
