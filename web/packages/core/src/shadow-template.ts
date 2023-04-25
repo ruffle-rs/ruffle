@@ -296,8 +296,9 @@ ruffleShadowTemplate.innerHTML = `
             padding: 16px;
             border: 3px solid black;
             margin: auto;
-            height: calc(100% - 38px);
-            max-height: 500px;
+            height: 500px;
+            max-height: calc(100% - 38px);
+            min-height: 80px;
         }
 
         #restore-save {
@@ -338,7 +339,8 @@ ruffleShadowTemplate.innerHTML = `
             height: inherit;
             display: block;
             padding-right: 16px;
-            max-height: 380px;
+            height: calc(100% - 45px);
+            min-height: 30px;
         }
 
         #local-saves td {
