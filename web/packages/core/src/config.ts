@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     // Backwards-compatibility option
     preloader: true,
     splashScreen: true,
-    maxExecutionDuration: { secs: 15, nanos: 0 },
+    maxExecutionDuration: 15,
     base: null,
     menu: true,
     salign: "",

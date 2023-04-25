@@ -153,6 +153,22 @@ export const enum RenderBackend {
 }
 
 /**
+ * Non-negative duration in seconds.
+ */
+export type SecsDuration = number;
+
+/**
+ * Deprecated duration type, use SecsDuration instead.
+ * Based on https://doc.rust-lang.org/stable/std/time/struct.Duration.html#method.new .
+ */
+export interface ObsoleteDuration {
+    secs: number;
+    nanos: number;
+}
+
+export type Duration = SecsDuration | ObsoleteDuration;
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -283,12 +299,9 @@ export interface BaseLoadOptions {
      * Maximum amount of time a script can take before scripting
      * is disabled.
      *
-     * @default { secs: 15, nanos: 0 }
+     * @default 15
      */
-    maxExecutionDuration?: {
-        secs: number;
-        nanos: number;
-    };
+    maxExecutionDuration?: Duration;
 
     /**
      * Specifies the base directory or URL used to resolve all relative path statements in the SWF file.
