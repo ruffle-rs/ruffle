@@ -452,6 +452,17 @@ export class RufflePlayer extends HTMLElement {
                 "The configuration option preloader has been replaced with splashScreen. If you own this website, please update the configuration."
             );
         }
+        if (
+            this.loadedConfig &&
+            this.loadedConfig.maxExecutionDuration &&
+            typeof this.loadedConfig.maxExecutionDuration !== "number"
+        ) {
+            console.warn(
+                "Configuration: An obsolete format for duration for 'maxExecutionDuration' was used, " +
+                    "please use a single number indicating seconds instead. For instance '15' instead of " +
+                    "'{secs: 15, nanos: 0}'."
+            );
+        }
         const ruffleConstructor = await loadRuffle(
             this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this)
