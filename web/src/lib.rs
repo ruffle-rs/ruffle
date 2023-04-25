@@ -125,6 +125,34 @@ struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
+fn deserialize_color<'de, D>(deserializer: D) -> Result<Option<Color>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let color: Option<String> = serde::Deserialize::deserialize(deserializer)?;
+    let color = match color {
+        Some(color) => color,
+        None => return Ok(None),
+    };
+
+    // Parse classic HTML hex color (XXXXXX or #XXXXXX), attempting to match browser behavior.
+    // Optional leading #.
+    let color = color.strip_prefix('#').unwrap_or(&color);
+
+    // Fail if less than 6 digits.
+    let color = match color.get(..6) {
+        Some(color) => color,
+        None => return Ok(None),
+    };
+
+    let rgb = color.chars().fold(0, |acc, c| {
+        // Each char represents 4-bits. Invalid hex digit is allowed (converts to 0).
+        let digit = c.to_digit(16).unwrap_or_default();
+        (acc << 4) | digit
+    });
+    Ok(Some(Color::from_rgb(rgb, 255)))
+}
+
 fn deserialize_log_level<'de, D>(deserializer: D) -> Result<tracing::Level, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -212,7 +240,8 @@ where
 struct Config {
     allow_script_access: bool,
 
-    background_color: Option<String>,
+    #[serde(deserialize_with = "deserialize_color")]
+    background_color: Option<Color>,
 
     letterbox: Letterbox,
 
@@ -675,9 +704,7 @@ impl Ruffle {
         let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
-            if let Some(color) = config.background_color.and_then(parse_html_color) {
-                core.set_background_color(Some(color));
-            }
+            core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
@@ -1593,32 +1620,6 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
         }
     }
     params
-}
-
-fn parse_html_color(color: impl AsRef<str>) -> Option<Color> {
-    // Parse classic HTML hex color (XXXXXX or #XXXXXX), attempting to match browser behavior.
-    // Optional leading #.
-    let mut color = color.as_ref();
-    color = color.strip_prefix('#').unwrap_or(color);
-
-    // Fail if less than 6 digits.
-    if color.len() < 6 {
-        return None;
-    }
-
-    // Each char represents 4-bits. Invalid hex digit is allowed (converts to 0).
-    let mut ret: u32 = 0;
-    for c in color[..6].bytes() {
-        let digit = match c {
-            b'0'..=b'9' => c - b'0',
-            b'a'..=b'f' => c - b'a' + 10,
-            b'A'..=b'F' => c - b'A' + 10,
-            _ => 0,
-        };
-        ret <<= 4;
-        ret |= u32::from(digit);
-    }
-    Some(Color::from_rgb(ret, 255))
 }
 
 /// Convert a web `KeyboardEvent.code` value into a Ruffle `KeyCode`.
