@@ -135,6 +135,23 @@ pub fn make_reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!(
+            "Error #2008: Parameter {} must be one of the accepted values.",
+            param_name
+        ),
+        2008,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,

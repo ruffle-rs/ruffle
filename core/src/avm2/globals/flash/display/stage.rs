@@ -1,7 +1,7 @@
 //! `flash.display.Stage` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -176,11 +176,7 @@ pub fn set_display_state<'gc>(
             .stage
             .set_display_state(&mut activation.context, display_state);
     } else {
-        return Err(Error::AvmError(argument_error(
-            activation,
-            "Error #2008: Parameter displayState must be one of the accepted values.",
-            2008,
-        )?));
+        return Err(make_error_2008(activation, "displayState"));
     }
     Ok(Value::Undefined)
 }
@@ -290,11 +286,7 @@ pub fn set_scale_mode<'gc>(
             .stage
             .set_scale_mode(&mut activation.context, scale_mode);
     } else {
-        return Err(Error::AvmError(argument_error(
-            activation,
-            "Error #2008: Parameter scaleMode must be one of the accepted values.",
-            2008,
-        )?));
+        return Err(make_error_2008(activation, "scaleMode"));
     }
     Ok(Value::Undefined)
 }

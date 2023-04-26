@@ -1,6 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -765,7 +766,7 @@ pub fn set_blend_mode<'gc>(
             dobj.set_blend_mode(activation.context.gc_context, mode);
         } else {
             tracing::error!("Unknown blend mode {}", mode);
-            return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+            return Err(make_error_2008(activation, "blendMode"));
         }
     }
     Ok(Value::Undefined)

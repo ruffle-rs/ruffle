@@ -1,4 +1,4 @@
-use crate::avm2::error::argument_error;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
@@ -618,27 +618,11 @@ pub fn set_sampler_state_at<'gc>(
         let filter = args[2].coerce_to_string(activation)?;
         let mip_filter = args[3].coerce_to_string(activation)?;
 
-        let wrap = Context3DWrapMode::from_wstr(&wrap).ok_or_else(|| {
-            Error::AvmError(
-                argument_error(
-                    activation,
-                    "Error #2008: Parameter wrap must be one of the accepted values.",
-                    2008,
-                )
-                .expect("Failed to construct error"),
-            )
-        })?;
+        let wrap = Context3DWrapMode::from_wstr(&wrap)
+            .ok_or_else(|| make_error_2008(activation, "wrap"))?;
 
-        let filter = Context3DTextureFilter::from_wstr(&filter).ok_or_else(|| {
-            Error::AvmError(
-                argument_error(
-                    activation,
-                    "Error #2008: Parameter filter must be one of the accepted values.",
-                    2008,
-                )
-                .expect("Failed to construct error"),
-            )
-        })?;
+        let filter = Context3DTextureFilter::from_wstr(&filter)
+            .ok_or_else(|| make_error_2008(activation, "filter"))?;
 
         if matches!(
             filter,

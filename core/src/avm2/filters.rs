@@ -5,7 +5,7 @@ use swf::{
     Fixed8, GlowFilter, GlowFilterFlags, GradientFilter, GradientFilterFlags, GradientRecord,
 };
 
-use crate::avm2::error::{argument_error, type_error};
+use crate::avm2::error::{make_error_2008, type_error};
 use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
 
 pub trait FilterAvm2Ext {
@@ -77,7 +77,7 @@ impl FilterAvm2Ext for Filter {
         Err(Error::AvmError(type_error(
             activation,
             &format!(
-                "Type Coercion failed: cannot convert {object:?} to flash.filters.BitmapFilter."
+                "Error #1034: Type Coercion failed: cannot convert {object:?} to flash.filters.BitmapFilter."
             ),
             1034,
         )?))
@@ -396,11 +396,7 @@ fn avm2_to_displacement_map_filter<'gc>(
         } else if &mode == b"wrap" {
             DisplacementMapFilterMode::Wrap
         } else {
-            return Err(Error::AvmError(argument_error(
-                activation,
-                "Parameter mode must be one of the accepted values.",
-                2008,
-            )?));
+            return Err(make_error_2008(activation, "mode"));
         }
     } else {
         DisplacementMapFilterMode::Wrap
@@ -420,7 +416,7 @@ fn avm2_to_displacement_map_filter<'gc>(
             return Err(Error::AvmError(type_error(
                 activation,
                 &format!(
-                    "Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."
+                    "Error #1034: Type Coercion failed: cannot convert {bitmap:?} to flash.display.BitmapData."
                 ),
                 1034,
             )?));

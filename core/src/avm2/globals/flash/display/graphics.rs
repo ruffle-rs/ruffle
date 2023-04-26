@@ -1,7 +1,7 @@
 //! `flash.display.Graphics` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -191,11 +191,7 @@ fn parse_gradient_type<'gc>(
     } else if &gradient_type == b"radial" {
         Ok(GradientType::Radial)
     } else {
-        Err(Error::AvmError(argument_error(
-            activation,
-            "Parameter type must be one of the accepted values.",
-            2008,
-        )?))
+        Err(make_error_2008(activation, "type"))
     }
 }
 
