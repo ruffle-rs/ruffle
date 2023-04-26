@@ -1,3 +1,7 @@
+// typeof AsBroadcaster
+function
+// new AsBroadcaster()
+[object Object]
 // broadcaster.addListener(listener1)
 true
 // broadcaster.addListener(listener1) (Adding the same object)
