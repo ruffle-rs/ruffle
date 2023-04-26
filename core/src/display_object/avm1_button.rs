@@ -52,15 +52,15 @@ impl<'gc> Avm1Button<'gc> {
         source_movie: &SwfSlice,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
-        let mut actions = vec![];
-        for action in &button.actions {
-            let action_data = source_movie.to_unbounded_subslice(action.action_data);
-            actions.extend(action.conditions.into_iter().map(|condition| ButtonAction {
-                action_data: action_data.clone(),
-                condition,
+        let actions = button
+            .actions
+            .iter()
+            .map(|action| ButtonAction {
+                action_data: source_movie.to_unbounded_subslice(action.action_data),
+                conditions: action.conditions,
                 key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
-            }));
-        }
+            })
+            .collect();
 
         let static_data = ButtonStatic {
             swf: source_movie.movie.clone(),
@@ -593,6 +593,7 @@ impl<'gc> Avm1ButtonData<'gc> {
             }
         }
     }
+
     fn run_actions(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -602,8 +603,8 @@ impl<'gc> Avm1ButtonData<'gc> {
         let mut handled = ClipEventResult::NotHandled;
         if let Some(parent) = self.base.base.parent {
             for action in &self.static_data.read().actions {
-                if action.condition == condition
-                    && (action.condition != swf::ButtonActionCondition::KEY_PRESS
+                if action.conditions.contains(condition)
+                    && (condition != swf::ButtonActionCondition::KEY_PRESS
                         || action.key_code == key_code)
                 {
                     // Note that AVM1 buttons run actions relative to their parent, not themselves.
@@ -648,7 +649,7 @@ impl From<ButtonState> for swf::ButtonState {
 #[derive(Clone, Debug)]
 struct ButtonAction {
     action_data: SwfSlice,
-    condition: swf::ButtonActionCondition,
+    conditions: swf::ButtonActionCondition,
     key_code: Option<ButtonKeyCode>,
 }
 
