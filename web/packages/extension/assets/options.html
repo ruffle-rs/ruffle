@@ -68,6 +68,16 @@
                         <input type="checkbox" id="ignore_optout" />
                         <label for="ignore_optout">Ignore website compatibility warnings</label>
                     </div>
+                    <div class="option select">
+                        <select id="force_renderer">
+                            <option value="">None</option>
+                            <option value="webgpu">WebGPU</option>
+                            <option value="wgpu-webgl">Wgpu (via WebGL)</option>
+                            <option value="webgl">WebGL</option>
+                            <option value="canvas">Canvas2D</option>
+                        </select>
+                        <label for="force_renderer">Force renderer</label>
+                    </div>
                     <div class="option number-input">
                         <input type="number" id="max_execution_duration" min="1" />
                         <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>

@@ -393,6 +393,20 @@ export interface BaseLoadOptions {
     preferredRenderer?: RenderBackend | null;
 
     /**
+     * The forced render backend of the Ruffle player.
+     *
+     * This option should only be used for testing;
+     * the available backends may change in future releases.
+     * By default, Ruffle chooses the most featureful backend supported by the user's system,
+     * falling back to more basic backends if necessary.
+     * The available values in order of default preference are:
+     * "webgpu", "wgpu-webgl", "webgl", "canvas".
+     *
+     * @default null
+     */
+    forceRenderer?: RenderBackend | null;
+
+    /**
      * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
      *
      * @default null

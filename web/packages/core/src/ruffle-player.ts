@@ -644,6 +644,10 @@ export class RufflePlayer extends HTMLElement {
             !("url" in options) || typeof options.url === "string",
             "`url` must be a string"
         );
+        check(
+            !("preferredRenderer" in options && "forceRenderer" in options),
+            "`preferredRenderer` and `forceRenderer` are mutual exclusive"
+        );
         return options;
     }
     /**
