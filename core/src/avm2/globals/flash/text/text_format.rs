@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2008;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -54,10 +55,7 @@ pub fn set_align<'gc>(
             } else if value == WStr::from_units(b"justify") {
                 Some(swf::TextAlign::Justify)
             } else {
-                return Err(
-                    "ArgumentError: Error #2008: Parameter align must be one of the accepted values."
-                        .into(),
-                );
+                return Err(make_error_2008(activation, "align"));
             };
         }
     }

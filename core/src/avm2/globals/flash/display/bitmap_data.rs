@@ -1,7 +1,7 @@
 //! `flash.display.BitmapData` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
+use crate::avm2::error::{argument_error, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
@@ -812,7 +812,7 @@ pub fn draw<'gc>(
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
-                return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+                return Err(make_error_2008(activation, "blendMode"));
             }
         }
 
@@ -891,7 +891,7 @@ pub fn draw_with_quality<'gc>(
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
-                return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+                return Err(make_error_2008(activation, "blendMode"));
             }
         }
 
