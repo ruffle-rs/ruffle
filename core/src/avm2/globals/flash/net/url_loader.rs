@@ -1,11 +1,10 @@
 //! `flash.net.URLLoader` native function definitions
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::flash::display::loader::request_from_url_request;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
-use crate::avm2_stub_method;
-use crate::backend::navigator::{NavigationMethod, Request};
 use crate::loader::DataFormat;
 
 /// Native function definition for `URLLoader.load`
@@ -35,7 +34,7 @@ pub fn load<'gc>(
             return Err(format!("Unknown data format: {data_format}").into());
         };
 
-        return spawn_fetch(activation, this, request, data_format);
+        return spawn_fetch(activation, this, *request, data_format);
     }
     Ok(Value::Undefined)
 }
@@ -43,75 +42,10 @@ pub fn load<'gc>(
 fn spawn_fetch<'gc>(
     activation: &mut Activation<'_, 'gc>,
     loader_object: Object<'gc>,
-    url_request: &Object<'gc>,
+    url_request: Object<'gc>,
     data_format: DataFormat,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let url = url_request
-        .get_public_property("url", activation)?
-        .coerce_to_string(activation)?;
-
-    let method_str = url_request
-        .get_public_property("method", activation)?
-        .coerce_to_string(activation)?;
-
-    let method = NavigationMethod::from_method_str(&method_str).unwrap_or_else(|| {
-        tracing::error!("Unknown HTTP method type {:?}", method_str);
-        NavigationMethod::Get
-    });
-
-    let content_type = url_request
-        .get_public_property("contentType", activation)?
-        .coerce_to_string(activation)?;
-
-    let data = url_request.get_public_property("data", activation)?;
-
-    let data = if let Value::Null = data {
-        None
-    } else {
-        Some(data.coerce_to_object(activation)?)
-    };
-
-    // FIXME: set `requestHeaders`, `followRedirects`, `requestHeaders`, and `userAgent`
-    // from the `URLRequest`
-    let mut request = Request::request(method, url.to_string(), None);
-
-    if let Some(data) = data {
-        if data.is_of_type(
-            activation.avm2().classes().urlvariables,
-            &mut activation.context,
-        ) {
-            if &*content_type == b"application/x-www-form-urlencoded" {
-                let data = data
-                    .call_public_property("toString", &[], activation)?
-                    .coerce_to_string(activation)?
-                    .to_string()
-                    .into_bytes();
-                if &*method_str == b"GET" {
-                    avm2_stub_method!(
-                        activation,
-                        "flash.net.URLLoader",
-                        "load",
-                        "with GET method and URLVariables data"
-                    );
-                }
-                request.set_body((data, "application/x-www-form-urlencoded".to_string()));
-            } else {
-                avm2_stub_method!(
-                    activation,
-                    "flash.net.URLLoader",
-                    "load",
-                    "with URLVariables data and content type other than application/x-www-form-urlencoded"
-                );
-            }
-        } else {
-            avm2_stub_method!(
-                activation,
-                "flash.net.URLLoader",
-                "load",
-                "with non-URLVariables data"
-            );
-        }
-    }
+    let request = request_from_url_request(activation, url_request)?;
 
     let future = activation.context.load_manager.load_data_into_url_loader(
         activation.context.player.clone(),
