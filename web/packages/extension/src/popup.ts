@@ -135,7 +135,10 @@ window.addEventListener("DOMContentLoaded", () => {
         "options-button"
     ) as HTMLButtonElement;
     optionsButton.textContent = utils.i18n.getMessage("open_settings_page");
-    optionsButton.addEventListener("click", () => utils.openOptionsPage());
+    optionsButton.addEventListener("click", async () => {
+        await utils.openOptionsPage();
+        window.close();
+    });
 
     reloadButton = document.getElementById(
         "reload-button"
@@ -143,10 +146,7 @@ window.addEventListener("DOMContentLoaded", () => {
     reloadButton.textContent = utils.i18n.getMessage("action_reload");
     reloadButton.addEventListener("click", async () => {
         await utils.tabs.reload(activeTab.id!);
-        // TODO: Wait for tab to load?
-        setTimeout(() => {
-            displayTabStatus();
-        }, 1000);
+        window.close();
     });
 
     displayTabStatus();
