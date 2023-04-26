@@ -1428,9 +1428,11 @@ async fn create_renderer(
 
     let mut renderer_list = vec!["webgpu", "wgpu-webgl", "webgl", "canvas"];
     if let Some(preferred_renderer) = &config.preferred_renderer {
-        if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
-            renderer_list.remove(pos);
-            renderer_list.insert(0, preferred_renderer.as_str());
+        if !preferred_renderer.is_empty() {
+            if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
+                renderer_list.remove(pos);
+                renderer_list.insert(0, preferred_renderer.as_str());
+            }
         }
     }
 

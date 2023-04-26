@@ -5,6 +5,7 @@ import {
     WindowMode,
     Letterbox,
     LogLevel,
+    RenderBackend,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -35,5 +36,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     publicPath: null,
     polyfills: true,
     playerVersion: null,
-    preferredRenderer: null,
+    preferredRenderer: RenderBackend.Automatic,
 };

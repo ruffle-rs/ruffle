@@ -124,6 +124,11 @@ export const enum WindowMode {
  */
 export const enum RenderBackend {
     /**
+     * Lets Ruffle select which renderer to use.
+     */
+    Automatic = "",
+
+    /**
      * An [in-development API](https://caniuse.com/webgpu) that will be preferred if available in the future.
      * Should behave the same as wgpu-webgl, except with lower overhead and thus better performance.
      */
@@ -384,7 +389,7 @@ export interface BaseLoadOptions {
      * The available values in order of default preference are:
      * "webgpu", "wgpu-webgl", "webgl", "canvas".
      *
-     * @default null
+     * @default RenderBackend.Automatic
      */
     preferredRenderer?: RenderBackend | null;
 
