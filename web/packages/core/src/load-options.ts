@@ -166,6 +166,10 @@ export interface ObsoleteDuration {
     nanos: number;
 }
 
+/**
+ * Any new duration-based setting should use 'number' or 'SecsDuration' for its type,
+ * instead of this type.
+ */
 export type Duration = SecsDuration | ObsoleteDuration;
 
 /**
