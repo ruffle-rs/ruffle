@@ -83,20 +83,36 @@ async function queryTabStatus(
     optionsChanged();
 }
 
-function objectsEqual<T>(x: NonNullable<T>, y: NonNullable<T>) {
-    for (const [key, value] of Object.entries(x)) {
-        if (y[key as keyof T] !== value) {
-            return false;
-        }
-    }
+/**
+ * Should only be called on data type objects without any "cyclic members" to avoid infinite recursion.
+ */
+function deepEqual(x: unknown, y: unknown): boolean {
+    if (
+        typeof x === "object" &&
+        typeof y === "object" &&
+        x !== null &&
+        y !== null
+    ) {
+        // Two non-null objects.
 
-    for (const [key, value] of Object.entries(y)) {
-        if (x[key as keyof T] !== value) {
-            return false;
+        for (const [key, value] of Object.entries(x)) {
+            if (!deepEqual(value, y[key as keyof typeof y])) {
+                return false;
+            }
         }
-    }
 
-    return true;
+        for (const [key, value] of Object.entries(y)) {
+            if (!deepEqual(value, x[key as keyof typeof x])) {
+                return false;
+            }
+        }
+
+        return true;
+    } else {
+        // Not two non-null objects.
+
+        return x === y;
+    }
 }
 
 function optionsChanged() {
@@ -104,7 +120,7 @@ function optionsChanged() {
         return;
     }
 
-    const isDifferent = !objectsEqual(savedOptions, tabOptions);
+    const isDifferent = !deepEqual(savedOptions, tabOptions);
     reloadButton.disabled = !isDifferent;
 }
 
