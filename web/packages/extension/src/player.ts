@@ -26,13 +26,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("main")!.append(player);
 
     const options = await utils.getOptions();
-    const config = {
+    player.load({
         letterbox: "on" as Letterbox,
         ...options,
-    };
-    player.load({
         url: swfUrl,
         base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
-        ...config,
     });
 });

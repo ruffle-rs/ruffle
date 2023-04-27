@@ -1,5 +1,6 @@
 import * as utils from "./utils";
 import type { BaseLoadOptions, Duration } from "ruffle-core";
+import { DEFAULT_CONFIG as CORE_DEFAULT_CONFIG } from "ruffle-core";
 
 export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
@@ -124,7 +125,8 @@ export async function bindOptions(
 
     for (const [key, element] of elements.entries()) {
         // Bind initial value.
-        element.value = options[key];
+        element.value =
+            options[key] ?? CORE_DEFAULT_CONFIG[key as keyof BaseLoadOptions];
 
         // Prevent transition on load.
         // Method from https://stackoverflow.com/questions/11131875.

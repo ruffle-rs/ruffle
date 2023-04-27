@@ -1,8 +1,6 @@
 import type { Options } from "./common";
-import { DEFAULT_CONFIG as CORE_DEFAULT_CONFIG } from "ruffle-core";
 
-const DEFAULT_OPTIONS: Required<Options> = {
-    ...CORE_DEFAULT_CONFIG,
+const DEFAULT_OPTIONS: Options = {
     ruffleEnable: true,
     ignoreOptout: false,
     autostart: false,
