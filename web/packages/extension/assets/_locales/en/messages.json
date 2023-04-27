@@ -21,7 +21,7 @@
         "message": "Log level"
     },
     "settings_max_execution_duration": {
-        "message": "How long can ActionScript execute for before being forcefully stopped (in seconds)"
+        "message": "Maximum allowed ActionScript execution duration (in seconds)"
     },
     "settings_player_version": {
         "message": "Flash player version number to emulate (range 1-32)"
