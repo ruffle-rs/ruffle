@@ -26,13 +26,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("main")!.append(player);
 
     const options = await utils.getOptions();
-    const config = {
-        letterbox: "on" as Letterbox,
-        ...options,
-    };
+
     player.load({
+        ...options,
+        // Override default value for 'letterbox' when playing in the extension player page.
+        letterbox: "on" as Letterbox,
         url: swfUrl,
         base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
-        ...config,
     });
 });
