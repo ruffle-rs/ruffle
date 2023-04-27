@@ -17,6 +17,10 @@ package flash.xml
          _setXML("<xml>" + input + "</xml>", this.ignoreWhite);
          _children = null;
       }
+
+      public function createElement(name:String): XMLNode {
+         return new XMLNode(XMLNodeType.ELEMENT_NODE, name);
+      }
    }
 }
 
