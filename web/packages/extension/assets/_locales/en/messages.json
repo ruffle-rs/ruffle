@@ -20,6 +20,9 @@
     "settings_log_level": {
         "message": "Log level"
     },
+    "settings_max_execution_duration": {
+        "message": "How long can ActionScript execute for before being forcefully stopped (in seconds)"
+    },
     "status_init": {
         "message": "Reading current tab…"
     },
