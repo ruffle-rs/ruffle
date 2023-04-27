@@ -170,9 +170,9 @@ pub fn start_drag<'gc>(
         } else {
             // The object moves relative to current mouse position.
             // Calculate the offset from the mouse to the object in world space.
-            let (object_x, object_y) = display_object.local_to_global(Default::default());
-            let (mouse_x, mouse_y) = *activation.context.mouse_position;
-            (object_x - mouse_x, object_y - mouse_y)
+            let object_position = display_object.local_to_global(Default::default());
+            let mouse_position = *activation.context.mouse_position;
+            object_position - mouse_position
         };
 
         let rectangle = args.try_get_object(activation, 1);

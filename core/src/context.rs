@@ -135,7 +135,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub input: &'a InputManager,
 
     /// The location of the mouse when it was last over the player.
-    pub mouse_position: &'a (Twips, Twips),
+    pub mouse_position: &'a Point<Twips>,
 
     /// The object being dragged via a `startDrag` action.
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,

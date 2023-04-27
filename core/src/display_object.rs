@@ -789,20 +789,20 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Converts a local position to a global stage position
-    fn local_to_global(&self, local: (Twips, Twips)) -> (Twips, Twips) {
+    fn local_to_global(&self, local: Point<Twips>) -> Point<Twips> {
         self.local_to_global_matrix() * local
     }
 
     /// Converts a local position on the stage to a local position on this display object
     /// Returns `None` if the object has zero scale.
-    fn global_to_local(&self, global: (Twips, Twips)) -> Option<(Twips, Twips)> {
+    fn global_to_local(&self, global: Point<Twips>) -> Option<Point<Twips>> {
         self.global_to_local_matrix().map(|matrix| matrix * global)
     }
 
     /// Converts a mouse position on the stage to a local position on this display object.
     /// If the object has zero scale, then the stage `TWIPS_TO_PIXELS` matrix will be used.
     /// This matches Flash's behavior for `mouseX`/`mouseY` on an object with zero scale.
-    fn mouse_to_local(&self, global: (Twips, Twips)) -> (Twips, Twips) {
+    fn mouse_to_local(&self, global: Point<Twips>) -> Point<Twips> {
         // MIKE: I suspect the `TWIPS_TO_PIXELS` scale should always be involved in the
         // calculation somehow, not just in the non-invertible case.
         self.global_to_local_matrix()
@@ -1618,8 +1618,8 @@ pub trait TDisplayObject<'gc>:
     fn set_object2(&self, _context: &mut UpdateContext<'_, 'gc>, _to: Avm2Object<'gc>) {}
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
-    fn hit_test_bounds(&self, pos: (Twips, Twips)) -> bool {
-        self.world_bounds().contains(pos)
+    fn hit_test_bounds(&self, point: Point<Twips>) -> bool {
+        self.world_bounds().contains(point)
     }
 
     /// Tests if a given object's world bounds intersects with the world bounds
@@ -1632,11 +1632,11 @@ pub trait TDisplayObject<'gc>:
     fn hit_test_shape(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        pos: (Twips, Twips),
+        point: Point<Twips>,
         _options: HitTestOptions,
     ) -> bool {
         // Default to using bounding box.
-        self.hit_test_bounds(pos)
+        self.hit_test_bounds(point)
     }
 
     fn post_instantiation(

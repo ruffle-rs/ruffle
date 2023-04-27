@@ -173,12 +173,12 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        pos: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         for child in self.iter_render_list().rev() {
             if let Some(int) = child.as_interactive() {
-                if let Some(result) = int.mouse_pick_avm1(context, pos, require_button_mode) {
+                if let Some(result) = int.mouse_pick_avm1(context, point, require_button_mode) {
                     return Some(result);
                 }
             }
@@ -190,14 +190,14 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        pos: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         // We have at most one child
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {
                 return int
-                    .mouse_pick_avm2(context, pos, require_button_mode)
+                    .mouse_pick_avm2(context, point, require_button_mode)
                     .combine_with_parent((*self).into());
             }
         }

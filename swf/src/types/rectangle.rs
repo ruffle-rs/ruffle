@@ -1,8 +1,6 @@
-use crate::Twips;
-use std::cmp::Ord;
-use std::ops::{Add, Sub};
+use crate::{types::point::Coordinate as PointCoordinate, Point, Twips};
 
-pub trait Coordinate: Copy + Ord + Add<Output = Self> + Sub<Output = Self> {
+pub trait Coordinate: PointCoordinate + Ord {
     const INVALID: Self;
 }
 
@@ -64,29 +62,29 @@ impl<T: Coordinate> Rectangle<T> {
 
     /// Clamp a given point inside this rectangle.
     #[must_use]
-    pub fn clamp(&self, (x, y): (T, T)) -> (T, T) {
+    pub fn clamp(&self, point: Point<T>) -> Point<T> {
         if self.is_valid() {
-            (
-                x.clamp(self.x_min, self.x_max),
-                y.clamp(self.y_min, self.y_max),
+            Point::new(
+                point.x.clamp(self.x_min, self.x_max),
+                point.y.clamp(self.y_min, self.y_max),
             )
         } else {
-            (x, y)
+            point
         }
     }
 
     #[must_use]
-    pub fn encompass(mut self, x: T, y: T) -> Self {
+    pub fn encompass(mut self, point: Point<T>) -> Self {
         if self.is_valid() {
-            self.x_min = self.x_min.min(x);
-            self.x_max = self.x_max.max(x);
-            self.y_min = self.y_min.min(y);
-            self.y_max = self.y_max.max(y);
+            self.x_min = self.x_min.min(point.x);
+            self.x_max = self.x_max.max(point.x);
+            self.y_min = self.y_min.min(point.y);
+            self.y_max = self.y_max.max(point.y);
         } else {
-            self.x_min = x;
-            self.x_max = x;
-            self.y_min = y;
-            self.y_max = y;
+            self.x_min = point.x;
+            self.x_max = point.x;
+            self.y_min = point.y;
+            self.y_max = point.y;
         }
         self
     }
@@ -116,8 +114,11 @@ impl<T: Coordinate> Rectangle<T> {
     }
 
     #[must_use]
-    pub fn contains(&self, (x, y): (T, T)) -> bool {
-        x >= self.x_min && x <= self.x_max && y >= self.y_min && y <= self.y_max
+    pub fn contains(&self, point: Point<T>) -> bool {
+        point.x >= self.x_min
+            && point.x <= self.x_max
+            && point.y >= self.y_min
+            && point.y <= self.y_max
     }
 }
 

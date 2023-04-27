@@ -620,7 +620,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
@@ -771,7 +771,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        mut point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         // The button is hovered if the mouse is over any child nodes.
@@ -794,7 +794,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             if let Some(hit_area) = hit_area {
                 //TODO: the if below should probably always be taken, why does the hit area
                 // sometimes have a parent?
-                let mut point = point;
                 if hit_area.parent().is_none() {
                     // hit_area is not actually a child, so transform point into local space before passing it down.
                     point = if let Some(point) = self.global_to_local(point) {

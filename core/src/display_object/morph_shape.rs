@@ -150,7 +150,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn hit_test_shape(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         _options: HitTestOptions,
     ) -> bool {
         if self.world_bounds().contains(point) {
@@ -159,7 +159,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
                 let point = local_matrix * point;
                 return ruffle_render::shape_utils::shape_hit_test(
                     &frame.shape,
-                    point,
+                    (point.x, point.y),
                     &local_matrix,
                 );
             } else {

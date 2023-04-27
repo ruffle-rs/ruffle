@@ -333,7 +333,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         for child in self.iter_render_list() {
@@ -534,7 +534,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
