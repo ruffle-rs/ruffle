@@ -1197,8 +1197,8 @@ impl Player {
                     drag_point = parent.mouse_to_local(drag_point);
                 }
                 drag_point = drag_object.constraint.clamp(drag_point);
-                display_object.set_x(context.gc_context, drag_point.x.to_pixels());
-                display_object.set_y(context.gc_context, drag_point.y.to_pixels());
+                display_object.set_x(context.gc_context, drag_point.x);
+                display_object.set_y(context.gc_context, drag_point.y);
 
                 // Update _droptarget property of dragged object.
                 if let Some(movie_clip) = display_object.as_movie_clip() {

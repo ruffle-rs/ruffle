@@ -3,7 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
 use crate::avm2::filters::FilterAvm2Ext;
+pub use crate::avm2::object::stage_allocator as display_object_allocator;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -20,9 +22,6 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
 use swf::BlendMode;
-
-pub use crate::avm2::object::stage_allocator as display_object_allocator;
-use crate::avm2::parameters::ParametersExt;
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -307,7 +306,7 @@ pub fn get_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj.x().into());
+        return Ok(dobj.x().to_pixels().into());
     }
 
     Ok(Value::Undefined)
@@ -320,9 +319,8 @@ pub fn set_x<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_x = args.get_f64(activation, 0)?;
-
-        dobj.set_x(activation.context.gc_context, new_x);
+        let x = args.get_f64(activation, 0)?;
+        dobj.set_x(activation.context.gc_context, Twips::from_pixels(x));
     }
 
     Ok(Value::Undefined)
@@ -335,7 +333,7 @@ pub fn get_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj.y().into());
+        return Ok(dobj.y().to_pixels().into());
     }
 
     Ok(Value::Undefined)
@@ -348,9 +346,8 @@ pub fn set_y<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let new_y = args.get_f64(activation, 0)?;
-
-        dobj.set_y(activation.context.gc_context, new_y);
+        let y = args.get_f64(activation, 0)?;
+        dobj.set_y(activation.context.gc_context, Twips::from_pixels(y));
     }
 
     Ok(Value::Undefined)

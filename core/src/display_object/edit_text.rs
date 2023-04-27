@@ -1574,32 +1574,30 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     // The returned position x and y of a text field is offset by the text bounds.
-    fn x(&self) -> f64 {
+    fn x(&self) -> Twips {
         let edit_text = self.0.read();
         let offset = edit_text.bounds.x_min;
-        (edit_text.base.base.transform.matrix.tx + offset).to_pixels()
+        edit_text.base.base.x() + offset
     }
 
-    fn set_x(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.x_min;
-        edit_text.base.base.transform.matrix.tx = Twips::from_pixels(value) - offset;
-        edit_text.base.base.set_transformed_by_script(true);
+        edit_text.base.base.set_x(x - offset);
         drop(edit_text);
         self.redraw_border(gc_context);
     }
 
-    fn y(&self) -> f64 {
+    fn y(&self) -> Twips {
         let edit_text = self.0.read();
         let offset = edit_text.bounds.y_min;
-        (edit_text.base.base.transform.matrix.ty + offset).to_pixels()
+        edit_text.base.base.y() + offset
     }
 
-    fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.y_min;
-        edit_text.base.base.transform.matrix.ty = Twips::from_pixels(value) - offset;
-        edit_text.base.base.set_transformed_by_script(true);
+        edit_text.base.base.set_y(y - offset);
         drop(edit_text);
         self.redraw_border(gc_context);
     }

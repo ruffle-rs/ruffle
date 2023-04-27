@@ -14,6 +14,7 @@ use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, GcWeakCell, MutationContext};
 use std::fmt;
+use swf::Twips;
 
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]
@@ -462,7 +463,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
 }
 
 fn x<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.x().into()
+    this.x().to_pixels().into()
 }
 
 fn set_x<'gc>(
@@ -470,14 +471,14 @@ fn set_x<'gc>(
     this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_x(activation.context.gc_context, val);
+    if let Some(x) = property_coerce_to_number(activation, val)? {
+        this.set_x(activation.context.gc_context, Twips::from_pixels(x));
     }
     Ok(())
 }
 
 fn y<'gc>(_activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.y().into()
+    this.y().to_pixels().into()
 }
 
 fn set_y<'gc>(
@@ -485,8 +486,8 @@ fn set_y<'gc>(
     this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_y(activation.context.gc_context, val);
+    if let Some(y) = property_coerce_to_number(activation, val)? {
+        this.set_y(activation.context.gc_context, Twips::from_pixels(y));
     }
     Ok(())
 }
