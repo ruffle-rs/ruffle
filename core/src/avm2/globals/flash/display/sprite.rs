@@ -155,7 +155,6 @@ pub fn set_button_mode<'gc>(
 }
 
 /// Starts dragging this display object, making it follow the cursor.
-/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Option<Object<'gc>>,
@@ -163,17 +162,6 @@ pub fn start_drag<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.and_then(|this| this.as_display_object()) {
         let lock_center = args.get_bool(0);
-
-        let offset = if lock_center {
-            // The object's origin point is locked to the mouse.
-            Default::default()
-        } else {
-            // The object moves relative to current mouse position.
-            // Calculate the offset from the mouse to the object in world space.
-            let object_position = display_object.local_to_global(Default::default());
-            let mouse_position = *activation.context.mouse_position;
-            object_position - mouse_position
-        };
 
         let rectangle = args.try_get_object(activation, 1);
         let constraint = if let Some(rectangle) = rectangle {
@@ -218,7 +206,8 @@ pub fn start_drag<'gc>(
 
         let drag_object = crate::player::DragObject {
             display_object,
-            offset,
+            last_mouse_position: *activation.context.mouse_position,
+            lock_center,
             constraint,
         };
         *activation.context.drag_object = Some(drag_object);

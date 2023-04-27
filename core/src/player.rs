@@ -1186,34 +1186,49 @@ impl Player {
     pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
         let mouse_position = *context.mouse_position;
         let is_action_script_3 = context.is_action_script_3();
-        if let Some(drag_object) = &mut context.drag_object {
+        if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
             if !is_action_script_3 && display_object.avm1_removed() {
                 // Be sure to clear the drag if the object was removed.
                 *context.drag_object = None;
-            } else {
-                let mut drag_point = mouse_position + drag_object.offset;
-                if let Some(parent) = display_object.parent() {
-                    drag_point = parent.mouse_to_local(drag_point);
-                }
-                drag_point = drag_object.constraint.clamp(drag_point);
-                display_object.set_x(context.gc_context, drag_point.x);
-                display_object.set_y(context.gc_context, drag_point.y);
+                return;
+            }
 
-                // Update _droptarget property of dragged object.
-                if let Some(movie_clip) = display_object.as_movie_clip() {
-                    // Turn the dragged object invisible so that we don't pick it.
-                    // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
-                    let was_visible = display_object.visible();
-                    display_object.set_visible(context.gc_context, false);
-                    // Set _droptarget to the object the mouse is hovering over.
-                    let drop_target_object = run_mouse_pick(context, false);
-                    movie_clip.set_drop_target(
-                        context.gc_context,
-                        drop_target_object.map(|d| d.as_displayobject()),
-                    );
-                    display_object.set_visible(context.gc_context, was_visible);
-                }
+            let local_to_global_matrix = match display_object.parent() {
+                Some(parent) => parent.local_to_global_matrix(),
+                None => Matrix::IDENTITY,
+            };
+            let global_to_local_matrix = local_to_global_matrix.inverse().unwrap_or_default();
+
+            let new_position = if drag_object.lock_center {
+                global_to_local_matrix * mouse_position
+            } else {
+                let mouse_delta = mouse_position - drag_object.last_mouse_position;
+                // TODO: Introduce `DisplayObject::position()`?
+                let position = Point::new(display_object.x(), display_object.y());
+                position + global_to_local_matrix * mouse_delta
+            };
+
+            let new_position = drag_object.constraint.clamp(new_position);
+
+            // TODO: Introduce `DisplayObject::set_position()`?
+            display_object.set_x(context.gc_context, new_position.x);
+            display_object.set_y(context.gc_context, new_position.y);
+            drag_object.last_mouse_position = mouse_position;
+
+            // Update `_droptarget` property of dragged object.
+            if let Some(movie_clip) = display_object.as_movie_clip() {
+                // Turn the dragged object invisible so that we don't pick it.
+                // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
+                let was_visible = display_object.visible();
+                display_object.set_visible(context.gc_context, false);
+                // Set `_droptarget` to the object the mouse is hovering over.
+                let drop_target_object = run_mouse_pick(context, false);
+                movie_clip.set_drop_target(
+                    context.gc_context,
+                    drop_target_object.map(|d| d.as_displayobject()),
+                );
+                display_object.set_visible(context.gc_context, was_visible);
             }
         }
     }
@@ -2372,9 +2387,14 @@ pub struct DragObject<'gc> {
     /// The display object being dragged.
     pub display_object: DisplayObject<'gc>,
 
-    /// The offset from the mouse position to the center of the clip.
+    /// The last seen mouse position.
     #[collect(require_static)]
-    pub offset: Point<Twips>,
+    pub last_mouse_position: Point<Twips>,
+
+    /// Whether the dragged object is locked to the center of the mouse position, or locked to the
+    /// point where the user first clicked it.
+    #[collect(require_static)]
+    pub lock_center: bool,
 
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]
