@@ -7,3 +7,11 @@
     margin: auto;
     padding: 24px 32px;
 }
+
+details > .options {
+    padding-top: 10px;
+}
+
+details > summary {
+    cursor: pointer;
+}
