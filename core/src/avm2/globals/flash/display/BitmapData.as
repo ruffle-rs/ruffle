@@ -60,6 +60,7 @@ package flash.display {
         public native function threshold(
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, operation:String, threshold:uint, color:uint = 0, mask:uint = 0xFFFFFFFF, copySource:Boolean = false
         ):uint;
+        public native function compare(otherBitmapData:BitmapData):Object;
 
         public function generateFilterRect(sourceRect:Rectangle, filter:BitmapFilter):Rectangle {
             stub_method("flash.display.BitmapData", "generateFilterRect");
