@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import type { BaseLoadOptions, Duration } from "ruffle-core";
+import type { BaseLoadOptions } from "ruffle-core";
 
 export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
@@ -32,27 +32,43 @@ class CheckboxOption implements OptionElement<boolean> {
     }
 }
 
-/**
- * Number input option for 'maxExecutionDuration'.
- */
-class MaxExecutionDurationOption implements OptionElement<Duration> {
+class NumberOption implements OptionElement<number | null> {
     constructor(
         private readonly numberInput: HTMLInputElement,
         readonly label: HTMLLabelElement
-    ) {}
+    ) {
+        this.numberInput.addEventListener("input", () => {
+            this.numberInput.reportValidity();
+        });
+    }
 
     get input() {
         return this.numberInput;
     }
 
-    get value() {
-        return Math.max(1, Math.round(this.numberInput.valueAsNumber));
+    get value(): number | null {
+        const ni = this.numberInput;
+        const num = ni.valueAsNumber;
+        if (Number.isNaN(num)) {
+            return null;
+        }
+        if (ni.min) {
+            const min = Number(ni.min);
+            if (min > num) {
+                return min;
+            }
+        }
+        if (ni.max) {
+            const max = Number(ni.max);
+            if (num > max) {
+                return max;
+            }
+        }
+        return num;
     }
 
-    set value(value: Duration) {
-        // Ignoring the 'nanos' part from the old format type ObsoleteDuration.
-        const newValue = typeof value === "number" ? value : value.secs;
-        this.numberInput.value = newValue.toString();
+    set value(value: number | null) {
+        this.numberInput.value = value?.toString() ?? "";
     }
 }
 
@@ -89,9 +105,7 @@ function getElement(option: Element): OptionElement<unknown> {
         }
 
         if (input.type === "number") {
-            if (input.id === "max_execution_duration") {
-                return new MaxExecutionDurationOption(input, label);
-            }
+            return new NumberOption(input, label);
         }
     }
 

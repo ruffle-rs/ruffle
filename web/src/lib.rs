@@ -133,7 +133,7 @@ where
     tracing::Level::from_str(&value).map_err(Error::custom)
 }
 
-fn deserialize_max_execution_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -242,7 +242,7 @@ struct Config {
     #[serde(deserialize_with = "deserialize_log_level")]
     log_level: tracing::Level,
 
-    #[serde(deserialize_with = "deserialize_max_execution_duration")]
+    #[serde(deserialize_with = "deserialize_duration")]
     max_execution_duration: Duration,
 
     player_version: Option<u8>,
