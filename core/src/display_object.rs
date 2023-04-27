@@ -201,22 +201,22 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.transform.color_transform = color_transform;
     }
 
-    fn x(&self) -> f64 {
-        self.transform.matrix.tx.to_pixels()
+    fn x(&self) -> Twips {
+        self.transform.matrix.tx
     }
 
-    fn set_x(&mut self, value: f64) {
+    fn set_x(&mut self, x: Twips) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.tx = Twips::from_pixels(value)
+        self.transform.matrix.tx = x;
     }
 
-    fn y(&self) -> f64 {
-        self.transform.matrix.ty.to_pixels()
+    fn y(&self) -> Twips {
+        self.transform.matrix.ty
     }
 
-    fn set_y(&mut self, value: f64) {
+    fn set_y(&mut self, y: Twips) {
         self.set_transformed_by_script(true);
-        self.transform.matrix.ty = Twips::from_pixels(value)
+        self.transform.matrix.ty = y;
     }
 
     /// Caches the scale and rotation factors for this display object, if necessary.
@@ -812,26 +812,26 @@ pub trait TDisplayObject<'gc>:
 
     /// The `x` position in pixels of this display object in local space.
     /// Returned by the `_x`/`x` ActionScript properties.
-    fn x(&self) -> f64 {
+    fn x(&self) -> Twips {
         self.base().x()
     }
 
     /// Sets the `x` position in pixels of this display object in local space.
     /// Set by the `_x`/`x` ActionScript properties.
-    fn set_x(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_x(value);
+    fn set_x(&self, gc_context: MutationContext<'gc, '_>, x: Twips) {
+        self.base_mut(gc_context).set_x(x);
     }
 
     /// The `y` position in pixels of this display object in local space.
     /// Returned by the `_y`/`y` ActionScript properties.
-    fn y(&self) -> f64 {
+    fn y(&self) -> Twips {
         self.base().y()
     }
 
     /// Sets the `y` position in pixels of this display object in local space.
     /// Set by the `_y`/`y` ActionScript properties.
-    fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
-        self.base_mut(gc_context).set_y(value);
+    fn set_y(&self, gc_context: MutationContext<'gc, '_>, y: Twips) {
+        self.base_mut(gc_context).set_y(y);
     }
 
     /// The rotation in degrees this display object in local space.
