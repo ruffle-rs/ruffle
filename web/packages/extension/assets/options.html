@@ -19,7 +19,7 @@
                     class="logo" />
             </a>
         </div>
-        <div class="container">
+        <div class="options container">
             <div class="option checkbox">
                 <input type="checkbox" id="ruffle_enable" />
                 <label for="ruffle_enable">Play Flash content in Ruffle</label>
@@ -36,41 +36,44 @@
                 <input type="checkbox" id="warn_on_unsupported_content" />
                 <label for="warn_on_unsupported_content">Warn on unsupported content</label>
             </div>
-            <div class="option checkbox">
-                <input type="checkbox" id="ignore_optout" />
-                <label for="ignore_optout">Ignore website compatibility warnings</label>
-            </div>
-            <div class="option select">
-                <select id="log_level">
-                    <option value="info">Info</option>
-                    <option value="warn">Warning</option>
-                    <option value="error">Error</option>
-                </select>
-                <label for="log_level">Log level</label>
-            </div>
-            <div class="option select">
-                <select id="preferred_renderer">
-                    <option value="webgpu">WebGPU</option>
-                    <option value="wgpu-webgl">Wgpu (via WebGL)</option>
-                    <option value="webgl">WebGL</option>
-                    <option value="canvas">Canvas2D</option>
-                </select>
-                <label for="preferred_renderer">Preferred renderer</label>
-            </div>
-            <div class="option number-input">
-                <input type="number" id="max_execution_duration"
-                       min="1"
-                />
-                <label for="max_execution_duration">How long can ActionScript execute for before being forcefully stopped (in seconds)</label>
-            </div>
-            <div class="option number-input">
-                <input type="number" id="player_version"
-                       min="1"
-                       max="32"
-                       placeholder="32"
-                />
-                <label for="player_version">Flash player version number to emulate (range 1-32)</label>
-            </div>
+            <details>
+                <summary>Advanced Options</summary>
+                <div class="options">
+                    <div class="option checkbox">
+                        <input type="checkbox" id="ignore_optout" />
+                        <label for="ignore_optout">Ignore website compatibility warnings</label>
+                    </div>
+                    <div class="option select">
+                        <select id="log_level">
+                            <option value="info">Info</option>
+                            <option value="warn">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                        <label for="log_level">Log level</label>
+                    </div>
+                    <div class="option select">
+                        <select id="preferred_renderer">
+                            <option value="webgpu">WebGPU</option>
+                            <option value="wgpu-webgl">Wgpu (via WebGL)</option>
+                            <option value="webgl">WebGL</option>
+                            <option value="canvas">Canvas2D</option>
+                        </select>
+                        <label for="preferred_renderer">Preferred renderer</label>
+                    </div>
+                    <div class="option number-input">
+                        <input type="number" id="player_version"
+                               min="1"
+                               max="32"
+                               placeholder="32"
+                        />
+                        <label for="player_version">Flash player version number to emulate (range 1-32)</label>
+                    </div>
+                    <div class="option number-input">
+                        <input type="number" id="max_execution_duration" min="1" />
+                        <label for="max_execution_duration">Maximum allowed ActionScript execution duration (in seconds)</label>
+                    </div>
+                </div>
+            </details>
         </div>
         <script src="dist/options.js"></script>
     </body>

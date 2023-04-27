@@ -36,19 +36,18 @@ body {
     transform: scale(104%);
 }
 
-/*
- * Controls.
- */
+/* Controls */
 
-/* Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW */
+.options {
+    display: flex;
+    flex-flow: column;
+    gap: 24px;
+}
+
 .option {
     position: relative;
     display: flex;
     align-items: center;
-}
-
-.option:not(:first-child) {
-    margin-top: 24px;
 }
 
 .option input,
@@ -62,7 +61,7 @@ body {
     padding-right: 80px;
 }
 
-/* Checkbox. */
+/* Checkbox (Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW) */
 
 .option.checkbox input {
     width: 40px;
@@ -107,7 +106,7 @@ body {
     right: 1px;
 }
 
-/* Number input. */
+/* Number input */
 
 .option.number-input input {
     width: 60px;
