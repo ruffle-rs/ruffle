@@ -1304,3 +1304,68 @@ pub fn threshold<'gc>(
 
     Ok(Value::Undefined)
 }
+
+/// Implement `BitmapData.compare`
+pub fn compare<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    const EQUIVALENT: i32 = 0;
+    const NOT_BITMAP: i32 = -1;
+    const BITMAP_DISPOSED: i32 = -2;
+    const DIFFERENT_WIDTHS: i32 = -3;
+    const DIFFERENT_HEIGHTS: i32 = -4;
+
+    let this_bitmap_data =
+        if let Some(this_bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+            this_bitmap_data
+        } else {
+            return Ok(NOT_BITMAP.into());
+        };
+    this_bitmap_data.check_valid(activation)?;
+
+    if this_bitmap_data.disposed() {
+        // The documentation says that -2 should be returned here, but -1 is actually returned.
+        return Ok(NOT_BITMAP.into());
+    }
+
+    let other_bitmap_data = if let Some(other_bitmap_data) = args
+        .get_object(activation, 0, "otherBitmapData")?
+        .as_bitmap_data()
+    {
+        other_bitmap_data
+    } else {
+        // The documentation says that -1 should be returned here, but -2 is actually returned.
+        return Ok(BITMAP_DISPOSED.into());
+    };
+    other_bitmap_data.check_valid(activation)?;
+
+    if other_bitmap_data.disposed() {
+        return Ok(BITMAP_DISPOSED.into());
+    }
+
+    if this_bitmap_data.width() != other_bitmap_data.width() {
+        return Ok(DIFFERENT_WIDTHS.into());
+    }
+
+    if this_bitmap_data.height() != other_bitmap_data.height() {
+        return Ok(DIFFERENT_HEIGHTS.into());
+    }
+
+    match operations::compare(this_bitmap_data, other_bitmap_data) {
+        Some(bitmap_data) => {
+            let class = activation.avm2().classes().bitmapdata;
+            Ok(BitmapDataObject::from_bitmap_data(
+                activation,
+                BitmapDataWrapper::new(GcCell::allocate(
+                    activation.context.gc_context,
+                    bitmap_data,
+                )),
+                class,
+            )?
+            .into())
+        }
+        None => Ok(EQUIVALENT.into()),
+    }
+}
