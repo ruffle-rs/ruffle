@@ -2562,7 +2562,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
         if options.contains(HitTestOptions::SKIP_INVISIBLE)
@@ -2879,7 +2879,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         if self.visible() {
@@ -2964,7 +2964,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         if self.visible() {

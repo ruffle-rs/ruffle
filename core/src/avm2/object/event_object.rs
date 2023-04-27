@@ -99,7 +99,7 @@ impl<'gc> EventObject<'gc> {
     where
         S: Into<AvmString<'gc>>,
     {
-        let local_pos = target.mouse_to_local(*activation.context.mouse_position);
+        let local = target.mouse_to_local(*activation.context.mouse_position);
 
         let event_type: AvmString<'gc> = event_type.into();
 
@@ -114,9 +114,9 @@ impl<'gc> EventObject<'gc> {
                     // cancellable
                     false.into(),
                     // localX
-                    local_pos.0.to_pixels().into(),
+                    local.x.to_pixels().into(),
                     // localY
-                    local_pos.1.to_pixels().into(),
+                    local.y.to_pixels().into(),
                     // relatedObject
                     related_object
                         .map(|o| o.as_displayobject().object2())

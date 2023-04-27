@@ -272,7 +272,7 @@ pub struct Player {
     input: InputManager,
 
     mouse_in_stage: bool,
-    mouse_pos: (Twips, Twips),
+    mouse_position: Point<Twips>,
 
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
@@ -1143,15 +1143,15 @@ impl Player {
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
-            let old_pos = self.mouse_pos;
-            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+            let prev_mouse_position = self.mouse_position;
+            self.mouse_position = inverse_view_matrix * Point::from_pixels(x, y);
 
             // Update the dragged object here to keep it constantly in sync with the mouse position.
             self.mutate_with_update_context(|context| {
                 Self::update_drag(context);
             });
 
-            let is_mouse_moved = old_pos != self.mouse_pos;
+            let is_mouse_moved = prev_mouse_position != self.mouse_position;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
             if self.update_mouse_state(is_mouse_button_changed, is_mouse_moved) {
@@ -1184,22 +1184,21 @@ impl Player {
 
     /// Update dragged object, if any.
     pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
-        let (mouse_x, mouse_y) = *context.mouse_position;
+        let mouse_position = *context.mouse_position;
         let is_action_script_3 = context.is_action_script_3();
         if let Some(drag_object) = &mut context.drag_object {
             let display_object = drag_object.display_object;
-            if !is_action_script_3 && drag_object.display_object.avm1_removed() {
+            if !is_action_script_3 && display_object.avm1_removed() {
                 // Be sure to clear the drag if the object was removed.
                 *context.drag_object = None;
             } else {
-                let (offset_x, offset_y) = drag_object.offset;
-                let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
+                let mut drag_point = mouse_position + drag_object.offset;
                 if let Some(parent) = display_object.parent() {
                     drag_point = parent.mouse_to_local(drag_point);
                 }
                 drag_point = drag_object.constraint.clamp(drag_point);
-                display_object.set_x(context.gc_context, drag_point.0.to_pixels());
-                display_object.set_y(context.gc_context, drag_point.1.to_pixels());
+                display_object.set_x(context.gc_context, drag_point.x.to_pixels());
+                display_object.set_y(context.gc_context, drag_point.y.to_pixels());
 
                 // Update _droptarget property of dragged object.
                 if let Some(movie_clip) = display_object.as_movie_clip() {
@@ -1759,7 +1758,7 @@ impl Player {
                 mouse_over_object: mouse_hovered_object,
                 mouse_down_object: mouse_pressed_object,
                 input: &self.input,
-                mouse_position: &self.mouse_pos,
+                mouse_position: &self.mouse_position,
                 drag_object,
                 player: self.self_reference.clone(),
                 load_manager,
@@ -1792,16 +1791,16 @@ impl Player {
                 stream_manager,
             };
 
-            let old_frame_rate = *update_context.frame_rate;
+            let prev_frame_rate = *update_context.frame_rate;
 
             let ret = f(&mut update_context);
 
-            let new_frame_rate = *update_context.frame_rate;
-
             // If we changed the framerate, let the audio handler now.
             #[allow(clippy::float_cmp)]
-            if old_frame_rate != new_frame_rate {
-                update_context.audio.set_frame_rate(new_frame_rate);
+            if *update_context.frame_rate != prev_frame_rate {
+                update_context
+                    .audio
+                    .set_frame_rate(*update_context.frame_rate);
             }
 
             self.current_frame = update_context
@@ -2290,7 +2289,7 @@ impl PlayerBuilder {
                 // Input
                 input: Default::default(),
                 mouse_in_stage: true,
-                mouse_pos: (Twips::ZERO, Twips::ZERO),
+                mouse_position: Point::ZERO,
                 mouse_cursor: MouseCursor::Arrow,
                 mouse_cursor_needs_check: false,
 
@@ -2375,7 +2374,7 @@ pub struct DragObject<'gc> {
 
     /// The offset from the mouse position to the center of the clip.
     #[collect(require_static)]
-    pub offset: (Twips, Twips),
+    pub offset: Point<Twips>,
 
     /// The bounding rectangle where the clip will be maintained.
     #[collect(require_static)]

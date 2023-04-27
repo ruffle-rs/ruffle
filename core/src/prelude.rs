@@ -4,7 +4,7 @@ pub use crate::display_object::{
 };
 pub use ruffle_render::matrix::Matrix;
 pub use std::ops::{Bound, RangeBounds};
-pub use swf::{CharacterId, Color, Rectangle, Twips};
+pub use swf::{CharacterId, Color, Point, Rectangle, Twips};
 pub use tracing::{error, info, trace, warn};
 
 /// A depth for a Flash display object in AVM1.

@@ -5,7 +5,7 @@ use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath, FillRule};
 use std::cell::{Cell, RefCell};
-use swf::{FillStyle, LineStyle, Rectangle, Twips};
+use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -19,8 +19,8 @@ pub struct Drawing {
     current_fill: Option<DrawingFill>,
     current_line: Option<DrawingLine>,
     pending_lines: Vec<DrawingLine>,
-    cursor: (Twips, Twips),
-    fill_start: (Twips, Twips),
+    cursor: Point<Twips>,
+    fill_start: Point<Twips>,
     winding_rule: FillRule,
 }
 
@@ -42,8 +42,8 @@ impl Drawing {
             current_fill: None,
             current_line: None,
             pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
+            cursor: Point::ZERO,
+            fill_start: Point::ZERO,
             winding_rule: FillRule::EvenOdd,
         }
     }
@@ -59,8 +59,8 @@ impl Drawing {
             current_fill: None,
             current_line: None,
             pending_lines: Vec::new(),
-            cursor: (Twips::ZERO, Twips::ZERO),
-            fill_start: (Twips::ZERO, Twips::ZERO),
+            cursor: Point::ZERO,
+            fill_start: Point::ZERO,
             winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
                 FillRule::NonZero
             } else {
@@ -122,8 +122,8 @@ impl Drawing {
             self.current_line = Some(DrawingLine {
                 style,
                 commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
+                    x: self.cursor.x,
+                    y: self.cursor.y,
                 }],
                 is_closed: false,
             });
@@ -132,8 +132,8 @@ impl Drawing {
             self.current_fill = Some(DrawingFill {
                 style,
                 commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
+                    x: self.cursor.x,
+                    y: self.cursor.y,
                 }],
             });
         }
@@ -150,8 +150,8 @@ impl Drawing {
         self.edge_bounds = Default::default();
         self.shape_bounds = Default::default();
         self.dirty.set(true);
-        self.cursor = (Twips::ZERO, Twips::ZERO);
-        self.fill_start = (Twips::ZERO, Twips::ZERO);
+        self.cursor = Point::ZERO;
+        self.fill_start = Point::ZERO;
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -167,8 +167,8 @@ impl Drawing {
             self.current_line = Some(DrawingLine {
                 style,
                 commands: vec![DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
+                    x: self.cursor.x,
+                    y: self.cursor.y,
                 }],
                 is_closed: false,
             });
@@ -187,7 +187,7 @@ impl Drawing {
         let add_to_bounds = if let DrawCommand::MoveTo { x, y } = command {
             // Close any pending fills before moving.
             self.close_path();
-            self.fill_start = (x, y);
+            self.fill_start = Point::new(x, y);
             false
         } else {
             true
@@ -210,8 +210,8 @@ impl Drawing {
             if self.fill_start == self.cursor {
                 // If this is the initial command after a move, include the starting point.
                 let command = DrawCommand::MoveTo {
-                    x: self.cursor.0,
-                    y: self.cursor.1,
+                    x: self.cursor.x,
+                    y: self.cursor.y,
                 };
                 self.shape_bounds = stretch_bounds(&self.shape_bounds, &command, stroke_width);
                 self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
@@ -220,7 +220,8 @@ impl Drawing {
             self.edge_bounds = stretch_bounds(&self.edge_bounds, &command, Twips::ZERO);
         }
 
-        self.cursor = command.end_point();
+        let (x, y) = command.end_point();
+        self.cursor = Point::new(x, y);
         self.dirty.set(true);
     }
 
@@ -266,8 +267,8 @@ impl Drawing {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
                     commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
+                        x: self.fill_start.x,
+                        y: self.fill_start.y,
                     });
                     true
                 } else {
@@ -284,8 +285,8 @@ impl Drawing {
                 let mut commands = line.commands.to_owned();
                 let is_closed = if self.current_fill.is_some() {
                     commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
+                        x: self.fill_start.x,
+                        y: self.fill_start.y,
                     });
                     true
                 } else {
@@ -321,14 +322,14 @@ impl Drawing {
 
     pub fn hit_test(
         &self,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         local_matrix: &ruffle_render::matrix::Matrix,
     ) -> bool {
         use ruffle_render::shape_utils;
         for path in &self.paths {
             match path {
                 DrawingPath::Fill(fill) => {
-                    if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+                    if shape_utils::draw_command_fill_hit_test(&fill.commands, (point.x, point.y)) {
                         return true;
                     }
                 }
@@ -336,7 +337,7 @@ impl Drawing {
                     if shape_utils::draw_command_stroke_hit_test(
                         &line.commands,
                         line.style.width(),
-                        point,
+                        (point.x, point.y),
                         local_matrix,
                     ) {
                         return true;
@@ -347,7 +348,7 @@ impl Drawing {
 
         // The pending fill will auto-close.
         if let Some(fill) = &self.current_fill {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+            if shape_utils::draw_command_fill_hit_test(&fill.commands, (point.x, point.y)) {
                 return true;
             }
         }
@@ -356,7 +357,7 @@ impl Drawing {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
                 line.style.width(),
-                point,
+                (point.x, point.y),
                 local_matrix,
             ) {
                 return true;
@@ -367,7 +368,7 @@ impl Drawing {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
                 line.style.width(),
-                point,
+                (point.x, point.y),
                 local_matrix,
             ) {
                 return true;
@@ -379,16 +380,16 @@ impl Drawing {
                 && shape_utils::draw_command_stroke_hit_test(
                     &[
                         DrawCommand::MoveTo {
-                            x: self.cursor.0,
-                            y: self.cursor.1,
+                            x: self.cursor.x,
+                            y: self.cursor.y,
                         },
                         DrawCommand::LineTo {
-                            x: self.fill_start.0,
-                            y: self.fill_start.1,
+                            x: self.fill_start.x,
+                            y: self.fill_start.y,
                         },
                     ],
                     line.style.width(),
-                    point,
+                    (point.x, point.y),
                     local_matrix,
                 )
             {
@@ -404,14 +405,14 @@ impl Drawing {
         if let Some(fill) = &mut self.current_fill {
             if self.cursor != self.fill_start {
                 fill.commands.push(DrawCommand::LineTo {
-                    x: self.fill_start.0,
-                    y: self.fill_start.1,
+                    x: self.fill_start.x,
+                    y: self.fill_start.y,
                 });
 
                 if let Some(line) = &mut self.current_line {
                     line.commands.push(DrawCommand::LineTo {
-                        x: self.fill_start.0,
-                        y: self.fill_start.1,
+                        x: self.fill_start.x,
+                        y: self.fill_start.y,
                     });
                 }
                 self.dirty.set(true);
@@ -460,15 +461,15 @@ fn stretch_bounds(
     let bounds = bounds.clone();
     match *command {
         DrawCommand::MoveTo { x, y } => bounds
-            .encompass(x - radius, y - radius)
-            .encompass(x + radius, y + radius),
+            .encompass(Point::new(x - radius, y - radius))
+            .encompass(Point::new(x + radius, y + radius)),
         DrawCommand::LineTo { x, y } => bounds
-            .encompass(x - radius, y - radius)
-            .encompass(x + radius, y + radius),
+            .encompass(Point::new(x - radius, y - radius))
+            .encompass(Point::new(x + radius, y + radius)),
         DrawCommand::CurveTo { x1, y1, x2, y2 } => bounds
-            .encompass(x1 - radius, y1 - radius)
-            .encompass(x1 + radius, y1 + radius)
-            .encompass(x2 - radius, y2 - radius)
-            .encompass(x2 + radius, y2 + radius),
+            .encompass(Point::new(x1 - radius, y1 - radius))
+            .encompass(Point::new(x1 + radius, y1 + radius))
+            .encompass(Point::new(x2 - radius, y2 - radius))
+            .encompass(Point::new(x2 + radius, y2 + radius)),
     }
 }

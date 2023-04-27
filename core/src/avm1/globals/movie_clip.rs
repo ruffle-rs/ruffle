@@ -201,9 +201,8 @@ pub fn hit_test<'gc>(
         if x.is_finite() && y.is_finite() {
             // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
             // root can be moved via _root._x etc., so we actually have to transform from root to world space.
-            let point = movie_clip
-                .avm1_root()
-                .local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
+            let local = Point::from_pixels(x, y);
+            let point = movie_clip.avm1_root().local_to_global(local);
             let ret = if shape {
                 movie_clip.hit_test_shape(
                     &mut activation.context,
@@ -1167,11 +1166,10 @@ fn local_to_global<'gc>(
                 .get_local_stored("y", activation)
                 .unwrap_or(Value::Undefined),
         ) {
-            let x = Twips::from_pixels(x);
-            let y = Twips::from_pixels(y);
-            let (out_x, out_y) = movie_clip.local_to_global((x, y));
-            point.set("x", out_x.to_pixels().into(), activation)?;
-            point.set("y", out_y.to_pixels().into(), activation)?;
+            let local = Point::from_pixels(x, y);
+            let global = movie_clip.local_to_global(local);
+            point.set("x", global.x.to_pixels().into(), activation)?;
+            point.set("y", global.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,
@@ -1304,10 +1302,10 @@ fn global_to_local<'gc>(
                 .get_local_stored("y", activation)
                 .unwrap_or(Value::Undefined),
         ) {
-            let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
-            let (out_x, out_y) = movie_clip.global_to_local(pt).unwrap_or(pt);
-            point.set("x", out_x.to_pixels().into(), activation)?;
-            point.set("y", out_y.to_pixels().into(), activation)?;
+            let global = Point::from_pixels(x, y);
+            let local = movie_clip.global_to_local(global).unwrap_or(global);
+            point.set("x", local.x.to_pixels().into(), activation)?;
+            point.set("y", local.y.to_pixels().into(), activation)?;
         } else {
             avm_warn!(
                 activation,

@@ -600,8 +600,7 @@ pub fn get_mouse_x<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
-
-        return Ok(local_mouse.0.to_pixels().into());
+        return Ok(local_mouse.x.to_pixels().into());
     }
 
     Ok(Value::Undefined)
@@ -615,8 +614,7 @@ pub fn get_mouse_y<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         let local_mouse = dobj.mouse_to_local(*activation.context.mouse_position);
-
-        return Ok(local_mouse.1.to_pixels().into());
+        return Ok(local_mouse.y.to_pixels().into());
     }
 
     Ok(Value::Undefined)
@@ -629,15 +627,15 @@ pub fn hit_test_point<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let x = Twips::from_pixels(args.get_f64(activation, 0)?);
-        let y = Twips::from_pixels(args.get_f64(activation, 1)?);
+        let x = args.get_f64(activation, 0)?;
+        let y = args.get_f64(activation, 1)?;
         let shape_flag = args.get_bool(2);
 
         // Transform the coordinates from root to world space.
-        let point = match dobj.avm2_root(&mut activation.context) {
-            Some(root) => root.local_to_global((x, y)),
-            None => (x, y),
-        };
+        let local = Point::from_pixels(x, y);
+        let global = dobj
+            .avm2_root(&mut activation.context)
+            .map_or(local, |root| root.local_to_global(local));
 
         if shape_flag {
             if !dobj.is_on_stage(&activation.context) {
@@ -645,10 +643,14 @@ pub fn hit_test_point<'gc>(
             }
 
             return Ok(dobj
-                .hit_test_shape(&mut activation.context, point, HitTestOptions::AVM_HIT_TEST)
+                .hit_test_shape(
+                    &mut activation.context,
+                    global,
+                    HitTestOptions::AVM_HIT_TEST,
+                )
                 .into());
         } else {
-            return Ok(dobj.hit_test_bounds(point).into());
+            return Ok(dobj.hit_test_bounds(global).into());
         }
     }
 
@@ -868,14 +870,15 @@ pub fn local_to_global<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
-        let (out_x, out_y) = dobj.local_to_global((Twips::from_pixels(x), Twips::from_pixels(y)));
+        let local = Point::from_pixels(x, y);
+        let global = dobj.local_to_global(local);
         return Ok(activation
             .avm2()
             .classes()
             .point
             .construct(
                 activation,
-                &[out_x.to_pixels().into(), out_y.to_pixels().into()],
+                &[global.x.to_pixels().into(), global.y.to_pixels().into()],
             )?
             .into());
     }
@@ -897,15 +900,15 @@ pub fn global_to_local<'gc>(
             .get_public_property("y", activation)?
             .coerce_to_number(activation)?;
 
-        let pt = (Twips::from_pixels(x), Twips::from_pixels(y));
-        let (out_x, out_y) = dobj.global_to_local(pt).unwrap_or(pt);
+        let global = Point::from_pixels(x, y);
+        let local = dobj.global_to_local(global).unwrap_or(global);
         return Ok(activation
             .avm2()
             .classes()
             .point
             .construct(
                 activation,
-                &[out_x.to_pixels().into(), out_y.to_pixels().into()],
+                &[local.x.to_pixels().into(), local.y.to_pixels().into()],
             )?
             .into());
     }

@@ -1,4 +1,4 @@
-use swf::{Fixed16, Rectangle, Twips};
+use swf::{Fixed16, Point, Rectangle, Twips};
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -187,13 +187,15 @@ impl std::ops::Mul for Matrix {
     }
 }
 
-impl std::ops::Mul<(Twips, Twips)> for Matrix {
-    type Output = (Twips, Twips);
-    fn mul(self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
-        let (x, y) = (x.get() as f32, y.get() as f32);
-        let out_x = round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get());
-        let out_y = round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get());
-        (Twips::new(out_x), Twips::new(out_y))
+impl std::ops::Mul<Point<Twips>> for Matrix {
+    type Output = Point<Twips>;
+
+    fn mul(self, point: Point<Twips>) -> Point<Twips> {
+        let x = point.x.get() as f32;
+        let y = point.y.get() as f32;
+        let out_x = Twips::new(round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get()));
+        let out_y = Twips::new(round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get()));
+        Point::new(out_x, out_y)
     }
 }
 
@@ -205,15 +207,15 @@ impl std::ops::Mul<Rectangle<Twips>> for Matrix {
             return Default::default();
         }
 
-        let (x0, y0) = self * (rhs.x_min, rhs.y_min);
-        let (x1, y1) = self * (rhs.x_min, rhs.y_max);
-        let (x2, y2) = self * (rhs.x_max, rhs.y_min);
-        let (x3, y3) = self * (rhs.x_max, rhs.y_max);
+        let p0 = self * Point::new(rhs.x_min, rhs.y_min);
+        let p1 = self * Point::new(rhs.x_min, rhs.y_max);
+        let p2 = self * Point::new(rhs.x_max, rhs.y_min);
+        let p3 = self * Point::new(rhs.x_max, rhs.y_max);
         Rectangle {
-            x_min: x0.min(x1).min(x2).min(x3),
-            x_max: x0.max(x1).max(x2).max(x3),
-            y_min: y0.min(y1).min(y2).min(y3),
-            y_max: y0.max(y1).max(y2).max(y3),
+            x_min: p0.x.min(p1.x).min(p2.x).min(p3.x),
+            x_max: p0.x.max(p1.x).max(p2.x).max(p3.x),
+            y_min: p0.y.min(p1.y).min(p2.y).min(p3.y),
+            y_max: p0.y.max(p1.y).max(p2.y).max(p3.y),
         }
     }
 }
@@ -602,23 +604,23 @@ mod tests {
         multiply_twips_identity_matrix,
         (
             Matrix::default(),
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::ZERO, Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::ZERO),
+            Point::new(Twips::ZERO, Twips::ZERO)
         ),
         (
             Matrix::default(),
-            (Twips::ZERO, Twips::new(10)),
-            (Twips::ZERO, Twips::new(10))
+            Point::new(Twips::ZERO, Twips::new(10)),
+            Point::new(Twips::ZERO, Twips::new(10))
         ),
         (
             Matrix::default(),
-            (Twips::new(10), Twips::ZERO),
-            (Twips::new(10), Twips::ZERO)
+            Point::new(Twips::new(10), Twips::ZERO),
+            Point::new(Twips::new(10), Twips::ZERO)
         ),
         (
             Matrix::default(),
-            (Twips::new(-251), Twips::new(152)),
-            (Twips::new(-251), Twips::new(152))
+            Point::new(Twips::new(-251), Twips::new(152)),
+            Point::new(Twips::new(-251), Twips::new(152))
         )
     );
 
@@ -634,8 +636,8 @@ mod tests {
                 d: 1.0,
                 ty: Twips::new(5)
             },
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::new(10), Twips::new(5))
+            Point::new(Twips::ZERO, Twips::ZERO),
+            Point::new(Twips::new(10), Twips::new(5))
         ),
         (
             Matrix {
@@ -646,8 +648,8 @@ mod tests {
                 d: 1.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(50), Twips::new(20)),
-            (Twips::new(-150), Twips::new(20))
+            Point::new(Twips::new(50), Twips::new(20)),
+            Point::new(Twips::new(-150), Twips::new(20))
         )
     );
 
@@ -663,8 +665,8 @@ mod tests {
                 d: 3.0,
                 ty: Twips::ZERO
             },
-            (Twips::ZERO, Twips::ZERO),
-            (Twips::ZERO, Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::ZERO),
+            Point::new(Twips::ZERO, Twips::ZERO)
         ),
         (
             Matrix {
@@ -675,8 +677,8 @@ mod tests {
                 d: 3.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(10), Twips::new(10)),
-            (Twips::new(30), Twips::new(30))
+            Point::new(Twips::new(10), Twips::new(10)),
+            Point::new(Twips::new(30), Twips::new(30))
         ),
         (
             Matrix {
@@ -687,8 +689,8 @@ mod tests {
                 d: 0.2,
                 ty: Twips::ZERO
             },
-            (Twips::new(5), Twips::new(10)),
-            (Twips::new(3), Twips::new(2))
+            Point::new(Twips::new(5), Twips::new(10)),
+            Point::new(Twips::new(3), Twips::new(2))
         ),
         (
             Matrix {
@@ -699,8 +701,8 @@ mod tests {
                 d: 0.5,
                 ty: Twips::ZERO
             },
-            (Twips::new(5), Twips::new(5)),
-            (Twips::new(2), Twips::new(2))
+            Point::new(Twips::new(5), Twips::new(5)),
+            Point::new(Twips::new(2), Twips::new(2))
         )
     );
 
@@ -716,8 +718,8 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(10), Twips::ZERO),
-            (Twips::ZERO, Twips::new(10))
+            Point::new(Twips::new(10), Twips::ZERO),
+            Point::new(Twips::ZERO, Twips::new(10))
         ),
         (
             Matrix {
@@ -728,8 +730,8 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::ZERO, Twips::new(10)),
-            (Twips::new(-10), Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::new(10)),
+            Point::new(Twips::new(-10), Twips::ZERO)
         ),
         (
             Matrix {
@@ -740,8 +742,8 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
-            (Twips::new(10), Twips::new(10)),
-            (Twips::new(10), Twips::new(-10))
+            Point::new(Twips::new(10), Twips::new(10)),
+            Point::new(Twips::new(10), Twips::new(-10))
         ),
         (
             Matrix {
@@ -752,8 +754,8 @@ mod tests {
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::ZERO
             },
-            (Twips::new(100), Twips::ZERO),
-            (Twips::new(71), Twips::new(-71))
+            Point::new(Twips::new(100), Twips::ZERO),
+            Point::new(Twips::new(71), Twips::new(-71))
         ),
         (
             Matrix {
@@ -764,8 +766,8 @@ mod tests {
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::ZERO
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(141), Twips::ZERO)
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(141), Twips::ZERO)
         )
     );
 
@@ -782,8 +784,8 @@ mod tests {
                 d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::ZERO
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(424), Twips::ZERO)
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(424), Twips::ZERO)
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
@@ -795,8 +797,8 @@ mod tests {
                 d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::new(5)
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(419), Twips::new(5))
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(419), Twips::new(5))
         ),
         (
             // Result of rotation by 45 degrees * translating by (-5, 5)
@@ -808,8 +810,8 @@ mod tests {
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::new(5)
             },
-            (Twips::new(100), Twips::new(100)),
-            (Twips::new(136), Twips::new(5))
+            Point::new(Twips::new(100), Twips::new(100)),
+            Point::new(Twips::new(136), Twips::new(5))
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
@@ -821,8 +823,8 @@ mod tests {
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
                 ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32)
             },
-            (Twips::new(105), Twips::new(95)),
-            (Twips::new(141), Twips::ZERO)
+            Point::new(Twips::new(105), Twips::new(95)),
+            Point::new(Twips::new(141), Twips::ZERO)
         )
     );
 }

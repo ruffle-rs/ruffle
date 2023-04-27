@@ -1138,13 +1138,11 @@ impl<'gc> EditText<'gc> {
         self.0.write(context.gc_context).max_chars = value;
     }
 
-    pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
+    pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
-        let Some(position) = self.global_to_local(position) else { return None; };
-        let position = (
-            position.0 + Twips::from_pixels(Self::INTERNAL_PADDING),
-            position.1 + Twips::from_pixels(Self::INTERNAL_PADDING),
-        );
+        let Some(mut position) = self.global_to_local(position) else { return None; };
+        position.x += Twips::from_pixels(Self::INTERNAL_PADDING);
+        position.y += Twips::from_pixels(Self::INTERNAL_PADDING);
 
         for layout_box in text.layout.iter() {
             let origin = layout_box.bounds().origin();
@@ -1163,12 +1161,12 @@ impl<'gc> EditText<'gc> {
                     self.text_transform(color, baseline_adjustment),
                     params,
                     |pos, _transform, _glyph: &Glyph, advance, x| {
-                        if local_position.0 >= x
-                            && local_position.0 <= x + advance
-                            && local_position.1 >= Twips::ZERO
-                            && local_position.1 <= params.height()
+                        if local_position.x >= x
+                            && local_position.x <= x + advance
+                            && local_position.y >= Twips::ZERO
+                            && local_position.y <= params.height()
                         {
-                            if local_position.0 >= x + (advance / 2) {
+                            if local_position.x >= x + (advance / 2) {
                                 result = Some(string_utils::next_char_boundary(text, pos));
                             } else {
                                 result = Some(pos);
@@ -1834,7 +1832,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn mouse_pick_avm1(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         // The text is hovered if the mouse is over any child nodes.
@@ -1852,7 +1850,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn mouse_pick_avm2(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         // The text is hovered if the mouse is over any child nodes.

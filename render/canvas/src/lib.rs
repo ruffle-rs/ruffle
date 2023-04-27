@@ -15,7 +15,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color, ColorTransform};
+use swf::{BlendMode, Color, ColorTransform, Point, Twips};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
@@ -958,16 +958,17 @@ fn create_linear_gradient(
         false
     };
     let create_fn = |matrix: swf::Matrix, gradient_scale: f64| {
-        let start = matrix * (swf::Twips::new(-16384), swf::Twips::ZERO);
-        let end = matrix * (swf::Twips::new(16384), swf::Twips::ZERO);
+        let start = matrix * Point::new(Twips::new(-16384), Twips::ZERO);
+        let end = matrix * Point::new(Twips::new(16384), Twips::ZERO);
         // If we have to scale the gradient due to spread mode, scale the endpoints away from the center.
-        let dx = 0.5 * (gradient_scale - 1.0) * (end.0 - start.0).to_pixels();
-        let dy = 0.5 * (gradient_scale - 1.0) * (end.1 - start.1).to_pixels();
+        let delta = end - start;
+        let dx = 0.5 * (gradient_scale - 1.0) * delta.x.to_pixels();
+        let dy = 0.5 * (gradient_scale - 1.0) * delta.y.to_pixels();
         Ok(context.create_linear_gradient(
-            start.0.to_pixels() - dx,
-            start.1.to_pixels() - dy,
-            end.0.to_pixels() + dx,
-            end.1.to_pixels() + dy,
+            start.x.to_pixels() - dx,
+            start.y.to_pixels() - dy,
+            end.x.to_pixels() + dx,
+            end.y.to_pixels() + dy,
         ))
     };
     swf_to_canvas_gradient(gradient, transformed, create_fn)
@@ -993,22 +994,23 @@ fn create_radial_gradient(
     };
     let create_fn = |matrix: swf::Matrix, gradient_scale: f64| {
         let focal_center = matrix
-            * (
-                swf::Twips::new((focal_point.clamp(-0.98, 0.98) * 16384.0) as i32),
-                swf::Twips::ZERO,
+            * Point::new(
+                Twips::new((focal_point.clamp(-0.98, 0.98) * 16384.0) as i32),
+                Twips::ZERO,
             );
-        let center = matrix * (swf::Twips::ZERO, swf::Twips::ZERO);
-        let end = matrix * (swf::Twips::new(16384), swf::Twips::ZERO);
-        let dx = (end.0 - center.0).to_pixels();
-        let dy = (end.1 - center.1).to_pixels();
+        let center = matrix * Point::new(Twips::ZERO, Twips::ZERO);
+        let end = matrix * Point::new(Twips::new(16384), Twips::ZERO);
+        let delta = end - center;
+        let dx = delta.x.to_pixels();
+        let dy = delta.y.to_pixels();
         let radius = (dx * dx + dy * dy).sqrt();
         context
             .create_radial_gradient(
-                focal_center.0.to_pixels(),
-                focal_center.1.to_pixels(),
+                focal_center.x.to_pixels(),
+                focal_center.y.to_pixels(),
                 0.0,
-                center.0.to_pixels(),
-                center.1.to_pixels(),
+                center.x.to_pixels(),
+                center.y.to_pixels(),
                 // Radius needs to be scaled if gradient spread mode is active.
                 radius * gradient_scale,
             )

@@ -200,7 +200,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn hit_test_shape(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        point: (Twips, Twips),
+        point: Point<Twips>,
         _options: HitTestOptions,
     ) -> bool {
         // Transform point to local coordinates and test.
@@ -213,7 +213,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 }
             } else {
                 let shape = &self.0.read().static_data.shape;
-                return ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix);
+                return ruffle_render::shape_utils::shape_hit_test(
+                    shape,
+                    (point.x, point.y),
+                    &local_matrix,
+                );
             }
         }
 

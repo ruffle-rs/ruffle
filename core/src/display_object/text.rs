@@ -170,7 +170,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     fn hit_test_shape(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        mut point: (Twips, Twips),
+        mut point: Point<Twips>,
         _options: HitTestOptions,
     ) -> bool {
         if self.world_bounds().contains(point) {
@@ -216,7 +216,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             if glyph_shape.shape_bounds.contains(point)
                                 && ruffle_render::shape_utils::shape_hit_test(
                                     &glyph_shape,
-                                    point,
+                                    (point.x, point.y),
                                     &local_matrix,
                                 )
                             {

@@ -6,6 +6,7 @@ use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
+use crate::display_object::container::DisplayObjectContainer;
 use crate::display_object::edit_text::EditText;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
@@ -21,9 +22,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;
-use swf::Twips;
-
-use super::DisplayObjectContainer;
+use swf::{Point, Twips};
 
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.
@@ -446,7 +445,7 @@ pub trait TInteractiveObject<'gc>:
     fn mouse_pick_avm1(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        _pos: (Twips, Twips),
+        _point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         None
@@ -455,7 +454,7 @@ pub trait TInteractiveObject<'gc>:
     fn mouse_pick_avm2(
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
-        _pos: (Twips, Twips),
+        _point: Point<Twips>,
         _require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
         Avm2MousePick::Miss
