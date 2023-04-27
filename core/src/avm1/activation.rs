@@ -3045,16 +3045,6 @@ pub fn start_drag<'gc>(
         .map(|o| o.as_bool(activation.context.swf.version()))
         .unwrap_or(false);
 
-    let offset = if lock_center {
-        // The object's origin point is locked to the mouse.
-        Default::default()
-    } else {
-        // The object moves relative to current mouse position.
-        // Calculate the offset from the mouse to the object in world space.
-        let object_position = display_object.local_to_global(Default::default());
-        object_position - *activation.context.mouse_position
-    };
-
     let constraint = if args.len() > 1 {
         // Invalid values turn into 0.
         let mut x_min = args
@@ -3106,7 +3096,8 @@ pub fn start_drag<'gc>(
 
     let drag_object = crate::player::DragObject {
         display_object,
-        offset,
+        last_mouse_position: *activation.context.mouse_position,
+        lock_center,
         constraint,
     };
     *activation.context.drag_object = Some(drag_object);
