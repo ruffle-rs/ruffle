@@ -1,4 +1,4 @@
-use swf::{Fixed16, Point, Rectangle, Twips};
+use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -170,6 +170,7 @@ impl Matrix {
 
 impl std::ops::Mul for Matrix {
     type Output = Self;
+
     fn mul(self, rhs: Self) -> Self {
         let (rhs_tx, rhs_ty) = (rhs.tx.get() as f32, rhs.ty.get() as f32);
         let (out_tx, out_ty) = (
@@ -196,6 +197,18 @@ impl std::ops::Mul<Point<Twips>> for Matrix {
         let out_x = Twips::new(round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get()));
         let out_y = Twips::new(round_to_i32(self.b * x + self.d * y).wrapping_add(self.ty.get()));
         Point::new(out_x, out_y)
+    }
+}
+
+impl std::ops::Mul<PointDelta<Twips>> for Matrix {
+    type Output = PointDelta<Twips>;
+
+    fn mul(self, delta: PointDelta<Twips>) -> PointDelta<Twips> {
+        let dx = delta.dx.get() as f32;
+        let dy = delta.dy.get() as f32;
+        let out_dx = Twips::new(round_to_i32(self.a * dx + self.c * dy));
+        let out_dy = Twips::new(round_to_i32(self.b * dx + self.d * dy));
+        PointDelta::new(out_dx, out_dy)
     }
 }
 

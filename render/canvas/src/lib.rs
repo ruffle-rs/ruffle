@@ -962,8 +962,8 @@ fn create_linear_gradient(
         let end = matrix * Point::new(Twips::new(16384), Twips::ZERO);
         // If we have to scale the gradient due to spread mode, scale the endpoints away from the center.
         let delta = end - start;
-        let dx = 0.5 * (gradient_scale - 1.0) * delta.x.to_pixels();
-        let dy = 0.5 * (gradient_scale - 1.0) * delta.y.to_pixels();
+        let dx = 0.5 * (gradient_scale - 1.0) * delta.dx.to_pixels();
+        let dy = 0.5 * (gradient_scale - 1.0) * delta.dy.to_pixels();
         Ok(context.create_linear_gradient(
             start.x.to_pixels() - dx,
             start.y.to_pixels() - dy,
@@ -998,11 +998,11 @@ fn create_radial_gradient(
                 Twips::new((focal_point.clamp(-0.98, 0.98) * 16384.0) as i32),
                 Twips::ZERO,
             );
-        let center = matrix * Point::new(Twips::ZERO, Twips::ZERO);
+        let center = matrix * Point::ZERO;
         let end = matrix * Point::new(Twips::new(16384), Twips::ZERO);
         let delta = end - center;
-        let dx = delta.x.to_pixels();
-        let dy = delta.y.to_pixels();
+        let dx = delta.dx.to_pixels();
+        let dy = delta.dy.to_pixels();
         let radius = (dx * dx + dy * dy).sqrt();
         context
             .create_radial_gradient(
