@@ -245,6 +245,9 @@ impl<'gc> Domain<'gc> {
     }
 
     pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: MutationContext<'gc, '_>) {
+        if self.0.read().classes.contains_key(class.read().name()) {
+            return;
+        }
         self.0.write(mc).classes.insert(class.read().name(), class);
     }
 
