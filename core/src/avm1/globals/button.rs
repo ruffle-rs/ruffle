@@ -67,6 +67,7 @@ fn enabled<'gc>(
     this: Avm1Button<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: This property should return the value set by the user.
     Ok(this.enabled().into())
 }
 
@@ -75,7 +76,11 @@ fn set_enabled<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let enabled = value.as_bool(activation.swf_version());
+    let enabled = if matches!(value, Value::Undefined) {
+        true
+    } else {
+        value.as_bool(activation.swf_version())
+    };
     this.set_enabled(&mut activation.context, enabled);
     Ok(())
 }

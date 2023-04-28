@@ -1,0 +1,61 @@
+// Source code for the `rollOver` event.
+// Other events just do `buttonAction("event_name");`.
+
+if(_root.step === undefined) {
+	_root.step = 1;
+	_root.enabledInButton = function() {
+		for(var i in _root.doin) {
+			if(i === "enabled") { return true; }
+		}
+		return false;
+	};
+	_root.buttonAction = function(event) {
+		trace("Step " + step + ": " + event);
+		var button = _root.doin;
+		switch(step) {
+			case 1:
+				// The mouse moved inside of the button area, this triggers the rollOver event.
+				trace("MovieClip.prototype.hasOwnProperty('enabled'): " + MovieClip.prototype.hasOwnProperty("enabled"));
+				trace("'enabled' in button: " + enabledInButton());
+				trace("button.enabled: " + button.enabled);
+				button.enabled = false;
+				button.enabled = undefined;
+				trace("// button.enabled = undefined");
+				trace("'enabled' in button: " + enabledInButton());
+				if(!button.enabled) {
+					trace("`button.enabled` is now a falsy value.");
+					if(button.enabled === undefined) {
+						trace("`button.enabled` is undefined.");
+					}
+				}
+				break;
+			case 2:
+				// The mouse left button was pressed, this triggers the press event.
+				trace("'enabled' in button: " + enabledInButton());
+				if(!button.enabled) {
+					trace("`button.enabled` is still a falsy value.");
+					if(button.enabled === undefined) {
+						trace("`button.enabled` is still undefined.");
+					}
+				}
+				break;
+			case 3:
+				// The mouse left button was released, this triggers the release event.
+				button.enabled = false;
+				delete button.enabled;
+				trace("// delete button.enabled");
+				trace("'enabled' in button: " + enabledInButton());
+				if(button.enabled === true) {
+					trace("`button.enabled` is now true.");
+				}
+				break;
+			case 4:
+				// The mouse left button was pressed, this triggers the press event.
+				break;
+		}
+		trace("");
+		step++;
+	};
+}
+
+buttonAction("rollOver");
