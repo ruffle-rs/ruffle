@@ -47,12 +47,10 @@ package flash.net {
 		}
 
 		public function get requestHeaders():Array {
-			stub_getter("flash.net.URLRequest", "requestHeaders");
 			return _requestHeaders;
 		}
 
 		public function set requestHeaders(headers:Array):void {
-			stub_setter("flash.net.URLRequest", "requestHeaders");
 			_requestHeaders = headers;
 		}
 

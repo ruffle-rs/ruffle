@@ -1,5 +1,7 @@
 //! `flash.display.Loader` builtin/prototype
 
+use indexmap::IndexMap;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
@@ -99,7 +101,7 @@ pub fn request_from_url_request<'gc>(
     activation: &mut Activation<'_, 'gc>,
     url_request: Object<'gc>,
 ) -> Result<Request, Error<'gc>> {
-    // FIXME: set `requestHeaders`, `followRedirects`, `requestHeaders`, and `userAgent`
+    // FIXME: set `followRedirects`  and `userAgent`
     // from the `URLRequest`
 
     let mut url = url_request
@@ -110,6 +112,35 @@ pub fn request_from_url_request<'gc>(
     let method = url_request
         .get_public_property("method", activation)?
         .coerce_to_string(activation)?;
+
+    let headers = url_request
+        .get_public_property("requestHeaders", activation)?
+        .coerce_to_object(activation)?
+        .as_array_object()
+        .unwrap();
+
+    let headers = headers.as_array_storage().unwrap();
+    let mut string_headers = IndexMap::default();
+    for i in 0..headers.length() {
+        let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
+            continue;
+        };
+
+        let name = header
+            .get_public_property("name", activation)?
+            .coerce_to_string(activation)?
+            .to_string();
+        let value = header
+            .get_public_property("value", activation)?
+            .coerce_to_string(activation)?
+            .to_string();
+
+        // Note - testing with Flash Player shows that later entries in the array
+        // overwrite earlier ones with the same name. Flash Player never sends an HTTP
+        // request with duplicate headers
+        string_headers.insert(name, value);
+    }
+
     // TODO: URLRequest.method should not be able to have invalid types.
     // We should throw an error there on set.
     let method = NavigationMethod::from_method_str(&method).unwrap_or(NavigationMethod::Get);
@@ -148,7 +179,10 @@ pub fn request_from_url_request<'gc>(
         }
     };
 
-    Ok(Request::request(method, url.to_string(), body))
+    let mut request = Request::request(method, url.to_string(), body);
+    request.set_headers(string_headers);
+
+    Ok(request)
 }
 
 pub fn load_bytes<'gc>(

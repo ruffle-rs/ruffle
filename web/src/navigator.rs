@@ -213,11 +213,19 @@ impl NavigatorBackend for WebNavigatorBackend {
                 init.body(Some(&blob));
             }
 
-            let request = WebRequest::new_with_str_and_init(&url, &init)
+            let web_request = WebRequest::new_with_str_and_init(&url, &init)
                 .map_err(|_| Error::FetchError(format!("Unable to create request for {url}")))?;
 
+            let headers = web_request.headers();
+
+            for (header_name, header_val) in request.headers() {
+                headers
+                    .set(header_name, header_val)
+                    .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
+            }
+
             let window = web_sys::window().expect("window()");
-            let fetchval = JsFuture::from(window.fetch_with_request(&request))
+            let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
                 .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 

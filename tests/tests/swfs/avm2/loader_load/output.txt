@@ -1,153 +1,126 @@
 Test 0
 // request.url
-http://example.org?foo
+http://localhost:8000
 
 // request.data
 foo
 
 // request.method
-post
+POST
 
 // loader.load(request)
 undefined
 Navigator::fetch:
-  URL: http://example.org?foo
+  URL: http://localhost:8000
   Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
   Body: foo
 
 Test 1
 // request.url
-http://example.org?foo
+http://localhost:8000
 
 // request.data
 baz
 
 // request.method
-post
+POST
 
 // loader.load(request)
 undefined
 Navigator::fetch:
-  URL: http://example.org?foo
+  URL: http://localhost:8000
   Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
   Body: baz
 
 Test 2
 // request.url
-http://example.org?foo
+http://localhost:8000
 
 // request.data
 foo=bar
 
 // request.method
-post
+POST
 
 // loader.load(request)
 undefined
 Navigator::fetch:
-  URL: http://example.org?foo
+  URL: http://localhost:8000
   Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
   Body: foo=bar
 
 Test 3
 // request.url
-http://example.org?foo
+http://localhost:8000
 
 // request.data
 aaa=bbb&cccc=true
 
 // request.method
-post
+POST
 
 // loader.load(request)
 undefined
 Navigator::fetch:
-  URL: http://example.org?foo
+  URL: http://localhost:8000
   Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
   Body: aaa=bbb&cccc=true
 
 Test 4
 // request.url
-http://example.org?foo
+http://localhost:8000
 
 // request.data
 a=b
 
 // request.method
-post
+POST
 
 // loader.load(request)
 undefined
 Navigator::fetch:
-  URL: http://example.org?foo
+  URL: http://localhost:8000
   Method: POST
+  Headers:
+MyHeader1: MyDuplicateVal
+MyHeader2: MyVal2
+MyHeader3: MyVal3
+MyHeader4: MyVal4
+ANewHeader: MyVal4
+SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
   Body: a=b
 
 Test 5
-// request.url
-http://example.org?foo
-
-// request.data
-foo
-
-// request.method
-GET
-
-// loader.load(request)
-undefined
-Navigator::fetch:
-  URL: http://example.org?foofoo
-  Method: GET
-
-Test 6
-// request.url
-http://example.org?foo
-
-// request.data
-baz
-
-// request.method
-GET
-
-// loader.load(request)
-undefined
-Navigator::fetch:
-  URL: http://example.org?foobaz
-  Method: GET
-
-Test 7
-// request.url
-http://example.org?foo
-
-// request.data
-foo=bar
-
-// request.method
-GET
-
-// loader.load(request)
-undefined
-Navigator::fetch:
-  URL: http://example.org?foofoo=bar
-  Method: GET
-
-Test 8
-// request.url
-http://example.org?foo
-
-// request.data
-aaa=bbb&cccc=true
-
-// request.method
-GET
-
-// loader.load(request)
-undefined
-Navigator::fetch:
-  URL: http://example.org?fooaaa=bbb&cccc=true
-  Method: GET

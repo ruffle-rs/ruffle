@@ -84,6 +84,13 @@ pub struct Request {
     ///
     /// The body consists of data and a mime type.
     body: Option<(Vec<u8>, String)>,
+
+    /// The headers for the request, as (header_name, header_value) pairs.
+    /// Flash appears to iterate over an internal hash table to determine
+    /// the order of headers sent over the network. We just use an IndexMap
+    /// to give us a consistent order - hopefully, no servers depend on
+    /// the order of headers.
+    headers: IndexMap<String, String>,
 }
 
 impl Request {
@@ -93,6 +100,7 @@ impl Request {
             url,
             method: NavigationMethod::Get,
             body: None,
+            headers: Default::default(),
         }
     }
 
@@ -102,13 +110,19 @@ impl Request {
             url,
             method: NavigationMethod::Post,
             body,
+            headers: Default::default(),
         }
     }
 
     /// Construct a request with the given method and data
     #[allow(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
-        Self { url, method, body }
+        Self {
+            url,
+            method,
+            body,
+            headers: Default::default(),
+        }
     }
 
     /// Retrieve the URL of this request.
@@ -128,6 +142,14 @@ impl Request {
 
     pub fn set_body(&mut self, body: (Vec<u8>, String)) {
         self.body = Some(body);
+    }
+
+    pub fn headers(&self) -> &IndexMap<String, String> {
+        &self.headers
+    }
+
+    pub fn set_headers(&mut self, headers: IndexMap<String, String>) {
+        self.headers = headers;
     }
 }
 
