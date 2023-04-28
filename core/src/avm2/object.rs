@@ -586,6 +586,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.base().has_own_property(name)
     }
 
+    /// Same as has_own_property, but constructs a public Multiname for you.
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        Ok(self.has_own_property(&Multiname::new(activation.avm2().public_namespace, name)))
+    }
+
     /// Returns true if an object has one or more traits of a given name.
     fn has_trait(self, name: &Multiname<'gc>) -> bool {
         let base = self.base();

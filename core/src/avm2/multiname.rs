@@ -314,6 +314,16 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    /// Creates a new Multiname with the `MultinameFlags::ATTRIBUTE` flag.
+    pub fn attribute(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
+        Self {
+            ns: NamespaceSet::single(ns),
+            name: Some(name.into()),
+            params: Vec::new(),
+            flags: MultinameFlags::ATTRIBUTE,
+        }
+    }
+
     pub fn namespace_set(&self) -> &[Namespace<'gc>] {
         match &self.ns {
             NamespaceSet::Single(ns) => std::slice::from_ref(ns),

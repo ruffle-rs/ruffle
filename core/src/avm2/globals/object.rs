@@ -210,8 +210,7 @@ pub fn has_own_property<'gc>(
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    let multiname = Multiname::new(activation.avm2().public_namespace, name);
-    Ok(this.has_own_property(&multiname).into())
+    Ok(this.has_own_property_string(name, activation)?.into())
 }
 
 /// `Object.prototype.isPrototypeOf`

@@ -4,14 +4,12 @@ use ruffle_wstr::WString;
 
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
-    e4x::{simple_content_to_string, E4XNode, E4XNodeKind},
+    e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
     error::type_error,
     object::{E4XOrXml, XmlListObject},
     string::AvmString,
     Activation, Error, Multiname, Object, TObject, Value,
 };
-
-use super::xml::name_to_multiname;
 
 fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
