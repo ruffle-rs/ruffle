@@ -36,7 +36,7 @@ pub use fixed::{Fixed16, Fixed8};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
 pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
-pub use point::Point;
+pub use point::{Point, PointDelta};
 pub use rectangle::Rectangle;
 pub use twips::Twips;
 

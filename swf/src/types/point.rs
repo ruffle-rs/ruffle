@@ -69,49 +69,92 @@ impl Point<Twips> {
     }
 }
 
-impl<T: Coordinate> Add for Point<T> {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, other: Self) -> Self {
-        Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-impl<T: Coordinate> AddAssign for Point<T> {
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        self.x += other.x;
-        self.y += other.y;
-    }
-}
-
-impl<T: Coordinate> Sub for Point<T> {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: Self) -> Self {
-        Self {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-}
-
-impl<T: Coordinate> SubAssign for Point<T> {
-    #[inline]
-    fn sub_assign(&mut self, other: Self) {
-        self.x -= other.x;
-        self.y -= other.y;
-    }
-}
-
 impl<T: Coordinate> fmt::Display for Point<T> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+/// A difference between two 2D points.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PointDelta<T: Coordinate> {
+    pub dx: T,
+    pub dy: T,
+}
+
+impl<T: Coordinate> PointDelta<T> {
+    /// The `PointDelta` object with a value of `(0, 0)`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(swf::PointDelta::<swf::Twips>::ZERO.dx, swf::Twips::ZERO);
+    /// assert_eq!(swf::PointDelta::<swf::Twips>::ZERO.dy, swf::Twips::ZERO);
+    /// ```
+    pub const ZERO: Self = Self {
+        dx: T::ZERO,
+        dy: T::ZERO,
+    };
+
+    pub const fn new(dx: T, dy: T) -> Self {
+        Self { dx, dy }
+    }
+}
+
+// point + delta
+impl<T: Coordinate> Add<PointDelta<T>> for Point<T> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, other: PointDelta<T>) -> Self {
+        Self {
+            x: self.x + other.dx,
+            y: self.y + other.dy,
+        }
+    }
+}
+
+// point += delta
+impl<T: Coordinate> AddAssign<PointDelta<T>> for Point<T> {
+    #[inline]
+    fn add_assign(&mut self, other: PointDelta<T>) {
+        self.x += other.dx;
+        self.y += other.dy;
+    }
+}
+
+// point - delta
+impl<T: Coordinate> Sub<PointDelta<T>> for Point<T> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, other: PointDelta<T>) -> Self {
+        Self {
+            x: self.x - other.dx,
+            y: self.y - other.dy,
+        }
+    }
+}
+
+// point -= delta
+impl<T: Coordinate> SubAssign<PointDelta<T>> for Point<T> {
+    #[inline]
+    fn sub_assign(&mut self, other: PointDelta<T>) {
+        self.x -= other.dx;
+        self.y -= other.dy;
+    }
+}
+
+// point - point
+impl<T: Coordinate> Sub for Point<T> {
+    type Output = PointDelta<T>;
+
+    #[inline]
+    fn sub(self, other: Self) -> PointDelta<T> {
+        PointDelta {
+            dx: self.x - other.x,
+            dy: self.y - other.y,
+        }
     }
 }
