@@ -1,6 +1,7 @@
 //! Navigator backend for web
 
 use crate::custom_event::RuffleEvent;
+use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
 };
@@ -11,6 +12,7 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::rc::Rc;
+use std::str::FromStr;
 use std::sync::mpsc::Sender;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -191,10 +193,20 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 let client =
                     client.ok_or_else(|| Error::FetchError("Network unavailable".to_string()))?;
 
-                let isahc_request = match request.method() {
+                let mut isahc_request = match request.method() {
                     NavigationMethod::Get => IsahcRequest::get(processed_url.to_string()),
                     NavigationMethod::Post => IsahcRequest::post(processed_url.to_string()),
                 };
+                if let Some(headers) = isahc_request.headers_mut() {
+                    for (name, val) in request.headers().iter() {
+                        headers.insert(
+                            HeaderName::from_str(name)
+                                .map_err(|e| Error::FetchError(e.to_string()))?,
+                            HeaderValue::from_str(val)
+                                .map_err(|e| Error::FetchError(e.to_string()))?,
+                        );
+                    }
+                }
 
                 let (body_data, _) = request.body().clone().unwrap_or_default();
                 let body = isahc_request

@@ -6,6 +6,10 @@
 	import flash.utils.ByteArray;
 	import flash.net.URLVariables;
 	import flash.events.Event;
+	import flash.events.IOErrorEvent;
+	import flash.events.ProgressEvent;
+	import flash.net.URLRequestHeader;
+	import flash.events.SecurityErrorEvent;
 	
 	
 	public class Test extends MovieClip {
@@ -25,12 +29,21 @@
 			ba.writeUTFBytes("a=b");
 			datas.push(ba);
 			
-			for each (var method in ["post", "GET"]) {
+			for each (var method in ["POST"]) {
 				for each (var data in datas) {
 					var request: URLRequest = new URLRequest();
-					request.url = "http://example.org?foo";
+					request.url = "http://localhost:8000";
 					request.method = method;
 					request.data = data;
+					var headers = new Array();
+					headers.push(new URLRequestHeader("MyHeader1", "MyVal1"));
+					headers.push(new URLRequestHeader("MyHeader2", "MyVal2"));
+					headers.push(new URLRequestHeader("MyHeader1", "MyDuplicateVal"));
+					headers.push(new URLRequestHeader("MyHeader3", "MyVal3"));
+					headers.push(new URLRequestHeader("MyHeader4", "MyVal4"));
+					headers.push(new URLRequestHeader("ANewHeader", "MyVal4"));
+					headers.push(new URLRequestHeader("SomeHeader", "MyVal4"));
+					request.requestHeaders = headers;
 					requests.push(request);
 				}
 			}
@@ -52,6 +65,13 @@
 		
 		function load(request: URLRequest) {
 			var loader = new Loader();
+			loader.contentLoaderInfo.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(e) {
+				trace("Security error: " + e);
+			});
+			/*loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, function(e) {
+				trace("IO error: " + e);
+			});*/
+		
 			trace("// request.url");
 			trace(request.url);
 			trace("");

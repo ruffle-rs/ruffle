@@ -62,6 +62,17 @@ impl NavigatorBackend for TestNavigatorBackend {
             log.avm_trace("Navigator::fetch:");
             log.avm_trace(&format!("  URL: {}", request.url()));
             log.avm_trace(&format!("  Method: {}", request.method()));
+            let headers = request.headers();
+            if !headers.is_empty() {
+                log.avm_trace(&format!(
+                    "  Headers:\n{}",
+                    headers
+                        .iter()
+                        .map(|(key, val)| format!("{key}: {val}"))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                ))
+            }
             if let Some((body, mime_type)) = request.body() {
                 log.avm_trace(&format!("  Mime-Type: {}", mime_type));
                 if mime_type == "application/x-www-form-urlencoded" {
