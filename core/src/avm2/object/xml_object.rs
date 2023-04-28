@@ -1,7 +1,7 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
@@ -277,6 +277,15 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
         }
         read.base.has_own_dynamic_property(name)
+    }
+
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = name_to_multiname(activation, &Value::String(name.into()))?;
+        Ok(self.has_own_property(&name))
     }
 
     fn set_property_local(

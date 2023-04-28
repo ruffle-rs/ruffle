@@ -1,6 +1,6 @@
 //! XML builtin and prototype
 
-use crate::avm2::e4x::{E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{
     E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject, XmlObject,
@@ -93,24 +93,6 @@ pub fn to_xml_string<'gc>(
     let xml = this.unwrap().as_xml_object().unwrap();
     let node = xml.node();
     Ok(Value::String(node.xml_to_xml_string(activation)?))
-}
-
-pub fn name_to_multiname<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    name: &Value<'gc>,
-) -> Result<Multiname<'gc>, Error<'gc>> {
-    if let Value::Object(o) = name {
-        if let Some(qname) = o.as_qname_object() {
-            return Ok(qname.name().clone());
-        }
-    }
-
-    let name = name.coerce_to_string(activation)?;
-    Ok(if &*name == b"*" {
-        Multiname::any(activation.context.gc_context)
-    } else {
-        Multiname::new(activation.avm2().public_namespace, name)
-    })
 }
 
 pub fn child<'gc>(

@@ -715,3 +715,30 @@ pub fn to_xml_string<'gc>(
     to_xml_string_inner(xml, &mut buf)?;
     Ok(AvmString::new(activation.context.gc_context, buf))
 }
+
+pub fn name_to_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &Value<'gc>,
+) -> Result<Multiname<'gc>, Error<'gc>> {
+    if let Value::Object(o) = name {
+        if let Some(qname) = o.as_qname_object() {
+            return Ok(qname.name().clone());
+        }
+    }
+
+    let name = name.coerce_to_string(activation)?;
+
+    if let Some(name) = name.strip_prefix(b'@') {
+        let name = AvmString::new(activation.context.gc_context, name);
+        return Ok(Multiname::attribute(
+            activation.avm2().public_namespace,
+            name,
+        ));
+    }
+
+    Ok(if &*name == b"*" {
+        Multiname::any(activation.context.gc_context)
+    } else {
+        Multiname::new(activation.avm2().public_namespace, name)
+    })
+}
