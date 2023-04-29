@@ -1,0 +1,6 @@
+xml.hasOwnProperty("@attr"): true
+xml.hasOwnProperty("@unknown"): false
+xml.hasOwnProperty("b"): true
+xml.hasOwnProperty("em"): false
+xml.hasOwnProperty("toXMLString"): false
+xml.hasOwnProperty("isPropertyEnumerable"): false
