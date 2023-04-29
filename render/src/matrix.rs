@@ -59,7 +59,7 @@ impl Matrix {
         ty: Twips::ZERO,
     };
 
-    pub fn scale(scale_x: f32, scale_y: f32) -> Self {
+    pub const fn scale(scale_x: f32, scale_y: f32) -> Self {
         Self {
             a: scale_x,
             c: 0.0,
@@ -615,15 +615,17 @@ mod tests {
     // Twips multiplied by the identity/default matrix should be unchanged.
     test_multiply_twips!(
         multiply_twips_identity_matrix,
+        (Matrix::default(), Point::ZERO, Point::ZERO),
+        (Matrix::default(), PointDelta::ZERO, PointDelta::ZERO),
         (
             Matrix::default(),
-            Point::new(Twips::ZERO, Twips::ZERO),
-            Point::new(Twips::ZERO, Twips::ZERO),
+            Point::new(Twips::ZERO, Twips::new(10)),
+            Point::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix::default(),
-            Point::new(Twips::ZERO, Twips::new(10)),
-            Point::new(Twips::ZERO, Twips::new(10)),
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix::default(),
@@ -632,88 +634,68 @@ mod tests {
         ),
         (
             Matrix::default(),
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+        ),
+        (
+            Matrix::default(),
             Point::new(Twips::new(-251), Twips::new(152)),
             Point::new(Twips::new(-251), Twips::new(152)),
+        ),
+        (
+            Matrix::default(),
+            PointDelta::new(Twips::new(-251), Twips::new(152)),
+            PointDelta::new(Twips::new(-251), Twips::new(152)),
         ),
     );
 
-    // Multiply by translate matrices; values should be shifted.
+    // Multiply by translate matrices; points should be shifted, point deltas should be unchanged.
     test_multiply_twips!(
         multiply_twips_translate,
         (
-            Matrix {
-                a: 1.0,
-                c: 0.0,
-                tx: Twips::new(10),
-                b: 0.0,
-                d: 1.0,
-                ty: Twips::new(5),
-            },
-            Point::new(Twips::ZERO, Twips::ZERO),
+            Matrix::translate(Twips::new(10), Twips::new(5)),
+            Point::ZERO,
             Point::new(Twips::new(10), Twips::new(5)),
         ),
         (
-            Matrix {
-                a: 1.0,
-                c: 0.0,
-                tx: Twips::new(-200),
-                b: 0.0,
-                d: 1.0,
-                ty: Twips::ZERO
-            },
+            Matrix::translate(Twips::new(10), Twips::new(5)),
+            PointDelta::ZERO,
+            PointDelta::ZERO,
+        ),
+        (
+            Matrix::translate(Twips::new(-200), Twips::ZERO),
             Point::new(Twips::new(50), Twips::new(20)),
             Point::new(Twips::new(-150), Twips::new(20)),
+        ),
+        (
+            Matrix::translate(Twips::new(-200), Twips::ZERO),
+            PointDelta::new(Twips::new(50), Twips::new(20)),
+            PointDelta::new(Twips::new(50), Twips::new(20)),
         ),
     );
 
     // Multiply by scalar matrices; values should be scaled up/down.
     test_multiply_twips!(
         multiply_twips_scale,
+        (Matrix::scale(3.0, 3.0), Point::ZERO, Point::ZERO),
+        (Matrix::scale(3.0, 3.0), PointDelta::ZERO, PointDelta::ZERO),
         (
-            Matrix {
-                a: 3.0,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 3.0,
-                ty: Twips::ZERO
-            },
-            Point::new(Twips::ZERO, Twips::ZERO),
-            Point::new(Twips::ZERO, Twips::ZERO),
-        ),
-        (
-            Matrix {
-                a: 3.0,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 3.0,
-                ty: Twips::ZERO
-            },
+            Matrix::scale(3.0, 3.0),
             Point::new(Twips::new(10), Twips::new(10)),
             Point::new(Twips::new(30), Twips::new(30)),
         ),
         (
-            Matrix {
-                a: 0.6,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 0.2,
-                ty: Twips::ZERO
-            },
+            Matrix::scale(3.0, 3.0),
+            PointDelta::new(Twips::new(10), Twips::new(10)),
+            PointDelta::new(Twips::new(30), Twips::new(30)),
+        ),
+        (
+            Matrix::scale(0.6, 0.2),
             Point::new(Twips::new(5), Twips::new(10)),
             Point::new(Twips::new(3), Twips::new(2)),
         ),
         (
-            Matrix {
-                a: 0.5,
-                c: 0.0,
-                tx: Twips::ZERO,
-                b: 0.0,
-                d: 0.5,
-                ty: Twips::ZERO
-            },
+            Matrix::scale(0.5, 0.5),
             Point::new(Twips::new(5), Twips::new(5)),
             Point::new(Twips::new(2), Twips::new(2)),
         ),
@@ -743,8 +725,32 @@ mod tests {
                 d: 0.0,
                 ty: Twips::ZERO
             },
+            PointDelta::new(Twips::new(10), Twips::ZERO),
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+        ),
+        (
+            Matrix {
+                a: 0.0,
+                c: -1.0,
+                tx: Twips::ZERO,
+                b: 1.0,
+                d: 0.0,
+                ty: Twips::ZERO
+            },
             Point::new(Twips::ZERO, Twips::new(10)),
             Point::new(Twips::new(-10), Twips::ZERO),
+        ),
+        (
+            Matrix {
+                a: 0.0,
+                c: -1.0,
+                tx: Twips::ZERO,
+                b: 1.0,
+                d: 0.0,
+                ty: Twips::ZERO
+            },
+            PointDelta::new(Twips::ZERO, Twips::new(10)),
+            PointDelta::new(Twips::new(-10), Twips::ZERO),
         ),
         (
             Matrix {
@@ -760,27 +766,35 @@ mod tests {
         ),
         (
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 0.0,
+                c: 1.0,
                 tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
+                b: -1.0,
+                d: 0.0,
                 ty: Twips::ZERO
             },
+            PointDelta::new(Twips::new(10), Twips::new(10)),
+            PointDelta::new(Twips::new(10), Twips::new(-10)),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
             Point::new(Twips::new(100), Twips::ZERO),
             Point::new(Twips::new(71), Twips::new(-71)),
         ),
         (
-            Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
-                tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::ZERO
-            },
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            PointDelta::new(Twips::new(100), Twips::ZERO),
+            PointDelta::new(Twips::new(71), Twips::new(-71)),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
             Point::new(Twips::new(100), Twips::new(100)),
             Point::new(Twips::new(141), Twips::ZERO),
+        ),
+        (
+            Matrix::rotate(-std::f32::consts::FRAC_PI_4),
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(141), Twips::ZERO),
         ),
     );
 
@@ -790,54 +804,106 @@ mod tests {
         (
             // Result of scaling by 3 * rotation by 45 degrees
             Matrix {
-                a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::ZERO,
-                b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(100), Twips::new(100)),
             Point::new(Twips::new(424), Twips::ZERO),
         ),
         (
+            // Result of scaling by 3 * rotation by 45 degrees
+            Matrix {
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::ZERO,
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::ZERO
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(424), Twips::ZERO),
+        ),
+        (
             // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
-                a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::new(-5),
-                b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
                 ty: Twips::new(5),
             },
             Point::new(Twips::new(100), Twips::new(100)),
             Point::new(Twips::new(419), Twips::new(5)),
         ),
         (
+            // Result of translating by (-5, 5) * rotation by 45 degrees
+            Matrix {
+                a: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                c: 3.0 * std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::new(-5),
+                b: 3.0 * -std::f32::consts::FRAC_PI_4.sin(),
+                d: 3.0 * std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(424), Twips::ZERO),
+        ),
+        (
             // Result of rotation by 45 degrees * translating by (-5, 5)
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::new(-5),
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
                 ty: Twips::new(5),
             },
             Point::new(Twips::new(100), Twips::new(100)),
             Point::new(Twips::new(136), Twips::new(5)),
         ),
         (
+            // Result of rotation by 45 degrees * translating by (-5, 5)
+            Matrix {
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::new(-5),
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new(5),
+            },
+            PointDelta::new(Twips::new(100), Twips::new(100)),
+            PointDelta::new(Twips::new(141), Twips::ZERO),
+        ),
+        (
             // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
-                a: f32::cos(std::f32::consts::FRAC_PI_4),
-                c: f32::sin(std::f32::consts::FRAC_PI_4),
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
                 tx: Twips::ZERO,
-                b: -f32::sin(std::f32::consts::FRAC_PI_4),
-                d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32),
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new((10.0 * std::f32::consts::FRAC_PI_4.sin()) as i32),
             },
             Point::new(Twips::new(105), Twips::new(95)),
             Point::new(Twips::new(141), Twips::ZERO),
+        ),
+        (
+            // Result of translating by (-5, 5) * rotation by 45 degrees
+            Matrix {
+                a: std::f32::consts::FRAC_PI_4.cos(),
+                c: std::f32::consts::FRAC_PI_4.sin(),
+                tx: Twips::ZERO,
+                b: -std::f32::consts::FRAC_PI_4.sin(),
+                d: std::f32::consts::FRAC_PI_4.cos(),
+                ty: Twips::new((10.0 * std::f32::consts::FRAC_PI_4.sin()) as i32),
+            },
+            PointDelta::new(Twips::new(105), Twips::new(95)),
+            PointDelta::new(Twips::new(141), Twips::new(-7)),
         ),
     );
 }
