@@ -204,7 +204,7 @@ pub fn get_enabled<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        return Ok(mc.enabled().into());
+        return Ok(mc.avm2_enabled().into());
     }
 
     Ok(Value::Undefined)
@@ -221,7 +221,7 @@ pub fn set_enabled<'gc>(
     {
         let enabled = args.get_bool(0);
 
-        mc.set_enabled(&mut activation.context, enabled);
+        mc.set_avm2_enabled(&mut activation.context, enabled);
     }
 
     Ok(Value::Undefined)

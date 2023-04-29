@@ -1797,7 +1797,11 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
         if event != ClipEvent::Press {
             return ClipEventResult::NotHandled;
         }

@@ -1,4 +1,4 @@
-use crate::avm1::{Object, StageObject, Value};
+use crate::avm1::{Activation, ActivationIdentifier, Object, StageObject, TObject, Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -43,7 +43,6 @@ pub struct Avm1ButtonData<'gc> {
     object: Option<Object<'gc>>,
     initialized: bool,
     has_focus: bool,
-    enabled: bool,
     use_hand_cursor: bool,
 }
 
@@ -90,7 +89,6 @@ impl<'gc> Avm1Button<'gc> {
                     ButtonTracking::Push
                 },
                 has_focus: false,
-                enabled: true,
                 use_hand_cursor: true,
             },
         ))
@@ -197,12 +195,23 @@ impl<'gc> Avm1Button<'gc> {
         }
     }
 
-    pub fn enabled(self) -> bool {
-        self.0.read().enabled
-    }
-
-    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
-        self.0.write(context.gc_context).enabled = enabled;
+    pub fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if let Some(object) = self.0.read().object {
+            let mut activation = Activation::from_stub(
+                context.reborrow(),
+                ActivationIdentifier::root("[AVM1 Button Enabled]"),
+            );
+            if let Ok(enabled) = object.get("enabled", &mut activation) {
+                match enabled {
+                    Value::Undefined => true,
+                    _ => enabled.as_bool(activation.swf_version()),
+                }
+            } else {
+                true
+            }
+        } else {
+            false
+        }
     }
 
     pub fn use_hand_cursor(self) -> bool {
@@ -421,7 +430,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, _event: ClipEvent) -> ClipEventResult {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
         // An invisible button can still run its `rollOut` or `releaseOutside` event.
         // A disabled button doesn't run its events (`KeyPress` being the exception) but
         // its state can still change. This is tested at "avm1/mouse_events_visible_enabled".
@@ -438,6 +451,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         let self_display_object = self.into();
+        let is_enabled = self.enabled(context);
+
         let mut write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
@@ -489,7 +504,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             _ => return ClipEventResult::NotHandled,
         };
 
-        let (update_state, new_state) = if write.enabled {
+        let (update_state, new_state) = if is_enabled {
             write.run_actions(context, condition, None);
             write.play_sound(context, sound);
 
@@ -557,8 +572,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         None
     }
 
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.use_hand_cursor() && self.enabled() {
+    fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
+        if self.use_hand_cursor() && self.enabled(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow

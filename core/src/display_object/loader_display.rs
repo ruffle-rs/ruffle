@@ -159,7 +159,11 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, _event: ClipEvent) -> ClipEventResult {
+    fn filter_clip_event(
+        self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
         ClipEventResult::NotHandled
     }
     fn event_dispatch(

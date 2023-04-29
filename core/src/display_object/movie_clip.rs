@@ -111,7 +111,7 @@ pub struct MovieClipData<'gc> {
     avm2_class: Option<Avm2ClassObject<'gc>>,
     drawing: Drawing,
     has_focus: bool,
-    enabled: bool,
+    avm2_enabled: bool,
 
     /// Show a hand cursor when the clip is in button mode.
     use_hand_cursor: bool,
@@ -154,7 +154,7 @@ impl<'gc> MovieClip<'gc> {
                 avm2_class: None,
                 drawing: Drawing::new(),
                 has_focus: false,
-                enabled: true,
+                avm2_enabled: true,
                 use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -193,7 +193,7 @@ impl<'gc> MovieClip<'gc> {
                 avm2_class: Some(class),
                 drawing: Drawing::new(),
                 has_focus: false,
-                enabled: true,
+                avm2_enabled: true,
                 use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -236,7 +236,7 @@ impl<'gc> MovieClip<'gc> {
                 avm2_class: None,
                 drawing: Drawing::new(),
                 has_focus: false,
-                enabled: true,
+                avm2_enabled: true,
                 use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -301,7 +301,7 @@ impl<'gc> MovieClip<'gc> {
                 avm2_class: None,
                 drawing: Drawing::new(),
                 has_focus: false,
-                enabled: true,
+                avm2_enabled: true,
                 use_hand_cursor: true,
                 button_mode: false,
                 last_queued_script_frame: None,
@@ -2208,12 +2208,40 @@ impl<'gc> MovieClip<'gc> {
         Ok(())
     }
 
-    pub fn enabled(self) -> bool {
-        self.0.read().enabled
+    fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !context.is_action_script_3() {
+            self.avm1_enabled(context)
+        } else {
+            self.avm2_enabled()
+        }
     }
 
-    pub fn set_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
-        self.0.write(context.gc_context).enabled = enabled;
+    fn avm1_enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        let object = self.object();
+        if let Avm1Value::Object(object) = object {
+            let mut activation = Avm1Activation::from_stub(
+                context.reborrow(),
+                ActivationIdentifier::root("[AVM1 MovieClip Enabled]"),
+            );
+            if let Ok(enabled) = object.get("enabled", &mut activation) {
+                match enabled {
+                    Avm1Value::Undefined => true,
+                    _ => enabled.as_bool(activation.swf_version()),
+                }
+            } else {
+                true
+            }
+        } else {
+            false
+        }
+    }
+
+    pub fn avm2_enabled(self) -> bool {
+        self.0.read().avm2_enabled
+    }
+
+    pub fn set_avm2_enabled(self, context: &mut UpdateContext<'_, 'gc>, enabled: bool) {
+        self.0.write(context.gc_context).avm2_enabled = enabled;
     }
 
     pub fn use_hand_cursor(self) -> bool {
@@ -2783,17 +2811,19 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         self.into()
     }
 
-    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
-        if event.is_button_event() && !self.visible() && !matches!(event, ClipEvent::ReleaseOutside)
-        {
-            return ClipEventResult::NotHandled;
-        }
+    fn filter_clip_event(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        if event.is_button_event() {
+            if !self.visible() && !matches!(event, ClipEvent::ReleaseOutside) {
+                return ClipEventResult::NotHandled;
+            }
 
-        if !self.enabled()
-            && event.is_button_event()
-            && !matches!(event, ClipEvent::KeyPress { .. })
-        {
-            return ClipEventResult::NotHandled;
+            if !self.enabled(context) && !matches!(event, ClipEvent::KeyPress { .. }) {
+                return ClipEventResult::NotHandled;
+            }
         }
 
         ClipEventResult::Handled
@@ -3090,7 +3120,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
-        if self.use_hand_cursor() && self.enabled() && self.is_button_mode(context) {
+        if self.use_hand_cursor() && self.enabled(context) && self.is_button_mode(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow
