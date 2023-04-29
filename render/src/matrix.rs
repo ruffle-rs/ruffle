@@ -263,7 +263,7 @@ mod tests {
     use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
 
     macro_rules! test_inverse {
-        ( $test: ident, $($args: expr),* ) => {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
@@ -279,7 +279,7 @@ mod tests {
     }
 
     macro_rules! test_multiply {
-        ( $test: ident, $($args: expr),* ) => {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
@@ -291,7 +291,7 @@ mod tests {
     }
 
     macro_rules! test_multiply_twips {
-        ( $test: ident, $($args: expr),* ) => {
+        ($test: ident, $($args: expr),* $(,)?) => {
             #[test]
             fn $test() {
                 $(
@@ -336,7 +336,7 @@ mod tests {
     // Identity matrix inverted should be unchanged.
     test_inverse!(
         inverse_identity_matrix,
-        (Matrix::default(), Some(Matrix::default()))
+        (Matrix::default(), Some(Matrix::default())),
     );
 
     // Standard test cases; there's nothing special about these matrices.
@@ -349,7 +349,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
             Some(Matrix {
                 a: -1.666_666_6,
@@ -357,8 +357,8 @@ mod tests {
                 tx: Twips::from_pixels(9.0),
                 b: 0.666_666_6,
                 d: -0.333_333_3,
-                ty: Twips::from_pixels(-4.0)
-            })
+                ty: Twips::from_pixels(-4.0),
+            }),
         ),
         (
             Matrix {
@@ -367,7 +367,7 @@ mod tests {
                 tx: Twips::from_pixels(-7.0),
                 b: -2.0,
                 d: -5.0,
-                ty: Twips::from_pixels(-2.0)
+                ty: Twips::from_pixels(-2.0),
             },
             Some(Matrix {
                 a: 1.666_666_6,
@@ -375,8 +375,8 @@ mod tests {
                 tx: Twips::from_pixels(9.0),
                 b: -0.666_666_6,
                 d: 0.333_333_3,
-                ty: Twips::from_pixels(-4.0)
-            })
+                ty: Twips::from_pixels(-4.0),
+            }),
         ),
         (
             Matrix {
@@ -385,7 +385,7 @@ mod tests {
                 tx: Twips::from_pixels(1.0),
                 b: -2.7,
                 d: 3.4,
-                ty: Twips::from_pixels(-2.4)
+                ty: Twips::from_pixels(-2.4),
             },
             Some(Matrix {
                 a: 0.407_673_9,
@@ -393,8 +393,8 @@ mod tests {
                 tx: Twips::from_pixels(-0.752_997_6),
                 b: 0.323_741,
                 d: 0.179_856_1,
-                ty: Twips::from_pixels(0.107_913_67)
-            })
+                ty: Twips::from_pixels(0.107_913_67),
+            }),
         ),
         (
             Matrix {
@@ -403,7 +403,7 @@ mod tests {
                 tx: Twips::from_pixels(10.0),
                 b: 0.0,
                 d: -1.0,
-                ty: Twips::from_pixels(5.0)
+                ty: Twips::from_pixels(5.0),
             },
             Some(Matrix {
                 a: -0.5,
@@ -411,9 +411,9 @@ mod tests {
                 tx: Twips::from_pixels(5.0),
                 b: 0.0,
                 d: -1.0,
-                ty: Twips::from_pixels(5.0)
-            })
-        )
+                ty: Twips::from_pixels(5.0),
+            }),
+        ),
     );
 
     // Non-invertible matrices
@@ -429,8 +429,8 @@ mod tests {
                 tx: Twips::from_pixels(123.0),
                 ty: Twips::from_pixels(234.0),
             },
-            None
-        )
+            None,
+        ),
     );
 
     // Anything multiplied by the identity matrix should be unchanged.
@@ -445,7 +445,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
             Matrix {
                 a: 1.0,
@@ -453,7 +453,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             }
         ),
         (
@@ -463,7 +463,7 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
+                ty: Twips::from_pixels(2.0),
             },
             Matrix::default(),
             Matrix {
@@ -472,9 +472,9 @@ mod tests {
                 tx: Twips::from_pixels(7.0),
                 b: 2.0,
                 d: 5.0,
-                ty: Twips::from_pixels(2.0)
-            }
-        )
+                ty: Twips::from_pixels(2.0),
+            },
+        ),
     );
 
     // General test cases for matrix multiplication.
@@ -487,7 +487,7 @@ mod tests {
                 tx: Twips::new(2),
                 b: 5.0,
                 d: 3.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 1.0,
@@ -495,7 +495,7 @@ mod tests {
                 tx: Twips::new(5),
                 b: 2.0,
                 d: 4.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 14.0,
@@ -503,8 +503,8 @@ mod tests {
                 tx: Twips::new(56),
                 b: 11.0,
                 d: 27.0,
-                ty: Twips::new(44)
-            }
+                ty: Twips::new(44),
+            },
         ),
         (
             Matrix {
@@ -513,7 +513,7 @@ mod tests {
                 tx: Twips::new(5),
                 b: 2.0,
                 d: 4.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 6.0,
@@ -521,7 +521,7 @@ mod tests {
                 tx: Twips::new(2),
                 b: 5.0,
                 d: 3.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 21.0,
@@ -529,8 +529,8 @@ mod tests {
                 tx: Twips::new(10),
                 b: 32.0,
                 d: 20.0,
-                ty: Twips::new(14)
-            }
+                ty: Twips::new(14),
+            },
         ),
         (
             Matrix {
@@ -539,7 +539,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 6.0,
@@ -547,7 +547,7 @@ mod tests {
                 tx: Twips::new(4),
                 b: 3.0,
                 d: 2.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 12.0,
@@ -555,8 +555,8 @@ mod tests {
                 tx: Twips::new(9),
                 b: 39.0,
                 d: 30.0,
-                ty: Twips::new(27)
-            }
+                ty: Twips::new(27),
+            },
         ),
         (
             Matrix {
@@ -565,7 +565,7 @@ mod tests {
                 tx: Twips::new(4),
                 b: 3.0,
                 d: 2.0,
-                ty: Twips::new(1)
+                ty: Twips::new(1),
             },
             Matrix {
                 a: 1.0,
@@ -573,7 +573,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 26.0,
@@ -581,8 +581,8 @@ mod tests {
                 tx: Twips::new(52),
                 b: 11.0,
                 d: 16.0,
-                ty: Twips::new(22)
-            }
+                ty: Twips::new(22),
+            },
         ),
         (
             Matrix {
@@ -591,7 +591,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 1.0,
@@ -599,7 +599,7 @@ mod tests {
                 tx: Twips::new(3),
                 b: 4.0,
                 d: 5.0,
-                ty: Twips::new(6)
+                ty: Twips::new(6),
             },
             Matrix {
                 a: 9.0,
@@ -607,9 +607,9 @@ mod tests {
                 tx: Twips::new(18),
                 b: 24.0,
                 d: 33.0,
-                ty: Twips::new(48)
-            }
-        )
+                ty: Twips::new(48),
+            },
+        ),
     );
 
     // Twips multiplied by the identity/default matrix should be unchanged.
@@ -618,23 +618,23 @@ mod tests {
         (
             Matrix::default(),
             Point::new(Twips::ZERO, Twips::ZERO),
-            Point::new(Twips::ZERO, Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::ZERO),
         ),
         (
             Matrix::default(),
             Point::new(Twips::ZERO, Twips::new(10)),
-            Point::new(Twips::ZERO, Twips::new(10))
+            Point::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix::default(),
             Point::new(Twips::new(10), Twips::ZERO),
-            Point::new(Twips::new(10), Twips::ZERO)
+            Point::new(Twips::new(10), Twips::ZERO),
         ),
         (
             Matrix::default(),
             Point::new(Twips::new(-251), Twips::new(152)),
-            Point::new(Twips::new(-251), Twips::new(152))
-        )
+            Point::new(Twips::new(-251), Twips::new(152)),
+        ),
     );
 
     // Multiply by translate matrices; values should be shifted.
@@ -647,10 +647,10 @@ mod tests {
                 tx: Twips::new(10),
                 b: 0.0,
                 d: 1.0,
-                ty: Twips::new(5)
+                ty: Twips::new(5),
             },
             Point::new(Twips::ZERO, Twips::ZERO),
-            Point::new(Twips::new(10), Twips::new(5))
+            Point::new(Twips::new(10), Twips::new(5)),
         ),
         (
             Matrix {
@@ -662,8 +662,8 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(50), Twips::new(20)),
-            Point::new(Twips::new(-150), Twips::new(20))
-        )
+            Point::new(Twips::new(-150), Twips::new(20)),
+        ),
     );
 
     // Multiply by scalar matrices; values should be scaled up/down.
@@ -679,7 +679,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::ZERO, Twips::ZERO),
-            Point::new(Twips::ZERO, Twips::ZERO)
+            Point::new(Twips::ZERO, Twips::ZERO),
         ),
         (
             Matrix {
@@ -691,7 +691,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(10), Twips::new(10)),
-            Point::new(Twips::new(30), Twips::new(30))
+            Point::new(Twips::new(30), Twips::new(30)),
         ),
         (
             Matrix {
@@ -703,7 +703,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(5), Twips::new(10)),
-            Point::new(Twips::new(3), Twips::new(2))
+            Point::new(Twips::new(3), Twips::new(2)),
         ),
         (
             Matrix {
@@ -715,8 +715,8 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(5), Twips::new(5)),
-            Point::new(Twips::new(2), Twips::new(2))
-        )
+            Point::new(Twips::new(2), Twips::new(2)),
+        ),
     );
 
     // Multiply by rotation matrices; values should be rotated around origin.
@@ -732,7 +732,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(10), Twips::ZERO),
-            Point::new(Twips::ZERO, Twips::new(10))
+            Point::new(Twips::ZERO, Twips::new(10)),
         ),
         (
             Matrix {
@@ -744,7 +744,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::ZERO, Twips::new(10)),
-            Point::new(Twips::new(-10), Twips::ZERO)
+            Point::new(Twips::new(-10), Twips::ZERO),
         ),
         (
             Matrix {
@@ -756,7 +756,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(10), Twips::new(10)),
-            Point::new(Twips::new(10), Twips::new(-10))
+            Point::new(Twips::new(10), Twips::new(-10)),
         ),
         (
             Matrix {
@@ -768,7 +768,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(100), Twips::ZERO),
-            Point::new(Twips::new(71), Twips::new(-71))
+            Point::new(Twips::new(71), Twips::new(-71)),
         ),
         (
             Matrix {
@@ -780,8 +780,8 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(100), Twips::new(100)),
-            Point::new(Twips::new(141), Twips::ZERO)
-        )
+            Point::new(Twips::new(141), Twips::ZERO),
+        ),
     );
 
     // Testing transformation matrices that have more than 1 translation applied.
@@ -798,7 +798,7 @@ mod tests {
                 ty: Twips::ZERO
             },
             Point::new(Twips::new(100), Twips::new(100)),
-            Point::new(Twips::new(424), Twips::ZERO)
+            Point::new(Twips::new(424), Twips::ZERO),
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
@@ -808,10 +808,10 @@ mod tests {
                 tx: Twips::new(-5),
                 b: 3.0 * -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(5)
+                ty: Twips::new(5),
             },
             Point::new(Twips::new(100), Twips::new(100)),
-            Point::new(Twips::new(419), Twips::new(5))
+            Point::new(Twips::new(419), Twips::new(5)),
         ),
         (
             // Result of rotation by 45 degrees * translating by (-5, 5)
@@ -821,10 +821,10 @@ mod tests {
                 tx: Twips::new(-5),
                 b: -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new(5)
+                ty: Twips::new(5),
             },
             Point::new(Twips::new(100), Twips::new(100)),
-            Point::new(Twips::new(136), Twips::new(5))
+            Point::new(Twips::new(136), Twips::new(5)),
         ),
         (
             // Result of translating by (-5, 5) * rotation by 45 degrees
@@ -834,11 +834,11 @@ mod tests {
                 tx: Twips::ZERO,
                 b: -f32::sin(std::f32::consts::FRAC_PI_4),
                 d: f32::cos(std::f32::consts::FRAC_PI_4),
-                ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32)
+                ty: Twips::new((10.0 * f32::sin(std::f32::consts::FRAC_PI_4)) as i32),
             },
             Point::new(Twips::new(105), Twips::new(95)),
-            Point::new(Twips::new(141), Twips::ZERO)
-        )
+            Point::new(Twips::new(141), Twips::ZERO),
+        ),
     );
 }
 
