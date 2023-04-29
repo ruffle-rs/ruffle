@@ -38,10 +38,10 @@ macro_rules! button_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "enabled" => property(button_getter!(enabled), button_setter!(set_enabled));
-    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "enabled" => bool(true);
+    "getDepth" => method(globals::get_depth; DONT_DELETE | READ_ONLY | VERSION_6);
     "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
-    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
+    "blendMode" => property(button_getter!(blend_mode), button_setter!(set_blend_mode); DONT_DELETE);
 };
 
 pub fn create_proto<'gc>(
@@ -61,28 +61,6 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.into())
-}
-
-fn enabled<'gc>(
-    this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: This property should return the value set by the user.
-    Ok(this.enabled().into())
-}
-
-fn set_enabled<'gc>(
-    this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    let enabled = if matches!(value, Value::Undefined) {
-        true
-    } else {
-        value.as_bool(activation.swf_version())
-    };
-    this.set_enabled(&mut activation.context, enabled);
-    Ok(())
 }
 
 fn use_hand_cursor<'gc>(

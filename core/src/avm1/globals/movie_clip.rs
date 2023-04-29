@@ -107,7 +107,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
     "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
-    "enabled" => property(mc_getter!(enabled), mc_setter!(set_enabled); DONT_DELETE | DONT_ENUM);
+    "enabled" => bool(true; DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
@@ -1406,28 +1406,6 @@ fn set_transform<'gc>(
         }
     }
 
-    Ok(())
-}
-
-fn enabled<'gc>(
-    this: MovieClip<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: This property should return the value set by the user.
-    Ok(this.enabled().into())
-}
-
-fn set_enabled<'gc>(
-    this: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-    value: Value<'gc>,
-) -> Result<(), Error<'gc>> {
-    let enabled = if matches!(value, Value::Undefined) {
-        true
-    } else {
-        value.as_bool(activation.swf_version())
-    };
-    this.set_enabled(&mut activation.context, enabled);
     Ok(())
 }
 
