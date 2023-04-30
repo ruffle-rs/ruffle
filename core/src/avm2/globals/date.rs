@@ -319,6 +319,19 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(activation
+        .avm2()
+        .classes()
+        .date
+        .construct(activation, &[])?
+        .into())
+}
+
 /// Implements `time` property's getter, and the `getTime` method. This will also be used for `valueOf`.
 pub fn time<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -1337,6 +1350,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     let mut write = class.write(mc);
     write.set_instance_allocator(date_allocator);
+    write.set_call_handler(Method::from_builtin(
+        call_handler,
+        "<Date call handler>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -1383,6 +1401,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
         activation.avm2().public_namespace,
         PUBLIC_CLASS_METHODS,
+    );
+
+    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 7)];
+
+    write.define_constant_int_class_traits(
+        activation.avm2().public_namespace,
+        CLASS_CONSTANTS,
+        activation,
     );
 
     class
