@@ -34,3 +34,9 @@ var xml = <a>xxx<foo>yyy</foo>zzz</a>;
 trace("before: " + xml.toXMLString());
 xml.b = "abc";
 trace("after: " + xml.toXMLString());
+
+var xml = <a/>;
+trace("before: " + xml.toXMLString());
+xml.name = "abc";
+trace("xml.name: " + xml.name);
+trace("after: " + xml.toXMLString());

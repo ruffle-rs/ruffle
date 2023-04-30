@@ -10,3 +10,6 @@ before: <a><b x="1"/></a>
 after: <a><b x="1">abc</b></a>
 before: <a>xxx<foo>yyy</foo>zzz</a>
 after: <a>xxx<foo>yyy</foo>zzz<b>abc</b></a>
+before: <a/>
+xml.name: abc
+after: <a><name>abc</name></a>

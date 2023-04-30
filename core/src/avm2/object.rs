@@ -183,6 +183,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 {
                     return self.get_property_local(multiname, activation);
                 }
+
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
@@ -278,6 +279,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 )
             }
             Some(Property::Method { .. }) => {
+                // Similar to the get_property special case for XML/XMLList.
+                if (self.as_xml_object().is_some() || self.as_xml_list_object().is_some())
+                    && multiname.contains_public_namespace()
+                {
+                    return self.set_property_local(multiname, value, activation);
+                }
+
                 return Err(error::make_reference_error(
                     activation,
                     error::ReferenceErrorCode::AssignToMethod,
