@@ -54,5 +54,10 @@ package flash.net {
                 throw new ArgumentError("Error #2008: Parameter endian must be one of the accepted values.", 2008);
             }
         }
+        
+        public function get connected():Boolean {
+            stub_getter("flash.net.Socket", "connected");
+            return false;
+        }
     }
 }
