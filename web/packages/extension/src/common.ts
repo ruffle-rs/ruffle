@@ -72,7 +72,7 @@ class NumberOption implements OptionElement<number | null> {
     }
 }
 
-class SelectOption implements OptionElement<string> {
+class SelectOption implements OptionElement<string | null> {
     constructor(
         private readonly select: HTMLSelectElement,
         readonly label: HTMLLabelElement
@@ -85,10 +85,13 @@ class SelectOption implements OptionElement<string> {
     get value() {
         const index = this.select.selectedIndex;
         const option = this.select.options[index]!;
-        return option.value;
+        // Convert the empty string to `null`.
+        return option.value || null;
     }
 
-    set value(value: string) {
+    set value(value: string | null) {
+        // Convert `null` to the empty string.
+        value ??= "";
         const options = Array.from(this.select.options);
         const index = options.findIndex((option) => option.value === value);
         this.select.selectedIndex = index;
