@@ -1167,7 +1167,7 @@ export class RufflePlayer extends HTMLElement {
         const items: Array<ContextMenuItem | null> = [];
         const addSeparator = () => {
             // Don't start with or duplicate separators.
-            if (items.length > 0 && items.at(-1) !== null) {
+            if (items.length > 0 && items[items.length - 1] !== null) {
                 items.push(null);
             }
         };
