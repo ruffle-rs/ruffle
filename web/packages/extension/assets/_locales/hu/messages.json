@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Flash tartalom lejátszása Ruffle-lel"
     },
-    "settings_page_ignore_optout": {
-        "message": "Flash tartalom lejátszása Ruffle-lel azon oldalakon is, amik nem akarják azt"
-    },
     "settings_ignore_optout": {
-        "message": "Eltekintés a weboldalak kompatibilitási figyelmeztetéseitől"
+        "message": "Flash tartalom lejátszása Ruffle-lel azon oldalakon is, amik nem akarják azt"
     },
     "status_init": {
         "message": "Jelenlegi fül olvasása…"

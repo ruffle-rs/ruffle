@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Redă conținut Flash în Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Redă conținut Flash chiar și pe site-uri care dezactivează Ruffle"
-    },
     "settings_ignore_optout": {
-        "message": "Ignoră avertismentele privind compatibilitatea site-urilor web"
+        "message": "Redă conținut Flash chiar și pe site-uri care dezactivează Ruffle"
     },
     "status_init": {
         "message": "Se citește fila actuală…"

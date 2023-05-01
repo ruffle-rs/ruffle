@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "使用 Ruffle 播放 Flash 内容"
     },
-    "settings_page_ignore_optout": {
-        "message": "即便站点禁用了 Ruffle 也播放 Flash 内容"
-    },
     "settings_ignore_optout": {
-        "message": "忽略网站兼容性警告"
+        "message": "即便站点禁用了 Ruffle 也播放 Flash 内容"
     },
     "settings_show_swf_download": {
         "message": "在右键菜单中显示SWF下载选项"

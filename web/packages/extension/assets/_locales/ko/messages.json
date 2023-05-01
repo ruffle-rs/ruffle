@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Ruffle에서 플래시 콘텐츠 재생하기"
     },
-    "settings_page_ignore_optout": {
-        "message": "Ruffle을 비활성화한 사이트에서도 플래시 콘텐츠 재생하기"
-    },
     "settings_ignore_optout": {
-        "message": "웹 사이트 호환성 경고를 무시하기"
+        "message": "Ruffle을 비활성화한 사이트에서도 플래시 콘텐츠 재생하기"
     },
     "settings_show_swf_download": {
         "message": "컨텍스트 메뉴에 SWF 다운로드 버튼 표시"

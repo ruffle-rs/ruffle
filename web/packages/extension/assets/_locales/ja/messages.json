@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "RuffleでFlashコンテンツを再生する"
     },
-    "settings_page_ignore_optout": {
-        "message": "Ruffleを無効にしたサイトでもFlashコンテンツを再生する"
-    },
     "settings_ignore_optout": {
-        "message": "Webサイトの互換性に関する警告を無視する"
+        "message": "Ruffleを無効にしたサイトでもFlashコンテンツを再生する"
     },
     "settings_show_swf_download": {
         "message": "SWFのダウンロードをコンテキストメニューに表示する"

@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Flash-inhoud afspelen in Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Flash-inhoud afspelen zelfs op sites die Ruffle uitschakelen"
-    },
     "settings_ignore_optout": {
-        "message": "Waarschuwingen voor de compatibiliteit van websites negeren"
+        "message": "Flash-inhoud afspelen zelfs op sites die Ruffle uitschakelen"
     },
     "status_init": {
         "message": "Huidig tabblad lezen…"

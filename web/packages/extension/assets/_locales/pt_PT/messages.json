@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Reproduzir conteúdo Flash no Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Reproduzir conteúdo Flash mesmo em sites que desabilitam o Ruffle"
-    },
     "settings_ignore_optout": {
-        "message": "Ignorar avisos de compatibilidade do site"
+        "message": "Reproduzir conteúdo Flash mesmo em sites que desabilitam o Ruffle"
     },
     "settings_show_swf_download": {
         "message": "Permitir o download de SWFs pelo menu de contexto"

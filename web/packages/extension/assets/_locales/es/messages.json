@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Ejecutar Flash con Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Ejecutar Flash incluso con Ruffle desactivado por la página"
-    },
     "settings_ignore_optout": {
-        "message": "Ignorar avisos de compatibilidad en páginas de internet"
+        "message": "Ejecutar Flash incluso con Ruffle desactivado por la página"
     },
     "settings_show_swf_download": {
         "message": "Mostrar descarga de SWF en el menú contextual"
