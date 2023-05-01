@@ -1901,7 +1901,7 @@ export class RufflePlayer extends HTMLElement {
 
                 const panicText = document.createElement("textarea");
                 panicText.value = errorText;
-                panicBody.appendChild(panicText);
+                panicBody.replaceChildren(panicText);
                 return false;
             };
         }
