@@ -11,9 +11,12 @@ use crate::{
     as_texture, format_list, get_backend_names, ColorAdjustments, Descriptors, Error,
     QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, Transforms,
 };
+use image::imageops::FilterType;
 use ruffle_render::backend::Context3D;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
+use ruffle_render::bitmap::{
+    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, PixelRegion, SyncHandle,
+};
 use ruffle_render::commands::CommandList;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::filters::Filter;
@@ -292,6 +295,32 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         }
     }
 
+    fn clamp_bitmap(&mut self, bitmap: &mut Bitmap) -> bool {
+        let max_size = self.descriptors.limits.max_texture_dimension_2d;
+        if bitmap.width() > max_size || bitmap.height() > max_size {
+            let image =
+                image::RgbaImage::from_raw(bitmap.width(), bitmap.height(), bitmap.data().to_vec())
+                    .expect("Width and height of bitmap must match bitmap data");
+
+            let ratio = bitmap.width() as f32 / bitmap.height() as f32;
+            let mut width = bitmap.width();
+            let mut height = bitmap.height();
+            if width > max_size {
+                width = max_size;
+                height = (max_size as f32 / ratio) as u32;
+            }
+            if height > max_size {
+                height = max_size;
+                width = (max_size as f32 * ratio) as u32;
+            }
+            let resized = image::imageops::resize(&image, width, height, FilterType::CatmullRom);
+            *bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, resized.into_raw());
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn descriptors(&self) -> &Arc<Descriptors> {
         &self.descriptors
     }
@@ -464,13 +493,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     #[instrument(level = "debug", skip_all)]
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
-        if bitmap.width() > self.descriptors.limits.max_texture_dimension_2d
-            || bitmap.height() > self.descriptors.limits.max_texture_dimension_2d
-        {
-            return Err(BitmapError::TooLarge);
-        }
+        let mut bitmap = bitmap.to_rgba();
 
-        let bitmap = bitmap.to_rgba();
+        self.clamp_bitmap(&mut bitmap);
+
         let extent = wgpu::Extent3d {
             width: bitmap.width(),
             height: bitmap.height(),
@@ -528,16 +554,22 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         &mut self,
         handle: &BitmapHandle,
         bitmap: Bitmap,
-        region: PixelRegion,
+        mut region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = as_texture(handle);
+
+        let mut bitmap = bitmap.to_rgba();
+        if self.clamp_bitmap(&mut bitmap) {
+            // If we're updating a resized texture, just redo the whole thing.
+            // We can't trivially map pixel regions as we use a filter to resize.
+            region = PixelRegion::for_whole_size(bitmap.width(), bitmap.height());
+        }
 
         let extent = wgpu::Extent3d {
             width: region.width(),
             height: region.height(),
             depth_or_array_layers: 1,
         };
-        let bitmap = bitmap.to_rgba();
 
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
