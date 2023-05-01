@@ -393,6 +393,16 @@ export interface BaseLoadOptions {
     preferredRenderer?: RenderBackend | null;
 
     /**
+     * If `preferredRenderer` has been set, turning this on
+     * shows a warning popup if the actually used renderer is
+     * not the preferred renderer. Is first and foremost useful
+     * for debugging for Ruffle-developers.
+     *
+     * @default false
+     */
+    warnIfPreferredRendererIsNotUsed?: boolean;
+
+    /**
      * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
      *
      * @default null

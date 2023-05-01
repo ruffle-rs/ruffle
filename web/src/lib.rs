@@ -81,6 +81,7 @@ struct RuffleInstance {
     has_focus: bool,
     trace_observer: Arc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    actually_used_renderer: String,
 }
 
 #[wasm_bindgen(raw_module = "./ruffle-player")]
@@ -373,6 +374,11 @@ impl Ruffle {
             .unwrap_or(JsValue::NULL)
     }
 
+    pub fn get_actually_used_renderer(&self) -> JsValue {
+        self.with_instance(|instance| JsValue::from_str(&instance.actually_used_renderer))
+            .unwrap_or(JsValue::NULL)
+    }
+
     // after the context menu is closed, remember to call `clear_custom_menu_items`!
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
@@ -592,7 +598,7 @@ impl Ruffle {
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
-        let (mut builder, canvas) =
+        let (mut builder, canvas, actually_used_renderer) =
             create_renderer(PlayerBuilder::new(), &document, &config).await?;
 
         parent
@@ -703,6 +709,7 @@ impl Ruffle {
             has_focus: false,
             trace_observer,
             log_subscriber,
+            actually_used_renderer,
         };
 
         // Prevent touch-scrolling on canvas.
@@ -1415,7 +1422,7 @@ async fn create_renderer(
     builder: PlayerBuilder,
     document: &web_sys::Document,
     config: &Config,
-) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
+) -> Result<(PlayerBuilder, HtmlCanvasElement, String), Box<dyn Error>> {
     #[cfg(not(any(
         feature = "canvas",
         feature = "webgl",
@@ -1463,7 +1470,11 @@ async fn create_renderer(
                         .await
                         {
                             Ok(renderer) => {
-                                return Ok((builder.with_renderer(renderer), canvas));
+                                return Ok((
+                                    builder.with_renderer(renderer),
+                                    canvas,
+                                    "webgpu".to_string(),
+                                ));
                             }
                             Err(error) => {
                                 tracing::error!("Error creating wgpu webgpu renderer: {}", error)
@@ -1486,7 +1497,11 @@ async fn create_renderer(
                         .await
                     {
                         Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
+                            return Ok((
+                                builder.with_renderer(renderer),
+                                canvas,
+                                "wgpu-webgl".to_string(),
+                            ));
                         }
                         Err(error) => {
                             tracing::error!("Error creating wgpu webgl renderer: {}", error)
@@ -1505,7 +1520,11 @@ async fn create_renderer(
                         .map_err(|_| "Expected HtmlCanvasElement")?;
                     match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
                         Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
+                            return Ok((
+                                builder.with_renderer(renderer),
+                                canvas,
+                                "webgl".to_string(),
+                            ));
                         }
                         Err(error) => tracing::error!("Error creating WebGL renderer: {}", error),
                     }
@@ -1525,7 +1544,11 @@ async fn create_renderer(
                         _is_transparent,
                     ) {
                         Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
+                            return Ok((
+                                builder.with_renderer(renderer),
+                                canvas,
+                                "canvas".to_string(),
+                            ));
                         }
                         Err(error) => tracing::error!("Error creating canvas renderer: {}", error),
                     }

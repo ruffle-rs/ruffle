@@ -36,4 +36,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     polyfills: true,
     playerVersion: null,
     preferredRenderer: null,
+    warnIfPreferredRendererIsNotUsed: false,
 };

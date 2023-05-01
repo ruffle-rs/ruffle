@@ -3,7 +3,11 @@ import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import type {
+    DataLoadOptions,
+    URLLoadOptions,
+    RenderBackend,
+} from "./load-options";
 import { AutoPlay, UnmuteOverlay, WindowMode } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
@@ -516,6 +520,37 @@ export class RufflePlayer extends HTMLElement {
                 (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
                 ")"
         );
+        {
+            const actuallyUsedRenderer =
+                this.instance!.get_actually_used_renderer() as
+                    | RenderBackend
+                    | null
+                    | "";
+
+            if (actuallyUsedRenderer) {
+                console.log(
+                    "%cUsed renderer: " + actuallyUsedRenderer,
+                    "background: #000; color: #fff"
+                );
+
+                if (
+                    this.loadedConfig &&
+                    this.loadedConfig.warnIfPreferredRendererIsNotUsed &&
+                    this.loadedConfig.preferredRenderer &&
+                    actuallyUsedRenderer !== this.loadedConfig.preferredRenderer
+                ) {
+                    const message =
+                        "The actually used renderer was not your preferred renderer:\n" +
+                        "Preferred renderer: " +
+                        this.loadedConfig.preferredRenderer +
+                        "\n" +
+                        "Actually used renderer: " +
+                        actuallyUsedRenderer;
+                    console.warn(message);
+                    window.alert(message);
+                }
+            }
+        }
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
         // It may change by itself to "running" some milliseconds later. So we need to wait a little
