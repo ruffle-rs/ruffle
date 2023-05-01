@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Flash içeriğini Ruffle ile oynat"
     },
-    "settings_page_ignore_optout": {
-        "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
-    },
     "settings_ignore_optout": {
-        "message": "Sitelerin uyumsuzluk uyarılarını yoksay"
+        "message": "Ruffle'a engel olan sitelerde dahi Flash içeriğini oynatmaya çalış"
     },
     "status_init": {
         "message": "Mevcut sekme okunuyor…"

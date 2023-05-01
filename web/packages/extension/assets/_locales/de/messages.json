@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Flash-Inhalte in Ruffle abspielen"
     },
-    "settings_page_ignore_optout": {
-        "message": "Flash-Inhalte abspielen, auch wenn die Seite Ruffle abgeschaltet hat"
-    },
     "settings_ignore_optout": {
-        "message": "Ignoriere Kompatibilitätswarnungen von Websites"
+        "message": "Flash-Inhalte abspielen, auch wenn die Seite Ruffle abgeschaltet hat"
     },
     "status_init": {
         "message": "Prüfe den aktuellen Tab…"

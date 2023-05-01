@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Spela upp Flash-innehåll i Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Spela upp Flash-innehåll även på sidor som inaktiverar Ruffle"
-    },
     "settings_ignore_optout": {
-        "message": "Ignorera webbsidekompatibilitetsvarningar"
+        "message": "Spela upp Flash-innehåll även på sidor som inaktiverar Ruffle"
     },
     "status_init": {
         "message": "Avläser aktuell flik…"

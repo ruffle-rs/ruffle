@@ -2,11 +2,8 @@
     "settings_ruffle_enable": {
         "message": "Проигрывать Flash-контент в Ruffle"
     },
-    "settings_page_ignore_optout": {
-        "message": "Проигрывать Flash-контент даже на тех сайтах, где Ruffle отключен"
-    },
     "settings_ignore_optout": {
-        "message": "Игнорировать предупреждения о совместимости с сайтами"
+        "message": "Проигрывать Flash-контент даже на тех сайтах, где Ruffle отключен"
     },
     "status_init": {
         "message": "Чтение текущей вкладки..."
