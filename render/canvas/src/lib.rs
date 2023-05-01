@@ -486,6 +486,10 @@ impl RenderBackend for WebCanvasRenderBackend {
         Cow::Borrowed("Renderer: Canvas")
     }
 
+    fn name(&self) -> &'static str {
+        "canvas"
+    }
+
     fn set_quality(&mut self, _quality: StageQuality) {}
 }
 

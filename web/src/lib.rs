@@ -378,6 +378,11 @@ impl Ruffle {
             .unwrap_or(JsValue::NULL)
     }
 
+    pub fn renderer_name(&self) -> JsValue {
+        self.with_core(|core| JsValue::from_str(core.renderer().name()))
+            .unwrap_or(JsValue::NULL)
+    }
+
     // after the context menu is closed, remember to call `clear_custom_menu_items`!
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {
