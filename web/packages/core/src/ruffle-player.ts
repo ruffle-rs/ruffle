@@ -13,6 +13,7 @@ import {
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
+import { text } from "./i18n";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -1238,14 +1239,14 @@ export class RufflePlayer extends HTMLElement {
         ) {
             addSeparator();
             items.push({
-                text: "Download .swf",
+                text: text("context-menu-download-swf"),
                 onClick: this.downloadSwf.bind(this),
             });
         }
 
         if (window.isSecureContext) {
             items.push({
-                text: "Copy debug info",
+                text: text("context-menu-copy-debug-info"),
                 onClick: () =>
                     navigator.clipboard.writeText(this.getPanicData()),
             });
@@ -1254,7 +1255,7 @@ export class RufflePlayer extends HTMLElement {
         const localSaveTable = this.saveManager.querySelector("#local-saves");
         if (localSaveTable && localSaveTable.textContent !== "") {
             items.push({
-                text: "Open Save Manager",
+                text: text("context-menu-open-save-manager"),
                 onClick: this.openSaveManager.bind(this),
             });
         }
@@ -1263,7 +1264,10 @@ export class RufflePlayer extends HTMLElement {
 
         const extensionString = this.isExtension ? "extension" : "";
         items.push({
-            text: `About Ruffle ${extensionString} (${buildInfo.versionName})`,
+            text: text("context-menu-about-ruffle", {
+                flavor: extensionString,
+                version: buildInfo.versionName,
+            }),
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -1273,7 +1277,7 @@ export class RufflePlayer extends HTMLElement {
         if (this.isTouch) {
             addSeparator();
             items.push({
-                text: "Hide this menu",
+                text: text("context-menu-hide"),
                 onClick: () => (this.contextMenuForceDisabled = true),
             });
         }
