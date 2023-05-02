@@ -1900,7 +1900,7 @@ export class RufflePlayer extends HTMLElement {
                 panicBody.classList.add("details");
 
                 const panicText = document.createElement("textarea");
-                panicText.setAttribute("readonly", "1");
+                panicText.readOnly = true;
                 panicText.value = errorText;
                 panicBody.replaceChildren(panicText);
                 return false;
