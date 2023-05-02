@@ -295,7 +295,7 @@ impl Ruffle {
 
             let ruffle = Ruffle::new_internal(parent, js_player, config)
                 .await
-                .map_err(|_| JsValue::from("Error creating player"))?;
+                .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
             Ok(JsValue::from(ruffle))
         })
     }
@@ -1444,6 +1444,8 @@ async fn create_renderer(
         if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
             renderer_list.remove(pos);
             renderer_list.insert(0, preferred_renderer.as_str());
+        } else {
+            tracing::error!("Unrecognized renderer name: {}", preferred_renderer);
         }
     }
 
@@ -1452,43 +1454,17 @@ async fn create_renderer(
     // with `getContext`.
     for renderer in renderer_list {
         match renderer {
+            #[cfg(all(feature = "webgpu", target_family = "wasm"))]
             "webgpu" => {
-                #[cfg(all(feature = "webgpu", target_family = "wasm"))]
+                // Check that we have access to WebGPU (navigator.gpu should exist).
+                if web_sys::window()
+                    .ok_or(JsValue::FALSE)
+                    .and_then(|window| {
+                        js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu"))
+                    })
+                    .unwrap_or_default()
                 {
-                    // Check that we have access to WebGPU (navigator.gpu should exist).
-                    if web_sys::window()
-                        .ok_or(JsValue::FALSE)
-                        .and_then(|window| {
-                            js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu"))
-                        })
-                        .unwrap_or_default()
-                    {
-                        tracing::info!("Creating wgpu webgpu renderer...");
-                        let canvas: HtmlCanvasElement = document
-                            .create_element("canvas")
-                            .into_js_result()?
-                            .dyn_into()
-                            .map_err(|_| "Expected HtmlCanvasElement")?;
-
-                        match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
-                            canvas.clone(),
-                        )
-                        .await
-                        {
-                            Ok(renderer) => {
-                                return Ok((builder.with_renderer(renderer), canvas));
-                            }
-                            Err(error) => {
-                                tracing::error!("Error creating wgpu webgpu renderer: {}", error)
-                            }
-                        }
-                    }
-                }
-            }
-            "wgpu-webgl" => {
-                #[cfg(all(feature = "wgpu-webgl", target_family = "wasm"))]
-                {
-                    tracing::info!("Creating wgpu webgl renderer...");
+                    tracing::info!("Creating wgpu webgpu renderer...");
                     let canvas: HtmlCanvasElement = document
                         .create_element("canvas")
                         .into_js_result()?
@@ -1502,51 +1478,62 @@ async fn create_renderer(
                             return Ok((builder.with_renderer(renderer), canvas));
                         }
                         Err(error) => {
-                            tracing::error!("Error creating wgpu webgl renderer: {}", error)
+                            tracing::error!("Error creating wgpu webgpu renderer: {}", error)
                         }
                     }
                 }
             }
+            #[cfg(all(feature = "wgpu-webgl", target_family = "wasm"))]
+            "wgpu-webgl" => {
+                tracing::info!("Creating wgpu webgl renderer...");
+                let canvas: HtmlCanvasElement = document
+                    .create_element("canvas")
+                    .into_js_result()?
+                    .dyn_into()
+                    .map_err(|_| "Expected HtmlCanvasElement")?;
+
+                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(canvas.clone())
+                    .await
+                {
+                    Ok(renderer) => {
+                        return Ok((builder.with_renderer(renderer), canvas));
+                    }
+                    Err(error) => {
+                        tracing::error!("Error creating wgpu webgl renderer: {}", error)
+                    }
+                }
+            }
+            #[cfg(feature = "webgl")]
             "webgl" => {
-                #[cfg(feature = "webgl")]
-                {
-                    tracing::info!("Creating WebGL renderer...");
-                    let canvas: HtmlCanvasElement = document
-                        .create_element("canvas")
-                        .into_js_result()?
-                        .dyn_into()
-                        .map_err(|_| "Expected HtmlCanvasElement")?;
-                    match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
-                        Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
-                        }
-                        Err(error) => tracing::error!("Error creating WebGL renderer: {}", error),
+                tracing::info!("Creating WebGL renderer...");
+                let canvas: HtmlCanvasElement = document
+                    .create_element("canvas")
+                    .into_js_result()?
+                    .dyn_into()
+                    .map_err(|_| "Expected HtmlCanvasElement")?;
+                match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
+                    Ok(renderer) => {
+                        return Ok((builder.with_renderer(renderer), canvas));
                     }
+                    Err(error) => tracing::error!("Error creating WebGL renderer: {}", error),
                 }
             }
+            #[cfg(feature = "canvas")]
             "canvas" => {
-                #[cfg(feature = "canvas")]
-                {
-                    tracing::info!("Creating Canvas renderer...");
-                    let canvas: HtmlCanvasElement = document
-                        .create_element("canvas")
-                        .into_js_result()?
-                        .dyn_into()
-                        .map_err(|_| "Expected HtmlCanvasElement")?;
-                    match ruffle_render_canvas::WebCanvasRenderBackend::new(
-                        &canvas,
-                        _is_transparent,
-                    ) {
-                        Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
-                        }
-                        Err(error) => tracing::error!("Error creating canvas renderer: {}", error),
+                tracing::info!("Creating Canvas renderer...");
+                let canvas: HtmlCanvasElement = document
+                    .create_element("canvas")
+                    .into_js_result()?
+                    .dyn_into()
+                    .map_err(|_| "Expected HtmlCanvasElement")?;
+                match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas, _is_transparent) {
+                    Ok(renderer) => {
+                        return Ok((builder.with_renderer(renderer), canvas));
                     }
+                    Err(error) => tracing::error!("Error creating canvas renderer: {}", error),
                 }
             }
-            _ => {
-                tracing::error!("Unrecognized renderer name: {}", renderer);
-            }
+            _ => {}
         }
     }
     Err("Unable to create renderer".into())
