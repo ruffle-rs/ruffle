@@ -61,7 +61,7 @@ features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
     "ChannelMergerNode", "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode",
-    "HtmlCanvasElement", "HtmlElement", "HtmlFormElement", "HtmlInputElement", "KeyboardEvent",
-    "Location", "PointerEvent", "Request", "RequestInit", "Response", "Storage", "WheelEvent",
-    "Window",
+    "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement", "HtmlInputElement",
+    "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit",
+    "Response", "Storage", "WheelEvent", "Window",
 ]
