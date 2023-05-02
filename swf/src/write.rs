@@ -1414,49 +1414,42 @@ impl<W: Write> Writer<W> {
         bits: &mut BitWriter<T>,
         context: &mut ShapeContext,
     ) -> Result<()> {
-        match *record {
-            ShapeRecord::StraightEdge { delta_x, delta_y } => {
+        match record {
+            ShapeRecord::StraightEdge { delta } => {
                 bits.write_ubits(2, 0b11)?; // Straight edge
                                             // TODO: Check underflow?
-                let mut num_bits = max(count_sbits_twips(delta_x), count_sbits_twips(delta_y));
-                num_bits = max(2, num_bits);
-                let is_axis_aligned = delta_x.get() == 0 || delta_y.get() == 0;
+                let num_bits = count_sbits_twips(delta.dx)
+                    .max(count_sbits_twips(delta.dy))
+                    .max(2);
+                let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
                 bits.write_ubits(4, num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
                 if is_axis_aligned {
-                    bits.write_bit(delta_x.get() == 0)?;
+                    bits.write_bit(delta.dx == Twips::ZERO)?;
                 }
-                if delta_x.get() != 0 {
-                    bits.write_sbits_twips(num_bits, delta_x)?;
+                if delta.dx != Twips::ZERO {
+                    bits.write_sbits_twips(num_bits, delta.dx)?;
                 }
-                if delta_y.get() != 0 {
-                    bits.write_sbits_twips(num_bits, delta_y)?;
+                if delta.dy != Twips::ZERO {
+                    bits.write_sbits_twips(num_bits, delta.dy)?;
                 }
             }
             ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
                 bits.write_ubits(2, 0b10)?; // Curved edge
-                let num_bits = [
-                    control_delta_x,
-                    control_delta_y,
-                    anchor_delta_x,
-                    anchor_delta_y,
-                ]
-                .iter()
-                .map(|x| count_sbits_twips(*x))
-                .max()
-                .unwrap();
+                let num_bits = count_sbits_twips(control_delta.dx)
+                    .max(count_sbits_twips(control_delta.dy))
+                    .max(count_sbits_twips(anchor_delta.dx))
+                    .max(count_sbits_twips(anchor_delta.dy));
                 bits.write_ubits(4, num_bits - 2)?;
-                bits.write_sbits_twips(num_bits, control_delta_x)?;
-                bits.write_sbits_twips(num_bits, control_delta_y)?;
-                bits.write_sbits_twips(num_bits, anchor_delta_x)?;
-                bits.write_sbits_twips(num_bits, anchor_delta_y)?;
+                bits.write_sbits_twips(num_bits, control_delta.dx)?;
+                bits.write_sbits_twips(num_bits, control_delta.dy)?;
+                bits.write_sbits_twips(num_bits, anchor_delta.dx)?;
+                bits.write_sbits_twips(num_bits, anchor_delta.dy)?;
             }
-            ShapeRecord::StyleChange(ref style_change) => {
+            ShapeRecord::StyleChange(style_change) => {
                 bits.write_bit(false)?; // Style change
                 let num_fill_bits = context.num_fill_bits.into();
                 let num_line_bits = context.num_line_bits.into();

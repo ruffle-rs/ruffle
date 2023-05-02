@@ -1744,21 +1744,25 @@ impl<'a> Reader<'a> {
                 let delta_x = if !is_axis_aligned || !is_vertical {
                     bits.read_sbits_twips(num_bits)?
                 } else {
-                    Default::default()
+                    Twips::ZERO
                 };
                 let delta_y = if !is_axis_aligned || is_vertical {
                     bits.read_sbits_twips(num_bits)?
                 } else {
-                    Default::default()
+                    Twips::ZERO
                 };
-                Some(ShapeRecord::StraightEdge { delta_x, delta_y })
+                Some(ShapeRecord::StraightEdge {
+                    delta: PointDelta::new(delta_x, delta_y),
+                })
             } else {
                 // CurvedEdge
+                let control_delta_x = bits.read_sbits_twips(num_bits)?;
+                let control_delta_y = bits.read_sbits_twips(num_bits)?;
+                let anchor_delta_x = bits.read_sbits_twips(num_bits)?;
+                let anchor_delta_y = bits.read_sbits_twips(num_bits)?;
                 Some(ShapeRecord::CurvedEdge {
-                    control_delta_x: bits.read_sbits_twips(num_bits)?,
-                    control_delta_y: bits.read_sbits_twips(num_bits)?,
-                    anchor_delta_x: bits.read_sbits_twips(num_bits)?,
-                    anchor_delta_y: bits.read_sbits_twips(num_bits)?,
+                    control_delta: PointDelta::new(control_delta_x, control_delta_y),
+                    anchor_delta: PointDelta::new(anchor_delta_x, anchor_delta_y),
                 })
             }
         } else {
@@ -2963,8 +2967,7 @@ pub mod tests {
         };
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(1.0),
-            delta_y: Twips::from_pixels(1.0),
+            delta: PointDelta::from_pixels(1.0, 1.0),
         };
         assert_eq!(
             read(&[0b11_0100_1_0, 0b1010_0010, 0b100_00000]),
@@ -2972,14 +2975,12 @@ pub mod tests {
         );
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(0.0),
-            delta_y: Twips::from_pixels(-1.0),
+            delta: PointDelta::from_pixels(0.0, -1.0),
         };
         assert_eq!(read(&[0b11_0100_0_1, 0b101100_00]), shape_record);
 
         let shape_record = ShapeRecord::StraightEdge {
-            delta_x: Twips::from_pixels(-1.5),
-            delta_y: Twips::from_pixels(0.0),
+            delta: PointDelta::from_pixels(-1.5, 0.0),
         };
         assert_eq!(read(&[0b11_0100_0_0, 0b100010_00]), shape_record);
     }

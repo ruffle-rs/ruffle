@@ -12,7 +12,7 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
-use swf::{Fixed16, Fixed8, Twips};
+use swf::{Fixed16, Fixed8, PointDelta, Twips};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -369,18 +369,16 @@ impl MorphShapeStatic {
     fn update_pos(x: &mut Twips, y: &mut Twips, record: &swf::ShapeRecord) {
         use swf::ShapeRecord;
         match record {
-            ShapeRecord::StraightEdge { delta_x, delta_y } => {
-                *x += *delta_x;
-                *y += *delta_y;
+            ShapeRecord::StraightEdge { delta } => {
+                *x += delta.dx;
+                *y += delta.dy;
             }
             ShapeRecord::CurvedEdge {
-                control_delta_x,
-                control_delta_y,
-                anchor_delta_x,
-                anchor_delta_y,
+                control_delta,
+                anchor_delta,
             } => {
-                *x += *control_delta_x + *anchor_delta_x;
-                *y += *control_delta_y + *anchor_delta_y;
+                *x += control_delta.dx + anchor_delta.dx;
+                *y += control_delta.dy + anchor_delta.dy;
             }
             ShapeRecord::StyleChange(ref style_change) => {
                 if let Some(move_to) = &style_change.move_to {
@@ -483,85 +481,74 @@ fn lerp_edges(
 ) -> swf::ShapeRecord {
     use swf::ShapeRecord;
     match (start, end) {
-        (
-            &ShapeRecord::StraightEdge {
-                delta_x: start_dx,
-                delta_y: start_dy,
-            },
-            &ShapeRecord::StraightEdge {
-                delta_x: end_dx,
-                delta_y: end_dy,
-            },
-        ) => ShapeRecord::StraightEdge {
-            delta_x: lerp_twips(start_dx, end_dx, a, b),
-            delta_y: lerp_twips(start_dy, end_dy, a, b),
-        },
-
-        (
-            &ShapeRecord::CurvedEdge {
-                control_delta_x: start_cdx,
-                control_delta_y: start_cdy,
-                anchor_delta_x: start_adx,
-                anchor_delta_y: start_ady,
-            },
-            &ShapeRecord::CurvedEdge {
-                control_delta_x: end_cdx,
-                control_delta_y: end_cdy,
-                anchor_delta_x: end_adx,
-                anchor_delta_y: end_ady,
-            },
-        ) => ShapeRecord::CurvedEdge {
-            control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
-            control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
-            anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
-            anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
-        },
-
-        (
-            &ShapeRecord::StraightEdge {
-                delta_x: start_dx,
-                delta_y: start_dy,
-            },
-            &ShapeRecord::CurvedEdge {
-                control_delta_x: end_cdx,
-                control_delta_y: end_cdy,
-                anchor_delta_x: end_adx,
-                anchor_delta_y: end_ady,
-            },
-        ) => {
-            let start_cdx = start_dx / 2;
-            let start_cdy = start_dy / 2;
-            let start_adx = start_cdx;
-            let start_ady = start_cdy;
-            ShapeRecord::CurvedEdge {
-                control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
-                control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
-                anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
-                anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
+        (ShapeRecord::StraightEdge { delta: start }, ShapeRecord::StraightEdge { delta: end }) => {
+            ShapeRecord::StraightEdge {
+                delta: PointDelta::new(
+                    lerp_twips(start.dx, end.dx, a, b),
+                    lerp_twips(start.dy, end.dy, a, b),
+                ),
             }
         }
 
         (
-            &ShapeRecord::CurvedEdge {
-                control_delta_x: start_cdx,
-                control_delta_y: start_cdy,
-                anchor_delta_x: start_adx,
-                anchor_delta_y: start_ady,
+            ShapeRecord::CurvedEdge {
+                control_delta: start_control,
+                anchor_delta: start_anchor,
             },
-            &ShapeRecord::StraightEdge {
-                delta_x: end_dx,
-                delta_y: end_dy,
+            ShapeRecord::CurvedEdge {
+                control_delta: end_control,
+                anchor_delta: end_anchor,
+            },
+        ) => ShapeRecord::CurvedEdge {
+            control_delta: PointDelta::new(
+                lerp_twips(start_control.dx, end_control.dx, a, b),
+                lerp_twips(start_control.dy, end_control.dy, a, b),
+            ),
+            anchor_delta: PointDelta::new(
+                lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
+                lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
+            ),
+        },
+
+        (
+            ShapeRecord::StraightEdge { delta: start },
+            ShapeRecord::CurvedEdge {
+                control_delta: end_control,
+                anchor_delta: end_anchor,
             },
         ) => {
-            let end_cdx = end_dx / 2;
-            let end_cdy = end_dy / 2;
-            let end_adx = end_cdx;
-            let end_ady = end_cdy;
+            let start_control = *start / 2;
+            let start_anchor = start_control;
             ShapeRecord::CurvedEdge {
-                control_delta_x: lerp_twips(start_cdx, end_cdx, a, b),
-                control_delta_y: lerp_twips(start_cdy, end_cdy, a, b),
-                anchor_delta_x: lerp_twips(start_adx, end_adx, a, b),
-                anchor_delta_y: lerp_twips(start_ady, end_ady, a, b),
+                control_delta: PointDelta::new(
+                    lerp_twips(start_control.dx, end_control.dx, a, b),
+                    lerp_twips(start_control.dy, end_control.dy, a, b),
+                ),
+                anchor_delta: PointDelta::new(
+                    lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
+                    lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
+                ),
+            }
+        }
+
+        (
+            ShapeRecord::CurvedEdge {
+                control_delta: start_control,
+                anchor_delta: start_anchor,
+            },
+            ShapeRecord::StraightEdge { delta: end },
+        ) => {
+            let end_control = *end / 2;
+            let end_anchor = end_control;
+            ShapeRecord::CurvedEdge {
+                control_delta: PointDelta::new(
+                    lerp_twips(start_control.dx, end_control.dx, a, b),
+                    lerp_twips(start_control.dy, end_control.dy, a, b),
+                ),
+                anchor_delta: PointDelta::new(
+                    lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
+                    lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
+                ),
             }
         }
         _ => unreachable!("{:?} {:?}", start, end),
