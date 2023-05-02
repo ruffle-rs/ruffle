@@ -328,3 +328,11 @@ pub fn text<'gc>(
     };
     Ok(XmlListObject::new(activation, nodes, Some(xml.into())).into())
 }
+
+pub fn length<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Integer(1))
+}

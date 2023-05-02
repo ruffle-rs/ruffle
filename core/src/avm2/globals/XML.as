@@ -48,6 +48,7 @@ package {
         AS3 native function descendants(name:Object = "*"):XMLList;
         AS3 native function text():XMLList;
         AS3 native function toString():String;
+        AS3 native function length():int;
 
         prototype.name = function():Object {
             var self:XML = this;
@@ -145,5 +146,10 @@ package {
             var self:XML = this;
             return self.AS3::normalize();
         };
+
+        prototype.length = function():int {
+            var self:XML = this;
+            return self.AS3::length();
+        }
     }
 }
