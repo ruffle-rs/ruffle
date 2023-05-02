@@ -21,19 +21,19 @@ pub enum NavigationMethod {
     Post,
 }
 
-/// The handling mode of navigate_to_url website calls.
+/// The handling mode of links opening a new website.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum OpenURLMode {
-    /// Allow all navigate_to_url website calls.
+    /// Allow all links to open a new website.
     #[serde(rename = "allow")]
     Allow,
 
-    /// A confirmation dialog opens with every navigate_to_url website call.
+    /// A confirmation dialog opens with every link trying to open a new website.
     #[serde(rename = "confirm")]
     Confirm,
 
-    /// Deny all navigate_to_url website calls.
+    /// Deny all links to open a new website.
     #[serde(rename = "deny")]
     Deny,
 }

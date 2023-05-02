@@ -156,7 +156,7 @@ struct Opt {
     #[clap(long)]
     frame_rate: Option<f64>,
 
-    /// The handling mode of navigate_to_url website calls.
+    /// The handling mode of links opening a new website.
     #[clap(long, default_value = "allow")]
     open_url_mode: OpenURLMode,
 }
