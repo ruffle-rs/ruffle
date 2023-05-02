@@ -67,6 +67,10 @@ pub trait RenderBackend: Downcast {
     fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
+    /// An internal name that is used to identify the render-backend.
+    /// For valid values, look at:
+    /// web/packages/core/src/load-options.ts:RenderBackend
+    fn name(&self) -> &'static str;
 
     fn set_quality(&mut self, quality: StageQuality);
 }

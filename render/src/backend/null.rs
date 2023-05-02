@@ -93,5 +93,9 @@ impl RenderBackend for NullRenderer {
         Cow::Borrowed("Renderer: Null")
     }
 
+    fn name(&self) -> &'static str {
+        ""
+    }
+
     fn set_quality(&mut self, _quality: StageQuality) {}
 }

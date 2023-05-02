@@ -378,6 +378,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Cow::Owned(result.join("\n"))
     }
 
+    fn name(&self) -> &'static str {
+        "webgpu"
+    }
+
     fn set_quality(&mut self, quality: StageQuality) {
         self.surface = Surface::new(
             &self.descriptors,

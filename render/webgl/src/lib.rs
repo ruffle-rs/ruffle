@@ -1101,6 +1101,10 @@ impl RenderBackend for WebGlRenderBackend {
         Cow::Owned(result.join("\n"))
     }
 
+    fn name(&self) -> &'static str {
+        "webgl"
+    }
+
     fn set_quality(&mut self, _quality: StageQuality) {}
 }
 
