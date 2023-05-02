@@ -379,7 +379,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn name(&self) -> &'static str {
-        "webgpu"
+        if cfg!(target_family = "wasm") {
+            let info = self.descriptors.adapter.get_info();
+            if info.backend == wgpu::Backend::BrowserWebGpu {
+                "webgpu"
+            } else {
+                "wgpu-webgl"
+            }
+        } else {
+            "wgpu"
+        }
     }
 
     fn set_quality(&mut self, quality: StageQuality) {
