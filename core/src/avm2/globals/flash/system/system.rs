@@ -11,8 +11,17 @@ pub fn set_clipboard<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    //TODO: in FP9+ this function only works when called from a button handler in the Plugin due to
-    // sandbox restrictions
+    // The following restrictions only apply to the plugin.
+    // TODO: Check the type of event that triggered the function call.
+    #[cfg(target_family = "wasm")]
+    if false {
+        return Err(Error::AvmError(crate::avm2::error::error(
+            activation,
+            "Error #2176: Certain actions, such as those that display a pop-up window, may only be invoked upon user interaction, for example by a mouse click or button press.",
+            2176,
+        )?));
+    }
+
     let new_content = args
         .get(0)
         .unwrap_or(&Value::Undefined)

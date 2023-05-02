@@ -2,7 +2,8 @@ use super::JavascriptPlayer;
 use ruffle_core::backend::ui::{FullscreenError, MouseCursor, UiBackend};
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
-use web_sys::HtmlCanvasElement;
+use wasm_bindgen::JsCast;
+use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
 
 /// An implementation of `UiBackend` utilizing `web_sys` bindings to input APIs.
 pub struct WebUiBackend {
@@ -55,10 +56,39 @@ impl UiBackend for WebUiBackend {
         self.update_mouse_cursor();
     }
 
-    fn set_clipboard_content(&mut self, _content: String) {
-        //TODO: in AVM2 FP9+ this only works when called from a button handler due to sandbox
-        // restrictions
-        tracing::warn!("set clipboard not implemented");
+    fn set_clipboard_content(&mut self, content: String) {
+        // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`
+        // is available only in secure contexts (HTTPS).
+        if let Some(element) = self.canvas.parent_element() {
+            let window = web_sys::window().expect("window()");
+            let document: HtmlDocument = window
+                .document()
+                .expect("document()")
+                .dyn_into()
+                .expect("document() didn't give us a document");
+            let textarea: HtmlTextAreaElement = document
+                .create_element("textarea")
+                .expect("create_element() must succeed")
+                .dyn_into()
+                .expect("create_element(\"textarea\") didn't give us a textarea");
+
+            textarea.set_value(&content);
+            let _ = element.append_child(&textarea);
+            textarea.select();
+
+            match document.exec_command("copy") {
+                Ok(success) => {
+                    if !success {
+                        tracing::warn!(
+                            "Couldn't set clipboard contents: The browser rejected the call"
+                        );
+                    }
+                }
+                Err(e) => tracing::error!("Couldn't set clipboard contents: {:?}", e),
+            }
+
+            let _ = element.remove_child(&textarea);
+        }
     }
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {
